@@ -4238,6 +4238,54 @@ export interface AuthAPI_User {
     login: string;
 }
 /**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.DeleteUser
+ */
+export interface AuthAPI_DeleteUser {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.DeleteUser.Request
+ */
+export interface AuthAPI_DeleteUser_Request {
+    /**
+     * login of the user to delete. Resolved the way an admin-supplied grant target is:
+     * across the configured providers, then the legacy empty-idp bucket, then by a login
+     * attribute unique across records - so an account left behind by a provider that has
+     * since been removed is reachable too.
+     *
+     * @generated from protobuf field: string login = 1
+     */
+    login: string;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.DeleteUser.Response
+ */
+export interface AuthAPI_DeleteUser_Response {
+    /**
+     * root resource the user owned; 0 when the user had none.
+     *
+     * @generated from protobuf field: uint64 user_root_id = 1
+     */
+    userRootId: bigint;
+    /**
+     * whether that root resource was deleted.
+     *
+     * @generated from protobuf field: bool user_root_deleted = 2
+     */
+    userRootDeleted: boolean;
+    /**
+     * grants revoked, the user-root self-grant included.
+     *
+     * @generated from protobuf field: uint32 revoked_grants = 3
+     */
+    revokedGrants: number;
+    /**
+     * login-index entries removed.
+     *
+     * @generated from protobuf field: uint32 removed_login_index_entries = 4
+     */
+    removedLoginIndexEntries: number;
+}
+/**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers
  */
 export interface AuthAPI_ListUsers {
@@ -19974,6 +20022,162 @@ class AuthAPI_User$Type extends MessageType<AuthAPI_User> {
  */
 export const AuthAPI_User = new AuthAPI_User$Type();
 // @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_DeleteUser$Type extends MessageType<AuthAPI_DeleteUser> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.DeleteUser", []);
+    }
+    create(value?: PartialMessage<AuthAPI_DeleteUser>): AuthAPI_DeleteUser {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_DeleteUser>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_DeleteUser): AuthAPI_DeleteUser {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_DeleteUser, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.DeleteUser
+ */
+export const AuthAPI_DeleteUser = new AuthAPI_DeleteUser$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_DeleteUser_Request$Type extends MessageType<AuthAPI_DeleteUser_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.DeleteUser.Request", [
+            { no: 1, name: "login", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_DeleteUser_Request>): AuthAPI_DeleteUser_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.login = "";
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_DeleteUser_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_DeleteUser_Request): AuthAPI_DeleteUser_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string login */ 1:
+                    message.login = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_DeleteUser_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string login = 1; */
+        if (message.login !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.login);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.DeleteUser.Request
+ */
+export const AuthAPI_DeleteUser_Request = new AuthAPI_DeleteUser_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_DeleteUser_Response$Type extends MessageType<AuthAPI_DeleteUser_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.DeleteUser.Response", [
+            { no: 1, name: "user_root_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "user_root_deleted", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 3, name: "revoked_grants", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
+            { no: 4, name: "removed_login_index_entries", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_DeleteUser_Response>): AuthAPI_DeleteUser_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.userRootId = 0n;
+        message.userRootDeleted = false;
+        message.revokedGrants = 0;
+        message.removedLoginIndexEntries = 0;
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_DeleteUser_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_DeleteUser_Response): AuthAPI_DeleteUser_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 user_root_id */ 1:
+                    message.userRootId = reader.uint64().toBigInt();
+                    break;
+                case /* bool user_root_deleted */ 2:
+                    message.userRootDeleted = reader.bool();
+                    break;
+                case /* uint32 revoked_grants */ 3:
+                    message.revokedGrants = reader.uint32();
+                    break;
+                case /* uint32 removed_login_index_entries */ 4:
+                    message.removedLoginIndexEntries = reader.uint32();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_DeleteUser_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 user_root_id = 1; */
+        if (message.userRootId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.userRootId);
+        /* bool user_root_deleted = 2; */
+        if (message.userRootDeleted !== false)
+            writer.tag(2, WireType.Varint).bool(message.userRootDeleted);
+        /* uint32 revoked_grants = 3; */
+        if (message.revokedGrants !== 0)
+            writer.tag(3, WireType.Varint).uint32(message.revokedGrants);
+        /* uint32 removed_login_index_entries = 4; */
+        if (message.removedLoginIndexEntries !== 0)
+            writer.tag(4, WireType.Varint).uint32(message.removedLoginIndexEntries);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.DeleteUser.Response
+ */
+export const AuthAPI_DeleteUser_Response = new AuthAPI_DeleteUser_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
 class AuthAPI_ListUsers$Type extends MessageType<AuthAPI_ListUsers> {
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.ListUsers", []);
@@ -20728,6 +20932,7 @@ export const Platform = new ServiceType("MiLaboratories.PL.API.Platform", [
     { name: "GetUserRoot", options: { "google.api.http": { post: "/v1/auth/user-root", body: "*" } }, I: AuthAPI_GetUserRoot_Request, O: AuthAPI_GetUserRoot_Response },
     { name: "ListUserResources", serverStreaming: true, options: {}, I: AuthAPI_ListUserResources_Request, O: AuthAPI_ListUserResources_Response },
     { name: "ListUsers", options: {}, I: AuthAPI_ListUsers_Request, O: AuthAPI_ListUsers_Response },
+    { name: "DeleteUser", options: { "google.api.http": { post: "/v1/auth/delete-user", body: "*" } }, I: AuthAPI_DeleteUser_Request, O: AuthAPI_DeleteUser_Response },
     { name: "ListResourceTypes", options: { "google.api.http": { get: "/v1/resource-types" } }, I: MiscAPI_ListResourceTypes_Request, O: MiscAPI_ListResourceTypes_Response },
     { name: "Ping", options: { "google.api.http": { get: "/v1/ping" } }, I: MaintenanceAPI_Ping_Request, O: MaintenanceAPI_Ping_Response },
     { name: "License", options: { "google.api.http": { get: "/v1/license" } }, I: MaintenanceAPI_License_Request, O: MaintenanceAPI_License_Response }
