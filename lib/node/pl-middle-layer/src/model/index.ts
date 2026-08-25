@@ -35,3 +35,17 @@ export {
   type TemplateApplyProblem,
   type TemplateApplyReport,
 } from "./template_apply";
+
+// The template export path. A caller renders a stored template back to a file, and reports
+// every block that stood in the way of storing one, so the outcome type and the stringifier
+// are as public as the `MiddleLayer.saveProjectAsTemplate` that produces them.
+export {
+  stringifyProjectTemplateV1,
+  locationOf,
+  type ProjectTemplateExportOutcome,
+} from "./template_serializer";
+export type { TemplateExportProblem } from "./template_export";
+
+// The template share path. Whether a template may be shared at all is a question a UI asks about
+// a template it is merely displaying, so the check and its problem type are public.
+export { unshareableTemplateEntries, type TemplateShareProblem } from "./template_share";

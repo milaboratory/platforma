@@ -1,6 +1,6 @@
 import type { ResourceType, Role } from "@milaboratories/pl-client";
 import { Role as RoleEnum } from "@milaboratories/pl-client";
-import type { Branded, ProjectId } from "@milaboratories/pl-model-common";
+import type { Branded, ProjectId, ProjectTemplateV1 } from "@milaboratories/pl-model-common";
 import { randomUUID } from "node:crypto";
 
 /**
@@ -84,23 +84,60 @@ export function canImpersonate(role: Role | null): boolean {
   }
 }
 
-/** One project's snapshot inside an envelope, keyed by {@link ProjectFieldUuid} in {@link EnvelopeData.projects}. */
+/** One project's snapshot inside an envelope, keyed by {@link ProjectFieldUuid} in a
+ *  `projects` {@link EnvelopePayload}. */
 export interface EnvelopeProject {
   label: string; // carried so the pending-share UI renders without traversing into the project
   source: ProjectId; // donor's source projectId; supersedes a prior share and matches the snapshot to its live source on change
   updatedAt: number; // ms epoch of the last (re)snapshot
 }
 
-/** Immutable `data` on a SharedEnvelope, set at createEphemeral, never mutated. */
+/**
+ * What a share carries. The discriminant is what a reader checks before anything else: a
+ * client that does not know a kind hides the share instead of offering something it cannot
+ * act on.
+ *
+ * `projects` snapshots ride as `project/{uuid}` fields on the envelope and this map only
+ * describes them; a `template` payload has no fields at all — the document is right here.
+ */
+export type EnvelopePayload =
+  | { kind: "projects"; projects: Record<ProjectFieldUuid, EnvelopeProject> }
+  | {
+      kind: "template";
+      document: ProjectTemplateV1;
+      /** Label to give the template on the recipient's own shelf. */
+      label: string;
+      /** Donor login, kept on the accepted template as its provenance. */
+      from: string;
+    };
+
+export type EnvelopePayloadKind = EnvelopePayload["kind"];
+
+/** Version written into every new envelope. Bumped from 1 when the payload became discriminated. */
+export const EnvelopeSchemaVersionCurrent = 2;
+
+/**
+ * Immutable `data` on a SharedEnvelope, set at createEphemeral, never mutated.
+ *
+ * Always the current version in memory: a v1 envelope (project map at the top level, no
+ * `payload` field) is upcast on read by {@link normalizeEnvelopeData}, so no reader past the
+ * decode has to know that two shapes ever existed.
+ */
 export interface EnvelopeData {
-  schemaVersion: 1;
+  schemaVersion: typeof EnvelopeSchemaVersionCurrent;
   shareId: ShareId; // donor-generated UUID; logical share identity, stable across changes
   sharedAt: number; // ms epoch; this instance's creation time — distinguishes instances of one shareId
   expiresAt: number | null; // ms epoch; sharedAt + ttl (default 14 days) for a targeted share; null for share-with-everybody (never expires)
   mode: EnvelopeMode; // what the acceptor's app should do with the contents
   sender: string; // donor login (informational; backend granted_by is authoritative)
   title: string; // display name shown to recipients; defaults to the first project's name
-  projects: Record<ProjectFieldUuid, EnvelopeProject>; // contained projects, keyed by project field uuid
+  payload: EnvelopePayload; // what the share carries
+}
+
+/** The project map of a projects-payload envelope, or `{}` for any other payload — the one
+ *  place a project-shaped reader turns a payload into the map it expects. */
+export function envelopeProjectMap(data: EnvelopeData): Record<ProjectFieldUuid, EnvelopeProject> {
+  return data.payload.kind === "projects" ? data.payload.projects : {};
 }
 
 /** Dynamic field on SharingState, one per handled share, keyed by shareId. */
@@ -110,7 +147,7 @@ export interface SharingDecision {
   decision: "accepted" | "rejected";
   timestamp: number; // ms epoch — when the acceptor acted
   envelopeSharedAt: number; // the acted-on envelope instance's sharedAt — pins which instance was handled (paired with the shareId key; the resource id is never stored)
-  acceptedProjects: string[]; // ids of the projects created in the acceptor's list ([] for a rejected share)
+  acceptedProjects: string[]; // ids of the projects created in the acceptor's list ([] for a rejected share, and for a template share, which creates none)
 }
 
 /** Dynamic field on SharedEnvelope, one per recipient who accepted or rejected, keyed
@@ -134,10 +171,45 @@ export interface EnvelopeAcceptance {
  * Single owner of the raw-data → {@link EnvelopeData} decode. The envelope's immutable `data`
  * blob is UTF-8 JSON set once at createEphemeral; every site that reads it from a raw resource
  * `data` byte buffer (the basic-resource read path) goes through here. The reactive tree-node
- * path uses `node.getDataAsJson<EnvelopeData>()`, which decodes the same JSON.
+ * path decodes the same JSON with `getDataAsJson` and normalizes it with
+ * {@link normalizeEnvelopeData} — both paths must, so neither sees the raw v1 shape.
+ *
+ * `undefined` for an envelope this build cannot act on; see {@link normalizeEnvelopeData}.
  */
-export function decodeEnvelopeData(data: Uint8Array): EnvelopeData {
-  return JSON.parse(Buffer.from(data).toString("utf-8")) as EnvelopeData;
+export function decodeEnvelopeData(data: Uint8Array): EnvelopeData | undefined {
+  return normalizeEnvelopeData(JSON.parse(Buffer.from(data).toString("utf-8")));
+}
+
+/**
+ * Brings a decoded envelope blob to the current shape, or reports that this build cannot act
+ * on it by returning `undefined` — an unknown `schemaVersion` or an unknown payload kind. A
+ * caller hides such a share rather than offering the recipient something it cannot handle.
+ *
+ * A v1 envelope carried its project map at the top level and had no `payload` field; it reads
+ * here as a `projects` payload, so envelopes written before the discriminant existed keep
+ * working unchanged.
+ */
+export function normalizeEnvelopeData(raw: unknown): EnvelopeData | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const e = raw as RawEnvelopeData;
+  if (e.schemaVersion !== 1 && e.schemaVersion !== EnvelopeSchemaVersionCurrent) return undefined;
+
+  const payload =
+    e.payload ??
+    (e.projects !== undefined ? ({ kind: "projects", projects: e.projects } as const) : undefined);
+  if (payload === undefined) return undefined;
+  if (!KnownPayloadKinds.has(payload.kind)) return undefined;
+
+  return {
+    schemaVersion: EnvelopeSchemaVersionCurrent,
+    shareId: e.shareId,
+    sharedAt: e.sharedAt,
+    expiresAt: e.expiresAt,
+    mode: e.mode,
+    sender: e.sender,
+    title: e.title,
+    payload,
+  };
 }
 
 /**
@@ -166,3 +238,38 @@ export type ShareProjectsOptions =
       title: string;
       mode: EnvelopeMode;
     };
+
+/**
+ * Options for {@link MiddleLayer.shareTemplate}.
+ *
+ * Recipients XOR everyone, exactly as {@link ShareProjectsOptions}, minus the mode: a template
+ * share is always granted read-only, because the recipient copies no resource out of the
+ * envelope — the document is in the envelope's own data.
+ */
+export type ShareTemplateOptions =
+  | {
+      recipients: string[]; // recipient logins
+      title: string; // display name shown to recipients; defaults to the template's label
+    }
+  | {
+      everyone: true; // share with all users on the server
+      title: string;
+    };
+
+//
+// Internals
+//
+
+/** Every payload kind this build can act on; anything else is hidden rather than offered. */
+const KnownPayloadKinds = new Set<string>(["projects", "template"]);
+
+/**
+ * The envelope blob as it comes off the wire, before {@link normalizeEnvelopeData} decides
+ * whether this build can act on it: the version is any number, the payload may be missing,
+ * and `projects` is the v1 top-level project map.
+ */
+type RawEnvelopeData = Omit<EnvelopeData, "schemaVersion" | "payload"> & {
+  schemaVersion: number;
+  payload?: EnvelopePayload;
+  projects?: Record<ProjectFieldUuid, EnvelopeProject>;
+};
