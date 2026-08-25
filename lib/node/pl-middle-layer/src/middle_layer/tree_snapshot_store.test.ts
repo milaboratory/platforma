@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import type { PlClient, SignedResourceId } from "@milaboratories/pl-client";
-import { createSignedResourceId, toResourceSignature } from "@milaboratories/pl-client";
+import {
+  createSignedResourceId,
+  parseSignedResourceId,
+  toResourceSignature,
+} from "@milaboratories/pl-client";
 import type { PersistedTree } from "@milaboratories/pl-tree";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import fsp from "node:fs/promises";
@@ -27,7 +31,7 @@ function fakeClient(
  *  tested against real trees in pl-tree. */
 function snapshotFor(root: SignedResourceId): PersistedTree {
   return {
-    witness: toResourceSignature(Buffer.from(root.split("|")[1], "hex")),
+    witness: parseSignedResourceId(root).signature,
     roots: [root],
     resources: [],
   };
@@ -109,7 +113,7 @@ describe("reporting failure", () => {
     const store = storeIn(occupied)!;
 
     expect(await store.write(rootA, snapshotFor(rootA))).toBe(false);
-    expect(store.stats.writeFailures).toBe(1);
+    expect(store.getStats().writeFailures).toBe(1);
   });
 
   test("a successful write says so", async () => {
@@ -129,7 +133,7 @@ describe("reporting failure", () => {
 
     const read = await store.read(rootA);
     expect(read).toStrictEqual({ ok: false, miss: "unreadable" });
-    expect(store.stats.misses.absent).toBe(0);
+    expect(store.getStats().misses.absent).toBe(0);
   });
 });
 
@@ -143,14 +147,14 @@ describe("round trip", () => {
     if (!read.ok) throw new Error("unreachable");
     expect(read.tree.roots).toStrictEqual([rootA]);
 
-    expect(store.stats.writes).toBe(1);
-    expect(store.stats.hits).toBe(1);
+    expect(store.getStats().writes).toBe(1);
+    expect(store.getStats().hits).toBe(1);
   });
 
   test("nothing written means an absent miss", async () => {
     const store = storeIn()!;
     expect(await store.read(rootA)).toStrictEqual({ ok: false, miss: "absent" });
-    expect(store.stats.misses.absent).toBe(1);
+    expect(store.getStats().misses.absent).toBe(1);
   });
 
   test("one file per project, rewritten in place", async () => {
@@ -259,8 +263,8 @@ describe("eviction", () => {
 
     expect(await files()).toHaveLength(1);
     expect((await store.read(rootA)).ok).toBe(true);
-    expect(store.stats.evicted).toBe(2);
-    expect(store.stats.evictedForSize).toBe(0);
+    expect(store.getStats().evicted).toBe(2);
+    expect(store.getStats().evictedForSize).toBe(0);
   });
 
   test("leaves files that are not ours, whatever the directory holds", async () => {
@@ -275,7 +279,7 @@ describe("eviction", () => {
 
     expect(await files()).toContain("someone-elses.txt");
     expect(await files()).toContain("tree.txt");
-    expect(store.stats.evicted).toBe(0);
+    expect(store.getStats().evicted).toBe(0);
   });
 
   test("keeps everything when under the ceiling", async () => {
@@ -285,7 +289,7 @@ describe("eviction", () => {
 
     await store.evict();
     expect(await files()).toHaveLength(2);
-    expect(store.stats.evicted).toBe(0);
+    expect(store.getStats().evicted).toBe(0);
   });
 
   test("trims to the ceiling, least recently written first", async () => {
@@ -308,7 +312,7 @@ describe("eviction", () => {
 
     expect((await tight.read(rootA)).ok).toBe(false);
     expect((await tight.read(rootB)).ok).toBe(true);
-    expect(tight.stats.evictedForSize).toBe(1);
+    expect(tight.getStats().evictedForSize).toBe(1);
   });
 
   test("an unusable directory costs the cache, not the startup", async () => {
@@ -319,7 +323,7 @@ describe("eviction", () => {
     const store = storeIn(occupied)!;
     await expect(store.evict()).resolves.toBeUndefined();
     await expect(store.write(rootA, snapshotFor(rootA))).resolves.toBe(false);
-    expect(store.stats.writeFailures).toBe(1);
+    expect(store.getStats().writeFailures).toBe(1);
     // "unreadable", not "absent": the directory is broken rather than empty, and that is the
     // distinction someone reading the counters needs.
     expect(await store.read(rootA)).toStrictEqual({ ok: false, miss: "unreadable" });
