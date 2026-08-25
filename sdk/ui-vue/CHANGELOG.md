@@ -1,5 +1,29 @@
 # @platforma-sdk/ui-vue
 
+## 1.83.1
+
+### Patch Changes
+
+- c5af077: Support TypeScript 7 (the native compiler) across the build toolchain.
+
+  TS7 no longer exposes the classic JS Compiler API that Volar-based tooling
+  requires, so:
+
+  - ts-builder runs `vue-tsc` against the official `@typescript/typescript6`
+    bridge, passes a TS7-compatible `--customConditions` value (a bare `,` is
+    parsed as a source file on TS7), provides an explicit `fs` to
+    `@vue/compiler-sfc` (`ts.sys` is gone on TS7), and uses `Bundler`
+    `moduleResolution` for declaration emit.
+  - build-configs provides the same explicit `fs` to the vitest Vue config so
+    SFC-compiling tests pass on TS7.
+  - ui-vue's `AnnotationsSidebar`/`FilterSidebar` title/label handlers accept
+    `string | undefined`, matching `PlEditableTitle`'s model emit type.
+  - @milaboratories/columns-collection-driver@0.2.4
+  - @milaboratories/pl-model-common@1.48.0
+  - @milaboratories/pf-spec-driver@1.5.1
+  - @milaboratories/uikit@2.15.26
+  - @platforma-sdk/model@1.83.0
+
 ## 1.83.0
 
 ### Minor Changes
