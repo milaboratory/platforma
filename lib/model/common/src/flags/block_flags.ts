@@ -13,7 +13,7 @@ export type BlockCodeFeatureFlags = Record<`supports${string}`, boolean | number
   Record<`requires${string}`, boolean | number | undefined>;
 
 /**
- * Known block flags. Flags are set during model compilation, see `BlockModel.create` for more details and for initial values.
+ * Known block flags. Flags are set during model compilation, see `BlockModelV3` feature flags for more details and for initial values.
  */
 export type BlockCodeKnownFeatureFlags = {
   readonly supportsLazyState?: boolean;
