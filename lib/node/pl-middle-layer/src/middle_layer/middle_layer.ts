@@ -1024,7 +1024,7 @@ export class MiddleLayer {
    *  Reads and hits are what show whether a reopen was actually warm, and the miss breakdown
    *  says why it was not. */
   public get treeSnapshotStats(): Readonly<TreeSnapshotStat> | undefined {
-    return this.env.treeSnapshots?.stats;
+    return this.env.treeSnapshots?.getStats();
   }
 
   /**

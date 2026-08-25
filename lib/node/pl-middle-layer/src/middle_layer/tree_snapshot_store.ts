@@ -199,7 +199,7 @@ export class TreeSnapshotStore {
     }
   }
 
-  public get stats(): Readonly<TreeSnapshotStat> {
+  public getStats(): Readonly<TreeSnapshotStat> {
     return this.stat;
   }
 
