@@ -4,3 +4,12 @@ export * from "./driver_kit";
 export * from "./ops";
 export { ProjectsField } from "./project_list";
 export type { OutgoingShare, PendingShare } from "./sharing_list";
+export { TemplatesField } from "./template_list";
+export type {
+  CreateProjectFromTemplateOutcome,
+  SaveProjectAsTemplateOutcome,
+  ShareTemplateOutcome,
+  StoredTemplateData,
+  TemplateId,
+  TemplateListEntry,
+} from "./template_list";

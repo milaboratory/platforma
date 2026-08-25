@@ -2,7 +2,7 @@ import type { PlTransaction, ResourceRef, SignedResourceId } from "@milaboratori
 import { field, isNotNullSignedResourceId, resourceIdToString } from "@milaboratories/pl-client";
 import { randomUUID } from "node:crypto";
 import type { ProjectMeta } from "@milaboratories/pl-model-middle-layer";
-import type { ProjectId } from "@milaboratories/pl-model-common";
+import type { ProjectId, ProjectTemplateV1 } from "@milaboratories/pl-model-common";
 import { ProjectMetaKey } from "../model/project_model";
 import { duplicateProject } from "./project";
 import type {
@@ -15,6 +15,7 @@ import type {
   SharingDecision,
 } from "../model/sharing_model";
 import {
+  EnvelopeSchemaVersionCurrent,
   SharedEnvelopeResourceType,
   acceptanceField,
   decisionField,
@@ -101,14 +102,14 @@ export async function buildShareEnvelope(
   }
 
   const data: EnvelopeData = {
-    schemaVersion: 1,
+    schemaVersion: EnvelopeSchemaVersionCurrent,
     shareId,
     sharedAt,
     expiresAt: params.expiresAt,
     mode: params.mode,
     sender: params.sender,
     title: params.title,
-    projects,
+    payload: { kind: "projects", projects },
   };
 
   // Immutable data set once at creation, never altered.
@@ -123,6 +124,57 @@ export async function buildShareEnvelope(
   // Attach to the outbox under {shareId} in the same transaction so the held-resource rule
   // keeps the ephemeral envelope alive.
   tx.createField(field(outboxRid, shareId), "Dynamic", envelope);
+
+  return { envelope, data };
+}
+
+/**
+ * Builds one {@link SharedEnvelopeResourceType} carrying a template document on the donor side,
+ * and attaches it under `{shareId}` on the donor's outbox. The caller issues the grant — always
+ * read-only — and commits, keeping create + grant atomic.
+ *
+ * There is nothing to snapshot and no input field to seal: the document is the whole payload and
+ * rides in the envelope's immutable `data`, which is also why the recipient needs no write access
+ * (it copies no resource out of the envelope).
+ *
+ * @returns the new envelope resource and the generated `EnvelopeData`.
+ */
+export function buildTemplateShareEnvelope(
+  tx: PlTransaction,
+  outboxRid: SignedResourceId,
+  template: { document: ProjectTemplateV1; label: string },
+  params: {
+    sender: string;
+    title: string;
+    /** ms epoch; sharedAt + ttl for a targeted share, null for share-with-everybody. */
+    expiresAt: number | null;
+    /** Existing shareId for a change; a fresh one is minted when omitted. */
+    shareId?: ShareId;
+    sharedAt?: number;
+  },
+): { envelope: ResourceRef; data: EnvelopeData } {
+  const data: EnvelopeData = {
+    schemaVersion: EnvelopeSchemaVersionCurrent,
+    shareId: params.shareId ?? newShareId(),
+    sharedAt: params.sharedAt ?? Date.now(),
+    expiresAt: params.expiresAt,
+    mode: "read-only",
+    sender: params.sender,
+    title: params.title,
+    payload: {
+      kind: "template",
+      document: template.document,
+      label: template.label,
+      from: params.sender,
+    },
+  };
+
+  // Immutable data set once at creation, never altered.
+  const envelope = tx.createEphemeral(SharedEnvelopeResourceType, JSON.stringify(data));
+
+  // Attach to the outbox under {shareId} in the same transaction so the held-resource rule
+  // keeps the ephemeral envelope alive.
+  tx.createField(field(outboxRid, data.shareId), "Dynamic", envelope);
 
   return { envelope, data };
 }

@@ -15,11 +15,14 @@ import type {
   EnvelopeAcceptance,
   EnvelopeData,
   EnvelopeMode,
+  EnvelopePayloadKind,
   ShareId,
 } from "../model/sharing_model";
 import {
   AcceptanceFieldPrefix,
   asShareId,
+  envelopeProjectMap,
+  normalizeEnvelopeData,
   SharedEnvelopeResourceType,
   SharingOutboxResourceType,
   SharingStateResourceType,
@@ -32,19 +35,28 @@ export interface OutgoingShare {
   expiresAt?: number; // EnvelopeData.expiresAt; null maps to undefined = never expires
   mode: EnvelopeMode;
   title: string; // display name shown to recipients; defaults to the first project's name
+  /** What the share carries — a pack of projects, or one template document. */
+  payloadKind: EnvelopePayloadKind;
   /** One entry per project in the pack, so the change UI can offer a per-project decision.
    *  `projectId` is the donor's source project id; `updatedAt` is when this project's
-   *  snapshot was last (re)taken. */
+   *  snapshot was last (re)taken. Empty for a template share. */
   projects: { projectId: ProjectId; label: string; updatedAt: number }[];
+  /** The shared template, for a template share; absent for a project share. */
+  template?: { label: string; blockCount: number };
   /** Full recipient logins, from `ListGrants` on the envelope; `["*"]` for everyone-shares. */
   recipients: string[];
+  /** Whether {@link responses} can ever be populated for this share. A template share is granted
+   *  read-only, so no recipient can record a reply on the envelope and the donor never learns who
+   *  accepted — a view must say so rather than render an empty response list as "nobody yet". */
+  responsesAvailable: boolean;
   /** Per recipient who has responded: their decision and when, from acceptance/{login}. */
   responses: Record<string, { action: "accepted" | "rejected"; timestamp: number }>;
 }
 
-/** Per-project view for the donor's change UI, from {@link EnvelopeData.projects}. */
+/** Per-project view for the donor's change UI, from the envelope's `projects` payload; empty
+ *  for a payload that carries no project. */
 function envelopeProjects(data: EnvelopeData): OutgoingShare["projects"] {
-  return Object.values(data.projects).map((p) => ({
+  return Object.values(envelopeProjectMap(data)).map((p) => ({
     projectId: p.source,
     label: p.label,
     updatedAt: p.updatedAt,
@@ -57,6 +69,9 @@ export interface PendingShare {
   sender: string; // EnvelopeData.sender, display only
   title: string; // display name shown to recipients; defaults to the first project's name
   mode: EnvelopeMode; // v1 renders only "copy" entries
+  /** What the offer carries, so the recipient is told what they are being offered — projects to
+   *  copy, or a template for their own shelf. */
+  payloadKind: EnvelopePayloadKind;
   grantedAt: number;
 }
 
@@ -108,8 +123,8 @@ export function createOutgoingSharesComputable(
         if (envelope === undefined) continue;
         if (!resourceTypesEqual(envelope.resourceType, SharedEnvelopeResourceType)) continue;
 
-        const data = envelope.getDataAsJson<EnvelopeData>();
-        if (data === undefined) continue;
+        const data = normalizeEnvelopeData(envelope.getDataAsJson<unknown>());
+        if (data === undefined) continue; // unknown version or payload kind — not ours to show
 
         const responses: OutgoingShare["responses"] = {};
         for (const f of envelope.listDynamicFields()) {
@@ -127,7 +142,17 @@ export function createOutgoingSharesComputable(
           ...(data.expiresAt !== null ? { expiresAt: data.expiresAt } : {}),
           mode: data.mode,
           title: data.title,
+          payloadKind: data.payload.kind,
           projects: envelopeProjects(data),
+          ...(data.payload.kind === "template"
+            ? {
+                template: {
+                  label: data.payload.label,
+                  blockCount: data.payload.document.blocks.length,
+                },
+              }
+            : {}),
+          responsesAvailable: data.payload.kind !== "template",
           responses,
           envelopeRid: envelope.id,
         });
@@ -255,7 +280,9 @@ export function createLiveEnvelopesComputable(
     for (const envelope of roots) {
       if (envelope === undefined) continue;
       if (!resourceTypesEqual(envelope.resourceType, SharedEnvelopeResourceType)) continue;
-      const data = envelope.getDataAsJson<EnvelopeData>();
+      const data = normalizeEnvelopeData(envelope.getDataAsJson<unknown>());
+      // Same recognise-or-hide rule as the pending view, and for the same envelope: hiding an
+      // offer while accept could still resolve it would only move the problem.
       if (data === undefined) continue;
       result.push({ rid: envelope.id, data });
     }
@@ -292,7 +319,9 @@ export function createPendingSharesComputable(
     for (const envelope of roots) {
       if (envelope === undefined) continue;
       if (!resourceTypesEqual(envelope.resourceType, SharedEnvelopeResourceType)) continue;
-      const data = envelope.getDataAsJson<EnvelopeData>();
+      const data = normalizeEnvelopeData(envelope.getDataAsJson<unknown>());
+      // An envelope whose schemaVersion or payload kind this build does not know is hidden, not
+      // offered: there is nothing useful to do with a share we cannot read.
       if (data === undefined) continue;
       if (handled.has(data.shareId)) continue; // already accepted or rejected
       if (currentUserLogin !== null && data.sender === currentUserLogin) continue; // own share
@@ -303,6 +332,7 @@ export function createPendingSharesComputable(
         sender: data.sender,
         title: data.title,
         mode: data.mode,
+        payloadKind: data.payload.kind,
         grantedAt: data.sharedAt,
       });
     }
