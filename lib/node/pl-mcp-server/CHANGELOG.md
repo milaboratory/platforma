@@ -1,5 +1,12 @@
 # @milaboratories/pl-mcp-server
 
+## 25.0.0
+
+### Patch Changes
+
+- Updated dependencies [68f19fa]
+  - @milaboratories/pl-middle-layer@1.68.0
+
 ## 24.0.0
 
 ### Patch Changes
