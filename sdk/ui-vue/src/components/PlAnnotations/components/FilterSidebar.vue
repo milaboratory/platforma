@@ -49,9 +49,9 @@ function produceStepUpdate(updater: (draft: Filter) => void) {
   props.onUpdateStep(produce(props.step, updater));
 }
 
-function updateLabel(label: string) {
+function updateLabel(label: string | undefined) {
   produceStepUpdate((draft) => {
-    draft.label = label;
+    draft.label = label ?? "";
   });
 }
 
