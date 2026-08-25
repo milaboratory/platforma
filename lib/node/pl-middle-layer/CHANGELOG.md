@@ -1,5 +1,18 @@
 # @milaboratories/pl-middle-layer
 
+## 1.68.0
+
+### Minor Changes
+
+- 68f19fa: Persist project tree mirrors to disk and restore them on open, so reopening a project transfers what changed rather than the whole tree. On by default, with a kill switch in `treeSnapshotOps`.
+
+### Patch Changes
+
+- Updated dependencies [0634133]
+- Updated dependencies [68f19fa]
+  - @milaboratories/pl-tree@1.14.0
+  - @milaboratories/pl-drivers@1.16.17
+
 ## 1.67.6
 
 ### Patch Changes

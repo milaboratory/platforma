@@ -1,5 +1,12 @@
 # @milaboratories/pl-tree
 
+## 1.14.0
+
+### Minor Changes
+
+- 0634133: Snapshot codec for persisting a tree mirror to disk, plus capture and restore. Bodies are stored against global ids with signatures in a side table, so a snapshot survives the signatures it was taken with.
+- 68f19fa: Persist project tree mirrors to disk and restore them on open, so reopening a project transfers what changed rather than the whole tree. On by default, with a kill switch in `treeSnapshotOps`.
+
 ## 1.13.7
 
 ### Patch Changes
