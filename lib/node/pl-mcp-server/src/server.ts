@@ -4,6 +4,7 @@ import { createServer, type IncomingMessage, type Server, type ServerResponse } 
 import { randomUUID } from "node:crypto";
 import type { MiddleLayer } from "@milaboratories/pl-middle-layer";
 import type { Branded } from "@milaboratories/pl-model-common";
+import { DiscoveryFile } from "./discovery";
 import type { ToolContext } from "./tools/types";
 import { registerPingTool } from "./tools/ping";
 import { registerConnectionTools } from "./tools/connection";
@@ -86,6 +87,8 @@ export interface PlMcpServerOptions {
   secret: McpSecret;
   /** Optional callbacks for project lifecycle events (e.g. to sync UI state). */
   callbacks?: PlMcpServerCallbacks;
+  /** Where to publish the live server address. Absent means publish nothing. */
+  discoveryFilePath?: string;
 }
 
 export class PlMcpServer {
@@ -93,6 +96,7 @@ export class PlMcpServer {
   private port: number;
   private readonly secret: McpSecret;
   private readonly callbacks: PlMcpServerCallbacks;
+  private readonly discoveryFile: DiscoveryFile | undefined;
   private httpServer: Server | undefined;
   private readonly transports = new Map<string, StreamableHTTPServerTransport>();
 
@@ -101,6 +105,10 @@ export class PlMcpServer {
     this.port = options.port;
     this.secret = options.secret;
     this.callbacks = options.callbacks ?? {};
+    this.discoveryFile =
+      options.discoveryFilePath === undefined
+        ? undefined
+        : new DiscoveryFile(options.discoveryFilePath);
   }
 
   /** Set or update the MiddleLayer instance (e.g. after connecting to a server). */
@@ -191,6 +199,11 @@ export class PlMcpServer {
         if (addr && typeof addr === "object") {
           this.port = addr.port;
         }
+        try {
+          await this.discoveryFile?.publish(this.url);
+        } catch {
+          // an unpublished address is degraded; a failed start is broken
+        }
         return;
       } catch (err: unknown) {
         if (
@@ -222,6 +235,8 @@ export class PlMcpServer {
       });
       this.httpServer = undefined;
     }
+
+    await this.discoveryFile?.remove();
   }
 
   private createMcpServer(): McpServer {
