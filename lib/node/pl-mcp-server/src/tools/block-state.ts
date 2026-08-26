@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { ToolContext } from "./types";
 import { summarizeOutputs } from "./tokens";
 import { safeEval } from "./sandbox";
+import { blockStateNotAvailable, toolError, transformFailed } from "./unreadable";
 import { errorResult, textResult } from "./types";
 
 export function registerBlockStateTools(server: McpServer, ctx: ToolContext): void {
@@ -70,6 +71,7 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     async ({ projectId, blockId, transform, transformTimeout }) => {
       const project = await ctx.getOpenedProject(projectId);
       const state = await project.getBlockState(blockId).getValue();
+      if (!state) return blockStateNotAvailable();
       const data = deriveDataFromStorage(state.blockStorage);
       if (transform) {
         try {
@@ -80,10 +82,7 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
           );
           return textResult(result);
         } catch (e: unknown) {
-          return errorResult(
-            `Transform failed: ${e instanceof Error ? e.message : String(e)}`,
-            "Check your JS expression syntax. Available variables: data, outputs.",
-          );
+          return toolError(transformFailed(e, "data, outputs"));
         }
       }
       return textResult({

@@ -14,6 +14,15 @@ import {
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { safeEval } from "./sandbox";
+import {
+  emptyColumnList,
+  tableReadFailed,
+  toolError,
+  transformFailed,
+  unreadableColumns,
+  unreadableColumnsError,
+  unresolvedHandle,
+} from "./unreadable";
 import { errorResult, textResult } from "./types";
 
 const HEX_HASH_RE = /^[a-f0-9]{64}$/;
@@ -22,13 +31,15 @@ const HEX_HASH_RE = /^[a-f0-9]{64}$/;
  * Try to resolve a 64-char hex handle as PTable, then PFrame.
  * Returns a summary object or the original string if neither works.
  */
-async function resolveHandle(
+export async function resolveHandle(
   handle: string,
   driver: PFrameDriver,
   maxColumns: number,
   cache: Map<string, unknown>,
 ): Promise<unknown> {
   if (cache.has(handle)) return cache.get(handle);
+
+  let pTableError = "";
 
   // Try PTable first (has rows — more useful info)
   try {
@@ -53,8 +64,8 @@ async function resolveHandle(
     }
     cache.set(handle, summary);
     return summary;
-  } catch {
-    // not a PTable
+  } catch (err) {
+    pTableError = err instanceof Error ? err.message : String(err);
   }
 
   // Try PFrame
@@ -76,12 +87,12 @@ async function resolveHandle(
     }
     cache.set(handle, summary);
     return summary;
-  } catch {
-    // not a PFrame either
+  } catch (err) {
+    const pFrameError = err instanceof Error ? err.message : String(err);
+    const entry = unresolvedHandle(handle, pTableError, pFrameError);
+    cache.set(handle, entry);
+    return entry;
   }
-
-  cache.set(handle, handle);
-  return handle;
 }
 
 /**
@@ -232,6 +243,8 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
       },
     },
     async ({ pTableHandle, columns, offset, limit, maxLimit, transform, transformTimeout }) => {
+      if (columns?.length === 0) return emptyColumnList();
+
       const pFrameDriver = ctx.requireMl().internalDriverKit.pFrameDriver;
       const handle = pTableHandle as PTableHandle;
 
@@ -239,7 +252,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
       try {
         spec = await pFrameDriver.getSpec(handle);
       } catch (err) {
-        return textResult({ error: `getSpec failed: ${err}` });
+        return tableReadFailed("spec", err);
       }
 
       const effectiveLimit = Math.min(limit, maxLimit);
@@ -248,15 +261,14 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
       // If no columns specified, get all
       const columnIndices = columns ?? spec.map((_: PTableColumnSpec, i: number) => i);
 
+      const unreadable = unreadableColumns(spec, columnIndices);
+      if (unreadable.length > 0) return unreadableColumnsError(unreadable);
+
       let vectors: PTableVector[];
       try {
         vectors = await pFrameDriver.getData(handle, columnIndices, range);
       } catch (err) {
-        return textResult({
-          error: `getData failed: ${err}`,
-          columnIndices,
-          range,
-        });
+        return tableReadFailed("data", err);
       }
 
       const actualRows = vectors.length > 0 ? vectors[0].data.length : 0;
@@ -290,10 +302,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
           );
           return textResult(result);
         } catch (e: unknown) {
-          return errorResult(
-            `Transform failed: ${e instanceof Error ? e.message : String(e)}`,
-            "Check your JS expression syntax. Available variables: rows, columns, offset, rowCount.",
-          );
+          return toolError(transformFailed(e, "rows, columns, offset, rowCount"));
         }
       }
 
