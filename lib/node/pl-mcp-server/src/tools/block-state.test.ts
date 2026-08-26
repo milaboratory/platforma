@@ -37,18 +37,22 @@ async function callGetBlockState(project: Partial<Project>) {
     "get_block_state",
   );
   if (!handler) throw new Error("get_block_state was not registered");
-  return handler({ projectId: "p1", blockId: "b1" });
+  return handler({ projectId: "p1", blockIds: ["b1"] });
 }
 
 describe("get_block_state", () => {
-  it("errors with the not-available message and hint when the state has not resolved yet", async () => {
-    const blockStateResult = await callGetBlockState({
-      getBlockState: () =>
-        ({ getValue: async () => undefined }) as never,
+  it("fails only that block's entry when its state has not resolved yet", async () => {
+    const result = await callGetBlockState({
+      getBlockState: () => ({ getValue: async () => undefined }) as never,
     });
 
-    expect(blockStateResult.isError).toBe(true);
-    expect(blockStateResult.content[0].text).toMatch(/not available yet/);
-    expect(blockStateResult.content[0].text).toMatch(/Hint: .*calculationStatus/);
+    expect(result.isError).not.toBe(true);
+    const entries = JSON.parse(result.content[0].text) as Record<
+      string,
+      { ok: boolean; error?: string; hint?: string }
+    >;
+    expect(entries.b1.ok).toBe(false);
+    expect(entries.b1.error).toMatch(/not available yet/);
+    expect(entries.b1.hint).toMatch(/calculationStatus/);
   });
 });

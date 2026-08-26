@@ -5,7 +5,8 @@ import { z } from "zod";
 import type { ToolContext } from "./types";
 import { summarizeOutputs } from "./tokens";
 import { safeEval } from "./sandbox";
-import { blockStateNotAvailable, toolError, transformFailed } from "./unreadable";
+import { MAX_BATCH_ENTRIES, readBatch, succeededEntry } from "./batch";
+import { blockStateNotAvailable, failedEntry, transformFailed } from "./unreadable";
 import { errorResult, textResult } from "./types";
 
 export function registerBlockStateTools(server: McpServer, ctx: ToolContext): void {
@@ -43,16 +44,21 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     "get_block_state",
     {
       description:
-        "Get block state. Returns block args (data) and a concise output summary with token estimates by default. " +
+        "Get the state of several blocks in one call. Returns one entry per requested block id, keyed by id, " +
+        `each carrying its own result or its own error. At most ${MAX_BATCH_ENTRIES} block ids per call. ` +
+        "Each entry returns block args (data) and a concise output summary with token estimates by default. " +
         "Use `transform` to extract specific data server-side without loading full outputs into context.\n\n" +
-        "Default: returns `{ data, outputs: [{ key, ok, hasValue, tokensEstimate }] }`\n\n" +
+        "Default: each entry is `{ ok: true, value: { data, outputs: [{ key, ok, hasValue, tokensEstimate }] } }`; " +
+        "a block that cannot be read is `{ ok: false, error, hint }`\n\n" +
         "Transform examples:\n" +
         "- `outputs.logs?.value` — get one specific output value\n" +
         "- `data` — get only block args\n" +
         "- `({ preset: outputs.preset?.value, qc: outputs.qc?.value })` — get specific outputs",
       inputSchema: {
         projectId: z.string().describe("Project ID"),
-        blockId: z.string().describe("Block ID"),
+        blockIds: z
+          .array(z.string())
+          .describe(`Block IDs to read — at most ${MAX_BATCH_ENTRIES} per call, each named once`),
         transform: z
           .string()
           .optional()
@@ -68,26 +74,24 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
           .describe("Timeout in ms for transform evaluation (default 5000)."),
       },
     },
-    async ({ projectId, blockId, transform, transformTimeout }) => {
+    async ({ projectId, blockIds, transform, transformTimeout }) => {
       const project = await ctx.getOpenedProject(projectId);
-      const state = await project.getBlockState(blockId).getValue();
-      if (!state) return blockStateNotAvailable();
-      const data = deriveDataFromStorage(state.blockStorage);
-      if (transform) {
-        try {
-          const result = await safeEval(
-            transform,
-            { data, outputs: state.outputs },
-            transformTimeout,
-          );
-          return textResult(result);
-        } catch (e: unknown) {
-          return toolError(transformFailed(e, "data, outputs"));
+
+      return readBatch(blockIds, async (blockId) => {
+        const state = await project.getBlockState(blockId).getValue();
+        if (!state) return failedEntry(blockStateNotAvailable());
+
+        const data = deriveDataFromStorage(state.blockStorage);
+        if (!transform) {
+          return succeededEntry({ data, outputs: summarizeOutputs(state.outputs) });
         }
-      }
-      return textResult({
-        data,
-        outputs: summarizeOutputs(state.outputs as Record<string, unknown> | undefined),
+        try {
+          return succeededEntry(
+            await safeEval(transform, { data, outputs: state.outputs }, transformTimeout),
+          );
+        } catch (cause) {
+          return failedEntry(transformFailed(cause, "data, outputs"));
+        }
       });
     },
   );

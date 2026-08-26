@@ -24,10 +24,15 @@ function parseResult(result: unknown): unknown {
   return JSON.parse(r.content[0].text);
 }
 
-function errorText(result: unknown): string {
+/** One block's entry out of a batch read: `{ ok: false, error, hint }` or `{ ok: true, value }`. */
+function entryFor(result: unknown, blockId: string) {
   const r = result as { isError?: boolean; content?: { type: string; text: string }[] };
-  expect(r.isError).toBe(true);
-  return r.content?.[0]?.text ?? "";
+  expect(r.isError).not.toBe(true);
+  const entries = JSON.parse(r.content?.[0]?.text ?? "{}") as Record<
+    string,
+    { ok: boolean; value?: unknown; error?: string; hint?: string }
+  >;
+  return entries[blockId];
 }
 
 async function projectWithBlock(client: Client) {
@@ -58,18 +63,19 @@ test(
       const [first, second] = await Promise.all([
         client.callTool({
           name: "get_block_state",
-          arguments: { projectId, blockId, transform: FOREVER, transformTimeout: 500 },
+          arguments: { projectId, blockIds: [blockId], transform: FOREVER, transformTimeout: 500 },
         }),
         client.callTool({
           name: "get_block_state",
-          arguments: { projectId, blockId, transform: FOREVER, transformTimeout: 500 },
+          arguments: { projectId, blockIds: [blockId], transform: FOREVER, transformTimeout: 500 },
         }),
       ]);
 
       for (const result of [first, second]) {
-        const text = errorText(result);
-        expect(text).toMatch(/transform/i);
-        expect(text).toMatch(/Hint:/);
+        const entry = entryFor(result, blockId);
+        expect(entry.ok).toBe(false);
+        expect(entry.error).toMatch(/transform/i);
+        expect(entry.hint).toBeTruthy();
       }
 
       await client.callTool({ name: "close_project", arguments: { projectId } });
@@ -84,17 +90,15 @@ test("a failed transform does not spoil the next one", { timeout: 60_000 }, asyn
 
     const failed = await client.callTool({
       name: "get_block_state",
-      arguments: { projectId, blockId, transform: FOREVER, transformTimeout: 500 },
+      arguments: { projectId, blockIds: [blockId], transform: FOREVER, transformTimeout: 500 },
     });
-    expect(errorText(failed)).toMatch(/transform/i);
+    expect(entryFor(failed, blockId).error).toMatch(/transform/i);
 
-    const value = parseResult(
-      await client.callTool({
-        name: "get_block_state",
-        arguments: { projectId, blockId, transform: "1 + 1", transformTimeout: 5000 },
-      }),
-    );
-    expect(value).toBe(2);
+    const next = await client.callTool({
+      name: "get_block_state",
+      arguments: { projectId, blockIds: [blockId], transform: "1 + 1", transformTimeout: 5000 },
+    });
+    expect(entryFor(next, blockId)).toEqual({ ok: true, value: 2 });
 
     await client.callTool({ name: "close_project", arguments: { projectId } });
     await client.callTool({ name: "delete_project", arguments: { projectId } });
@@ -110,9 +114,14 @@ test(
 
       const failed = await client.callTool({
         name: "get_block_state",
-        arguments: { projectId, blockId, transform: OVER_MEMORY_LIMIT, transformTimeout: 10_000 },
+        arguments: {
+          projectId,
+          blockIds: [blockId],
+          transform: OVER_MEMORY_LIMIT,
+          transformTimeout: 10_000,
+        },
       });
-      expect(errorText(failed)).toMatch(/transform/i);
+      expect(entryFor(failed, blockId).error).toMatch(/transform/i);
 
       const ping = parseResult(await client.callTool({ name: "ping", arguments: {} }));
       expect(ping).toEqual({ status: "ok", connected: true });
