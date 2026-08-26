@@ -26,6 +26,25 @@ Claude Code  ──MCP──▶  pl-mcp-server (worker)  ──IPC──▶  Des
                                                            └── Modals
 ```
 
+## Connecting With The Claude Plugin
+
+The plugin finds the running server itself — there is no address to copy.
+
+```
+/plugin marketplace add milaboratory/platforma
+/plugin install platforma
+```
+
+Then start the Platforma Desktop App and enable the MCP server in Settings. Run `/mcp` to see the
+`pl` server; its tools arrive as `mcp__plugin_platforma_pl__*`.
+
+The app publishes its live address to `~/.platforma/mcp-server.json` as the server starts, and the
+plugin reads that file each time Claude starts it. A server that rebound to another port, or that
+regenerated its secret, is still found with nothing reconfigured.
+
+The two sections below remain valid for a client this plugin does not serve, and for anyone who
+would rather wire the address by hand.
+
 ## Connecting From Claude Code
 
 1. **Start the Platforma Desktop App and enable MCP** — the MCP server feature marked as Alpha for now. To enable it open Settings, scroll down to the bottom, enable checkbox "Enable MCP Server". Then copy MCP Server URL.

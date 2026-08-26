@@ -1,0 +1,9 @@
+{
+  "name": "platforma",
+  "version": "0.1.0",
+  "description": "Drive the Platforma Desktop App from Claude. The plugin finds the running MCP server itself.",
+  "author": { "name": "milaboratory" },
+  "repository": "https://github.com/milaboratory/platforma",
+  "license": "UNLICENSED",
+  "keywords": ["platforma", "mcp", "desktop", "bioinformatics"]
+}
