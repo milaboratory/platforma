@@ -86,11 +86,15 @@ test("a healthy block-state read is unchanged", { timeout: 30_000 }, async () =>
     });
 
     const state = parseResult(
-      await client.callTool({ name: "get_block_state", arguments: { projectId, blockId } }),
-    ) as { data: unknown; outputs: unknown[] };
+      await client.callTool({
+        name: "get_block_state",
+        arguments: { projectId, blockIds: [blockId] },
+      }),
+    ) as Record<string, { ok: boolean; value?: { data: unknown; outputs: unknown[] } }>;
 
-    expect(state.data).toBeDefined();
-    expect(Array.isArray(state.outputs)).toBe(true);
+    expect(state[blockId].ok).toBe(true);
+    expect(state[blockId].value?.data).toBeDefined();
+    expect(Array.isArray(state[blockId].value?.outputs)).toBe(true);
 
     await client.callTool({ name: "close_project", arguments: { projectId } });
     await client.callTool({ name: "delete_project", arguments: { projectId } });
@@ -102,7 +106,10 @@ test("a healthy outputs read is unchanged", { timeout: 30_000 }, async () => {
     const { projectId, blockId } = await projectWithBlock(client);
 
     const outputs = parseResult(
-      await client.callTool({ name: "get_block_outputs", arguments: { projectId, blockId } }),
+      await client.callTool({
+        name: "get_block_outputs",
+        arguments: { projectId, blockIds: [blockId] },
+      }),
     );
 
     expect(outputs).toBeDefined();

@@ -14,8 +14,11 @@ import {
 import { z } from "zod";
 import type { ToolContext } from "./types";
 import { safeEval } from "./sandbox";
+import { MAX_BATCH_ENTRIES, readBatch, succeededEntry } from "./batch";
 import {
+  blockHasNoOutputs,
   emptyColumnList,
+  failedEntry,
   tableReadFailed,
   toolError,
   transformFailed,
@@ -23,7 +26,7 @@ import {
   unreadableColumnsError,
   unresolvedHandle,
 } from "./unreadable";
-import { errorResult, textResult } from "./types";
+import { textResult } from "./types";
 
 const HEX_HASH_RE = /^[a-f0-9]{64}$/;
 
@@ -134,12 +137,15 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
     "get_block_outputs",
     {
       description:
-        "Get block output values as a JSON map. " +
+        "Get the output values of several blocks in one call. Returns one entry per requested block id, keyed by id, " +
+        `each carrying its own output map or its own error. At most ${MAX_BATCH_ENTRIES} block ids per call. ` +
         "PFrame/PTable handles are resolved inline to summaries with column specs and row counts. " +
         "Use this to discover block results and available data before querying tables.",
       inputSchema: {
         projectId: z.string().describe("Project ID"),
-        blockId: z.string().describe("Block ID"),
+        blockIds: z
+          .array(z.string())
+          .describe(`Block IDs to read — at most ${MAX_BATCH_ENTRIES} per call, each named once`),
         maxColumns: z
           .number()
           .optional()
@@ -147,29 +153,23 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
           .describe("Max columns to show per PFrame/PTable summary (default 30)."),
       },
     },
-    async ({ projectId, blockId, maxColumns }) => {
+    async ({ projectId, blockIds, maxColumns }) => {
       const project = await ctx.getOpenedProject(projectId);
-      const state = await project.getBlockState(blockId).getValue();
-      if (!state.outputs)
-        return errorResult(
-          "Block has no outputs yet.",
-          "The block may not have been run. Use get_project_overview to check its calculationStatus, then run_block if needed.",
-        );
-
-      const outputs = state.outputs as Record<string, { ok?: boolean; value?: unknown }>;
       const driver = ctx.requireMl().internalDriverKit.pFrameDriver;
       const cache = new Map<string, unknown>();
 
-      const result: Record<string, unknown> = {};
-      for (const [key, output] of Object.entries(outputs)) {
-        if (!output?.ok || output.value == null) {
-          result[key] = { ok: output?.ok ?? false };
-          continue;
-        }
-        result[key] = await resolveHandlesInValue(output.value, driver, maxColumns, cache);
-      }
+      return readBatch(blockIds, async (blockId) => {
+        const state = await project.getBlockState(blockId).getValue();
+        if (!state?.outputs) return failedEntry(blockHasNoOutputs());
 
-      return textResult(result);
+        const outputs = state.outputs as Record<string, { ok?: boolean; value?: unknown }>;
+        const result: Record<string, unknown> = {};
+        for (const [key, output] of Object.entries(outputs)) {
+          if (!output?.ok || output.value === undefined) continue;
+          result[key] = await resolveHandlesInValue(output.value, driver, maxColumns, cache);
+        }
+        return succeededEntry(result);
+      });
     },
   );
 
@@ -243,7 +243,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
       },
     },
     async ({ pTableHandle, columns, offset, limit, maxLimit, transform, transformTimeout }) => {
-      if (columns?.length === 0) return emptyColumnList();
+      if (columns?.length === 0) return toolError(emptyColumnList());
 
       const pFrameDriver = ctx.requireMl().internalDriverKit.pFrameDriver;
       const handle = pTableHandle as PTableHandle;
@@ -252,7 +252,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
       try {
         spec = await pFrameDriver.getSpec(handle);
       } catch (err) {
-        return tableReadFailed("spec", err);
+        return toolError(tableReadFailed("spec", err));
       }
 
       const effectiveLimit = Math.min(limit, maxLimit);
@@ -262,13 +262,13 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
       const columnIndices = columns ?? spec.map((_: PTableColumnSpec, i: number) => i);
 
       const unreadable = unreadableColumns(spec, columnIndices);
-      if (unreadable.length > 0) return unreadableColumnsError(unreadable);
+      if (unreadable.length > 0) return toolError(unreadableColumnsError(unreadable));
 
       let vectors: PTableVector[];
       try {
         vectors = await pFrameDriver.getData(handle, columnIndices, range);
       } catch (err) {
-        return tableReadFailed("data", err);
+        return toolError(tableReadFailed("data", err));
       }
 
       const actualRows = vectors.length > 0 ? vectors[0].data.length : 0;

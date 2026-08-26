@@ -1,7 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { PTableColumnSpec } from "@milaboratories/pl-middle-layer";
 import {
+  batchTooLarge,
+  blockHasNoOutputs,
+  blockReadFailed,
   blockStateNotAvailable,
+  duplicateBlockId,
+  emptyBlockList,
+  noLogHandles,
+  toolError,
   emptyColumnList,
   tableReadFailed,
   unreadableColumns,
@@ -9,9 +16,10 @@ import {
   unresolvedHandle,
 } from "./unreadable";
 
-function textOf(result: { content: { text: string }[]; isError?: boolean }): string {
-  expect(result.isError).toBe(true);
-  return result.content[0].text;
+function textOf(failure: { message: string; hint: string }): string {
+  const envelope = toolError(failure) as { content: { text: string }[]; isError?: boolean };
+  expect(envelope.isError).toBe(true);
+  return envelope.content[0].text;
 }
 
 function column(name: string, valueType: string): PTableColumnSpec {
@@ -81,5 +89,20 @@ describe("unresolvedHandle", () => {
     expect(entry.pTableError).toBe("no table");
     expect(entry.pFrameError).toBe("no frame");
     expect(entry.hint).toMatch(/may not be a table handle/);
+  });
+});
+
+describe("the six new builders", () => {
+  it("each carry a message and a hint", () => {
+    expect(textOf(batchTooLarge(12, 10))).toMatch(/asked for 12 blocks[\s\S]*Hint: .*at most 10/);
+    expect(textOf(emptyBlockList())).toMatch(
+      /list of block ids is empty[\s\S]*Hint: .*get_project_overview/,
+    );
+    expect(textOf(duplicateBlockId("b1"))).toMatch(/more than once: b1[\s\S]*Hint: .*once/);
+    expect(textOf(blockHasNoOutputs())).toMatch(/no outputs yet[\s\S]*Hint: .*run_block/);
+    expect(textOf(noLogHandles())).toMatch(/No log handles[\s\S]*Hint: .*get_block_outputs/);
+    expect(textOf(blockReadFailed(new Error("boom")))).toMatch(
+      /Reading the block failed: boom[\s\S]*Hint:/,
+    );
   });
 });

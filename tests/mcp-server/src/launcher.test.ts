@@ -78,24 +78,28 @@ test("a client reaches the server through the declared entry", { timeout: 30_000
   }
 });
 
-test("a retried port is still reached, because the file carries it", { timeout: 30_000 }, async () => {
-  const occupant: Server = createServer();
-  await new Promise<void>((r) => occupant.listen(0, "127.0.0.1", () => r()));
-  const taken = (occupant.address() as { port: number }).port;
+test(
+  "a retried port is still reached, because the file carries it",
+  { timeout: 30_000 },
+  async () => {
+    const occupant: Server = createServer();
+    await new Promise<void>((r) => occupant.listen(0, "127.0.0.1", () => r()));
+    const taken = (occupant.address() as { port: number }).port;
 
-  const server = new PlMcpServer({ port: taken, secret: newSecret(), discoveryFilePath });
-  await server.start();
-  const client = await connectThroughLauncher();
-  try {
-    expect(new URL(await publishedUrl()).port).toBe(String(taken + 1));
-    const { tools } = await client.listTools();
-    expect(tools.map((t) => t.name)).toContain("ping");
-  } finally {
-    await client.close();
-    await server.stop();
-    await new Promise<void>((r) => occupant.close(() => r()));
-  }
-});
+    const server = new PlMcpServer({ port: taken, secret: newSecret(), discoveryFilePath });
+    await server.start();
+    const client = await connectThroughLauncher();
+    try {
+      expect(new URL(await publishedUrl()).port).toBe(String(taken + 1));
+      const { tools } = await client.listTools();
+      expect(tools.map((t) => t.name)).toContain("ping");
+    } finally {
+      await client.close();
+      await server.stop();
+      await new Promise<void>((r) => occupant.close(() => r()));
+    }
+  },
+);
 
 test("a restart on a different port needs no reconfiguration", { timeout: 30_000 }, async () => {
   const first = new PlMcpServer({ port: 0, secret: newSecret(), discoveryFilePath });
@@ -119,9 +123,9 @@ test("a restart on a different port needs no reconfiguration", { timeout: 30_000
 
 test("an address nothing listens on fails to connect", { timeout: 30_000 }, async () => {
   await writeFile(discoveryFilePath, JSON.stringify({ url: "http://127.0.0.1:1/none/mcp" }));
-  await expect(connectThroughLauncher()).rejects.toThrow();
+  await expect(connectThroughLauncher()).rejects.toThrow(/closed|exited|spawn|connect/i);
 });
 
 test("a missing discovery file fails to connect", { timeout: 30_000 }, async () => {
-  await expect(connectThroughLauncher()).rejects.toThrow();
+  await expect(connectThroughLauncher()).rejects.toThrow(/closed|exited|spawn|connect/i);
 });
