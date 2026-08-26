@@ -39,7 +39,7 @@ export interface PlMcpServerCallbacks {
   /** List available blocks from all configured registries. */
   listAvailableBlocks?: (query?: string) => Promise<unknown[]>;
   /** Navigate the desktop UI to show a specific block. */
-  selectBlock?: (projectId: string, blockId: string) => Promise<void>;
+  selectBlock?: (projectId: string, blockId: string) => Promise<{ ready: boolean }>;
   /** Read recent lines from the application log. */
   readAppLog?: (lines: number, search?: string) => Promise<string>;
   /** List saved server connections. */
