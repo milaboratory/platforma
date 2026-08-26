@@ -17,7 +17,7 @@ MCP (Model Context Protocol) server that enables AI assistants to interact with 
 
 ## How It Works
 
-The MCP server runs as a worker process inside the Platforma Desktop App (Electron). It communicates with the main process via IPC and exposes tools over the MCP protocol (stdio transport by default, HTTP also supported).
+The MCP server runs as a worker process inside the Platforma Desktop App (Electron). It communicates with the main process via IPC and exposes tools over the MCP protocol on one transport: streamable HTTP, bound to loopback.
 
 ```
 Claude Code  ──MCP──▶  pl-mcp-server (worker)  ──IPC──▶  Desktop App (main process)
@@ -36,7 +36,7 @@ Claude Code  ──MCP──▶  pl-mcp-server (worker)  ──IPC──▶  Des
    {
      "mcpServers": {
        "pl": {
-         "type": "sse",
+         "type": "http",
          "url": "http://127.0.0.1:4200/<!!CHANGE ME!!>/mcp"
        }
      }
