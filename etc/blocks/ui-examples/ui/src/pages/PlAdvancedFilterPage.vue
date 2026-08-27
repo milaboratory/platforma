@@ -99,33 +99,6 @@ async function getSuggestOptions({
   }
   return (uniqueValuesByColumnOrAxisId[key] || []).filter((v) => v.label.includes(searchStr));
 }
-async function getSuggestModel({
-  columnId,
-  searchStr,
-  axisIdx,
-}: {
-  columnId: PlAdvancedFilterColumnId;
-  searchStr: string;
-  axisIdx?: number;
-}) {
-  const key = columnIdKey(columnId);
-  if (axisIdx !== undefined) {
-    const axisValues = uniqueValuesByAxisIdx[key]?.[axisIdx];
-    return (
-      axisValues.find((v) => v.value === searchStr) || {
-        value: searchStr,
-        label: `Label of ${searchStr}`,
-      }
-    );
-  }
-  const columnValues = uniqueValuesByColumnOrAxisId[key];
-  return (
-    columnValues.find((v) => v.value === searchStr) || {
-      value: searchStr,
-      label: `Label of ${searchStr}`,
-    }
-  );
-}
 
 const errorState: PlAdvancedFilter = {
   id: Math.random(),
@@ -232,6 +205,10 @@ const filterStates = ref<Record<string, PlAdvancedFilter>>({
 });
 
 const selectedSavedFilters = ref<keyof typeof filterStates.value>("normalState");
+
+function updateFilters(filters: PlAdvancedFilter) {
+  filterStates.value = { ...filterStates.value, [selectedSavedFilters.value]: filters };
+}
 const filterStatesOptions = [
   { value: "normalState", label: "Normal state" },
   { value: "errorState", label: "State with errors" },
@@ -271,11 +248,11 @@ watch(
       </div>
       <div :key="selectedSavedFilters" :class="$style.rightColumn">
         <PlAdvancedFilterComponent
-          v-model:filters="filterStates[selectedSavedFilters] as PlAdvancedFilter"
-          :items="options"
+          :filters="filterStates[selectedSavedFilters]"
+          :on-update-filters="updateFilters"
+          :options="options"
           :enable-dnd="enableDnd"
           :get-suggest-options="getSuggestOptions"
-          :get-suggest-model="getSuggestModel"
         />
       </div>
     </div>
