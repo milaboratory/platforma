@@ -1,5 +1,4 @@
 import { readdirSync } from "node:fs";
-import { join } from "node:path";
 import type { ConfigEnv, UserConfig } from "vite";
 import { mergeConfig } from "vite";
 import dts from "vite-plugin-dts";
@@ -26,7 +25,7 @@ export function createViteLibConfig(configEnv: ConfigEnv): UserConfig {
             // live deeper (src/components/**), so the detector misses them, falls back to
             // the plain TS processor and silently emits no *.vue.d.ts — while lib.d.ts
             // still re-exports those .vue specifiers. Decide it ourselves.
-            processor: containsVueFiles("src") ? "vue" : "ts",
+            processor: hasVueFiles("src") ? "vue" : "ts",
             compilerOptions: {
               declaration: true,
               declarationMap: true,
@@ -68,18 +67,10 @@ export function createViteLibConfig(configEnv: ConfigEnv): UserConfig {
 
 // Internals
 
-function containsVueFiles(dir: string): boolean {
-  let entries;
+function hasVueFiles(dir: string): boolean {
   try {
-    entries = readdirSync(dir, { withFileTypes: true });
+    return readdirSync(dir, { recursive: true }).some((entry) => String(entry).endsWith(".vue"));
   } catch {
     return false;
   }
-
-  for (const entry of entries) {
-    if (entry.isFile() && entry.name.endsWith(".vue")) return true;
-    if (entry.isDirectory() && containsVueFiles(join(dir, entry.name))) return true;
-  }
-
-  return false;
 }
