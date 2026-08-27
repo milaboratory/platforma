@@ -1,5 +1,20 @@
 # @platforma-sdk/ui-vue
 
+## 1.83.3
+
+### Patch Changes
+
+- ddf58fa: Restore emission of `*.vue.d.ts` declarations in browser-lib builds.
+
+  vite-plugin-dts 5 auto-detects whether to run its Vue program processor, but its detector only scans two directory levels below the package root. Our SFCs live deeper (`src/components/**`), so it fell back to the plain TypeScript processor and silently emitted no `*.vue.d.ts` — while `dist/lib.d.ts` still re-exported those `.vue` specifiers, breaking any consumer that resolves them (e.g. block model facade builds). ts-builder now picks the processor itself.
+
+- Updated dependencies [ddf58fa]
+  - @milaboratories/uikit@2.15.27
+  - @milaboratories/columns-collection-driver@0.2.4
+  - @milaboratories/pl-model-common@1.48.0
+  - @milaboratories/pf-spec-driver@1.5.1
+  - @platforma-sdk/model@1.83.0
+
 ## 1.83.1
 
 ### Patch Changes
