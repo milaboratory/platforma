@@ -1,0 +1,322 @@
+// Unit tests for `:pframes.column-id`.
+//
+// Pins two things: the pool-key derivations that existing bundles already
+// depend on (any drift here breaks blocks silently), and the per-layer spec
+// math against its TypeScript source of truth
+// (lib/model/common/src/drivers/pframe/spec/{ids,filtered_column,overridden}.ts).
+
+test := import(":test")
+columnId := import(":pframes.column-id")
+canonical := import(":canonical")
+
+leafGlobal := func(blockId, name) {
+	return canonical.encode({ __isRef: true, blockId: blockId, name: name })
+}
+
+filteredId := func(source, axisFilters) {
+	return canonical.encode({ __isFiltered: true, source: source, axisFilters: axisFilters })
+}
+
+overriddenId := func(source, specOverrides) {
+	return canonical.encode({ __isOverridden: true, source: source, specOverrides: specOverrides })
+}
+
+discoveredId := func(column, path) {
+	return canonical.encode({ __isDiscovered: true, column: column, path: path })
+}
+
+sampleSpec := func() {
+	return {
+		kind: "PColumn",
+		name: "value",
+		valueType: "Int",
+		annotations: { "pl7.app/label": "Value" },
+		domain: { "pl7.app/blockId": "b1" },
+		axesSpec: [
+			{ name: "clonotypeKey", type: "String" },
+			{ name: "clusterId", type: "Int" }
+		]
+	}
+}
+
+//
+// kindOf — marker forms must be tested before the legacy duck-test
+//
+
+TestKindOfLeafGlobal := func() {
+	test.isEqual(columnId.KIND_LEAF_GLOBAL, columnId.kindOf(columnId.decode(leafGlobal("b1", "col"))))
+}
+
+TestKindOfLeafLocal := func() {
+	test.isEqual(columnId.KIND_LEAF_LOCAL,
+		columnId.kindOf({ resolvePath: ["a", "b"], name: "col" }))
+}
+
+TestKindOfNewFilteredIsNotLegacy := func() {
+	// New-form Filtered carries `source` + `axisFilters` too; the marker wins.
+	key := columnId.decode(filteredId(leafGlobal("b1", "col"), [[1, 7]]))
+	test.isEqual(columnId.KIND_FILTERED, columnId.kindOf(key))
+}
+
+TestKindOfLegacyFiltered := func() {
+	// Legacy shape: `source` is an anchored selector MAP, not an id string.
+	test.isEqual(columnId.KIND_LEGACY_FILTERED,
+		columnId.kindOf({ source: { name: "value" }, axisFilters: [[0, "x"]] }))
+}
+
+TestKindOfOverridden := func() {
+	key := columnId.decode(overriddenId(leafGlobal("b1", "col"), { domain: { d: "1" } }))
+	test.isEqual(columnId.KIND_OVERRIDDEN, columnId.kindOf(key))
+}
+
+TestKindOfDiscovered := func() {
+	key := columnId.decode(discoveredId(leafGlobal("b1", "hit"), undefined))
+	test.isEqual(columnId.KIND_DISCOVERED, columnId.kindOf(key))
+}
+
+TestKindOfSelector := func() {
+	test.isEqual(columnId.KIND_SELECTOR, columnId.kindOf({ name: "value", axes: [] }))
+}
+
+//
+// isUniversalId
+//
+
+TestIsUniversalIdAcceptsEveryKeyForm := func() {
+	test.isTrue(columnId.isUniversalId(leafGlobal("b1", "col")))
+	test.isTrue(columnId.isUniversalId(filteredId(leafGlobal("b1", "col"), [[0, 1]])))
+	test.isTrue(columnId.isUniversalId(overriddenId(leafGlobal("b1", "col"), {})))
+	test.isTrue(columnId.isUniversalId(discoveredId(leafGlobal("b1", "col"), undefined)))
+}
+
+TestIsUniversalIdRejectsPlainStringsAndSelectors := func() {
+	test.isFalse(columnId.isUniversalId("just-a-name"))
+	test.isFalse(columnId.isUniversalId(""))
+	test.isFalse(columnId.isUniversalId(42))
+	test.isFalse(columnId.isUniversalId({ name: "value" }))
+}
+
+//
+// poolKey — the derivations existing bundles already depend on
+//
+
+TestPoolKeyLegacyFilteredKeysOnSource := func() {
+	source := { name: "value", axes: [{ name: "clonotypeKey" }] }
+	key := columnId.poolKey({ source: source, axisFilters: [[0, "x"]] })
+	test.isEqual(canonical.encode(source), key)
+}
+
+TestPoolKeyLeafIsTheIdItself := func() {
+	id := leafGlobal("b1", "col")
+	test.isEqual(id, columnId.poolKey(id))
+}
+
+TestPoolKeyRecipeIsTheFullId := func() {
+	// NOT the leaf: two routes to the same physical column stay distinct.
+	id := filteredId(leafGlobal("b1", "col"), [[1, 7]])
+	test.isEqual(id, columnId.poolKey(id))
+}
+
+TestPoolKeyOfMapEqualsPoolKeyOfString := func() {
+	id := discoveredId(leafGlobal("b1", "hit"), [{ type: "linker", column: leafGlobal("b1", "lnk") }])
+	test.isEqual(columnId.poolKey(id), columnId.poolKey(columnId.decode(id)))
+}
+
+//
+// extractLeafId
+//
+
+TestExtractLeafIdThroughEveryLayer := func() {
+	leaf := leafGlobal("b1", "col")
+	stacked := overriddenId(filteredId(discoveredId(leaf, undefined), [[0, 3]]), { domain: { d: "1" } })
+	test.isEqual(leaf, columnId.extractLeafId(stacked))
+}
+
+TestExtractLeafIdOfLeafIsIdentity := func() {
+	leaf := leafGlobal("b1", "col")
+	test.isEqual(leaf, columnId.extractLeafId(leaf))
+}
+
+//
+// unwrap
+//
+
+TestUnwrapPeelsAllThreeLayers := func() {
+	leaf := leafGlobal("b1", "col")
+	linker := leafGlobal("b1", "lnk")
+	overrides := { annotations: { "pl7.app/label": "Patched" } }
+	id := overriddenId(
+		filteredId(discoveredId(leaf, [{ type: "linker", column: linker }]), [[1, 5]]),
+		overrides)
+
+	u := columnId.unwrap(id)
+	test.isEqual(leaf, u.leafId)
+	test.isEqual([[1, 5]], u.axisFilters)
+	test.isEqual(overrides, u.specOverrides)
+	test.isEqual(true, u.discovery.__isDiscovered)
+	test.isEqual(leaf, u.discovery.column)
+}
+
+TestUnwrapOfBareLeafHasNoLayers := func() {
+	u := columnId.unwrap(leafGlobal("b1", "col"))
+	test.isTrue(is_undefined(u.axisFilters))
+	test.isTrue(is_undefined(u.specOverrides))
+	test.isTrue(is_undefined(u.discovery))
+}
+
+//
+// referencedIds — linkers first (outermost hop first), hit last
+//
+
+TestReferencedIdsListsLinkersThenSelf := func() {
+	hit := leafGlobal("b1", "hit")
+	l0 := leafGlobal("b1", "lnk0")
+	l1 := leafGlobal("b1", "lnk1")
+	id := discoveredId(hit, [
+		{ type: "linker", column: l0 },
+		{ type: "linker", column: l1 }
+	])
+	test.isEqual([l0, l1, id], columnId.referencedIds(id))
+}
+
+TestReferencedIdsOfPlainColumnIsItself := func() {
+	id := leafGlobal("b1", "col")
+	test.isEqual([id], columnId.referencedIds(id))
+}
+
+//
+// applyAxisFilters
+//
+
+TestApplyAxisFiltersDropsPinnedAxes := func() {
+	got := columnId.applyAxisFilters(sampleSpec(), [[1, 7]])
+	test.isEqual([{ name: "clonotypeKey", type: "String" }], got.axesSpec)
+	// Untouched fields survive.
+	test.isEqual("value", got.name)
+}
+
+TestApplyAxisFiltersIsIdentityWhenEmpty := func() {
+	spec := sampleSpec()
+	test.isEqual(spec, columnId.applyAxisFilters(spec, []))
+	test.isEqual(spec, columnId.applyAxisFilters(spec, undefined))
+}
+
+//
+// applySpecOverrides
+//
+
+TestApplySpecOverridesMergesMetadata := func() {
+	got := columnId.applySpecOverrides(sampleSpec(), {
+		annotations: { "pl7.app/label": "Patched", "extra": "1" },
+		domain: { "new": "2" }
+	})
+	test.isEqual("Patched", got.annotations["pl7.app/label"])
+	test.isEqual("1", got.annotations["extra"])
+	// Merge, not replace: the pre-existing domain key survives.
+	test.isEqual("b1", got.domain["pl7.app/blockId"])
+	test.isEqual("2", got.domain["new"])
+}
+
+TestApplySpecOverridesPatchesAxisPositionally := func() {
+	got := columnId.applySpecOverrides(sampleSpec(), {
+		axesSpec: { "1": { annotations: { "pl7.app/label": "Cluster" } } }
+	})
+	test.isEqual("clonotypeKey", got.axesSpec[0].name)
+	test.isEqual("Cluster", got.axesSpec[1].annotations["pl7.app/label"])
+	// Positional patch must not change identity fields it did not mention.
+	test.isEqual("clusterId", got.axesSpec[1].name)
+}
+
+TestApplySpecOverridesIsIdentityWhenAbsent := func() {
+	spec := sampleSpec()
+	test.isEqual(spec, columnId.applySpecOverrides(spec, undefined))
+}
+
+//
+// effectiveSpec — layers apply leaf-first: Filtered then Overridden
+//
+
+TestEffectiveSpecAppliesFilterBeforeOverride := func() {
+	// Pin axis 1, then patch what is now the only remaining axis (index 0).
+	id := overriddenId(
+		filteredId(leafGlobal("b1", "col"), [[1, 7]]),
+		{ axesSpec: { "0": { annotations: { "pl7.app/label": "Clonotype" } } } })
+
+	got := columnId.effectiveSpec(sampleSpec(), id)
+	test.isEqual(1, len(got.axesSpec))
+	test.isEqual("clonotypeKey", got.axesSpec[0].name)
+	test.isEqual("Clonotype", got.axesSpec[0].annotations["pl7.app/label"])
+}
+
+TestEffectiveSpecOfDiscoveredPassesThrough := func() {
+	// The linker chain enables co-indexing; it does not remap the hit's axes.
+	id := discoveredId(leafGlobal("b1", "hit"),
+		[{ type: "linker", column: leafGlobal("b1", "lnk") }])
+	test.isEqual(sampleSpec(), columnId.effectiveSpec(sampleSpec(), id))
+}
+
+TestEffectiveSpecOfLeafIsIdentity := func() {
+	spec := sampleSpec()
+	test.isEqual(spec, columnId.effectiveSpec(spec, leafGlobal("b1", "col")))
+}
+
+//
+// fromEnrichmentRef — the v1 wire form is the narrower one, so it normalizes
+// into a Discovered key and the workflow carries one route mechanism
+//
+
+TestFromEnrichmentRefMapsFieldByField := func() {
+	hit := leafGlobal("b1", "hit")
+	linker := leafGlobal("b1", "lnk")
+	qual := { axis: { name: "clusterId" }, contextDomain: { d: "1" } }
+
+	got := columnId.fromEnrichmentRef({
+		__isEnrichment: "v1",
+		hit: hit,
+		path: [{ type: "linker", linker: linker }],
+		qualifications: [qual]
+	})
+
+	test.isEqual({
+		__isDiscovered: true,
+		column: hit,
+		path: [{ type: "linker", column: linker }],
+		columnQualifications: [qual]
+	}, got)
+}
+
+TestFromEnrichmentRefZeroHop := func() {
+	hit := leafGlobal("b1", "hit")
+	// Empty path and qualifications are omitted on both sides, so a zero-hop
+	// ref yields a key with no optional fields at all.
+	test.isEqual({ __isDiscovered: true, column: hit },
+		columnId.fromEnrichmentRef({ __isEnrichment: "v1", hit: hit, path: [] }))
+}
+
+TestFromEnrichmentRefPassesResolvedHopsThrough := func() {
+	// v1 allows a resolved {spec, data} in place of an id; it is not an id and
+	// must survive untouched for the caller to resolve.
+	resolved := { spec: { kind: "PColumn" }, data: "d" }
+	got := columnId.fromEnrichmentRef({
+		__isEnrichment: "v1",
+		hit: resolved,
+		path: [{ type: "linker", linker: resolved }]
+	})
+	test.isEqual(resolved, got.column)
+	test.isEqual(resolved, got.path[0].column)
+}
+
+TestFromEnrichmentRefRoundTripsThroughUnwrap := func() {
+	// The normalized key is a real Discovered key: unwrap sees the route.
+	hit := leafGlobal("b1", "hit")
+	linker := leafGlobal("b1", "lnk")
+	key := columnId.fromEnrichmentRef({
+		__isEnrichment: "v1",
+		hit: hit,
+		path: [{ type: "linker", linker: linker }]
+	})
+
+	test.isEqual(columnId.KIND_DISCOVERED, columnId.kindOf(key))
+	test.isEqual(hit, columnId.unwrap(key).leafId)
+	test.isEqual([linker, canonical.encode(key)], columnId.referencedIds(key))
+}
