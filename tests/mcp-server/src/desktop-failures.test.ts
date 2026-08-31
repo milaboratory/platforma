@@ -95,18 +95,22 @@ test("a selection that never became ready is reported", { timeout: 30_000 }, asy
   );
 });
 
-test("a ready selection reports success and records its arguments", { timeout: 30_000 }, async () => {
-  const standIns = desktopStandIns({ selectBlock: async () => ({ ready: true }) });
-  await withMcpServer(
-    async ({ client }) => {
-      const result = (await client.callTool({
-        name: "select_block",
-        arguments: { projectId: "p", blockId: "b" },
-      })) as Result;
-      expect(result.isError).not.toBe(true);
-      expect(JSON.parse(result.content?.[0]?.text ?? "{}")).toEqual({ ok: true });
-      expect(standIns.calls).toEqual([{ callback: "selectBlock", args: ["p", "b"] }]);
-    },
-    { callbacks: standIns.callbacks },
-  );
-});
+test(
+  "a ready selection reports success and records its arguments",
+  { timeout: 30_000 },
+  async () => {
+    const standIns = desktopStandIns({ selectBlock: async () => ({ ready: true }) });
+    await withMcpServer(
+      async ({ client }) => {
+        const result = (await client.callTool({
+          name: "select_block",
+          arguments: { projectId: "p", blockId: "b" },
+        })) as Result;
+        expect(result.isError).not.toBe(true);
+        expect(JSON.parse(result.content?.[0]?.text ?? "{}")).toEqual({ ok: true });
+        expect(standIns.calls).toEqual([{ callback: "selectBlock", args: ["p", "b"] }]);
+      },
+      { callbacks: standIns.callbacks },
+    );
+  },
+);
