@@ -1,11 +1,15 @@
 import type { PlClient } from "@milaboratories/pl-client";
 import { MiddleLayer, TestHelpers } from "@milaboratories/pl-middle-layer";
 import { PlMcpServer } from "@milaboratories/pl-mcp-server";
-import type { McpSecret } from "@milaboratories/pl-mcp-server";
+import type { McpSecret, PlMcpServerCallbacks } from "@milaboratories/pl-mcp-server";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
+
+export interface McpTestOptions {
+  callbacks?: PlMcpServerCallbacks;
+}
 
 export interface McpTestContext {
   client: Client;
@@ -13,7 +17,10 @@ export interface McpTestContext {
   serverUrl: string;
 }
 
-export async function withMcpServer(cb: (ctx: McpTestContext) => Promise<void>): Promise<void> {
+export async function withMcpServer(
+  cb: (ctx: McpTestContext) => Promise<void>,
+  options: McpTestOptions = {},
+): Promise<void> {
   const workFolder = path.resolve(import.meta.dirname, "..", "work", randomUUID());
   const secret = randomUUID().replace(/-/g, "") as McpSecret;
 
@@ -32,7 +39,12 @@ export async function withMcpServer(cb: (ctx: McpTestContext) => Promise<void>):
     ml.addRuntimeCapability("requiresUIAPIVersion", 3);
     ml.addRuntimeCapability("requiresCreatePTable", 2);
 
-    const mcpServer = new PlMcpServer({ middleLayer: ml, port: 0, secret });
+    const mcpServer = new PlMcpServer({
+      middleLayer: ml,
+      port: 0,
+      secret,
+      callbacks: options.callbacks,
+    });
     await mcpServer.start();
 
     const client = new Client({ name: "test-client", version: "1.0.0" });
