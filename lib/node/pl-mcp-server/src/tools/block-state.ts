@@ -1,7 +1,8 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { deriveDataFromStorage } from "@platforma-sdk/model";
 import { ModelAPIVersionMismatchError } from "@milaboratories/pl-errors";
-import { z } from "zod";
+import { toStandardJsonSchema } from "@valibot/to-json-schema";
+import * as v from "valibot";
 import type { ToolContext } from "./types";
 import { summarizeOutputs } from "./tokens";
 import { safeEval } from "./sandbox";
@@ -13,9 +14,11 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     {
       description:
         "Get project overview with all blocks and their statuses (calculationStatus, canRun, stale, errors, upstreams/downstreams)",
-      inputSchema: {
-        projectId: z.string().describe("Project ID (must be opened)"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID (must be opened)")),
+        }),
+      ),
     },
     async ({ projectId }) => {
       const project = await ctx.getOpenedProject(projectId);
@@ -49,23 +52,29 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
         "- `outputs.logs?.value` — get one specific output value\n" +
         "- `data` — get only block args\n" +
         "- `({ preset: outputs.preset?.value, qc: outputs.qc?.value })` — get specific outputs",
-      inputSchema: {
-        projectId: z.string().describe("Project ID"),
-        blockId: z.string().describe("Block ID"),
-        transform: z
-          .string()
-          .optional()
-          .describe(
-            "JS expression evaluated server-side against full block state. " +
-              "Available variables: `data` (block args), `outputs` (raw outputs object). " +
-              "Omit for default concise summary.",
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID")),
+          blockId: v.pipe(v.string(), v.description("Block ID")),
+          transform: v.optional(
+            v.pipe(
+              v.string(),
+              v.description(
+                "JS expression evaluated server-side against full block state. " +
+                  "Available variables: `data` (block args), `outputs` (raw outputs object). " +
+                  "Omit for default concise summary.",
+              ),
+            ),
           ),
-        transformTimeout: z
-          .number()
-          .optional()
-          .default(5000)
-          .describe("Timeout in ms for transform evaluation (default 5000)."),
-      },
+          transformTimeout: v.optional(
+            v.pipe(
+              v.number(),
+              v.description("Timeout in ms for transform evaluation (default 5000)."),
+            ),
+            5000,
+          ),
+        }),
+      ),
     },
     async ({ projectId, blockId, transform, transformTimeout }) => {
       const project = await ctx.getOpenedProject(projectId);
@@ -97,11 +106,13 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     "set_block_data",
     {
       description: "Set the user-facing data of a block (triggers args derivation and staging)",
-      inputSchema: {
-        projectId: z.string().describe("Project ID"),
-        blockId: z.string().describe("Block ID"),
-        data: z.record(z.unknown()).describe("Block data object"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID")),
+          blockId: v.pipe(v.string(), v.description("Block ID")),
+          data: v.pipe(v.record(v.string(), v.unknown()), v.description("Block data object")),
+        }),
+      ),
     },
     async ({ projectId, blockId, data }) => {
       const project = await ctx.getOpenedProject(projectId);

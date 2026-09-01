@@ -1,5 +1,6 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/server";
+import { toStandardJsonSchema } from "@valibot/to-json-schema";
+import * as v from "valibot";
 import type { ToolContext } from "./types";
 import { errorResult, textResult } from "./types";
 
@@ -33,11 +34,18 @@ export function registerConnectionTools(server: McpServer, ctx: ToolContext): vo
     "connect_to_server",
     {
       description: "Connect to a Platforma server. Use list_connections to see saved servers.",
-      inputSchema: {
-        addr: z.string().describe("Server address (e.g. https://pl6.demo2.platforma.bio:6346)"),
-        login: z.string().describe("Username"),
-        password: z.string().optional().describe("Password (uses saved token if omitted)"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          addr: v.pipe(
+            v.string(),
+            v.description("Server address (e.g. https://pl6.demo2.platforma.bio:6346)"),
+          ),
+          login: v.pipe(v.string(), v.description("Username")),
+          password: v.optional(
+            v.pipe(v.string(), v.description("Password (uses saved token if omitted)")),
+          ),
+        }),
+      ),
     },
     async ({ addr, login, password }) => {
       if (!ctx.callbacks.connectToServer) {

@@ -1,7 +1,8 @@
 import { writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/server";
+import { toStandardJsonSchema } from "@valibot/to-json-schema";
+import * as v from "valibot";
 import type { ToolContext } from "./types";
 import { errorResult } from "./types";
 
@@ -11,14 +12,18 @@ export function registerScreenshotTool(server: McpServer, ctx: ToolContext): voi
     {
       description:
         "Capture a screenshot of the current application window. Optionally save to a file.",
-      inputSchema: {
-        savePath: z
-          .string()
-          .optional()
-          .describe(
-            "Absolute file path to save the screenshot as PNG. If omitted, returns the image inline only.",
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          savePath: v.optional(
+            v.pipe(
+              v.string(),
+              v.description(
+                "Absolute file path to save the screenshot as PNG. If omitted, returns the image inline only.",
+              ),
+            ),
           ),
-      },
+        }),
+      ),
     },
     async ({ savePath }: { savePath?: string }) => {
       if (!ctx.callbacks.captureScreenshot) {
