@@ -252,6 +252,7 @@ catalog:
 
   "zod": ~3.25.76
   "valibot": ^1.4.2
+  "@standard-schema/spec": ^1.1.0
 
   "archiver": ^7.0.1
 
