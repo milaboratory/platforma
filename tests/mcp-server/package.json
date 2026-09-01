@@ -15,8 +15,7 @@
     "@milaboratories/pl-client": "workspace:*",
     "@milaboratories/pl-mcp-server": "workspace:*",
     "@milaboratories/pl-middle-layer": "workspace:*",
-    "@modelcontextprotocol/sdk": "catalog:",
-    "zod": "catalog:"
+    "@modelcontextprotocol/client": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

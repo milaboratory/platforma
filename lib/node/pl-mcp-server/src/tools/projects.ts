@@ -1,5 +1,6 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/server";
+import { toStandardJsonSchema } from "@valibot/to-json-schema";
+import * as v from "valibot";
 import type { ToolContext } from "./types";
 import { textResult } from "./types";
 
@@ -27,7 +28,9 @@ export function registerProjectTools(server: McpServer, ctx: ToolContext): void 
     "create_project",
     {
       description: "Create a new project",
-      inputSchema: { label: z.string().describe("Project name") },
+      inputSchema: toStandardJsonSchema(
+        v.object({ label: v.pipe(v.string(), v.description("Project name")) }),
+      ),
     },
     async ({ label }) => {
       const projectId = await ctx.requireMl().createProject({ label });
@@ -40,9 +43,14 @@ export function registerProjectTools(server: McpServer, ctx: ToolContext): void 
     "open_project",
     {
       description: "Open a project for editing. Required before working with blocks.",
-      inputSchema: {
-        projectId: z.string().describe("Project ID from list_projects or create_project"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(
+            v.string(),
+            v.description("Project ID from list_projects or create_project"),
+          ),
+        }),
+      ),
     },
     async ({ projectId }) => {
       const entry = await ctx.resolveProject(projectId);
@@ -56,7 +64,9 @@ export function registerProjectTools(server: McpServer, ctx: ToolContext): void 
     "close_project",
     {
       description: "Close an opened project, releasing its resources",
-      inputSchema: { projectId: z.string().describe("Project ID") },
+      inputSchema: toStandardJsonSchema(
+        v.object({ projectId: v.pipe(v.string(), v.description("Project ID")) }),
+      ),
     },
     async ({ projectId }) => {
       const entry = await ctx.resolveProject(projectId);
@@ -70,7 +80,9 @@ export function registerProjectTools(server: McpServer, ctx: ToolContext): void 
     "delete_project",
     {
       description: "Delete a project permanently. The project must be closed first.",
-      inputSchema: { projectId: z.string().describe("Project ID") },
+      inputSchema: toStandardJsonSchema(
+        v.object({ projectId: v.pipe(v.string(), v.description("Project ID")) }),
+      ),
     },
     async ({ projectId }) => {
       const entry = await ctx.resolveProject(projectId);

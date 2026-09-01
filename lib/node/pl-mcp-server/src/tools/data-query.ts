@@ -1,4 +1,4 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type {
   PFrameHandle,
   PTableHandle,
@@ -11,7 +11,8 @@ import {
   readAnnotation,
   PFrameDriver,
 } from "@milaboratories/pl-model-common";
-import { z } from "zod";
+import { toStandardJsonSchema } from "@valibot/to-json-schema";
+import * as v from "valibot";
 import type { ToolContext } from "./types";
 import { safeEval } from "./sandbox";
 import { errorResult, textResult } from "./types";
@@ -100,11 +101,11 @@ async function resolveHandlesInValue(
   }
   if (typeof value !== "object") return value;
   if (Array.isArray(value)) {
-    return Promise.all(value.map((v) => resolveHandlesInValue(v, driver, maxColumns, cache)));
+    return Promise.all(value.map((item) => resolveHandlesInValue(item, driver, maxColumns, cache)));
   }
   const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-    out[k] = await resolveHandlesInValue(v, driver, maxColumns, cache);
+  for (const [key, item] of Object.entries(value as Record<string, unknown>)) {
+    out[key] = await resolveHandlesInValue(item, driver, maxColumns, cache);
   }
   return out;
 }
@@ -126,15 +127,19 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
         "Get block output values as a JSON map. " +
         "PFrame/PTable handles are resolved inline to summaries with column specs and row counts. " +
         "Use this to discover block results and available data before querying tables.",
-      inputSchema: {
-        projectId: z.string().describe("Project ID"),
-        blockId: z.string().describe("Block ID"),
-        maxColumns: z
-          .number()
-          .optional()
-          .default(30)
-          .describe("Max columns to show per PFrame/PTable summary (default 30)."),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID")),
+          blockId: v.pipe(v.string(), v.description("Block ID")),
+          maxColumns: v.optional(
+            v.pipe(
+              v.number(),
+              v.description("Max columns to show per PFrame/PTable summary (default 30)."),
+            ),
+            30,
+          ),
+        }),
+      ),
     },
     async ({ projectId, blockId, maxColumns }) => {
       const project = await ctx.getOpenedProject(projectId);
@@ -167,11 +172,14 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
     {
       description:
         "List all columns in a PFrame with their specs. Use get_block_outputs first to find the PFrame handle.",
-      inputSchema: {
-        pFrameHandle: z
-          .string()
-          .describe("PFrame handle (64-char hex hash from get_block_outputs)"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          pFrameHandle: v.pipe(
+            v.string(),
+            v.description("PFrame handle (64-char hex hash from get_block_outputs)"),
+          ),
+        }),
+      ),
     },
     async ({ pFrameHandle }) => {
       const pFrameDriver = ctx.requireMl().internalDriverKit.pFrameDriver;
@@ -199,37 +207,51 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
       description:
         "Query data from a PTable. Returns rows as arrays of values. Use get_block_outputs first to find the PTable handle. " +
         "Use `transform` to process results server-side and return only what you need.",
-      inputSchema: {
-        pTableHandle: z
-          .string()
-          .describe("PTable handle (64-char hex hash from get_block_outputs)"),
-        columns: z
-          .array(z.number())
-          .optional()
-          .describe(
-            "Column indices to retrieve (default: all). Use get_block_outputs to see column indices.",
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          pTableHandle: v.pipe(
+            v.string(),
+            v.description("PTable handle (64-char hex hash from get_block_outputs)"),
           ),
-        offset: z.number().optional().default(0).describe("Row offset (default 0)"),
-        limit: z.number().optional().default(50).describe("Number of rows to return (default 50)."),
-        maxLimit: z
-          .number()
-          .optional()
-          .default(1000)
-          .describe("Upper bound for limit (default 1000). Increase for large exports."),
-        transform: z
-          .string()
-          .optional()
-          .describe(
-            "JS expression evaluated server-side against query results. " +
-              "Available variables: `rows` (array of row arrays), `columns` (column headers), `offset`, `rowCount`. " +
-              "Example: `rows.map(r => r[0])` — extract first column only.",
+          columns: v.optional(
+            v.pipe(
+              v.array(v.number()),
+              v.description(
+                "Column indices to retrieve (default: all). Use get_block_outputs to see column indices.",
+              ),
+            ),
           ),
-        transformTimeout: z
-          .number()
-          .optional()
-          .default(5000)
-          .describe("Timeout in ms for transform evaluation (default 5000)."),
-      },
+          offset: v.optional(v.pipe(v.number(), v.description("Row offset (default 0)")), 0),
+          limit: v.optional(
+            v.pipe(v.number(), v.description("Number of rows to return (default 50).")),
+            50,
+          ),
+          maxLimit: v.optional(
+            v.pipe(
+              v.number(),
+              v.description("Upper bound for limit (default 1000). Increase for large exports."),
+            ),
+            1000,
+          ),
+          transform: v.optional(
+            v.pipe(
+              v.string(),
+              v.description(
+                "JS expression evaluated server-side against query results. " +
+                  "Available variables: `rows` (array of row arrays), `columns` (column headers), `offset`, `rowCount`. " +
+                  "Example: `rows.map(r => r[0])` — extract first column only.",
+              ),
+            ),
+          ),
+          transformTimeout: v.optional(
+            v.pipe(
+              v.number(),
+              v.description("Timeout in ms for transform evaluation (default 5000)."),
+            ),
+            5000,
+          ),
+        }),
+      ),
     },
     async ({ pTableHandle, columns, offset, limit, maxLimit, transform, transformTimeout }) => {
       const pFrameDriver = ctx.requireMl().internalDriverKit.pFrameDriver;
@@ -260,7 +282,7 @@ export function registerDataQueryTools(server: McpServer, ctx: ToolContext): voi
       }
 
       const actualRows = vectors.length > 0 ? vectors[0].data.length : 0;
-      const columnVectors = vectors.map((v) => vectorToJson(v, actualRows));
+      const columnVectors = vectors.map((vector) => vectorToJson(vector, actualRows));
       const rows: unknown[][] = [];
       for (let r = 0; r < actualRows; r++) {
         rows.push(columnVectors.map((col) => col[r]));
