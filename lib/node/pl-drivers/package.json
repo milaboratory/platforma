@@ -45,6 +45,7 @@
     "openapi-fetch": "catalog:",
     "tar-fs": "catalog:",
     "undici": "catalog:",
+    "valibot": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

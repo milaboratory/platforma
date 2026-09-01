@@ -251,6 +251,7 @@ catalog:
   "es-toolkit": ^1.39.10
 
   "zod": ~3.25.76
+  "valibot": ^1.4.2
 
   "archiver": ^7.0.1
 

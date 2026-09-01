@@ -31,7 +31,7 @@
   "dependencies": {
     "@milaboratories/pl-client": "workspace:*",
     "canonicalize": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

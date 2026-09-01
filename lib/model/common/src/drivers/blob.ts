@@ -1,5 +1,5 @@
 import type { Branded } from "../branding";
-import { z } from "zod";
+import * as v from "valibot";
 
 /** Handle of locally downloaded blob. This handle is issued only after the
  * blob's content is downloaded locally, and ready for quick access. */
@@ -22,14 +22,14 @@ export interface BlobHandleAndSize<
 }
 
 /** Range in bytes, from should be less than to. */
-export const RangeBytes = z.object({
+export const RangeBytes = v.object({
   /** Included left border. */
-  from: z.number().min(0),
+  from: v.pipe(v.number(), v.minValue(0)),
   /** Excluded right border. */
-  to: z.number().min(1),
+  to: v.pipe(v.number(), v.minValue(1)),
 });
 
-export type RangeBytes = z.infer<typeof RangeBytes>;
+export type RangeBytes = v.InferOutput<typeof RangeBytes>;
 
 export function newRangeBytesOpt(from?: number, to?: number): RangeBytes | undefined {
   if (from == undefined || to == undefined) {

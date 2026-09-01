@@ -1,12 +1,12 @@
 import type { BlockCodeFeatureFlags } from "../flags";
-import { z } from "zod";
+import * as v from "valibot";
 
-export const Code = z.object({
-  type: z.literal("plain"),
-  content: z.string(),
+export const Code = v.object({
+  type: v.literal("plain"),
+  content: v.string(),
 });
 
-export type Code = z.infer<typeof Code>;
+export type Code = v.InferOutput<typeof Code>;
 
 export type BlockCodeWithInfo = {
   readonly code: Code;
