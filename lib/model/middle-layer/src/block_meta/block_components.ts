@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "valibot";
 
 //
 // Workflow + BlockComponents canonical TS types.
@@ -37,18 +37,16 @@ export type BlockComponents<WMContent, UIContent> = {
 };
 
 /**
- * Builds the zod schema for a wrapped workflow component carrying `content`
- * as the `main` payload. Shared between the `package.json` boundary parser
- * (where `content` is `z.string()`) and the manifest schema (where `content`
- * is `ContentRelative`).
+ * Builds the valibot schema for a wrapped workflow component carrying
+ * `content` as the `main` payload. Shared between the `package.json` boundary
+ * parser (where `content` is `v.string()`) and the manifest schema (where
+ * `content` is `ContentRelative`).
  */
-export function WorkflowSchemaV1<C extends z.ZodTypeAny>(content: C) {
-  return z
-    .object({
-      type: z.literal("workflow-v1"),
-      main: content,
-    })
-    .strict();
+export function WorkflowSchemaV1<const C extends v.GenericSchema>(content: C) {
+  return v.strictObject({
+    type: v.literal("workflow-v1"),
+    main: content,
+  });
 }
 
 //
@@ -57,18 +55,23 @@ export function WorkflowSchemaV1<C extends z.ZodTypeAny>(content: C) {
 // the canonical wrapped shape.
 //
 
-const WorkflowDescriptionRaw = z.union([
-  z.string().transform<WorkflowV1<string>>((value) => ({
-    type: "workflow-v1",
-    main: value,
-  })),
-  WorkflowSchemaV1(z.string()),
-]) satisfies z.ZodType<Workflow<string>, z.ZodTypeDef, any>;
+const WorkflowDescriptionRaw = v.union([
+  v.pipe(
+    v.string(),
+    v.transform(
+      (value): WorkflowV1<string> => ({
+        type: "workflow-v1",
+        main: value,
+      }),
+    ),
+  ),
+  WorkflowSchemaV1(v.string()),
+]) satisfies v.GenericSchema<unknown, Workflow<string>>;
 
 export type BlockComponentsDescriptionRaw = BlockComponents<string, string>;
 
-export const BlockComponentsDescriptionRaw = z.object({
+export const BlockComponentsDescriptionRaw = v.object({
   workflow: WorkflowDescriptionRaw,
-  model: z.string(),
-  ui: z.string(),
-}) satisfies z.ZodType<BlockComponentsDescriptionRaw, z.ZodTypeDef, any>;
+  model: v.string(),
+  ui: v.string(),
+}) satisfies v.GenericSchema<unknown, BlockComponentsDescriptionRaw>;

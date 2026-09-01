@@ -1,7 +1,7 @@
-import { z } from "zod";
+import * as v from "valibot";
 
 //
-// Canonical content types. TypeScript is the source of truth. The zod
+// Canonical content types. TypeScript is the source of truth. The valibot
 // schemas below are boundary validators pegged to these types via
 // `satisfies`; they exist only to parse external data (`package.json`,
 // registry manifests, registry overview files).
@@ -105,60 +105,50 @@ export type ContentRelativeBinary = ContentExplicitBase64 | ContentRelative;
 export type ContentRelativeText = ContentExplicitString | ContentRelative;
 
 //
-// Zod schemas — boundary validators only. The TS types above are the source
-// of truth; each schema is pegged via `satisfies z.ZodType<T>`. Only the
-// schemas referenced by sibling boundary files (`block_meta.ts`,
+// Valibot schemas — boundary validators only. The TS types above are the
+// source of truth; each schema is pegged via `satisfies v.GenericSchema<T>`.
+// Only the schemas referenced by sibling boundary files (`block_meta.ts`,
 // `block_manifest.ts`) are exported.
 //
 
 const absPathRegex = new RegExp(`^(/|[A-Z]:\\\\)`);
 
-const contentExplicitStringSchema = z
-  .object({
-    type: z.literal("explicit-string"),
-    content: z.string(),
-  })
-  .strict() satisfies z.ZodType<ContentExplicitString>;
+const contentExplicitStringSchema = v.strictObject({
+  type: v.literal("explicit-string"),
+  content: v.string(),
+}) satisfies v.GenericSchema<ContentExplicitString>;
 
-export const ContentExplicitBase64 = z
-  .object({
-    type: z.literal("explicit-base64"),
-    mimeType: z.string().regex(/\w+\/[-+.\w]+/),
-    content: z.string().base64(),
-  })
-  .strict() satisfies z.ZodType<ContentExplicitBase64>;
+export const ContentExplicitBase64 = v.strictObject({
+  type: v.literal("explicit-base64"),
+  mimeType: v.pipe(v.string(), v.regex(/\w+\/[-+.\w]+/)),
+  content: v.pipe(v.string(), v.base64()),
+}) satisfies v.GenericSchema<ContentExplicitBase64>;
 
-export const ContentExplicitBytes = z
-  .object({
-    type: z.literal("explicit-bytes"),
-    mimeType: z.string().regex(/\w+\/[-+.\w]+/),
-    content: z.instanceof(Uint8Array),
-  })
-  .strict() satisfies z.ZodType<ContentExplicitBytes>;
+export const ContentExplicitBytes = v.strictObject({
+  type: v.literal("explicit-bytes"),
+  mimeType: v.pipe(v.string(), v.regex(/\w+\/[-+.\w]+/)),
+  content: v.instance(Uint8Array),
+}) satisfies v.GenericSchema<ContentExplicitBytes>;
 
-export const ContentRelative = z
-  .object({
-    type: z.literal("relative"),
-    path: z.string(),
-  })
-  .strict() satisfies z.ZodType<ContentRelative>;
+export const ContentRelative = v.strictObject({
+  type: v.literal("relative"),
+  path: v.string(),
+}) satisfies v.GenericSchema<ContentRelative>;
 
-const contentAbsoluteFileSchema = z
-  .object({
-    type: z.literal("absolute-file"),
-    file: z.string().regex(absPathRegex, "path to file must be absolute"),
-  })
-  .strict() satisfies z.ZodType<ContentAbsoluteFile>;
+const contentAbsoluteFileSchema = v.strictObject({
+  type: v.literal("absolute-file"),
+  file: v.pipe(v.string(), v.regex(absPathRegex, "path to file must be absolute")),
+}) satisfies v.GenericSchema<ContentAbsoluteFile>;
 
-export const ContentRelativeBinary = z.discriminatedUnion("type", [
+export const ContentRelativeBinary = v.variant("type", [
   ContentExplicitBase64,
   ContentRelative,
-]) satisfies z.ZodType<ContentRelativeBinary>;
+]) satisfies v.GenericSchema<ContentRelativeBinary>;
 
-export const ContentRelativeText = z.discriminatedUnion("type", [
+export const ContentRelativeText = v.variant("type", [
   contentExplicitStringSchema,
   ContentRelative,
-]) satisfies z.ZodType<ContentRelativeText>;
+]) satisfies v.GenericSchema<ContentRelativeText>;
 
 //
 // Boundary normalizing transforms — parse the loose forms authors write in
@@ -167,25 +157,27 @@ export const ContentRelativeText = z.discriminatedUnion("type", [
 // `ContentExplicitString` (text only).
 //
 
-export const DescriptionContentBinary = z.union([
-  z
-    .string()
-    .startsWith("file:")
-    .transform<ContentRelativeBinary>((value) => ({
-      type: "relative",
-      path: value.slice(5),
-    })),
-  z.discriminatedUnion("type", [ContentExplicitBase64, ContentRelative, contentAbsoluteFileSchema]),
-]) satisfies z.ZodType<ContentAnyBinaryLocal, z.ZodTypeDef, any>;
+export const DescriptionContentBinary = v.union([
+  v.pipe(
+    v.string(),
+    v.startsWith("file:"),
+    v.transform(
+      (value): ContentRelativeBinary => ({
+        type: "relative",
+        path: value.slice(5),
+      }),
+    ),
+  ),
+  v.variant("type", [ContentExplicitBase64, ContentRelative, contentAbsoluteFileSchema]),
+]) satisfies v.GenericSchema<unknown, ContentAnyBinaryLocal>;
 
-export const DescriptionContentText = z.union([
-  z.string().transform<ContentRelativeText>((value) => {
-    if (value.startsWith("file:")) return { type: "relative", path: value.slice(5) };
-    return { type: "explicit-string", content: value };
-  }),
-  z.discriminatedUnion("type", [
-    contentExplicitStringSchema,
-    ContentRelative,
-    contentAbsoluteFileSchema,
-  ]),
-]) satisfies z.ZodType<ContentAnyTextLocal, z.ZodTypeDef, any>;
+export const DescriptionContentText = v.union([
+  v.pipe(
+    v.string(),
+    v.transform((value): ContentRelativeText => {
+      if (value.startsWith("file:")) return { type: "relative", path: value.slice(5) };
+      return { type: "explicit-string", content: value };
+    }),
+  ),
+  v.variant("type", [contentExplicitStringSchema, ContentRelative, contentAbsoluteFileSchema]),
+]) satisfies v.GenericSchema<unknown, ContentAnyTextLocal>;

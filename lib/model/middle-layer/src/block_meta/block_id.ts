@@ -1,18 +1,16 @@
-import { z } from "zod";
+import * as v from "valibot";
 import { SemVer } from "./semver";
 
 /** Global identifier of the block */
-export const BlockPackId = z
-  .object({
-    organization: z.string(),
-    name: z.string(),
-    version: SemVer,
-  })
-  .strict();
-export type BlockPackId = z.infer<typeof BlockPackId>;
+export const BlockPackId = v.strictObject({
+  organization: v.string(),
+  name: v.string(),
+  version: SemVer,
+});
+export type BlockPackId = v.InferOutput<typeof BlockPackId>;
 
-export const BlockPackIdNoVersion = BlockPackId.omit({ version: true });
-export type BlockPackIdNoVersion = z.infer<typeof BlockPackIdNoVersion>;
+export const BlockPackIdNoVersion = v.omit(BlockPackId, ["version"]);
+export type BlockPackIdNoVersion = v.InferOutput<typeof BlockPackIdNoVersion>;
 
 export function blockPackIdToString(bp: BlockPackId): string;
 export function blockPackIdToString(bp: BlockPackId | undefined): string | undefined;

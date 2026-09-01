@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { describe, expect, test } from "vitest";
 import { BlockPackMetaDescriptionRaw } from "./block_meta";
 
@@ -9,7 +10,7 @@ const minimal = {
 
 describe("BlockPackMeta requiredCapabilities", () => {
   test("accepts and round-trips the field", () => {
-    const parsed = BlockPackMetaDescriptionRaw.parse({
+    const parsed = v.parse(BlockPackMetaDescriptionRaw, {
       ...minimal,
       requiredCapabilities: ["wasm:v1"],
     });
@@ -17,7 +18,7 @@ describe("BlockPackMeta requiredCapabilities", () => {
   });
 
   test("accepts arbitrary token strings (loose, not enum)", () => {
-    const parsed = BlockPackMetaDescriptionRaw.parse({
+    const parsed = v.parse(BlockPackMetaDescriptionRaw, {
       ...minimal,
       requiredCapabilities: ["wasm", "future-feature"],
     });
@@ -25,15 +26,15 @@ describe("BlockPackMeta requiredCapabilities", () => {
   });
 
   test("absent field stays optional (legacy manifests)", () => {
-    const parsed = BlockPackMetaDescriptionRaw.parse(minimal);
+    const parsed = v.parse(BlockPackMetaDescriptionRaw, minimal);
     expect(parsed.requiredCapabilities).toBeUndefined();
   });
 
   test("forward-compat: unknown sibling fields pass through (not stripped)", () => {
-    // Schema uses `.passthrough()` so older block-tools versions don't drop
+    // Schema uses `v.looseObject` so older block-tools versions don't drop
     // fields they don't know about during registry-mutating round-trips
     // (mark-stable, refresh-registry, restore-overview-from-snapshot).
-    const parsed = BlockPackMetaDescriptionRaw.parse({
+    const parsed = v.parse(BlockPackMetaDescriptionRaw, {
       ...minimal,
       requiredCapabilities: ["wasm:v1"],
       futureFieldNoOldDesktopKnowsAbout: { x: 1 },
