@@ -3,6 +3,7 @@ import { getConfig } from "../registry_v1/config";
 import { targetFileOption } from "../registry_v1/flags";
 import fs from "node:fs";
 import YAML from "yaml";
+import * as v from "valibot";
 import { PlRegPackageConfigDataShard } from "../registry_v1/config_schema";
 import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 
@@ -42,7 +43,7 @@ export function uploadPackageV1Command(): Command {
 
   cmd.action(async (flags) => {
     const logger = new ConsoleLoggerAdapter();
-    const configFromFlags: PlRegPackageConfigDataShard = PlRegPackageConfigDataShard.parse({});
+    const configFromFlags: PlRegPackageConfigDataShard = v.parse(PlRegPackageConfigDataShard, {});
 
     for (const field of BasicConfigFields) if (flags[field]) configFromFlags[field] = flags[field];
 

@@ -1,4 +1,5 @@
 import { Command, Option } from "commander";
+import * as v from "valibot";
 import fs from "node:fs";
 import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import { ManifestFileName } from "../v2/registry/schema_public";
@@ -76,7 +77,7 @@ export function publishCommand(): Command {
     const rawManifest = JSON.parse(
       await fs.promises.readFile(manifestPath, { encoding: "utf-8" }),
     ) as Record<string, unknown>;
-    let manifest = BlockPackManifest.parse(rawManifest);
+    let manifest = v.parse(BlockPackManifest, rawManifest);
     // To keep extra fields from the manifest and keep coerced fields
     manifest = simpleDeepMerge(
       rawManifest,

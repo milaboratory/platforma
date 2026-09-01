@@ -1,3 +1,3 @@
-import { z } from "zod";
+import * as v from "valibot";
 
-export const PlRegAddress = z.string().regex(/^(?:s3:|file:)/);
+export const PlRegAddress = v.pipe(v.string(), v.regex(/^(?:s3:|file:)/));

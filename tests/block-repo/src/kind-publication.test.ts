@@ -24,6 +24,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { regTest } from "./test_utils";
+import * as v from "valibot";
 
 /**
  * Publishing a kind, on the same axes block publishing is covered on.
@@ -65,7 +66,8 @@ regTest(
     const readPackFile = async (file: string) =>
       Buffer.from(await fsp.readFile(path.resolve(packDir, file)));
 
-    const manifestV1 = BlockPackManifest.parse(
+    const manifestV1 = v.parse(
+      BlockPackManifest,
       JSON.parse(await fsp.readFile(path.join(packDir, "manifest.json"), { encoding: "utf-8" })),
     );
     const blockV1 = manifestV1.description.id;
@@ -93,7 +95,8 @@ regTest(
     );
 
     // The stored manifest is the built one plus the registry's own upload stamp.
-    const storedManifest = KindManifest.parse(
+    const storedManifest = v.parse(
+      KindManifest,
       JSON.parse(
         (await storage.getFile(`${kindContentPrefix(kindName, kindV1)}/manifest.json`))!.toString(),
       ),
@@ -136,7 +139,7 @@ regTest(
     // What the projection reads is the stored manifest's `kind`, which is what this
     // patches.
     const bumped = overrideManifestVersion(manifestV1, bumpPatch(blockV1.version));
-    const manifestV2 = BlockPackManifest.parse({
+    const manifestV2 = v.parse(BlockPackManifest, {
       ...bumped,
       description: {
         ...bumped.description,
@@ -190,7 +193,7 @@ regTest(
     async function readProjection(): Promise<KindOverview> {
       const raw = await storage.getFile(kindOverviewPath(kindLoc));
       expect(raw, `kind overview missing at ${kindOverviewPath(kindLoc)}`).toBeDefined();
-      return KindOverview.parse(JSON.parse(raw!.toString()));
+      return v.parse(KindOverview, JSON.parse(raw!.toString()));
     }
 
     async function resolve(selector: string, options?: { allowUnstable: boolean }) {

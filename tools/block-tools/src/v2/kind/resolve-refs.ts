@@ -2,6 +2,7 @@ import fsp from "node:fs/promises";
 import fs from "node:fs";
 import path from "node:path";
 import { createRequire } from "node:module";
+import * as v from "valibot";
 import { formatKindRef, type BlockKindReference } from "@milaboratories/pl-model-common";
 import type { BlockPackManifest } from "@milaboratories/pl-model-middle-layer";
 import { KindManifest } from "../registry/schema_kinds";
@@ -114,7 +115,7 @@ export async function resolveFacadeKind(
         `Build the kind (ts-builder build --target block-kind && block-tools build-kind-manifest) before publishing.`,
     );
   }
-  const manifest = KindManifest.parse(JSON.parse(manifestRaw));
+  const manifest = v.parse(KindManifest, JSON.parse(manifestRaw));
 
   const ref = formatKindRef({ name: manifest.kind.name, version: manifest.kind.version });
   const fileReader: RelativeContentReader = async (relativePath) =>

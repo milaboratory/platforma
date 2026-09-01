@@ -6,7 +6,7 @@ import {
   Sha256Schema,
   VersionWithChannels,
 } from "@milaboratories/pl-model-middle-layer";
-import { z } from "zod";
+import * as v from "valibot";
 
 export const MainPrefix = "v2/";
 
@@ -29,22 +29,18 @@ export function packageContentPrefix(bp: BlockPackId): string {
 
 export const ManifestSuffix = "/" + ManifestFileName;
 
-export const PackageOverviewVersionEntry = z
-  .object({
-    description: BlockPackDescriptionManifest,
-    channels: z.array(z.string()).default(() => []),
-    manifestSha256: Sha256Schema,
-  })
-  .passthrough();
-export type PackageOverviewVersionEntry = z.infer<typeof PackageOverviewVersionEntry>;
+export const PackageOverviewVersionEntry = v.looseObject({
+  description: BlockPackDescriptionManifest,
+  channels: v.optional(v.array(v.string()), () => []),
+  manifestSha256: Sha256Schema,
+});
+export type PackageOverviewVersionEntry = v.InferOutput<typeof PackageOverviewVersionEntry>;
 
-export const PackageOverview = z
-  .object({
-    schema: z.literal("v2"),
-    versions: z.array(PackageOverviewVersionEntry),
-  })
-  .passthrough();
-export type PackageOverview = z.infer<typeof PackageOverview>;
+export const PackageOverview = v.looseObject({
+  schema: v.literal("v2"),
+  versions: v.array(PackageOverviewVersionEntry),
+});
+export type PackageOverview = v.InferOutput<typeof PackageOverview>;
 
 export function packageOverviewPathInsideV2(bp: BlockPackIdNoVersion): string {
   return `${bp.organization}/${bp.name}/${PackageOverviewFileName}`;
@@ -74,36 +70,33 @@ export const GlobalOverviewGzPath = `${MainPrefix}${GlobalOverviewGzFileName}`;
  * lack an `AnyChannel` slot in `latestByChannel`; `normalizeGlobalOverviewEntry`
  * fills both in from the deprecated `allVersions` / `latest` fields.
  */
-const GlobalOverviewEntryRawSchema = z
-  .object({
-    id: BlockPackIdNoVersion,
-    /** @deprecated kept for back-compat with older overview files */
-    allVersions: z.array(z.string()).optional(),
-    allVersionsWithChannels: z.array(VersionWithChannels).optional(),
-    /** @deprecated kept for back-compat with older overview files */
-    latest: BlockPackDescriptionManifest.optional(),
-    /** @deprecated kept for back-compat with older overview files */
-    latestManifestSha256: Sha256Schema.optional(),
-    latestByChannel: z
-      .record(
-        z.string(),
-        z
-          .object({
-            description: BlockPackDescriptionManifest,
-            manifestSha256: Sha256Schema,
-          })
-          .passthrough(),
-      )
-      .default({}),
-  })
-  .passthrough();
+const GlobalOverviewEntryRawSchema = v.looseObject({
+  id: BlockPackIdNoVersion,
+  /** @deprecated kept for back-compat with older overview files */
+  allVersions: v.optional(v.array(v.string())),
+  allVersionsWithChannels: v.optional(v.array(VersionWithChannels)),
+  /** @deprecated kept for back-compat with older overview files */
+  latest: v.optional(BlockPackDescriptionManifest),
+  /** @deprecated kept for back-compat with older overview files */
+  latestManifestSha256: v.optional(Sha256Schema),
+  latestByChannel: v.optional(
+    v.record(
+      v.string(),
+      v.looseObject({
+        description: BlockPackDescriptionManifest,
+        manifestSha256: Sha256Schema,
+      }),
+    ),
+    {},
+  ),
+});
 
-export type GlobalOverviewEntryReg = z.infer<typeof GlobalOverviewEntryRawSchema> & {
-  allVersionsWithChannels: z.infer<typeof VersionWithChannels>[];
+export type GlobalOverviewEntryReg = v.InferOutput<typeof GlobalOverviewEntryRawSchema> & {
+  allVersionsWithChannels: v.InferOutput<typeof VersionWithChannels>[];
 };
 
 /**
- * Fills in defaults for older `overview.json` shapes after Zod parsing:
+ * Fills in defaults for older `overview.json` shapes after schema parsing:
  *   - Derives `allVersionsWithChannels` from deprecated `allVersions` when missing.
  *   - Ensures `latestByChannel[AnyChannel]` is populated from the deprecated
  *     `latest` / `latestManifestSha256` fields.
@@ -115,7 +108,7 @@ export type GlobalOverviewEntryReg = z.infer<typeof GlobalOverviewEntryRawSchema
  * partially-migrated overview files.
  */
 function normalizeGlobalOverviewEntry(
-  parsed: z.infer<typeof GlobalOverviewEntryRawSchema>,
+  parsed: v.InferOutput<typeof GlobalOverviewEntryRawSchema>,
 ): GlobalOverviewEntryReg {
   const id = `${parsed.id.organization}/${parsed.id.name}`;
 
@@ -125,7 +118,7 @@ function normalizeGlobalOverviewEntry(
       throw new Error(
         `GlobalOverviewEntry ${id} is missing both 'allVersionsWithChannels' and the deprecated 'allVersions' fallback`,
       );
-    allVersionsWithChannels = parsed.allVersions.map((v) => ({ version: v, channels: [] }));
+    allVersionsWithChannels = parsed.allVersions.map((version) => ({ version, channels: [] }));
   }
 
   let latestByChannel = parsed.latestByChannel;
@@ -152,28 +145,27 @@ function normalizeGlobalOverviewEntry(
 
 /**
  * Parsed-and-normalized registry overview document. Forward-compat: the
- * underlying zod schema uses `.passthrough()` so future top-level fields
- * survive parse/round-trip; the TS type lists only known fields.
+ * underlying schema is a `v.looseObject`, so future top-level fields survive
+ * parse/round-trip; the TS type lists only known fields.
  */
 export type GlobalOverviewReg = {
   schema: "v2";
   packages: GlobalOverviewEntryReg[];
 };
 
-const GlobalOverviewRegRawSchema = z
-  .object({
-    schema: z.literal("v2"),
-    packages: z.array(GlobalOverviewEntryRawSchema),
-  })
-  .passthrough();
+const GlobalOverviewRegRawSchema = v.looseObject({
+  schema: v.literal("v2"),
+  packages: v.array(GlobalOverviewEntryRawSchema),
+});
 
 /**
  * Parses and normalizes a `GlobalOverviewReg` document read from registry
- * storage. Validation runs through zod; the back-compat normalization runs
- * after parse as a plain function (see `normalizeGlobalOverviewEntry`).
+ * storage. Validation runs through valibot and throws a `ValiError` on a
+ * malformed document; the back-compat normalization runs after parse as a
+ * plain function (see `normalizeGlobalOverviewEntry`).
  */
 export function parseGlobalOverviewReg(raw: unknown): GlobalOverviewReg {
-  const parsed = GlobalOverviewRegRawSchema.parse(raw);
+  const parsed = v.parse(GlobalOverviewRegRawSchema, raw);
   return {
     ...parsed,
     packages: parsed.packages.map(normalizeGlobalOverviewEntry),
