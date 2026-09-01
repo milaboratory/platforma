@@ -1,11 +1,11 @@
 import { test, expect } from "vitest";
-import type { z } from "zod/v4";
+import * as v from "valibot";
 import * as entrypoints from "./entrypoints";
 import * as testArtifacts from "./test-artifacts";
 
-const parseJSON = <T extends z.ZodTypeAny>(data: string, schema: T): z.infer<T> => {
+const parseJSON = <T extends v.GenericSchema>(data: string, schema: T): v.InferOutput<T> => {
   const parsedData: unknown = JSON.parse(data);
-  return schema.parse(parsedData);
+  return v.parse(schema, parsedData);
 };
 
 test.for([
