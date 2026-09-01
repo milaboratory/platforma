@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import * as v from "valibot";
 import { dockerSchema } from "../core/schemas/artifacts";
 
 describe("Docker Package Schema Validation", () => {
@@ -9,10 +10,10 @@ describe("Docker Package Schema Validation", () => {
       dockerfile: "Dockerfile",
     };
 
-    const result = dockerSchema.safeParse(invalidPackage);
+    const result = v.safeParse(dockerSchema, invalidPackage);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toContain('Context cannot be "./" or "."');
+      expect(result.issues[0].message).toContain('Context cannot be "./" or "."');
     }
   });
 
@@ -23,10 +24,10 @@ describe("Docker Package Schema Validation", () => {
       dockerfile: "Dockerfile",
     };
 
-    const result = dockerSchema.safeParse(invalidPackage);
+    const result = v.safeParse(dockerSchema, invalidPackage);
     expect(result.success).toBe(false);
     if (!result.success) {
-      expect(result.error.issues[0].message).toContain('Context cannot be "./" or "."');
+      expect(result.issues[0].message).toContain('Context cannot be "./" or "."');
     }
   });
 
@@ -50,7 +51,7 @@ describe("Docker Package Schema Validation", () => {
     ];
 
     for (const validPackage of validPackages) {
-      const result = dockerSchema.safeParse(validPackage);
+      const result = v.safeParse(dockerSchema, validPackage);
       expect(result.success).toBe(true);
     }
   });
@@ -61,7 +62,7 @@ describe("Docker Package Schema Validation", () => {
       context: "valid-context",
     };
 
-    const result = dockerSchema.safeParse(minimalPackage);
+    const result = v.safeParse(dockerSchema, minimalPackage);
     expect(result.success).toBe(true);
   });
 });
