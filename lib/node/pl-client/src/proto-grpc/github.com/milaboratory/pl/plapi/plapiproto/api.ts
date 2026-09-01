@@ -4248,9 +4248,9 @@ export interface AuthAPI_DeleteUser {
 export interface AuthAPI_DeleteUser_Request {
     /**
      * login of the user to delete. Resolved the way an admin-supplied grant target is:
-     * across the configured providers, then the legacy empty-idp bucket, then by a login
-     * attribute unique across records - so an account left behind by a provider that has
-     * since been removed is reachable too.
+     * a point lookup on the identity index, which carries no provider id - so an account
+     * left behind by a provider that has since been removed from the configuration is
+     * reachable too.
      *
      * @generated from protobuf field: string login = 1
      */
@@ -4279,11 +4279,12 @@ export interface AuthAPI_DeleteUser_Response {
      */
     revokedGrants: number;
     /**
-     * login-index entries removed.
+     * identity-index entries removed: the login, the email and any alternative of either
+     * that resolved to this account.
      *
-     * @generated from protobuf field: uint32 removed_login_index_entries = 4
+     * @generated from protobuf field: uint32 removed_identity_index_entries = 4
      */
-    removedLoginIndexEntries: number;
+    removedIdentityIndexEntries: number;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers
@@ -20113,7 +20114,7 @@ class AuthAPI_DeleteUser_Response$Type extends MessageType<AuthAPI_DeleteUser_Re
             { no: 1, name: "user_root_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 2, name: "user_root_deleted", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 3, name: "revoked_grants", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
-            { no: 4, name: "removed_login_index_entries", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+            { no: 4, name: "removed_identity_index_entries", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
         ]);
     }
     create(value?: PartialMessage<AuthAPI_DeleteUser_Response>): AuthAPI_DeleteUser_Response {
@@ -20121,7 +20122,7 @@ class AuthAPI_DeleteUser_Response$Type extends MessageType<AuthAPI_DeleteUser_Re
         message.userRootId = 0n;
         message.userRootDeleted = false;
         message.revokedGrants = 0;
-        message.removedLoginIndexEntries = 0;
+        message.removedIdentityIndexEntries = 0;
         if (value !== undefined)
             reflectionMergePartial<AuthAPI_DeleteUser_Response>(this, message, value);
         return message;
@@ -20140,8 +20141,8 @@ class AuthAPI_DeleteUser_Response$Type extends MessageType<AuthAPI_DeleteUser_Re
                 case /* uint32 revoked_grants */ 3:
                     message.revokedGrants = reader.uint32();
                     break;
-                case /* uint32 removed_login_index_entries */ 4:
-                    message.removedLoginIndexEntries = reader.uint32();
+                case /* uint32 removed_identity_index_entries */ 4:
+                    message.removedIdentityIndexEntries = reader.uint32();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -20164,9 +20165,9 @@ class AuthAPI_DeleteUser_Response$Type extends MessageType<AuthAPI_DeleteUser_Re
         /* uint32 revoked_grants = 3; */
         if (message.revokedGrants !== 0)
             writer.tag(3, WireType.Varint).uint32(message.revokedGrants);
-        /* uint32 removed_login_index_entries = 4; */
-        if (message.removedLoginIndexEntries !== 0)
-            writer.tag(4, WireType.Varint).uint32(message.removedLoginIndexEntries);
+        /* uint32 removed_identity_index_entries = 4; */
+        if (message.removedIdentityIndexEntries !== 0)
+            writer.tag(4, WireType.Varint).uint32(message.removedIdentityIndexEntries);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

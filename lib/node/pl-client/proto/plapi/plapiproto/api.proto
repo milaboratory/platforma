@@ -1992,9 +1992,9 @@ message AuthAPI {
   message DeleteUser {
     message Request {
       // login of the user to delete. Resolved the way an admin-supplied grant target is:
-      // across the configured providers, then the legacy empty-idp bucket, then by a login
-      // attribute unique across records - so an account left behind by a provider that has
-      // since been removed is reachable too.
+      // a point lookup on the identity index, which carries no provider id - so an account
+      // left behind by a provider that has since been removed from the configuration is
+      // reachable too.
       string login = 1;
     }
 
@@ -2005,8 +2005,9 @@ message AuthAPI {
       bool user_root_deleted = 2;
       // grants revoked, the user-root self-grant included.
       uint32 revoked_grants = 3;
-      // login-index entries removed.
-      uint32 removed_login_index_entries = 4;
+      // identity-index entries removed: the login, the email and any alternative of either
+      // that resolved to this account.
+      uint32 removed_identity_index_entries = 4;
     }
   }
 

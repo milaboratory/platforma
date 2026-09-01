@@ -45,8 +45,9 @@ export interface UserDeletionReport {
   readonly userRootDeleted: boolean;
   /** Grants revoked, the user-root self-grant included. */
   readonly revokedGrants: number;
-  /** Login-index entries removed — one per (provider, match key) the login was indexed under. */
-  readonly removedLoginIndexEntries: number;
+  /** Identity-index entries removed — one per value that resolved to the account: its login,
+   *  its email, and any alternative of either. */
+  readonly removedIdentityIndexEntries: number;
 }
 
 /** Information about a single data library (LS storage). */
@@ -271,11 +272,14 @@ export class UserResources {
   }
 
   /**
-   * Deletes a user account: the record, every login-index entry that resolves to it, every grant
-   * it holds, and its root resource — and with the root, everything still attached under it.
+   * Deletes a user account: the record, every identity-index entry that resolves to it (its login,
+   * its email, and any alternative of either), every grant it holds, and its root resource — and
+   * with the root, everything still attached under it.
    *
-   * Exists for the duplicate a misconfigured provider can mint for one person: the spare record
-   * shows up wherever users are listed and its projects keep taking part in deduplication.
+   * Exists for the duplicate account one person can end up with — an identity that could not be
+   * matched across a provider cutover, or one minted before the backend started refusing two
+   * records for one identity. The spare record shows up wherever users are listed and its projects
+   * keep taking part in deduplication.
    *
    * Destructive and irreversible. Re-attach anything worth keeping to another user's root before
    * calling — `pl-cli admin delete-user` does both steps in order. Requires admin/controller
@@ -288,7 +292,7 @@ export class UserResources {
       userRootId: resp.userRootId === 0n ? undefined : resp.userRootId,
       userRootDeleted: resp.userRootDeleted,
       revokedGrants: resp.revokedGrants,
-      removedLoginIndexEntries: resp.removedLoginIndexEntries,
+      removedIdentityIndexEntries: resp.removedIdentityIndexEntries,
     };
   }
 

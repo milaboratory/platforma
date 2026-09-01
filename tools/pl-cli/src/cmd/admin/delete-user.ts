@@ -99,7 +99,7 @@ export default function adminDeleteUserCommand(): Command {
           userRootId: report.userRootId === undefined ? null : report.userRootId.toString(),
           userRootDeleted: report.userRootDeleted,
           revokedGrants: report.revokedGrants,
-          removedLoginIndexEntries: report.removedLoginIndexEntries,
+          removedIdentityIndexEntries: report.removedIdentityIndexEntries,
         });
       } else {
         outputText(renderResult(user, flags.moveProjectsTo, moved, projects));
