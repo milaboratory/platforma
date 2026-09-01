@@ -1,55 +1,55 @@
-import { z } from "zod";
+import * as v from "valibot";
 
-const MonetizationTrial = z.literal("trial");
-const MonetizationFree = z.literal("free");
-const MonetizationSinglePayment = z.literal("single_payment");
-const MonetizationSubscription = z.literal("subscription");
+const MonetizationTrial = v.literal("trial");
+const MonetizationFree = v.literal("free");
+const MonetizationSinglePayment = v.literal("single_payment");
+const MonetizationSubscription = v.literal("subscription");
 
-const MonetizationType = z.union([
+const MonetizationType = v.union([
   MonetizationTrial,
   MonetizationFree,
   MonetizationSinglePayment,
   MonetizationSubscription,
-  z.literal("base"), // outdated
+  v.literal("base"), // outdated
 ]);
 
-export const Limit = z.object({
-  type: z.union([z.literal("unique_launches"), z.literal("volume_limit")]),
-  used: z.number(),
-  toSpend: z.number(),
-  available: z.number().nullable(), // null if unlimited
+export const Limit = v.object({
+  type: v.union([v.literal("unique_launches"), v.literal("volume_limit")]),
+  used: v.number(),
+  toSpend: v.number(),
+  available: v.nullable(v.number()), // null if unlimited
 });
 
-const DryRunResult = z.object(
+const DryRunResult = v.object(
   {
-    productKey: z.string(),
-    productName: z.string().default("Unknown product"),
-    customerEmail: z.string().optional(),
-    canRun: z.boolean(),
-    status: z.string(), // 'select-tariff', 'active', 'payment_required', 'limits_exceeded', 'inactive', 'unknown',
-    mnz: z.object({
-      type: MonetizationType.optional(),
-      endOfBillingPeriod: z.string().nullable().optional(),
-      limits: z.array(Limit).optional(),
+    productKey: v.string(),
+    productName: v.optional(v.string(), "Unknown product"),
+    customerEmail: v.optional(v.string()),
+    canRun: v.boolean(),
+    status: v.string(), // 'select-tariff', 'active', 'payment_required', 'limits_exceeded', 'inactive', 'unknown',
+    mnz: v.object({
+      type: v.optional(MonetizationType),
+      endOfBillingPeriod: v.optional(v.nullable(v.string())),
+      limits: v.optional(v.array(Limit)),
     }),
   },
-  { message: "Invalid DryRunResult" },
+  "Invalid DryRunResult",
 );
 
-type DryRunResult = z.infer<typeof DryRunResult>;
+type DryRunResult = v.InferOutput<typeof DryRunResult>;
 
-const Response = z
-  .object({
-    httpError: z.string().optional(),
-    response: z
-      .object({
-        result: DryRunResult.optional(),
-        error: z.unknown().optional(),
-      })
-      .optional(),
-  })
-  .optional();
+const Response = v.optional(
+  v.object({
+    httpError: v.optional(v.string()),
+    response: v.optional(
+      v.object({
+        result: v.optional(DryRunResult),
+        error: v.optional(v.unknown()),
+      }),
+    ),
+  }),
+);
 
-type Response = z.infer<typeof Response>;
+type Response = v.InferOutput<typeof Response>;
 
 export { MonetizationType, DryRunResult, Response };

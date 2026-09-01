@@ -28,6 +28,7 @@
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/uikit": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
+    "@standard-schema/spec": "catalog:",
     "@types/d3-format": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
@@ -41,8 +42,8 @@
     "fast-json-patch": "catalog:",
     "immer": "catalog:",
     "lru-cache": "catalog:",
-    "vue": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:",
+    "vue": "catalog:"
   },
   "devDependencies": {
     "@faker-js/faker": "catalog:",
