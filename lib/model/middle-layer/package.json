@@ -31,7 +31,7 @@
     "@milaboratories/pl-model-common": "workspace:*",
     "es-toolkit": "catalog:",
     "utility-types": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

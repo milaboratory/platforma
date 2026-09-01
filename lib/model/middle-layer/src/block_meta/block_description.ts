@@ -1,5 +1,4 @@
-import type { ZodTypeAny } from "zod";
-import { z } from "zod";
+import * as v from "valibot";
 import { BlockComponentsDescriptionRaw } from "./block_components";
 import { BlockPackMetaDescriptionRaw } from "./block_meta";
 import { BlockPackId } from "./block_id";
@@ -30,38 +29,40 @@ export type BlockPackDescription<Components, Meta> = {
  * strings become `ContentRelative`; bare text strings become
  * `ContentExplicitString`. See `DescriptionContentText`/`DescriptionContentBinary`.
  */
-export const BlockPackDescriptionFromPackageJsonRaw = z.object({
+export const BlockPackDescriptionFromPackageJsonRaw = v.object({
   components: BlockComponentsDescriptionRaw,
   meta: BlockPackMetaDescriptionRaw,
 });
 
-export const FeatureFlags = z
-  .record(z.string(), z.union([z.boolean(), z.number()]))
-  .transform((flags) => flags as BlockCodeKnownFeatureFlags);
+export const FeatureFlags = v.pipe(
+  v.record(v.string(), v.union([v.boolean(), v.number()])),
+  v.transform((flags) => flags as BlockCodeKnownFeatureFlags),
+);
 
 /** Block-kind reference schema — a plain `{name}@{version}` string at rest. */
-export const BlockKindRef = z.string().transform((s) => s as BlockKindReference);
+export const BlockKindRef = v.pipe(
+  v.string(),
+  v.transform((s) => s as BlockKindReference),
+);
 
 export function CreateBlockPackDescriptionSchema<
-  Components extends ZodTypeAny,
-  Meta extends ZodTypeAny,
+  const Components extends v.GenericSchema,
+  const Meta extends v.GenericSchema,
 >(components: Components, meta: Meta) {
-  return z
-    .object({
-      id: BlockPackId,
-      components,
-      meta,
-      featureFlags: FeatureFlags.optional(),
-      kind: BlockKindRef.optional(),
-    })
-    .passthrough();
+  return v.looseObject({
+    id: BlockPackId,
+    components,
+    meta,
+    featureFlags: v.optional(FeatureFlags),
+    kind: v.optional(BlockKindRef),
+  });
 }
 
 export const BlockPackDescriptionRaw = CreateBlockPackDescriptionSchema(
   BlockComponentsDescriptionRaw,
   BlockPackMetaDescriptionRaw,
 );
-export type BlockPackDescriptionRaw = z.infer<typeof BlockPackDescriptionRaw>;
+export type BlockPackDescriptionRaw = v.InferOutput<typeof BlockPackDescriptionRaw>;
 
 export function overrideDescriptionVersion<T extends { id: BlockPackId }>(
   manifest: T,
