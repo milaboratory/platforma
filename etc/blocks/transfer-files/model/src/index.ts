@@ -6,17 +6,18 @@ import type {
 } from "@platforma-sdk/model";
 import { BlockModelV3, DataModelBuilder } from "@platforma-sdk/model";
 import { kind } from "@milaboratories/milaboratories.transfer-files.kind";
-import { z } from "zod";
+import * as v from "valibot";
 
-export const ImportFileHandleSchema = z
-  .string()
-  .refine<ImportFileHandle>(((_a) => true) as (arg: string) => arg is ImportFileHandle);
+export const ImportFileHandleSchema = v.pipe(
+  v.string(),
+  v.transform((value): ImportFileHandle => value as ImportFileHandle),
+);
 
-export const BlockData = z.object({
-  inputHandles: z.array(ImportFileHandleSchema),
+export const BlockData = v.object({
+  inputHandles: v.array(ImportFileHandleSchema),
 });
 
-export type BlockData = z.infer<typeof BlockData>;
+export type BlockData = v.InferOutput<typeof BlockData>;
 
 /** What the workflow consumes — projected from {@link BlockData} by the args lambda. */
 export type BlockArgs = {

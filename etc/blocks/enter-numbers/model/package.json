@@ -27,7 +27,7 @@
   "dependencies": {
     "@milaboratories/milaboratories.test-enter-numbers.kind": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
