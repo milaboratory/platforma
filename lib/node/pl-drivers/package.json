@@ -45,8 +45,7 @@
     "openapi-fetch": "catalog:",
     "tar-fs": "catalog:",
     "undici": "catalog:",
-    "valibot": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

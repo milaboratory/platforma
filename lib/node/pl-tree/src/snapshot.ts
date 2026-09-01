@@ -1,6 +1,6 @@
 import type { SignedResourceId, ResourceType } from "@milaboratories/pl-client";
 import type { Optional, Writable } from "utility-types";
-import type { ZodType, z } from "zod";
+import * as v from "valibot";
 import type { PlTreeNodeAccessor } from "./accessors";
 import { PlTreeEntry, PlTreeEntryAccessor } from "./accessors";
 import type { ComputableCtx } from "@milaboratories/computable";
@@ -32,9 +32,9 @@ type ResourceSnapshotGeneric = ResourceSnapshot<
 
 /** Request that we'll pass to getResourceSnapshot function. We infer the type of ResourceSnapshot from this. */
 export type ResourceSnapshotSchema<
-  Data extends ZodType | "raw" | undefined = undefined,
+  Data extends v.GenericSchema | "raw" | undefined = undefined,
   Fields extends Record<string, boolean> | undefined = undefined,
-  KV extends Record<string, ZodType | "raw"> | undefined = undefined,
+  KV extends Record<string, v.GenericSchema | "raw"> | undefined = undefined,
 > = {
   readonly data: Data;
   readonly fields: Fields;
@@ -43,9 +43,9 @@ export type ResourceSnapshotSchema<
 
 /** Creates ResourceSnapshotSchema. It converts an optional schema type to schema type. */
 export function rsSchema<
-  const Data extends ZodType | "raw" | undefined = undefined,
+  const Data extends v.GenericSchema | "raw" | undefined = undefined,
   const Fields extends Record<string, boolean> | undefined = undefined,
-  const KV extends Record<string, ZodType | "raw"> | undefined = undefined,
+  const KV extends Record<string, v.GenericSchema | "raw"> | undefined = undefined,
 >(
   schema: Optional<ResourceSnapshotSchema<Data, Fields, KV>>,
 ): ResourceSnapshotSchema<Data, Fields, KV> {
@@ -54,20 +54,20 @@ export function rsSchema<
 
 /** The most generic type of ResourceSnapshotSchema. */
 type ResourceSnapshotSchemaGeneric = ResourceSnapshotSchema<
-  ZodType | "raw" | undefined,
+  v.GenericSchema | "raw" | undefined,
   Record<string, boolean> | undefined,
-  Record<string, ZodType | "raw"> | undefined
+  Record<string, v.GenericSchema | "raw"> | undefined
 >;
 
 /**
  * If Data is 'raw' in schema, we'll get bytes,
- * if it's Zod, we'll parse it via zod.
+ * if it's a schema, we'll parse it via valibot.
  * Or else we just got undefined in the field.
  */
-type InferDataType<Data extends ZodType | "raw" | undefined> = Data extends "raw"
+type InferDataType<Data extends v.GenericSchema | "raw" | undefined> = Data extends "raw"
   ? Uint8Array
-  : Data extends ZodType
-    ? z.infer<Data>
+  : Data extends v.GenericSchema
+    ? v.InferOutput<Data>
     : undefined;
 
 /**
@@ -86,14 +86,17 @@ type InferFieldsType<Fields extends Record<string, boolean> | undefined> = Field
 
 /**
  * If KV is undefined, won't set it.
- * If one of values is Zod, we'll get KV and converts it to Zod schema.
+ * If one of values is a schema, we'll get KV and parse it with that schema.
  * If the value is 'raw', just returns bytes.
  */
-type InferKVType<KV extends Record<string, ZodType | "raw"> | undefined> = KV extends undefined
-  ? undefined
-  : {
-      [FieldName in keyof KV]: KV[FieldName] extends ZodType ? z.infer<KV[FieldName]> : Uint8Array;
-    };
+type InferKVType<KV extends Record<string, v.GenericSchema | "raw"> | undefined> =
+  KV extends undefined
+    ? undefined
+    : {
+        [FieldName in keyof KV]: KV[FieldName] extends v.GenericSchema
+          ? v.InferOutput<KV[FieldName]>
+          : Uint8Array;
+      };
 
 /** Infer ResourceSnapshot from ResourceShapshotSchema, S can be any ResourceSnapshotSchema. */
 export type InferSnapshot<S extends ResourceSnapshotSchemaGeneric> = ResourceSnapshot<
@@ -128,7 +131,7 @@ export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneri
 
   if (schema.data !== undefined) {
     if (schema.data === "raw") result.data = node.getData();
-    else result.data = schema.data.parse(node.getDataAsJson());
+    else result.data = v.parse(schema.data, node.getDataAsJson());
   }
 
   if (schema.fields !== undefined) {
@@ -154,7 +157,7 @@ export function makeResourceSnapshot<Schema extends ResourceSnapshotSchemaGeneri
       } else if (type === "raw") {
         kv[fieldName] = value;
       } else {
-        kv[fieldName] = type.parse(JSON.parse(Buffer.from(value).toString("utf-8")));
+        kv[fieldName] = v.parse(type, JSON.parse(Buffer.from(value).toString("utf-8")));
       }
     }
     result.kv = kv;

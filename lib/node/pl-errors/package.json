@@ -31,7 +31,7 @@
   "dependencies": {
     "@milaboratories/pl-client": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

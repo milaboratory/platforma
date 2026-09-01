@@ -5,23 +5,27 @@ import type winston from "winston";
 import { Writable } from "node:stream";
 import os from "node:os";
 import readlineSync from "readline-sync";
-import { z } from "zod";
+import * as v from "valibot";
 import decompress from "decompress";
 
 const blockPlatformsToChoose = ["Python"];
 const allPlatforms = ["Tengo", "Python"] as const;
-const CreateBlockPlatforms = z.union([z.literal("Tengo"), z.literal("Python")]);
-export type CreateBlockPlatform = z.infer<typeof CreateBlockPlatforms>;
+const CreateBlockPlatforms = v.union([v.literal("Tengo"), v.literal("Python")]);
+export type CreateBlockPlatform = v.InferOutput<typeof CreateBlockPlatforms>;
 
-const CreateBlockOptions = z.object({
-  npmOrgName: z.string().min(1),
-  orgName: z.string().min(1, { message: `Organization name must be provided` }),
-  blockName: z.string().min(1, { message: `Block name must be provided` }),
-  softwarePlatforms: z.array(CreateBlockPlatforms).refine((p) => new Set(p).size === p.length, {
-    message: "Must be an array of unique software platforms",
-  }),
+const CreateBlockOptions = v.object({
+  npmOrgName: v.pipe(v.string(), v.minLength(1)),
+  orgName: v.pipe(v.string(), v.minLength(1, `Organization name must be provided`)),
+  blockName: v.pipe(v.string(), v.minLength(1, `Block name must be provided`)),
+  softwarePlatforms: v.pipe(
+    v.array(CreateBlockPlatforms),
+    v.check(
+      (platforms) => new Set(platforms).size === platforms.length,
+      "Must be an array of unique software platforms",
+    ),
+  ),
 });
-export type CreateBlockOptions = z.infer<typeof CreateBlockOptions>;
+export type CreateBlockOptions = v.InferOutput<typeof CreateBlockOptions>;
 
 /** Creates a block by cloning block-boilerplate repository. */
 export async function createBlock(logger: winston.Logger) {
@@ -89,17 +93,17 @@ function askForOptions(): CreateBlockOptions {
   }
   softwarePlatforms = Array.from(new Set(softwarePlatforms)).sort();
 
-  const result = CreateBlockOptions.safeParse({
+  const result = v.safeParse(CreateBlockOptions, {
     npmOrgName,
     orgName,
     blockName,
     softwarePlatforms,
   });
-  if (!result.success && result.error.issues.length) {
-    throw new Error(result.error.issues.map((i) => i.message).join("; "));
+  if (!result.success) {
+    throw new Error(result.issues.map((issue) => issue.message).join("; "));
   }
 
-  return result.data!;
+  return result.output;
 }
 
 async function downloadAndUnzip(url: string, pathInArchive: string, outputPath: string) {
