@@ -1,29 +1,35 @@
-import { z } from "zod";
+import * as v from "valibot";
 import type { AxisQualification } from "./drivers/pframe/spec/selectors";
 import type { PObjectId } from "./pool/spec";
 
-export const PlRef = z
-  .object({
-    __isRef: z
-      .literal(true)
-      .describe("Crucial marker for the block dependency tree reconstruction"),
-    blockId: z.string().describe("Upstream block id"),
-    name: z.string().describe("Name of the output provided to the upstream block's output context"),
-    requireEnrichments: z
-      .literal(true)
-      .optional()
-      .describe(
-        "True if current block that stores this reference in its args, may need enrichments " +
-          "for the references value originating from the blocks in between current and referenced block",
+export const PlRef = v.pipe(
+  v.object({
+    __isRef: v.pipe(
+      v.literal(true),
+      v.description("Crucial marker for the block dependency tree reconstruction"),
+    ),
+    blockId: v.pipe(v.string(), v.description("Upstream block id")),
+    name: v.pipe(
+      v.string(),
+      v.description("Name of the output provided to the upstream block's output context"),
+    ),
+    requireEnrichments: v.optional(
+      v.pipe(
+        v.literal(true),
+        v.description(
+          "True if current block that stores this reference in its args, may need enrichments " +
+            "for the references value originating from the blocks in between current and referenced block",
+        ),
       ),
-  })
-  .describe(
+    ),
+  }),
+  v.description(
     "Universal reference type, allowing to set block connections. It is crucial that " +
       "{@link __isRef} is present and equal to true, internal logic relies on this marker " +
       "to build block dependency trees.",
-  )
-  .readonly();
-export type PlRef = z.infer<typeof PlRef>;
+  ),
+);
+export type PlRef = Readonly<v.InferOutput<typeof PlRef>>;
 /** @deprecated use {@link PlRef} */
 export type Ref = PlRef;
 

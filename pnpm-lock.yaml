@@ -297,6 +297,9 @@ catalogs:
     utility-types:
       specifier: ^3.11.0
       version: 3.11.0
+    valibot:
+      specifier: ^1.4.2
+      version: 1.4.2
     vite:
       specifier: ^8.0.6
       version: 8.0.6
@@ -1679,9 +1682,9 @@ importers:
       typescript:
         specifier: '*'
         version: 5.9.3
-      zod:
+      valibot:
         specifier: 'catalog:'
-        version: 3.25.76
+        version: 1.4.2(typescript@5.9.3)
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2392,9 +2395,9 @@ importers:
       canonicalize:
         specifier: 'catalog:'
         version: 2.1.0
-      zod:
+      valibot:
         specifier: 'catalog:'
-        version: 3.25.76
+        version: 1.4.2(typescript@7.0.2)
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2460,9 +2463,9 @@ importers:
       es-toolkit:
         specifier: 'catalog:'
         version: 1.39.10
-      zod:
+      valibot:
         specifier: 'catalog:'
-        version: 3.25.76
+        version: 1.4.2(typescript@7.0.2)
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -2599,9 +2602,9 @@ importers:
       json-stringify-safe:
         specifier: 'catalog:'
         version: 5.0.1
-      zod:
+      valibot:
         specifier: 'catalog:'
-        version: 3.25.76
+        version: 1.4.2(typescript@7.0.2)
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -3023,6 +3026,9 @@ importers:
       undici:
         specifier: 'catalog:'
         version: 7.16.0
+      valibot:
+        specifier: 'catalog:'
+        version: 1.4.2(typescript@7.0.2)
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -3298,12 +3304,12 @@ importers:
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
+      valibot:
+        specifier: 'catalog:'
+        version: 1.4.2(typescript@7.0.2)
       yaml:
         specifier: 'catalog:'
         version: 2.8.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -3728,9 +3734,6 @@ importers:
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -9995,6 +9998,14 @@ packages:
     deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
+  valibot@1.4.2:
+    resolution: {integrity: sha512-gjdCvJ6d3RyHAneqxMYMW9QMCwYMb3jpOO0IyHZV1bnRHFBHrX3VkIILt5XYR0WhwHiH7Mty8ovuPZ/O3gamrg==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
@@ -15975,6 +15986,14 @@ snapshots:
   utility-types@3.11.0: {}
 
   uuid@9.0.1: {}
+
+  valibot@1.4.2(typescript@5.9.3):
+    optionalDependencies:
+      typescript: 5.9.3
+
+  valibot@1.4.2(typescript@7.0.2):
+    optionalDependencies:
+      typescript: 7.0.2
 
   vary@1.1.2: {}
 
