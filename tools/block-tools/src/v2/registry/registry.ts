@@ -3,6 +3,7 @@ import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import { compare as compareSemver } from "semver";
 import { gzip, gunzip } from "node:zlib";
 import { promisify } from "node:util";
+import * as v from "valibot";
 import type { RegistryStorage } from "../../io/storage";
 import type { BlockPackId, BlockPackIdNoVersion } from "@milaboratories/pl-model-middle-layer";
 import {
@@ -267,7 +268,7 @@ export class BlockRegistryV2 {
       // Create pre-write snapshot in force mode if package overview exists
       if (mode === "force" && pOverviewContent !== undefined) {
         const preWriteTimestamp = this.generatePreWriteTimestamp();
-        const existingOverview = PackageOverview.parse(JSON.parse(pOverviewContent.toString()));
+        const existingOverview = v.parse(PackageOverview, JSON.parse(pOverviewContent.toString()));
         await this.createPackageOverviewSnapshot(
           packageInfo.package,
           existingOverview,
@@ -280,7 +281,7 @@ export class BlockRegistryV2 {
           ? { schema: "v2", versions: [] }
           : pOverviewContent === undefined
             ? { schema: "v2", versions: [] }
-            : PackageOverview.parse(JSON.parse(pOverviewContent.toString()));
+            : v.parse(PackageOverview, JSON.parse(pOverviewContent.toString()));
       this.logger.info(
         `Updating ${packageInfo.package.organization}:${packageInfo.package.name} overview${mode === "force" ? " (starting empty in force mode)" : ""}, ${packageOverview.versions.length} records`,
       );
@@ -300,8 +301,8 @@ export class BlockRegistryV2 {
       }
 
       // reading new entries
-      for (const [v] of packageInfo.versions.entries()) {
-        const version = v.toString();
+      for (const [rawVersion] of packageInfo.versions.entries()) {
+        const version = rawVersion.toString();
         const id: BlockPackId = {
           ...packageInfo.package,
           version,
@@ -320,7 +321,8 @@ export class BlockRegistryV2 {
           }
         });
         // pushing the overview
-        const description = BlockPackManifest.parse(
+        const description = v.parse(
+          BlockPackManifest,
           JSON.parse(manifestContent.toString("utf8")),
         ).description;
         newVersions.push({
@@ -363,7 +365,8 @@ export class BlockRegistryV2 {
 
       // calculating all channels
       const allChannels = new Set<string>();
-      for (const v of newVersions) for (const c of v.channels) allChannels.add(c);
+      for (const entry of newVersions)
+        for (const channel of entry.channels) allChannels.add(channel);
 
       // patching corresponding entry in overview
       overviewPackages = overviewPackages.filter(
@@ -387,15 +390,17 @@ export class BlockRegistryV2 {
         // left for backward compatibility
         latestManifestSha256: newVersions[0].manifestSha256,
         latestByChannel: Object.fromEntries(
-          [...allChannels, AnyChannel].map((c) => {
-            // if c === 'any' the first element will be "found"
-            const v = newVersions.find((v) => c === AnyChannel || v.channels.indexOf(c) !== -1);
-            if (!v) throw new Error("Assertion error");
+          [...allChannels, AnyChannel].map((channel) => {
+            // if channel === 'any' the first element will be "found"
+            const entry = newVersions.find(
+              (candidate) => channel === AnyChannel || candidate.channels.indexOf(channel) !== -1,
+            );
+            if (!entry) throw new Error("Assertion error");
             return [
-              c,
+              channel,
               {
-                description: addRelativePathPrefix(v.description, packagePrefix),
-                manifestSha256: v?.manifestSha256,
+                description: addRelativePathPrefix(entry.description, packagePrefix),
+                manifestSha256: entry.manifestSha256,
               },
             ];
           }),
@@ -518,7 +523,7 @@ export class BlockRegistryV2 {
   ): Promise<undefined | PackageOverview> {
     const content = await this.storage.getFile(packageOverviewPath(name));
     if (content === undefined) return undefined;
-    return PackageOverview.parse(JSON.parse(content.toString()));
+    return v.parse(PackageOverview, JSON.parse(content.toString()));
   }
 
   public async getGlobalOverview(): Promise<undefined | GlobalOverviewReg> {
@@ -531,7 +536,7 @@ export class BlockRegistryV2 {
   private async getKindOverviewAt(path: string): Promise<KindOverview | undefined> {
     const content = await this.storage.getFile(path);
     if (content === undefined) return undefined;
-    return KindOverview.parse(JSON.parse(content.toString()));
+    return v.parse(KindOverview, JSON.parse(content.toString()));
   }
 
   private async marchChanged(id: BlockPackId) {
@@ -681,7 +686,7 @@ export class BlockRegistryV2 {
     // NET-NEW source-hash immutability guard (absent / equal / differ).
     const existing = await this.storage.getFile(`${prefix}/${KindManifestFileName}`);
     if (existing !== undefined) {
-      const prev = KindManifest.parse(JSON.parse(existing.toString()));
+      const prev = v.parse(KindManifest, JSON.parse(existing.toString()));
       if (prev.sourceHash === kindManifest.sourceHash) {
         this.logger.info(
           `Kind ${npmName}@${version} already published with identical source — no-op`,
@@ -713,7 +718,7 @@ export class BlockRegistryV2 {
     }
 
     // manifest LAST = commit marker; stamp firstUploadTimestamp when absent.
-    const toStore = KindManifest.parse({
+    const toStore = v.parse(KindManifest, {
       ...kindManifest,
       firstUploadTimestamp: kindManifest.firstUploadTimestamp ?? Date.now(),
     } satisfies KindManifest);

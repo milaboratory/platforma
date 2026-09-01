@@ -5,6 +5,7 @@ import { embedBlockPackMetaAbsoluteBytes, RegistryV1 } from "@platforma-sdk/bloc
 import fs from "node:fs";
 import path from "node:path";
 import YAML from "yaml";
+import * as v from "valibot";
 import { assertNever } from "@milaboratories/ts-helpers";
 import { LegacyDevBlockPackFiles } from "../dev_env";
 import { tryLoadPackDescription } from "@platforma-sdk/block-tools";
@@ -178,7 +179,7 @@ export class BlockPackRegistry {
             path.join(devPath, RegistryV1.PlPackageYamlConfigFile),
           );
           if (legacyYamlContent !== undefined) {
-            const config = RegistryV1.PlPackageConfigData.parse(YAML.parse(legacyYamlContent));
+            const config = v.parse(RegistryV1.PlPackageConfigData, YAML.parse(legacyYamlContent));
 
             const mtime = await getDevV1PacketMtime(devPath);
 
