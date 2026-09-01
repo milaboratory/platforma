@@ -1,11 +1,11 @@
 import { test, expect } from "vitest";
-import type { z } from "zod/v4";
+import * as v from "valibot";
 import * as artifacts from "./artifacts";
 import * as testArtifacts from "./test-artifacts";
 
-const parseArtifact = <T extends z.ZodTypeAny>(data: string, schema: T): z.infer<T> => {
+const parseArtifact = <T extends v.GenericSchema>(data: string, schema: T): v.InferOutput<T> => {
   const parsedData: unknown = JSON.parse(data);
-  return schema.parse(parsedData);
+  return v.parse(schema, parsedData);
 };
 
 // ['conda', artifacts.condaPackageSchema, testArtifacts.CondaArtifact],

@@ -45,8 +45,7 @@
     "es-toolkit": "catalog:",
     "fast-json-patch": "catalog:",
     "lru-cache": "catalog:",
-    "utility-types": "catalog:",
-    "zod": "catalog:"
+    "utility-types": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

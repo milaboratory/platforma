@@ -213,7 +213,9 @@ catalog:
 
   # Net / MCP
 
-  "@modelcontextprotocol/sdk": ^1.27.1
+  "@modelcontextprotocol/server": ^2.0.0
+  "@modelcontextprotocol/client": ^2.0.0
+  "@modelcontextprotocol/node": ^2.0.0
   "undici": ~7.16.0
   "@grpc/grpc-js": ~1.14.4
   "@protobuf-ts/grpc-transport": *protobuf-ts
@@ -250,7 +252,9 @@ catalog:
 
   "es-toolkit": ^1.39.10
 
-  "zod": ~3.25.76
+  "valibot": ^1.4.2
+  "@valibot/to-json-schema": ^1.7.1
+  "@standard-schema/spec": ^1.1.0
 
   "archiver": ^7.0.1
 

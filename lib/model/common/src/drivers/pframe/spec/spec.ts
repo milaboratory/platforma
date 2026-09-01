@@ -1,7 +1,7 @@
 import { ensureError } from "../../../errors";
 import { canonicalizeJson, type CanonicalizedJson, type StringifiedJson } from "../../../json";
 import type { PObject, PObjectId, PObjectSpec } from "../../../pool";
-import { z } from "zod";
+import * as v from "valibot";
 
 export const ValueType = {
   Int: "Int",
@@ -29,7 +29,7 @@ export function readMetadata<U extends Metadata, T extends keyof U = keyof U>(
 
 type MetadataJsonImpl<M> = {
   [P in keyof M as M[P] extends StringifiedJson ? P : never]: M[P] extends StringifiedJson<infer U>
-    ? z.ZodType<U>
+    ? v.GenericSchema<U>
     : never;
 };
 export type MetadataJson<M> = MetadataJsonImpl<Required<M>>;
@@ -39,14 +39,14 @@ export function readMetadataJsonOrThrow<M extends Metadata, T extends keyof Meta
   metadataJson: MetadataJson<M>,
   key: T,
   methodNameInError: string = "readMetadataJsonOrThrow",
-): z.infer<MetadataJson<M>[T]> | undefined {
+): v.InferOutput<MetadataJson<M>[T]> | undefined {
   const json = readMetadata<M, T>(metadata, key);
   if (json === undefined) return undefined;
 
   const schema = metadataJson[key];
   try {
     const value = JSON.parse(json);
-    return schema.parse(value);
+    return v.parse(schema, value);
   } catch (error: unknown) {
     throw new Error(
       `${methodNameInError} failed, ` +
@@ -61,7 +61,7 @@ export function readMetadataJson<M extends Metadata, T extends keyof MetadataJso
   metadata: Metadata | undefined,
   metadataJson: MetadataJson<M>,
   key: T,
-): z.infer<MetadataJson<M>[T]> | undefined {
+): v.InferOutput<MetadataJson<M>[T]> | undefined {
   try {
     return readMetadataJsonOrThrow(metadata, metadataJson, key);
   } catch {
@@ -105,7 +105,7 @@ export function readDomain<T extends keyof Domain>(
 export function readDomainJsonOrThrow<T extends keyof DomainJson>(
   spec: { domain?: Metadata | undefined } | undefined,
   key: T,
-): z.infer<DomainJson[T]> | undefined {
+): v.InferOutput<DomainJson[T]> | undefined {
   return readMetadataJsonOrThrow<Domain, T>(spec?.domain, DomainJson, key, "readDomainJsonOrThrow");
 }
 
@@ -113,7 +113,7 @@ export function readDomainJsonOrThrow<T extends keyof DomainJson>(
 export function readDomainJson<T extends keyof DomainJson>(
   spec: { domain?: Metadata | undefined } | undefined,
   key: T,
-): z.infer<DomainJson[T]> | undefined {
+): v.InferOutput<DomainJson[T]> | undefined {
   return readMetadataJson<Domain, T>(spec?.domain, DomainJson, key);
 }
 
@@ -224,67 +224,51 @@ export type Annotation = Metadata &
 /// One step in a column's derivation lineage. Only `type` and `label` are part
 /// of the typed public surface; writers may add fields (e.g. `id`, `importance`)
 /// passed through opaquely as `unknown`, accessed via explicit narrowing.
-const TraceEntrySchema = z
-  .object({
-    type: z.string(),
-    label: z.string(),
-  })
-  .catchall(z.unknown());
+const TraceEntrySchema = v.looseObject({
+  type: v.string(),
+  label: v.string(),
+});
 
-export type TraceEntry = z.infer<typeof TraceEntrySchema>;
+export type TraceEntry = v.InferOutput<typeof TraceEntrySchema>;
 
 export type Trace = TraceEntry[];
 
-// export const AxisSpec = z.object({
-//   type: z.nativeEnum(ValueType),
-//   name: z.string(),
-//   domain: z.record(z.string(), z.string()).optional(),
-//   annotations: z.record(z.string(), z.string()).optional(),
-//   parentAxes: z.array(z.number()).optional(),
-// }).passthrough();
-//
-// type Expect<T extends true> = T;
-// type Equal<X, Y> =
-// (<T>() => T extends X ? 1 : 2) extends (<T>() => T extends Y ? 1 : 2) ? true : false;
-//
-// type _test = Expect<Equal<
-//   Readonly<z.infer<typeof AxisSpec>>,
-//   Readonly<AxisSpec & Record<string, unknown>>
-// >>;
-
 export type AnnotationJson = MetadataJson<Annotation>;
 
-const ValueTypeSchema = z.enum(["Int", "Long", "Float", "Double", "String"] as const);
+const ValueTypeSchema = v.picklist(["Int", "Long", "Float", "Double", "String"]);
 export const AnnotationJson: AnnotationJson = {
-  [Annotation.DiscreteValues]: z.array(z.string()).or(z.array(z.number())),
-  [Annotation.Graph.Axis.HighCardinality]: z.boolean(),
-  [Annotation.Graph.Axis.LowerLimit]: z.number(),
-  [Annotation.Graph.Axis.UpperLimit]: z.number(),
-  [Annotation.Graph.Axis.SymmetricRange]: z.boolean(),
-  [Annotation.Graph.IsDenseAxis]: z.boolean(),
-  [Annotation.Graph.Palette]: z.object({ mapping: z.record(z.number()), name: z.string() }),
-  [Annotation.Graph.Thresholds]: z.array(
-    z.object({
-      columnId: z.object({ valueType: ValueTypeSchema, name: z.string() }),
-      value: z.number(),
+  [Annotation.DiscreteValues]: v.union([v.array(v.string()), v.array(v.number())]),
+  [Annotation.Graph.Axis.HighCardinality]: v.boolean(),
+  [Annotation.Graph.Axis.LowerLimit]: v.number(),
+  [Annotation.Graph.Axis.UpperLimit]: v.number(),
+  [Annotation.Graph.Axis.SymmetricRange]: v.boolean(),
+  [Annotation.Graph.IsDenseAxis]: v.boolean(),
+  [Annotation.Graph.Palette]: v.object({
+    mapping: v.record(v.string(), v.number()),
+    name: v.string(),
+  }),
+  [Annotation.Graph.Thresholds]: v.array(
+    v.object({
+      columnId: v.object({ valueType: ValueTypeSchema, name: v.string() }),
+      value: v.number(),
     }),
   ),
-  [Annotation.Graph.TreatAbsentValuesAs]: z.number(),
-  [Annotation.Graph.IsVirtual]: z.boolean(),
-  [Annotation.HideDataFromUi]: z.boolean(),
-  [Annotation.HideDataFromGraphs]: z.boolean(),
-  [Annotation.IsDiscreteFilter]: z.boolean(),
-  [Annotation.IsLinkerColumn]: z.boolean(),
-  [Annotation.IsSubset]: z.boolean(),
-  [Annotation.Max]: z.number(),
-  [Annotation.Min]: z.number(),
-  [Annotation.MultipliesBy]: z.array(z.string()),
-  [Annotation.Parents]: z.array(z.string()),
-  [Annotation.Sequence.Annotation.Mapping]: z.record(z.string(), z.string()),
-  [Annotation.Sequence.IsAnnotation]: z.boolean(),
-  [Annotation.Table.OrderPriority]: z.number(),
-  [Annotation.Trace]: z.array(TraceEntrySchema),
-  [Annotation.VDJ.IsAssemblingFeature]: z.boolean(),
+  [Annotation.Graph.TreatAbsentValuesAs]: v.number(),
+  [Annotation.Graph.IsVirtual]: v.boolean(),
+  [Annotation.HideDataFromUi]: v.boolean(),
+  [Annotation.HideDataFromGraphs]: v.boolean(),
+  [Annotation.IsDiscreteFilter]: v.boolean(),
+  [Annotation.IsLinkerColumn]: v.boolean(),
+  [Annotation.IsSubset]: v.boolean(),
+  [Annotation.Max]: v.number(),
+  [Annotation.Min]: v.number(),
+  [Annotation.MultipliesBy]: v.array(v.string()),
+  [Annotation.Parents]: v.array(v.string()),
+  [Annotation.Sequence.Annotation.Mapping]: v.record(v.string(), v.string()),
+  [Annotation.Sequence.IsAnnotation]: v.boolean(),
+  [Annotation.Table.OrderPriority]: v.number(),
+  [Annotation.Trace]: v.array(TraceEntrySchema),
+  [Annotation.VDJ.IsAssemblingFeature]: v.boolean(),
 };
 
 /// Helper function for reading plain annotation values
@@ -299,7 +283,7 @@ export function readAnnotation<T extends keyof Annotation>(
 export function readAnnotationJsonOrThrow<T extends keyof AnnotationJson>(
   spec: { annotations?: Metadata | undefined } | undefined,
   key: T,
-): z.infer<AnnotationJson[T]> | undefined {
+): v.InferOutput<AnnotationJson[T]> | undefined {
   return readMetadataJsonOrThrow<Annotation, T>(
     spec?.annotations,
     AnnotationJson,
@@ -312,7 +296,7 @@ export function readAnnotationJsonOrThrow<T extends keyof AnnotationJson>(
 export function readAnnotationJson<T extends keyof AnnotationJson>(
   spec: { annotations?: Metadata | undefined } | undefined,
   key: T,
-): z.infer<AnnotationJson[T]> | undefined {
+): v.InferOutput<AnnotationJson[T]> | undefined {
   return readMetadataJson<Annotation, T>(spec?.annotations, AnnotationJson, key);
 }
 

@@ -4,7 +4,7 @@ import fs from "node:fs";
 import type { Hash } from "node:crypto";
 import { createHash } from "node:crypto";
 import winston from "winston";
-import type { z } from "zod/v4";
+import type * as v from "valibot";
 import * as envs from "./envs";
 
 export const packageJsonName = "package.json";
@@ -353,41 +353,40 @@ export function indentText(txt: string, indent: string | number, skipFirstLine: 
     .join("\n");
 }
 
+const issuePath = (issue: v.BaseIssue<unknown>): string[] =>
+  issue.path?.map((item) => String(item.key)) ?? [];
+
 export const formatZodIssues = (
-  issues: z.core.$ZodIssue[],
-  i: string = "",
-  p: PropertyKey[] = [],
+  issues: readonly v.BaseIssue<unknown>[],
+  indent: string = "",
+  parentPath: string[] = [],
 ): string => {
   const _errors: string[] = [];
 
-  const formatSubpath = (path: PropertyKey[], prefix: string = "") => {
+  const formatSubpath = (path: string[], prefix: string = "") => {
     let pp = path.join(".");
-    if (pp != "" && p.length > 0) pp = `.${pp}`;
+    if (pp != "" && parentPath.length > 0) pp = `.${pp}`;
     if (pp != "") pp = `${prefix}${pp}`;
     return pp;
   };
 
-  const addItem = (item: string) => _errors.push(indentText(item, i));
+  const addItem = (item: string) => _errors.push(indentText(item, indent));
 
   for (const issue of issues) {
-    if (issue.code === "invalid_union") {
+    const path = issuePath(issue);
+
+    if ((issue.type === "union" || issue.type === "variant") && issue.issues) {
       addItem(`✖ Expected one of several possible values`);
-      const path = formatSubpath(issue.path, "");
-      addItem(`  → at '${path}':`);
-      for (const errGrp of issue.errors) {
-        _errors.push(formatZodIssues(errGrp, `${i}    `, [...p, ...issue.path]));
-      }
-    } else if (issue.code === "invalid_element" || issue.code === "invalid_key") {
-      addItem(`✖ ${issue.code.replaceAll("_", " ")}:`);
-      _errors.push(formatZodIssues(issue.issues, `${i}  `, [...p, ...issue.path]));
-    } else if (issue.code === "invalid_type") {
-      const path = formatSubpath(issue.path, " ");
-      const prefix = `✖ (${issue.expected})${path}: `;
-      const msg = indentText(issue.message, Math.min(prefix.length, 20), true);
-      addItem(`${prefix}${msg}`);
+      addItem(`  → at '${formatSubpath(path, "")}':`);
+      _errors.push(formatZodIssues(issue.issues, `${indent}    `, [...parentPath, ...path]));
+    } else if (issue.issues) {
+      addItem(`✖ ${issue.type.replaceAll("_", " ")}:`);
+      _errors.push(formatZodIssues(issue.issues, `${indent}  `, [...parentPath, ...path]));
     } else {
-      const path = formatSubpath(issue.path, " ");
-      const prefix = `✖ (${issue.code.replaceAll("_", " ")})${path}: `;
+      // A 'schema' issue reports the shape it wanted; a validation or transformation issue only
+      // has its own name to report.
+      const label = issue.kind === "schema" ? issue.expected : issue.type.replaceAll("_", " ");
+      const prefix = `✖ (${label})${formatSubpath(path, " ")}: `;
       const msg = indentText(issue.message, Math.min(prefix.length, 20), true);
       addItem(`${prefix}${msg}`);
     }

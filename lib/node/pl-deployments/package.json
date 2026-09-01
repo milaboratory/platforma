@@ -49,8 +49,8 @@
     "tar": "catalog:",
     "undici": "catalog:",
     "upath": "catalog:",
-    "yaml": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:",
+    "yaml": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

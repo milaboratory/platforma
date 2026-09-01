@@ -1,6 +1,7 @@
 import path from "node:path";
 import fs from "node:fs";
 import type winston from "winston";
+import * as v from "valibot";
 
 import * as swJson from "./schemas/sw-json";
 import type * as artifacts from "./schemas/artifacts";
@@ -68,10 +69,10 @@ export function readDescriptorFile(
   }
 
   const swJsonContent = fs.readFileSync(descriptorFilePath);
-  const result = swJson.swJsonSchema.safeParse(JSON.parse(swJsonContent.toString()));
+  const result = v.safeParse(swJson.swJsonSchema, JSON.parse(swJsonContent.toString()));
 
   if (!result.success) {
-    throw util.CLIError(util.formatZodIssues(result.error.issues));
+    throw util.CLIError(util.formatZodIssues(result.issues));
   }
 
   return {
@@ -79,7 +80,7 @@ export function readDescriptorFile(
       package: packageNameForDescriptor,
       name: entrypointForDescriptor,
     },
-    ...result.data,
+    ...result.output,
   };
 }
 

@@ -4,7 +4,7 @@ import {
   createSignedResourceId,
   DefaultFinalResourceDataPredicate,
 } from "@milaboratories/pl-client";
-import { z } from "zod";
+import * as v from "valibot";
 import { InferSnapshot, makeResourceSnapshot, rsSchema } from "./snapshot";
 import { PlTreeState } from "./state";
 import {
@@ -21,11 +21,11 @@ const rid = createSignedResourceId;
 
 // schema definition
 const MyTestResourceState = rsSchema({
-  data: z.object({
-    jf: z.number(),
+  data: v.object({
+    jf: v.number(),
   }),
   fields: { b: true, c: false },
-  kv: { thekey: z.string() },
+  kv: { thekey: v.string() },
 });
 
 // type derived from schema for out users and us
@@ -93,7 +93,7 @@ test("simple snapshot test", async () => {
       id: rid(1n),
       fields: [iField("b", rid(2n))],
       data: new TextEncoder().encode(`{"jf": 0}`),
-      kv: [{ key: "thekey", value: Buffer.from("123") }], // thekey type changed to number (invalid accordig to zod schema)
+      kv: [{ key: "thekey", value: Buffer.from("123") }], // thekey type changed to number (invalid accordig to the schema)
     },
   ]);
 

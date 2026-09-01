@@ -2,7 +2,7 @@ import * as path from "node:path";
 import * as fs from "node:fs";
 import { createHash } from "node:crypto";
 import type winston from "winston";
-import { z } from "zod/v4";
+import * as v from "valibot";
 
 import * as defaults from "../defaults";
 import * as util from "./util";
@@ -14,32 +14,32 @@ import * as docker from "./docker";
 import { prepareDockerOptions as pythonDockerOptions } from "./docker-python";
 import { prepareDockerOptions as condaDockerOptions } from "./docker-conda";
 
-const storagePresetSchema = z.object({
-  downloadURL: z.string().optional(),
-  storageURL: z.string().optional(),
+const storagePresetSchema = v.object({
+  downloadURL: v.optional(v.string()),
+  storageURL: v.optional(v.string()),
 });
-type storagePreset = z.infer<typeof storagePresetSchema>;
+type storagePreset = v.InferOutput<typeof storagePresetSchema>;
 
-const binaryRegistryPresetsSchema = z.record(z.string(), storagePresetSchema);
-type binaryRegistryPresets = z.infer<typeof binaryRegistryPresetsSchema>;
+const binaryRegistryPresetsSchema = v.record(v.string(), storagePresetSchema);
+type binaryRegistryPresets = v.InferOutput<typeof binaryRegistryPresetsSchema>;
 
-const packageJsonSchema = z.object({
-  name: z.string(),
-  version: z.string(),
-  private: z.boolean().optional(),
+const packageJsonSchema = v.object({
+  name: v.string(),
+  version: v.string(),
+  private: v.optional(v.boolean()),
 
-  "block-software": z.object({
-    registries: z
-      .object({
-        binary: binaryRegistryPresetsSchema.optional(),
-      })
-      .optional(),
+  "block-software": v.object({
+    registries: v.optional(
+      v.object({
+        binary: v.optional(binaryRegistryPresetsSchema),
+      }),
+    ),
 
-    artifacts: artifacts.artifactIndexSchema.optional(),
+    artifacts: v.optional(artifacts.artifactIndexSchema),
     entrypoints: entrypoints.entrypointListSchema,
   }),
 });
-type packageJson = z.infer<typeof packageJsonSchema>;
+type packageJson = v.InferOutput<typeof packageJsonSchema>;
 
 const wellKnownRegistries: Record<string, storagePreset> = {
   [defaults.BIN_REGISTRY_NAME]: {
@@ -117,9 +117,9 @@ export class PackageInfo {
 
     const result = parsePackageJson(pkgJsonData);
     if (!result.success) {
-      throw util.CLIError(`\n` + util.formatZodIssues(result.error.issues));
+      throw util.CLIError(`\n` + util.formatZodIssues(result.issues));
     }
-    this.pkgJson = result.data;
+    this.pkgJson = result.output;
     this.logger.debug("    " + JSON.stringify(this.pkgJson));
 
     this.validateConfig();
@@ -866,9 +866,9 @@ export class PackageInfo {
   }
 }
 
-function parsePackageJson(data: string): z.ZodSafeParseResult<packageJson> {
+function parsePackageJson(data: string): v.SafeParseResult<typeof packageJsonSchema> {
   const parsedData: unknown = JSON.parse(data);
-  return packageJsonSchema.safeParse(parsedData);
+  return v.safeParse(packageJsonSchema, parsedData);
 }
 
 function requireArtifactType(

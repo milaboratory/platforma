@@ -12,7 +12,7 @@ import type {
   Project,
   BlockStateInternalV3,
 } from "@milaboratories/pl-middle-layer";
-import { z } from "zod";
+import * as v from "valibot";
 import type { BlockDumpUnified } from "./unified-state-schema";
 
 /** Simple types that should not be recursively expanded */
@@ -30,21 +30,21 @@ export type DumpedNode = {
   error?: string;
 };
 
-/** Zod schema for ResourceType */
-const ResourceTypeSchema = z.object({
-  name: z.string(),
-  version: z.string(),
+/** Valibot schema for ResourceType */
+const ResourceTypeSchema = v.object({
+  name: v.string(),
+  version: v.string(),
 });
 
-/** Zod schema for DumpedNode (recursive) */
-const DumpedNodeSchema: z.ZodType<DumpedNode> = z.lazy(() =>
-  z.object({
+/** Valibot schema for DumpedNode (recursive) */
+const DumpedNodeSchema: v.GenericSchema<DumpedNode> = v.lazy(() =>
+  v.object({
     type: ResourceTypeSchema,
-    data: z.unknown().optional(),
-    inputs: z.record(z.string(), DumpedNodeSchema).optional(),
-    outputs: z.record(z.string(), DumpedNodeSchema).optional(),
-    dynamics: z.record(z.string(), DumpedNodeSchema).optional(),
-    error: z.string().optional(),
+    data: v.optional(v.unknown()),
+    inputs: v.optional(v.record(v.string(), DumpedNodeSchema)),
+    outputs: v.optional(v.record(v.string(), DumpedNodeSchema)),
+    dynamics: v.optional(v.record(v.string(), DumpedNodeSchema)),
+    error: v.optional(v.string()),
   }),
 );
 
@@ -234,7 +234,7 @@ export async function createProjectWatcher<Dump>(
   options?: {
     workFolder?: string;
     onNext?: (result: Dump[]) => void;
-    validator?: z.ZodType<Dump[]>;
+    validator?: v.GenericSchema<Dump[]>;
   },
 ) {
   const abortController = new AbortController();
@@ -369,12 +369,12 @@ export async function createProjectWatcher<Dump>(
       if (result !== undefined) {
         // Validate the block dump if a validator is provided
         if (options?.validator) {
-          const parseResult = options.validator.safeParse(result.blocks);
+          const parseResult = v.safeParse(options.validator, result.blocks);
           if (!parseResult.success) {
-            console.error(parseResult.error.message);
+            console.error(v.summarize(parseResult.issues));
             // throw new Error(
-            //   `Block dump validation failed: ${parseResult.error.message}`,
-            //   { cause: parseResult.error }
+            //   `Block dump validation failed: ${v.summarize(parseResult.issues)}`,
+            //   { cause: parseResult.issues }
             // );
           }
         }

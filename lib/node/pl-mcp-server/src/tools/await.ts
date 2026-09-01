@@ -1,7 +1,8 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { isTimeoutError } from "@milaboratories/pl-middle-layer";
 import { deriveDataFromStorage } from "@platforma-sdk/model";
-import { z } from "zod";
+import { toStandardJsonSchema } from "@valibot/to-json-schema";
+import * as v from "valibot";
 import type { ToolContext } from "./types";
 import { summarizeOutputs } from "./tokens";
 import { safeEval } from "./sandbox";
@@ -15,24 +16,33 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
         "Wait for a block to finish computation and outputs to stabilize. " +
         "Returns block status, data, and concise output summary with token estimates. " +
         "Use `transform` to extract specific data server-side on completion.",
-      inputSchema: {
-        projectId: z.string().describe("Project ID"),
-        blockId: z.string().describe("Block ID to wait for"),
-        timeout: z.number().optional().default(120000).describe("Timeout in ms (default 120000)"),
-        transform: z
-          .string()
-          .optional()
-          .describe(
-            "JS expression evaluated server-side when block completes. " +
-              "Available variables: `data` (block args), `outputs` (raw outputs), `block` (status info). " +
-              "Omit for default concise summary.",
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID")),
+          blockId: v.pipe(v.string(), v.description("Block ID to wait for")),
+          timeout: v.optional(
+            v.pipe(v.number(), v.description("Timeout in ms (default 120000)")),
+            120000,
           ),
-        transformTimeout: z
-          .number()
-          .optional()
-          .default(5000)
-          .describe("Timeout in ms for transform evaluation (default 5000)."),
-      },
+          transform: v.optional(
+            v.pipe(
+              v.string(),
+              v.description(
+                "JS expression evaluated server-side when block completes. " +
+                  "Available variables: `data` (block args), `outputs` (raw outputs), `block` (status info). " +
+                  "Omit for default concise summary.",
+              ),
+            ),
+          ),
+          transformTimeout: v.optional(
+            v.pipe(
+              v.number(),
+              v.description("Timeout in ms for transform evaluation (default 5000)."),
+            ),
+            5000,
+          ),
+        }),
+      ),
     },
     async ({ projectId, blockId, timeout, transform, transformTimeout }) => {
       const project = await ctx.getOpenedProject(projectId);

@@ -17,6 +17,7 @@ import type { BlockKindReference } from "@milaboratories/pl-model-common";
 import { parseKindRef } from "@milaboratories/pl-model-common";
 import type { FolderReader } from "../../io";
 import canonicalize from "canonicalize";
+import * as v from "valibot";
 import {
   GlobalOverviewFileName,
   MainPrefix,
@@ -56,10 +57,12 @@ export function inferUpdateSuggestions(currentVersion: string, availableVersions
   const suggestions: UpdateSuggestions<string> = [];
 
   const patch = availableVersions.find(
-    (v) => semver.gt(v, currentVersion) && semver.lt(v, nextMinor),
+    (version) => semver.gt(version, currentVersion) && semver.lt(version, nextMinor),
   );
-  const minor = availableVersions.find((v) => semver.gte(v, nextMinor) && semver.lt(v, nextMajor));
-  const major = availableVersions.find((v) => semver.gte(v, nextMajor));
+  const minor = availableVersions.find(
+    (version) => semver.gte(version, nextMinor) && semver.lt(version, nextMajor),
+  );
+  const major = availableVersions.find((version) => semver.gte(version, nextMajor));
 
   if (patch) suggestions.push({ type: "patch", update: patch });
   if (minor) suggestions.push({ type: "minor", update: minor });
@@ -211,8 +214,8 @@ export class RegistryV2Reader {
     if (overview === undefined) return undefined;
 
     const versionCandidates = overview.allVersions
-      .filter((v) => channel === AnyChannel || v.channels.indexOf(channel) >= 0)
-      .map((v) => v.version);
+      .filter((entry) => channel === AnyChannel || entry.channels.indexOf(channel) >= 0)
+      .map((entry) => entry.version);
 
     // versions are sorted
     versionCandidates.reverse(); // changing sorting order to opposite
@@ -228,7 +231,10 @@ export class RegistryV2Reader {
       const manifestContent = await this.v2RootFolderReader.readFile(
         packageContentPrefixInsideV2(id) + ManifestSuffix,
       );
-      const overview = BlockPackManifest.parse(JSON.parse(Buffer.from(manifestContent).toString()));
+      const overview = v.parse(
+        BlockPackManifest,
+        JSON.parse(Buffer.from(manifestContent).toString()),
+      );
       return {
         id: id,
         meta: await this.embedMetaContent(
@@ -254,7 +260,8 @@ export class RegistryV2Reader {
         const packageFolderReader = this.v2RootFolderReader.relativeReader(
           packageContentPrefixInsideV2(id),
         );
-        const manifest = BlockPackManifest.parse(
+        const manifest = v.parse(
+          BlockPackManifest,
           JSON.parse(Buffer.from(await packageFolderReader.readFile(ManifestFileName)).toString()),
         );
         return blockComponentsManifestToAbsoluteUrl(
@@ -288,7 +295,7 @@ export class RegistryV2Reader {
         const bytes = await this.kindsRootFolderReader.readFile(relPath, {
           signal: options?.signal,
         });
-        return KindOverview.parse(JSON.parse(Buffer.from(bytes).toString()));
+        return v.parse(KindOverview, JSON.parse(Buffer.from(bytes).toString()));
       }, Retry2TimesWithDelay);
     } catch {
       // Absent overview (or unreadable) → treat as "no such kind projection".

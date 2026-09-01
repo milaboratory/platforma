@@ -1,6 +1,7 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import type { BlockPackSpecAny } from "@milaboratories/pl-middle-layer";
-import { z } from "zod";
+import { toStandardJsonSchema } from "@valibot/to-json-schema";
+import * as v from "valibot";
 import type { ToolContext } from "./types";
 import { errorResult, textResult } from "./types";
 
@@ -10,27 +11,30 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     {
       description:
         "Add a block to an opened project. Spec can be from-registry-v2 (for published blocks) or dev-v2 (for local dev blocks).",
-      inputSchema: {
-        projectId: z.string().describe("Project ID (must be opened)"),
-        label: z.string().describe("Block label"),
-        spec: z
-          .union([
-            z.object({
-              type: z.literal("from-registry-v2"),
-              registryUrl: z.string().describe("Registry URL"),
-              id: z.object({
-                organization: z.string(),
-                name: z.string(),
-                version: z.string(),
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID (must be opened)")),
+          label: v.pipe(v.string(), v.description("Block label")),
+          spec: v.pipe(
+            v.union([
+              v.object({
+                type: v.literal("from-registry-v2"),
+                registryUrl: v.pipe(v.string(), v.description("Registry URL")),
+                id: v.object({
+                  organization: v.string(),
+                  name: v.string(),
+                  version: v.string(),
+                }),
               }),
-            }),
-            z.object({
-              type: z.literal("dev-v2"),
-              folder: z.string().describe("Path to block folder"),
-            }),
-          ])
-          .describe("Block pack specification"),
-      },
+              v.object({
+                type: v.literal("dev-v2"),
+                folder: v.pipe(v.string(), v.description("Path to block folder")),
+              }),
+            ]),
+            v.description("Block pack specification"),
+          ),
+        }),
+      ),
     },
     async ({ projectId, label, spec }) => {
       const project = await ctx.getOpenedProject(projectId);
@@ -49,31 +53,36 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     {
       description:
         "Update an existing block's pack (reload from registry or dev folder). Use after rebuilding a dev block to pick up changes without removing/re-adding it.",
-      inputSchema: {
-        projectId: z.string().describe("Project ID (must be opened)"),
-        blockId: z.string().describe("Block ID to update"),
-        spec: z
-          .union([
-            z.object({
-              type: z.literal("from-registry-v2"),
-              registryUrl: z.string().describe("Registry URL"),
-              id: z.object({
-                organization: z.string(),
-                name: z.string(),
-                version: z.string(),
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID (must be opened)")),
+          blockId: v.pipe(v.string(), v.description("Block ID to update")),
+          spec: v.pipe(
+            v.union([
+              v.object({
+                type: v.literal("from-registry-v2"),
+                registryUrl: v.pipe(v.string(), v.description("Registry URL")),
+                id: v.object({
+                  organization: v.string(),
+                  name: v.string(),
+                  version: v.string(),
+                }),
               }),
-            }),
-            z.object({
-              type: z.literal("dev-v2"),
-              folder: z.string().describe("Path to block folder"),
-            }),
-          ])
-          .describe("Block pack specification"),
-        resetArgs: z
-          .boolean()
-          .optional()
-          .describe("Reset block arguments to initial values (default: false)"),
-      },
+              v.object({
+                type: v.literal("dev-v2"),
+                folder: v.pipe(v.string(), v.description("Path to block folder")),
+              }),
+            ]),
+            v.description("Block pack specification"),
+          ),
+          resetArgs: v.optional(
+            v.pipe(
+              v.boolean(),
+              v.description("Reset block arguments to initial values (default: false)"),
+            ),
+          ),
+        }),
+      ),
     },
     async ({ projectId, blockId, spec, resetArgs }) => {
       const project = await ctx.getOpenedProject(projectId);
@@ -91,10 +100,12 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     "remove_block",
     {
       description: "Remove a block from an opened project",
-      inputSchema: {
-        projectId: z.string().describe("Project ID"),
-        blockId: z.string().describe("Block ID to remove"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID")),
+          blockId: v.pipe(v.string(), v.description("Block ID to remove")),
+        }),
+      ),
     },
     async ({ projectId, blockId }) => {
       const project = await ctx.getOpenedProject(projectId);
@@ -107,10 +118,12 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     "run_block",
     {
       description: "Run a block. Stale upstream blocks are started automatically.",
-      inputSchema: {
-        projectId: z.string().describe("Project ID"),
-        blockId: z.string().describe("Block ID to run"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID")),
+          blockId: v.pipe(v.string(), v.description("Block ID to run")),
+        }),
+      ),
     },
     async ({ projectId, blockId }) => {
       const project = await ctx.getOpenedProject(projectId);
@@ -123,10 +136,12 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     "stop_block",
     {
       description: "Stop a running block",
-      inputSchema: {
-        projectId: z.string().describe("Project ID"),
-        blockId: z.string().describe("Block ID to stop"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID")),
+          blockId: v.pipe(v.string(), v.description("Block ID to stop")),
+        }),
+      ),
     },
     async ({ projectId, blockId }) => {
       const project = await ctx.getOpenedProject(projectId);
@@ -139,10 +154,15 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     "reorder_blocks",
     {
       description: "Reorder blocks in a project. Must provide ALL block IDs in the desired order.",
-      inputSchema: {
-        projectId: z.string().describe("Project ID"),
-        blockIds: z.array(z.string()).describe("All block IDs in the desired order"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID")),
+          blockIds: v.pipe(
+            v.array(v.string()),
+            v.description("All block IDs in the desired order"),
+          ),
+        }),
+      ),
     },
     async ({ projectId, blockIds }) => {
       const project = await ctx.getOpenedProject(projectId);
@@ -156,12 +176,16 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     {
       description:
         "List available blocks from configured registries. Optional query to filter by name.",
-      inputSchema: {
-        query: z
-          .string()
-          .optional()
-          .describe("Filter blocks by name (case-insensitive substring match)"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          query: v.optional(
+            v.pipe(
+              v.string(),
+              v.description("Filter blocks by name (case-insensitive substring match)"),
+            ),
+          ),
+        }),
+      ),
     },
     async ({ query }) => {
       if (!ctx.callbacks.listAvailableBlocks) {
@@ -180,12 +204,17 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     {
       description:
         "Get detailed info about a specific block package from the registry. Use list_available_blocks first to find the block.",
-      inputSchema: {
-        registryUrl: z.string().describe("Registry URL (from list_available_blocks)"),
-        organization: z.string().describe("Organization name"),
-        name: z.string().describe("Block package name"),
-        version: z.string().describe("Block version"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          registryUrl: v.pipe(
+            v.string(),
+            v.description("Registry URL (from list_available_blocks)"),
+          ),
+          organization: v.pipe(v.string(), v.description("Organization name")),
+          name: v.pipe(v.string(), v.description("Block package name")),
+          version: v.pipe(v.string(), v.description("Block version")),
+        }),
+      ),
     },
     async ({ registryUrl, organization, name, version }) => {
       if (!ctx.callbacks.getBlockInfo) {
@@ -203,10 +232,12 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
     "select_block",
     {
       description: "Navigate the desktop UI to show a specific block's interface",
-      inputSchema: {
-        projectId: z.string().describe("Project ID"),
-        blockId: z.string().describe("Block ID to display"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID")),
+          blockId: v.pipe(v.string(), v.description("Block ID to display")),
+        }),
+      ),
     },
     async ({ projectId, blockId }) => {
       if (!ctx.callbacks.selectBlock) {

@@ -58,8 +58,8 @@
     "semver": "catalog:",
     "undici": "catalog:",
     "utility-types": "catalog:",
-    "yaml": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:",
+    "yaml": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

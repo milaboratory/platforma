@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "valibot";
 import * as fs from "node:fs/promises";
 import { RangeBytes } from "@milaboratories/pl-model-common";
 import { createPathAtomically, MiLogger } from "@milaboratories/ts-helpers";
@@ -7,11 +7,11 @@ import { CorruptedRangesError } from "./cache";
 /** The content of the ranges file: ranges of bytes.
  * The ranges should be normalized: sorted and no overlaps.
  * For that, use `normalizeRanges` function. */
-const Ranges = z.object({
-  ranges: z.array(RangeBytes),
+const Ranges = v.object({
+  ranges: v.array(RangeBytes),
 });
 
-export type Ranges = z.infer<typeof Ranges>;
+export type Ranges = v.InferOutput<typeof Ranges>;
 
 export const rangesFilePostfix = ".ranges.json";
 
@@ -23,9 +23,9 @@ export async function readRangesFile(logger: MiLogger, path: string): Promise<Ra
   let ranges: Ranges = { ranges: [] };
   try {
     const file = await fs.readFile(path, "utf8");
-    ranges = Ranges.parse(JSON.parse(file));
+    ranges = v.parse(Ranges, JSON.parse(file));
   } catch (e: unknown) {
-    if (e instanceof SyntaxError || e instanceof z.ZodError) {
+    if (e instanceof SyntaxError || e instanceof v.ValiError) {
       const msg = `readRangesFile: the file ${path} was corrupted: ${e}`;
       logger.error(msg);
       throw new CorruptedRangesError(msg);

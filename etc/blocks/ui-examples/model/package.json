@@ -26,8 +26,7 @@
   },
   "dependencies": {
     "@milaboratories/milaboratories.ui-examples.kind": "workspace:*",
-    "@platforma-sdk/model": "workspace:*",
-    "zod": "catalog:"
+    "@platforma-sdk/model": "workspace:*"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

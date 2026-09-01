@@ -1,7 +1,8 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { McpServer } from "@modelcontextprotocol/server";
 import { isAnyLogHandle } from "@milaboratories/pl-model-common";
 import type { AnyLogHandle } from "@milaboratories/pl-model-common";
-import { z } from "zod";
+import { toStandardJsonSchema } from "@valibot/to-json-schema";
+import * as v from "valibot";
 import type { ToolContext } from "./types";
 import { errorResult, textResult } from "./types";
 
@@ -11,15 +12,22 @@ export function registerLogTools(server: McpServer, ctx: ToolContext): void {
     {
       description:
         "Read execution logs for a block. Extracts log handles from block outputs and reads log content. Returns logs keyed by sample/run ID.",
-      inputSchema: {
-        projectId: z.string().describe("Project ID"),
-        blockId: z.string().describe("Block ID"),
-        lines: z.number().optional().default(100).describe("Number of lines per log (default 100)"),
-        sampleId: z
-          .string()
-          .optional()
-          .describe("Specific sample/key to read logs for (reads all if omitted)"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          projectId: v.pipe(v.string(), v.description("Project ID")),
+          blockId: v.pipe(v.string(), v.description("Block ID")),
+          lines: v.optional(
+            v.pipe(v.number(), v.description("Number of lines per log (default 100)")),
+            100,
+          ),
+          sampleId: v.optional(
+            v.pipe(
+              v.string(),
+              v.description("Specific sample/key to read logs for (reads all if omitted)"),
+            ),
+          ),
+        }),
+      ),
     },
     async ({ projectId, blockId, lines, sampleId }) => {
       const project = await ctx.getOpenedProject(projectId);
@@ -78,10 +86,17 @@ export function registerLogTools(server: McpServer, ctx: ToolContext): void {
     "get_app_log",
     {
       description: "Read recent lines from the application log. Useful for debugging errors.",
-      inputSchema: {
-        lines: z.number().optional().default(50).describe("Number of lines to return (default 50)"),
-        search: z.string().optional().describe("Filter lines containing this substring"),
-      },
+      inputSchema: toStandardJsonSchema(
+        v.object({
+          lines: v.optional(
+            v.pipe(v.number(), v.description("Number of lines to return (default 50)")),
+            50,
+          ),
+          search: v.optional(
+            v.pipe(v.string(), v.description("Filter lines containing this substring")),
+          ),
+        }),
+      ),
     },
     async ({ lines, search }) => {
       if (!ctx.callbacks.readAppLog) {
