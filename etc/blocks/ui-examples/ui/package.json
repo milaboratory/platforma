@@ -28,8 +28,7 @@
     "@milaboratories/uikit": "workspace:*",
     "ag-grid-enterprise": "catalog:",
     "ag-grid-vue3": "catalog:",
-    "vitest": "catalog:",
-    "zod": "catalog:"
+    "vitest": "catalog:"
   },
   "peerDependencies": {
     "@types/node": "*",

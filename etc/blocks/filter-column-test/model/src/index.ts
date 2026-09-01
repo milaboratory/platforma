@@ -8,13 +8,13 @@ import type {
 } from "@platforma-sdk/model";
 import { BlockModelV3, DataModelBuilder, buildDatasetOptions } from "@platforma-sdk/model";
 import { kind } from "@milaboratories/milaboratories.test-filter-column.kind";
-import { z } from "zod";
+import * as v from "valibot";
 
-export const BlockData = z.object({
-  dataset: z.custom<DatasetSelection>().optional(),
+export const BlockData = v.object({
+  dataset: v.optional(v.custom<DatasetSelection>(() => true)),
 });
 
-export type BlockData = z.infer<typeof BlockData>;
+export type BlockData = v.InferOutput<typeof BlockData>;
 
 // The kind declares no init params — `dataset` is always picked in the UI — so
 // `init` takes no `params` and a fresh block starts with an unset selection.

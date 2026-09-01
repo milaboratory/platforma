@@ -1,7 +1,7 @@
 import type { InferHrefType, InferOutputsType } from "@platforma-sdk/model";
 import { BlockModelV3, DataModelBuilder } from "@platforma-sdk/model";
 import { kind } from "@milaboratories/milaboratories.test-enter-numbers.kind";
-import { z } from "zod";
+import * as v from "valibot";
 
 // Data version 1: just numbers
 type BlockDataV1 = {
@@ -15,13 +15,13 @@ type BlockDataV2 = {
 };
 
 // Data version 3 (current): added description
-export const $BlockData = z.object({
-  numbers: z.array(z.coerce.number()),
-  labels: z.array(z.string()),
-  description: z.string(),
+export const $BlockData = v.object({
+  numbers: v.array(v.pipe(v.unknown(), v.transform(Number), v.number())),
+  labels: v.array(v.string()),
+  description: v.string(),
 });
 
-export type BlockData = z.infer<typeof $BlockData>;
+export type BlockData = v.InferOutput<typeof $BlockData>;
 
 // Define data model with migrations from v1 to current
 const dataModel = new DataModelBuilder({ kind })

@@ -1,21 +1,21 @@
 import type { ImportFileHandle, InferHrefType, InferOutputsType } from "@platforma-sdk/model";
 import { BlockModelV3, DataModelBuilder } from "@platforma-sdk/model";
 import { kind } from "@milaboratories/milaboratories.test-blob-url-custom-protocol.kind";
-import { z } from "zod";
+import * as v from "valibot";
 
-export const ImportFileHandleSchema = z
-  .string()
-  .optional()
-  .refine<ImportFileHandle | undefined>(
-    ((_a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined,
-  );
+export const ImportFileHandleSchema = v.optional(
+  v.pipe(
+    v.string(),
+    v.transform((value): ImportFileHandle => value as ImportFileHandle),
+  ),
+);
 
-export const BlockData = z.object({
+export const BlockData = v.object({
   inputTgzHandle: ImportFileHandleSchema,
   inputZipHandle: ImportFileHandleSchema,
 });
 
-export type BlockData = z.infer<typeof BlockData>;
+export type BlockData = v.InferOutput<typeof BlockData>;
 
 /** What the workflow consumes — projected from {@link BlockData} by the args lambda. */
 export type BlockArgs = {
