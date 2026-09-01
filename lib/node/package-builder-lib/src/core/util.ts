@@ -4,7 +4,7 @@ import fs from "node:fs";
 import type { Hash } from "node:crypto";
 import { createHash } from "node:crypto";
 import winston from "winston";
-import type { z } from "zod/v4";
+import type * as v from "valibot";
 import * as envs from "./envs";
 
 export const packageJsonName = "package.json";
