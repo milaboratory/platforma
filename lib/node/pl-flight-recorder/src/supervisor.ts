@@ -1,8 +1,16 @@
 import fs from "node:fs";
 import path from "node:path";
-import { CRASH_FILE_PREFIX, type CrashMarker, type CrashReason } from "./events";
+import {
+  CRASH_FILE_PREFIX,
+  FLIGHT_FILE_PREFIX,
+  type CrashMarker,
+  type CrashReason,
+} from "./events";
+import { sessionIdFromFile } from "./recorder";
 
 export type CrashMarkerInput = {
+  /** Overrides the session id; by default the newest flight log in `dir` is taken. */
+  sessionId?: string;
   reason?: CrashReason;
   error?: (Error & { code?: string }) | unknown;
   code?: number;
@@ -40,6 +48,9 @@ export function writeCrashMarker(dir: string, input: CrashMarkerInput = {}): str
   const marker: CrashMarker = {
     type: "external-crash",
     wall: Date.now(),
+    // The dying thread owns the session id; the parent recovers it from the
+    // newest flight log, which at the moment of death is the dying session's.
+    sessionId: input.sessionId ?? newestSessionId(dir),
     reason: input.reason ?? classifyReason(input),
     errorCode: error?.code,
     errorName: error?.name,
@@ -106,6 +117,20 @@ export function superviseWorker(
 }
 
 // Internals
+
+function newestSessionId(dir: string): string | undefined {
+  let names: string[];
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    return undefined;
+  }
+  const newest = names
+    .filter((name) => name.startsWith(`${FLIGHT_FILE_PREFIX}-`) && name.endsWith(".ndjson"))
+    .map((name) => ({ name, mtimeMs: fs.statSync(path.join(dir, name)).mtimeMs }))
+    .sort((lhs, rhs) => rhs.mtimeMs - lhs.mtimeMs)[0];
+  return newest ? sessionIdFromFile(newest.name) : undefined;
+}
 
 function classifyReason({ error, code, signal }: CrashMarkerInput): CrashReason {
   const errorCode = (error as { code?: string } | undefined)?.code;

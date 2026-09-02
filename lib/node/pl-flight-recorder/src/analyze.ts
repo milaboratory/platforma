@@ -7,7 +7,7 @@ import type {
   SessionEnvironment,
 } from "./events";
 import { SAMPLER_FILE_PREFIX, SESSION_END_RECORD, SESSION_RECORD } from "./events";
-import { listSessions, readSession, sessionIdFromFile } from "./recorder";
+import { listSessions, readSession, sessionIdFromFile, sessionStartFromId } from "./recorder";
 import { readCrashMarkers } from "./supervisor";
 import type { FindingSeverity, JoinNodeDigest, StructuralFinding } from "./digest";
 
@@ -143,10 +143,7 @@ export function analyzeSession(file: string, dir: string = path.dirname(file)): 
   const samples = readSamples(path.join(dir, `${SAMPLER_FILE_PREFIX}-${sessionId}.ndjson`));
 
   const ended = records.find((r) => r.type === SESSION_END_RECORD);
-  const lastWall = records.at(-1)?.wall ?? 0;
-  // The supervisor writes after the thread is already gone, so the marker
-  // belonging to this session is the first recorded at or after its last record.
-  const crashMarker = readCrashMarkers(dir).find((marker) => marker.wall >= lastWall - 1000);
+  const crashMarker = ended ? undefined : findCrashMarker(dir, sessionId, records);
 
   const memory = analyzeMemory(records, samples, header.env);
   const operations = pairOperations(records);
@@ -228,6 +225,38 @@ const CAUSE_RULES = [
   "unbounded-getData",
   "huge-inline-column",
 ];
+
+/**
+ * The marker for a session is the one that names it. Older markers carry no
+ * session id; for those the fallback is the window between this session's last
+ * record and the start of whichever session began next, so a later session's
+ * death is never mistaken for this one's.
+ */
+function findCrashMarker(
+  dir: string,
+  sessionId: string,
+  records: FlightRecord[],
+): CrashMarker | undefined {
+  const markers = readCrashMarkers(dir);
+  const named = markers.find((marker) => marker.sessionId === sessionId);
+  if (named) return named;
+
+  const lastWall = records.at(-1)?.wall ?? 0;
+  const thisStart = sessionStartFromId(sessionId);
+  const nextStart = listSessions(dir)
+    .map((session) => sessionStartFromId(sessionIdFromFile(session.file)))
+    .filter((start) => start > thisStart)
+    .sort((lhs, rhs) => lhs - rhs)[0];
+  // A marker cannot predate the session it belongs to; the small backward
+  // tolerance only absorbs clock drift between the parent and the worker.
+  const notBefore = Math.max(thisStart, lastWall - 1000);
+  return markers.find(
+    (marker) =>
+      marker.sessionId === undefined &&
+      marker.wall >= notBefore &&
+      (nextStart === undefined || marker.wall < nextStart),
+  );
+}
 
 function readSamples(file: string): SamplerRecord[] {
   try {

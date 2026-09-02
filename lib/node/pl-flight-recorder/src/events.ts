@@ -61,6 +61,8 @@ export type SamplerRecord = FlightRecordBase & {
 export type CrashMarker = {
   type: "external-crash";
   wall: number;
+  /** Session the marker belongs to, when the supervisor could tell. */
+  sessionId?: string;
   reason: CrashReason;
   errorCode?: string;
   errorName?: string;
