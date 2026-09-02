@@ -586,7 +586,9 @@ export interface components {
        */
       clientSecret: string;
     };
-    AuthAPI_BeginSSOLogin_Request: Record<string, never>;
+    AuthAPI_BeginSSOLogin_Request: {
+      idp: string;
+    };
     AuthAPI_BeginSSOLogin_Response: {
       publicPkce: components["schemas"]["AuthAPI_BeginSSOLogin_PublicPKCE"];
     };
@@ -672,6 +674,7 @@ export interface components {
     AuthAPI_Login_BasicCredentials: {
       login: string;
       password: string;
+      idp: string;
     };
     AuthAPI_Login_Request: {
       basic: components["schemas"]["AuthAPI_Login_BasicCredentials"];
@@ -695,6 +698,7 @@ export interface components {
     AuthAPI_Login_SSOCredentials: {
       /** Format: bytes */
       tokenResponse: string;
+      idp: string;
     };
     /**
      * @description TokenCredentials accepts any opaque bearer-style string: a controller

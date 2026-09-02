@@ -862,7 +862,9 @@ components:
              desktop, which performs the token exchange as a confidential client.
     AuthAPI_BeginSSOLogin_Request:
       type: object
-      properties: {}
+      properties:
+        idp:
+          type: string
     AuthAPI_BeginSSOLogin_Response:
       type: object
       properties:
@@ -1007,6 +1009,8 @@ components:
           type: string
         password:
           type: string
+        idp:
+          type: string
     AuthAPI_Login_Request:
       type: object
       properties:
@@ -1039,6 +1043,8 @@ components:
         tokenResponse:
           type: string
           format: bytes
+        idp:
+          type: string
       description: |-
         SSOCredentials carries the raw JSON body returned by the IdP's /token
          endpoint after the desktop completes a PKCE exchange.

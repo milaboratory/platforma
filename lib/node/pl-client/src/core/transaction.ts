@@ -1238,6 +1238,8 @@ export class PlTransaction {
         includeKv: opts?.includeKv ?? false,
         maxDepth: opts?.maxDepth,
         showSoftDeletes: false,
+        // Empty token requests the full tree — this call has no continuation to resume.
+        changedSinceToken: new Uint8Array(0),
       },
     });
 
