@@ -1,0 +1,259 @@
+import fs from "node:fs";
+import path from "node:path";
+import os from "node:os";
+import v8 from "node:v8";
+import {
+  FLIGHT_FILE_PREFIX,
+  SESSION_END_RECORD,
+  SESSION_RECORD,
+  type FlightRecord,
+  type MemorySnapshot,
+  type SessionEnvironment,
+} from "./events";
+
+export type RecorderOptions = {
+  /** Directory holding flight logs; created if absent. */
+  dir: string;
+  /** Which part of the app is recording, e.g. `middle-layer`. */
+  role?: string;
+  /** Free-form context stored in the session header (app version, project id). */
+  meta?: Record<string, unknown>;
+  /** Log is rotated past this size so the tail, which explains the crash, survives. */
+  maxFileBytes?: number;
+};
+
+export type Recorder = {
+  readonly sessionId: string;
+  readonly file: string;
+  /** Appends one record and returns its sequence number. Never throws. */
+  event(type: string, payload?: Record<string, unknown>): number;
+  /** Memory reading for the calling thread; `rss` is process-wide. */
+  memorySnapshot(): MemorySnapshot;
+  /** Writes the terminating record. Its absence is how a crash is detected. */
+  close(reason?: string): void;
+};
+
+export type SessionFileInfo = {
+  file: string;
+  mtimeMs: number;
+  bytes: number;
+  /** True when the log has no terminating record, i.e. the process died. */
+  crashed: boolean;
+};
+
+export type ParsedSession = {
+  file: string;
+  records: FlightRecord[];
+  /** True when the last line was cut mid-write by the kill. */
+  truncatedTail: boolean;
+};
+
+/**
+ * Opens a flight log for this process and writes the session header.
+ *
+ * Records are appended with a synchronous write rather than through a stream:
+ * the process being recorded dies without warning — V8 fatal out-of-memory, a
+ * failed native allocation, the OS out-of-memory killer — so no exit hook, no
+ * flush and no `finally` block runs. Anything still sitting in a userspace
+ * buffer is exactly the part that would have explained the death.
+ */
+export function openRecorder(options: RecorderOptions): Recorder {
+  const { dir, role = "middle-layer", meta = {}, maxFileBytes = 32 * 1024 * 1024 } = options;
+  fs.mkdirSync(dir, { recursive: true });
+
+  const sessionId = `${Date.now()}-${process.pid}-${randomTag()}`;
+  const file = path.join(dir, `${FLIGHT_FILE_PREFIX}-${sessionId}.ndjson`);
+  const state = { fd: fs.openSync(file, "a"), bytes: 0, seq: 0, closed: false };
+
+  const memorySnapshot = (): MemorySnapshot => {
+    const usage = process.memoryUsage();
+    return {
+      rss: usage.rss,
+      heapUsed: usage.heapUsed,
+      heapTotal: usage.heapTotal,
+      external: usage.external,
+      arrayBuffers: usage.arrayBuffers,
+      heapLimit: v8.getHeapStatistics().heap_size_limit,
+    };
+  };
+
+  const event = (type: string, payload: Record<string, unknown> = {}): number => {
+    if (state.closed) return -1;
+    const seq = ++state.seq;
+    writeLine(state, file, maxFileBytes, {
+      seq,
+      t: monotonic(),
+      wall: Date.now(),
+      type,
+      ...payload,
+    });
+    return seq;
+  };
+
+  const recorder: Recorder = {
+    sessionId,
+    file,
+    event,
+    memorySnapshot,
+    close(reason = "normal") {
+      if (state.closed) return;
+      event(SESSION_END_RECORD, { reason, mem: memorySnapshot() });
+      state.closed = true;
+      try {
+        fs.closeSync(state.fd);
+      } catch {
+        // Closing an already-dead descriptor must not fail shutdown.
+      }
+    },
+  };
+
+  event(SESSION_RECORD, {
+    role,
+    pid: process.pid,
+    meta,
+    env: describeEnvironment(),
+    mem: memorySnapshot(),
+  });
+
+  return recorder;
+}
+
+/**
+ * Periodic memory record written by the recorded thread itself.
+ *
+ * Doubles as a stall detector. This timer cannot fire while its thread is inside
+ * a long synchronous call, so a gap here that the independent sampler thread
+ * does not share means the thread was blocked — which is also why the heap
+ * reading nearest a synchronous blow-up is always stale.
+ */
+export function startSelfSampler(recorder: Recorder, intervalMs = 500): () => void {
+  let last = Date.now();
+  const timer = setInterval(() => {
+    const now = Date.now();
+    recorder.event("mem-self", {
+      mem: recorder.memorySnapshot(),
+      stallMs: Math.max(0, now - last - intervalMs),
+    });
+    last = now;
+  }, intervalMs);
+  timer.unref();
+  return () => clearInterval(timer);
+}
+
+/** Flight logs in a directory, newest first, each flagged as crashed or clean. */
+export function listSessions(dir: string): SessionFileInfo[] {
+  let names: string[];
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    return [];
+  }
+  return names
+    .filter((name) => name.startsWith(`${FLIGHT_FILE_PREFIX}-`) && name.endsWith(".ndjson"))
+    .map((name) => {
+      const file = path.join(dir, name);
+      const stat = fs.statSync(file);
+      return { file, mtimeMs: stat.mtimeMs, bytes: stat.size, crashed: !hasSessionEnd(file) };
+    })
+    .sort((lhs, rhs) => rhs.mtimeMs - lhs.mtimeMs);
+}
+
+/** Parses a flight log, tolerating a final line cut short by a hard kill. */
+export function readSession(file: string): ParsedSession {
+  const records: FlightRecord[] = [];
+  let truncatedTail = false;
+  const lines = fs.readFileSync(file, "utf8").split("\n");
+  for (const [index, line] of lines.entries()) {
+    if (line === "") continue;
+    try {
+      records.push(JSON.parse(line) as FlightRecord);
+    } catch {
+      if (index >= lines.length - 2) truncatedTail = true;
+    }
+  }
+  return { file, records, truncatedTail };
+}
+
+/** Session id embedded in a flight log's file name. */
+export function sessionIdFromFile(file: string): string {
+  const match = path.basename(file).match(/^flight-(.+)\.ndjson(\.1)?$/);
+  return match ? match[1] : path.basename(file);
+}
+
+// Internals
+
+type WriterState = { fd: number; bytes: number; seq: number; closed: boolean };
+
+function writeLine(
+  state: WriterState,
+  file: string,
+  maxFileBytes: number,
+  record: FlightRecord,
+): void {
+  let line: string;
+  try {
+    line = `${JSON.stringify(record, bigintSafe)}\n`;
+  } catch {
+    line = `${JSON.stringify({ seq: record.seq, type: "record-serialization-failed" })}\n`;
+  }
+  try {
+    if (state.bytes + line.length > maxFileBytes) rotate(state, file);
+    fs.writeSync(state.fd, line);
+    state.bytes += line.length;
+  } catch {
+    // A recorder that cannot write stays silent rather than cascading into the
+    // application it is only supposed to observe.
+  }
+}
+
+// The tail is the only part that explains a crash, so the old file is parked
+// beside the new one instead of the new writes being dropped.
+function rotate(state: WriterState, file: string): void {
+  fs.closeSync(state.fd);
+  try {
+    fs.renameSync(file, `${file}.1`);
+  } catch {
+    // If the parked slot cannot be written, recording simply continues.
+  }
+  state.fd = fs.openSync(file, "a");
+  state.bytes = 0;
+}
+
+function hasSessionEnd(file: string): boolean {
+  const size = fs.statSync(file).size;
+  if (size === 0) return false;
+  const window = Math.min(size, 8192);
+  const buffer = Buffer.alloc(window);
+  const fd = fs.openSync(file, "r");
+  try {
+    fs.readSync(fd, buffer, 0, window, size - window);
+  } finally {
+    fs.closeSync(fd);
+  }
+  return buffer.toString("utf8").includes(`"type":"${SESSION_END_RECORD}"`);
+}
+
+function describeEnvironment(): SessionEnvironment {
+  const maxOldSpaceFlag = process.execArgv.find((arg) => arg.startsWith("--max-old-space-size"));
+  return {
+    node: process.version,
+    platform: `${process.platform}-${process.arch}`,
+    cpus: os.cpus().length,
+    totalMemory: os.totalmem(),
+    heapLimit: v8.getHeapStatistics().heap_size_limit,
+    execArgv: [...process.execArgv],
+    maxOldSpaceSize: maxOldSpaceFlag ? Number(maxOldSpaceFlag.split("=")[1]) : undefined,
+  };
+}
+
+function bigintSafe(_key: string, value: unknown): unknown {
+  return typeof value === "bigint" ? Number(value) : value;
+}
+
+function monotonic(): number {
+  return Math.round(performance.now() * 1000) / 1000;
+}
+
+function randomTag(): string {
+  return Math.random().toString(36).slice(2, 8);
+}
