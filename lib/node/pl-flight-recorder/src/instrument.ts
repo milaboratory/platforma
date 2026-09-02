@@ -308,9 +308,29 @@ function record<R>(
     digest = { digestFailed: describeError(error) };
   }
   const findings = "findings" in digest ? digest.findings : undefined;
-  const seq = recorder.event(op, { def: digest, findings, mem: recorder.memorySnapshot() });
+  // A creation call is synchronous but not free: it hands the definition to the
+  // native engine, which can allocate. It gets a begin/end pair like any other
+  // operation, so a death inside it is attributed to it and not to the render
+  // around it.
+  const seq = recorder.event(`${op}-begin`, {
+    def: digest,
+    findings,
+    mem: recorder.memorySnapshot(),
+  });
+  const startedAt = performance.now();
 
-  const result = call();
+  let result: R;
+  try {
+    result = call();
+  } catch (error) {
+    recorder.event(`${op}-error`, {
+      begin: seq,
+      ms: round(performance.now() - startedAt),
+      error: describeError(error),
+      mem: recorder.memorySnapshot(),
+    });
+    throw error;
+  }
 
   const handle = handleOf(result);
   const tree = "tree" in digest ? digest.tree : undefined;
@@ -320,7 +340,12 @@ function record<R>(
     inputRowsMax: tree?.inputRowsMax ?? ("inputRows" in digest ? digest.inputRows : undefined),
     digest: "kind" in digest ? digest : undefined,
   });
-  recorder.event(`${op}-handle`, { begin: seq, handle: shortHandle(handle) });
+  recorder.event(`${op}-end`, {
+    begin: seq,
+    ms: round(performance.now() - startedAt),
+    handle: shortHandle(handle),
+    mem: recorder.memorySnapshot(),
+  });
   return result;
 }
 

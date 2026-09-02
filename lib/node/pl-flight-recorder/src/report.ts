@@ -334,7 +334,7 @@ function findCulpritJoin(records: FlightRecord[], analysis: SessionAnalysis): Cu
     const joinSeq = beginRecord?.joinSeq as number | undefined;
     const join = joinSeq === undefined ? undefined : bySeq.get(joinSeq);
     if (join?.def) {
-      return { seq: join.seq, type: join.type, def: join.def as Record<string, unknown> };
+      return { seq: join.seq, type: opName(join.type), def: join.def as Record<string, unknown> };
     }
   }
   // Otherwise the most recent join carrying a structural finding.
@@ -343,8 +343,16 @@ function findCulpritJoin(records: FlightRecord[], analysis: SessionAnalysis): Cu
   );
   const fallback = flagged ?? records.findLast((record) => record.def);
   return fallback
-    ? { seq: fallback.seq, type: fallback.type, def: fallback.def as Record<string, unknown> }
+    ? {
+        seq: fallback.seq,
+        type: opName(fallback.type),
+        def: fallback.def as Record<string, unknown>,
+      }
     : undefined;
+}
+
+function opName(recordType: string): string {
+  return recordType.replace(/-(begin|end|error)$/, "");
 }
 
 function sparkline(series: { wall: number; rss?: number }[], width = 72): string {

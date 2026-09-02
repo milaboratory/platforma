@@ -63,7 +63,13 @@ export function openRecorder(options: RecorderOptions): Recorder {
 
   const sessionId = `${Date.now()}-${process.pid}-${randomTag()}`;
   const file = path.join(dir, `${FLIGHT_FILE_PREFIX}-${sessionId}.ndjson`);
-  const state = { fd: fs.openSync(file, "a"), bytes: 0, seq: 0, closed: false };
+  const state: WriterState = {
+    fd: fs.openSync(file, "a"),
+    bytes: 0,
+    seq: 0,
+    closed: false,
+    header: undefined,
+  };
 
   const memorySnapshot = (): MemorySnapshot => {
     const usage = process.memoryUsage();
@@ -107,13 +113,10 @@ export function openRecorder(options: RecorderOptions): Recorder {
     },
   };
 
-  event(SESSION_RECORD, {
-    role,
-    pid: process.pid,
-    meta,
-    env: describeEnvironment(),
-    mem: memorySnapshot(),
-  });
+  // Kept so a rotated log can be given the same header again: the active file
+  // must describe its own session even if the parked segment is lost.
+  state.header = { role, pid: process.pid, meta, env: describeEnvironment() };
+  event(SESSION_RECORD, { ...state.header, mem: memorySnapshot() });
 
   return recorder;
 }
@@ -158,10 +161,28 @@ export function listSessions(dir: string): SessionFileInfo[] {
     .sort((lhs, rhs) => rhs.mtimeMs - lhs.mtimeMs);
 }
 
-/** Parses a flight log, tolerating a final line cut short by a hard kill. */
+/**
+ * Parses a flight log, tolerating a final line cut short by a hard kill.
+ *
+ * A rotated session spans two files: the parked `.1` segment holds the original
+ * header and the earlier operations, the active file holds the tail. Both are
+ * read so begin records in one segment can be paired with end records in the
+ * other; sequence numbers run across the boundary.
+ */
 export function readSession(file: string): ParsedSession {
   const records: FlightRecord[] = [];
   let truncatedTail = false;
+  const parked = `${file}.1`;
+  if (fs.existsSync(parked)) {
+    for (const line of fs.readFileSync(parked, "utf8").split("\n")) {
+      if (line === "") continue;
+      try {
+        records.push(JSON.parse(line) as FlightRecord);
+      } catch {
+        // A damaged line in the parked segment costs one record, not the session.
+      }
+    }
+  }
   const lines = fs.readFileSync(file, "utf8").split("\n");
   for (const [index, line] of lines.entries()) {
     if (line === "") continue;
@@ -174,6 +195,12 @@ export function readSession(file: string): ParsedSession {
   return { file, records, truncatedTail };
 }
 
+/** Wall-clock start of a session, taken from the id its file name carries. */
+export function sessionStartFromId(sessionId: string): number {
+  const start = Number(sessionId.split("-")[0]);
+  return Number.isFinite(start) ? start : 0;
+}
+
 /** Session id embedded in a flight log's file name. */
 export function sessionIdFromFile(file: string): string {
   const match = path.basename(file).match(/^flight-(.+)\.ndjson(\.1)?$/);
@@ -182,7 +209,13 @@ export function sessionIdFromFile(file: string): string {
 
 // Internals
 
-type WriterState = { fd: number; bytes: number; seq: number; closed: boolean };
+type WriterState = {
+  fd: number;
+  bytes: number;
+  seq: number;
+  closed: boolean;
+  header: Record<string, unknown> | undefined;
+};
 
 function writeLine(
   state: WriterState,
@@ -197,7 +230,26 @@ function writeLine(
     line = `${JSON.stringify({ seq: record.seq, type: "record-serialization-failed" })}\n`;
   }
   try {
-    if (state.bytes + line.length > maxFileBytes) rotate(state, file);
+    if (state.bytes + line.length > maxFileBytes) {
+      rotate(state, file);
+      // Re-emit the session header, marked as a continuation, so the active
+      // file alone still carries environment, heap limit and metadata.
+      if (state.header) {
+        const header = `${JSON.stringify(
+          {
+            seq: ++state.seq,
+            t: monotonic(),
+            wall: Date.now(),
+            type: SESSION_RECORD,
+            ...state.header,
+            continuation: true,
+          },
+          bigintSafe,
+        )}\n`;
+        fs.writeSync(state.fd, header);
+        state.bytes += header.length;
+      }
+    }
     fs.writeSync(state.fd, line);
     state.bytes += line.length;
   } catch {
@@ -207,7 +259,10 @@ function writeLine(
 }
 
 // The tail is the only part that explains a crash, so the old file is parked
-// beside the new one instead of the new writes being dropped.
+// beside the new one instead of the new writes being dropped. Exactly one parked
+// segment is kept, which bounds a session's disk use at twice the file limit;
+// a session that rotates twice keeps its header (re-emitted below) but loses
+// records older than the previous segment.
 function rotate(state: WriterState, file: string): void {
   fs.closeSync(state.fd);
   try {
