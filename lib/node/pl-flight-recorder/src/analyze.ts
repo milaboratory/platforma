@@ -227,10 +227,12 @@ const CAUSE_RULES = [
 ];
 
 /**
- * The marker for a session is the one that names it. Older markers carry no
- * session id; for those the fallback is the window between this session's last
- * record and the start of whichever session began next, so a later session's
- * death is never mistaken for this one's.
+ * The marker for a session is the one that names it with an id the parent
+ * assigned. A guessed id — read off the newest open log at the moment of death —
+ * can name a concurrent live session instead of the dying one, so it counts only
+ * when the time window agrees. Markers without an id fall back to the window
+ * alone: between this session's last record and the start of whichever session
+ * began next, and never before this session's own start.
  */
 function findCrashMarker(
   dir: string,
@@ -238,8 +240,10 @@ function findCrashMarker(
   records: FlightRecord[],
 ): CrashMarker | undefined {
   const markers = readCrashMarkers(dir);
-  const named = markers.find((marker) => marker.sessionId === sessionId);
-  if (named) return named;
+  const assigned = markers.find(
+    (marker) => marker.sessionId === sessionId && marker.sessionIdSource === "assigned",
+  );
+  if (assigned) return assigned;
 
   const lastWall = records.at(-1)?.wall ?? 0;
   const thisStart = sessionStartFromId(sessionId);
@@ -250,12 +254,15 @@ function findCrashMarker(
   // A marker cannot predate the session it belongs to; the small backward
   // tolerance only absorbs clock drift between the parent and the worker.
   const notBefore = Math.max(thisStart, lastWall - 1000);
-  return markers.find(
+  const inWindow = (marker: CrashMarker) =>
+    marker.wall >= notBefore && (nextStart === undefined || marker.wall < nextStart);
+
+  const guessed = markers.find(
     (marker) =>
-      marker.sessionId === undefined &&
-      marker.wall >= notBefore &&
-      (nextStart === undefined || marker.wall < nextStart),
+      marker.sessionId === sessionId && marker.sessionIdSource !== "assigned" && inWindow(marker),
   );
+  if (guessed) return guessed;
+  return markers.find((marker) => marker.sessionId === undefined && inWindow(marker));
 }
 
 function readSamples(file: string): SamplerRecord[] {

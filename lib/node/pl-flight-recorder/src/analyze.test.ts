@@ -243,6 +243,47 @@ describe("review findings", () => {
     expect(analyzeSession(newer.file, dir).crashMarker?.sessionId).toBe(newer.sessionId);
   });
 
+  test("an assigned session id binds the marker even while a newer session is live", () => {
+    const dying = openRecorder({ dir });
+    dying.event("getData-begin", { handle: "t1" });
+    const live = openRecorder({ dir });
+    live.event("getShape-begin", { handle: "t2" });
+    // The live session keeps appending after the worker died — it is the newer file.
+    writeCrashMarker(dir, {
+      sessionId: dying.sessionId,
+      error: Object.assign(new Error("Worker terminated"), { code: "ERR_WORKER_OUT_OF_MEMORY" }),
+    });
+    live.event("getShape-end", { begin: 2, mem: live.memorySnapshot() });
+
+    expect(analyzeSession(dying.file, dir).crashMarker?.sessionId).toBe(dying.sessionId);
+    expect(analyzeSession(dying.file, dir).verdict.memoryRegion).toBe(
+      "js-heap-exhaustion-confirmed",
+    );
+    expect(analyzeSession(live.file, dir).crashMarker).toBeUndefined();
+  });
+
+  test("a guessed session id never pins the death on a session that outlived it", () => {
+    const dying = openRecorder({ dir });
+    dying.event("getData-begin", { handle: "t1" });
+    const live = openRecorder({ dir });
+    live.event("getShape-begin", { handle: "t2" });
+    // No id handed over: the supervisor can only guess, and the newest open log
+    // is the live session's, not the dying one's.
+    writeCrashMarker(dir, {
+      error: Object.assign(new Error("Worker terminated"), { code: "ERR_WORKER_OUT_OF_MEMORY" }),
+    });
+    // The live session goes on well past the marker.
+    fs.appendFileSync(
+      live.file,
+      `${JSON.stringify({ seq: 99, t: 0, wall: Date.now() + 60_000, type: "mem-self" })}\n`,
+    );
+
+    const marker = analyzeSession(live.file, dir).crashMarker;
+    expect(marker).toBeUndefined();
+    // The dying session gets no confirmation either — honest, rather than wrong.
+    expect(analyzeSession(dying.file, dir).crashMarker).toBeUndefined();
+  });
+
   test("a legacy marker without a session id is bounded by the next session's start", () => {
     const first = openRecorder({ dir });
     first.event("getData-begin", { handle: "t1" });
