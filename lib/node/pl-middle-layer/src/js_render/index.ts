@@ -8,6 +8,10 @@ import type { DeadlineSettings } from "./context";
 import { JsExecutionContext } from "./context";
 import type { BlockContextAny } from "../middle_layer/block_ctx";
 import { getDebugFlags } from "../debug";
+import { recordModelRenderSync } from "@milaboratories/pl-flight-recorder";
+
+/** Memory ceiling applied to every QuickJS runtime that evaluates model code. */
+const QUICK_JS_MEMORY_LIMIT = 1024 * 1024 * 8;
 
 function logOutputStatus(
   handle: string,
@@ -106,7 +110,7 @@ export function computableFromRF(
 
     try {
       const runtime = scope.manage(env.quickJs.newRuntime());
-      runtime.setMemoryLimit(1024 * 1024 * 8);
+      runtime.setMemoryLimit(QUICK_JS_MEMORY_LIMIT);
       runtime.setMaxStackSize(1024 * 320);
 
       let deadlineSettings: DeadlineSettings | undefined;
@@ -126,50 +130,83 @@ export function computableFromRF(
         { computableCtx: cCtx, blockCtx: ctx, mlEnv: env },
       );
 
-      rCtx.evaluateBundle(code.content);
-      const result = rCtx.runCallback(fh.handle);
-
-      rCtx.resetComputableCtx();
-
-      const toBeResolved = rCtx.computableHelper!.computablesToResolve;
-
-      if (Object.keys(toBeResolved).length === 0) {
-        const importedResult = rCtx.importObjectUniversal(result);
-        if (getDebugFlags().logJsExecStat)
-          console.log(`[jsExec] ${key}: ${JSON.stringify(rCtx.stats)}`);
-        logOutputStatus(
-          fh.handle,
-          importedResult,
-          cCtx.unstableMarker === undefined,
-          -1,
-          cCtx.unstableMarker,
-        );
-        return { ir: importedResult };
-      }
-
-      let recalculationCounter = 0;
-      if (getDebugFlags().logOutputStatus)
-        console.log(`Output ${fh.handle} scaffold calculated (not all computables resolved yet).`);
-      keepVmAlive = true;
-
-      return {
-        ir: toBeResolved,
-        postprocessValue: (resolved: Record<string, unknown>, { unstableMarker, stable }) => {
-          // resolving futures
-          for (const [handle, value] of Object.entries(resolved)) rCtx.runCallback(handle, value);
-
-          // rendering result
-          const renderedResult = rCtx.importObjectUniversal(result);
-
-          // logging
-          recalculationCounter++;
-          if (getDebugFlags().logJsExecStat)
-            console.log(`[jsExec] ${key} #${recalculationCounter}: ${JSON.stringify(rCtx.stats)}`);
-          logOutputStatus(fh.handle, renderedResult, stable, recalculationCounter, unstableMarker);
-
-          return renderedResult;
-        },
+      const flightRecorder = env.driverKit.flightRecorder;
+      const renderInfo = {
+        blockId: ctx.blockId,
+        key,
+        lambda: fh.handle,
+        // The sandbox has its own 8 MB ceiling, so the model's own objects can
+        // never exhaust the host heap. What can is the volume crossing out of
+        // it, which `stats` counts.
+        sandboxMemoryLimit: QUICK_JS_MEMORY_LIMIT,
+        getStats: () => ({ ...rCtx.stats }),
       };
+
+      return recordModelRenderSync(flightRecorder, renderInfo, () => {
+        rCtx.evaluateBundle(code.content);
+        const result = rCtx.runCallback(fh.handle);
+
+        rCtx.resetComputableCtx();
+
+        const toBeResolved = rCtx.computableHelper!.computablesToResolve;
+
+        if (Object.keys(toBeResolved).length === 0) {
+          const importedResult = rCtx.importObjectUniversal(result);
+          if (getDebugFlags().logJsExecStat)
+            console.log(`[jsExec] ${key}: ${JSON.stringify(rCtx.stats)}`);
+          logOutputStatus(
+            fh.handle,
+            importedResult,
+            cCtx.unstableMarker === undefined,
+            -1,
+            cCtx.unstableMarker,
+          );
+          return { ir: importedResult };
+        }
+
+        let recalculationCounter = 0;
+        if (getDebugFlags().logOutputStatus)
+          console.log(
+            `Output ${fh.handle} scaffold calculated (not all computables resolved yet).`,
+          );
+        keepVmAlive = true;
+
+        return {
+          ir: toBeResolved,
+          postprocessValue: (resolved: Record<string, unknown>, { unstableMarker, stable }) => {
+            recalculationCounter++;
+            // A deferred render resumes here, potentially many times, and each
+            // resumption can build joins of its own, so each gets its own span.
+            return recordModelRenderSync(
+              flightRecorder,
+              { ...renderInfo, recalculation: recalculationCounter },
+              () => {
+                // resolving futures
+                for (const [handle, value] of Object.entries(resolved))
+                  rCtx.runCallback(handle, value);
+
+                // rendering result
+                const renderedResult = rCtx.importObjectUniversal(result);
+
+                // logging
+                if (getDebugFlags().logJsExecStat)
+                  console.log(
+                    `[jsExec] ${key} #${recalculationCounter}: ${JSON.stringify(rCtx.stats)}`,
+                  );
+                logOutputStatus(
+                  fh.handle,
+                  renderedResult,
+                  stable,
+                  recalculationCounter,
+                  unstableMarker,
+                );
+
+                return renderedResult;
+              },
+            );
+          },
+        };
+      });
     } catch (e) {
       keepVmAlive = false;
       throw e;
@@ -189,7 +226,7 @@ export function executeSingleLambda(
   const scope = new Scope();
   try {
     const runtime = scope.manage(quickJs.newRuntime());
-    runtime.setMemoryLimit(1024 * 1024 * 8);
+    runtime.setMemoryLimit(QUICK_JS_MEMORY_LIMIT);
     runtime.setMaxStackSize(1024 * 320);
 
     let deadlineSettings: DeadlineSettings | undefined;
