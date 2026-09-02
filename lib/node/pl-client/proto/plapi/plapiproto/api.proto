@@ -608,6 +608,23 @@ message TxAPI {
 
     message Response {
       Tx tx = 1;
+
+      // The token to store and send back as changed_since_token on any later Tree
+      // request. Everything the token denotes has finished committing, and it is
+      // sampled as this transaction opens, so a write that had not committed by
+      // then sits above it while one that had is visible to this transaction's
+      // reads. One token per transaction, however many tree reads it issues.
+      //
+      // Absent on a WRITABLE open, which is issued no token: the walk would see
+      // that transaction's own uncommitted writes (see changed_since_token).
+      //
+      // Store it only after a whole tree response has been applied successfully. A
+      // client that keeps it after a partial apply will never be sent the
+      // resources it dropped. Clear it on tree rebuild, on a root-set change, and
+      // whenever the seed array is invalidated - the server no longer refuses a
+      // token presented against a differently shaped request, so that is the
+      // client's to enforce.
+      bytes next_since_token = 2;
     }
   }
   message Commit {
@@ -961,7 +978,35 @@ message ResourceAPI {
       // are included with deleted_time populated.
       bool show_soft_deletes = 9;
 
-      // next free: 10;
+      // An opaque continuation token, taken verbatim from a previous response's
+      // next_since_token. The server returns bodies only for resources that
+      // changed after the point this token denotes; every other visited resource
+      // gets a body-less frame with resource_unchanged set. Empty or absent (the
+      // default) requests the full tree.
+      //
+      // Clients must not parse, construct or compare this value: its encoding is
+      // server-private and may change without a wire version bump. Store the
+      // token only after applying a whole response successfully.
+      //
+      // A token the server cannot use is answered with the full tree, never with
+      // an error, so it is always safe to send back whatever was last received.
+      // The server detects and ignores a token that does not fit the request it
+      // arrives on - the token is bound to the traversal-shaping parameters
+      // (resource_id, seeds, max_depth, include_kv, show_soft_deletes,
+      // field_filter, traverse_stop_rules), so changing any of them costs one
+      // full tree instead of silently reporting never-sent resources as held.
+      //
+      // Ignored on a WRITABLE transaction, which also receives no
+      // next_since_token: the walk sees that transaction's uncommitted writes, so
+      // delta skipping there could pin a body describing state that never
+      // committed. Poll from a read-only transaction.
+      //
+      // Servers advertise support via "treeChangedSince:v1" in
+      // MaintenanceAPI.Ping.Response.capabilities; old servers ignore this field
+      // and always send the full tree.
+      bytes changed_since_token = 10;
+
+      // next free: 11;
     }
 
     // A single entry point for multi-root tree traversal.
@@ -1049,8 +1094,9 @@ message ResourceAPI {
     // Multi-message
     message Response {
       // Full resource payload. Absent on stop-marker frames (when the server
-      // advertises `treeStopMarker:v1` and traverse_was_stopped is true).
-      // Always populated on normal frames.
+      // advertises `treeStopMarker:v1` and traverse_was_stopped is true) and on
+      // unchanged frames (when resource_unchanged is true). Populated on every
+      // other frame.
       optional Resource resource = 1;
 
       // Populated only when include_kv=true in the request.
@@ -1067,10 +1113,27 @@ message ResourceAPI {
       // are zero/empty.
       bool traverse_was_stopped = 3;
 
-      // Populated only on stop-marker frames (resource is unset).
-      // Zero / empty on normal frames; use resource.resource_id instead.
+      // Populated on frames where resource is unset - stop-marker and unchanged
+      // frames. Zero / empty on frames carrying a resource; use
+      // resource.resource_id instead.
       uint64 resource_id = 4;
       bytes resource_signature = 5;
+
+      // True on a body-less frame emitted for a resource the client already holds:
+      // resource is unset, and resource_id and resource_signature carry the
+      // identity instead. The client keeps everything it holds for that resource,
+      // fields and kv alike, and the traversal still descends into it - an
+      // unchanged parent routinely has changed children.
+      //
+      // Orthogonal to traverse_was_stopped; a frame may set both.
+      //
+      // A resource may appear twice in one response: an unchanged frame, then a
+      // body frame later in the same response. The later frame supersedes the
+      // earlier one, so apply frames in arrival order and treat an unchanged
+      // frame for an unknown resource as benign rather than fatal.
+      bool resource_unchanged = 6;
+
+      // next free: 7;
     }
   }
 
@@ -1735,7 +1798,9 @@ message AuthAPI {
   // before redirecting to the IdP. The current stub implementation forgets the
   // nonce immediately and does not validate it on Login.
   message BeginSSOLogin {
-    message Request {}
+    message Request {
+      optional string idp = 1;
+    }
 
     message PublicPKCE {
       string nonce = 1; // server-issued one-time value
@@ -1790,6 +1855,7 @@ message AuthAPI {
     message BasicCredentials {
       string login = 1;
       string password = 2;
+      optional string idp = 3;
     }
 
     // TokenCredentials accepts any opaque bearer-style string: a controller
@@ -1802,6 +1868,7 @@ message AuthAPI {
     // endpoint after the desktop completes a PKCE exchange.
     message SSOCredentials {
       bytes token_response = 1;
+      optional string idp = 2;
     }
 
     message Request {
@@ -1968,10 +2035,22 @@ message AuthAPI {
   }
 
   message User {
-    // login is the stable identifier of the user — the grant target and the
-    // GetUserRoot key. Further fields (e.g. first name, last name, email) may
-    // be added later without breaking compatibility.
+    // login is the user's provider-facing login identifier and the value clients
+    // pass as a grant target / impersonation subject. It is the only identity a
+    // client needs: the backend resolves it to an internal id that is never
+    // exposed over the API.
     string login = 1;
+    // display_name is the user's human-readable name, mapped from the provider on
+    // login. May be empty for migrated users who have not logged in since upgrade.
+    string display_name = 2;
+    // email is the user's email, mapped from the provider on login. May be empty
+    // when the provider does not supply it or the mapping is disabled.
+    string email = 3;
+    // attributes carries the remaining provider-mapped attributes the client
+    // configured (e.g. full_name, external_id, custom fields), keyed by attribute
+    // name. The default attributes (login, display_name, email) are promoted to
+    // their own fields above and are not repeated here.
+    map<string, string> attributes = 4;
   }
 
   message ListUsers {
