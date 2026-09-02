@@ -63,6 +63,12 @@ export type CrashMarker = {
   wall: number;
   /** Session the marker belongs to, when the supervisor could tell. */
   sessionId?: string;
+  /**
+   * `assigned` when the parent handed the id to the worker and knows it for
+   * certain; `guessed` when it was read off the newest open flight log, which
+   * a concurrent live session can make wrong.
+   */
+  sessionIdSource?: "assigned" | "guessed";
   reason: CrashReason;
   errorCode?: string;
   errorName?: string;

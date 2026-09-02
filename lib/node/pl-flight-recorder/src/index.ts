@@ -1,5 +1,6 @@
 export {
   openRecorder,
+  newSessionId,
   startSelfSampler,
   listSessions,
   readSession,
@@ -15,6 +16,7 @@ export { startMemorySampler, type MemorySampler, type MemorySamplerOptions } fro
 export {
   openFlightSession,
   FLIGHT_DIR_ENV,
+  FLIGHT_SESSION_ENV,
   type FlightSession,
   type FlightSessionOptions,
 } from "./session";

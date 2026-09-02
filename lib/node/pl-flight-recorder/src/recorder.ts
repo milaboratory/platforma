@@ -20,6 +20,12 @@ export type RecorderOptions = {
   meta?: Record<string, unknown>;
   /** Log is rotated past this size so the tail, which explains the crash, survives. */
   maxFileBytes?: number;
+  /**
+   * Session id assigned by a supervising parent, so the crash marker the parent
+   * writes names this session with certainty rather than by inference.
+   * Generated when absent.
+   */
+  sessionId?: string;
 };
 
 export type Recorder = {
@@ -58,10 +64,15 @@ export type ParsedSession = {
  * buffer is exactly the part that would have explained the death.
  */
 export function openRecorder(options: RecorderOptions): Recorder {
-  const { dir, role = "middle-layer", meta = {}, maxFileBytes = 32 * 1024 * 1024 } = options;
+  const {
+    dir,
+    role = "middle-layer",
+    meta = {},
+    maxFileBytes = 32 * 1024 * 1024,
+    sessionId = newSessionId(),
+  } = options;
   fs.mkdirSync(dir, { recursive: true });
 
-  const sessionId = `${Date.now()}-${process.pid}-${randomTag()}`;
   const file = path.join(dir, `${FLIGHT_FILE_PREFIX}-${sessionId}.ndjson`);
   const state: WriterState = {
     fd: fs.openSync(file, "a"),
@@ -193,6 +204,16 @@ export function readSession(file: string): ParsedSession {
     }
   }
   return { file, records, truncatedTail };
+}
+
+/**
+ * Mints a session id. A parent that supervises a worker calls this, hands the id
+ * to the worker, and keeps it for the crash marker, so both sides agree on the
+ * session by construction. The leading timestamp is what
+ * {@link sessionStartFromId} reads back.
+ */
+export function newSessionId(): string {
+  return `${Date.now()}-${process.pid}-${randomTag()}`;
 }
 
 /** Wall-clock start of a session, taken from the id its file name carries. */

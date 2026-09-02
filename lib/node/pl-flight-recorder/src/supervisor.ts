@@ -1,15 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
-import {
-  CRASH_FILE_PREFIX,
-  FLIGHT_FILE_PREFIX,
-  type CrashMarker,
-  type CrashReason,
-} from "./events";
-import { sessionIdFromFile } from "./recorder";
+import { CRASH_FILE_PREFIX, type CrashMarker, type CrashReason } from "./events";
+import { listSessions, sessionIdFromFile } from "./recorder";
 
 export type CrashMarkerInput = {
-  /** Overrides the session id; by default the newest flight log in `dir` is taken. */
+  /** Session id the parent assigned to the worker; without it the newest open flight log is guessed. */
   sessionId?: string;
   reason?: CrashReason;
   error?: (Error & { code?: string }) | unknown;
@@ -19,6 +14,12 @@ export type CrashMarkerInput = {
 };
 
 export type SuperviseOptions = {
+  /**
+   * The session id handed to the worker at spawn (see `FLIGHT_SESSION_ENV`).
+   * With it the marker names the dying session with certainty; without it the
+   * newest open flight log is taken as a guess.
+   */
+  sessionId?: string;
   onCrash?: (info: {
     kind: "error" | "exit";
     markerFile: string;
@@ -45,12 +46,21 @@ export type SupervisedWorker = {
 export function writeCrashMarker(dir: string, input: CrashMarkerInput = {}): string {
   fs.mkdirSync(dir, { recursive: true });
   const error = input.error as (Error & { code?: string }) | undefined;
+  // Only an id the parent handed to the worker is certain. Reading the newest
+  // open flight log is a guess: a concurrent live session that appended after
+  // the dying worker's last record would be named instead, so the analyzer
+  // treats a guessed id as a hint to be checked against the time window.
+  const guessedSessionId = input.sessionId === undefined ? newestOpenSessionId(dir) : undefined;
   const marker: CrashMarker = {
     type: "external-crash",
     wall: Date.now(),
-    // The dying thread owns the session id; the parent recovers it from the
-    // newest flight log, which at the moment of death is the dying session's.
-    sessionId: input.sessionId ?? newestSessionId(dir),
+    sessionId: input.sessionId ?? guessedSessionId,
+    sessionIdSource:
+      input.sessionId !== undefined
+        ? "assigned"
+        : guessedSessionId !== undefined
+          ? "guessed"
+          : undefined,
     reason: input.reason ?? classifyReason(input),
     errorCode: error?.code,
     errorName: error?.name,
@@ -106,30 +116,27 @@ export function superviseWorker(
   let recorded = false;
   worker.on("error", (error: Error) => {
     recorded = true;
-    const markerFile = writeCrashMarker(dir, { error });
+    const markerFile = writeCrashMarker(dir, { error, sessionId: options.sessionId });
     options.onCrash?.({ kind: "error", error, markerFile });
   });
   worker.on("exit", (code: number) => {
     if (code === 0 || recorded) return;
-    const markerFile = writeCrashMarker(dir, { reason: "worker-exit", code });
+    const markerFile = writeCrashMarker(dir, {
+      reason: "worker-exit",
+      code,
+      sessionId: options.sessionId,
+    });
     options.onCrash?.({ kind: "exit", code, markerFile });
   });
 }
 
 // Internals
 
-function newestSessionId(dir: string): string | undefined {
-  let names: string[];
-  try {
-    names = fs.readdirSync(dir);
-  } catch {
-    return undefined;
-  }
-  const newest = names
-    .filter((name) => name.startsWith(`${FLIGHT_FILE_PREFIX}-`) && name.endsWith(".ndjson"))
-    .map((name) => ({ name, mtimeMs: fs.statSync(path.join(dir, name)).mtimeMs }))
-    .sort((lhs, rhs) => rhs.mtimeMs - lhs.mtimeMs)[0];
-  return newest ? sessionIdFromFile(newest.name) : undefined;
+// The dying session has no terminating record, so only open sessions qualify;
+// among those the newest is the best available guess.
+function newestOpenSessionId(dir: string): string | undefined {
+  const open = listSessions(dir).find((session) => session.crashed);
+  return open ? sessionIdFromFile(open.file) : undefined;
 }
 
 function classifyReason({ error, code, signal }: CrashMarkerInput): CrashReason {

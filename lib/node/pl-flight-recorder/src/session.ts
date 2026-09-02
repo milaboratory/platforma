@@ -5,9 +5,18 @@ import { createHandleRegistry, type HandleRegistry } from "./instrument";
 /** Environment variable naming the directory flight logs are written to. */
 export const FLIGHT_DIR_ENV = "MI_FLIGHT_RECORDER_DIR";
 
+/**
+ * Environment variable carrying the session id a supervising parent assigned.
+ * Set it alongside {@link FLIGHT_DIR_ENV} when spawning the worker and pass the
+ * same id to `superviseWorker`.
+ */
+export const FLIGHT_SESSION_ENV = "MI_FLIGHT_RECORDER_SESSION";
+
 export type FlightSessionOptions = {
   /** Overrides the directory from the environment. */
   dir?: string;
+  /** Overrides the session id from the environment. */
+  sessionId?: string;
   role?: string;
   meta?: Record<string, unknown>;
   samplerIntervalMs?: number;
@@ -34,7 +43,12 @@ export function openFlightSession(options: FlightSessionOptions = {}): FlightSes
   const dir = options.dir ?? process.env[FLIGHT_DIR_ENV];
   if (!dir) return undefined;
 
-  const recorder = openRecorder({ dir, role: options.role, meta: options.meta });
+  const recorder = openRecorder({
+    dir,
+    role: options.role,
+    meta: options.meta,
+    sessionId: options.sessionId ?? process.env[FLIGHT_SESSION_ENV] ?? undefined,
+  });
   const sampler = startMemorySampler({
     dir,
     sessionId: recorder.sessionId,
