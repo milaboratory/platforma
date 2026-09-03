@@ -10,6 +10,8 @@ import type { MaintenanceAPI_Ping_Response } from "./api";
 import type { MaintenanceAPI_Ping_Request } from "./api";
 import type { MiscAPI_ListResourceTypes_Response } from "./api";
 import type { MiscAPI_ListResourceTypes_Request } from "./api";
+import type { AuthAPI_DeleteUser_Response } from "./api";
+import type { AuthAPI_DeleteUser_Request } from "./api";
 import type { AuthAPI_ListUsers_Response } from "./api";
 import type { AuthAPI_ListUsers_Request } from "./api";
 import type { AuthAPI_ListUserResources_Response } from "./api";
@@ -290,6 +292,19 @@ export interface IPlatformClient {
      * @generated from protobuf rpc: ListUsers
      */
     listUsers(input: AuthAPI_ListUsers_Request, options?: RpcOptions): UnaryCall<AuthAPI_ListUsers_Request, AuthAPI_ListUsers_Response>;
+    /**
+     * DeleteUser removes a user account from the instance: the user record, every login-index
+     * entry that resolves to it, every grant it holds, and its root resource with everything
+     * still attached under it. Admin-only and irreversible - re-attach anything worth keeping
+     * to another user's root before calling (`pl-cli admin delete-user` does both steps).
+     *
+     * Exists because multi-provider auth can mint a duplicate account for one person: the waste
+     * record shows up in the sharing UI and its projects keep taking part in deduplication, and
+     * until now nothing could remove it.
+     *
+     * @generated from protobuf rpc: DeleteUser
+     */
+    deleteUser(input: AuthAPI_DeleteUser_Request, options?: RpcOptions): UnaryCall<AuthAPI_DeleteUser_Request, AuthAPI_DeleteUser_Response>;
     /**
      *
      * Other stuff
@@ -627,6 +642,22 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
         return stackIntercept<AuthAPI_ListUsers_Request, AuthAPI_ListUsers_Response>("unary", this._transport, method, opt, input);
     }
     /**
+     * DeleteUser removes a user account from the instance: the user record, every login-index
+     * entry that resolves to it, every grant it holds, and its root resource with everything
+     * still attached under it. Admin-only and irreversible - re-attach anything worth keeping
+     * to another user's root before calling (`pl-cli admin delete-user` does both steps).
+     *
+     * Exists because multi-provider auth can mint a duplicate account for one person: the waste
+     * record shows up in the sharing UI and its projects keep taking part in deduplication, and
+     * until now nothing could remove it.
+     *
+     * @generated from protobuf rpc: DeleteUser
+     */
+    deleteUser(input: AuthAPI_DeleteUser_Request, options?: RpcOptions): UnaryCall<AuthAPI_DeleteUser_Request, AuthAPI_DeleteUser_Response> {
+        const method = this.methods[35], opt = this._transport.mergeOptions(options);
+        return stackIntercept<AuthAPI_DeleteUser_Request, AuthAPI_DeleteUser_Response>("unary", this._transport, method, opt, input);
+    }
+    /**
      *
      * Other stuff
      *
@@ -634,7 +665,7 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
      * @generated from protobuf rpc: ListResourceTypes
      */
     listResourceTypes(input: MiscAPI_ListResourceTypes_Request, options?: RpcOptions): UnaryCall<MiscAPI_ListResourceTypes_Request, MiscAPI_ListResourceTypes_Response> {
-        const method = this.methods[35], opt = this._transport.mergeOptions(options);
+        const method = this.methods[36], opt = this._transport.mergeOptions(options);
         return stackIntercept<MiscAPI_ListResourceTypes_Request, MiscAPI_ListResourceTypes_Response>("unary", this._transport, method, opt, input);
     }
     /**
@@ -645,14 +676,14 @@ export class PlatformClient implements IPlatformClient, ServiceInfo {
      * @generated from protobuf rpc: Ping
      */
     ping(input: MaintenanceAPI_Ping_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response> {
-        const method = this.methods[36], opt = this._transport.mergeOptions(options);
+        const method = this.methods[37], opt = this._transport.mergeOptions(options);
         return stackIntercept<MaintenanceAPI_Ping_Request, MaintenanceAPI_Ping_Response>("unary", this._transport, method, opt, input);
     }
     /**
      * @generated from protobuf rpc: License
      */
     license(input: MaintenanceAPI_License_Request, options?: RpcOptions): UnaryCall<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response> {
-        const method = this.methods[37], opt = this._transport.mergeOptions(options);
+        const method = this.methods[38], opt = this._transport.mergeOptions(options);
         return stackIntercept<MaintenanceAPI_License_Request, MaintenanceAPI_License_Response>("unary", this._transport, method, opt, input);
     }
 }

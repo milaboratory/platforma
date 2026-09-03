@@ -261,6 +261,21 @@ service Platform {
 
   rpc ListUsers(AuthAPI.ListUsers.Request) returns (AuthAPI.ListUsers.Response) {}
 
+  // DeleteUser removes a user account from the instance: the user record, every login-index
+  // entry that resolves to it, every grant it holds, and its root resource with everything
+  // still attached under it. Admin-only and irreversible - re-attach anything worth keeping
+  // to another user's root before calling (`pl-cli admin delete-user` does both steps).
+  //
+  // Exists because multi-provider auth can mint a duplicate account for one person: the waste
+  // record shows up in the sharing UI and its projects keep taking part in deduplication, and
+  // until now nothing could remove it.
+  rpc DeleteUser(AuthAPI.DeleteUser.Request) returns (AuthAPI.DeleteUser.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/delete-user"
+      body: "*"
+    };
+  }
+
   //
   // Other stuff
   //
@@ -1972,6 +1987,28 @@ message AuthAPI {
     // GetUserRoot key. Further fields (e.g. first name, last name, email) may
     // be added later without breaking compatibility.
     string login = 1;
+  }
+
+  message DeleteUser {
+    message Request {
+      // login of the user to delete. Resolved the way an admin-supplied grant target is:
+      // a point lookup on the identity index, which carries no provider id - so an account
+      // left behind by a provider that has since been removed from the configuration is
+      // reachable too.
+      string login = 1;
+    }
+
+    message Response {
+      // root resource the user owned; 0 when the user had none.
+      uint64 user_root_id = 1;
+      // whether that root resource was deleted.
+      bool user_root_deleted = 2;
+      // grants revoked, the user-root self-grant included.
+      uint32 revoked_grants = 3;
+      // identity-index entries removed: the login, the email and any alternative of either
+      // that resolved to this account.
+      uint32 removed_identity_index_entries = 4;
+    }
   }
 
   message ListUsers {
