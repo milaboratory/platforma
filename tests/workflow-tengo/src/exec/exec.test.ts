@@ -75,6 +75,82 @@ tplTest.concurrent.for([{ gpuMemory: "16GiB" }])(
 );
 
 /**
+ * A command asks for scratch space and prints back what the runner told it: the size it was
+ * given and where to put its temporary data. This is the only check that the request survives
+ * the whole path — builder, quota, compute allocation, driver — rather than being dropped in
+ * the middle.
+ *
+ * A local backend has no dedicated scratch device, so the path it reports is the command's
+ * working directory. That is the documented promise for a runner that cannot do better, and
+ * asserting it here keeps the "always a usable location" guarantee honest.
+ */
+// The size is deliberately small: this test is about the request reaching the command, not
+// about how much can be allocated. Once the backend plans real storage capacity, a test that
+// asks for hundreds of gigabytes would start failing on whichever runner happens to be smaller.
+tplTest.concurrent.for([{ scratchFreeSpace: "1GiB", expectedGiB: "1" }])(
+  "scratch-space (scratchFreeSpace=$scratchFreeSpace)",
+  async ({ scratchFreeSpace, expectedGiB }, { helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.run.scratch_space",
+      ["scratch"],
+      (tx) => ({
+        scratchFreeSpace: tx.createValue(Pl.JsonObject, JSON.stringify(scratchFreeSpace)),
+      }),
+    );
+
+    const scratchOut = await result
+      .computeOutput("scratch", (a) => a?.getDataAsString()?.trim())
+      .awaitStableValue();
+    console.log(`scratch test output: "${scratchOut}"`);
+
+    const [gib, path] = (scratchOut ?? "").split(" ");
+    expect(gib).eq(expectedGiB);
+    expect(path).toBeTruthy();
+    // Local execution points temporary data at the working directory.
+    expect(path?.startsWith("/")).toBe(true);
+  },
+);
+
+/**
+ * A scratch size written as a formula, with and without a .staticFallback(). Both shapes
+ * evaluate to the same 2 GiB: on any backend that honours a scratch request, the formula is
+ * evaluated and the fallback is never consulted.
+ *
+ * A fallback on a SCRATCH formula is therefore useless — not wrong, just inert. Scratch control
+ * arrived after formula support, so a backend that cannot evaluate formulas has no scratch
+ * storage to give either: whatever size the fallback supplies is ignored, and the command gets
+ * its default temporary directory exactly as it would with no request at all. That is why the
+ * builder drops an unresolvable scratch size instead of failing, where a ram or cpu formula —
+ * which older backends do honour — must still produce a number.
+ *
+ * Both cases are kept because the two shapes must not diverge in what they let through: the
+ * exec runs either way, and the size the command sees is the evaluated one.
+ */
+tplTest.concurrent.for([
+  { withFallback: true, expectedGiB: "2" },
+  { withFallback: false, expectedGiB: "2" },
+])(
+  "scratch-formula (withFallback=$withFallback)",
+  async ({ withFallback, expectedGiB }, { helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.run.scratch_formula",
+      ["scratch"],
+      (tx) => ({
+        withFallback: tx.createValue(Pl.JsonObject, JSON.stringify(withFallback)),
+      }),
+    );
+
+    const scratchOut = await result
+      .computeOutput("scratch", (a) => a?.getDataAsString()?.trim())
+      .awaitStableValue();
+    console.log(`scratch formula output (withFallback=${withFallback}): "${scratchOut}"`);
+    expect(scratchOut).eq(expectedGiB);
+  },
+);
+
+/**
  * Requests a secret and checks its value is not empty.
  */
 tplTest.concurrent("check-secret", async ({ helper, expect }) => {
