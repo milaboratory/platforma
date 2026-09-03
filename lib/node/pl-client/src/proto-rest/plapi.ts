@@ -642,8 +642,10 @@ export interface components {
        *      instance. Unique across the entire server.
        */
       id: string;
-      /** @description description is the human-readable label in case we'd like to render it in UI. */
+      /** @description description is the long-form human-readable text a client may render alongside the title, for example in a tooltip or under the button. */
       description: string;
+      /** @description title is the short human-readable label a client renders for this method, for example on the sign-in button. Always set. */
+      title: string;
       basic: components["schemas"]["AuthAPI_ListMethods_BasicAuthMethod"];
       token: components["schemas"]["AuthAPI_ListMethods_TokenAuthMethod"];
       sso: components["schemas"]["AuthAPI_ListMethods_SSOAuthMethod"];

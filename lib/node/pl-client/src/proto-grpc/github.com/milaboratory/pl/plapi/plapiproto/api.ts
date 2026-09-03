@@ -3701,11 +3701,19 @@ export interface AuthAPI_ListMethods_MethodInfo {
      */
     id: string;
     /**
-     * description is the human-readable label in case we'd like to render it in UI.
+     * description is the long-form human-readable text a client may render
+     * alongside the title, for example in a tooltip or under the button.
      *
      * @generated from protobuf field: string description = 7
      */
     description: string;
+    /**
+     * title is the short human-readable label a client renders for this
+     * method, for example on the sign-in button. Always set.
+     *
+     * @generated from protobuf field: string title = 9
+     */
+    title: string;
     /**
      * @generated from protobuf oneof: method
      */
@@ -17826,6 +17834,7 @@ class AuthAPI_ListMethods_MethodInfo$Type extends MessageType<AuthAPI_ListMethod
         super("MiLaboratories.PL.API.AuthAPI.ListMethods.MethodInfo", [
             { no: 6, name: "id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 7, name: "description", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 9, name: "title", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 4, name: "basic", kind: "message", oneof: "method", T: () => AuthAPI_ListMethods_BasicAuthMethod },
             { no: 5, name: "token", kind: "message", oneof: "method", T: () => AuthAPI_ListMethods_TokenAuthMethod },
             { no: 8, name: "sso", kind: "message", oneof: "method", T: () => AuthAPI_ListMethods_SSOAuthMethod }
@@ -17835,6 +17844,7 @@ class AuthAPI_ListMethods_MethodInfo$Type extends MessageType<AuthAPI_ListMethod
         const message = globalThis.Object.create((this.messagePrototype!));
         message.id = "";
         message.description = "";
+        message.title = "";
         message.method = { oneofKind: undefined };
         if (value !== undefined)
             reflectionMergePartial<AuthAPI_ListMethods_MethodInfo>(this, message, value);
@@ -17850,6 +17860,9 @@ class AuthAPI_ListMethods_MethodInfo$Type extends MessageType<AuthAPI_ListMethod
                     break;
                 case /* string description */ 7:
                     message.description = reader.string();
+                    break;
+                case /* string title */ 9:
+                    message.title = reader.string();
                     break;
                 case /* MiLaboratories.PL.API.AuthAPI.ListMethods.BasicAuthMethod basic */ 4:
                     message.method = {
@@ -17896,6 +17909,9 @@ class AuthAPI_ListMethods_MethodInfo$Type extends MessageType<AuthAPI_ListMethod
         /* MiLaboratories.PL.API.AuthAPI.ListMethods.SSOAuthMethod sso = 8; */
         if (message.method.oneofKind === "sso")
             AuthAPI_ListMethods_SSOAuthMethod.internalBinaryWrite(message.method.sso, writer.tag(8, WireType.LengthDelimited).fork(), options).join();
+        /* string title = 9; */
+        if (message.title !== "")
+            writer.tag(9, WireType.LengthDelimited).string(message.title);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

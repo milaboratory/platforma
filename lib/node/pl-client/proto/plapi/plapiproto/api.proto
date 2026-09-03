@@ -1776,8 +1776,13 @@ message AuthAPI {
       // instance. Unique across the entire server.
       string id = 6;
 
-      // description is the human-readable label in case we'd like to render it in UI.
+      // description is the long-form human-readable text a client may render
+      // alongside the title, for example in a tooltip or under the button.
       string description = 7;
+
+      // title is the short human-readable label a client renders for this
+      // method, for example on the sign-in button. Always set.
+      string title = 9;
 
       oneof method {
         BasicAuthMethod basic = 4;
@@ -1789,7 +1794,7 @@ message AuthAPI {
       reserved 2; // string name - replaced by id + description
       reserved 3; // map<string, string> info
 
-      // next free: 8;
+      // next free: 10;
     }
   }
 
