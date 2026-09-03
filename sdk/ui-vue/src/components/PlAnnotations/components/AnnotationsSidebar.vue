@@ -30,9 +30,9 @@ function produceAnnotationUpdate(updater: (draft: Annotation) => void) {
   props.onUpdateAnnotation(produce(props.annotation, updater));
 }
 
-function updateTitle(title: string) {
+function updateTitle(title: string | undefined) {
   produceAnnotationUpdate((draft) => {
-    draft.title = title;
+    draft.title = title ?? "";
   });
 }
 

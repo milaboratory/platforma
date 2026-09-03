@@ -1,5 +1,29 @@
 # @milaboratories/uikit
 
+## 2.15.27
+
+### Patch Changes
+
+- ddf58fa: Restore emission of `*.vue.d.ts` declarations in browser-lib builds.
+
+  vite-plugin-dts 5 auto-detects whether to run its Vue program processor, but its detector only scans two directory levels below the package root. Our SFCs live deeper (`src/components/**`), so it fell back to the plain TypeScript processor and silently emitted no `*.vue.d.ts` — while `dist/lib.d.ts` still re-exported those `.vue` specifiers, breaking any consumer that resolves them (e.g. block model facade builds). ts-builder now picks the processor itself.
+
+  - @milaboratories/helpers@1.14.5
+  - @platforma-sdk/model@1.83.0
+
+## 2.15.26
+
+### Patch Changes
+
+- Updated dependencies [be89730]
+  - @platforma-sdk/model@1.83.0
+
+## 2.15.25
+
+### Patch Changes
+
+- fdca274: PlElementListItem: wrap drag handle and chevron into a single container aligned to the top of the head, so icons stay on the first title line with multiline titles
+
 ## 2.15.24
 
 ### Patch Changes

@@ -1,5 +1,54 @@
 # @milaboratories/pl-middle-layer
 
+## 1.68.0
+
+### Minor Changes
+
+- 68f19fa: Persist project tree mirrors to disk and restore them on open, so reopening a project transfers what changed rather than the whole tree. On by default, with a kill switch in `treeSnapshotOps`.
+
+### Patch Changes
+
+- Updated dependencies [0634133]
+- Updated dependencies [68f19fa]
+  - @milaboratories/pl-tree@1.14.0
+  - @milaboratories/pl-drivers@1.16.17
+
+## 1.67.6
+
+### Patch Changes
+
+- cbe94c7: Make Run re-render a block whose production failed outright.
+
+  The Run button is enabled whenever a block's production carries an error, but the mutator recognised only one of the two shapes such a failure takes. `productionHasErrors` read the field's `status`, which is derived from the resource the field points at — so it saw a value resource that exists and carries an error, and missed a field whose own error slot is filled and that therefore has no value resource at all. In that second shape `renderProduction` found nothing to re-render for the block and committed an empty transaction: the button was live, the click was accepted, and the block never re-ran.
+
+  Field-level errors are now carried through `ProjectMutator.load` alongside the value reference and counted by `productionHasErrors`, so both shapes reach `requireProductionRendering` and the enable condition the desktop uses for the button once again matches the condition the mutator renders on.
+
+  - @milaboratories/pl-model-backend@1.4.21
+  - @milaboratories/columns-collection-driver@0.2.4
+  - @milaboratories/pl-model-common@1.48.0
+  - @milaboratories/pl-model-middle-layer@1.32.0
+  - @milaboratories/pf-spec-driver@1.5.1
+  - @milaboratories/computable@2.9.8
+  - @milaboratories/pf-driver@1.9.1
+  - @milaboratories/pl-client@3.14.7
+  - @milaboratories/pl-deployments@3.0.16
+  - @milaboratories/pl-drivers@1.16.16
+  - @milaboratories/pl-errors@1.4.36
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/pl-tree@1.13.7
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/helpers@1.14.5
+  - @platforma-sdk/model@1.83.0
+  - @platforma-sdk/block-tools@2.14.3
+  - @milaboratories/resolve-helper@1.1.3
+
+## 1.67.5
+
+### Patch Changes
+
+- Updated dependencies [be89730]
+  - @platforma-sdk/model@1.83.0
+
 ## 1.67.4
 
 ### Patch Changes

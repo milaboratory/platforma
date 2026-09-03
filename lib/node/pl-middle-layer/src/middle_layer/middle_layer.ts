@@ -111,6 +111,13 @@ import type { Dispatcher } from "undici";
 import { RetryAgent } from "undici";
 import { getDebugFlags } from "../debug";
 import { ProjectHelper } from "../model/project_helper";
+import type { TreeSnapshotStat } from "./tree_snapshot_store";
+import { TreeSnapshotStore } from "./tree_snapshot_store";
+
+/** How long shutdown waits for close-boundary snapshot writes that are already running. Long
+ *  enough for a ten-megabyte encode and write on ordinary storage, short enough that a wedged
+ *  filesystem does not hold the quit open. */
+const SNAPSHOT_DRAIN_TIMEOUT_MS = 5_000;
 
 export interface MiddleLayerEnvironment {
   dispose(): Promise<void>;
@@ -129,6 +136,9 @@ export interface MiddleLayerEnvironment {
   readonly driverKit: MiddleLayerDriverKit;
   readonly serviceRegistry: ModelServiceRegistry;
   readonly projectHelper: ProjectHelper;
+  /** Persisted project tree mirrors. Undefined when snapshots are switched off, or when the
+   *  client is impersonating another user, in which case nothing is read or written. */
+  readonly treeSnapshots?: TreeSnapshotStore;
 }
 
 /**
@@ -1132,6 +1142,36 @@ export class MiddleLayer {
 
   private readonly openedProjects = new Map<ProjectId, Project>();
 
+  /** Snapshot writes started by {@link closeProject} and not yet finished. Held only so
+   *  {@link close} can give them a bounded chance to land. */
+  private readonly pendingSnapshotWrites = new Set<Promise<void>>();
+
+  private trackSnapshotWrite(write: Promise<void>): void {
+    this.pendingSnapshotWrites.add(write);
+    void write.finally(() => this.pendingSnapshotWrites.delete(write));
+  }
+
+  /** Waits for close-boundary snapshot writes that are already running, up to `timeoutMs`.
+   *
+   * This starts no work: quitting still performs no snapshot of its own. It only lets a write
+   * that a project close already began finish, so closing a project and immediately quitting
+   * does not routinely lose it. Bounded, because a wedged filesystem must not hang the quit,
+   * and losing the write costs one cold open rather than any correctness. */
+  private async drainSnapshotWrites(timeoutMs: number): Promise<void> {
+    if (this.pendingSnapshotWrites.size === 0) return;
+
+    let timer: NodeJS.Timeout | undefined;
+    const expiry = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, timeoutMs);
+      timer.unref?.();
+    });
+    try {
+      await Promise.race([Promise.allSettled(this.pendingSnapshotWrites), expiry]);
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+    }
+  }
+
   /** Opens a project, and starts corresponding project maintenance loop. */
   public async openProject(id: ProjectId): Promise<void> {
     if (this.openedProjects.has(id)) throw new Error(`Project ${id} already opened`);
@@ -1145,6 +1185,16 @@ export class MiddleLayer {
     const prj = this.openedProjects.get(id);
     if (prj === undefined) throw new Error(`Project ${id} not found among opened projects`);
     this.openedProjects.delete(id);
+
+    // Snapshot before destroy, and here rather than inside destroy(): destroy() is also what
+    // application shutdown runs, and quitting should perform no snapshot work. Terminating the
+    // tree invalidates it, so the state has to be taken first either way.
+    //
+    // Started, not awaited. The capture happens synchronously inside, which is the part that
+    // needs the tree alive; the encode and write are up to ten megabytes of work that closing a
+    // project should not sit behind. Kept so shutdown can drain it.
+    this.trackSnapshotWrite(prj.snapshotOnClose());
+
     await prj.destroy();
     this.openedProjectsList.setValue([...this.openedProjects.keys()]);
   }
@@ -1159,6 +1209,13 @@ export class MiddleLayer {
   /** Returns true if project with given id is currently opened. */
   public isProjectOpened(id: ProjectId): boolean {
     return this.openedProjects.has(id);
+  }
+
+  /** Counters for the persisted project tree mirrors, or undefined when they are switched off.
+   *  Reads and hits are what show whether a reopen was actually warm, and the miss breakdown
+   *  says why it was not. */
+  public get treeSnapshotStats(): Readonly<TreeSnapshotStat> | undefined {
+    return this.env.treeSnapshots?.getStats();
   }
 
   /**
@@ -1176,6 +1233,7 @@ export class MiddleLayer {
       this.sharingStateTree.terminate(),
       this.pendingSharesTree.terminate(),
     ]);
+    await this.drainSnapshotWrites(SNAPSHOT_DRAIN_TIMEOUT_MS);
     await this.env.dispose();
     await this.pl.close();
   }
@@ -1283,6 +1341,24 @@ export class MiddleLayer {
 
     const serviceRegistry = createModelServiceRegistry({ logger });
 
+    const treeSnapshots = TreeSnapshotStore.create(pl, {
+      dir: ops.treeSnapshotPath,
+      maxSizeBytes: ops.treeSnapshotOps.maxSizeBytes,
+      enabled: ops.treeSnapshotOps.enabled,
+      logger,
+    });
+    if (ops.treeSnapshotOps.enabled) {
+      // Housekeeping before any project opens: drop snapshots from other builds, backends and
+      // users, then trim to the ceiling.
+      await treeSnapshots?.evict();
+    } else {
+      // Switched off, so reclaim what earlier sessions left on disk. The reason to reach for
+      // this switch is usually the disk itself, and leaving the files behind would answer the
+      // wrong half of that complaint. Keyed on the setting, not on the store being absent: it
+      // is also absent for an impersonated client, whose session must not delete anything.
+      await TreeSnapshotStore.purge(ops.treeSnapshotPath, logger);
+    }
+
     const env: MiddleLayerEnvironment = {
       pl,
       blockEventDispatcher: new BlockEventDispatcher(),
@@ -1303,6 +1379,7 @@ export class MiddleLayer {
       serviceRegistry,
       quickJs,
       projectHelper: new ProjectHelper(quickJs, logger),
+      treeSnapshots,
       dispose: async () => {
         await serviceRegistry.dispose();
         await retryHttpDispatcher.destroy();
