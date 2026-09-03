@@ -1,0 +1,48 @@
+/**
+ * A scratch space request written as a formula, in the two shapes that matter on a backend
+ * that cannot evaluate formulas at run time (no getBlobSize):
+ *
+ *   withFallback = true  — .staticFallback() supplies the size, so the request survives.
+ *   withFallback = false — nothing to fall back on, so the request is dropped and the exec
+ *                          runs anyway. This is where scratch differs from ram and cpu, which
+ *                          fail instead; a run must never be lost over a missing size hint.
+ *
+ * The command prints the size it was actually given, so the same template proves both the
+ * evaluated value on a current backend and the fallback value on an old one.
+ */
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+f := exec.formula
+
+self.defineOutputs(["scratch"])
+
+self.body(func(inputs) {
+	scratch := f.gib(2).times(1)
+	if inputs.withFallback {
+		scratch = f.gib(2).times(1).staticFallback(f.gib(3))
+	}
+
+	run := exec.builder().
+		cmd("sh").
+		resources({
+			onCPU: {
+				cpu: 1,
+				ram: "50MiB",
+				scratchFreeSpace: scratch
+			}
+		}).
+		arg("-c").
+		// The formula rides the CID-transparent meta rail, so two execs differing only in it
+		// dedup to a single run. Naming the case in an argument keeps the two apart.
+		arg("printf '%s' \"$2\"").
+		arg("sh"). // $0 for the inline script
+		arg(string(inputs.withFallback)).
+		argExpr("{system.scratch.gib}").
+		saveStdoutContent().
+		run()
+
+	return {
+		scratch: run.getStdoutContent()
+	}
+})

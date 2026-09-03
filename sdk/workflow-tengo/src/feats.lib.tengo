@@ -79,6 +79,11 @@ export ll.toStrict({
 	// true when backend supports "ContextDomain" query predicate in block resolver
 	contextDomainQuery:       _isEnabled("contextDomainQuery"),
 
+	// true when the backend understands scratch space requests ('scratchFreeSpace' in a
+	// compute quota). Understanding the request is not the same as being able to serve it:
+	// a deployment with no scratch storage leaves the command its default temporary storage.
+	hasScratchSpace:          _isEnabled("scratchSpace"),
+
 	// true when backend populates the multi-step 'progress' map output field
 	// on Blob* import/upload resources. When false, the SDK synthesizes the
 	// same map shape locally (single entry "01" → handle).
