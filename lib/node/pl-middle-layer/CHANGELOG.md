@@ -1,5 +1,31 @@
 # @milaboratories/pl-middle-layer
 
+## 1.68.1
+
+### Patch Changes
+
+- fd0ae2c: pl-cli: add `admin delete-user`, so a duplicate user account can be removed.
+
+  Multi-provider auth can leave one person with two accounts — an identity that could not be matched by email across a cutover, or a duplicate minted before the backend started refusing two records for one identity. The spare account was not inert: it appeared in the sharing user picker, and the projects in its root kept taking part in deduplication. Nothing removed one.
+
+  `admin delete-user <user>` now does, backed by the new `AuthAPI.DeleteUser` RPC. When the account still owns projects it requires an explicit decision rather than picking a default, since both defaults are wrong to assume:
+
+  - `--move-projects-to <user>` re-attaches every project to another user's root and then deletes the account. It is a move, not a copy: the same project resources are re-homed, so nothing is duplicated and nothing needs re-verifying. A name the target already uses is suffixed rather than overwritten, and the target's project list is created if they never had one.
+  - `--delete-projects` deletes the projects along with the account.
+
+  Both prompt with the affected project list first; `--force` skips that for scripted runs. Deleting an account removes its record, its identity-index entries (login, email and any alternative of either), its grants and its root resource, and frees those values — the person's next sign-in lands on a clean account instead of reviving the deleted one. Requires admin/controller credentials, and refuses to target the account those credentials authenticate as.
+
+  `pl-client` gains `PlClient.deleteUser(login)` (gRPC-only, like `listUsers`). `pl-middle-layer` now exports `ProjectsResourceType`, which a caller writing into another user's root needs.
+
+- Updated dependencies [fd0ae2c]
+  - @milaboratories/pl-client@3.15.0
+  - @milaboratories/pl-model-backend@1.4.22
+  - @milaboratories/pl-drivers@1.16.18
+  - @milaboratories/pl-errors@1.4.37
+  - @milaboratories/pl-tree@1.14.1
+  - @platforma-sdk/block-tools@2.14.4
+  - @platforma-sdk/workflow-tengo@6.8.3
+
 ## 1.68.0
 
 ### Minor Changes
