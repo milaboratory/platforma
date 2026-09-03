@@ -82,11 +82,18 @@ export default function adminDeleteUserCommand(): Command {
         // Created if the target has none, so re-homing to a user who has never opened the app
         // works rather than failing halfway with the account still present.
         const targetList = await ensureUserProjectList(pl, target.userRoot);
-        moved = await moveProjects(pl, source.projectListRid!, targetList, projects);
+        moved = await moveProjects(pl, source.projectListRid!, targetList);
       }
 
-      // Deleting the account takes its root with it, and with the root every project still
-      // attached — which is why the move above has to have committed first.
+      // deleteUser takes the root and everything still attached to it. The listing, the prompt and
+      // the move each ran in an earlier transaction, so re-read: a project attached since then would
+      // be destroyed without ever being reviewed.
+      const remaining =
+        source.projectListRid === undefined
+          ? []
+          : await listProjectIdentities(pl, source.projectListRid);
+      assertProjectsAccountedFor(user, flags, projects, remaining);
+
       const report = await pl.deleteUser(user);
 
       if (flags.format === "json") {
@@ -95,14 +102,14 @@ export default function adminDeleteUserCommand(): Command {
           user,
           movedTo: flags.moveProjectsTo ?? null,
           movedProjects: moved,
-          deletedProjects: flags.moveProjectsTo ? [] : projects.map((p) => p.label),
+          deletedProjects: flags.moveProjectsTo ? [] : remaining.map((p) => p.label),
           userRootId: report.userRootId === undefined ? null : report.userRootId.toString(),
           userRootDeleted: report.userRootDeleted,
           revokedGrants: report.revokedGrants,
           removedIdentityIndexEntries: report.removedIdentityIndexEntries,
         });
       } else {
-        outputText(renderResult(user, flags.moveProjectsTo, moved, projects));
+        outputText(renderResult(user, flags.moveProjectsTo, moved, remaining));
       }
     } finally {
       await pl.close();
@@ -112,7 +119,38 @@ export default function adminDeleteUserCommand(): Command {
   return cmd;
 }
 
-/** Asks the operator to confirm, spelling out which projects are affected and how. */
+/**
+ * Refuses while the root holds a project the operator never agreed to lose — attached after the
+ * listing, or left behind by the move.
+ *
+ * A last read, not a lock: it closes the prompt-sized window, not the round trip that follows.
+ */
+function assertProjectsAccountedFor(
+  user: string,
+  flags: { moveProjectsTo?: string },
+  approved: ProjectIdentityWithLabel[],
+  remaining: ProjectIdentityWithLabel[],
+): void {
+  if (flags.moveProjectsTo) {
+    if (remaining.length === 0) return;
+    throw new Error(
+      `User "${user}" still owns ${remaining.length} project(s) after the move: ` +
+        `${remaining.map((p) => p.label).join(", ")}. The account was NOT deleted — ` +
+        "the projects were attached while the move ran. Re-run the command to move them too.",
+    );
+  }
+
+  const approvedIds = new Set(approved.map((p) => p.id));
+  const unapproved = remaining.filter((p) => !approvedIds.has(p.id));
+  if (unapproved.length === 0) return;
+  throw new Error(
+    `User "${user}" gained ${unapproved.length} project(s) since the list you confirmed: ` +
+      `${unapproved.map((p) => p.label).join(", ")}. The account was NOT deleted — ` +
+      "deleting it now would destroy them unreviewed. Re-run the command to see the current list.",
+  );
+}
+
+/** Asks the operator to confirm, naming the affected projects and their fate. */
 async function confirmDeletion(
   user: string,
   projects: ProjectIdentityWithLabel[],

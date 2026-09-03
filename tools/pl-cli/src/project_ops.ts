@@ -91,25 +91,36 @@ export async function listProjectIdentities(
   projectListRid: SignedResourceId,
 ): Promise<ProjectIdentityWithLabel[]> {
   return await pl.withReadTx("listProjectIdentities", async (tx) => {
-    const data = await tx.getResourceData(projectListRid, true);
-    const projects: ProjectIdentityWithLabel[] = [];
-
-    for (const f of data.fields) {
-      if (isNullSignedResourceId(f.value)) continue;
-
-      const metaStr = await tx.getKValueStringIfExists(f.value, ProjectMetaKey);
-      const meta: ProjectMeta = metaStr ? JSON.parse(metaStr) : { label: "(unknown)" };
-
-      projects.push({
-        id: resourceIdToString(f.value),
-        rid: f.value,
-        fieldName: f.name,
-        label: meta.label,
-      });
-    }
-
-    return projects;
+    return await listProjectIdentitiesInTx(tx, projectListRid);
   });
+}
+
+/**
+ * {@link listProjectIdentities} against a transaction the caller already holds, so a write that
+ * acts on the list can read it in the same transaction rather than trusting an earlier snapshot.
+ */
+export async function listProjectIdentitiesInTx(
+  tx: PlTransaction,
+  projectListRid: SignedResourceId,
+): Promise<ProjectIdentityWithLabel[]> {
+  const data = await tx.getResourceData(projectListRid, true);
+  const projects: ProjectIdentityWithLabel[] = [];
+
+  for (const f of data.fields) {
+    if (isNullSignedResourceId(f.value)) continue;
+
+    const metaStr = await tx.getKValueStringIfExists(f.value, ProjectMetaKey);
+    const meta: ProjectMeta = metaStr ? JSON.parse(metaStr) : { label: "(unknown)" };
+
+    projects.push({
+      id: resourceIdToString(f.value),
+      rid: f.value,
+      fieldName: f.name,
+      label: meta.label,
+    });
+  }
+
+  return projects;
 }
 
 /** Get detailed info about a project. */
@@ -279,11 +290,15 @@ export async function moveProjects(
   pl: PlClient,
   sourceProjectListRid: SignedResourceId,
   targetProjectListRid: SignedResourceId,
-  projects: ProjectIdentity[],
 ): Promise<MovedProject[]> {
-  if (projects.length === 0) return [];
-
   return await pl.withWriteTx("moveProjects", async (tx) => {
+    // Read here rather than taken from the caller: a list read before an operator answered a
+    // confirmation prompt describes the account as it was minutes ago, and a project attached
+    // since then would be left on the source root — where the account deletion that follows
+    // destroys it. Moving what this transaction sees narrows that to the transaction itself.
+    const projects = await listProjectIdentitiesInTx(tx, sourceProjectListRid);
+    if (projects.length === 0) return [];
+
     const takenLabels = await getExistingLabelsInTx(tx, targetProjectListRid);
     const moved: MovedProject[] = [];
 
