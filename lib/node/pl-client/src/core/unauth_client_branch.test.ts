@@ -323,6 +323,27 @@ test("login drops the picked id on the token branch", async () => {
   expect(info.jwtToken).toBe("jwt-from-loginWithToken");
 });
 
+test("login routes to loginWithToken when the picked id names a token method, even though the backend also advertises basic", async () => {
+  const { client, ll } = makeStub({
+    hasAuthV2: true,
+    methods: [
+      { id: "ldap-a", title: "ldap-a", description: "", method: { oneofKind: "basic", basic: {} } },
+      {
+        id: "htpasswd",
+        title: "htpasswd",
+        description: "",
+        method: { oneofKind: "token", token: {} },
+      },
+    ],
+  });
+
+  const info = await client.login("alice", "opaque-token", "htpasswd");
+
+  expect(ll.loginWithToken).toHaveBeenCalledWith("opaque-token");
+  expect(ll.loginBasic).not.toHaveBeenCalled();
+  expect(info.jwtToken).toBe("jwt-from-loginWithToken");
+});
+
 test("ssoConfig returns the first sso method and drops the rest", () => {
   const first = ssoMethod({
     id: "sso-first",
