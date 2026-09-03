@@ -1,25 +1,27 @@
 import { Computable } from "@milaboratories/computable";
 import { field, Pl, TestHelpers } from "@milaboratories/pl-client";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
-import {
-  Args,
-  BlockConfigGeneric,
-  BlockModel,
-  getJsonField,
-  getResourceField,
-  getResourceValueAsJson,
-  InferOutputType,
-  isolate,
-  It,
-  MainOutputs,
-  makeObject,
-  mapArrayValues,
-  PlResourceEntry,
-  TypedConfig,
-} from "@platforma-sdk/model";
+import type { Cfg, PlResourceEntry } from "@platforma-sdk/model";
 import { expect, test } from "vitest";
 import { MiddleLayerDriverKit } from "../middle_layer/driver_kit";
 import { computableFromCfgUnsafe } from "./executor";
+
+// The SDK no longer ships a builder for these configs — it went away with the v1/v2
+// block model — but the executor still has to render configs of blocks published
+// before that. So the fixtures below are spelled out as plain `Cfg` trees.
+
+const ctxVar = (variable: string): Cfg => ({ type: "GetFromCtx", variable });
+const imm = (value: unknown): Cfg => ({ type: "Immediate", value });
+const jsonField = (source: Cfg, field: Cfg): Cfg => ({ type: "GetJsonField", source, field });
+const resourceField = (source: Cfg, field: Cfg): Cfg => ({
+  type: "GetResourceField",
+  source,
+  field,
+});
+
+const Args = ctxVar("$args");
+const It = ctxVar("$it");
+const MainOutputs = ctxVar("$prod");
 
 test("local cfg test (no pl)", async () => {
   const args = {
@@ -27,38 +29,24 @@ test("local cfg test (no pl)", async () => {
     a: { c: "hi" },
     b: ["a", "b", "c"],
   };
-  const theCValue = getJsonField(Args, "theC");
+  const theCValue = jsonField(Args, imm("theC"));
 
-  const cfg = (
-    BlockModel.create<typeof args>("Heavy")
-      .initialArgs(args)
-      .output("out1", getJsonField(getJsonField(Args, "a"), theCValue))
-      .output(
-        "out2",
-        mapArrayValues(getJsonField(Args, "b"), isolate(makeObject({ theField: It }))),
-      )
-      .done() as any
-  ).config as BlockConfigGeneric;
+  const outputs = {
+    out1: jsonField(jsonField(Args, imm("a")), theCValue),
+    out2: {
+      type: "MapArrayValues",
+      source: jsonField(Args, imm("b")),
+      itVar: "$it",
+      mapping: { type: "Isolate", cfg: { type: "MakeObject", template: { theField: It } } },
+    },
+  } satisfies Record<string, Cfg>;
 
   const ctx = { $args: args };
 
-  const computable1 = computableFromCfgUnsafe(
-    {} as MiddleLayerDriverKit,
-    ctx,
-    cfg.outputs["out1"] as TypedConfig,
-  );
-  const out1 = (await computable1.getValue()) as InferOutputType<
-    (typeof cfg.outputs)["out1"],
-    typeof args,
-    unknown
-  >;
-  expect(out1).toEqual("hi");
+  const computable1 = computableFromCfgUnsafe({} as MiddleLayerDriverKit, ctx, outputs.out1);
+  expect(await computable1.getValue()).toEqual("hi");
 
-  const computable2 = computableFromCfgUnsafe(
-    {} as MiddleLayerDriverKit,
-    ctx,
-    cfg.outputs["out2"] as TypedConfig,
-  );
+  const computable2 = computableFromCfgUnsafe({} as MiddleLayerDriverKit, ctx, outputs.out2);
   const out2 = await computable2.getValue();
   expect(out2).toStrictEqual([{ theField: "a" }, { theField: "b" }, { theField: "c" }]);
 });
@@ -71,20 +59,14 @@ test("cfg test with pl, simple", async () => {
   const input = {
     theC: "c",
   };
-  const theCValue = getJsonField(Args, "theC");
+  const theCValue = jsonField(Args, imm("theC"));
 
-  const cfg = (
-    BlockModel.create<typeof input>("Heavy")
-      .initialArgs(input)
-      .output(
-        "out1",
-        getJsonField(
-          getResourceValueAsJson<TestResourceValue>()(getResourceField(MainOutputs, theCValue)),
-          "someField",
-        ),
-      )
-      .done() as any
-  ).config as BlockConfigGeneric;
+  const outputs = {
+    out1: jsonField(
+      { type: "GetResourceValueAsJson", source: resourceField(MainOutputs, theCValue) },
+      imm("someField"),
+    ),
+  } satisfies Record<string, Cfg>;
 
   await TestHelpers.withTempRoot(async (pl) => {
     const tree = await SynchronizedTreeState.init(pl, pl.clientRoot, {
@@ -100,7 +82,7 @@ test("cfg test with pl, simple", async () => {
     const computable: Computable<unknown> = computableFromCfgUnsafe(
       {} as MiddleLayerDriverKit,
       ctx,
-      cfg.outputs["out1"] as TypedConfig,
+      outputs.out1,
     ) as any;
 
     expect(await computable.getValue()).toBeUndefined();
