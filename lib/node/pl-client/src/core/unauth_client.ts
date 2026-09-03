@@ -178,17 +178,24 @@ export class UnauthenticatedPlClient {
 
   /** Login with username and password.
    *
-   * Routes to {@link LLPlClient.loginBasic} or {@link LLPlClient.loginWithToken} based on
-   * advertised auth methods. On legacy backends, uses GetJWTToken with Basic header.
+   * Routes to {@link LLPlClient.loginBasic} or {@link LLPlClient.loginWithToken} based on the
+   * advertised method `idP` names. On legacy backends, uses GetJWTToken with Basic header.
    *
-   * `idP` names the advertised method — basic branch only. Token and legacy branches ignore it
-   * and keep today's first-match behavior. */
+   * `idP` names the advertised method. A named basic-kind method routes to the basic branch;
+   * a named token-kind method routes to the token branch even when the backend also advertises
+   * a basic method — the token wire carries no selector, so the id itself is dropped there and
+   * only the branch choice is kept. Omitted, or naming no advertised method, falls back to
+   * today's first-match behavior: basic wins over token when both are advertised. */
   public async login(user: string, password: string, idP?: string): Promise<AuthInformation> {
     try {
       let token: string;
       if (this.ll.hasCapability("auth:v2")) {
         const schemes = this.supportedAuthSchemes;
-        if (schemes.basic) {
+        const namedKind =
+          idP === undefined ? undefined : this.loginMethods().find((m) => m.id === idP)?.kind;
+        if (namedKind === "token") {
+          token = await this.ll.loginWithToken(password);
+        } else if (schemes.basic) {
           token =
             idP === undefined
               ? await this.ll.loginBasic(user, password)
