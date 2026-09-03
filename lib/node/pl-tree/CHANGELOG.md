@@ -1,5 +1,13 @@
 # @milaboratories/pl-tree
 
+## 1.14.1
+
+### Patch Changes
+
+- Updated dependencies [fd0ae2c]
+  - @milaboratories/pl-client@3.15.0
+  - @milaboratories/pl-errors@1.4.37
+
 ## 1.14.0
 
 ### Minor Changes
