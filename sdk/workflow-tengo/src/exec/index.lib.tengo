@@ -59,6 +59,12 @@ _assertValidGpuRequest := func(amount, ctx) {
 	validation.assertType(amount, ["or", "number", "string"], ctx + ": VRAM amount must be a number of bytes or a size string like '16GiB'")
 	ll.assert(is_string(amount) || amount >= 16 * units.MiB, ctx + ": VRAM amount in bytes should be at least 16MiB (did you pass bytes instead of GiB?)")
 }
+// A scratch request is a size string ("500GiB") or a number of bytes, with the same 16MiB floor
+// that catches a bytes-where-GiB-was-meant mistake.
+_assertValidScratchRequest := func(amount, ctx) {
+	validation.assertType(amount, ["or", "number", "string"], ctx + ": scratch space amount must be a number of bytes or a size string like '500GiB'")
+	ll.assert(is_string(amount) || amount >= 16 * units.MiB, ctx + ": scratch space in bytes should be at least 16MiB (did you pass bytes instead of GiB?)")
+}
 
 /**
  * Creates a new builder for constructing and executing commands.
@@ -92,6 +98,7 @@ builder := func() {
 	cpuRequest := undefined
 	ramRequest := undefined
 	gpuMemory := undefined
+	scratchFreeSpace := undefined
 
 	// resource-formula builder state (ram / cpu / vram formulas + addFile tags).
 	// Set by .resources({ ... }); each *FormulaAst holds a plain formula AST and
@@ -103,6 +110,8 @@ builder := func() {
 	cpuFormulaFallback := undefined
 	gpuFormulaAst := undefined
 	gpuFormulaFallback := undefined
+	scratchFormulaAst := undefined
+	scratchFormulaFallback := undefined
 	fileTags := {}   // fileName -> tag (for f.size("tag") / f.lineCount("tag") aggregation)
 
 	commandName := ""
@@ -527,6 +536,27 @@ builder := func() {
 		 * onCPU takes { cpu, ram }; onGPU takes { cpu, ram, vram } (vram is what
 		 * makes it a GPU allocation, so it is required there).
 		 *
+		 * Both blocks also accept an optional `scratchFreeSpace`: disposable disk space for
+		 * the command's temporary data, which TMPDIR then points at. Ask for it when a command
+		 * writes large intermediate files — sorting, indexing, alignment — instead of leaving
+		 * it to whatever small temporary directory the runner provides by default:
+		 *
+		 *   .resources({
+		 *       queue: "heavy",
+		 *       onCPU: { cpu: 8, ram: "32GiB", scratchFreeSpace: "500GiB" }
+		 *   })
+		 *
+		 * The size may be a formula, like the other dimensions. A deployment that cannot serve
+		 * the request caps it, and one that has no scratch storage at all ignores it: the
+		 * command still runs, with the temporary storage it would have had anyway. That makes
+		 * scratch space an optimisation to ask for freely, never a precondition — which is why
+		 * a scratch formula with no .staticFallback() drops the request instead of failing the
+		 * exec, where a ram or cpu formula would error.
+		 *
+		 * A .staticFallback() on a scratch formula is inert: it is consulted only by backends
+		 * that cannot evaluate formulas, and those predate scratch control, so they ignore the
+		 * request whatever size it carries. Harmless to write, pointless to add.
+		 *
 		 * NOTE: resource formulas are CID-transparent — they do NOT participate in
 		 * exec deduplication. Two execs identical except for their formula dedup to
 		 * one run (and one allocation); vary a real input (an arg or file) if you
@@ -592,6 +622,20 @@ builder := func() {
 					memFormulaFallback = undefined
 				}
 			}
+			setScratch := func(v, ctx) {
+				if execFormula.isFormula(v) {
+					scratchFormulaAst = execFormula.astOf(v)
+					scratchFormulaFallback = undefined
+					fb := execFormula.fallbackOf(v)
+					if !is_undefined(fb) { _assertValidScratchRequest(fb, ctx + " scratchFreeSpace fallback"); scratchFormulaFallback = fb }
+					scratchFreeSpace = undefined
+				} else {
+					_assertValidScratchRequest(v, ctx + " scratchFreeSpace")
+					scratchFreeSpace = v
+					scratchFormulaAst = undefined
+					scratchFormulaFallback = undefined
+				}
+			}
 			setVram := func(v, ctx) {
 				if execFormula.isFormula(v) {
 					gpuFormulaAst = execFormula.astOf(v)
@@ -610,8 +654,8 @@ builder := func() {
 			assertKeys := func(block, name, allowVram) {
 				ll.assert(ll.isMap(block), "exec.builder.resources.%s: expected a map", name)
 				for k, _ in block {
-					ok := k == "cpu" || k == "ram" || (allowVram && k == "vram")
-					ll.assert(ok, "exec.builder.resources.%s: unknown key %q (allowed: %s)", name, k, allowVram ? "cpu, ram, vram" : "cpu, ram")
+					ok := k == "cpu" || k == "ram" || k == "scratchFreeSpace" || (allowVram && k == "vram")
+					ll.assert(ok, "exec.builder.resources.%s: unknown key %q (allowed: %s)", name, k, allowVram ? "cpu, ram, vram, scratchFreeSpace" : "cpu, ram, scratchFreeSpace")
 				}
 				ll.assert(!is_undefined(block.cpu) && !is_undefined(block.ram),
 					"exec.builder.resources.%s: cpu and ram are required", name)
@@ -636,15 +680,30 @@ builder := func() {
 					"exec.builder.resources: onGPU was set without onCPU (GPU required), but this backend has no GPU support (exec.hasGpu is false). Add an onCPU block for an adaptive CPU fallback, or run on a GPU-enabled backend.")
 			}
 
+			// Scratch space is optional in both blocks. Whichever block loses must not leave its
+			// value behind, and a spec that asks for no scratch at all must clear whatever an
+			// earlier .resources() call set — same discipline as the GPU state below.
+			setScratchFrom := func(block, ctx) {
+				if is_undefined(block.scratchFreeSpace) {
+					scratchFreeSpace = undefined
+					scratchFormulaAst = undefined
+					scratchFormulaFallback = undefined
+					return
+				}
+				setScratch(block.scratchFreeSpace, ctx)
+			}
+
 			if useGPU {
 				g := spec.onGPU
 				setCpu(g.cpu, "resources.onGPU")
 				setRam(g.ram, "resources.onGPU")
 				setVram(g.vram, "resources.onGPU")
+				setScratchFrom(g, "resources.onGPU")
 			} else {
 				c := spec.onCPU
 				setCpu(c.cpu, "resources.onCPU")
 				setRam(c.ram, "resources.onCPU")
+				setScratchFrom(c, "resources.onCPU")
 				// CPU-only mode: clear any GPU/VRAM state left from a prior .gpuMemory()
 				// or an earlier GPU-shaped .resources() so this spec doesn't leak a GPU request.
 				gpuMemory = undefined
@@ -1333,10 +1392,12 @@ builder := func() {
 			// builder() factory itself (see _lineCountResource). That is a plain
 			// recursive function call within :exec — no import of :pt or any
 			// metrics module — so there is no import cycle.
-			hasFormula := !is_undefined(memFormulaAst) || !is_undefined(cpuFormulaAst) || !is_undefined(gpuFormulaAst)
+			hasFormula := !is_undefined(memFormulaAst) || !is_undefined(cpuFormulaAst) ||
+				!is_undefined(gpuFormulaAst) || !is_undefined(scratchFormulaAst)
 			resolvedMem := undefined
 			resolvedCpu := undefined
 			resolvedGpu := undefined
+			resolvedScratch := undefined
 			lineCountMapResource := undefined
 
 			if hasFormula {
@@ -1358,14 +1419,20 @@ builder := func() {
 					fb := execFormula.applyFormulaFallback({
 						ram: { ast: memFormulaAst, fallback: memFormulaFallback, static: ramRequest },
 						cpu: { ast: cpuFormulaAst, fallback: cpuFormulaFallback, static: cpuRequest },
-						gpu: { ast: gpuFormulaAst, fallback: gpuFormulaFallback, static: gpuMemory }
+						gpu: { ast: gpuFormulaAst, fallback: gpuFormulaFallback, static: gpuMemory },
+						scratch: { ast: scratchFormulaAst, fallback: scratchFormulaFallback, static: scratchFreeSpace }
 					})
 					ll.assert(is_undefined(fb.err), fb.err)
 					ramRequest = fb.ram
 					cpuRequest = fb.cpu
 					gpuMemory = fb.gpu
+					// A scratch formula with nothing to fall back on leaves the request unset.
+					// The exec still runs: a backend that cannot evaluate the formula has no
+					// scratch storage to give either, so the size is moot rather than missing.
+					scratchFreeSpace = fb.scratch
 					if is_int(ramRequest) { ramRequest = string(ramRequest) + "b" }
 					if is_int(gpuMemory) { gpuMemory = string(gpuMemory) + "b" }
+					if is_int(scratchFreeSpace) { scratchFreeSpace = string(scratchFreeSpace) + "b" }
 				} else {
 					tagMap := {}
 					for fileName, tag in fileTags {
@@ -1388,6 +1455,11 @@ builder := func() {
 					if !is_undefined(gpuFormulaAst) {
 						resolvedGpu = execFormula.resolveAst(gpuFormulaAst, tagMap, allFiles)
 						refs := execFormula.referencedMetricFiles(resolvedGpu)
+						if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
+					}
+					if !is_undefined(scratchFormulaAst) {
+						resolvedScratch = execFormula.resolveAst(scratchFormulaAst, tagMap, allFiles)
+						refs := execFormula.referencedMetricFiles(resolvedScratch)
 						if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
 					}
 
@@ -1419,6 +1491,9 @@ builder := func() {
 				// static quota's gpuMemory unset in that case, exactly as ram/cpu do.
 				if !is_undefined(gpuMemory) { quotaData.gpuMemory = gpuMemory }
 			}
+			// Scratch space stands on its own: it needs no cpu/ram companion, and a VRAM-style
+			// formula leaves the static field unset for the pure template to compute.
+			if !is_undefined(scratchFreeSpace) { quotaData.scratchFreeSpace = scratchFreeSpace }
 			metaExecInputs := {
 				quota: smart.createJsonResource(quotaData)
 			}
@@ -1442,6 +1517,7 @@ builder := func() {
 			if !is_undefined(resolvedMem) { metaExecInputs[execConstants.META_INPUT_MEM_FORMULA] = smart.createJsonResource(resolvedMem) }
 			if !is_undefined(resolvedCpu) { metaExecInputs[execConstants.META_INPUT_CPU_FORMULA] = smart.createJsonResource(resolvedCpu) }
 			if !is_undefined(resolvedGpu) { metaExecInputs[execConstants.META_INPUT_GPU_FORMULA] = smart.createJsonResource(resolvedGpu) }
+			if !is_undefined(resolvedScratch) { metaExecInputs[execConstants.META_INPUT_SCRATCH_FORMULA] = smart.createJsonResource(resolvedScratch) }
 			if !is_undefined(lineCountMapResource) { pureExecInputs[execConstants.REGULAR_INPUT_LINE_COUNT] = lineCountMapResource }
 
 			// We add monetization only if it's enabled

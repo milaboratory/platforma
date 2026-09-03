@@ -1,0 +1,119 @@
+test := import(":test")
+exec := import(":exec")
+ll := import(":ll")
+f := import(":exec.formula")
+
+// Scratch space is disposable disk for a command's temporary data, asked for through
+// .resources({ onCPU|onGPU: { scratchFreeSpace } }). These tests cover what the builder
+// accepts and how the request survives the CPU-vs-GPU choice; the size that finally reaches
+// the backend is asserted end to end by the integration test, which reads it back out of a
+// running command through '{system.scratch.*}'.
+
+TestScratchSizeStringAccepted := func() {
+	b := exec.builder().
+		cmd("test").
+		resources({ onCPU: { cpu: 1, ram: "2GiB", scratchFreeSpace: "500GiB" } })
+
+	test.isTrue(ll.methodExists(b, "run"), "a size string must be accepted")
+}
+
+TestScratchByteCountAccepted := func() {
+	b := exec.builder().
+		cmd("test").
+		resources({ onCPU: { cpu: 1, ram: "2GiB", scratchFreeSpace: 100 * 1024 * 1024 * 1024 } })
+
+	test.isTrue(ll.methodExists(b, "run"), "a byte count must be accepted")
+}
+
+TestScratchIsOptional := func() {
+	b := exec.builder().
+		cmd("test").
+		resources({ onCPU: { cpu: 1, ram: "2GiB" } })
+
+	test.isTrue(ll.methodExists(b, "run"), "a spec without scratch space must stay valid")
+}
+
+TestScratchAcceptedInGpuBlock := func() {
+	b := exec.builder().
+		cmd("test").
+		resources({
+			onCPU: { cpu: 1, ram: "2GiB", scratchFreeSpace: "100GiB" },
+			onGPU: { cpu: 2, ram: "4GiB", vram: "16GiB", scratchFreeSpace: "500GiB" }
+		})
+
+	test.isTrue(ll.methodExists(b, "run"), "both blocks must accept scratch space")
+}
+
+TestScratchAcceptsFormula := func() {
+	b := exec.builder().
+		cmd("test").
+		resources({
+			onCPU: {
+				cpu: 1,
+				ram: "2GiB",
+				scratchFreeSpace: f.size("input").times(3).staticFallback(f.gib(200))
+			}
+		})
+
+	test.isTrue(ll.methodExists(b, "run"), "a formula must be accepted for scratch space")
+}
+
+TestScratchFormulaNeedsNoFallback := func() {
+	b := exec.builder().
+		cmd("test").
+		resources({ onCPU: { cpu: 1, ram: "2GiB", scratchFreeSpace: f.size("input").times(3) } })
+
+	test.isTrue(ll.methodExists(b, "run"),
+		"a scratch formula without a fallback must be accepted: it degrades to no request")
+}
+
+// Note on panic-path coverage: the two rejection contracts — an unknown key next to
+// scratchFreeSpace (a typo must not be silently dropped) and a byte count below the 16MiB
+// floor (a bytes-where-GiB-was-meant mistake) — both go through ll.assert, which is terminal
+// in Tengo. Like the formula suite's own rejection contracts, they cannot be exercised from a
+// unit test.
+
+// ---- applyFormulaFallback: the scratch dimension ---------------------------
+// On a backend that cannot evaluate formulas, every other dimension must resolve to a
+// number or the exec fails. Scratch is the exception: it drops out instead.
+
+TestScratchFallbackApplies := func() {
+	res := f.applyFormulaFallback({
+		ram: { static: "16GiB" },
+		cpu: { static: 4 },
+		scratch: { ast: f.size(), fallback: "200GiB" }
+	})
+
+	test.isEqual("200GiB", res.scratch)
+	test.isTrue(is_undefined(res.err))
+}
+
+TestScratchFallbackStaticRequestWins := func() {
+	res := f.applyFormulaFallback({
+		ram: { static: "16GiB" },
+		cpu: { static: 4 },
+		scratch: { ast: f.size(), fallback: "200GiB", static: "500GiB" }
+	})
+
+	test.isEqual("500GiB", res.scratch)
+	test.isTrue(is_undefined(res.err))
+}
+
+TestScratchFallbackMissingDropsRequest := func() {
+	// The asymmetry that makes scratch safe to ask for: no fallback, no error, no request.
+	res := f.applyFormulaFallback({
+		ram: { static: "16GiB" },
+		cpu: { static: 4 },
+		scratch: { ast: f.size() }
+	})
+
+	test.isTrue(is_undefined(res.err), "a scratch formula without a fallback must not fail the exec")
+	test.isTrue(is_undefined(res.scratch), "the request must be dropped rather than guessed")
+}
+
+TestScratchFallbackAbsentDimension := func() {
+	res := f.applyFormulaFallback({ ram: { static: "16GiB" }, cpu: { static: 4 } })
+
+	test.isTrue(is_undefined(res.scratch), "no scratch dimension means no scratch request")
+	test.isTrue(is_undefined(res.err))
+}
