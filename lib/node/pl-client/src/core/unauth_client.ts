@@ -18,6 +18,7 @@ export type SSOFlowType = "public_pkce";
  * may surface (`userIdClaim`, `groupsClaim`). */
 export type SSOAuthMethod = {
   id: string;
+  title: string;
   description: string;
   issuer: string;
   clientId: string;
@@ -49,11 +50,11 @@ export type SSOLoginAttempt = {
 };
 
 /** One login method the backend advertises, of any kind. Every advertised method keeps its own
- * `id`, `description` and kind. Two same-kind methods, such as two LDAP directories, are two
- * entries a caller can name apart and never collapsed into one. See {@link UnauthenticatedPlClient.loginMethods}. */
+ * `id`, `title`, `description` and kind. Two same-kind methods, such as two LDAP directories, are
+ * two entries a caller can name apart and never collapsed into one. See {@link UnauthenticatedPlClient.loginMethods}. */
 export type LoginMethod =
-  | { kind: "basic"; id: string; description: string }
-  | { kind: "token"; id: string; description: string }
+  | { kind: "basic"; id: string; title: string; description: string }
+  | { kind: "token"; id: string; title: string; description: string }
   | ({ kind: "sso" } & SSOAuthMethod);
 
 /** Primarily used for initial authentication (login) */
@@ -113,6 +114,7 @@ export class UnauthenticatedPlClient {
     if (sso.flowType !== AuthAPI_ListMethods_SSOAuthMethod_FlowType.PUBLIC_PKCE) return undefined;
     return {
       id: method.id,
+      title: method.title || method.description || method.id,
       description: method.description,
       issuer: sso.issuer,
       clientId: sso.clientId,
@@ -145,7 +147,7 @@ export class UnauthenticatedPlClient {
   }
 
   /** Every login method the backend advertises, of every kind, in advertised order, each
-   * keeping its own `id`, `description` and kind. An entry with no usable method arm, or an
+   * keeping its own `id`, `title`, `description` and kind. An entry with no usable method arm, or an
    * SSO entry whose flow no client here can drive, is dropped rather than failing the whole
    * list, which is why this accessor skips where {@link ssoConfig} throws. */
   public loginMethods(): LoginMethod[] {
@@ -157,6 +159,7 @@ export class UnauthenticatedPlClient {
           picked.push({
             kind: method.method.oneofKind,
             id: method.id,
+            title: method.title || method.description || method.id,
             description: method.description,
           });
           break;

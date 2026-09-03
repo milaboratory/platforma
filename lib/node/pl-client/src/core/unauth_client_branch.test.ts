@@ -16,9 +16,23 @@ function makeStub(opts: { hasAuthV2: boolean; scheme?: Scheme; methods?: MethodI
   const methods =
     opts.methods ??
     (scheme === "basic"
-      ? [{ id: "basic", method: { oneofKind: "basic", basic: {} } }]
+      ? [
+          {
+            id: "basic",
+            title: "basic",
+            description: "",
+            method: { oneofKind: "basic", basic: {} },
+          },
+        ]
       : scheme === "token"
-        ? [{ id: "token", method: { oneofKind: "token", token: {} } }]
+        ? [
+            {
+              id: "token",
+              title: "token",
+              description: "",
+              method: { oneofKind: "token", token: {} },
+            },
+          ]
         : []);
   const ll = {
     hasCapability: vi.fn(
@@ -80,6 +94,7 @@ test("hasCapability proxies to underlying LLPlClient", () => {
 
 function ssoMethod(overrides: {
   id: string;
+  title?: string;
   description: string;
   issuer: string;
   flowType?: AuthAPI_ListMethods_SSOAuthMethod_FlowType;
@@ -95,6 +110,7 @@ function ssoMethod(overrides: {
 }): MethodInfo {
   return {
     id: overrides.id,
+    title: overrides.title ?? overrides.id,
     description: overrides.description,
     method: {
       oneofKind: "sso",
@@ -115,12 +131,12 @@ function ssoMethod(overrides: {
   };
 }
 
-function basicMethod(id: string, description = "Basic auth"): MethodInfo {
-  return { id, description, method: { oneofKind: "basic", basic: {} } };
+function basicMethod(id: string, description = "Basic auth", title = id): MethodInfo {
+  return { id, title, description, method: { oneofKind: "basic", basic: {} } };
 }
 
-function tokenMethod(id: string, description = "Static token"): MethodInfo {
-  return { id, description, method: { oneofKind: "token", token: {} } };
+function tokenMethod(id: string, description = "Static token", title = id): MethodInfo {
+  return { id, title, description, method: { oneofKind: "token", token: {} } };
 }
 
 // --- loginMethods() ---
@@ -145,6 +161,35 @@ test("loginMethods lists every advertised method, of every kind, in advertised o
     "htpasswd-b",
     "token-a",
   ]);
+  expect(listed.map((m) => m.title)).toEqual([
+    "sso-a",
+    "sso-b",
+    "htpasswd-a",
+    "htpasswd-b",
+    "token-a",
+  ]);
+});
+
+test("loginMethods falls back to description, then id, when the backend omits title", () => {
+  const methods: MethodInfo[] = [
+    {
+      id: "no-title",
+      title: "",
+      description: "Untitled backend",
+      method: { oneofKind: "basic", basic: {} },
+    },
+    {
+      id: "no-title-no-description",
+      title: "",
+      description: "",
+      method: { oneofKind: "token", token: {} },
+    },
+  ];
+  const { client } = makeStub({ hasAuthV2: true, methods });
+
+  const listed = client.loginMethods();
+
+  expect(listed.map((m) => m.title)).toEqual(["Untitled backend", "no-title-no-description"]);
 });
 
 test("loginMethods keeps same-kind methods distinct while supportedAuthSchemes still collapses them", () => {
@@ -164,6 +209,7 @@ test("loginMethods keeps same-kind methods distinct while supportedAuthSchemes s
 test("loginMethods maps every field of an SSO projection, and drops an empty accessType", () => {
   const method = ssoMethod({
     id: "sso-1",
+    title: "Corporate SSO",
     description: "Corp SSO",
     issuer: "https://idp.example",
     clientId: "the-client-id",
@@ -183,6 +229,7 @@ test("loginMethods maps every field of an SSO projection, and drops an empty acc
   expect(entry).toEqual({
     kind: "sso",
     id: "sso-1",
+    title: "Corporate SSO",
     description: "Corp SSO",
     issuer: "https://idp.example",
     clientId: "the-client-id",
@@ -199,7 +246,12 @@ test("loginMethods maps every field of an SSO projection, and drops an empty acc
 });
 
 test("loginMethods drops an advertised method with no usable arm", () => {
-  const armless: MethodInfo = { id: "legacy", description: "", method: { oneofKind: undefined } };
+  const armless: MethodInfo = {
+    id: "legacy",
+    title: "legacy",
+    description: "",
+    method: { oneofKind: undefined },
+  };
   const { client } = makeStub({ hasAuthV2: true, methods: [armless, basicMethod("htpasswd-a")] });
 
   expect(client.loginMethods().map((m) => m.id)).toEqual(["htpasswd-a"]);
@@ -293,13 +345,19 @@ test("ssoConfig returns the first sso method and drops the rest", () => {
   });
 });
 
-test("ssoConfig carries id and description onto the returned SSOAuthMethod", () => {
-  const method = ssoMethod({ id: "sso-1", description: "Corp SSO", issuer: "https://idp.example" });
+test("ssoConfig carries id, title and description onto the returned SSOAuthMethod", () => {
+  const method = ssoMethod({
+    id: "sso-1",
+    title: "Corporate IdP",
+    description: "Corp SSO",
+    issuer: "https://idp.example",
+  });
   const { client } = makeStub({ hasAuthV2: true, methods: [method] });
 
   const sso = client.ssoConfig();
 
   expect(sso?.id).toBe("sso-1");
+  expect(sso?.title).toBe("Corporate IdP");
   expect(sso?.description).toBe("Corp SSO");
 });
 
@@ -319,8 +377,8 @@ test("ssoConfig throws when the sso method's flow type is not PUBLIC_PKCE", () =
 
 test("supportedAuthSchemes collapses a basic+token+sso method list to scheme booleans", () => {
   const methods: MethodInfo[] = [
-    { id: "basic", description: "", method: { oneofKind: "basic", basic: {} } },
-    { id: "token", description: "", method: { oneofKind: "token", token: {} } },
+    { id: "basic", title: "basic", description: "", method: { oneofKind: "basic", basic: {} } },
+    { id: "token", title: "token", description: "", method: { oneofKind: "token", token: {} } },
     ssoMethod({ id: "sso-1", description: "Corp SSO", issuer: "https://idp.example" }),
   ];
   const { client } = makeStub({ hasAuthV2: true, methods });

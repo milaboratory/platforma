@@ -967,7 +967,7 @@ export class LLPlClient implements WireClientProviderFactory {
       // while protobuf-ts models it as a discriminated union. Reshape per item.
       resp = {
         methods: (wsResponse.methods ?? []).map((m): grpcTypes.AuthAPI_ListMethods_MethodInfo => {
-          const base = { id: m.id, description: m.description };
+          const base = { id: m.id, description: m.description, title: m.title };
           if (m.basic !== undefined) {
             return { ...base, method: { oneofKind: "basic", basic: m.basic } };
           }
