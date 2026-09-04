@@ -192,7 +192,14 @@ export function analyzeSession(file: string, dir: string = path.dirname(file)): 
     smokingGun: inFlight.at(-1),
     renders: summarizeRenders(records),
     findings,
-    verdict: buildVerdict({ crashed: !ended, memory, inFlight, findings, crashMarker }),
+    verdict: buildVerdict({
+      crashed: !ended,
+      memory,
+      inFlight,
+      findings,
+      crashMarker,
+      blockOf: enclosingRenders(records),
+    }),
     timeline: records.slice(-40).map(compactRecord),
   };
 }
@@ -370,6 +377,9 @@ function pairOperations(records: FlightRecord[]): OperationSummary[] {
   const operations: OperationSummary[] = [];
   for (const record of records) {
     if (record.type.endsWith("-begin")) {
+      // A begin rewritten into a rotated segment repeats its sequence number;
+      // the operation is already known and must not be counted twice.
+      if (begins.has(record.seq)) continue;
       const summary: OperationSummary = {
         op: record.type.replace(/-begin$/, ""),
         seq: record.seq,
@@ -672,14 +682,21 @@ function buildVerdict(input: {
   inFlight: OperationSummary[];
   findings: Finding[];
   crashMarker?: CrashMarker;
+  /** Block whose render was open at each sequence number. */
+  blockOf: Map<number, string>;
 }): Verdict {
-  const { crashed, memory, inFlight, findings, crashMarker } = input;
+  const { crashed, memory, inFlight, findings, crashMarker, blockOf } = input;
   const gun = inFlight.at(-1);
   const region = findings.find((finding) => REGION_RULES.includes(finding.rule));
   const cause = findings.find((finding) => CAUSE_RULES.includes(finding.rule));
 
+  // A driver call carries no block identity of its own, so it is taken from the
+  // render that was open around it rather than from whichever finding happens
+  // to have one.
   const blockId =
-    (gun?.info?.blockId as string | undefined) ?? findings.find((finding) => finding.block)?.block;
+    (gun?.info?.blockId as string | undefined) ??
+    (gun === undefined ? undefined : blockOf.get(gun.seq)) ??
+    findings.find((finding) => finding.block)?.block;
   return {
     outcome: crashed
       ? `session ended without shutdown${

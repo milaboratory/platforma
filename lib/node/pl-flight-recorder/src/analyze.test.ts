@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { openRecorder, listSessions } from "./recorder";
+import { openRecorder, listSessions, type Recorder } from "./recorder";
 import { readCrashMarkers, writeCrashMarker } from "./supervisor";
 import { analyzeLatest, analyzeSession } from "./analyze";
 import { renderReport } from "./report";
@@ -226,6 +226,58 @@ describe("review findings", () => {
     expect(analysis.attribution.some((op) => op.op === "getShape")).toBe(true);
   });
 
+  test("an open begin survives repeated rotation, so the in-flight call is still named", () => {
+    const recorder = openRecorder({ dir, maxFileBytes: 1800, meta: { appVersion: "carry" } });
+    // These two never end. Their begin records are written before any rotation
+    // and must still be there after the earliest segment has been overwritten.
+    recorder.event("render-begin", { blockId: "block-7", mem: recorder.memorySnapshot() });
+    recorder.event("createPTable-begin", {
+      def: { kind: "PTableDef", def: { type: "inner" } },
+      mem: recorder.memorySnapshot(),
+    });
+
+    rotateUntilEarliestSegmentLost(recorder);
+
+    const analysis = analyzeSession(recorder.file, dir);
+    expect(analysis.rotations).toBeGreaterThan(1);
+    // Carried-forward begins repeat their sequence number and must not be
+    // counted as separate operations.
+    expect(analysis.inFlight.map((op) => `${op.op}#${op.seq}`)).toEqual([
+      "render#2",
+      "createPTable#3",
+    ]);
+    expect(analysis.smokingGun?.op).toBe("createPTable");
+    expect(analysis.verdict.where).toContain("createPTable");
+    expect(analysis.verdict.where).toContain("block-7");
+  });
+
+  test("the earliest memory reading survives rotation, so growth is not understated", () => {
+    const recorder = openRecorder({ dir, maxFileBytes: 1800 });
+    recorder.event("getData-begin", { handle: "t1", mem: recorder.memorySnapshot() });
+    rotateUntilEarliestSegmentLost(recorder);
+
+    const analysis = analyzeSession(recorder.file, dir);
+    // Without the carried baseline the heap series would start mid-session while
+    // the sampler's resident series still starts at zero, which biases the
+    // classifier toward blaming native memory.
+    expect(fs.readFileSync(recorder.file, "utf8")).toContain('"mem-baseline"');
+    expect(analysis.memory.heapGrowth).toBeDefined();
+  });
+
+  test("a completed operation is still paired when its begin was carried forward", () => {
+    const recorder = openRecorder({ dir, maxFileBytes: 1800 });
+    const begin = recorder.event("getShape-begin", {
+      handle: "t1",
+      mem: recorder.memorySnapshot(),
+    });
+    rotateUntilEarliestSegmentLost(recorder);
+    recorder.event("getShape-end", { begin, rows: 5, mem: recorder.memorySnapshot() });
+
+    const analysis = analyzeSession(recorder.file, dir);
+    expect(analysis.inFlight).toEqual([]);
+    expect(analysis.attribution.some((op) => op.op === "getShape")).toBe(true);
+  });
+
   test("a crash marker names its session and never attaches to a clean or unrelated one", () => {
     const clean = openRecorder({ dir });
     clean.event("getData-begin", { handle: "t1" });
@@ -333,6 +385,23 @@ describe("review findings", () => {
 });
 
 // Internals
+
+/**
+ * Fills the log until the earliest segment has been overwritten: the parked
+ * segment is itself a rotated one, which is the case the carry-forward exists
+ * for. Counting headers in the active file would not do — the preamble is
+ * rewritten from scratch on every rotation, so it always holds exactly one.
+ */
+function rotateUntilEarliestSegmentLost(recorder: Recorder): void {
+  const parked = `${recorder.file}.1`;
+  for (let guard = 0; guard < 20_000; guard++) {
+    recorder.event("mem-self", { mem: recorder.memorySnapshot() });
+    if (fs.existsSync(parked) && fs.readFileSync(parked, "utf8").includes('"continuation":true')) {
+      return;
+    }
+  }
+  throw new Error("log did not rotate twice");
+}
 
 type FakeModelDriver = {
   createPFrame(def: unknown): string;

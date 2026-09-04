@@ -94,6 +94,8 @@ export type CrashReason =
   | "unknown";
 
 export const SESSION_RECORD = "session";
+/** Earliest memory reading of a session, rewritten into every rotated segment. */
+export const MEM_BASELINE_RECORD = "mem-baseline";
 export const SESSION_END_RECORD = "session-end";
 export const FLIGHT_FILE_PREFIX = "flight";
 export const SAMPLER_FILE_PREFIX = "mem";
