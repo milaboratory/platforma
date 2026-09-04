@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { openRecorder, listSessions } from "./recorder";
-import { writeCrashMarker } from "./supervisor";
+import { readCrashMarkers, writeCrashMarker } from "./supervisor";
 import { analyzeLatest, analyzeSession } from "./analyze";
 import { renderReport } from "./report";
 import {
@@ -238,9 +238,11 @@ describe("review findings", () => {
       error: Object.assign(new Error("Worker terminated"), { code: "ERR_WORKER_OUT_OF_MEMORY" }),
     });
 
+    // Two sessions look dead, so the marker names neither and says so.
     expect(analyzeSession(clean.file, dir).crashMarker).toBeUndefined();
-    expect(analyzeSession(older.file, dir).crashMarker).toBeUndefined();
-    expect(analyzeSession(newer.file, dir).crashMarker?.sessionId).toBe(newer.sessionId);
+    const olderAnalysis = analyzeSession(older.file, dir);
+    expect(olderAnalysis.crashMarker).toBeUndefined();
+    expect(olderAnalysis.findings.map((f) => f.rule)).toContain("unattributed-crash-marker");
   });
 
   test("an assigned session id binds the marker even while a newer session is live", () => {
@@ -262,26 +264,46 @@ describe("review findings", () => {
     expect(analyzeSession(live.file, dir).crashMarker).toBeUndefined();
   });
 
-  test("a guessed session id never pins the death on a session that outlived it", () => {
+  test("a marker with no assigned id goes to the session that stopped writing", () => {
     const dying = openRecorder({ dir });
     dying.event("getData-begin", { handle: "t1" });
     const live = openRecorder({ dir });
     live.event("getShape-begin", { handle: "t2" });
-    // No id handed over: the supervisor can only guess, and the newest open log
-    // is the live session's, not the dying one's.
+    // No id handed over. The newest open log at this moment is the live
+    // session's, so a guess would name the wrong one.
     writeCrashMarker(dir, {
       error: Object.assign(new Error("Worker terminated"), { code: "ERR_WORKER_OUT_OF_MEMORY" }),
     });
-    // The live session goes on well past the marker.
+    const guess = readCrashMarkers(dir)[0];
+    expect(guess.sessionId).toBeUndefined();
+    expect(guess.guessedSessionId).toBe(live.sessionId);
+
+    // The live session carries on well past the marker, which is what separates
+    // it from the one that died.
     fs.appendFileSync(
       live.file,
       `${JSON.stringify({ seq: 99, t: 0, wall: Date.now() + 60_000, type: "mem-self" })}\n`,
     );
 
-    const marker = analyzeSession(live.file, dir).crashMarker;
-    expect(marker).toBeUndefined();
-    // The dying session gets no confirmation either — honest, rather than wrong.
-    expect(analyzeSession(dying.file, dir).crashMarker).toBeUndefined();
+    expect(analyzeSession(live.file, dir).crashMarker).toBeUndefined();
+    // The guess named the live session, yet the death is attributed to the one
+    // that actually stopped writing.
+    expect(analyzeSession(dying.file, dir).crashMarker?.reason).toBe("js-heap-out-of-memory");
+  });
+
+  test("two sessions that both look dead leave the marker unattributed", () => {
+    const first = openRecorder({ dir });
+    first.event("getData-begin", { handle: "t1" });
+    const second = openRecorder({ dir });
+    second.event("getData-begin", { handle: "t2" });
+    // Neither closes and neither writes again, so timing cannot tell them apart.
+    writeCrashMarker(dir, { reason: "killed-by-os" });
+
+    for (const session of [first, second]) {
+      const analysis = analyzeSession(session.file, dir);
+      expect(analysis.crashMarker).toBeUndefined();
+      expect(analysis.findings.map((f) => f.rule)).toContain("unattributed-crash-marker");
+    }
   });
 
   test("a legacy marker without a session id is bounded by the next session's start", () => {
