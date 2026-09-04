@@ -15,6 +15,7 @@ import * as util from "./util";
 import * as archive from "./archive";
 import * as storage from "./storage";
 import * as docker from "./docker";
+import * as dockerCoverage from "./docker-coverage";
 import { tmpSpecFile } from "./docker-conda";
 
 export class Core {
@@ -212,6 +213,23 @@ export class Core {
     }
   }
 
+  /**
+   * Fails a CI build that would describe software no kubernetes installation can run.
+   *
+   * `buildSwJsonFiles` calls this on the selection it is about to write, so no path
+   * can skip it. Callers may also invoke it up front — the answer comes from the
+   * package's declaration alone, so a CI run that is going to fail can fail before
+   * it spends minutes building archives and images.
+   */
+  public assertDockerCoverage(options?: { entrypoints?: Map<string, entrypoint.Entrypoint> }) {
+    dockerCoverage.assertDockerCoverage({
+      softwareWithoutDocker: dockerCoverage.softwareEntrypointsWithoutDocker(
+        options?.entrypoints ?? this.entrypoints,
+      ),
+      requirementWaived: !this.pkgInfo.requireDocker,
+    });
+  }
+
   // Get entrypoints defined in package.json, transform them to local or release (depending on `buildMode`)
   // sw.json entrypoint descriptors, and write them to ./dist/tengo/sw.json or as.json next to the package.json.
   public buildSwJsonFiles(options?: {
@@ -240,6 +258,14 @@ export class Core {
     let entrypoints = Array.from(this.entrypoints.entries());
     if (entrypointNames.length > 0) {
       entrypoints = entrypoints.filter(([epName, _]) => entrypointNames.includes(epName));
+    }
+
+    // The descriptor is the contract the backend reads, so this is the last point at
+    // which a software entrypoint with no docker image can still be stopped. Judged
+    // over the selection being described, so a targeted build answers only for what
+    // it writes. The placeholder path describes no software at all.
+    if (!options?.noSoftware) {
+      this.assertDockerCoverage({ entrypoints: new Map(entrypoints) });
     }
 
     const infos = options?.noSoftware

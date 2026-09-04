@@ -36,6 +36,12 @@ export async function runBuild(params: {
   const ids = opts.ids;
   core.buildMode = buildModeForScenario(scenario);
 
+  // Software with no docker variant cannot run on a k8s install, and the answer comes
+  // from package.json alone — so a CI run that cannot produce a runnable release says
+  // so before building anything. The no-software scenario describes no software at
+  // all; buildSwJsonFiles re-checks whatever the other scenarios end up writing.
+  if (scenario.kind !== "no-software") core.assertDockerCoverage();
+
   const buildBinary = () =>
     core.buildSoftwareArchives({
       ids,

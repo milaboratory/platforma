@@ -9,6 +9,7 @@
     "test:check": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build --docker-build --docker-no-autopush && node ./verify.mjs"
   },
   "block-software": {
+    "requireDocker": false,
     "registries": {
       "binary": {
         "milaboratories": {
