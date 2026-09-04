@@ -251,6 +251,30 @@ describe("review findings", () => {
     expect(analysis.verdict.where).toContain("block-7");
   });
 
+  test("a render that spans rotation stops attributing calls once it has returned", () => {
+    const recorder = openRecorder({ dir, maxFileBytes: 1800 });
+    const render = recorder.event("render-begin", {
+      blockId: "block-early",
+      mem: recorder.memorySnapshot(),
+    });
+    // The begin is carried into the new segment, so the log holds two copies of
+    // it under one sequence number.
+    rotateUntilEarliestSegmentLost(recorder);
+    recorder.event("render-end", { begin: render, mem: recorder.memorySnapshot() });
+
+    // This call belongs to no render at all: the only one is over.
+    recorder.event("createPTable-begin", {
+      def: { kind: "PTableDef", def: crossJoinDef() },
+      mem: recorder.memorySnapshot(),
+    });
+
+    const analysis = analyzeSession(recorder.file, dir);
+    expect(analysis.inFlight.map((op) => op.op)).toEqual(["createPTable"]);
+    const crossJoin = analysis.findings.find((f) => f.rule === "cross-join");
+    expect(crossJoin).toBeDefined();
+    expect(crossJoin?.block).toBeUndefined();
+  });
+
   test("the earliest memory reading survives rotation, so growth is not understated", () => {
     const recorder = openRecorder({ dir, maxFileBytes: 1800 });
     recorder.event("getData-begin", { handle: "t1", mem: recorder.memorySnapshot() });
