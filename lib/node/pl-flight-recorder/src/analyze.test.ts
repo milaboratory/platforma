@@ -218,6 +218,9 @@ describe("review findings", () => {
     const analysis = analyzeSession(recorder.file, dir);
     expect(analysis.env?.node).toBe(process.version);
     expect(analysis.meta).toEqual({ appVersion: "rot" });
+    // The loss is reported rather than implied.
+    expect(analysis.rotations).toBe(1);
+    expect(renderReport(analysis)).toContain("Log rotations");
     // getShape began before rotation and ended after it; only getData is open.
     expect(analysis.inFlight.map((op) => op.op)).toEqual(["getData"]);
     expect(analysis.attribution.some((op) => op.op === "getShape")).toBe(true);

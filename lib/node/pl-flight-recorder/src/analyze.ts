@@ -111,6 +111,12 @@ export type SessionAnalysis = {
   role?: string;
   meta?: Record<string, unknown>;
   recordCount: number;
+  /**
+   * How many times the log rotated. Each rotation re-emits the session header,
+   * so environment and metadata survive, but operations older than the retained
+   * segments do not — which is why the count is reported rather than implied.
+   */
+  rotations: number;
   memory: MemoryAnalysis;
   /** Completed operations ranked by resident growth. */
   attribution: OperationSummary[];
@@ -176,6 +182,7 @@ export function analyzeSession(file: string, dir: string = path.dirname(file)): 
     role: header.role,
     meta: header.meta,
     recordCount: records.length,
+    rotations: records.filter((r) => r.type === SESSION_RECORD && r.continuation === true).length,
     memory,
     attribution: operations
       .filter((op) => typeof op.rssDelta === "number")
