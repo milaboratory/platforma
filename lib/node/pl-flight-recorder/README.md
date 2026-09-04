@@ -72,6 +72,11 @@ code has never seen can make a report less informative but never make it leak.
 
 Two things bound one record: arrays keep their head and carry an `$omitted`
 marker, and a node budget stops a pathological definition from filling the log.
+A session's log is bounded the same way, at two segments of 32 MiB. Rotation
+rewrites into the new segment the three things a report cannot be produced
+without — the session header, the earliest memory reading, and the begin record
+of every operation still open — so repeated rotation costs only operations that
+already completed. The report states how many rotations happened.
 Class instances are named (`$opaque`) rather than walked, which matters because
 a definition can carry live accessors that reference each other.
 
