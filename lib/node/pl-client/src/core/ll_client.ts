@@ -645,15 +645,19 @@ export class LLPlClient implements WireClientProviderFactory {
     }
   }
 
-  /** Login via username/password. Returns a fresh JWT. Backend creates a new session per call. */
+  /** Login via username/password. Returns a fresh JWT. Backend creates a new session per call.
+   * `opts.idP` names the advertised login method to route to; omitted, the backend keeps its
+   * current first-match behaviour. */
   public async loginBasic(
     user: string,
     password: string,
-    opts: { ttlSeconds?: bigint; role?: AuthAPI_Role } = {},
+    opts: { ttlSeconds?: bigint; role?: AuthAPI_Role; idP?: string } = {},
   ): Promise<string> {
     const cl = this.clientProvider.get();
     const ttl = opts.ttlSeconds ?? BigInt(this.conf.authTTLSeconds);
     const role = opts.role ?? AuthAPI_Role.UNSPECIFIED;
+    const basic =
+      opts.idP === undefined ? { login: user, password } : { login: user, password, idp: opts.idP };
 
     if (cl instanceof GrpcPlApiClient) {
       return (
@@ -661,7 +665,7 @@ export class LLPlClient implements WireClientProviderFactory {
           {
             credentials: {
               oneofKind: "basic",
-              basic: { login: user, password },
+              basic,
             },
             expiration: { seconds: ttl, nanos: 0 },
             requestedRole: role,
@@ -674,7 +678,7 @@ export class LLPlClient implements WireClientProviderFactory {
         // openapi-typescript generated all body fields as required, but Login.Request
         // has a credentials oneof — only one of `basic`/`token` is sent. Cast around it.
         body: {
-          basic: { login: user, password },
+          basic,
           expiration: `${ttl}s`,
           requestedRole: role,
         } as any,
@@ -723,16 +727,19 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   /** Login via SSO: forwards the raw IdP /token JSON body to the backend.
-   * Backend validates signature + nonce + audience and mints a Platforma JWT. */
-  public async loginSSO(tokenResponse: Uint8Array): Promise<string> {
+   * Backend validates signature + nonce + audience and mints a Platforma JWT. `idP` names the
+   * advertised login method to route to; omitted, the backend keeps its current first-match
+   * behaviour. */
+  public async loginSSO(tokenResponse: Uint8Array, idP?: string): Promise<string> {
     const cl = this.clientProvider.get();
+    const sso = idP === undefined ? { tokenResponse } : { tokenResponse, idp: idP };
     if (cl instanceof GrpcPlApiClient) {
       return (
         await cl.login(
           {
             credentials: {
               oneofKind: "sso",
-              sso: { tokenResponse },
+              sso,
             },
           },
           { timeout: DEFAULT_LOGIN_TIMEOUT },
@@ -741,7 +748,7 @@ export class LLPlClient implements WireClientProviderFactory {
     } else {
       const resp = cl.POST("/v1/auth/login", {
         body: {
-          sso: { tokenResponse: Buffer.from(tokenResponse).toString("base64") },
+          sso: { ...sso, tokenResponse: Buffer.from(tokenResponse).toString("base64") },
         } as any,
       });
       return notEmpty((await resp).data, "REST: empty response for SSO login request").token;
@@ -750,11 +757,16 @@ export class LLPlClient implements WireClientProviderFactory {
 
   /** Request a one-time PKCE nonce + its expiry from the backend. The desktop is
    * expected to place the nonce verbatim into the OIDC auth-request before
-   * redirecting to the IdP; the backend enforces the expiry on {@link loginSSO}. */
-  public async beginSSOLogin(): Promise<{ nonce: string; expiresAt: Date; clientSecret?: string }> {
+   * redirecting to the IdP; the backend enforces the expiry on {@link loginSSO}. `idP` names the
+   * advertised login method to route to; omitted, the backend keeps its current first-match
+   * behaviour. */
+  public async beginSSOLogin(
+    idP?: string,
+  ): Promise<{ nonce: string; expiresAt: Date; clientSecret?: string }> {
     const cl = this.clientProvider.get();
+    const request = idP === undefined ? {} : { idp: idP };
     if (cl instanceof GrpcPlApiClient) {
-      const resp = (await cl.beginSSOLogin({}).response).flow;
+      const resp = (await cl.beginSSOLogin(request).response).flow;
       if (resp.oneofKind !== "publicPkce") {
         throw new Error(`beginSSOLogin: unsupported flow ${resp.oneofKind}`);
       }
@@ -766,7 +778,7 @@ export class LLPlClient implements WireClientProviderFactory {
       };
     } else {
       const wsResponse = notEmpty(
-        (await cl.POST("/v1/auth/sso/begin-login", { body: {} })).data,
+        (await cl.POST("/v1/auth/sso/begin-login", { body: request as any })).data,
         "REST: empty response for beginSSOLogin request",
       );
       const pkce = notEmpty(wsResponse.publicPkce, "REST: missing publicPkce in beginSSOLogin");
@@ -955,7 +967,7 @@ export class LLPlClient implements WireClientProviderFactory {
       // while protobuf-ts models it as a discriminated union. Reshape per item.
       resp = {
         methods: (wsResponse.methods ?? []).map((m): grpcTypes.AuthAPI_ListMethods_MethodInfo => {
-          const base = { id: m.id, description: m.description };
+          const base = { id: m.id, description: m.description, title: m.title };
           if (m.basic !== undefined) {
             return { ...base, method: { oneofKind: "basic", basic: m.basic } };
           }

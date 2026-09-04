@@ -18,6 +18,7 @@ export type SSOFlowType = "public_pkce";
  * may surface (`userIdClaim`, `groupsClaim`). */
 export type SSOAuthMethod = {
   id: string;
+  title: string;
   description: string;
   issuer: string;
   clientId: string;
@@ -47,6 +48,14 @@ export type SSOLoginAttempt = {
    * desktop exchanges the code as a confidential client. */
   clientSecret?: string;
 };
+
+/** One login method the backend advertises, of any kind. Every advertised method keeps its own
+ * `id`, `title`, `description` and kind. Two same-kind methods, such as two LDAP directories, are
+ * two entries a caller can name apart and never collapsed into one. See {@link UnauthenticatedPlClient.loginMethods}. */
+export type LoginMethod =
+  | { kind: "basic"; id: string; title: string; description: string }
+  | { kind: "token"; id: string; title: string; description: string }
+  | ({ kind: "sso" } & SSOAuthMethod);
 
 /** Primarily used for initial authentication (login) */
 export class UnauthenticatedPlClient {
@@ -82,7 +91,9 @@ export class UnauthenticatedPlClient {
 
   /** Classifies the advertised authentication methods by credential scheme.
    * On legacy backends (no auth:v2) the typed oneof is empty; callers fall through to {@link login}
-   * which uses the legacy GetJWTToken path. SSO is surfaced via {@link ssoConfig}, not here. */
+   * which uses the legacy GetJWTToken path.
+   * @deprecated collapses every basic-kind method into one boolean; use {@link loginMethods} to
+   * see each advertised method's own id. `login()` still reads this to choose the credential path. */
   public get supportedAuthSchemes(): { basic: boolean; token: boolean } {
     const result = { basic: false, token: false };
     for (const m of this.ll.authMethodsSync.methods) {
@@ -92,8 +103,37 @@ export class UnauthenticatedPlClient {
     return result;
   }
 
+  /** Builds the {@link SSOAuthMethod} projection an advertised SSO entry carries, or `undefined`
+   * for a flow no client here can drive. Shared by {@link ssoConfig} and {@link loginMethods},
+   * which each apply their own rule for an unsupported flow. */
+  private toSSOAuthMethod(
+    method: AuthAPI_ListMethods_Response["methods"][number],
+  ): SSOAuthMethod | undefined {
+    if (method.method.oneofKind !== "sso") return undefined;
+    const sso = method.method.sso;
+    if (sso.flowType !== AuthAPI_ListMethods_SSOAuthMethod_FlowType.PUBLIC_PKCE) return undefined;
+    return {
+      id: method.id,
+      title: method.title || method.description || method.id,
+      description: method.description,
+      issuer: sso.issuer,
+      clientId: sso.clientId,
+      scopes: sso.scopes,
+      resource: sso.resource,
+      prompt: sso.prompt,
+      redirectPorts: sso.redirectPorts,
+      subjectTokenSource: sso.subjectTokenSource,
+      userIdClaim: sso.userIdClaim,
+      groupsClaim: sso.groupsClaim,
+      accessType: sso.accessType || undefined,
+      flowType: "public_pkce",
+    };
+  }
+
   /** Projection of the first advertised SSO method, derived from {@link authMethodsSync}.
-   * v1: at most one SSO method per deployment, so callers do not need to discriminate. */
+   * v1: at most one SSO method per deployment, so callers do not need to discriminate.
+   * @deprecated surfaces only the first advertised SSO method; use {@link loginMethods} to see
+   * every advertised method, of every kind. */
   public ssoConfig(): SSOAuthMethod | undefined {
     for (const method of this.ll.authMethodsSync.methods) {
       if (method.method.oneofKind !== "sso") continue;
@@ -101,42 +141,65 @@ export class UnauthenticatedPlClient {
       if (sso.flowType !== AuthAPI_ListMethods_SSOAuthMethod_FlowType.PUBLIC_PKCE) {
         throw new Error(`ssoConfig: unsupported SSO flow type ${sso.flowType}`);
       }
-      return {
-        id: method.id,
-        description: method.description,
-        issuer: sso.issuer,
-        clientId: sso.clientId,
-        scopes: sso.scopes,
-        resource: sso.resource,
-        prompt: sso.prompt,
-        redirectPorts: sso.redirectPorts,
-        subjectTokenSource: sso.subjectTokenSource,
-        userIdClaim: sso.userIdClaim,
-        groupsClaim: sso.groupsClaim,
-        accessType: sso.accessType || undefined,
-        flowType: "public_pkce",
-      };
+      return this.toSSOAuthMethod(method);
     }
     return undefined;
   }
 
-  /** Login with username+password.
+  /** Every login method the backend advertises, of every kind, in advertised order, each
+   * keeping its own `id`, `title`, `description` and kind. An entry with no usable method arm, or an
+   * SSO entry whose flow no client here can drive, is dropped rather than failing the whole
+   * list, which is why this accessor skips where {@link ssoConfig} throws. */
+  public loginMethods(): LoginMethod[] {
+    const picked: LoginMethod[] = [];
+    for (const method of this.ll.authMethodsSync.methods) {
+      switch (method.method.oneofKind) {
+        case "basic":
+        case "token":
+          picked.push({
+            kind: method.method.oneofKind,
+            id: method.id,
+            title: method.title || method.description || method.id,
+            description: method.description,
+          });
+          break;
+        case "sso": {
+          const sso = this.toSSOAuthMethod(method);
+          if (sso !== undefined) picked.push({ kind: "sso", ...sso });
+          break;
+        }
+        default:
+          // No arm at all — a legacy backend advertising nothing pickable.
+          break;
+      }
+    }
+    return picked;
+  }
+
+  /** Login with username and password.
    *
-   * On auth:v2 backends the client inspects the advertised AuthMethods:
-   *   - if basic auth is offered, sends {@link LLPlClient.loginBasic};
-   *   - if only token auth is offered, treats `password` as an opaque bearer token and
-   *     sends {@link LLPlClient.loginWithToken} (so deployments configured for static-token
-   *     auth still log in without the caller switching methods).
+   * Routes to {@link LLPlClient.loginBasic} or {@link LLPlClient.loginWithToken} based on the
+   * advertised method `idP` names. On legacy backends, uses GetJWTToken with Basic header.
    *
-   * On legacy backends (no auth:v2) it falls through to GetJWTToken with the Basic header,
-   * preserving original behavior. */
-  public async login(user: string, password: string): Promise<AuthInformation> {
+   * `idP` names the advertised method. A named basic-kind method routes to the basic branch;
+   * a named token-kind method routes to the token branch even when the backend also advertises
+   * a basic method — the token wire carries no selector, so the id itself is dropped there and
+   * only the branch choice is kept. Omitted, or naming no advertised method, falls back to
+   * today's first-match behavior: basic wins over token when both are advertised. */
+  public async login(user: string, password: string, idP?: string): Promise<AuthInformation> {
     try {
       let token: string;
       if (this.ll.hasCapability("auth:v2")) {
         const schemes = this.supportedAuthSchemes;
-        if (schemes.basic) {
-          token = await this.ll.loginBasic(user, password);
+        const namedKind =
+          idP === undefined ? undefined : this.loginMethods().find((m) => m.id === idP)?.kind;
+        if (namedKind === "token") {
+          token = await this.ll.loginWithToken(password);
+        } else if (schemes.basic) {
+          token =
+            idP === undefined
+              ? await this.ll.loginBasic(user, password)
+              : await this.ll.loginBasic(user, password, { idP });
         } else if (schemes.token) {
           token = await this.ll.loginWithToken(password);
         } else {
@@ -157,9 +220,12 @@ export class UnauthenticatedPlClient {
   }
 
   /** Request fresh server-issued login material. v1 only emits the public-PKCE flow;
-   * desktop MUST place the returned `nonce` verbatim into the OIDC auth-request. */
-  public async beginSSOLogin(): Promise<SSOLoginAttempt> {
-    const attempt = await this.ll.beginSSOLogin();
+   * desktop MUST place the returned `nonce` verbatim into the OIDC auth-request. `idP` names
+   * the advertised SSO method to route to; omitted, the backend keeps its current first-match
+   * behaviour. */
+  public async beginSSOLogin(idP?: string): Promise<SSOLoginAttempt> {
+    const attempt =
+      idP === undefined ? await this.ll.beginSSOLogin() : await this.ll.beginSSOLogin(idP);
     return {
       flow: "public_pkce",
       nonce: attempt.nonce,
@@ -168,10 +234,18 @@ export class UnauthenticatedPlClient {
     };
   }
 
-  /** Forward the verbatim IdP `/token` response body and receive a Platforma JWT. */
-  public async loginSSO(payload: { tokenResponse: Uint8Array }): Promise<AuthInformation> {
+  /** Forward the verbatim IdP `/token` response body and receive a Platforma JWT. `idP` names
+   * the advertised SSO method to route to; omitted, the backend keeps its current first-match
+   * behaviour. */
+  public async loginSSO(payload: {
+    tokenResponse: Uint8Array;
+    idP?: string;
+  }): Promise<AuthInformation> {
     try {
-      const jwtToken = await this.ll.loginSSO(payload.tokenResponse);
+      const jwtToken =
+        payload.idP === undefined
+          ? await this.ll.loginSSO(payload.tokenResponse)
+          : await this.ll.loginSSO(payload.tokenResponse, payload.idP);
       if (jwtToken === "") throw new Error("empty token");
       return { jwtToken };
     } catch (e: any) {
