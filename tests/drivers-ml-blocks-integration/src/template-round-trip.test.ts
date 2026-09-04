@@ -209,6 +209,94 @@ test("v3: a reference to a deleted block survives the export unexamined", async 
   });
 });
 
+/**
+ * The stored template is the same round trip, with the file replaced by an object on the
+ * server: save the project, then apply what was saved.
+ *
+ * What this adds over the trip above is the storage in the middle — the document goes into a
+ * template's immutable `data` blob and comes back out of it — and the two calls a user
+ * actually reaches: `saveProjectAsTemplate` and `createProjectFromTemplate`. The apply side
+ * differs in one way that matters: resolution runs before the project exists, so a template
+ * nothing can build leaves no empty project behind.
+ */
+test("v3: a project saved as a template applies back as an equivalent project", async ({
+  expect,
+}) => {
+  await withMl(async (ml) => {
+    const sourceId = await ml.createProject({ label: "Source" });
+    await ml.openProject(sourceId);
+    const source = ml.getOpenedProject(sourceId);
+
+    const numbersId = await source.addBlock("Numbers", enterNumbersSpec);
+    const sumId = await source.addBlock("Sum", sumNumbersSpec);
+
+    // Everything here is inside the params contract, so the applied project must hold it
+    // verbatim. What falls outside the contract is lost by design, and is pinned by the
+    // trip above rather than a second time here.
+    await source.mutateBlockStorage(numbersId, {
+      operation: "update-block-data",
+      value: { numbers: [1, 2, 3], labels: [], description: "" },
+    });
+    await source.mutateBlockStorage(sumId, {
+      operation: "update-block-data",
+      value: { sources: [createPlRef(numbersId, "numbers")] },
+    });
+    await settled(source, sumId);
+
+    // --- Save ---------------------------------------------------------------
+
+    const saved = await ml.saveProjectAsTemplate(sourceId);
+    if (!saved.ok) throw new Error(`save failed: ${JSON.stringify(saved.problems)}`);
+
+    const stored = await ml.getTemplateData(saved.templateId);
+    // Entry ids are the source project's own block ids, in structure order — which is the
+    // instantiation order the apply below has to reproduce.
+    expect(stored.document.blocks.map((entry) => entry.id)).toStrictEqual([numbersId, sumId]);
+    expect(stored.document.blocks[0].params).toStrictEqual({ numbers: [1, 2, 3] });
+    expect(stored.document.blocks[1].params).toStrictEqual({
+      sources: [createPlRef(numbersId, "numbers")],
+    });
+    // Provenance, and the label the template gets by default: the project it was taken from.
+    expect(stored.sourceProjectLabel).toBe("Source");
+
+    const listed = (await ml.templateList.awaitStableValue()).find(
+      (t) => t.id === saved.templateId,
+    );
+    expect(listed).toMatchObject({ label: "Source", blockCount: 2, sourceProjectLabel: "Source" });
+
+    // --- Apply --------------------------------------------------------------
+
+    const applied = await ml.createProjectFromTemplate(
+      saved.templateId,
+      "Target",
+      localPacksOnly(),
+    );
+    if (!applied.ok) throw new Error(`apply failed: ${JSON.stringify(applied.problems)}`);
+
+    expect(applied.added.map((entry) => entry.templateLocalId)).toStrictEqual([numbersId, sumId]);
+
+    // 1. The applied project describes the same pipeline, in the same order.
+    const reExported = await ml.exportProjectAsTemplate(applied.projectId);
+    if (!reExported.ok) throw new Error(`re-export failed: ${JSON.stringify(reExported.problems)}`);
+    expect(canonical(reExported.document)).toStrictEqual(canonical(stored.document));
+
+    // 2. And every block starts with the params its source block held, with the one field
+    //    that must differ: the reference now names the block the apply created.
+    await ml.openProject(applied.projectId);
+    const target = ml.getOpenedProject(applied.projectId);
+    const appliedId = new Map(applied.added.map((entry) => [entry.templateLocalId, entry.blockId]));
+
+    expect(blockData(await settled(target, appliedId.get(numbersId)!))).toStrictEqual({
+      numbers: [1, 2, 3],
+      labels: [],
+      description: "",
+    });
+    expect(blockData(await settled(target, appliedId.get(sumId)!))).toStrictEqual({
+      sources: [createPlRef(appliedId.get(numbersId)!, "numbers")],
+    });
+  });
+});
+
 /** A block's current data, as the model sees it. */
 function blockData(state: Awaited<ReturnType<typeof awaitBlockStateStable>>): unknown {
   return deriveDataFromStorage(state.blockStorage);
