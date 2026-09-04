@@ -314,3 +314,124 @@ describe("Linker columns", () => {
     expect(linkerMap.getReachableByLinkersAxesFromAxes([axisA])).toEqual([]);
   });
 });
+
+/**
+ * MILAB-6651 — side assignment for the real `pl7.app/sc/cellLinker`.
+ *
+ * In the data, many cells map to ONE clonotype, so the clonotype is the linker's
+ * one-side and the sample/cell pair is its many-side. `mixcr-clonotyping` authors
+ * the axes as `[sampleId, cellId <- sampleId, scClonotypeKey]`, and side assignment
+ * is purely positional — `getAxesGroups` returns groups ordered by their smallest
+ * contained index and `fromColumns` destructures `const [left, right] = groups`
+ * (`linker_columns.ts:53`). So the engine reads the sides backwards.
+ *
+ * These are characterization tests: they assert the WRONG behaviour that exists
+ * today. When explicit sides land, they must flip — and that flip is the proof.
+ */
+describe("MILAB-6651 cellLinker side assignment", () => {
+  const axisSampleId = makeTestAxis({ name: "sampleId" });
+  const axisCellId = makeTestAxis({ name: "cellId", parents: [axisSampleId] });
+  const axisClonotype = makeTestAxis({ name: "scClonotypeKey" });
+
+  /** `[sampleId, cellId <- sampleId, scClonotypeKey]` — the layout as authored. */
+  const asAuthored = makeLinkerColumn({
+    name: "cellLinker",
+    from: [axisSampleId, axisCellId],
+    to: [axisClonotype],
+  });
+
+  /** The same linker with the clonotype component authored first. */
+  const corrected = makeLinkerColumn({
+    name: "cellLinker",
+    from: [axisClonotype],
+    to: [axisSampleId, axisCellId],
+  });
+
+  /**
+   * Group membership as a sorted set. `getAxesGroups` documents "There are no order
+   * inside every group" (`linker_columns.ts:271`), so asserting a particular order
+   * *within* a group would pin an implementation detail the source explicitly
+   * disclaims. Which group comes *first* is what side assignment reads, and that is
+   * asserted positionally.
+   */
+  const names = (axes: AxisSpecNormalized[]) => axes.map((a) => a.name).sort();
+
+  test("grouping order puts the sample/cell component first, so it becomes the one-side", () => {
+    const groups = LinkerMap.getAxesGroups(
+      getNormalizedAxesList([axisSampleId, axisCellId, axisClonotype]),
+    );
+
+    expect(groups.length).toBe(2);
+    // groups[0] is destructured as `left` — the one-side. That is inverted:
+    // {sampleId, cellId} is the many-side in reality.
+    expect(names(groups[0])).toEqual(["cellId", "sampleId"]);
+    expect(names(groups[1])).toEqual(["scClonotypeKey"]);
+  });
+
+  test("a clonotype-keyed source reaches cell-level axes today (the leakage)", () => {
+    const linkerMap = LinkerMap.fromColumns([asAuthored]);
+
+    // Edges are stored many-side -> one-side (`linker_columns.ts:91`), so with the
+    // sides inverted a clonotype-keyed table can traverse down to per-cell axes.
+    // This is what puts cell-level columns into a clonotype-keyed p-frame.
+    expect(
+      new Set(linkerMap.getReachableByLinkersAxesFromAxes([axisClonotype]).map((a) => a.name)),
+    ).toEqual(new Set(["cellId", "sampleId"]));
+  });
+
+  test("a cell-keyed source cannot reach the clonotype today (the lost capability)", () => {
+    // The trunk must carry the whole parent tree. Linker map keys are built from
+    // `getArrayFromAxisTree`, so the cell trunk's key is [cellId, sampleId]; passing
+    // cellId alone yields the key [cellId] and misses for an unrelated reason.
+    const cellTrunk = [axisSampleId, axisCellId];
+
+    const asAuthoredMap = LinkerMap.fromColumns([asAuthored]);
+    expect(asAuthoredMap.getReachableByLinkersAxesFromAxes(cellTrunk)).toEqual([]);
+
+    // Authoring the same linker with correct sides makes the intended cell ->
+    // clonotype enrichment appear, and removes the reverse traversal.
+    const correctedMap = LinkerMap.fromColumns([corrected]);
+    expect(correctedMap.getReachableByLinkersAxesFromAxes(cellTrunk).map((a) => a.name)).toEqual([
+      "scClonotypeKey",
+    ]);
+    expect(correctedMap.getReachableByLinkersAxesFromAxes([axisClonotype])).toEqual([]);
+  });
+
+  /**
+   * Exhaustive companion to the ordering test above, and the TS mirror of
+   * `split_component_order_follows_authoring_order_for_every_permutation` in
+   * pframes-rs `axes_spec.rs`.
+   *
+   * Group *membership* must not depend on authoring order; which group comes *first*
+   * must. That distinction is the whole of MILAB-6651 — the cellLinker's axes group
+   * correctly however they are written down, and it is purely their position that
+   * decides which component gets treated as the one-side. So no structural rule can
+   * recover the intended direction; it has to be declared or read from data.
+   *
+   * Note the two engines reach this ordering independently: Rust via
+   * `disjoint::DisjointSet::sets()`, TS via its own index scan (`linker_columns.ts:304,330`).
+   * Nothing couples them, and they have already drifted twice (malformed-linker
+   * handling, `excludeColumns` support), so both sides assert it separately. A real
+   * shared fixture would need a generated cross-repo contract.
+   */
+  test("grouping is authoring-order independent, but group position is not", () => {
+    const normalized = getNormalizedAxesList([axisSampleId, axisCellId, axisClonotype]);
+
+    for (const order of allPermutations(normalized)) {
+      const groups = LinkerMap.getAxesGroups(order);
+      expect(groups.length).toBe(2);
+
+      // Membership is invariant across all 6 orderings.
+      expect(groups.map(names).sort((a, b) => a[0].localeCompare(b[0]))).toEqual([
+        ["cellId", "sampleId"],
+        ["scClonotypeKey"],
+      ]);
+
+      // Position tracks the earliest-written member of each group — which is exactly
+      // why a mis-authored linker inverts its own sides.
+      const earliest = (group: AxisSpecNormalized[]) =>
+        Math.min(...group.map((a) => order.findIndex((o) => o.name === a.name)));
+      expect(earliest(groups[0])).toBeLessThan(earliest(groups[1]));
+    }
+  });
+});
