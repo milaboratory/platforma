@@ -200,8 +200,11 @@ export function blockPackageJsonRules(ctx: RunContext): void {
   const v = ctx.blockVars;
 
   // The kind is a MANDATORY block component: every block must declare exactly
-  // one sibling `kind/` package. Fail loudly otherwise — a kind-less block is
-  // invalid, and this is what surfaces the not-yet-migrated blocks.
+  // one sibling `kind/` package. DISCOVERY synthesises the module when the
+  // package is absent, so `refresh` bootstraps it instead of failing here and
+  // the zero branch is an invariant guard rather than the migration signal it
+  // once was. Two or more kinds stay a hard error — nothing can pick between
+  // them.
   const kindModules = findModules(ctx, "kind");
   if (kindModules.length !== 1) {
     throw new Error(
