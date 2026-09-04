@@ -13,9 +13,11 @@ import { PackageInfo } from "../package-info";
 import { Core } from "../core";
 import {
   assertDockerCoverage,
+  descriptorHasNoDockerVariant,
   softwareEntrypointsWithoutDocker,
   type DockerCoverage,
 } from "../docker-coverage";
+import { NO_SOFTWARE_PLACEHOLDER } from "../../defaults";
 
 const mockLogger = {
   info: vi.fn(),
@@ -115,6 +117,19 @@ describe("softwareEntrypointsWithoutDocker", () => {
     ).toEqual([]);
   });
 
+  // The ':docker' suffix marks the companion PackageInfo generates, but entrypoint
+  // names are barely constrained, so a package may declare one called 'main:docker'.
+  // Reading the suffix as "generated, already covered" would let it hide there.
+  it("flags a binary-only entrypoint that is itself named with the companion suffix", () => {
+    expect(uncovered({ entrypoints: { "main:docker": javaEntrypoint(false) } })).toEqual([
+      "main:docker",
+    ]);
+  });
+
+  it("passes an entrypoint named with the suffix once it declares an image", () => {
+    expect(uncovered({ entrypoints: { "main:docker": javaEntrypoint(true) } })).toEqual([]);
+  });
+
   it("skips run environments, whose image is baked into the software that uses them", () => {
     expect(
       uncovered({
@@ -190,6 +205,40 @@ describe("softwareEntrypointsWithoutDocker", () => {
       if (ci === undefined) delete process.env.CI;
       else process.env.CI = ci;
     }
+  });
+});
+
+describe("descriptorHasNoDockerVariant", () => {
+  const binary = { type: "java", registry: "milaboratories", package: "sw/1.0.0.tgz", cmd: ["x"] };
+
+  it("flags a rendered descriptor with only a binary variant", () => {
+    expect(descriptorHasNoDockerVariant({ binary })).toBe(true);
+  });
+
+  it("passes a descriptor that carries an image", () => {
+    expect(descriptorHasNoDockerVariant({ binary, docker: { tag: "reg/img:tag" } })).toBe(false);
+  });
+
+  it("passes a run environment, which is not runnable software", () => {
+    expect(descriptorHasNoDockerVariant({ runEnv: { type: "java" } })).toBe(false);
+  });
+
+  it("passes a dev-mode descriptor, which points at a directory and never runs on a cluster", () => {
+    expect(descriptorHasNoDockerVariant({ local: { path: "/src" }, isDev: true })).toBe(false);
+  });
+
+  it("passes the no-software placeholder", () => {
+    expect(
+      descriptorHasNoDockerVariant({
+        isDev: true,
+        binary: { type: "binary", registry: NO_SOFTWARE_PLACEHOLDER, cmd: ["true"] },
+      }),
+    ).toBe(false);
+  });
+
+  it("ignores anything that is not a descriptor object", () => {
+    expect(descriptorHasNoDockerVariant(null)).toBe(false);
+    expect(descriptorHasNoDockerVariant("{}")).toBe(false);
   });
 });
 

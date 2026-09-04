@@ -8,6 +8,7 @@ export { assertDockerPushIntent, type PushIntent } from "./core/push-guard";
 export {
   assertDockerCoverage,
   softwareEntrypointsWithoutDocker,
+  descriptorHasNoDockerVariant,
   type DockerCoverage,
 } from "./core/docker-coverage";
 

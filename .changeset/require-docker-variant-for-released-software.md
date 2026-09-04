@@ -12,3 +12,8 @@ specified". The check reads the package's declaration rather than what a given r
 partial builds (`--variant binary`) stay valid, and it is skipped outside CI so mid-edit packages
 do not block local iteration. A deliberately binary-only package declares itself with
 `"block-software": { "requireDocker": false }`.
+
+A reference entrypoint re-exports a descriptor this package neither builds nor can fix, so it is
+not failed on — the owning package may have opted out deliberately, and that waiver does not
+travel inside the descriptor. Copying one that carries no image now logs a warning naming the
+descriptor to fix instead.
