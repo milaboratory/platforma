@@ -438,7 +438,13 @@ function enclosingRenders(records: FlightRecord[]): Map<number, string> {
   const open: { seq: number; blockId?: string }[] = [];
   for (const record of records) {
     if (record.type === "render-begin") {
-      open.push({ seq: record.seq, blockId: record.blockId as string | undefined });
+      // A render open across a rotation is written twice with one sequence
+      // number: once in the segment that was overwritten, once carried into the
+      // new one. Pushing both would leave a copy open after the render returned,
+      // and every later driver call would be blamed on a block that had finished.
+      if (!open.some((entry) => entry.seq === record.seq)) {
+        open.push({ seq: record.seq, blockId: record.blockId as string | undefined });
+      }
     } else if (record.type === "render-end" || record.type === "render-error") {
       const index = open.findIndex((entry) => entry.seq === record.begin);
       if (index >= 0) open.splice(index, 1);
