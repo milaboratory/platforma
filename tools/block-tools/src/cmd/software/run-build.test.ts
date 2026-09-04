@@ -22,6 +22,9 @@ function fakeBuilder() {
     publishDockerImages: vi.fn(rec("publishDockerImages")),
     publishPackages: vi.fn(async () => void calls.push("publishPackages")),
     buildSwJsonFiles: vi.fn(rec("buildSwJsonFiles")),
+    // A guard, not a build step: kept out of `calls` so the order assertions stay
+    // about what the pass actually builds and pushes.
+    assertDockerCoverage: vi.fn(),
   };
   return { core: core as unknown as Builder, calls, spies: core };
 }
@@ -125,6 +128,19 @@ describe("runBuild orchestration", () => {
       "publishPackages",
       "buildSwJsonFiles",
     ]);
+  });
+
+  it("checks docker coverage up front, so a doomed build fails before it builds", async () => {
+    const b = await run({ channel: "release", location: "remote" });
+    expect(b.spies.assertDockerCoverage).toHaveBeenCalled();
+    expect(b.spies.assertDockerCoverage.mock.invocationCallOrder[0]).toBeLessThan(
+      b.spies.buildDockerImages.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("skips the coverage check when the scenario describes no software at all", async () => {
+    const b = await run({ variant: "none" });
+    expect(b.spies.assertDockerCoverage).not.toHaveBeenCalled();
   });
 
   it("dev docker build targets the built-in dev registry; release the production registry", async () => {
