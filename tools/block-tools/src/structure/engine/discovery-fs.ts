@@ -197,6 +197,19 @@ export function discoverRunContext(input: DiscoverInput): RunContext {
   const facadeName = blockMod.name.replace(/\.block$/, "");
   const blockVars = parseBlockVars(facadeName);
 
+  // A kind is a mandatory block component, but a block written before kinds
+  // existed has no `kind/` package on disk, so DISCOVERY finds no kind module
+  // and every kind rule fans out over nothing. Synthesise the module the same
+  // way `init` does (`modulesForInit`) so a plain `structure refresh`
+  // BOOTSTRAPS the package: the managed `package.json` and the fixed configs
+  // are written from their generators, `src/index.ts` lands as a scaffold, and
+  // `kind` joins `packages:` because `ensureWorkspaceModulePaths` reads
+  // `ctx.modules`. Without this a pre-kind block could only be migrated by
+  // hand-crafting the package first — `refresh` threw before touching a file.
+  if (!modules.some((m) => m.scope === "kind")) {
+    modules.push({ scope: "kind", name: `${facadeName}.kind`, path: "kind" });
+  }
+
   return createRunContext({
     isSdkInternal,
     updateDepsOnly: input.updateDepsOnly ?? false,
