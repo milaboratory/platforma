@@ -405,6 +405,10 @@ const NEXT_STEPS: { rule: string; step: string }[] = [
     step: "Growth is outside the JS heap, so raising --max-old-space-size will not help. Ask for a pframes engine heap profile (pprofDump) alongside this report.",
   },
   {
+    rule: "unattributed-crash-marker",
+    step: "A crash marker could not be attributed because more than one session in the directory stopped writing around the same time. Spawn the middle-layer worker with an assigned flight session id, which removes the ambiguity entirely.",
+  },
+  {
     rule: "heap-reading-stale",
     step: "The heap was not sampled near the crash because the thread was blocked. Treat the heap numbers in this report as a floor, not a measurement.",
   },

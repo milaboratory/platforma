@@ -4,7 +4,7 @@ import { CRASH_FILE_PREFIX, type CrashMarker, type CrashReason } from "./events"
 import { listSessions, sessionIdFromFile } from "./recorder";
 
 export type CrashMarkerInput = {
-  /** Session id the parent assigned to the worker; without it the newest open flight log is guessed. */
+  /** Session id the parent assigned to the worker. Omitted, the marker carries no identity. */
   sessionId?: string;
   reason?: CrashReason;
   error?: (Error & { code?: string }) | unknown;
@@ -16,8 +16,9 @@ export type CrashMarkerInput = {
 export type SuperviseOptions = {
   /**
    * The session id handed to the worker at spawn (see `FLIGHT_SESSION_ENV`).
-   * With it the marker names the dying session with certainty; without it the
-   * newest open flight log is taken as a guess.
+   * With it the marker names the dying session with certainty. Without it the
+   * analyzer has to attribute the marker by timing, and will decline to
+   * attribute it at all when more than one session looks dead.
    */
   sessionId?: string;
   onCrash?: (info: {
@@ -46,21 +47,16 @@ export type SupervisedWorker = {
 export function writeCrashMarker(dir: string, input: CrashMarkerInput = {}): string {
   fs.mkdirSync(dir, { recursive: true });
   const error = input.error as (Error & { code?: string }) | undefined;
-  // Only an id the parent handed to the worker is certain. Reading the newest
-  // open flight log is a guess: a concurrent live session that appended after
-  // the dying worker's last record would be named instead, so the analyzer
-  // treats a guessed id as a hint to be checked against the time window.
-  const guessedSessionId = input.sessionId === undefined ? newestOpenSessionId(dir) : undefined;
+  // Only an id the parent handed to the worker is certain, and only a certain
+  // id goes in `sessionId`. Reading the newest open flight log names whichever
+  // session wrote last, which a concurrent live session makes wrong; recorded
+  // as identity that would misattribute the death and, worse, stop the session
+  // that actually died from claiming the marker. So it is advisory only.
   const marker: CrashMarker = {
     type: "external-crash",
     wall: Date.now(),
-    sessionId: input.sessionId ?? guessedSessionId,
-    sessionIdSource:
-      input.sessionId !== undefined
-        ? "assigned"
-        : guessedSessionId !== undefined
-          ? "guessed"
-          : undefined,
+    sessionId: input.sessionId,
+    guessedSessionId: input.sessionId === undefined ? newestOpenSessionId(dir) : undefined,
     reason: input.reason ?? classifyReason(input),
     errorCode: error?.code,
     errorName: error?.name,
@@ -132,8 +128,9 @@ export function superviseWorker(
 
 // Internals
 
-// The dying session has no terminating record, so only open sessions qualify;
-// among those the newest is the best available guess.
+// Advisory only, for a human reading a directory by hand: the dying session has
+// no terminating record, so among the sessions that look dead this names the one
+// that wrote last. Never used as identity — see `CrashMarker.guessedSessionId`.
 function newestOpenSessionId(dir: string): string | undefined {
   const open = listSessions(dir).find((session) => session.crashed);
   return open ? sessionIdFromFile(open.file) : undefined;

@@ -31,6 +31,10 @@ export const THRESHOLDS = {
   returnedBytes: 256 * 1024 * 1024,
   inlineEntries: 1_000_000,
   stallMs: 2000,
+  /** Backward tolerance when matching a marker by time, for parent/worker clock drift. */
+  clockToleranceMs: 1000,
+  /** How many open sessions are considered as rivals for an unattributed marker. */
+  maxRivalSessions: 8,
   /** A machine-memory claim needs the process to actually be large. */
   machineRssShare: 0.25,
 } as const;
@@ -143,7 +147,10 @@ export function analyzeSession(file: string, dir: string = path.dirname(file)): 
   const samples = readSamples(path.join(dir, `${SAMPLER_FILE_PREFIX}-${sessionId}.ndjson`));
 
   const ended = records.find((r) => r.type === SESSION_END_RECORD);
-  const crashMarker = ended ? undefined : findCrashMarker(dir, sessionId, records);
+  const attribution = ended
+    ? { marker: undefined, ambiguous: false }
+    : findCrashMarker(dir, sessionId, records);
+  const crashMarker = attribution.marker;
 
   const memory = analyzeMemory(records, samples, header.env);
   const operations = pairOperations(records);
@@ -151,6 +158,7 @@ export function analyzeSession(file: string, dir: string = path.dirname(file)): 
 
   const findings = [
     ...classifyCrashMarker(crashMarker),
+    ...ambiguousMarkerFinding(attribution.ambiguous),
     ...classifyMemory(memory, header.env, crashMarker),
     ...collectStructural(records),
     ...collectEmpirical(records, operations, definitionBySeq(records)),
@@ -203,6 +211,9 @@ export function formatBytes(value: number | undefined): string {
 
 // Internals
 
+const CLOCK_TOLERANCE_MS = THRESHOLDS.clockToleranceMs;
+const MAX_RIVAL_SESSIONS = THRESHOLDS.maxRivalSessions;
+
 const SEVERITY_ORDER: Record<FindingSeverity, number> = {
   critical: 0,
   high: 1,
@@ -227,42 +238,65 @@ const CAUSE_RULES = [
 ];
 
 /**
- * The marker for a session is the one that names it with an id the parent
- * assigned. A guessed id — read off the newest open log at the moment of death —
- * can name a concurrent live session instead of the dying one, so it counts only
- * when the time window agrees. Markers without an id fall back to the window
- * alone: between this session's last record and the start of whichever session
- * began next, and never before this session's own start.
+ * The marker for a session is the one whose assigned id names it.
+ *
+ * Failing that, a marker with no id is attributed by time: a session that died
+ * stopped writing, so the marker lands at or just after its last record, while a
+ * session that survived kept writing past it. That test only separates them when
+ * the other sessions actually did keep writing. When two sessions both look
+ * dead, no attribution is made at all — an unattributed marker is reported as
+ * such, which is honest, where naming the wrong session is not.
  */
 function findCrashMarker(
   dir: string,
   sessionId: string,
   records: FlightRecord[],
-): CrashMarker | undefined {
+): { marker?: CrashMarker; ambiguous: boolean } {
   const markers = readCrashMarkers(dir);
-  const assigned = markers.find(
-    (marker) => marker.sessionId === sessionId && marker.sessionIdSource === "assigned",
-  );
-  if (assigned) return assigned;
+  const assigned = markers.find((marker) => isAssigned(marker) && marker.sessionId === sessionId);
+  if (assigned) return { marker: assigned, ambiguous: false };
 
-  const lastWall = records.at(-1)?.wall ?? 0;
   const thisStart = sessionStartFromId(sessionId);
-  const nextStart = listSessions(dir)
-    .map((session) => sessionStartFromId(sessionIdFromFile(session.file)))
-    .filter((start) => start > thisStart)
-    .sort((lhs, rhs) => lhs - rhs)[0];
-  // A marker cannot predate the session it belongs to; the small backward
-  // tolerance only absorbs clock drift between the parent and the worker.
-  const notBefore = Math.max(thisStart, lastWall - 1000);
-  const inWindow = (marker: CrashMarker) =>
-    marker.wall >= notBefore && (nextStart === undefined || marker.wall < nextStart);
+  const lastWall = records.at(-1)?.wall ?? 0;
+  const others = openSessionEnds(dir).filter((session) => session.sessionId !== sessionId);
 
-  const guessed = markers.find(
-    (marker) =>
-      marker.sessionId === sessionId && marker.sessionIdSource !== "assigned" && inWindow(marker),
-  );
-  if (guessed) return guessed;
-  return markers.find((marker) => marker.sessionId === undefined && inWindow(marker));
+  for (const marker of markers) {
+    if (isAssigned(marker)) continue;
+    // A marker cannot predate the session it belongs to; the backward tolerance
+    // only absorbs clock drift between the parent and the worker.
+    if (marker.wall < Math.max(thisStart, lastWall - CLOCK_TOLERANCE_MS)) continue;
+    const rivals = others.filter(
+      (session) => marker.wall >= Math.max(session.start, session.lastWall - CLOCK_TOLERANCE_MS),
+    );
+    if (rivals.length > 0) return { marker: undefined, ambiguous: true };
+    return { marker, ambiguous: false };
+  }
+  return { marker: undefined, ambiguous: false };
+}
+
+/**
+ * An older recorder put a guess in `sessionId` and labelled it. Such an id is
+ * not identity, so it is read back as an unattributed marker.
+ */
+function isAssigned(marker: CrashMarker): boolean {
+  return marker.sessionId !== undefined && marker.sessionIdSource !== "guessed";
+}
+
+/** Last recorded wall clock of every session that has no terminating record. */
+function openSessionEnds(dir: string): { sessionId: string; start: number; lastWall: number }[] {
+  return listSessions(dir)
+    .filter((session) => session.crashed)
+    .slice(0, MAX_RIVAL_SESSIONS)
+    .map((session) => {
+      const id = sessionIdFromFile(session.file);
+      let lastWall = 0;
+      try {
+        lastWall = readSession(session.file).records.at(-1)?.wall ?? 0;
+      } catch {
+        // A session whose log cannot be read cannot rival anything.
+      }
+      return { sessionId: id, start: sessionStartFromId(id), lastWall };
+    });
 }
 
 function readSamples(file: string): SamplerRecord[] {
@@ -497,6 +531,18 @@ function classifyCrashMarker(marker: CrashMarker | undefined): Finding[] {
       severity: "critical",
       source: "supervisor",
       detail: `${explanation[marker.reason] ?? marker.reason}${firstLine ? ` — ${firstLine}` : ""}`,
+    },
+  ];
+}
+
+function ambiguousMarkerFinding(ambiguous: boolean): Finding[] {
+  if (!ambiguous) return [];
+  return [
+    {
+      rule: "unattributed-crash-marker",
+      severity: "medium",
+      detail:
+        "a crash marker sits in this session's time window, but another session in the same directory also stopped writing around then, so it is not attributed to either — spawn the worker with an assigned session id to remove the ambiguity",
     },
   ];
 }

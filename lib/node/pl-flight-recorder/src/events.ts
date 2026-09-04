@@ -61,13 +61,20 @@ export type SamplerRecord = FlightRecordBase & {
 export type CrashMarker = {
   type: "external-crash";
   wall: number;
-  /** Session the marker belongs to, when the supervisor could tell. */
+  /**
+   * Session the marker belongs to. Present only when the parent assigned the id
+   * to the worker and therefore knows it; never inferred, because a wrong id
+   * here would both misattribute the death and stop the right session from
+   * claiming it.
+   */
   sessionId?: string;
   /**
-   * `assigned` when the parent handed the id to the worker and knows it for
-   * certain; `guessed` when it was read off the newest open flight log, which
-   * a concurrent live session can make wrong.
+   * Advisory only: the newest open flight log at the moment of death. A
+   * concurrent live session can make this wrong, so it is never matched against
+   * — it exists to help a human read a directory by hand.
    */
+  guessedSessionId?: string;
+  /** Written by an older recorder that put a guess in `sessionId`. */
   sessionIdSource?: "assigned" | "guessed";
   reason: CrashReason;
   errorCode?: string;
