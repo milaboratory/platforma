@@ -5,6 +5,12 @@ export * as util from "./core/util";
 export * as envs from "./core/envs";
 export * as defaults from "./defaults";
 export { assertDockerPushIntent, type PushIntent } from "./core/push-guard";
+export {
+  assertDockerCoverage,
+  softwareEntrypointsWithoutDocker,
+  descriptorHasNoDockerVariant,
+  type DockerCoverage,
+} from "./core/docker-coverage";
 
 /** The logger the engine and its callers pass around. */
 export type Logger = winston.Logger;
@@ -24,6 +30,7 @@ export type Builder = Pick<
   | "version"
   | "isPrivate"
   | "selectedDockerPackages"
+  | "assertDockerCoverage"
   | "buildDockerImages"
   | "buildSoftwareArchives"
   | "buildSwJsonFiles"
