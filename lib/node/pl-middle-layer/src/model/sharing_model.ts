@@ -113,8 +113,13 @@ export type EnvelopePayload =
 
 export type EnvelopePayloadKind = EnvelopePayload["kind"];
 
+/** Every envelope schema version this build can read. Adding a version here is what makes
+ *  {@link normalizeEnvelopeData} accept it; bumping {@link EnvelopeSchemaVersionCurrent} to a
+ *  version missing from this union is a compile error. */
+export type EnvelopeSchemaVersion = 1 | 2;
+
 /** Version written into every new envelope. Bumped from 1 when the payload became discriminated. */
-export const EnvelopeSchemaVersionCurrent = 2;
+export const EnvelopeSchemaVersionCurrent = 2 satisfies EnvelopeSchemaVersion;
 
 /**
  * Immutable `data` on a SharedEnvelope, set at createEphemeral, never mutated.
@@ -192,13 +197,13 @@ export function decodeEnvelopeData(data: Uint8Array): EnvelopeData | undefined {
 export function normalizeEnvelopeData(raw: unknown): EnvelopeData | undefined {
   if (typeof raw !== "object" || raw === null) return undefined;
   const e = raw as RawEnvelopeData;
-  if (e.schemaVersion !== 1 && e.schemaVersion !== EnvelopeSchemaVersionCurrent) return undefined;
+  if (!Object.hasOwn(ReadableSchemaVersions, e.schemaVersion)) return undefined;
 
   const payload =
     e.payload ??
     (e.projects !== undefined ? ({ kind: "projects", projects: e.projects } as const) : undefined);
   if (payload === undefined) return undefined;
-  if (!KnownPayloadKinds.has(payload.kind)) return undefined;
+  if (!Object.hasOwn(KnownPayloadKinds, payload.kind)) return undefined;
 
   return {
     schemaVersion: EnvelopeSchemaVersionCurrent,
@@ -260,8 +265,21 @@ export type ShareTemplateOptions =
 // Internals
 //
 
-/** Every payload kind this build can act on; anything else is hidden rather than offered. */
-const KnownPayloadKinds = new Set<string>(["projects", "template"]);
+/** Every payload kind this build can act on; anything else is hidden rather than offered.
+ *  Keyed by {@link EnvelopePayloadKind}, so adding a kind to {@link EnvelopePayload} without
+ *  teaching the decoder about it is a compile error, not a share that silently disappears. */
+const KnownPayloadKinds: Record<EnvelopePayloadKind, true> = {
+  projects: true,
+  template: true,
+};
+
+/** Every schema version {@link normalizeEnvelopeData} accepts. Keyed by
+ *  {@link EnvelopeSchemaVersion}, so widening that union without deciding how the new shape
+ *  is upcast is a compile error. */
+const ReadableSchemaVersions: Record<EnvelopeSchemaVersion, true> = {
+  1: true,
+  2: true,
+};
 
 /**
  * The envelope blob as it comes off the wire, before {@link normalizeEnvelopeData} decides
