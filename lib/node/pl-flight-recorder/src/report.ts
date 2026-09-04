@@ -43,6 +43,12 @@ export function renderReport(analysis: SessionAnalysis): string {
       row("Worst recorded thread stall", `${Math.round(analysis.memory.worstStallMs)} ms`),
       row("Log tail truncated by the kill", String(analysis.truncatedTail)),
       row(
+        "Log rotations",
+        analysis.rotations === 0
+          ? "none — the whole session is present"
+          : `${analysis.rotations} — operations older than the retained segments are absent`,
+      ),
+      row(
         "Supervisor crash marker",
         analysis.crashMarker
           ? `${analysis.crashMarker.reason}${
@@ -417,6 +423,11 @@ const NEXT_STEPS: { rule: string; step: string }[] = [
 function nextStepsSection(analysis: SessionAnalysis): string {
   const rules = new Set(analysis.findings.map((finding) => finding.rule));
   const steps = NEXT_STEPS.filter((entry) => rules.has(entry.rule)).map((entry) => entry.step);
+  if (analysis.rotations > 1) {
+    steps.push(
+      "This session rotated more than once, so only the last two segments are on disk and the earliest operations are gone. The verdict above rests on the tail, which is intact; treat the operation list as partial.",
+    );
+  }
   if (!analysis.memory.samplerPresent) {
     steps.push(
       "No sampler series in this session: the RSS curve came from in-thread records only and may have gaps where the thread was blocked.",
