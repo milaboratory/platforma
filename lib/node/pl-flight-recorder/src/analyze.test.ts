@@ -191,7 +191,7 @@ describe("review findings", () => {
     expect(analysis.smokingGun?.op).toBe("createPTable");
     expect(analysis.verdict.where).toContain("createPTable");
     expect(analysis.verdict.where).toContain("block-7");
-    expect(renderReport(analysis)).toContain("Join in flight");
+    expect(renderReport(analysis)).toContain("Definition in flight");
     expect(renderReport(analysis)).toContain("DISJOINT");
   });
 

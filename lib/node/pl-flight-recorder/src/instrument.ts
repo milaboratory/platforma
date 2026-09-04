@@ -1,5 +1,5 @@
 import type { PColumn, PTableDef, PTableDefV2 } from "@milaboratories/pl-model-common";
-import { digestPFrameDef, digestPTableDef, digestPTableDefV2, type DefDigest } from "./digest";
+import { digestDef, type DefDigest, type DefKind } from "./digest";
 import type { Recorder } from "./recorder";
 
 /**
@@ -17,11 +17,9 @@ import type { Recorder } from "./recorder";
  */
 
 export type HandleOrigin = {
-  /** Sequence number of the record holding the join digest. */
+  /** Sequence number of the record holding the definition. */
   seq: number;
   op: string;
-  inputRowsMax?: number;
-  digest?: DefDigest;
   observed?: { rows?: number; columns?: number };
 };
 
@@ -89,33 +87,18 @@ export function wrapModelDriver<D extends ModelDriverLike<unknown>>(
 ): D {
   const wrapped = {
     createPFrame(def: readonly PColumn<unknown>[]) {
-      return record(
-        recorder,
-        registry,
-        handleOf,
-        "createPFrame",
-        () => digestPFrameDef(def),
-        () => (driver.createPFrame as (d: unknown) => unknown)(def),
+      return record(recorder, registry, handleOf, "createPFrame", "PFrameDef", def, () =>
+        (driver.createPFrame as (d: unknown) => unknown)(def),
       );
     },
     createPTable(def: PTableDef<PColumn<unknown>>) {
-      return record(
-        recorder,
-        registry,
-        handleOf,
-        "createPTable",
-        () => digestPTableDef(def),
-        () => (driver.createPTable as (d: unknown) => unknown)(def),
+      return record(recorder, registry, handleOf, "createPTable", "PTableDef", def, () =>
+        (driver.createPTable as (d: unknown) => unknown)(def),
       );
     },
     createPTableV2(def: PTableDefV2<PColumn<unknown>>) {
-      return record(
-        recorder,
-        registry,
-        handleOf,
-        "createPTableV2",
-        () => digestPTableDefV2(def),
-        () => (driver.createPTableV2 as (d: unknown) => unknown)(def),
+      return record(recorder, registry, handleOf, "createPTableV2", "PTableDefV2", def, () =>
+        (driver.createPTableV2 as (d: unknown) => unknown)(def),
       );
     },
   };
@@ -157,15 +140,10 @@ export function wrapDataDriver<D extends object>(
         async () => {
           const shape = await source.getShape(handle, ...rest);
           registry.observe(handle, { rows: shape?.rows, columns: shape?.columns });
-          return {
-            result: shape,
-            detail: {
-              rows: shape?.rows,
-              columns: shape?.columns,
-              inputRowsMax: origin?.inputRowsMax,
-              amplification: ratio(shape?.rows, origin?.inputRowsMax),
-            },
-          };
+          // How much this join amplified is judged in the analyzer, which can
+          // read the definition this handle came from without repeating the
+          // work here, on the hot path.
+          return { result: shape, detail: { rows: shape?.rows, columns: shape?.columns } };
         },
       );
     },
@@ -201,10 +179,7 @@ export function wrapDataDriver<D extends object>(
       return await span(
         recorder,
         "calculateTableData",
-        {
-          handle: shortHandle(handle),
-          def: digestPTableDef(request as PTableDef<PColumn<unknown>>),
-        },
+        { handle: shortHandle(handle), def: digestDef("PTableDef", request) },
         async () => {
           const data = await source.calculateTableData(handle, request, ...rest);
           const vectors = (data ?? []).map((column) => (column as { data?: unknown })?.data);
@@ -297,26 +272,22 @@ function record<R>(
   registry: HandleRegistry,
   handleOf: (result: unknown) => string,
   op: string,
-  digestFn: () => DefDigest,
+  kind: DefKind,
+  def: unknown,
   call: () => R,
 ): R {
   let digest: DefDigest | { digestFailed: string };
   try {
-    digest = digestFn();
+    digest = digestDef(kind, def);
   } catch (error) {
     // Diagnostics must never be the reason a join fails to build.
     digest = { digestFailed: describeError(error) };
   }
-  const findings = "findings" in digest ? digest.findings : undefined;
   // A creation call is synchronous but not free: it hands the definition to the
   // native engine, which can allocate. It gets a begin/end pair like any other
   // operation, so a death inside it is attributed to it and not to the render
   // around it.
-  const seq = recorder.event(`${op}-begin`, {
-    def: digest,
-    findings,
-    mem: recorder.memorySnapshot(),
-  });
+  const seq = recorder.event(`${op}-begin`, { def: digest, mem: recorder.memorySnapshot() });
   const startedAt = performance.now();
 
   let result: R;
@@ -333,13 +304,7 @@ function record<R>(
   }
 
   const handle = handleOf(result);
-  const tree = "tree" in digest ? digest.tree : undefined;
-  registry.put(handle, {
-    seq,
-    op,
-    inputRowsMax: tree?.inputRowsMax ?? ("inputRows" in digest ? digest.inputRows : undefined),
-    digest: "kind" in digest ? digest : undefined,
-  });
+  registry.put(handle, { seq, op });
   recorder.event(`${op}-end`, {
     begin: seq,
     ms: round(performance.now() - startedAt),
@@ -412,12 +377,6 @@ function sampledArrayBytes(data: unknown[]): number {
     sampled += typeof value === "string" ? value.length * 2 + 24 : 8;
   }
   return Math.round((sampled / sampleSize) * data.length);
-}
-
-function ratio(value: number | undefined, base: number | undefined): number | undefined {
-  return typeof value === "number" && typeof base === "number" && base > 0
-    ? round(value / base)
-    : undefined;
 }
 
 function shortHandle(handle: string): string {

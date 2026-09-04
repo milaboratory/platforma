@@ -9,7 +9,7 @@ import type {
 import { SAMPLER_FILE_PREFIX, SESSION_END_RECORD, SESSION_RECORD } from "./events";
 import { listSessions, readSession, sessionIdFromFile, sessionStartFromId } from "./recorder";
 import { readCrashMarkers } from "./supervisor";
-import type { FindingSeverity, JoinNodeDigest, StructuralFinding } from "./digest";
+import { inputRowsMax, joinShapes, structuralFindings, type FindingSeverity } from "./rules";
 
 /**
  * Turns a flight log into an attributed cause.
@@ -153,7 +153,7 @@ export function analyzeSession(file: string, dir: string = path.dirname(file)): 
     ...classifyCrashMarker(crashMarker),
     ...classifyMemory(memory, header.env, crashMarker),
     ...collectStructural(records),
-    ...collectEmpirical(records, operations),
+    ...collectEmpirical(records, operations, definitionBySeq(records)),
     ...stallFindings(memory),
   ].sort(bySeverity);
 
@@ -359,8 +359,9 @@ function collectStructural(records: FlightRecord[]): Finding[] {
   const enclosing = enclosingRenders(records);
   const out: Finding[] = [];
   for (const record of records) {
-    const findings = record.findings as StructuralFinding[] | undefined;
-    for (const finding of findings ?? []) {
+    // Rules run here rather than at record time, so they can be revised against
+    // logs that already exist and cost nothing on the hot path.
+    for (const finding of structuralFindings(recordedDef(record))) {
       out.push({
         rule: finding.rule,
         severity: finding.severity,
@@ -397,19 +398,36 @@ function enclosingRenders(records: FlightRecord[]): Map<number, string> {
   return out;
 }
 
-function collectEmpirical(records: FlightRecord[], operations: OperationSummary[]): Finding[] {
+function collectEmpirical(
+  records: FlightRecord[],
+  operations: OperationSummary[],
+  definitions: Map<number, unknown>,
+): Finding[] {
   const out: Finding[] = [];
+  const beginBySeq = new Map(records.map((record) => [record.seq, record]));
   for (const record of records) {
-    const amplification = record.amplification as number | undefined;
-    if (record.type === "getShape-end" && (amplification ?? 0) >= THRESHOLDS.amplification) {
-      out.push({
-        rule: "join-amplification",
-        severity: "critical",
-        seq: record.seq,
-        detail: `join produced ${formatCount(record.rows as number)} rows from at most ${formatCount(
-          record.inputRowsMax as number,
-        )} input rows (x${amplification})`,
-      });
+    if (record.type === "getShape-end") {
+      // The observed row count is compared against what the definition of the
+      // table declared as input, which is looked up here rather than carried on
+      // the record.
+      const begin = record.begin === undefined ? undefined : beginBySeq.get(record.begin);
+      const joinSeq = begin?.joinSeq as number | undefined;
+      const declared = joinSeq === undefined ? undefined : inputRowsMax(definitions.get(joinSeq));
+      const rows = record.rows as number | undefined;
+      const amplification =
+        typeof rows === "number" && typeof declared === "number" && declared > 0
+          ? Math.round((rows / declared) * 100) / 100
+          : undefined;
+      if ((amplification ?? 0) >= THRESHOLDS.amplification) {
+        out.push({
+          rule: "join-amplification",
+          severity: "critical",
+          seq: record.seq,
+          detail: `join produced ${formatCount(rows)} rows from at most ${formatCount(
+            declared,
+          )} declared input rows (x${amplification})`,
+        });
+      }
     }
     const tableRows = (record.tableRows as number | undefined) ?? 0;
     if (
@@ -434,7 +452,7 @@ function collectEmpirical(records: FlightRecord[], operations: OperationSummary[
       });
     }
     if (record.type.startsWith("createP")) {
-      for (const inline of inlineColumns(record.def)) {
+      for (const inline of inlineColumns(recordedDef(record))) {
         if ((inline.entries ?? 0) < THRESHOLDS.inlineEntries) continue;
         out.push({
           rule: "huge-inline-column",
@@ -658,27 +676,39 @@ function compactRecord(record: FlightRecord): Record<string, unknown> {
   return out;
 }
 
-function summarizeDef(def: unknown): Record<string, unknown> {
-  const typed = def as {
-    kind?: string;
-    columnCount?: number;
-    inputRows?: number;
-    tree?: JoinNodeDigest;
-    filters?: unknown[];
-  };
-  if (typed.kind === "PFrameDef") {
-    return { columns: typed.columnCount, inputRows: typed.inputRows };
-  }
-  if (typed.kind === "PTableDefV2") return { query: true };
-  const tree = typed.tree;
+function summarizeDef(digest: unknown): Record<string, unknown> {
+  const typed = digest as { kind?: string; redaction?: { bytes?: number } } | undefined;
+  const def = recordedDefFrom(digest);
+  const outermost = joinShapes(def)[0];
   return {
-    join: tree?.k,
-    children: tree?.children?.length,
-    sharedAxes: tree?.sharedAxes?.length,
-    inputRowsMax: tree?.inputRowsMax,
-    rowsUpperBound: tree?.rowsUpperBound,
-    filters: typed.filters?.length,
+    kind: typed?.kind,
+    bytes: typed?.redaction?.bytes,
+    join: outermost?.join,
+    children: outermost?.childCount,
+    sharedAxes: outermost?.sharedAxes.length,
+    inputRowsMax: outermost?.inputRowsMax ?? inputRowsMax(def),
+    rowsUpperBound: outermost?.rowsUpperBound,
   };
+}
+
+/** The redacted definition inside a record, if it carries one. */
+function recordedDef(record: FlightRecord): unknown {
+  return recordedDefFrom(record.def);
+}
+
+function recordedDefFrom(digest: unknown): unknown {
+  if (!digest || typeof digest !== "object") return undefined;
+  return (digest as { def?: unknown }).def;
+}
+
+/** Definition of each creation call, keyed by the sequence number of its record. */
+function definitionBySeq(records: FlightRecord[]): Map<number, unknown> {
+  const out = new Map<number, unknown>();
+  for (const record of records) {
+    const def = recordedDef(record);
+    if (def !== undefined) out.set(record.seq, def);
+  }
+  return out;
 }
 
 function bySeverity(lhs: Finding, rhs: Finding): number {

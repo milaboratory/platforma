@@ -41,24 +41,37 @@ export {
   type RenderInfo,
 } from "./instrument";
 
+export { digestDef, REDACTION, type DefDigest, type DefKind } from "./digest";
+
 export {
-  digestJoinTree,
-  digestPTableDef,
-  digestPTableDefV2,
-  digestPFrameDef,
-  digestSpec,
-  digestData,
-  digestFilter,
+  redact,
+  hashString,
+  isHashedString,
+  SCHEMA_KEYS,
+  SCHEMA_SUBTREE_KEYS,
+  SUMMARISED_KEYS,
+  COUNTED_KEYS,
+  type RedactionStats,
+  type RedactOptions,
+  type HashedString,
+} from "./redact";
+
+export { summarizeData, type DataSummary } from "./data_summary";
+
+export {
+  structuralFindings,
+  joinShapes,
+  inputRowsMax,
+  axesUnder,
   axisKey,
   axisNameKey,
-  REDACTION,
-  type DefDigest,
-  type PTableDefDigest,
-  type JoinNodeDigest,
-  type ColumnDigest,
+  isJoinNode,
+  joinChildren,
   type StructuralFinding,
   type FindingSeverity,
-} from "./digest";
+  type JoinShape,
+  type AxisDescriptor,
+} from "./rules";
 
 export {
   analyzeSession,

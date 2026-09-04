@@ -1,5 +1,6 @@
 import { readSession } from "./recorder";
-import { REDACTION, type ColumnDigest, type JoinNodeDigest } from "./digest";
+import { REDACTION } from "./digest";
+import { axesUnder, axisKey, isJoinNode, joinChildren, joinShapes } from "./rules";
 import { formatBytes, formatCount, type SessionAnalysis } from "./analyze";
 import type { FlightRecord } from "./events";
 
@@ -130,76 +131,178 @@ function attributionSection(analysis: SessionAnalysis): string {
 
 function culpritSection(culprit: Culprit | undefined): string {
   if (!culprit) {
-    return "## Join in flight\n\nNo join definition was recorded for the failing operation.";
+    return "## Definition in flight\n\nNo definition was recorded for the failing operation.";
   }
-  const lines = [`## Join in flight (seq ${culprit.seq}, \`${culprit.type}\`)`, ""];
-  const def = culprit.def as {
-    kind?: string;
-    query?: unknown;
-    columnCount?: number;
-    inputRows?: number;
-    columns?: ColumnDigest[];
-    tree?: JoinNodeDigest;
-    filters?: unknown[];
-    partitionFilters?: unknown[];
-  };
+  const digest = culprit.def as
+    | { kind?: string; def?: unknown; redaction?: RedactionSummary }
+    | undefined;
+  const def = digest?.def;
+  const lines = [
+    `## Definition in flight (seq ${culprit.seq}, \`${culprit.type}\`, ${digest?.kind ?? "unknown shape"})`,
+    "",
+    "```",
+    renderDefTree(def, ""),
+    "```",
+  ];
 
-  if (def.kind === "PTableDefV2") {
-    lines.push("Query-based def (V2):", "", "```", JSON.stringify(def.query, null, 1), "```");
-    return lines.join("\n");
-  }
-  if (def.kind === "PFrameDef") {
-    lines.push(
-      `PFrame with ${def.columnCount} columns, ${formatCount(def.inputRows)} input rows.`,
-      "",
-      "```",
-      (def.columns ?? []).map((column) => `  ${columnLine(column)}`).join("\n"),
-      "```",
-    );
-    return lines.join("\n");
-  }
-
-  lines.push("```", renderTree(def.tree, ""), "```");
-  const filters = [...(def.partitionFilters ?? []), ...(def.filters ?? [])];
-  if (filters.length > 0) {
-    lines.push(
-      "",
-      `Filters: ${(def.partitionFilters ?? []).length} partition, ${(def.filters ?? []).length} record.`,
-      "",
-      "```",
-      JSON.stringify(filters, null, 1),
-      "```",
-    );
-  }
+  const elided = describeElisions(digest?.redaction);
+  if (elided) lines.push("", elided);
   return lines.join("\n");
 }
 
-function renderTree(node: JoinNodeDigest | undefined, indent: string): string {
-  if (!node) return `${indent}(none)`;
-  if (!node.children) return `${indent}${columnLine(node)}`;
-  const head =
-    `${indent}${node.k}  children=${node.children.length}` +
-    `  sharedAxes=${node.sharedAxes?.length ?? 0}` +
-    (node.disjointPairs?.length ? `  !! DISJOINT ${JSON.stringify(node.disjointPairs)}` : "") +
-    `  inputRowsMax=${formatCount(node.inputRowsMax)}` +
-    (node.rowsUpperBound ? `  rowsUpperBound=${formatCount(node.rowsUpperBound)}` : "");
-  const axes = `${indent}  axisUnion: ${(node.axisUnion ?? []).join("  ") || "(none)"}`;
-  return [head, axes, ...node.children.map((child) => renderTree(child, `${indent}    `))].join(
-    "\n",
+type RedactionSummary = {
+  bytes?: number;
+  hashedStrings?: number;
+  truncatedArrays?: number;
+  omittedItems?: number;
+  depthCapped?: number;
+  opaqueObjects?: number;
+  budgetExhausted?: boolean;
+};
+
+function describeElisions(redaction: RedactionSummary | undefined): string | undefined {
+  if (!redaction) return undefined;
+  const notes: string[] = [];
+  if (redaction.omittedItems) {
+    notes.push(
+      `${redaction.omittedItems} array item(s) omitted across ${redaction.truncatedArrays} array(s)`,
+    );
+  }
+  if (redaction.depthCapped) notes.push(`${redaction.depthCapped} subtree(s) cut at the depth cap`);
+  if (redaction.budgetExhausted)
+    notes.push("the node budget was exhausted, so the tail is missing");
+  const size = redaction.bytes !== undefined ? formatBytes(redaction.bytes) : undefined;
+  const all = [size, ...notes].filter(Boolean);
+  return all.length > 0 ? `Recorded shape: ${all.join("; ")}.` : undefined;
+}
+
+/**
+ * Renders the recorded definition as a tree.
+ *
+ * The walk is driven by the shape rather than by a known definition type: a node
+ * with a join discriminator gets the join line, a node carrying a column spec
+ * gets the column line, and anything else with a discriminator is printed as a
+ * pass-through step. The same code therefore renders both the original tree API
+ * and the V2 query API.
+ */
+function renderDefTree(node: unknown, indent: string, depth = 0): string {
+  if (depth > 24) return `${indent}…`;
+  if (node === null || node === undefined) return `${indent}(none)`;
+  if (Array.isArray(node)) {
+    return node.map((child) => renderDefTree(child, indent, depth + 1)).join("\n");
+  }
+  if (typeof node !== "object") return `${indent}${String(node)}`;
+
+  const record = node as Record<string, unknown>;
+  // Both APIs wrap a column as `{ type: "column", column: … }`, so the wrapper
+  // and the column it carries are printed as one line rather than two.
+  const payload = columnPayload(record);
+  if (payload) return `${indent}${columnLine(record, payload)}`;
+
+  if (isJoinNode(record)) {
+    const shape = joinShapes(record)[0];
+    const children = joinChildren(record);
+    const head =
+      `${indent}${shape?.join ?? "join"}  children=${children.length}` +
+      `  sharedAxes=${shape?.sharedAxes.length ?? 0}` +
+      (shape?.disjointPairs.length ? `  !! DISJOINT ${JSON.stringify(shape.disjointPairs)}` : "") +
+      `  inputRowsMax=${formatCount(shape?.inputRowsMax)}` +
+      (shape?.rowsUpperBound ? `  rowsUpperBound=${formatCount(shape.rowsUpperBound)}` : "");
+    const axes = `${indent}  axisUnion: ${(shape?.axisUnion ?? []).join("  ") || "(none)"}`;
+    return [
+      head,
+      axes,
+      ...children.map((child) => renderDefTree(child, `${indent}    `, depth + 1)),
+    ].join("\n");
+  }
+
+  const discriminator = typeof record.type === "string" ? record.type : undefined;
+  const interesting = Object.entries(record).filter(([, value]) => isStructural(value));
+  if (discriminator) {
+    const detail = [
+      filtersNote(record),
+      typeof record.$omitted === "number" ? `omitted=${record.$omitted}` : undefined,
+    ]
+      .filter(Boolean)
+      .join("  ");
+    const head = `${indent}${discriminator}${detail ? `  ${detail}` : ""}`;
+    return [
+      head,
+      ...interesting.map(([, value]) => renderDefTree(value, `${indent}  `, depth + 1)),
+    ].join("\n");
+  }
+  // A transparent wrapper (the V2 `{ entry }` shape, or a plain container):
+  // print nothing for it and keep the indentation of its parent.
+  return interesting.length > 0
+    ? interesting.map(([, value]) => renderDefTree(value, indent, depth + 1)).join("\n")
+    : `${indent}${describeLeafObject(record)}`;
+}
+
+function filtersNote(record: Record<string, unknown>): string | undefined {
+  const parts: string[] = [];
+  for (const key of ["filters", "partitionFilters", "sorting"]) {
+    const value = record[key];
+    if (Array.isArray(value) && value.length > 0) parts.push(`${key}=${value.length}`);
+  }
+  const predicate = record.predicate as { operator?: unknown } | undefined;
+  if (typeof predicate?.operator === "string") parts.push(`op=${predicate.operator}`);
+  return parts.length > 0 ? parts.join(" ") : undefined;
+}
+
+function columnLine(outer: Record<string, unknown>, payload: Record<string, unknown>): string {
+  const spec = (payload.spec ?? {}) as {
+    name?: unknown;
+    valueType?: unknown;
+    axesSpec?: unknown[];
+  };
+  const data = (payload.data ?? payload.dataInfo ?? {}) as {
+    kind?: string;
+    rows?: number;
+    bytes?: number;
+    parts?: number;
+    entries?: number;
+  };
+  const axes = axesUnder(payload).map(axisKey).join(" , ");
+  const rows = data.rows ?? data.entries;
+  return (
+    `${typeof outer.type === "string" ? outer.type : "column"}  ` +
+    `${asText(spec.name)} : ${asText(spec.valueType)}` +
+    `  axes=[${axes}]` +
+    `  data=${data.kind ?? "?"}` +
+    (data.parts !== undefined ? ` parts=${data.parts}` : "") +
+    (rows !== undefined ? ` rows=${formatCount(rows)}` : " rows=unknown") +
+    (data.bytes !== undefined ? ` bytes=${formatBytes(data.bytes)}` : "")
   );
 }
 
-function columnLine(node: ColumnDigest): string {
-  const spec = node.spec;
-  const axes = spec.axes.map((axis) => axis.id).join(" , ");
-  return (
-    `${node.k ?? "column"}  ${spec.name ?? "?"} : ${spec.valueType ?? "?"}` +
-    `  axes=[${axes}]` +
-    `  data=${node.data.kind}` +
-    (node.data.parts !== undefined ? ` parts=${node.data.parts}` : "") +
-    (node.rows !== undefined ? ` rows=${formatCount(node.rows)}` : " rows=unknown") +
-    (node.bytes !== undefined ? ` bytes=${formatBytes(node.bytes)}` : "")
-  );
+/** The record carrying a column spec: the node itself, or the column it wraps. */
+function columnPayload(record: Record<string, unknown>): Record<string, unknown> | undefined {
+  if (carriesSpec(record)) return record;
+  const inner = record.column;
+  return carriesSpec(inner) ? (inner as Record<string, unknown>) : undefined;
+}
+
+function carriesSpec(value: unknown): boolean {
+  if (typeof value !== "object" || value === null) return false;
+  const spec = (value as { spec?: { axesSpec?: unknown } }).spec;
+  return Array.isArray(spec?.axesSpec);
+}
+
+function isStructural(value: unknown): boolean {
+  return typeof value === "object" && value !== null;
+}
+
+function describeLeafObject(record: Record<string, unknown>): string {
+  if (typeof record.$omitted === "number") return `… ${record.$omitted} more omitted`;
+  if (record.$depth !== undefined) return "… cut at the depth cap";
+  if (record.$budget !== undefined) return "… node budget exhausted";
+  if (typeof record.$opaque === "string") return `(${record.$opaque})`;
+  const keys = Object.keys(record);
+  return keys.length > 0 ? `{ ${keys.join(", ")} }` : "{}";
+}
+
+function asText(value: unknown): string {
+  return typeof value === "string" ? value : "?";
 }
 
 function rendersSection(analysis: SessionAnalysis): string {

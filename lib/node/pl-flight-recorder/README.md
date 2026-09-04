@@ -49,20 +49,47 @@ The verdict combines three independent lines of evidence, none sufficient alone:
 2. **Which memory ran out.** JS heap (confirmed by the parent), off-heap
    ArrayBuffers handed out by the engine, native allocation, or the machine.
    This decides whether `--max-old-space-size` is even relevant.
-3. **Why the data was that big.** Structural faults readable from specs before
-   any data is touched, plus the observed row count and its amplification over
-   the largest input.
+3. **Why the data was that big.** Structural faults readable from the recorded
+   shape before any data is touched — a cartesian join, or axes that agree on
+   name and type but differ in domain — plus the observed row count against the
+   input the definition declared.
 
-## Redaction
+## What is recorded, and how
 
-A report is meant to be sendable, so redaction happens as records are written,
-not as a later scrub.
+A definition is recorded by **shape**, not by a hand-written digest per
+definition type. `redact` walks whatever the seam was handed and rebuilds it:
+keys, numbers and the small set of strings that are schema survive verbatim,
+every other string becomes a hash and a length, and a column payload is replaced
+by counts. The default for an unrecognised string is to hash it, so a field this
+code has never seen can make a report less informative but never make it leak.
 
-- Kept: column names, value types, axis names, types and domains, annotation
-  **keys**, row and byte counts.
-- Never recorded: cell values, filter reference values (replaced by a hash and a
-  cardinality), annotation **values** — `pl7.app/label` carries user-entered
-  sample names — and inline column payloads.
+- Kept: definition shape, column and axis names, value types, axis domains
+  (they carry join identity), filter operators, row/byte/partition counts.
+- Hashed: filter reference values, annotation values (`pl7.app/label` carries
+  user-entered sample names), column ids, every other string. The hash is
+  stable, so two labels can be compared without either being revealed.
+- Dropped: cell values, inline column payloads, partition keys.
+
+Two things bound one record: arrays keep their head and carry an `$omitted`
+marker, and a node budget stops a pathological definition from filling the log.
+Class instances are named (`$opaque`) rather than walked, which matters because
+a definition can carry live accessors that reference each other.
+
+On a realistic definition (two columns, 72 partitions, a 1200-value filter) the
+record is ~1 KB against ~23 KB for the definition as it stands — but size is not
+why this exists. The definition as it stands cannot be sent to us at all.
+
+Only one module knows a definition's types: `data_summary`, which reads row
+counts and byte sizes out of `DataInfo` because those numbers live at
+type-specific positions and they are what predicts a join's cost.
+
+## Rules run in the analyzer
+
+Structural rules are not evaluated while recording. Nothing is computed on the
+hot path, the rules can be revised against logs that already exist, and one
+implementation covers every definition shape: join nodes are recognised by their
+discriminator and their children by position, so the original tree API and the
+V2 query API are read by the same walk.
 
 ## Where it hooks in
 
