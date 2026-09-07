@@ -44,6 +44,33 @@ export interface TreeLoadingRequest {
  */
 export type TraversalMode = "auto" | "client-bfs" | "backend-streaming";
 
+/** A concrete loading algorithm: a {@link TraversalMode} with `"auto"` and any unsupported
+ * preference already resolved against the server's capabilities. */
+export type TreeLoadingAlgorithmName = "client-bfs" | "backend-streaming";
+
+/** Resolves a traversal mode into the algorithm a tree will run. A tree calls this once, when
+ * it is made, and keeps the answer for its whole life, so the choice (and the fallback warning
+ * for a preference the backend cannot serve) happens once rather than on every poll. */
+export function resolveTreeLoadingAlgorithm(
+  mode: TraversalMode,
+  capabilities: readonly string[] = [],
+  logger?: { warn: (msg: string) => void },
+): TreeLoadingAlgorithmName {
+  const streaming = supportsResourceTreeTraversal(capabilities);
+  switch (mode) {
+    case "client-bfs":
+      return "client-bfs";
+    case "backend-streaming":
+      if (streaming) return "backend-streaming";
+      (logger ?? console).warn(
+        "traversalMode=backend-streaming but backend lacks treeFilter:v2 capability; falling back to BFS",
+      );
+      return "client-bfs";
+    case "auto":
+      return streaming ? "backend-streaming" : "client-bfs";
+  }
+}
+
 /** Given the current tree state, build the request object to pass to
  * {@link loadTreeState} to load updated state. */
 export function constructTreeLoadingRequest(
@@ -431,21 +458,12 @@ export async function loadTreeState(
   if (stats) stats.requests++;
 
   try {
-    const wantsStreaming =
-      mode === "backend-streaming" ||
-      (mode === "auto" && supportsResourceTreeTraversal(capabilities));
+    // A tree passes its pinned algorithm here, which resolves to itself. The mode form is
+    // kept for callers that run a single load.
+    const algorithm = resolveTreeLoadingAlgorithm(mode, capabilities, logger);
+    if (stats) stats.usedStreaming = algorithm === "backend-streaming";
 
-    if (stats) stats.usedStreaming = wantsStreaming && supportsResourceTreeTraversal(capabilities);
-
-    if (wantsStreaming && !supportsResourceTreeTraversal(capabilities)) {
-      const msg =
-        "traversalMode=backend-streaming but backend lacks treeFilter:v2 capability; falling back to BFS";
-      if (logger) logger.warn(msg);
-      else console.warn(msg);
-      return await loadTreeStateViaBfs(tx, loadingRequest, stats);
-    }
-
-    return wantsStreaming
+    return algorithm === "backend-streaming"
       ? await loadTreeStateViaResourceTree(tx, loadingRequest, stats, logger)
       : await loadTreeStateViaBfs(tx, loadingRequest, stats);
   } finally {

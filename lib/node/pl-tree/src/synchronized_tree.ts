@@ -16,8 +16,18 @@ import {
 } from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
 import { PlTreeState, TreeStateUpdateError } from "./state";
-import type { PruningFunction, TraversalMode, TreeLoadingStat } from "./sync";
-import { constructTreeLoadingRequest, initialTreeLoadingStat, loadTreeState } from "./sync";
+import type {
+  PruningFunction,
+  TraversalMode,
+  TreeLoadingAlgorithmName,
+  TreeLoadingStat,
+} from "./sync";
+import {
+  constructTreeLoadingRequest,
+  initialTreeLoadingStat,
+  loadTreeState,
+  resolveTreeLoadingAlgorithm,
+} from "./sync";
 import type { PersistedTree } from "./persisted_tree";
 import { captureTreeState, restoreTreeState } from "./persisted_tree";
 import * as tp from "node:timers/promises";
@@ -185,6 +195,10 @@ export class SynchronizedTreeState {
   private readonly fieldFilter?: Filter;
   private readonly traverseStopRules?: Filter;
   private readonly traversalMode: TraversalMode;
+  /** Resolved once from {@link traversalMode} and the server's capabilities, and used by every
+   * poll of this tree. Selecting per poll was only sound while no algorithm kept state between
+   * polls; pinning it here is what lets one do so. */
+  private readonly algorithm: TreeLoadingAlgorithmName;
   private readonly logStat?: StatLoggingMode;
   private readonly hooks: PollingComputableHooks;
   private readonly abortController = new AbortController();
@@ -225,6 +239,12 @@ export class SynchronizedTreeState {
     this.fieldFilter = fieldFilter;
     this.traverseStopRules = traverseStopRules;
     this.traversalMode = traversalMode ?? "auto";
+    this.algorithm = resolveTreeLoadingAlgorithm(
+      this.traversalMode,
+      pl.serverInfo.capabilities ?? [],
+      logger,
+    );
+    logger?.info(`tree loading algorithm: ${this.algorithm} (traversalMode=${this.traversalMode})`);
     this.pollingInterval = pollingInterval;
     this.effectivePollingInterval = pollingInterval;
     this.finalPredicate = finalPredicateOverride ?? pl.finalPredicate;
@@ -445,7 +465,7 @@ export class SynchronizedTreeState {
           request,
           stats,
           this.pl.serverInfo.capabilities ?? [],
-          this.traversalMode,
+          this.algorithm,
           this.logger,
         );
       },
