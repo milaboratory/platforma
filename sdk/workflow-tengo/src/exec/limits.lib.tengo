@@ -56,6 +56,7 @@ quotaBuilder := func() {
 	cpu_request := undefined
 	ram_request := undefined
 	gpu_request := undefined
+	scratch_request := undefined
 
 	self = ll.toStrict({
 		/**
@@ -123,6 +124,30 @@ quotaBuilder := func() {
 		},
 
 		/**
+		 * Amount of scratch (temporary) disk space to request.
+		 *
+		 * Scratch space is disposable storage for the command's intermediate data; TMPDIR
+		 * points at it. A backend that cannot give the command a device of its own ignores
+		 * the request and leaves the command with its default temporary storage.
+		 *
+		 * @param amount: number | string - amount in bytes or a size string (case-insensitive):
+		 *                                    K,  KB,  M,  MB,  G,  GB for base-10 sizes (x1000)
+		 *                                   Ki, KiB, Mi, MiB, Gi, GiB for base-2 sizes (x1024)
+		 * @return builder
+		 */
+		scratchFreeSpace: func(amount) {
+			validation.assertType(
+				amount,
+				["or", "number", "string", "null"],
+				"exec.quota.builder.scratchFreeSpace: scratch space amount should be a number or string")
+			ll.assert(is_undefined(amount) || is_string(amount) || amount > 0,
+				"exec.quota.builder.scratchFreeSpace: amount in bytes should be greater than 0")
+			scratch_request = amount
+
+			return self
+		},
+
+		/**
 		 * Create Quota resource.
 		 *
 		 * @return smart.resource - reference to the resulting value resource
@@ -141,6 +166,9 @@ quotaBuilder := func() {
 			}
 			if !is_undefined(gpu_request) {
 				data.gpuMemory = gpu_request
+			}
+			if !is_undefined(scratch_request) {
+				data.scratchFreeSpace = scratch_request
 			}
 
 			return smart.ephemeralBuilder(_RTYPE_QUOTA, json.encode(data)).lockAndBuild()

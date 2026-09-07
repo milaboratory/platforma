@@ -1,0 +1,38 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+self.defineOutputs(["scratch"])
+
+self.body(func(inputs) {
+	/* Closes the loop on a scratch space request: the size asked for here travels through
+	 * the quota to the backend's compute allocation, and comes back as the '{system.scratch.*}'
+	 * values the running command sees. Reading them out of the command's own stdout is the only
+	 * way to prove the number and the location survived the whole path rather than being
+	 * dropped somewhere in the middle.
+	 *
+	 * Local execution has no dedicated scratch device, so the path is the command's working
+	 * directory — which is exactly what the runner promises when it cannot do better. */
+	run := exec.builder().
+		cmd("sh").
+		resources({
+			// Every number here is the smallest that still runs: the test is about the scratch
+			// request reaching the command, so it must not compete for resources with whatever
+			// else shares the runner, nor become a capacity bet on a small CI machine.
+			onCPU: {
+				cpu: 1,
+				ram: "50MiB",
+				scratchFreeSpace: inputs.scratchFreeSpace
+			}
+		}).
+		arg("-c").
+		arg("printf '%s %s' \"$1\" \"$2\"").
+		arg("sh"). // $0 for the inline script
+		argExpr("{system.scratch.gib}").
+		argExpr("{system.scratch.path}").
+		saveStdoutContent().
+		run()
+
+	return {
+		scratch: run.getStdoutContent()
+	}
+})
