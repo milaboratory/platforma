@@ -287,7 +287,7 @@ referencedMetricFiles := func(resolvedNode) {
 	return acc
 }
 
-// applyFormulaFallback resolves the static ram/cpu/gpu to use when the backend
+// applyFormulaFallback resolves the static ram/cpu/gpu/scratch to use when the backend
 // cannot evaluate resource formulas at run time (no getBlobSize). `dims` is keyed
 // by dimension — { ram: { ast, fallback, static }, cpu: {...}, gpu?: {...} } —
 // where `ast` is the formula (if any), `static` the static request (if any), and
@@ -301,9 +301,18 @@ referencedMetricFiles := func(resolvedNode) {
 // the builder before they reach here; this only picks among them. The gpu
 // dimension is optional in `dims` (omitted when no GPU is in play); res.gpu is
 // then undefined and the caller leaves the quota's gpuMemory unset.
+//
+// Scratch space breaks the "needs SOME static value" rule on purpose: a scratch
+// formula with neither a static request nor a fallback resolves to undefined and
+// the caller simply omits the field. A backend that cannot evaluate the formula
+// cannot serve a scratch request either — scratch control came after formulas — so
+// no value this could pick would change what the command gets, and refusing the
+// exec over the missing one would cost a run for nothing. RAM and CPU are honoured
+// by those same backends and have no run at all without a number, so they error.
 applyFormulaFallback := func(dims) {
 	gpu := is_undefined(dims.gpu) ? {} : dims.gpu
-	res := { ram: dims.ram.static, cpu: dims.cpu.static, gpu: gpu.static, err: undefined }
+	scratch := is_undefined(dims.scratch) ? {} : dims.scratch
+	res := { ram: dims.ram.static, cpu: dims.cpu.static, gpu: gpu.static, scratch: scratch.static, err: undefined }
 	if !is_undefined(_unwrap(dims.ram.ast)) && is_undefined(res.ram) {
 		if is_undefined(dims.ram.fallback) {
 			res.err = "exec.builder: the RAM formula needs a static fallback on backends that can't evaluate resource formulas at run time. Provide .staticFallback(...) on the RAM formula, set a static ram, or upgrade the backend."
@@ -324,6 +333,9 @@ applyFormulaFallback := func(dims) {
 			return res
 		}
 		res.gpu = gpu.fallback
+	}
+	if !is_undefined(_unwrap(scratch.ast)) && is_undefined(res.scratch) {
+		res.scratch = scratch.fallback
 	}
 	return res
 }

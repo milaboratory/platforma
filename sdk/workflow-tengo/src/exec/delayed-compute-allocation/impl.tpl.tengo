@@ -20,6 +20,9 @@ self.body(func(inputs) {
 	if !is_undefined(request.gpuMemory) {
 		qb.gpuMemory(request.gpuMemory)
 	}
+	if !is_undefined(request.scratchFreeSpace) {
+		qb.scratchFreeSpace(request.scratchFreeSpace)
+	}
 	quotaRef := qb.build()
 
 	computeRequestRef := limits.computeRequestBuilder().
