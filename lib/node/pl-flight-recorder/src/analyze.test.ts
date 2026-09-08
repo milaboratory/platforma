@@ -35,7 +35,7 @@ describe("crash detection", () => {
 
     const analysis = analyzeSession(sessions[0].file, dir);
     expect(analysis.crashed).toBe(true);
-    expect(analysis.smokingGun?.op).toBe("getShape");
+    expect(analysis.inFlightAtDeath?.op).toBe("getShape");
   });
 
   test("a closed session is reported as clean and has nothing in flight", () => {
@@ -59,7 +59,7 @@ describe("crash detection", () => {
 
     const analysis = analyzeLatest(dir)!;
     expect(analysis.inFlight.map((op) => op.op)).toEqual(["render", "getData"]);
-    expect(analysis.smokingGun?.op).toBe("getData");
+    expect(analysis.inFlightAtDeath?.op).toBe("getData");
     expect(analysis.findings.map((f) => f.rule)).toContain("unbounded-getData");
   });
 });
@@ -140,6 +140,34 @@ describe("instrumentation through to the report", () => {
     expect(report).toContain("rowsUpperBound=921,600,000");
   });
 
+  test("an unfinished getUniqueValues is the operation in flight", async () => {
+    const recorder = openRecorder({ dir });
+    const dataDriver = wrapDataDriver(
+      {
+        getShape: async (_handle: string) => ({ rows: 1, columns: 1 }),
+        getData: async (_handle: string, _columnIndices: number[]) => [],
+        calculateTableData: async (_handle: string, _request: unknown) => [],
+        // Stands in for the engine dying mid-call: the promise never settles,
+        // so no end record is ever written.
+        getUniqueValues: (_handle: string, _request: unknown) => new Promise<never>(() => {}),
+        findColumns: async (_handle: string, _request: unknown) => ({ hits: [] }),
+      },
+      recorder,
+      createHandleRegistry(),
+    );
+    const secret = "CASSLGQGAETQYF";
+    void dataDriver.getUniqueValues("t1", {
+      columnId: "col",
+      axis: { type: "String", name: "pl7.app/vdj/clonotypeKey" },
+      filters: [{ predicate: { operator: "Equal", reference: secret } }],
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+
+    const analysis = analyzeSession(recorder.file, dir);
+    expect(analysis.inFlightAtDeath?.op).toBe("getUniqueValues");
+    expect(fs.readFileSync(recorder.file, "utf8")).not.toContain(secret);
+  });
+
   test("a digest failure does not stop the join from being built", () => {
     const recorder = openRecorder({ dir });
     const modelDriver = wrapModelDriver(fakeModelDriver(), recorder, createHandleRegistry());
@@ -188,7 +216,7 @@ describe("review findings", () => {
     fs.writeFileSync(recorder.file, `${content.slice(0, before)}${beginLine}\n`);
 
     const analysis = analyzeSession(recorder.file, dir);
-    expect(analysis.smokingGun?.op).toBe("createPTable");
+    expect(analysis.inFlightAtDeath?.op).toBe("createPTable");
     expect(analysis.verdict.where).toContain("createPTable");
     expect(analysis.verdict.where).toContain("block-7");
     expect(renderReport(analysis)).toContain("Definition in flight");
@@ -246,7 +274,7 @@ describe("review findings", () => {
       "render#2",
       "createPTable#3",
     ]);
-    expect(analysis.smokingGun?.op).toBe("createPTable");
+    expect(analysis.inFlightAtDeath?.op).toBe("createPTable");
     expect(analysis.verdict.where).toContain("createPTable");
     expect(analysis.verdict.where).toContain("block-7");
   });

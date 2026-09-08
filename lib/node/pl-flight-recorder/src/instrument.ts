@@ -1,5 +1,6 @@
 import type { PColumn, PTableDef, PTableDefV2 } from "@milaboratories/pl-model-common";
 import { digestDef, type DefDigest, type DefKind } from "./digest";
+import { redact } from "./redact";
 import type { Recorder } from "./recorder";
 
 /**
@@ -128,6 +129,16 @@ export function wrapDataDriver<D extends object>(
       ...rest: unknown[]
     ): Promise<unknown[]>;
     calculateTableData(handle: string, request: unknown, ...rest: unknown[]): Promise<unknown[]>;
+    getUniqueValues(
+      handle: string,
+      request: unknown,
+      ...rest: unknown[]
+    ): Promise<{ values?: { data?: unknown }; overflow?: boolean }>;
+    findColumns(
+      handle: string,
+      request: unknown,
+      ...rest: unknown[]
+    ): Promise<{ hits?: unknown[] }>;
   };
 
   const wrapped = {
@@ -187,6 +198,40 @@ export function wrapDataDriver<D extends object>(
             result: data,
             detail: { columns: data?.length, returnedBytes: vectorsBytes(vectors) },
           };
+        },
+      );
+    },
+
+    // Both of these reach the engine as well, and a filter that matches most of
+    // a large axis is a plausible place to run out of memory. The request is
+    // recorded redacted: axis identity survives, filter values become hashes.
+    async getUniqueValues(handle: string, request: unknown, ...rest: unknown[]) {
+      return await span(
+        recorder,
+        "getUniqueValues",
+        { handle: shortHandle(handle), request: redact(request).value },
+        async () => {
+          const response = await source.getUniqueValues(handle, request, ...rest);
+          return {
+            result: response,
+            detail: {
+              uniqueValues: vectorLength(response?.values),
+              overflow: response?.overflow,
+              returnedBytes: vectorsBytes([response?.values]),
+            },
+          };
+        },
+      );
+    },
+
+    async findColumns(handle: string, request: unknown, ...rest: unknown[]) {
+      return await span(
+        recorder,
+        "findColumns",
+        { handle: shortHandle(handle), request: redact(request).value },
+        async () => {
+          const response = await source.findColumns(handle, request, ...rest);
+          return { result: response, detail: { hits: response?.hits?.length } };
         },
       );
     },
@@ -366,6 +411,11 @@ function vectorsBytes(vectors: unknown[]): number {
     if (typeof isNA?.byteLength === "number") bytes += isNA.byteLength;
   }
   return bytes;
+}
+
+function vectorLength(vector: unknown): number | undefined {
+  const data = (vector as { data?: { length?: number } } | undefined)?.data;
+  return typeof data?.length === "number" ? data.length : undefined;
 }
 
 function sampledArrayBytes(data: unknown[]): number {

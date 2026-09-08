@@ -122,7 +122,7 @@ export type SessionAnalysis = {
   attribution: OperationSummary[];
   inFlight: OperationSummary[];
   /** The innermost operation that started and never returned. */
-  smokingGun?: OperationSummary;
+  inFlightAtDeath?: OperationSummary;
   renders: RenderSummary[];
   findings: Finding[];
   verdict: Verdict;
@@ -189,7 +189,7 @@ export function analyzeSession(file: string, dir: string = path.dirname(file)): 
       .sort((lhs, rhs) => (rhs.rssDelta ?? 0) - (lhs.rssDelta ?? 0))
       .slice(0, 12),
     inFlight,
-    smokingGun: inFlight.at(-1),
+    inFlightAtDeath: inFlight.at(-1),
     renders: summarizeRenders(records),
     findings,
     verdict: buildVerdict({
