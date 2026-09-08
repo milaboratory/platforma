@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.70.0
+
+### Minor Changes
+
+- d8b9666: `TemplateExportProblem` carries `blockLabel`, the block's label from the project structure, so a UI can name the block that stops an export instead of showing its id.
+
 ## 1.69.2
 
 ### Patch Changes
