@@ -98,10 +98,9 @@ test("a template holding a block from a folder on this machine is shared like an
 
     // A stored template is shareable by existing. Whether the recipient can resolve every entry
     // is their question, answered where they preview or apply it — not a gate on sending.
-    const shared = await ml.shareTemplate(stored.id, {
-      recipients: ["colleague"],
-      title: "Built here",
-    });
+    // With everyone, like the other share tests here: a named recipient must already exist on
+    // the backend, and the test server has no second user.
+    const shared = await ml.shareTemplate(stored.id, { everyone: true, title: "Built here" });
 
     const outgoing = await ml.outgoingShares.awaitStableValue();
     expect((outgoing ?? []).map((s) => s.shareId)).toStrictEqual([shared.shareId]);
