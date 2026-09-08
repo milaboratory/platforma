@@ -141,6 +141,34 @@ describe("runBuild orchestration", () => {
   it("skips the coverage check when the scenario describes no software at all", async () => {
     const b = await run({ variant: "none" });
     expect(b.spies.assertDockerCoverage).not.toHaveBeenCalled();
+    expect(b.spies.buildSwJsonFiles).toHaveBeenCalledWith(
+      expect.objectContaining({ skipDockerCoverage: true }),
+    );
+  });
+
+  // `build:dev-binary-existing` builds nothing: the descriptor points at an artifact whose
+  // coverage was settled when it was released, so this run answers for none of it.
+  it("skips the coverage check when pointing at an already-published binary", async () => {
+    const b = await run({ usePublished: true });
+    expect(b.spies.assertDockerCoverage).not.toHaveBeenCalled();
+    expect(b.spies.buildSwJsonFiles).toHaveBeenCalledWith(
+      expect.objectContaining({ skipDockerCoverage: true }),
+    );
+  });
+
+  it("keeps the coverage check on the scenarios that do build software", async () => {
+    for (const knobs of [
+      { channel: "release", location: "remote" },
+      { channel: "dev", location: "remote" },
+      { channel: "dev", location: "local" },
+      {},
+    ] as const) {
+      const b = await run(knobs);
+      expect(b.spies.assertDockerCoverage).toHaveBeenCalled();
+      expect(b.spies.buildSwJsonFiles).toHaveBeenCalledWith(
+        expect.objectContaining({ skipDockerCoverage: false }),
+      );
+    }
   });
 
   it("dev docker build targets the built-in dev registry; release the production registry", async () => {

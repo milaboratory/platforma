@@ -38,9 +38,12 @@ export async function runBuild(params: {
 
   // Software with no docker variant cannot run on a k8s install, and the answer comes
   // from package.json alone — so a CI run that cannot produce a runnable release says
-  // so before building anything. The no-software scenario describes no software at
-  // all; buildSwJsonFiles re-checks whatever the other scenarios end up writing.
-  if (scenario.kind !== "no-software") core.assertDockerCoverage();
+  // so before building anything. Two scenarios build no software and therefore answer
+  // for none: `no-software` describes none at all, and `binary-existing` points the
+  // descriptor at an artifact whose coverage was settled when it was released. The
+  // engine also skips dev-local builds, whose descriptors never reach a cluster;
+  // buildSwJsonFiles re-checks whatever the remaining scenarios end up writing.
+  if (!buildsNoSoftware(scenario)) core.assertDockerCoverage();
 
   const buildBinary = () =>
     core.buildSoftwareArchives({
@@ -115,7 +118,16 @@ export async function runBuild(params: {
   }
 
   // DESCRIPTOR LAST — only after build + push have succeeded.
-  core.buildSwJsonFiles({ packageIds: ids, noSoftware: scenario.kind === "no-software" });
+  core.buildSwJsonFiles({
+    packageIds: ids,
+    noSoftware: scenario.kind === "no-software",
+    skipDockerCoverage: buildsNoSoftware(scenario),
+  });
+}
+
+// Scenarios that build no software of their own, so they answer for no docker coverage.
+function buildsNoSoftware(scenario: Scenario): boolean {
+  return scenario.kind === "no-software" || scenario.kind === "binary-existing";
 }
 
 function buildModeForScenario(scenario: Scenario): util.BuildMode {
