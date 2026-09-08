@@ -441,13 +441,17 @@ function nextStepsSection(analysis: SessionAnalysis): string {
 
 function findCulpritJoin(records: FlightRecord[], analysis: SessionAnalysis): Culprit | undefined {
   const bySeq = new Map(records.map((record) => [record.seq, record]));
-  const gun = analysis.smokingGun;
+  const inFlight = analysis.inFlightAtDeath;
 
   // An in-flight data call points back at the join that produced its handle.
-  if (gun) {
-    const beginRecord = bySeq.get(gun.seq);
+  if (inFlight) {
+    const beginRecord = bySeq.get(inFlight.seq);
     if (beginRecord?.def) {
-      return { seq: gun.seq, type: gun.op, def: beginRecord.def as Record<string, unknown> };
+      return {
+        seq: inFlight.seq,
+        type: inFlight.op,
+        def: beginRecord.def as Record<string, unknown>,
+      };
     }
     const joinSeq = beginRecord?.joinSeq as number | undefined;
     const join = joinSeq === undefined ? undefined : bySeq.get(joinSeq);

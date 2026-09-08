@@ -1,3 +1,9 @@
+import type {
+  JoinEntry,
+  SpecQueryLinkerJoin,
+  SpecQueryOuterJoin,
+  SpecQuerySymmetricJoin,
+} from "@milaboratories/pl-model-common";
 import type { DataSummary } from "./data_summary";
 
 /**
@@ -47,12 +53,30 @@ export type JoinShape = {
   rowsUpperBound?: number;
 };
 
-/** Joins whose entries are peers; an entry missing part of the key fans out. */
-const SYMMETRIC_JOINS = new Set(["inner", "innerJoin"]);
-/** Joins that union rather than intersect. */
-const UNION_JOINS = new Set(["full", "fullJoin"]);
-/** Joins driven by one side. */
-const DRIVEN_JOINS = new Set(["outer", "outerJoin", "linkerJoin"]);
+// The discriminators are pinned to the model's own literal types, so renaming a
+// join kind in pl-model-common fails this build instead of silently disabling a
+// rule. The model exports the names only as types, never as runtime constants.
+type TreeJoinType = Extract<
+  JoinEntry<unknown>,
+  { entries: unknown } | { primary: unknown }
+>["type"];
+type QueryJoinType = (SpecQuerySymmetricJoin | SpecQueryOuterJoin | SpecQueryLinkerJoin)["type"];
+
+/** Joins that keep only keys present in every entry; an entry missing part of the key fans out. */
+const INTERSECT_JOINS: ReadonlySet<string> = new Set(["inner", "innerJoin"] satisfies (
+  | TreeJoinType
+  | QueryJoinType
+)[]);
+/** Joins that keep keys present in any entry, filling the rest with nulls. */
+const UNION_JOINS: ReadonlySet<string> = new Set(["full", "fullJoin"] satisfies (
+  | TreeJoinType
+  | QueryJoinType
+)[]);
+/** Joins driven by one side: the primary or linker decides which keys exist. */
+const DRIVEN_JOINS: ReadonlySet<string> = new Set(["outer", "outerJoin", "linkerJoin"] satisfies (
+  | TreeJoinType
+  | QueryJoinType
+)[]);
 
 /** Structural findings for a recorded definition, most specific first. */
 export function structuralFindings(def: unknown): StructuralFinding[] {
@@ -92,7 +116,7 @@ export function isJoinNode(node: unknown): boolean {
   const type = discriminator(node);
   return (
     type !== undefined &&
-    (SYMMETRIC_JOINS.has(type) || UNION_JOINS.has(type) || DRIVEN_JOINS.has(type))
+    (INTERSECT_JOINS.has(type) || UNION_JOINS.has(type) || DRIVEN_JOINS.has(type))
   );
 }
 
@@ -197,7 +221,7 @@ function collect(node: unknown, path: string, findings: StructuralFinding[]): vo
   // Fan-out is worth reporting only where the node still has a working join key
   // and its entries are peers; on a cartesian node it restates the cross-join,
   // and on a driven join a narrower secondary is the intended behaviour.
-  if (!SYMMETRIC_JOINS.has(shape.join) || shape.disjointPairs.length > 0) return;
+  if (!INTERSECT_JOINS.has(shape.join) || shape.disjointPairs.length > 0) return;
   const missing = children
     .map((child, index) => {
       const own = new Set(axesUnder(child).map(axisKey));
@@ -255,7 +279,7 @@ function estimateRows(node: unknown, depth = 0): number | undefined {
       .filter((value): value is number => typeof value === "number");
     if (rows.length === 0) return undefined;
     // An intersection cannot exceed its largest input; a union adds up.
-    return SYMMETRIC_JOINS.has(join) ? Math.max(...rows) : sum(rows);
+    return INTERSECT_JOINS.has(join) ? Math.max(...rows) : sum(rows);
   }
   const own = ownRows(node);
   if (own !== undefined) return own;
