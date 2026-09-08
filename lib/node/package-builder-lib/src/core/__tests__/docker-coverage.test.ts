@@ -185,6 +185,36 @@ describe("softwareEntrypointsWithoutDocker", () => {
     );
   });
 
+  // A dev-local build describes software by filesystem path, so a missing image cannot
+  // hurt anyone on a cluster — and blocking it would fail a block's own tests
+  // (`build:dev-local`, and `test`'s binary-only build) on a release rule.
+  it("leaves a dev-local build alone, whose descriptors never reach a cluster", () => {
+    const ci = process.env.CI;
+    process.env.CI = "true";
+
+    fs.writeFileSync(
+      path.join(packageRoot, "package.json"),
+      JSON.stringify({
+        name: "test-package",
+        version: "1.0.0",
+        "block-software": { entrypoints: { main: javaEntrypoint(false) } },
+      }),
+    );
+
+    const core = new Core(mockLogger, { packageRoot });
+    core.buildMode = "dev-local";
+    try {
+      expect(() => core.assertDockerCoverage()).not.toThrow();
+      core.buildMode = "dev-remote";
+      expect(() => core.assertDockerCoverage()).toThrow(/produce no docker image/);
+      core.buildMode = "release";
+      expect(() => core.assertDockerCoverage()).toThrow(/produce no docker image/);
+    } finally {
+      if (ci === undefined) delete process.env.CI;
+      else process.env.CI = ci;
+    }
+  });
+
   it("stops a CI build before it writes the descriptor", () => {
     const ci = process.env.CI;
     process.env.CI = "true";

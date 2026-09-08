@@ -13,6 +13,12 @@ partial builds (`--variant binary`) stay valid, and it is skipped outside CI so 
 do not block local iteration. A deliberately binary-only package declares itself with
 `"block-software": { "requireDocker": false }`.
 
+Only builds that write a registry descriptor answer for coverage: `build:release` and
+`build:dev-remote`, plus a bare `pl-pkg build`. A dev-local build (`build:dev-local`, and the
+`test` script's binary-only build) describes software by filesystem path and never reaches a
+cluster, so it is left alone rather than failed on a release rule — as are the two scenarios that
+build no software of their own, `build:dev-no-software` and `build:dev-binary-existing`.
+
 A reference entrypoint re-exports a descriptor this package neither builds nor can fix, so it is
 not failed on — the owning package may have opted out deliberately, and that waiver does not
 travel inside the descriptor. Copying one that carries no image now logs a warning naming the
