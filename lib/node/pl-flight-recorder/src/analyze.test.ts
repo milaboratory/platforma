@@ -330,6 +330,24 @@ describe("review findings", () => {
     expect(analysis.attribution.some((op) => op.op === "getShape")).toBe(true);
   });
 
+  test("a render open across a rotation is listed once, and as finished", () => {
+    const recorder = openRecorder({ dir, maxFileBytes: 2000 });
+    const begin = recorder.event("render-begin", {
+      blockId: "block-7",
+      mem: recorder.memorySnapshot(),
+    });
+    while (!fs.existsSync(`${recorder.file}.1`)) {
+      recorder.event("mem-self", { mem: recorder.memorySnapshot() });
+    }
+    recorder.event("render-end", { begin, ms: 5, mem: recorder.memorySnapshot() });
+
+    const analysis = analyzeSession(recorder.file, dir);
+    const renders = analysis.renders.filter((render) => render.blockId === "block-7");
+    expect(renders).toHaveLength(1);
+    expect(renders[0].end).toBe(true);
+    expect(analysis.inFlight).toEqual([]);
+  });
+
   test("a crash marker names its session and never attaches to a clean or unrelated one", () => {
     const clean = openRecorder({ dir });
     clean.event("getData-begin", { handle: "t1" });

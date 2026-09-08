@@ -661,6 +661,9 @@ function summarizeRenders(records: FlightRecord[]): RenderSummary[] {
   const out: RenderSummary[] = [];
   for (const record of records) {
     if (record.type === "render-begin") {
+      // A render open across a rotation is written twice under one sequence
+      // number; the carried copy must not become a second, never-finished render.
+      if (open.has(record.seq)) continue;
       const summary: RenderSummary = {
         seq: record.seq,
         blockId: record.blockId as string | undefined,
