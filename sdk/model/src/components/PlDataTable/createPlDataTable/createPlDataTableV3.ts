@@ -132,10 +132,11 @@ export function createPlDataTableV3<A, U>(
   );
   const orderByColId = evaluateRules(options.displayOptions?.ordering ?? [], allColumnsForRules);
 
-  const resolver = createColumnResolver(
-    [...primary, ...direct, ...linked.flatMap((lc) => [...collectLinkerColumns(lc), lc])],
-    { warn: ctx.logWarn.bind(ctx) },
-  );
+  const resolver = createColumnResolver([
+    ...primary,
+    ...direct,
+    ...linked.flatMap((lc) => [...collectLinkerColumns(lc), lc]),
+  ]);
 
   const remapedDefaultFilters = remapFilterColumnIds(options.filters, resolver);
   const filters = filterFilters(
