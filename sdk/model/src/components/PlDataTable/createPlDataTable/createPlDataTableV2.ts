@@ -82,10 +82,7 @@ export function createPlDataTableV2<A, U>(
 
   const fullColumns = [...columns, ...fullLabelColumns];
 
-  const resolver = createColumnResolver(
-    fullColumns.map((c) => DataColumn.fromColumn(c)),
-    { warn: ctx.logWarn.bind(ctx) },
-  );
+  const resolver = createColumnResolver(fullColumns.map((c) => DataColumn.fromColumn(c)));
 
   // -- Filtering: rewrite via resolver, throw if any reference is unresolved --
   const rawFilters = tableStateNormalized.pTableParams.filters;
