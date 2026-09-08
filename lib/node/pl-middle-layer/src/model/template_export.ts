@@ -20,6 +20,9 @@ export type TemplateExportEntry = {
    * already stored in params need no translation.
    */
   readonly blockId: string;
+  /** The block's label from the project structure, carried so a problem found downstream can
+   *  name the block to a person. Not written to the template. */
+  readonly blockLabel: string;
   /**
    * The block's params exactly as it projected them.
    *
@@ -33,6 +36,9 @@ export type TemplateExportEntry = {
 /** Why one block could not be exported. */
 export type TemplateExportProblem = {
   readonly blockId: string;
+  /** The block's label as the project structure holds it. An id means nothing to the person who
+   *  pressed Export; this is what a UI shows. */
+  readonly blockLabel: string;
   readonly error: string;
 };
 
@@ -91,19 +97,20 @@ export function walkProjectForTemplateExport(
   const entries: TemplateExportEntry[] = [];
   const problems: TemplateExportProblem[] = [];
 
-  for (const { id } of allBlocks(structure)) {
+  for (const { id, label } of allBlocks(structure)) {
     const derived = paramsProvider(id);
 
     if (derived === undefined) {
       problems.push({
         blockId: id,
+        blockLabel: label,
         error: "Block state is unavailable, so its template params could not be derived",
       });
       continue;
     }
 
     if (derived.error !== undefined) {
-      problems.push({ blockId: id, error: derived.error });
+      problems.push({ blockId: id, blockLabel: label, error: derived.error });
       continue;
     }
 
@@ -117,12 +124,13 @@ export function walkProjectForTemplateExport(
     if (typeof params !== "object" || params === null || Array.isArray(params)) {
       problems.push({
         blockId: id,
+        blockLabel: label,
         error: `templateParams() must return an object, got ${typeName(params)}`,
       });
       continue;
     }
 
-    entries.push({ blockId: id, params: params as Record<string, unknown> });
+    entries.push({ blockId: id, blockLabel: label, params: params as Record<string, unknown> });
   }
 
   return { entries, problems };

@@ -385,14 +385,16 @@ describe("assembleProjectTemplateV1", () => {
   test("carries the walk's problems through unchanged", () => {
     const { document, problems } = assembleProjectTemplateV1(
       {
-        entries: [{ blockId: "a", params: {} }],
-        problems: [{ blockId: "ghost", error: "state unavailable" }],
+        entries: [{ blockId: "a", blockLabel: "a", params: {} }],
+        problems: [{ blockId: "ghost", blockLabel: "ghost", error: "state unavailable" }],
       },
       kindPerBlock,
       () => registrySpec,
     );
 
-    expect(problems).toEqual([{ blockId: "ghost", error: "state unavailable" }]);
+    expect(problems).toEqual([
+      { blockId: "ghost", blockLabel: "ghost", error: "state unavailable" },
+    ]);
     expect(document.blocks.map((b) => b.id)).toEqual(["a"]);
   });
 });
