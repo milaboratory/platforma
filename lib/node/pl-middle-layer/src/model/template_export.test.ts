@@ -101,7 +101,7 @@ describe("collecting each block's descriptor output", () => {
       providerFrom({ mixcr: ok(params) }),
     );
 
-    expect(walk.entries).toEqual([{ blockId: "mixcr", params }]);
+    expect(walk.entries).toEqual([{ blockId: "mixcr", blockLabel: "mixcr", params }]);
   });
 
   test("a block with nothing to project yields empty params", () => {
@@ -112,7 +112,9 @@ describe("collecting each block's descriptor output", () => {
       providerFrom({ "pool-explorer": ok({}) }),
     );
 
-    expect(walk.entries).toEqual([{ blockId: "pool-explorer", params: {} }]);
+    expect(walk.entries).toEqual([
+      { blockId: "pool-explorer", blockLabel: "pool-explorer", params: {} },
+    ]);
     expect(walk.problems).toEqual([]);
   });
 });
@@ -145,7 +147,7 @@ describe("what the walk does with params", () => {
       providerFrom({ block1: ok({}) }),
     );
 
-    expect(walk.entries).toEqual([{ blockId: "block1", params: {} }]);
+    expect(walk.entries).toEqual([{ blockId: "block1", blockLabel: "block1", params: {} }]);
   });
 
   test("a wrapper's contents are never inspected, whatever they are", () => {
@@ -210,7 +212,7 @@ describe("problems", () => {
     // Every offending block is reported at once rather than aborting on the
     // first, so the user fixes them in one pass.
     expect(walk.problems).toEqual([
-      { blockId: "b", error: "templateParams() threw: not exportable yet" },
+      { blockId: "b", blockLabel: "b", error: "templateParams() threw: not exportable yet" },
     ]);
     expect(walk.entries.map((e) => e.blockId)).toEqual(["a", "c"]);
   });
@@ -228,6 +230,7 @@ describe("problems", () => {
     expect(walk.problems).toEqual([
       {
         blockId: "ghost",
+        blockLabel: "ghost",
         error: "Block state is unavailable, so its template params could not be derived",
       },
     ]);
@@ -249,7 +252,11 @@ describe("problems", () => {
 
     expect(walk.entries).toEqual([]);
     expect(walk.problems).toEqual([
-      { blockId: "odd", error: `templateParams() must return an object, got ${expected}` },
+      {
+        blockId: "odd",
+        blockLabel: "odd",
+        error: `templateParams() must return an object, got ${expected}`,
+      },
     ]);
   });
 });

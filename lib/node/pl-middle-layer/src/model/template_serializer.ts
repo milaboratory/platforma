@@ -126,6 +126,7 @@ export function assembleProjectTemplateV1(
     if (kind === undefined) {
       problems.push({
         blockId: entry.blockId,
+        blockLabel: entry.blockLabel,
         error:
           "Block declares no kind, so it cannot be written to a template: an entry's kind " +
           "carries the params contract the entry is typed against",
@@ -143,6 +144,7 @@ export function assembleProjectTemplateV1(
     } catch (e) {
       problems.push({
         blockId: entry.blockId,
+        blockLabel: entry.blockLabel,
         error: `Block's stored kind reference is malformed: ${e instanceof Error ? e.message : String(e)}`,
       });
       continue;
