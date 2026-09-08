@@ -198,6 +198,27 @@ describe("problems", () => {
     expect(result.problems[0].error).toContain("declares no kind");
   });
 
+  test("a problem raised here carries the block's label from the walk", () => {
+    // Labels distinct from ids, or the assertion could not tell a label carried through from
+    // an id copied into the field.
+    const structure: ProjectStructure = {
+      groups: [
+        {
+          id: "g1",
+          label: "G1",
+          blocks: [{ id: "legacy", label: "Old Aligner", renderingMode: "Heavy" }],
+        },
+      ],
+    };
+    const result = exportOf(structure, { legacy: ok({}) }, () => undefined);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems).toEqual([
+      { blockId: "legacy", blockLabel: "Old Aligner", error: expect.stringContaining("no kind") },
+    ]);
+  });
+
   test("a malformed stored kind reference is a problem, not a throw", () => {
     const result = exportOf(
       simpleStructure("a"),
