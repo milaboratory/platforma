@@ -24,6 +24,35 @@ function providerFrom(params: Record<string, TemplateParamsResult>) {
 
 const ok = (value: unknown): TemplateParamsResult => ({ value });
 
+describe("labels", () => {
+  test("an entry and a problem both carry the block's label, not its id", () => {
+    // `simpleStructure` labels every block after its id, which cannot tell a label read from
+    // the structure apart from an id copied into the field. Distinct labels here can.
+    const structure: ProjectStructure = {
+      groups: [
+        {
+          id: "g1",
+          label: "G1",
+          blocks: [
+            { id: "b1", label: "MiXCR Clonotyping", renderingMode: "Heavy" },
+            { id: "b2", label: "Clonotype Browser", renderingMode: "Heavy" },
+          ],
+        },
+      ],
+    };
+    const walk = walkProjectForTemplateExport(structure, providerFrom({ b1: ok({}) }));
+
+    expect(walk.entries).toEqual([{ blockId: "b1", blockLabel: "MiXCR Clonotyping", params: {} }]);
+    expect(walk.problems).toEqual([
+      {
+        blockId: "b2",
+        blockLabel: "Clonotype Browser",
+        error: "Block state is unavailable, so its template params could not be derived",
+      },
+    ]);
+  });
+});
+
 describe("order", () => {
   test("entries come out in structure order — no sort, none needed", () => {
     // The structure IS the topological order: a block can only legally reference
