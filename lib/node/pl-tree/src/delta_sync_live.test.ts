@@ -1,6 +1,13 @@
 import { test, expect } from "vitest";
-import { field, hasCapability, TestHelpers } from "@milaboratories/pl-client";
+import {
+  asSignedResourceId,
+  field,
+  hasCapability,
+  parseSignedResourceId,
+  TestHelpers,
+} from "@milaboratories/pl-client";
 import type { PlClient } from "@milaboratories/pl-client";
+import type { ExtendedResourceData } from "./state";
 import { TestStructuralResourceType1 } from "./test_utils";
 import { SynchronizedTreeState } from "./synchronized_tree";
 import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
@@ -16,16 +23,37 @@ import tp from "timers/promises";
  * one without it. The unit coverage in `delta_sync.test.ts` pins the client's own logic; what
  * cannot be faked, and is what these are for, is the backend's own emission rule.
  */
-function deltaCapable(pl: PlClient, testName: string): boolean {
-  const capable = hasCapability(pl.serverInfo.capabilities ?? [], "treeChangedSince:v1");
-  // Returning early would report green having executed nothing, which is worse than a skip:
-  // the expected state today is a backend without the capability, so a silent pass here means
-  // the whole delta suite reads as covered when it never ran.
-  if (!capable) console.warn(`SKIPPED (backend lacks treeChangedSince:v1): ${testName}`);
-  return capable;
+/** Marks the test SKIPPED, not passed, when the backend cannot serve delta.
+ *
+ * These previously returned early, so on a backend without the capability the whole delta
+ * suite reported four green ticks over zero delta code. Skipped and passed are different
+ * signals and a run summary has to be able to tell them apart. */
+function skipUnlessDelta(pl: PlClient, ctx: { skip: (note?: string) => void }): boolean {
+  if (hasCapability(pl.serverInfo.capabilities ?? [], "treeChangedSince:v1")) return true;
+  ctx.skip("backend does not advertise treeChangedSince:v1 (needs pl PR #2163)");
+  return false;
 }
 
 const logger = new ConsoleLoggerAdapter(console);
+
+/** Whole-mirror comparison, so a retained-but-unreferenced resource or a dropped property
+ * shows up rather than only a differing count. */
+function canonicalShape(resources: ExtendedResourceData[]): string {
+  return resources
+    .map(
+      (r) =>
+        `${r.id}|${r.kind}|${r.final}|${r.inputsLocked}|${r.outputsLocked}|` +
+        `${r.fields
+          .map((f) => `${f.name}=${f.value}`)
+          .sort()
+          .join(",")}|kv:${r.kv
+          .map((kv) => kv.key)
+          .sort()
+          .join(",")}`,
+    )
+    .sort()
+    .join("\n");
+}
 
 /** A root with one child holding data, which is enough of a tree to poll. */
 async function seedTree(pl: PlClient) {
@@ -49,18 +77,23 @@ async function seedTree(pl: PlClient) {
   );
 }
 
-async function openTree(pl: PlClient, root: string, traversalMode: TraversalMode) {
+async function openTree(
+  pl: PlClient,
+  root: string,
+  traversalMode: TraversalMode,
+  extra: Record<string, unknown> = {},
+) {
   return await SynchronizedTreeState.init(
     pl,
     root as never,
-    { stopPollingDelay: 50, pollingInterval: 10, traversalMode, logStat: "cumulative" },
+    { stopPollingDelay: 50, pollingInterval: 10, traversalMode, ...extra } as never,
     logger,
   );
 }
 
-test("a delta poll delivers a change on a resource the mirror already holds", async () => {
+test("a delta poll delivers a change on a resource the mirror already holds", async (ctx) => {
   await TestHelpers.withTempRoot(async (pl) => {
-    if (!deltaCapable(pl, "delivers a change on a held resource")) return;
+    if (!skipUnlessDelta(pl, ctx)) return;
 
     const { root, child } = await seedTree(pl);
     const tree = await openTree(pl, root, "backend-delta");
@@ -92,9 +125,9 @@ test("a delta poll delivers a change on a resource the mirror already holds", as
   });
 });
 
-test("delta and streaming converge on the same mirror", async () => {
+test("delta and streaming converge on the same mirror", async (ctx) => {
   await TestHelpers.withTempRoot(async (pl) => {
-    if (!deltaCapable(pl, "delta and streaming converge")) return;
+    if (!skipUnlessDelta(pl, ctx)) return;
 
     const { root, child } = await seedTree(pl);
 
@@ -139,9 +172,9 @@ test("delta and streaming converge on the same mirror", async () => {
   });
 });
 
-test("a quiet parent: a change under an unchanged resource still arrives", async () => {
+test("a quiet parent: a change under an unchanged resource still arrives", async (ctx) => {
   await TestHelpers.withTempRoot(async (pl) => {
-    if (!deltaCapable(pl, "quiet parent")) return;
+    if (!skipUnlessDelta(pl, ctx)) return;
 
     const { root, child } = await seedTree(pl);
     const tree = await openTree(pl, root, "backend-delta");
@@ -175,29 +208,52 @@ test("a quiet parent: a change under an unchanged resource still arrives", async
   });
 });
 
-test("a token-less poll over a populated mirror does not throw", async () => {
+test("a delta tree restored from a snapshot converges with streaming", async (ctx) => {
   await TestHelpers.withTempRoot(async (pl) => {
-    if (!deltaCapable(pl, "token-less poll over a populated mirror")) return;
+    if (!skipUnlessDelta(pl, ctx)) return;
 
     const { root } = await seedTree(pl);
 
-    // Load once through streaming so the mirror is populated and some resources may have
-    // gone final, then hand that same state to a delta tree whose token is still unset. That
-    // is the shape of a warm start from a snapshot, and of the first poll after a token
-    // discard: a full walk that delivers bodies for resources the mirror already holds as
-    // final, which updateFromResourceData refuses.
-    const warm = await openTree(pl, root, "backend-streaming");
+    // Load through streaming, then hand that mirror to a delta tree via restoreFrom. This is
+    // the ordinary upgrade path and the one shape a cold open cannot produce: a POPULATED
+    // mirror whose first delta poll carries no token, so it is a full walk that also sends no
+    // stop rules. Bodies for resources the mirror holds as final must be skipped, or the apply
+    // throws; resources below them must not be retained unreferenced.
+    //
+    // The earlier version of this test opened a fresh delta tree after terminating the
+    // streaming one, which gave an EMPTY mirror and asserted nothing.
+    // The fixture must actually contain a final resource or the skip branch is never reached:
+    // DefaultFinalResourceDataPredicate marks none of the test resource types final, which is
+    // why an earlier version of this test passed with the skip disabled. Everything except the
+    // root goes final, so the root stays a seed and the tree can still poll.
+    const finalPredicateOverride = (r: { id: unknown }) => r.id !== root;
+
+    const warm = await openTree(pl, root, "backend-streaming", { finalPredicateOverride });
     await warm.refreshState();
-    const streamingShape = warm.dumpState().length;
+    const witness = parseSignedResourceId(asSignedResourceId(root)).signature;
+    const snapshot = warm.capture(witness);
+    const streamingShape = canonicalShape(warm.dumpState());
     await warm.terminate();
 
-    const delta = await openTree(pl, root, "backend-delta");
+    const delta = await SynchronizedTreeState.init(
+      pl,
+      root as never,
+      {
+        stopPollingDelay: 50,
+        pollingInterval: 10,
+        traversalMode: "backend-delta",
+        restoreFrom: snapshot,
+        finalPredicateOverride,
+      },
+      logger,
+    );
     try {
+      expect(delta.wasRestoredFromSnapshot).toBe(true);
       await delta.refreshState();
       await delta.refreshState();
-      expect(delta.dumpState().length).toBe(streamingShape);
+      expect(canonicalShape(delta.dumpState())).toBe(streamingShape);
     } finally {
       await delta.terminate();
     }
   });
-});
+}, 300_000);
