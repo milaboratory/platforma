@@ -577,9 +577,27 @@ export class PlTreeState {
           if (stat) stat.errorsAttached++;
         }
 
-        // updating fields
+        // updating fields.
+        //
+        // Fields normally arrive in the order they are already stored, so the stored ones are
+        // walked in lockstep with the incoming ones and matched by direct name comparison
+        // rather than through a fieldsMap lookup: every field name in a poll response is
+        // freshly decoded from protobuf, so V8 has no cached hash for any of them.
+        //
+        // Any divergence (reordering, an insertion, a removal) abandons the walk, and the rest
+        // of the resource resolves through fieldsMap.get, which is always correct. The walk is
+        // abandoned before any fieldsMap.set, so it never observes an insertion made through
+        // the live iterator.
+        let walk: MapIterator<PlTreeField> | undefined =
+          rd.fields.length > 0 ? resource.fieldsMap.values() : undefined;
         for (const fd of rd.fields) {
-          let field = resource.fieldsMap.get(fd.name);
+          let field: PlTreeField | undefined;
+          if (walk !== undefined) {
+            const next = walk.next();
+            if (next.done === true || next.value.name !== fd.name) walk = undefined;
+            else field = next.value;
+          }
+          if (field === undefined) field = resource.fieldsMap.get(fd.name);
 
           if (!field) {
             // new field
