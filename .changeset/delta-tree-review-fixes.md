@@ -1,5 +1,5 @@
 ---
-"@milaboratories/pl-tree": patch
+"@milaboratories/pl-tree": minor
 ---
 
 Fix the delta path skipping resources the mirror holds as final, which made a token-less poll

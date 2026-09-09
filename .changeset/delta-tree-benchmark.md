@@ -1,5 +1,5 @@
 ---
-"@milaboratories/pl-tree": patch
+"@milaboratories/pl-tree": minor
 ---
 
 Add a cost benchmark comparing the three tree loading algorithms across pruning on/off, and

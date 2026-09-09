@@ -1314,9 +1314,14 @@ export class PlTransaction {
                 continue;
               }
 
-              if (!frame.resource) {
+              if (!frame.resource && frame.traverseWasStopped) {
                 // Stop-marker frame: a traverseStopRules match, sent without a body. Cannot
                 // arrive under changedSinceToken, where stop rules do not apply.
+                //
+                // Narrowed on traverseWasStopped rather than on the missing body alone: the
+                // server emits a body-less frame only for this case today, but if another
+                // body-less kind is ever added, treating it as a stop marker would make the
+                // streaming path re-fetch it as a follow-up seed instead of ignoring it.
                 const id = createSignedResourceId(
                   frame.resourceId,
                   toResourceSignature(frame.resourceSignature),
@@ -1326,6 +1331,12 @@ export class PlTransaction {
                   done: false,
                 };
               }
+
+              // A body-less frame that is not a stop marker: a kind this client does not
+              // know. Skipped rather than passed on, because there is no payload to build a
+              // "resource" frame from. Unreachable against the current server, which emits
+              // one only for a stop match.
+              if (!frame.resource) continue;
 
               return {
                 value: {

@@ -1,5 +1,5 @@
 ---
-"@milaboratories/pl-tree": patch
+"@milaboratories/pl-tree": minor
 ---
 
 Test coverage for delta polling: 12 unit tests over seeding, pruning, reference resolution
