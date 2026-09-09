@@ -476,6 +476,37 @@ test("stop-marker-unknown-triggers-followup: unknown marker fetched in follow-up
   expect(callCount).toBe(2);
 });
 
+test("stop-marker-followup-large: a very large follow-up round does not overflow the stack", async () => {
+  // Regression: result.push(...followUpResult) threw RangeError once the follow-up round
+  // exceeded the argument limit (~200k elements on Node 26).
+  const followUpSize = 300_000;
+  let callCount = 0;
+  const tx = {
+    resourceTree: () => {
+      callCount++;
+      if (callCount === 1) {
+        return (async function* () {
+          yield makeStopMarker("NG:0x1");
+        })();
+      } else {
+        return (async function* () {
+          for (let i = 0; i < followUpSize; i++) yield makeFullResource(`NG:0x${i.toString(16)}`);
+        })();
+      }
+    },
+  } as unknown as Parameters<typeof loadTreeState>[0];
+
+  const request = {
+    seedResources: ["NG:0x99"],
+    finalResources: new Set<string>(),
+  } as unknown as Parameters<typeof loadTreeState>[1];
+
+  const result = await loadTreeState(tx, request, undefined, stopMarkerCaps);
+
+  expect(result).toHaveLength(followUpSize);
+  expect(callCount).toBe(2);
+});
+
 test("legacy-backend-compat: no stop markers in stream → no follow-up call", async () => {
   // Old backends emit only full-resource frames; pendingFollowUp stays empty
   // and the follow-up loop body never executes.
