@@ -781,11 +781,23 @@ export class PlTreeState {
           if (stat) stat.readyFlips++;
         }
 
-        // syncing kv
+        // syncing kv. Same lockstep walk as the fields above, for the same reason: kv keys
+        // arrive in a stable order and are freshly decoded strings. The walk is only set up
+        // when there is something to compare against, so a resource with no kv allocates no
+        // iterator.
+        let kvWalk: MapIterator<[string, Uint8Array]> | undefined =
+          rd.kv.length > 0 ? resource.kv.entries() : undefined;
         for (const kv of rd.kv) {
-          const current = resource.kv.get(kv.key);
+          let current: Uint8Array | undefined;
+          if (kvWalk !== undefined) {
+            const next = kvWalk.next();
+            if (next.done === true || next.value[0] !== kv.key) kvWalk = undefined;
+            else current = next.value[1];
+          }
+          if (current === undefined) current = resource.kv.get(kv.key);
           if (current === undefined) {
             resource.kv.set(kv.key, kv.value);
+            kvWalk = undefined;
             notEmpty(resource.kvChangedPerKey).markChanged(
               kv.key,
               `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
