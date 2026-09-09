@@ -27,6 +27,7 @@ import {
   initialTreeLoadingStat,
   loadTreeState,
   resolveTreeLoadingAlgorithm,
+  supportsResourceTreeTraversal,
 } from "./sync";
 import type { PersistedTree } from "./persisted_tree";
 import { captureTreeState, restoreTreeState } from "./persisted_tree";
@@ -197,8 +198,9 @@ export class SynchronizedTreeState {
   private readonly traversalMode: TraversalMode;
   /** Resolved once from {@link traversalMode} and the server's capabilities, and used by every
    * poll of this tree. Selecting per poll was only sound while no algorithm kept state between
-   * polls; pinning it here is what lets one do so. */
-  private readonly algorithm: TreeLoadingAlgorithmName;
+   * polls; pinning it here is what lets one do so. Only ever reassigned by the one-way
+   * demotion in {@link loadAndApply} when the backend advertises delta but issues no token. */
+  private algorithm: TreeLoadingAlgorithmName;
   /** Change token the last successful delta apply was dated at, handed to the next poll so
    * the backend sends only what moved since. Undefined until the first delta poll commits
    * one, and again whenever {@link discardDeltaToken} drops it. */
@@ -465,10 +467,13 @@ export class SynchronizedTreeState {
     const { data, nextToken } = await this.pl.withReadTx(
       "ReadingTree",
       async (tx) => {
-        // Dates the transaction, not the response, so it is the watermark for everything
-        // this transaction sees.
-        const nextToken =
-          this.algorithm === "backend-delta" ? await tx.getNextSinceToken() : undefined;
+        // Started, not awaited, before the walk. The token dates the transaction rather than
+        // the response, so it is not an input to the request - the request carries the
+        // PREVIOUS poll's token. Awaiting it here would block on the tx-open response before
+        // sending the tree request, costing a whole round trip that streaming does not pay,
+        // because requests pipeline on one bidi stream and withReadTx does not await the open.
+        const tokenPromise =
+          this.algorithm === "backend-delta" ? tx.getNextSinceToken() : undefined;
         const data = await loadTreeState(
           tx,
           request,
@@ -477,7 +482,7 @@ export class SynchronizedTreeState {
           this.algorithm,
           this.logger,
         );
-        return { data, nextToken };
+        return { data, nextToken: await tokenPromise };
       },
       txOps,
     );
@@ -486,6 +491,26 @@ export class SynchronizedTreeState {
     // Only with the whole batch applied: advancing past a partial apply loses the dropped
     // resources for good. A throw above leaves the old token, so the next poll re-reads it.
     if (nextToken !== undefined) this.deltaToken = nextToken;
+    else if (this.algorithm === "backend-delta") this.demoteFromDelta();
+  }
+
+  /** Give up on delta for the life of this tree, once, when the backend advertises
+   * `treeChangedSince:v1` but hands out no token.
+   *
+   * Without this the tree stays on delta with `deltaToken` permanently unset, and every poll
+   * is then a token-less delta poll: a full tree read that also sends no stop rules, so it
+   * transfers the subtrees the streaming path prunes away. Nothing else detects it -
+   * `deltaSuspectedFullAnswers` only fires when a token WAS sent - so it would run at the
+   * poll interval, forever, silently. Streaming is the correct destination: it is what `auto`
+   * would have picked without the capability, and it restores the stop rules. */
+  private demoteFromDelta() {
+    this.algorithm = supportsResourceTreeTraversal(this.pl.serverInfo.capabilities ?? [])
+      ? "backend-streaming"
+      : "client-bfs";
+    this.logger?.warn(
+      `tree: backend advertises treeChangedSince:v1 but issued no change token; ` +
+        `falling back to ${this.algorithm} for the life of this tree`,
+    );
   }
 
   /** Discards the change token, so the next delta poll asks for the full tree. Required

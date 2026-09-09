@@ -241,7 +241,7 @@ Used streaming: ${stat.usedStreaming}
 [delta] seeds sent: ${stat.deltaSeedsSent}, resolution rounds: ${stat.deltaResolutionRounds}, suspected full answers: ${stat.deltaSuspectedFullAnswers}`;
 }
 
-function supportsResourceTreeTraversal(capabilities: readonly string[] = []): boolean {
+export function supportsResourceTreeTraversal(capabilities: readonly string[] = []): boolean {
   return hasCapability(capabilities, "treeFilter:v2");
 }
 
