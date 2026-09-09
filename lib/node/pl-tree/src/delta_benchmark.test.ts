@@ -127,9 +127,6 @@ type Row = {
   changedSteady: number;
   prunedFields: number;
   ms: number;
-  /** Mirror contents at the end, so a lost update shows up as a shape difference rather
-   * than only as a smaller counter. */
-  shape: string;
 };
 
 async function runArm(
@@ -140,7 +137,8 @@ async function runArm(
   const caps = pl.serverInfo.capabilities ?? [];
   if (arm.mode === "backend-delta" && !hasCapability(caps, "treeChangedSince:v1")) return undefined;
 
-  const state = new PlTreeState([seed.root], DefaultFinalResourceDataPredicate);
+  // Scalar, not an array: the constructor takes SignedResourceId | Set<SignedResourceId>.
+  const state = new PlTreeState(seed.root, DefaultFinalResourceDataPredicate);
   const stat: TreeLoadingStat = initialTreeLoadingStat();
   let token: Uint8Array | undefined;
   let changedAtColdLoad = 0;
@@ -186,21 +184,10 @@ async function runArm(
     changedSteady: stat.resourcesNew + stat.resourcesChanged - changedAtColdLoad,
     prunedFields: stat.prunedFields,
     ms: stat.millisSpent,
-    shape: state
-      .dumpState()
-      .map(
-        (r) =>
-          `${r.id}|${r.fields
-            .map((f) => `${f.name}=${f.value}`)
-            .sort()
-            .join(",")}`,
-      )
-      .sort()
-      .join(";"),
   };
 }
 
-function report(rows: Row[], finalisation: boolean, skipped: string[]) {
+function report(rows: Row[], finalisation: boolean, skipped: string[], failed: string[] = []) {
   const pad = (s: string | number, n: number) => String(s).padStart(n);
   const lines = [
     "",
@@ -216,22 +203,36 @@ function report(rows: Row[], finalisation: boolean, skipped: string[]) {
     );
   }
 
-  // The correctness guard. A cheaper arm that ended up with a different mirror did not save
-  // work, it lost an update - and the counters alone cannot tell those apart.
-  const shapes = new Set(rows.map((r) => r.shape));
-  lines.push(
-    "",
-    shapes.size === 1
-      ? `mirror check: all ${rows.length} arms converged on the same mirror`
-      : `MIRROR MISMATCH: ${shapes.size} distinct mirrors across ${rows.length} arms - an arm lost an update`,
-  );
-  if (shapes.size > 1) {
-    for (const r of rows)
-      lines.push(`  ${r.arm} -> ${r.shape.length} chars, ${r.changedSteady} changed`);
+  // The correctness guard, and it has to be the change COUNT, not the mirror contents.
+  //
+  // Each arm performs exactly POLL_CYCLES mutations, each a KV write on one leaf, so every
+  // arm must observe exactly that many steady-state changes. An arm reporting fewer did not
+  // save work - it never received an update.
+  //
+  // The mirrors themselves cannot be compared across arms: the tree is shared and never
+  // reset, and each arm writes its own KV keys (it has to, or a later arm rewrites identical
+  // bytes and observes no change at all), so a later arm legitimately holds more KV than an
+  // earlier one. Comparing mirror strings reported a mismatch on every run, including runs
+  // where nothing was lost.
+  lines.push("");
+  for (const r of rows) {
+    if (r.changedSteady === POLL_CYCLES) continue;
+    lines.push(
+      `LOST UPDATES: ${r.arm.trim()} saw ${r.changedSteady} of ${POLL_CYCLES} steady changes`,
+    );
   }
+  if (rows.every((r) => r.changedSteady === POLL_CYCLES)) {
+    lines.push(`change check: every arm observed all ${POLL_CYCLES} steady-state changes`);
+  }
+
   if (skipped.length > 0) {
     lines.push("", `skipped (backend lacks treeChangedSince:v1): ${skipped.join(", ")}`);
   }
+  if (failed.length > 0) {
+    lines.push("", "FAILED ARMS:");
+    for (const f of failed) lines.push(`  ${f}`);
+  }
+
   lines.push(
     "",
     "  res/bytes  what the arm actually pulled down; lower is the win",
@@ -259,12 +260,19 @@ test("benchmark: tree loading cost by algorithm", async () => {
     const rows: Row[] = [];
     const skipped: string[] = [];
 
+    const failed: string[] = [];
     for (const arm of ARMS) {
-      const row = await runArm(pl, arm, seed);
-      if (row === undefined) skipped.push(arm.label.trim());
-      else rows.push(row);
+      // One arm failing must not lose the other five: this runs against a real backend, and
+      // an algorithm that errors is itself a result worth reporting.
+      try {
+        const row = await runArm(pl, arm, seed);
+        if (row === undefined) skipped.push(arm.label.trim());
+        else rows.push(row);
+      } catch (e: unknown) {
+        failed.push(`${arm.label.trim()}: ${e instanceof Error ? e.message : String(e)}`);
+      }
     }
 
-    report(rows, process.env.PL_TREE_NO_FINALISATION !== "1", skipped);
+    report(rows, process.env.PL_TREE_NO_FINALISATION !== "1", skipped, failed);
   });
 }, 600_000);
