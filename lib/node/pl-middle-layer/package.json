@@ -40,6 +40,7 @@
     "@milaboratories/pl-deployments": "workspace:*",
     "@milaboratories/pl-drivers": "workspace:*",
     "@milaboratories/pl-errors": "workspace:*",
+    "@milaboratories/pl-flight-recorder": "workspace:*",
     "@milaboratories/pl-http": "workspace:*",
     "@milaboratories/pl-model-backend": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
