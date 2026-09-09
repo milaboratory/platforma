@@ -51,8 +51,8 @@ export interface TreeLoadingRequest {
 }
 
 /** Controls which tree-loading path is used.
- * - `"auto"` (default): use backend streaming when the backend advertises `treeFilter:v2`,
- *   fall back to client-side BFS otherwise.
+ * - `"auto"` (default): use delta polling when the backend advertises `treeChangedSince:v1`,
+ *   else backend streaming when it advertises `treeFilter:v2`, else client-side BFS.
  * - `"client-bfs"`: always use client-side BFS, even on capable backends.
  * - `"backend-streaming"`: always prefer backend streaming; if the capability is absent,
  *   logs a warning and falls back to BFS (never throws).
@@ -93,6 +93,10 @@ export function resolveTreeLoadingAlgorithm(
       );
       return "client-bfs";
     case "auto":
+      // Delta first: it is the only path whose cost tracks what changed rather than what the
+      // tree holds. Streaming is the fallback for a backend that can shape a walk but not
+      // date one, and BFS for a backend that can do neither.
+      if (delta) return "backend-delta";
       return streaming ? "backend-streaming" : "client-bfs";
   }
 }
