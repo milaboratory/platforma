@@ -173,6 +173,14 @@ const textValue = computed(() => {
   return item?.label || props.modelValue; // @todo show inner value?
 });
 
+// Native tooltip with the full selected value; the value layer itself has
+// `pointer-events: none`, so the title goes on the field wrapper.
+const fieldTitle = computed(() => {
+  if (data.open) return undefined;
+  const v = textValue.value;
+  return v !== undefined && v !== null && v !== "" ? String(v) : undefined;
+});
+
 const computedPlaceholder = computed(() => {
   if (!data.open && props.modelValue) {
     return "";
@@ -319,7 +327,7 @@ watchPostEffect(() => {
       @focusout="onFocusOut"
     >
       <div class="ui-dropdown__container">
-        <div class="ui-dropdown__field">
+        <div class="ui-dropdown__field" :title="fieldTitle">
           <input
             ref="input"
             v-model="data.search"
