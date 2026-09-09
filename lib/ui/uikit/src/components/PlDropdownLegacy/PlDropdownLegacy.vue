@@ -15,7 +15,7 @@ import { PlTooltip } from "../PlTooltip";
 import DoubleContour from "../../utils/DoubleContour.vue";
 import { useLabelNotch } from "../../utils/useLabelNotch";
 import type { ListOption, ListOptionNormalized } from "../../types";
-import { scrollIntoView } from "../../helpers/dom";
+import { hasTextOverflow, scrollIntoView } from "../../helpers/dom";
 import { deepEqual } from "../../helpers/objects";
 import DropdownListItem from "../DropdownListItem.vue";
 import LongText from "../LongText.vue";
@@ -173,10 +173,20 @@ const textValue = computed(() => {
   return item?.label || props.modelValue; // @todo show inner value?
 });
 
-// Native tooltip with the full selected value; the value layer itself has
-// `pointer-events: none`, so the title goes on the field wrapper.
+const valueRef = ref<HTMLElement>();
+const valueTruncated = ref(false);
+
+// Measured on hover, right before the browser decides whether to show the
+// tooltip, so layout changes after mount are always accounted for.
+const onFieldMouseEnter = () => {
+  valueTruncated.value = hasTextOverflow(valueRef.value);
+};
+
+// Native tooltip with the full selected value, only when it is actually cut
+// with an ellipsis; the value layer itself has `pointer-events: none`, so the
+// title goes on the field wrapper.
 const fieldTitle = computed(() => {
-  if (data.open) return undefined;
+  if (data.open || !valueTruncated.value) return undefined;
   const v = textValue.value;
   return v !== undefined && v !== null && v !== "" ? String(v) : undefined;
 });
@@ -327,7 +337,7 @@ watchPostEffect(() => {
       @focusout="onFocusOut"
     >
       <div class="ui-dropdown__container">
-        <div class="ui-dropdown__field" :title="fieldTitle">
+        <div class="ui-dropdown__field" :title="fieldTitle" @mouseenter="onFieldMouseEnter">
           <input
             ref="input"
             v-model="data.search"
@@ -340,7 +350,7 @@ watchPostEffect(() => {
             @focus="onInputFocus"
           />
 
-          <div v-if="!data.open" @click="setFocusOnInput">
+          <div v-if="!data.open" ref="valueRef" @click="setFocusOnInput">
             <LongText class="input-value"> {{ textValue }} </LongText>
           </div>
 
