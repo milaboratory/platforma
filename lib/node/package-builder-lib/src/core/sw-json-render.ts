@@ -7,6 +7,7 @@ import type * as swJson from "./schemas/sw-json";
 import type * as entrypoint from "./schemas/entrypoints";
 import * as util from "./util";
 import * as docker from "./docker";
+import * as dockerCoverage from "./docker-coverage";
 import * as defaults from "../defaults";
 import { descriptorFilePath } from "./resolver";
 import { resolveRunEnvironment } from "./resolver";
@@ -179,6 +180,30 @@ export class SwJsonRenderer {
     const dstSwInfoPath = descriptorFilePath(this.pkgInfo.packageRoot, epType, epName);
     util.ensureDirsExist(path.dirname(dstSwInfoPath));
     fs.copyFileSync(srcFile, dstSwInfoPath);
+
+    if (epType === "software") this.warnIfNoDockerVariant(epName, srcFile);
+  }
+
+  /**
+   * A reference re-exports another package's descriptor verbatim, so the docker-coverage
+   * check cannot judge it from this package's declaration — and must not fail on it: the
+   * owning package may have declared itself binary-only on purpose, and that waiver does
+   * not travel inside the descriptor. Warn, naming what to fix and where.
+   */
+  private warnIfNoDockerVariant(epName: string, srcFile: string) {
+    let descriptor: unknown;
+    try {
+      descriptor = JSON.parse(fs.readFileSync(srcFile, "utf-8"));
+    } catch {
+      return; // an unreadable descriptor is the copy's problem to report, not this warning's
+    }
+
+    if (!dockerCoverage.descriptorHasNoDockerVariant(descriptor)) return;
+
+    this.logger.warn(
+      `referenced entrypoint '${epName}' carries no docker image, so no kubernetes ` +
+        `installation can run it. Fix it in the package that owns ${srcFile}.`,
+    );
   }
 
   private renderLocalPackage(
