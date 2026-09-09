@@ -31,5 +31,13 @@ Increase the size for a stronger workload. A fatal native OOM can terminate the 
 worker; the page cannot catch that failure or cancel an in-flight native call. Save other work
 before running this diagnostic.
 
-Validation: all five packages build; a native-driver smoke run with 10 rows per input returned
-100 rows and 5 columns. A full OOM run is manual.
+Run the bounded native-driver regression test from `core/platforma`:
+
+```sh
+pnpm --filter @milaboratories/milaboratories.test-pframes-oom.model test
+```
+
+The test uses the same query builder as the block with 10 rows per input. It verifies 100 rows
+and 5 columns, stable table identity for identical inputs, and a fresh identity when `runId`
+changes. It needs localhost listening for the driver’s blob provider. All five packages build;
+a full OOM run remains manual.
