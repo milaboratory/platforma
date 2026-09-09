@@ -513,6 +513,14 @@ export class PlTreeState {
     const incrementRefs: SignedResourceId[] = [];
     const decrementRefs: SignedResourceId[] = [];
 
+    // `resourcesAdded` is notified once, after the loop: markChanged detaches every watcher on
+    // its first call and no watcher can attach in the middle of this synchronous loop, so a
+    // single notification covers every resource added here. It also builds the marker string
+    // just once, which is worth doing because resourceIdToString on a signed id parses a
+    // BigInt and hex-decodes a Buffer.
+    let addedCount = 0;
+    let firstAdded: SignedResourceId | undefined;
+
     // patching / creating resources
     for (const rd of resourceData) {
       let resource = this.resources.get(rd.id);
@@ -832,7 +840,8 @@ export class PlTreeState {
 
         // adding the resource to the heap
         this.resources.set(resource.id, resource);
-        this.resourcesAdded.markChanged(`new resource ${resourceIdToString(resource.id)} added`);
+        if (addedCount === 0) firstAdded = resource.id;
+        addedCount++;
       }
 
       if (stat) {
@@ -848,6 +857,13 @@ export class PlTreeState {
         }
       }
     }
+
+    if (firstAdded !== undefined)
+      this.resourcesAdded.markChanged(
+        addedCount === 1
+          ? `new resource ${resourceIdToString(firstAdded)} added`
+          : `${addedCount} new resources added, first ${resourceIdToString(firstAdded)}`,
+      );
 
     // applying refCount increments
     for (const rid of incrementRefs) {
