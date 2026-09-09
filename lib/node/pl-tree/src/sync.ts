@@ -10,6 +10,7 @@ import Denque from "denque";
 import { hasCapability, isNullSignedResourceId } from "@milaboratories/pl-client";
 import type { ExtendedResourceData, PlTreeState, ResourceUpdateStat } from "./state";
 import { ConcurrencyLimitingExecutor, msToHumanReadable } from "@milaboratories/ts-helpers";
+import { loadDeltaTreeState } from "./delta_sync";
 
 /** Applied to list of fields in resource data. */
 export type PruningFunction = (resource: ExtendedResourceData) => FieldData[];
@@ -31,8 +32,22 @@ export interface TreeLoadingRequest {
   /** ResourceTree field filter passed to the backend when supported. */
   readonly fieldFilter?: Filter;
 
-  /** ResourceTree traversal stop rules passed to the backend when supported. */
+  /** ResourceTree traversal stop rules passed to the backend when supported.
+   * Ignored by the backend under {@link changedSinceToken}. */
   readonly traverseStopRules?: Filter;
+
+  /** The tree's roots. Delta seeds at these when finalisation is off, and when the
+   * non-final frontier is empty. */
+  readonly roots: readonly SignedResourceId[];
+
+  /** Every id the mirror currently holds, final or not. Delta needs it to tell a reference
+   * it must resolve from one already satisfied locally; the union of this and
+   * {@link seedResources} is what the mirror contains. */
+  readonly knownResources: ReadonlySet<SignedResourceId>;
+
+  /** Change token from the transaction this request will run in, for a delta walk. Absent
+   * means "send the full tree", which is also what a token the server cannot use gets. */
+  readonly changedSinceToken?: Uint8Array;
 }
 
 /** Controls which tree-loading path is used.
@@ -41,12 +56,15 @@ export interface TreeLoadingRequest {
  * - `"client-bfs"`: always use client-side BFS, even on capable backends.
  * - `"backend-streaming"`: always prefer backend streaming; if the capability is absent,
  *   logs a warning and falls back to BFS (never throws).
+ * - `"backend-delta"`: always prefer delta polling, which hands the backend the transaction's
+ *   change token and takes only what changed since it; if `treeChangedSince:v1` is absent,
+ *   logs a warning and falls back to the best available path (never throws).
  */
-export type TraversalMode = "auto" | "client-bfs" | "backend-streaming";
+export type TraversalMode = "auto" | "client-bfs" | "backend-streaming" | "backend-delta";
 
 /** A concrete loading algorithm: a {@link TraversalMode} with `"auto"` and any unsupported
  * preference already resolved against the server's capabilities. */
-export type TreeLoadingAlgorithmName = "client-bfs" | "backend-streaming";
+export type TreeLoadingAlgorithmName = "client-bfs" | "backend-streaming" | "backend-delta";
 
 /** Resolves a traversal mode into the algorithm a tree will run. A tree calls this once, when
  * it is made, and keeps the answer for its whole life, so the choice (and the fallback warning
@@ -57,9 +75,17 @@ export function resolveTreeLoadingAlgorithm(
   logger?: { warn: (msg: string) => void },
 ): TreeLoadingAlgorithmName {
   const streaming = supportsResourceTreeTraversal(capabilities);
+  const delta = supportsTreeDelta(capabilities);
   switch (mode) {
     case "client-bfs":
       return "client-bfs";
+    case "backend-delta":
+      if (delta) return "backend-delta";
+      (logger ?? console).warn(
+        "traversalMode=backend-delta but backend lacks treeChangedSince:v1 capability; falling back to " +
+          (streaming ? "backend-streaming" : "client-bfs"),
+      );
+      return streaming ? "backend-streaming" : "client-bfs";
     case "backend-streaming":
       if (streaming) return "backend-streaming";
       (logger ?? console).warn(
@@ -75,7 +101,10 @@ export function resolveTreeLoadingAlgorithm(
  * {@link loadTreeState} to load updated state. */
 export function constructTreeLoadingRequest(
   tree: PlTreeState,
-  options: Pick<TreeLoadingRequest, "pruningFunction" | "fieldFilter" | "traverseStopRules"> = {},
+  options: Pick<
+    TreeLoadingRequest,
+    "pruningFunction" | "fieldFilter" | "traverseStopRules" | "changedSinceToken"
+  > = {},
 ): TreeLoadingRequest {
   const seedResources: SignedResourceId[] = [];
   const finalResources = new Set<SignedResourceId>();
@@ -91,9 +120,12 @@ export function constructTreeLoadingRequest(
   return {
     seedResources,
     finalResources,
+    roots: [...tree.roots],
+    knownResources: materialized,
     pruningFunction: options.pruningFunction,
     fieldFilter: options.fieldFilter,
     traverseStopRules: options.traverseStopRules,
+    changedSinceToken: options.changedSinceToken,
   };
 }
 
@@ -126,6 +158,12 @@ export type TreeLoadingStat = ResourceUpdateStat & {
   bfsResourcesRequested: number;
   /** BFS path: requested resources that no longer exist (undefined reply). */
   bfsResourcesNotFound: number;
+  /** Delta path: seed ids handed to the backend, summed over every round of the poll.
+   * This is what finalisation costs: the frontier is many seeds, the roots are few. */
+  deltaSeedsSent: number;
+  /** Delta path: extra rounds spent resolving references a delta body pointed at but the
+   * response did not carry. */
+  deltaResolutionRounds: number;
 };
 
 export function initialTreeLoadingStat(): TreeLoadingStat {
@@ -149,6 +187,8 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
     traverseWasStoppedCount: 0,
     bfsResourcesRequested: 0,
     bfsResourcesNotFound: 0,
+    deltaSeedsSent: 0,
+    deltaResolutionRounds: 0,
     resourcesNew: 0,
     resourcesChanged: 0,
     resourcesUnchanged: 0,
@@ -189,11 +229,16 @@ Changed with stable metadata: ${stat.metadataStableChanged}
 BFS fetches wasted on unchanged: ${stat.bfsRequestsWasted}
 Used streaming: ${stat.usedStreaming}
 [streaming] rounds: ${stat.streamRounds}, resource frames: ${stat.resourceFrames}, stop-marker frames: ${stat.stopMarkerFrames}, stop->follow-up: ${stat.stopMarkersFollowUp}, traverse-stopped: ${stat.traverseWasStoppedCount}
-[bfs] resources requested: ${stat.bfsResourcesRequested}, not found: ${stat.bfsResourcesNotFound}`;
+[bfs] resources requested: ${stat.bfsResourcesRequested}, not found: ${stat.bfsResourcesNotFound}
+[delta] seeds sent: ${stat.deltaSeedsSent}, resolution rounds: ${stat.deltaResolutionRounds}`;
 }
 
 function supportsResourceTreeTraversal(capabilities: readonly string[] = []): boolean {
   return hasCapability(capabilities, "treeFilter:v2");
+}
+
+function supportsTreeDelta(capabilities: readonly string[] = []): boolean {
+  return hasCapability(capabilities, "treeChangedSince:v1");
 }
 
 function collectStatsForResource(resource: ExtendedResourceData, stats?: TreeLoadingStat) {
@@ -463,9 +508,16 @@ export async function loadTreeState(
     const algorithm = resolveTreeLoadingAlgorithm(mode, capabilities, logger);
     if (stats) stats.usedStreaming = algorithm === "backend-streaming";
 
-    return algorithm === "backend-streaming"
-      ? await loadTreeStateViaResourceTree(tx, loadingRequest, stats, logger)
-      : await loadTreeStateViaBfs(tx, loadingRequest, stats);
+    switch (algorithm) {
+      case "backend-delta":
+        return await loadDeltaTreeState(tx, loadingRequest, stats, logger);
+      case "backend-streaming":
+        return await loadTreeStateViaResourceTree(tx, loadingRequest, stats, logger);
+      case "client-bfs":
+        return await loadTreeStateViaBfs(tx, loadingRequest, stats);
+      default:
+        throw new Error(`unknown tree loading algorithm: ${algorithm as string}`);
+    }
   } finally {
     if (stats) stats.millisSpent += Date.now() - startTimestamp;
   }

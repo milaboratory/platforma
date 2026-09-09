@@ -1,6 +1,7 @@
 export * from "./traversal_ops";
 export * from "./state";
 export * from "./sync";
+export * from "./delta_sync";
 export * from "./accessors";
 export * from "./snapshot";
 export * from "./persisted_tree";
