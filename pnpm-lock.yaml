@@ -4792,6 +4792,9 @@ importers:
         specifier: '*'
         version: 5.9.3
     devDependencies:
+      '@milaboratories/pf-driver':
+        specifier: workspace:*
+        version: link:../../../../lib/node/pf-driver
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../../tools/build-configs

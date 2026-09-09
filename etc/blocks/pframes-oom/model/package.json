@@ -22,7 +22,8 @@
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target block-model",
     "fmt": "ts-builder format",
-    "watch": "ts-builder build --target block-model --watch"
+    "watch": "ts-builder build --target block-model --watch",
+    "test": "vitest run"
   },
   "dependencies": {
     "@milaboratories/milaboratories.test-pframes-oom.kind": "workspace:*",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/pf-driver": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@platforma-sdk/block-tools": "workspace:*",
