@@ -366,7 +366,7 @@ async function loadTreeStateViaResourceTree(
     traverseStopRules,
   });
 
-  const { result, followUpSeeds } = await processResourceTreeStream(
+  let { result, followUpSeeds } = await processResourceTreeStream(
     treeItems,
     finalResources,
     pruningFunction,
@@ -401,7 +401,8 @@ async function loadTreeStateViaResourceTree(
       pruningFunction,
       stats,
     );
-    result.push(...followUpResult);
+    // spreading fails due to exceeding stack argument size
+    result = result.concat(followUpResult);
     if (stats) {
       logger?.info?.(
         `loadTreeStateViaResourceTree: follow-up request for ${roundSeeds.length} stop-marker seeds: ${JSON.stringify(roundSeeds)}`,
