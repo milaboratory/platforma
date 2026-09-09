@@ -199,6 +199,10 @@ export class SynchronizedTreeState {
    * poll of this tree. Selecting per poll was only sound while no algorithm kept state between
    * polls; pinning it here is what lets one do so. */
   private readonly algorithm: TreeLoadingAlgorithmName;
+  /** Change token the last successful delta apply was dated at, handed to the next poll so
+   * the backend sends only what moved since. Undefined until the first delta poll commits
+   * one, and again whenever {@link discardDeltaToken} drops it. */
+  private deltaToken: Uint8Array | undefined;
   private readonly logStat?: StatLoggingMode;
   private readonly hooks: PollingComputableHooks;
   private readonly abortController = new AbortController();
@@ -450,6 +454,7 @@ export class SynchronizedTreeState {
       pruningFunction: this.pruning,
       fieldFilter: this.fieldFilter,
       traverseStopRules: this.traverseStopRules,
+      changedSinceToken: this.deltaToken,
     });
     // A shared-type-seed tree with no currently-discovered roots is legitimately empty:
     // there is nothing to traverse, and tx.resourceTree([]) would throw "at least one seed
@@ -457,10 +462,14 @@ export class SynchronizedTreeState {
     // adds roots later via setRoots(), which schedules the next refresh. Explicit-root trees
     // never hit this (their root set is non-empty by construction).
     if (request.seedResources.length === 0 && request.finalResources.size === 0) return;
-    const data = await this.pl.withReadTx(
+    const { data, nextToken } = await this.pl.withReadTx(
       "ReadingTree",
       async (tx) => {
-        return await loadTreeState(
+        // Read before the walk: the token dates the transaction, not the response, so it is
+        // the watermark for everything this transaction sees.
+        const nextToken =
+          this.algorithm === "backend-delta" ? await tx.getNextSinceToken() : undefined;
+        const data = await loadTreeState(
           tx,
           request,
           stats,
@@ -468,10 +477,26 @@ export class SynchronizedTreeState {
           this.algorithm,
           this.logger,
         );
+        return { data, nextToken };
       },
       txOps,
     );
     this.state.updateFromResourceData(data, { allowOrphanInputs: true, stat: stats });
+
+    // Only now, with the whole batch applied. Advancing the token after a partial apply would
+    // mean the resources this poll dropped are never sent again. A throw above leaves the old
+    // token in place, so the next poll re-reads the same span.
+    if (nextToken !== undefined) this.deltaToken = nextToken;
+  }
+
+  /** Discards the change token, so the next delta poll asks for the full tree. Required
+   * whenever the mirror stops being a faithful record of what the token says we hold: a
+   * rebuild after {@link TreeStateUpdateError}, or a root-set change, which reshapes the
+   * traversal the token was earned under. */
+  private discardDeltaToken(reason: string) {
+    if (this.deltaToken === undefined) return;
+    this.deltaToken = undefined;
+    this.logger?.info(`tree delta token discarded (${reason}); next poll reads the full tree`);
   }
 
   /** Discovery sync for shared-type seeds: re-polls `ListUserResources` (gRPC-only) and
@@ -497,8 +522,17 @@ export class SynchronizedTreeState {
       for (const id of ids) discovered.add(id);
     }
 
+    const rootsChanged =
+      discovered.size !== this.discoveredRoots.length ||
+      this.discoveredRoots.some((id) => !discovered.has(id));
+
     this.discoveredRoots = [...discovered];
     this.state.setRoots(this.currentRootSet());
+
+    // A root leaving takes its unreferenced subtree with it, and a root arriving brings a
+    // subtree the token would skip as unchanged. Either way the token no longer describes
+    // what we hold.
+    if (rootsChanged) this.discardDeltaToken("root set changed");
   }
 
   /** If true this tree state is permanently terminaed. */
@@ -577,6 +611,9 @@ export class SynchronizedTreeState {
           this.state.invalidateTree("stat update error");
           // creating new tree with the full current root set (re-discovered on next iteration)
           this.state = new PlTreeState(this.currentRootSet(), this.finalPredicate);
+          // The new mirror holds nothing, so a token dated against the old one would skip
+          // everything it already covered.
+          this.discardDeltaToken("tree rebuilt after update error");
 
           // scheduling state update without delay
           continue;
