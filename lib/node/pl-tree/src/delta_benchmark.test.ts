@@ -28,6 +28,11 @@ import type { ExtendedResourceData } from "./state";
  * reported as skipped rather than silently measuring the fallback path.
  */
 
+/** Payload per resource. Without it every struct is empty, `retrievedResourceDataBytes` is 0
+ * for every arm, and the downlink-bytes column - which is the entire point of delta - reads
+ * as zero everywhere. */
+const PAYLOAD = Buffer.alloc(2048, "x");
+
 /** Width and depth of the synthetic tree. Deliberately modest: the shape of the numbers shows
  * up well before a 7k-resource project, and a seed that large would dominate the run. */
 const CHILDREN = 12;
@@ -57,26 +62,26 @@ async function seedTree(
   return await pl.withWriteTx(
     "BenchSeed",
     async (tx) => {
-      const root = tx.createStruct(TestStructuralResourceType1);
+      const root = tx.createStruct(TestStructuralResourceType1, PAYLOAD);
       const rootField = field(tx.clientRoot, "benchRoot");
       tx.createField(rootField, "Dynamic");
       tx.setField(rootField, root);
 
       const leaves: Promise<SignedResourceId>[] = [];
       for (let c = 0; c < CHILDREN; c++) {
-        const child = tx.createStruct(TestStructuralResourceType1);
+        const child = tx.createStruct(TestStructuralResourceType1, PAYLOAD);
         const cf = field(root, `child${c}`);
         tx.createField(cf, "Dynamic");
         tx.setField(cf, child);
 
         // A field the pruning function removes, so prune=on and prune=off differ.
-        const pruned = tx.createStruct(TestStructuralResourceType1);
+        const pruned = tx.createStruct(TestStructuralResourceType1, PAYLOAD);
         const pf = field(child, "pruneMe");
         tx.createField(pf, "Dynamic");
         tx.setField(pf, pruned);
 
         for (let g = 0; g < GRANDCHILDREN; g++) {
-          const grand = tx.createStruct(TestStructuralResourceType1);
+          const grand = tx.createStruct(TestStructuralResourceType1, PAYLOAD);
           const gf = field(child, `g${g}`);
           tx.createField(gf, "Dynamic");
           tx.setField(gf, grand);
@@ -93,11 +98,15 @@ async function seedTree(
 
 /** One mutation between polls: a KV write on a leaf. The parent is not rewritten, so this is
  * the quiet-parent shape - which is exactly what the finalisation arms differ on. */
-async function touchLeaf(pl: PlClient, leaf: SignedResourceId, round: number) {
+async function touchLeaf(pl: PlClient, leaf: SignedResourceId, arm: string, round: number) {
   await pl.withWriteTx(
     "BenchTouch",
     async (tx: PlTransaction) => {
-      tx.setKValue(leaf, `bench${round}`, Buffer.from(`r${round}`));
+      // Keyed by arm, not just round. The tree is shared across arms and never reset, and
+      // state.ts compares KV values - so a second arm rewriting the same key with the same
+      // bytes produces no client-observable change at all, and would measure a steady state
+      // with nothing in it. That flatters delta and penalises the arms that ran first.
+      tx.setKValue(leaf, `bench-${arm}-${round}`, Buffer.from(`r${round}`));
       await tx.commit();
     },
     { sync: true },
@@ -113,8 +122,14 @@ type Row = {
   resolutions: number;
   unchanged: number;
   wastedBytes: number;
-  newOrChanged: number;
+  /** Steady-state only: the cold load's `resourcesNew` would dwarf it and hide a lost
+   * update inside a sum of ~100. */
+  changedSteady: number;
+  prunedFields: number;
   ms: number;
+  /** Mirror contents at the end, so a lost update shows up as a shape difference rather
+   * than only as a smaller counter. */
+  shape: string;
 };
 
 async function runArm(
@@ -128,6 +143,7 @@ async function runArm(
   const state = new PlTreeState([seed.root], DefaultFinalResourceDataPredicate);
   const stat: TreeLoadingStat = initialTreeLoadingStat();
   let token: Uint8Array | undefined;
+  let changedAtColdLoad = 0;
 
   // Initial load plus POLL_CYCLES steady-state polls, each preceded by one mutation. The
   // initial load is included on purpose: it is the cold-open cost, and it is where the arms
@@ -135,7 +151,8 @@ async function runArm(
   for (let cycle = 0; cycle <= POLL_CYCLES; cycle++) {
     if (cycle > 0) {
       const leaf = seed.leaves[cycle % seed.leaves.length];
-      if (leaf !== undefined) await touchLeaf(pl, leaf, cycle);
+      if (leaf !== undefined)
+        await touchLeaf(pl, leaf, arm.label.trim().replace(/\s+/g, "-"), cycle);
     }
 
     const request = constructTreeLoadingRequest(state, {
@@ -152,6 +169,9 @@ async function runArm(
 
     state.updateFromResourceData(data, { allowOrphanInputs: true, stat });
     if (next !== undefined) token = next;
+
+    // Freeze the cold-load contribution so the steady-state figure below is only the polls.
+    if (cycle === 0) changedAtColdLoad = stat.resourcesNew + stat.resourcesChanged;
   }
 
   return {
@@ -163,8 +183,20 @@ async function runArm(
     resolutions: stat.deltaResolutionRounds,
     unchanged: stat.resourcesUnchanged,
     wastedBytes: stat.bytesUnchanged,
-    newOrChanged: stat.resourcesNew + stat.resourcesChanged,
+    changedSteady: stat.resourcesNew + stat.resourcesChanged - changedAtColdLoad,
+    prunedFields: stat.prunedFields,
     ms: stat.millisSpent,
+    shape: state
+      .dumpState()
+      .map(
+        (r) =>
+          `${r.id}|${r.fields
+            .map((f) => `${f.name}=${f.value}`)
+            .sort()
+            .join(",")}`,
+      )
+      .sort()
+      .join(";"),
   };
 }
 
@@ -176,12 +208,26 @@ function report(rows: Row[], finalisation: boolean, skipped: string[]) {
     `tree: ${CHILDREN} children x ${GRANDCHILDREN} grandchildren, ${POLL_CYCLES} polls after load,`,
     `      one KV write on a leaf between polls (quiet-parent shape)`,
     "",
-    `${"arm".padEnd(28)} ${pad("trips", 6)} ${pad("res", 6)} ${pad("bytes", 8)} ${pad("seeds", 6)} ${pad("resolv", 7)} ${pad("unchgd", 7)} ${pad("wasted", 7)} ${pad("moved", 6)} ${pad("ms", 7)}`,
+    `${"arm".padEnd(28)} ${pad("trips", 6)} ${pad("res", 6)} ${pad("bytes", 8)} ${pad("seeds", 6)} ${pad("resolv", 7)} ${pad("unchgd", 7)} ${pad("wasted", 8)} ${pad("chgd", 5)} ${pad("pruned", 7)} ${pad("ms", 7)}`,
   ];
   for (const r of rows) {
     lines.push(
-      `${r.arm.padEnd(28)} ${pad(r.roundTrips, 6)} ${pad(r.resources, 6)} ${pad(r.bytes, 8)} ${pad(r.seeds, 6)} ${pad(r.resolutions, 7)} ${pad(r.unchanged, 7)} ${pad(r.wastedBytes, 7)} ${pad(r.newOrChanged, 6)} ${pad(r.ms, 7)}`,
+      `${r.arm.padEnd(28)} ${pad(r.roundTrips, 6)} ${pad(r.resources, 6)} ${pad(r.bytes, 8)} ${pad(r.seeds, 6)} ${pad(r.resolutions, 7)} ${pad(r.unchanged, 7)} ${pad(r.wastedBytes, 8)} ${pad(r.changedSteady, 5)} ${pad(r.prunedFields, 7)} ${pad(r.ms, 7)}`,
     );
+  }
+
+  // The correctness guard. A cheaper arm that ended up with a different mirror did not save
+  // work, it lost an update - and the counters alone cannot tell those apart.
+  const shapes = new Set(rows.map((r) => r.shape));
+  lines.push(
+    "",
+    shapes.size === 1
+      ? `mirror check: all ${rows.length} arms converged on the same mirror`
+      : `MIRROR MISMATCH: ${shapes.size} distinct mirrors across ${rows.length} arms - an arm lost an update`,
+  );
+  if (shapes.size > 1) {
+    for (const r of rows)
+      lines.push(`  ${r.arm} -> ${r.shape.length} chars, ${r.changedSteady} changed`);
   }
   if (skipped.length > 0) {
     lines.push("", `skipped (backend lacks treeChangedSince:v1): ${skipped.join(", ")}`);
@@ -189,10 +235,17 @@ function report(rows: Row[], finalisation: boolean, skipped: string[]) {
   lines.push(
     "",
     "  res/bytes  what the arm actually pulled down; lower is the win",
-    "  unchgd     resources re-fetched only to be found unchanged; delta should be 0",
+    "  unchgd     resources re-fetched only to be found unchanged. Delta drives this down but",
+    "             not to 0: a resolution round fetches unconditionally, so an unchanged",
+    "             resolved resource legitimately lands here",
     "  wasted     bytes in that unchanged bucket",
-    "  moved      resources genuinely new or changed; must match across arms or an arm lost an update",
-    "  seeds      seed ids sent, summed over rounds; this is what finalisation costs",
+    "  chgd       steady-state changes only, cold load excluded. Compare across arms: fewer",
+    "             means an update was lost, not that work was saved",
+    "  pruned     fields dropped client-side. Backend arms prune after the frames arrive, so",
+    "             their trips/res/bytes do NOT differ between prune=on and prune=off; only the",
+    "             BFS arms avoid traversing a pruned field",
+    "  seeds      seed ids sent, summed over rounds; this is what finalisation costs. Scales",
+    "             with the mirror, so this tree is too small to show the real uplink cost",
     "",
   );
   console.log(lines.join("\n"));

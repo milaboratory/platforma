@@ -1,6 +1,7 @@
 import type { PlTransaction, SignedResourceId } from "@milaboratories/pl-client";
 import { isNotNullSignedResourceId } from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
+import { TreeStateUpdateError } from "./state";
 import type { TreeLoadingRequest, TreeLoadingStat } from "./sync";
 
 /**
@@ -71,8 +72,15 @@ export async function loadDeltaTreeState(
   stats?: TreeLoadingStat,
   logger?: { warn: (msg: string) => void },
 ): Promise<ExtendedResourceData[]> {
-  const { seedResources, roots, knownResources, pruningFunction, fieldFilter, changedSinceToken } =
-    loadingRequest;
+  const {
+    seedResources,
+    finalResources,
+    roots,
+    knownResources,
+    pruningFunction,
+    fieldFilter,
+    changedSinceToken,
+  } = loadingRequest;
 
   // With finalisation off the roots are the only entry point. With it on the frontier is, and
   // the roots stand in when it is empty: a tree whose every resource is final still has to
@@ -111,6 +119,20 @@ export async function loadDeltaTreeState(
         if (frame.traverseWasStopped) stats.traverseWasStoppedCount++;
       }
 
+      // A held final resource can never be updated again: updateFromResourceData throws on any
+      // body for one, changed or not, and invalidates the whole tree. A token-less poll is a
+      // full walk with no stop rules, so it emits exactly those bodies for every final
+      // resource under a non-final seed - which is what the first poll after a restored
+      // snapshot, or after a token discard, does. Both sibling algorithms skip the same way.
+      //
+      // Safe for the reference invariant: finalResources is a subset of knownResources, so a
+      // reference pointing at a skipped resource is still satisfied, and dropping it from the
+      // batch drops its own outgoing requirements with it.
+      if (finalResources.has(frame.id)) {
+        if (stats) stats.finalResourcesSkipped++;
+        continue;
+      }
+
       // A "resource" frame is already an ExtendedResourceData plus the frame discriminants,
       // so the payload needs no reassembly - only field pruning.
       const { frameKind: _frameKind, traverseWasStopped: _stopped, ...resource } = frame;
@@ -145,7 +167,13 @@ export async function loadDeltaTreeState(
       // Asked for every one of these already and they did not arrive: the ids exist in a
       // reference but the backend will not serve them under this token. Applying anyway
       // invalidates the tree, so fail here with the ids rather than there without them.
-      throw new Error(
+      //
+      // TreeStateUpdateError rather than a plain Error on purpose: the poll loop rebuilds the
+      // mirror and discards the token for that class, and re-reads from scratch. A plain Error
+      // only gets logged, leaving the token and the seed set identical, so the very same
+      // reference fails on every subsequent poll and the tree never updates again. A
+      // soft-deleted referent reaches here, since those frames are dropped client-side.
+      throw new TreeStateUpdateError(
         `delta poll: ${unresolved.length} referenced resource(s) could not be resolved, first ${unresolved[0]}`,
       );
     }

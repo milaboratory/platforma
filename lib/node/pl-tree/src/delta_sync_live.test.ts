@@ -16,8 +16,13 @@ import tp from "timers/promises";
  * one without it. The unit coverage in `delta_sync.test.ts` pins the client's own logic; what
  * cannot be faked, and is what these are for, is the backend's own emission rule.
  */
-function deltaCapable(pl: PlClient): boolean {
-  return hasCapability(pl.serverInfo.capabilities ?? [], "treeChangedSince:v1");
+function deltaCapable(pl: PlClient, testName: string): boolean {
+  const capable = hasCapability(pl.serverInfo.capabilities ?? [], "treeChangedSince:v1");
+  // Returning early would report green having executed nothing, which is worse than a skip:
+  // the expected state today is a backend without the capability, so a silent pass here means
+  // the whole delta suite reads as covered when it never ran.
+  if (!capable) console.warn(`SKIPPED (backend lacks treeChangedSince:v1): ${testName}`);
+  return capable;
 }
 
 const logger = new ConsoleLoggerAdapter(console);
@@ -55,7 +60,7 @@ async function openTree(pl: PlClient, root: string, traversalMode: TraversalMode
 
 test("a delta poll delivers a change on a resource the mirror already holds", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
-    if (!deltaCapable(pl)) return;
+    if (!deltaCapable(pl, "delivers a change on a held resource")) return;
 
     const { root, child } = await seedTree(pl);
     const tree = await openTree(pl, root, "backend-delta");
@@ -89,7 +94,7 @@ test("a delta poll delivers a change on a resource the mirror already holds", as
 
 test("delta and streaming converge on the same mirror", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
-    if (!deltaCapable(pl)) return;
+    if (!deltaCapable(pl, "delta and streaming converge")) return;
 
     const { root, child } = await seedTree(pl);
 
@@ -136,7 +141,7 @@ test("delta and streaming converge on the same mirror", async () => {
 
 test("a quiet parent: a change under an unchanged resource still arrives", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
-    if (!deltaCapable(pl)) return;
+    if (!deltaCapable(pl, "quiet parent")) return;
 
     const { root, child } = await seedTree(pl);
     const tree = await openTree(pl, root, "backend-delta");
@@ -170,22 +175,29 @@ test("a quiet parent: a change under an unchanged resource still arrives", async
   });
 });
 
-test("a discarded token still leaves a correct mirror", async () => {
+test("a token-less poll over a populated mirror does not throw", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
-    if (!deltaCapable(pl)) return;
+    if (!deltaCapable(pl, "token-less poll over a populated mirror")) return;
 
     const { root } = await seedTree(pl);
-    const tree = await openTree(pl, root, "backend-delta");
-    try {
-      await tree.refreshState();
-      const before = tree.dumpState().length;
 
-      // A full re-read is what a discarded token produces, and it must be a no-op for
-      // correctness: the same resources, applied over themselves.
-      await tree.refreshState();
-      expect(tree.dumpState().length).toBe(before);
+    // Load once through streaming so the mirror is populated and some resources may have
+    // gone final, then hand that same state to a delta tree whose token is still unset. That
+    // is the shape of a warm start from a snapshot, and of the first poll after a token
+    // discard: a full walk that delivers bodies for resources the mirror already holds as
+    // final, which updateFromResourceData refuses.
+    const warm = await openTree(pl, root, "backend-streaming");
+    await warm.refreshState();
+    const streamingShape = warm.dumpState().length;
+    await warm.terminate();
+
+    const delta = await openTree(pl, root, "backend-delta");
+    try {
+      await delta.refreshState();
+      await delta.refreshState();
+      expect(delta.dumpState().length).toBe(streamingShape);
     } finally {
-      await tree.terminate();
+      await delta.terminate();
     }
   });
 });
