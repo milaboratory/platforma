@@ -66,12 +66,6 @@ function request(over: Partial<Record<keyof TreeLoadingRequest, unknown>> = {}) 
   } as unknown as TreeLoadingRequest;
 }
 
-/** The seeding branch this process runs. It is a module-load const in delta_sync.ts, so a
- * test cannot flip it; instead each seeding test asserts the branch that is live, and the
- * other branch is covered by the same file re-run with the env var set (which is what the
- * benchmark does). */
-const FINALISATION = process.env.PL_TREE_NO_FINALISATION !== "1";
-
 describe("seeding", () => {
   test("seeds the non-final frontier, not the roots, and passes the token", async () => {
     const { tx, calls } = txReturning([[]]);
@@ -91,8 +85,8 @@ describe("seeding", () => {
     );
 
     expect(calls).toHaveLength(1);
-    // Finalisation on seeds every non-final resource; off seeds the roots alone.
-    expect(calls[0]?.seeds).toEqual(FINALISATION ? ["NG:0x1", "NG:0x2"] : ["NG:root"]);
+    // Every non-final resource is a seed, never the roots alone.
+    expect(calls[0]?.seeds).toEqual(["NG:0x1", "NG:0x2"]);
     expect(calls[0]?.opts.includeKv).toBe(true);
     expect(calls[0]?.opts.changedSinceToken).toEqual(new Uint8Array([7]));
     expect(calls[0]?.opts.fieldFilter).toEqual({ marker: "field" });

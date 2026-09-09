@@ -17,10 +17,9 @@ import type { ExtendedResourceData } from "./state";
  * through `SynchronizedTreeState`.
  *
  *   PL_TREE_BENCH=1 pnpm exec vitest run src/delta_benchmark.test.ts
- *   PL_TREE_BENCH=1 PL_TREE_NO_FINALISATION=1 pnpm exec vitest run src/delta_benchmark.test.ts
  *
- * Two processes because finalisation is a module-load const. Delta arms report as skipped on a
- * backend without `treeChangedSince:v1`, rather than silently measuring the fallback.
+ * Delta arms report as skipped on a backend without `treeChangedSince:v1`, rather than
+ * silently measuring the fallback.
  */
 
 /** Without a payload every struct is empty and the downlink-bytes column - the whole point of
@@ -177,11 +176,11 @@ async function runArm(
   };
 }
 
-function report(rows: Row[], finalisation: boolean, skipped: string[], failed: string[] = []) {
+function report(rows: Row[], skipped: string[], failed: string[] = []) {
   const pad = (s: string | number, n: number) => String(s).padStart(n);
   const lines = [
     "",
-    `=== tree loading cost, finalisation=${finalisation ? "on" : "off"} ===`,
+    "=== tree loading cost ===",
     `tree: ${CHILDREN} children x ${GRANDCHILDREN} grandchildren, ${POLL_CYCLES} polls after load,`,
     `      one KV write on a leaf between polls (quiet-parent shape)`,
     "",
@@ -228,7 +227,7 @@ function report(rows: Row[], finalisation: boolean, skipped: string[], failed: s
     "  pruned     fields dropped client-side. Backend arms prune after the frames arrive, so",
     "             their trips/res/bytes do NOT differ between prune=on and prune=off; only the",
     "             BFS arms avoid traversing a pruned field",
-    "  seeds      seed ids sent, summed over rounds; this is what finalisation costs. Scales",
+    "  seeds      seed ids sent, summed over rounds; scales",
     "             with the mirror, so this tree is too small to show the real uplink cost",
     "",
   );
@@ -256,6 +255,6 @@ test("benchmark: tree loading cost by algorithm", async () => {
       }
     }
 
-    report(rows, process.env.PL_TREE_NO_FINALISATION !== "1", skipped, failed);
+    report(rows, skipped, failed);
   });
 }, 600_000);
