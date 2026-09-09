@@ -1,6 +1,7 @@
 import { test, expect, describe } from "vitest";
 import { NullSignedResourceId } from "@milaboratories/pl-client";
 import { loadDeltaTreeState } from "./delta_sync";
+import { TreeStateUpdateError } from "./state";
 import { initialTreeLoadingStat } from "./sync";
 import type { TreeLoadingRequest, TreeLoadingStat } from "./sync";
 
@@ -168,6 +169,49 @@ describe("delta response", () => {
   });
 });
 
+test("copies every resource property off the frame", async () => {
+  // The resource is built as an explicit literal rather than a spread, which is faster but
+  // silently omits whatever is forgotten. Measured: eight of the twelve could be deleted with
+  // the rest of this suite still green.
+  const { tx } = txReturning([
+    [
+      {
+        ...frame("NG:0x1", { kv: [{ key: "k", value: new Uint8Array([9]) }] }),
+        type: { name: "Marker", version: "7" },
+        kind: "Value",
+        data: new Uint8Array([1, 2]),
+        resourceReady: true,
+        originalResourceId: "NG:0xORIG",
+        final: true,
+        inputsLocked: true,
+        outputsLocked: true,
+      },
+    ],
+  ]);
+
+  const result = await loadDeltaTreeState(
+    tx,
+    request({
+      seedResources: ["NG:0x1"],
+      knownResources: new Set(["NG:0x1", "NG:0xORIG"]),
+    }),
+  );
+
+  expect(result).toHaveLength(1);
+  expect(result[0]).toMatchObject({
+    id: "NG:0x1",
+    type: { name: "Marker", version: "7" },
+    kind: "Value",
+    data: new Uint8Array([1, 2]),
+    resourceReady: true,
+    originalResourceId: "NG:0xORIG",
+    final: true,
+    inputsLocked: true,
+    outputsLocked: true,
+    kv: [{ key: "k", value: new Uint8Array([9]) }],
+  });
+});
+
 describe("final resources", () => {
   test("skips a body for a resource the mirror already marked final", async () => {
     const stats: TreeLoadingStat = initialTreeLoadingStat();
@@ -305,8 +349,9 @@ describe("reference resolution", () => {
 
     expect(calls).toHaveLength(2);
     expect(calls[1]?.seeds).toEqual(["NG:0xNEW"]);
-    // Deep, not 0: at 0 a newly attached subtree costs one round trip per level.
-    expect(calls[1]?.opts.unconditionalDepth).toBeGreaterThan(1);
+    // Pinned, not just "deep": at 0 a newly attached subtree costs one sequential round trip
+    // per level, and the value is the whole trade the constant's comment argues.
+    expect(calls[1]?.opts.unconditionalDepth).toBe(32);
     // The token still rides the resolution round: what it returns is dated the same as the
     // poll it came with.
     expect(calls[1]?.opts.changedSinceToken).toEqual(new Uint8Array([7]));
@@ -400,9 +445,13 @@ describe("reference resolution", () => {
         tx,
         request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
       ),
-    ).rejects.toThrow(/still unresolved after \d+ rounds/);
-    // Bounded: a handful of round trips, not one per link in an unbounded chain.
-    expect(n).toBeLessThan(30);
+      // The class, not just the message: synchronized_tree rebuilds and discards the token
+      // only for TreeStateUpdateError. A plain Error is logged and the identical request
+      // retried forever.
+    ).rejects.toThrow(TreeStateUpdateError);
+    // Pinned: each round is a sequential round trip, and the cap is what stops an unbounded
+    // chain costing more than the full re-read the rebuild it escalates to performs.
+    expect(n).toBe(4);
   });
 
   test("throws with the ids rather than letting the apply invalidate the tree", async () => {
@@ -417,7 +466,7 @@ describe("reference resolution", () => {
         tx,
         request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
       ),
-    ).rejects.toThrow("NG:0xGONE");
+    ).rejects.toThrow(TreeStateUpdateError);
 
     // One poll, one resolution attempt, then it gives up instead of looping.
     expect(calls).toHaveLength(2);
