@@ -146,6 +146,12 @@ packages:
   - etc/blocks/transfer-files/block
   - etc/blocks/transfer-files/kind
 
+  - etc/blocks/pframes-oom/workflow
+  - etc/blocks/pframes-oom/model
+  - etc/blocks/pframes-oom/ui
+  - etc/blocks/pframes-oom/block
+  - etc/blocks/pframes-oom/kind
+
   # Tests
 
   - tests/workflow-tengo

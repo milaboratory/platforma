@@ -1,0 +1,4 @@
+{
+  "extends": "@milaboratories/ts-configs/block/model",
+  "include": ["src/**/*"]
+}
