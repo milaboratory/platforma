@@ -33,16 +33,15 @@ export interface TreeLoadingRequest {
   readonly fieldFilter?: Filter;
 
   /** ResourceTree traversal stop rules passed to the backend when supported.
-   * Ignored by the backend under {@link changedSinceToken}. */
+   * @deprecated prune with {@link changedSinceToken} instead; ignored by the backend under one. */
   readonly traverseStopRules?: Filter;
 
   /** The tree's roots. Delta seeds at these when finalisation is off, and when the
    * non-final frontier is empty. */
   readonly roots: readonly SignedResourceId[];
 
-  /** Every id the mirror currently holds, final or not. Delta needs it to tell a reference
-   * it must resolve from one already satisfied locally; the union of this and
-   * {@link seedResources} is what the mirror contains. */
+  /** Every id the mirror currently holds, final or not. Delta uses it to tell a reference it
+   * must resolve from one already satisfied locally. */
   readonly knownResources: ReadonlySet<SignedResourceId>;
 
   /** Change token from the transaction this request will run in, for a delta walk. Absent
@@ -93,9 +92,8 @@ export function resolveTreeLoadingAlgorithm(
       );
       return "client-bfs";
     case "auto":
-      // Delta first: it is the only path whose cost tracks what changed rather than what the
-      // tree holds. Streaming is the fallback for a backend that can shape a walk but not
-      // date one, and BFS for a backend that can do neither.
+      // Delta first: its cost tracks what changed rather than what the tree holds. Streaming
+      // is the fallback for a backend that can shape a walk but not date one.
       if (delta) return "backend-delta";
       return streaming ? "backend-streaming" : "client-bfs";
   }
@@ -153,8 +151,7 @@ export type TreeLoadingStat = ResourceUpdateStat & {
   streamRounds: number;
   /** Backend paths: resource frames received. */
   resourceFrames: number;
-  /** Backend paths: stopMarker frames received. Streaming expects these; on delta they are a
-   * contract violation and are warned about. */
+  /** Streaming path: stopMarker frames received (both skipped and follow-up). */
   stopMarkerFrames: number;
   /** Streaming path: stop markers that were not final locally and triggered a follow-up fetch. */
   stopMarkersFollowUp: number;
@@ -171,12 +168,8 @@ export type TreeLoadingStat = ResourceUpdateStat & {
    * response did not carry. */
   deltaResolutionRounds: number;
   /** Delta path: polls that sent a token and got back a response the size of the whole
-   * mirror, which is what a token the server refused looks like from here.
-   *
-   * Rejection is silent by design - a foreign-instance or rewound token is answered with the
-   * full tree, never an error - so without this a tree paying full-tree cost on every poll
-   * after a backend instance swap is indistinguishable from a healthy one. Heuristic, not a
-   * signal from the server: a genuinely large change set trips it too. */
+   * mirror, which is what a refused token looks like from here - rejection is silent, so this
+   * is the only tell. Heuristic: a genuinely large change set trips it too. */
   deltaSuspectedFullAnswers: number;
 };
 
@@ -256,7 +249,7 @@ function supportsTreeDelta(capabilities: readonly string[] = []): boolean {
   return hasCapability(capabilities, "treeChangedSince:v1");
 }
 
-function collectStatsForResource(resource: ExtendedResourceData, stats?: TreeLoadingStat) {
+export function collectStatsForResource(resource: ExtendedResourceData, stats?: TreeLoadingStat) {
   if (!stats) return;
   stats.retrievedResources++;
   stats.retrievedFields += resource.fields.length;
@@ -521,9 +514,8 @@ export async function loadTreeState(
     // A tree passes its pinned algorithm here, which resolves to itself. The mode form is
     // kept for callers that run a single load.
     const algorithm = resolveTreeLoadingAlgorithm(mode, capabilities, logger);
-    // True for both backend paths, not just streaming. state.ts reads this to decide whether
-    // an unchanged resource cost a wasted per-resource fetch, which is a BFS-only concept:
-    // leaving it false for delta reports phantom "BFS fetches wasted" on a delta tree.
+    // Both backend paths, not just streaming: state.ts reads this to attribute a BFS-only
+    // wasted-fetch counter, and leaving it false for delta reports phantom waste.
     if (stats) stats.usedStreaming = algorithm !== "client-bfs";
 
     switch (algorithm) {
