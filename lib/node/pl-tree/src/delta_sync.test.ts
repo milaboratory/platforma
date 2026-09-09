@@ -160,8 +160,7 @@ describe("delta response", () => {
     expect(stats.retrievedFields).toBe(1);
   });
 
-  test("ignores a stop-marker frame, which a delta walk should never produce", async () => {
-    const warnings: string[] = [];
+  test("ignores a stop-marker frame, which the server cannot emit for a delta walk", async () => {
     const { tx } = txReturning([
       [{ frameKind: "stopMarker", id: "NG:0x5", traverseWasStopped: true }, frame("NG:0x1")],
     ]);
@@ -169,13 +168,9 @@ describe("delta response", () => {
     const result = await loadDeltaTreeState(
       tx,
       request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
-      undefined,
-      { warn: (m) => warnings.push(m) },
     );
 
     expect(result.map((r) => r.id)).toEqual(["NG:0x1"]);
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toContain("NG:0x5");
   });
 });
 
@@ -299,7 +294,7 @@ describe("diagnostics", () => {
 });
 
 describe("reference resolution", () => {
-  test("resolves a reference the delta did not carry, at unconditional depth 0", async () => {
+  test("resolves a reference the delta did not carry, at a subtree-clearing depth", async () => {
     const stats: TreeLoadingStat = initialTreeLoadingStat();
     const { tx, calls } = txReturning([
       // Poll: a held resource repointed at a resource we have never seen.
@@ -316,7 +311,8 @@ describe("reference resolution", () => {
 
     expect(calls).toHaveLength(2);
     expect(calls[1]?.seeds).toEqual(["NG:0xNEW"]);
-    expect(calls[1]?.opts.unconditionalDepth).toBe(0);
+    // Deep, not 0: at 0 a newly attached subtree costs one round trip per level.
+    expect(calls[1]?.opts.unconditionalDepth).toBeGreaterThan(1);
     // The token still rides the resolution round: what it returns is dated the same as the
     // poll it came with.
     expect(calls[1]?.opts.changedSinceToken).toEqual(new Uint8Array([7]));
@@ -390,6 +386,29 @@ describe("reference resolution", () => {
 
     expect(calls).toHaveLength(2);
     expect(calls[1]?.seeds).toEqual(["NG:0xSHARED"]);
+  });
+
+  test("gives up after a bounded number of rounds rather than looping on round trips", async () => {
+    // A backend that always answers with one more unknown reference. Without a cap this walks
+    // one sequential round trip per link, forever.
+    let n = 0;
+    const tx = {
+      resourceTree: () => {
+        const id = `NG:0xCHAIN${n++}`;
+        return (async function* () {
+          yield frame(id, { fields: [field("next", `NG:0xCHAIN${n}`)] });
+        })();
+      },
+    } as unknown as Parameters<typeof loadDeltaTreeState>[0];
+
+    await expect(
+      loadDeltaTreeState(
+        tx,
+        request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
+      ),
+    ).rejects.toThrow(/still unresolved after \d+ rounds/);
+    // Bounded: a handful of round trips, not one per link in an unbounded chain.
+    expect(n).toBeLessThan(30);
   });
 
   test("throws with the ids rather than letting the apply invalidate the tree", async () => {

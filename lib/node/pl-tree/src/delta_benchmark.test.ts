@@ -10,31 +10,25 @@ import type { FieldData } from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
 
 /**
- * Cost comparison between the tree loading algorithms, and between finalisation on and off.
+ * Cost comparison across the tree loading algorithms, and finalisation on vs off.
  *
- * Not a test: it asserts nothing and is skipped unless `PL_TREE_BENCH=1`, because it needs a
- * live backend and takes real time. It drives `loadTreeState` directly rather than through
- * `SynchronizedTreeState` so each poll is one deliberate round rather than whatever the poll
- * loop decided, and so the stat object is visible.
+ * Asserts nothing, and no-ops without `PL_TREE_BENCH=1`. Drives `loadTreeState` directly so
+ * each poll is one deliberate round and the stat object is visible, neither of which is true
+ * through `SynchronizedTreeState`.
  *
  *   PL_TREE_BENCH=1 pnpm exec vitest run src/delta_benchmark.test.ts
  *   PL_TREE_BENCH=1 PL_TREE_NO_FINALISATION=1 pnpm exec vitest run src/delta_benchmark.test.ts
  *
- * The second run is the finalisation-off arm. It is a separate process because the setting is
- * a module-load const: a tree may not change its seeding mid-life without discarding the
- * change token it holds.
- *
- * The delta arms need `treeChangedSince:v1`, so on a backend without it those rows are
- * reported as skipped rather than silently measuring the fallback path.
+ * Two processes because finalisation is a module-load const. Delta arms report as skipped on a
+ * backend without `treeChangedSince:v1`, rather than silently measuring the fallback.
  */
 
-/** Payload per resource. Without it every struct is empty, `retrievedResourceDataBytes` is 0
- * for every arm, and the downlink-bytes column - which is the entire point of delta - reads
- * as zero everywhere. */
+/** Without a payload every struct is empty and the downlink-bytes column - the whole point of
+ * delta - reads as zero on every arm. */
 const PAYLOAD = Buffer.alloc(2048, "x");
 
-/** Width and depth of the synthetic tree. Deliberately modest: the shape of the numbers shows
- * up well before a 7k-resource project, and a seed that large would dominate the run. */
+/** Modest on purpose: the shape of the numbers shows up well before a 7k-resource project.
+ * Note the seed count scales with the mirror, so this is too small to price that. */
 const CHILDREN = 12;
 const GRANDCHILDREN = 6;
 /** Polls per arm after the initial load. */
@@ -51,8 +45,7 @@ const ARMS: Arm[] = [
   { label: "backend-delta     prune=off", mode: "backend-delta", pruning: false },
 ];
 
-/** Drops one field name, standing in for the real project pruning. Enough to make the
- * pruning dimension cost something without importing the middle layer. */
+/** Stands in for the real project pruning, without importing the middle layer. */
 const benchPruning = (r: ExtendedResourceData): FieldData[] =>
   r.fields.filter((f) => !f.name.startsWith("pruneMe"));
 
@@ -102,10 +95,8 @@ async function touchLeaf(pl: PlClient, leaf: SignedResourceId, arm: string, roun
   await pl.withWriteTx(
     "BenchTouch",
     async (tx: PlTransaction) => {
-      // Keyed by arm, not just round. The tree is shared across arms and never reset, and
-      // state.ts compares KV values - so a second arm rewriting the same key with the same
-      // bytes produces no client-observable change at all, and would measure a steady state
-      // with nothing in it. That flatters delta and penalises the arms that ran first.
+      // Keyed by arm: the tree is shared and never reset, and state.ts compares KV values,
+      // so a later arm rewriting the same key with the same bytes observes no change at all.
       tx.setKValue(leaf, `bench-${arm}-${round}`, Buffer.from(`r${round}`));
       await tx.commit();
     },
@@ -143,9 +134,8 @@ async function runArm(
   let token: Uint8Array | undefined;
   let changedAtColdLoad = 0;
 
-  // Initial load plus POLL_CYCLES steady-state polls, each preceded by one mutation. The
-  // initial load is included on purpose: it is the cold-open cost, and it is where the arms
-  // are meant to look alike.
+  // Cold load plus POLL_CYCLES polls, one mutation before each. The cold load is included on
+  // purpose: it is where the arms are meant to look alike.
   for (let cycle = 0; cycle <= POLL_CYCLES; cycle++) {
     if (cycle > 0) {
       const leaf = seed.leaves[cycle % seed.leaves.length];
@@ -203,17 +193,10 @@ function report(rows: Row[], finalisation: boolean, skipped: string[], failed: s
     );
   }
 
-  // The correctness guard, and it has to be the change COUNT, not the mirror contents.
-  //
-  // Each arm performs exactly POLL_CYCLES mutations, each a KV write on one leaf, so every
-  // arm must observe exactly that many steady-state changes. An arm reporting fewer did not
-  // save work - it never received an update.
-  //
-  // The mirrors themselves cannot be compared across arms: the tree is shared and never
-  // reset, and each arm writes its own KV keys (it has to, or a later arm rewrites identical
-  // bytes and observes no change at all), so a later arm legitimately holds more KV than an
-  // earlier one. Comparing mirror strings reported a mismatch on every run, including runs
-  // where nothing was lost.
+  // The correctness guard, and it has to be the change COUNT. Each arm makes exactly
+  // POLL_CYCLES mutations, so each must observe that many changes; fewer means an update was
+  // lost, not that work was saved. Mirror CONTENTS cannot be compared across arms, since
+  // per-arm keys on a shared tree leave later arms legitimately holding more KV.
   lines.push("");
   for (const r of rows) {
     if (r.changedSteady === POLL_CYCLES) continue;
