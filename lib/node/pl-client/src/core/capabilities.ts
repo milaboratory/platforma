@@ -17,6 +17,10 @@
 export type BackendCapability =
   | "auth:v2"
   | "treeFilter:v2"
+  // Delta tree reads: Tree, ResourceAPI.Get and ResourceKVAPI.List accept a
+  // changed_since_token and answer with only what changed since it. Narrower in name
+  // than in reach, since it gates all three.
+  | "treeChangedSince:v1"
   | "wasm:v1"
   // Project-sharing capability tokens.
   | "crossTreeRefs:v1" // cross-color field attach (accept a foreign-colored shared envelope)

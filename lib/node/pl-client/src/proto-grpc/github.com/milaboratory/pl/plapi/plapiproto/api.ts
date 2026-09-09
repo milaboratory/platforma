@@ -1035,12 +1035,18 @@ export interface TxAPI_Open_Response {
      * Absent on a WRITABLE open, which is issued no token: the walk would see
      * that transaction's own uncommitted writes (see changed_since_token).
      *
+     * Also accepted by ResourceAPI.Get and ResourceKVAPI.List, which apply the
+     * same per-resource emission rule.
+     *
      * Store it only after a whole tree response has been applied successfully. A
      * client that keeps it after a partial apply will never be sent the
      * resources it dropped. Clear it on tree rebuild, on a root-set change, and
-     * whenever the seed array is invalidated - the server no longer refuses a
-     * token presented against a differently shaped request, so that is the
-     * client's to enforce.
+     * on any change to the traversal shape it was earned under - the token
+     * carries no request shape, so that is the client's to enforce.
+     *
+     * Opaque, with one promise: two tokens from one server instance may be
+     * compared for order, so a client can tell which of the two it holds is the
+     * later. Never parse or construct one, and never compare across instances.
      *
      * @generated from protobuf field: bytes next_since_token = 2
      */
@@ -1527,12 +1533,36 @@ export interface ResourceAPI_Get_Request {
      * @generated from protobuf field: bool show_soft_deletes = 4
      */
     showSoftDeletes: boolean;
+    /**
+     * Same token and same emission rule as ResourceAPI.Tree's
+     * changed_since_token: the response carries a resource only when its own
+     * change token is newer than the point this one denotes, and otherwise
+     * comes back with resource unset. Empty or absent (the default) always
+     * returns the body.
+     *
+     * A client on a per-resource read path takes this so it answers the same
+     * way the tree does; one that wants a body regardless simply omits it.
+     * There is no unconditional_depth here - nothing traverses, so there is no
+     * depth to bound.
+     *
+     * Ignored on a WRITABLE transaction, for the reason given on
+     * ResourceAPI.Tree.Request.changed_since_token. Gated by the same
+     * "treeChangedSince:v1" capability, whose name is narrower than what it
+     * covers.
+     *
+     * @generated from protobuf field: bytes changed_since_token = 5
+     */
+    changedSinceToken: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.Get.Response
  */
 export interface ResourceAPI_Get_Response {
     /**
+     * Unset when the request carried a changed_since_token and this resource
+     * has not changed since the point it denotes - see changed_since_token.
+     * Populated on every other response.
+     *
      * @generated from protobuf field: MiLaboratories.PL.API.Resource resource = 1
      */
     resource?: Resource;
@@ -1825,7 +1855,15 @@ export interface ResourceAPI_Tree_Request {
      * outputs_locked (bool). Old servers ignore this field and never
      * set traverse_was_stopped.
      *
-     * @generated from protobuf field: optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter traverse_stop_rules = 7
+     * Ignored on a request carrying a usable changed_since_token: a delta walk
+     * is pruned by the change token alone, and traverse_was_stopped is never
+     * set on it.
+     *
+     * Deprecated: prune with changed_since_token instead. Still honoured on a
+     * request without a token; scheduled for removal once no client sends it.
+     *
+     * @deprecated
+     * @generated from protobuf field: optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter traverse_stop_rules = 7 [deprecated = true]
      */
     traverseStopRules?: ResourceAPI_Tree_Filter;
     /**
@@ -1847,23 +1885,58 @@ export interface ResourceAPI_Tree_Request {
      */
     showSoftDeletes: boolean;
     /**
-     * An opaque continuation token, taken verbatim from a previous response's
-     * next_since_token. The server returns bodies only for resources that
-     * changed after the point this token denotes; every other visited resource
-     * gets a body-less frame with resource_unchanged set. Empty or absent (the
-     * default) requests the full tree.
+     * An opaque continuation token, taken verbatim from the next_since_token an
+     * earlier transaction's Open response carried. The server returns bodies
+     * only for resources that changed after the point this token denotes; every
+     * other visited resource is passed over in silence, producing no frame at
+     * all. Empty or absent (the default) requests the full tree.
      *
-     * Clients must not parse, construct or compare this value: its encoding is
-     * server-private and may change without a wire version bump. Store the
-     * token only after applying a whole response successfully.
+     * A response therefore contains exactly the resources whose own change
+     * token is newer than the point this one denotes, and nothing else. Two
+     * obligations follow, both of them the client's:
+     *
+     *   - Absence is not removal. A resource missing from a delta response is
+     *     either unchanged or gone, and the two are indistinguishable. Detect
+     *     removals another way, or poll without a token to reconcile.
+     *
+     *   - A body may reference resources the response does not carry. A field
+     *     repointed at an older resource, or a subtree the traversal newly
+     *     reaches, keeps its old change token and is not sent - this poll or
+     *     any later one, since its token never moves again. The reference field
+     *     carries the target's resource ID and a valid signature for it, and
+     *     every resource the walk visited stays readable by ID inside the
+     *     walking transaction, frame or no frame. Read them with one Tree
+     *     request naming those IDs in seeds under an unconditional_depth, or
+     *     one at a time with ResourceAPI.Get.
+     *
+     * The traversal does not descend below an unchanged resource: the walk ends
+     * on that branch, so a change beneath an unchanged resource arrives only
+     * once something on the path down to it changes as well. Absence is not
+     * removal for that reason too. A response in which nothing changed carries
+     * no frames at all and arrives as an empty multi-message.
+     *
+     * traverse_stop_rules are ignored on a request carrying a usable token: the
+     * token is the only pruning, and traverse_was_stopped is never set.
+     *
+     * Clients must not parse or construct this value: its encoding is
+     * server-private and may change without a wire version bump. Two tokens
+     * issued by one server instance may be compared for order, so a client can
+     * tell which of the two it holds is the later; comparison across instances
+     * is undefined. Store the token only after applying a whole response
+     * successfully.
      *
      * A token the server cannot use is answered with the full tree, never with
      * an error, so it is always safe to send back whatever was last received.
-     * The server detects and ignores a token that does not fit the request it
-     * arrives on - the token is bound to the traversal-shaping parameters
-     * (resource_id, seeds, max_depth, include_kv, show_soft_deletes,
-     * field_filter, traverse_stop_rules), so changing any of them costs one
-     * full tree instead of silently reporting never-sent resources as held.
+     *
+     * The token carries no request shape and cannot: it is minted as a
+     * transaction OPENS, before any tree request exists, and one transaction
+     * may issue many reads with different depths, filters and seeds. So
+     * discarding it when the traversal shape changes - max_depth, include_kv,
+     * show_soft_deletes, field_filter, traverse_stop_rules, or the seed set -
+     * is the client's obligation. Keeping it across such a change silently
+     * skips resources the new shape reaches. Other seeds and an
+     * unconditional_depth under the same token are NOT a shape change: what
+     * they return is dated the same as the poll they came with.
      *
      * Ignored on a WRITABLE transaction, which also receives no
      * next_since_token: the walk sees that transaction's uncommitted writes, so
@@ -1877,6 +1950,23 @@ export interface ResourceAPI_Tree_Request {
      * @generated from protobuf field: bytes changed_since_token = 10
      */
     changedSinceToken: Uint8Array;
+    /**
+     * Depths at or below this one are emitted whatever changed_since_token
+     * says, the seed being depth 0. Explicitly optional: absent means no
+     * unconditional depth, which differs from 0. Ignored without
+     * changed_since_token, which already sends everything.
+     *
+     * This is how a client reads what a delta response referenced but did not
+     * carry. One Tree request naming the unknown IDs in seeds, under the same
+     * token, returns them here while everything the client already holds below
+     * the frontier stays skipped. The depth is the lever: 0 takes the seeds
+     * alone, 1 takes a level per round trip, a depth past the subtree takes it
+     * whole. Without it such a request comes back empty, and empty is
+     * indistinguishable from not-found.
+     *
+     * @generated from protobuf field: optional uint32 unconditional_depth = 11
+     */
+    unconditionalDepth?: number;
 }
 /**
  * A single entry point for multi-root tree traversal.
@@ -2072,9 +2162,9 @@ export interface ResourceAPI_Tree_KV {
 export interface ResourceAPI_Tree_Response {
     /**
      * Full resource payload. Absent on stop-marker frames (when the server
-     * advertises `treeStopMarker:v1` and traverse_was_stopped is true) and on
-     * unchanged frames (when resource_unchanged is true). Populated on every
-     * other frame.
+     * advertises `treeStopMarker:v1` and traverse_was_stopped is true).
+     * Populated on every other frame. A resource the client already holds
+     * unchanged produces no frame at all - see changed_since_token.
      *
      * @generated from protobuf field: optional MiLaboratories.PL.API.Resource resource = 1
      */
@@ -2111,23 +2201,6 @@ export interface ResourceAPI_Tree_Response {
      * @generated from protobuf field: bytes resource_signature = 5
      */
     resourceSignature: Uint8Array;
-    /**
-     * True on a body-less frame emitted for a resource the client already holds:
-     * resource is unset, and resource_id and resource_signature carry the
-     * identity instead. The client keeps everything it holds for that resource,
-     * fields and kv alike, and the traversal still descends into it - an
-     * unchanged parent routinely has changed children.
-     *
-     * Orthogonal to traverse_was_stopped; a frame may set both.
-     *
-     * A resource may appear twice in one response: an unchanged frame, then a
-     * body frame later in the same response. The later frame supersedes the
-     * earlier one, so apply frames in arrival order and treat an unchanged
-     * frame for an unknown resource as benign rather than fatal.
-     *
-     * @generated from protobuf field: bool resource_unchanged = 6
-     */
-    resourceUnchanged: boolean;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.TreeSize
@@ -2985,6 +3058,25 @@ export interface ResourceKVAPI_List_Request {
      * @generated from protobuf field: uint32 limit = 3
      */
     limit: number;
+    /**
+     * Same token and same emission rule as ResourceAPI.Tree's
+     * changed_since_token: the listing runs only when the resource's own change
+     * token is newer than the point this one denotes, and otherwise comes back
+     * with no records at all. Empty or absent (the default) always lists.
+     *
+     * No records therefore means the metadata is unchanged, empty, or gone,
+     * indistinguishably - which costs nothing, because a client only sends the
+     * token for a resource whose metadata it already holds. One that wants the
+     * listing regardless omits it.
+     *
+     * Ignored on a WRITABLE transaction, for the reason given on
+     * ResourceAPI.Tree.Request.changed_since_token. Gated by the same
+     * "treeChangedSince:v1" capability, whose name is narrower than what it
+     * covers.
+     *
+     * @generated from protobuf field: bytes changed_since_token = 5
+     */
+    changedSinceToken: Uint8Array;
 }
 /**
  * Multi-message
@@ -8547,7 +8639,8 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "load_fields", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 4, name: "show_soft_deletes", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+            { no: 4, name: "show_soft_deletes", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 5, name: "changed_since_token", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_Get_Request>): ResourceAPI_Get_Request {
@@ -8556,6 +8649,7 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
         message.resourceSignature = new Uint8Array(0);
         message.loadFields = false;
         message.showSoftDeletes = false;
+        message.changedSinceToken = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_Get_Request>(this, message, value);
         return message;
@@ -8576,6 +8670,9 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
                     break;
                 case /* bool show_soft_deletes */ 4:
                     message.showSoftDeletes = reader.bool();
+                    break;
+                case /* bytes changed_since_token */ 5:
+                    message.changedSinceToken = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -8601,6 +8698,9 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
         /* bool show_soft_deletes = 4; */
         if (message.showSoftDeletes !== false)
             writer.tag(4, WireType.Varint).bool(message.showSoftDeletes);
+        /* bytes changed_since_token = 5; */
+        if (message.changedSinceToken.length)
+            writer.tag(5, WireType.LengthDelimited).bytes(message.changedSinceToken);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -9765,7 +9865,8 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
             { no: 7, name: "traverse_stop_rules", kind: "message", T: () => ResourceAPI_Tree_Filter },
             { no: 8, name: "seeds", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ResourceAPI_Tree_SeedResource },
             { no: 9, name: "show_soft_deletes", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 10, name: "changed_since_token", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 10, name: "changed_since_token", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 11, name: "unconditional_depth", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_Tree_Request>): ResourceAPI_Tree_Request {
@@ -9800,7 +9901,7 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
                 case /* bool include_kv */ 6:
                     message.includeKv = reader.bool();
                     break;
-                case /* optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter traverse_stop_rules */ 7:
+                case /* optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter traverse_stop_rules = 7 [deprecated = true] */ 7:
                     message.traverseStopRules = ResourceAPI_Tree_Filter.internalBinaryRead(reader, reader.uint32(), options, message.traverseStopRules);
                     break;
                 case /* repeated MiLaboratories.PL.API.ResourceAPI.Tree.SeedResource seeds */ 8:
@@ -9811,6 +9912,9 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
                     break;
                 case /* bytes changed_since_token */ 10:
                     message.changedSinceToken = reader.bytes();
+                    break;
+                case /* optional uint32 unconditional_depth */ 11:
+                    message.unconditionalDepth = reader.uint32();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -9839,7 +9943,7 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
         /* bool include_kv = 6; */
         if (message.includeKv !== false)
             writer.tag(6, WireType.Varint).bool(message.includeKv);
-        /* optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter traverse_stop_rules = 7; */
+        /* optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter traverse_stop_rules = 7 [deprecated = true]; */
         if (message.traverseStopRules)
             ResourceAPI_Tree_Filter.internalBinaryWrite(message.traverseStopRules, writer.tag(7, WireType.LengthDelimited).fork(), options).join();
         /* repeated MiLaboratories.PL.API.ResourceAPI.Tree.SeedResource seeds = 8; */
@@ -9851,6 +9955,9 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
         /* bytes changed_since_token = 10; */
         if (message.changedSinceToken.length)
             writer.tag(10, WireType.LengthDelimited).bytes(message.changedSinceToken);
+        /* optional uint32 unconditional_depth = 11; */
+        if (message.unconditionalDepth !== undefined)
+            writer.tag(11, WireType.Varint).uint32(message.unconditionalDepth);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -10111,8 +10218,7 @@ class ResourceAPI_Tree_Response$Type extends MessageType<ResourceAPI_Tree_Respon
             { no: 2, name: "kv", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ResourceAPI_Tree_KV },
             { no: 3, name: "traverse_was_stopped", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 4, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 5, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
-            { no: 6, name: "resource_unchanged", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+            { no: 5, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_Tree_Response>): ResourceAPI_Tree_Response {
@@ -10121,7 +10227,6 @@ class ResourceAPI_Tree_Response$Type extends MessageType<ResourceAPI_Tree_Respon
         message.traverseWasStopped = false;
         message.resourceId = 0n;
         message.resourceSignature = new Uint8Array(0);
-        message.resourceUnchanged = false;
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_Tree_Response>(this, message, value);
         return message;
@@ -10145,9 +10250,6 @@ class ResourceAPI_Tree_Response$Type extends MessageType<ResourceAPI_Tree_Respon
                     break;
                 case /* bytes resource_signature */ 5:
                     message.resourceSignature = reader.bytes();
-                    break;
-                case /* bool resource_unchanged */ 6:
-                    message.resourceUnchanged = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -10176,9 +10278,6 @@ class ResourceAPI_Tree_Response$Type extends MessageType<ResourceAPI_Tree_Respon
         /* bytes resource_signature = 5; */
         if (message.resourceSignature.length)
             writer.tag(5, WireType.LengthDelimited).bytes(message.resourceSignature);
-        /* bool resource_unchanged = 6; */
-        if (message.resourceUnchanged !== false)
-            writer.tag(6, WireType.Varint).bool(message.resourceUnchanged);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -14585,7 +14684,8 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 4, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "start_from", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "limit", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+            { no: 3, name: "limit", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
+            { no: 5, name: "changed_since_token", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceKVAPI_List_Request>): ResourceKVAPI_List_Request {
@@ -14594,6 +14694,7 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
         message.resourceSignature = new Uint8Array(0);
         message.startFrom = "";
         message.limit = 0;
+        message.changedSinceToken = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceKVAPI_List_Request>(this, message, value);
         return message;
@@ -14614,6 +14715,9 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
                     break;
                 case /* uint32 limit */ 3:
                     message.limit = reader.uint32();
+                    break;
+                case /* bytes changed_since_token */ 5:
+                    message.changedSinceToken = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -14639,6 +14743,9 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
         /* bytes resource_signature = 4; */
         if (message.resourceSignature.length)
             writer.tag(4, WireType.LengthDelimited).bytes(message.resourceSignature);
+        /* bytes changed_since_token = 5; */
+        if (message.changedSinceToken.length)
+            writer.tag(5, WireType.LengthDelimited).bytes(message.changedSinceToken);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
