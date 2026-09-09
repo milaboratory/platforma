@@ -90,10 +90,15 @@ export type ResourceTreeItem = ResourceData & { kv: KeyValue[]; traverseWasStopp
 
 /** A single frame from the resourceTree() stream.
  *
- * When the server advertises `treeStopMarker:v1`, a stop-matched node is emitted
- * as a lightweight marker instead of a full resource payload. Callers must
- * narrow on `frameKind` before accessing type-specific fields.
+ * A node the request's `traverseStopRules` matched is emitted as a lightweight marker
+ * instead of a full resource payload. Callers must narrow on `frameKind` before accessing
+ * type-specific fields.
  * Note: `frameKind` is distinct from `ResourceData.kind` (which is the resource kind).
+ *
+ * Under `changedSinceToken` there are no markers: stop rules do not apply to a delta walk,
+ * and a resource the walk passes over in silence produces no frame of any kind. A
+ * `"resource"` frame there may still carry `traverseWasStopped`, which then means only that
+ * nothing below it was streamed.
  */
 export type ResourceTreeFrame =
   | (ResourceTreeItem & { frameKind: "resource" })
@@ -243,6 +248,7 @@ async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefin
  * This class encapsulates finalization stage and provides ready-to-communication transaction object.
  * */
 export class PlTransaction {
+  private readonly txOpen: Promise<{ id: bigint; sinceToken?: Uint8Array }>;
   private readonly globalTxId: Promise<bigint>;
   private readonly localTxId: number = PlTransaction.nextLocalTxId();
 
@@ -279,7 +285,7 @@ export class PlTransaction {
     private readonly enableFormattedErrors: boolean = false,
   ) {
     // initiating transaction
-    this.globalTxId = this.sendSingleAndParse(
+    this.txOpen = this.sendSingleAndParse(
       {
         oneofKind: "txOpen",
         txOpen: {
@@ -290,8 +296,15 @@ export class PlTransaction {
             : TxAPI_Open_Request_WritableTx.NOT_WRITABLE,
         },
       },
-      (r) => notEmpty(r.txOpen.tx?.id),
+      (r) => ({
+        id: notEmpty(r.txOpen.tx?.id),
+        // Empty on a server without treeChangedSince:v1, and on a writable transaction,
+        // which is served none: its reads see this transaction's own uncommitted writes,
+        // so a token earned here could pin state that never commits.
+        sinceToken: r.txOpen.nextSinceToken.length > 0 ? r.txOpen.nextSinceToken : undefined,
+      }),
     );
+    this.globalTxId = this.txOpen.then((r) => r.id);
 
     void this.track(this.globalTxId);
 
@@ -1172,6 +1185,23 @@ export class PlTransaction {
     return await this.globalTxId;
   }
 
+  /**
+   * The change token this transaction was opened at, to hand back as
+   * {@link resourceTree}'s `changedSinceToken` on a later poll. `undefined` when the server
+   * does not advertise `treeChangedSince:v1`, and on a writable transaction, which is served
+   * none.
+   *
+   * Store it only after a whole response has been applied: kept after a partial apply, the
+   * resources that were dropped are never sent again. It carries no request shape, so
+   * discarding it when the traversal shape changes is the caller's job.
+   *
+   * Opaque, with one promise: two tokens from one server instance may be compared for order.
+   * Never parse one, and never compare across instances.
+   */
+  public async getNextSinceToken(): Promise<Uint8Array | undefined> {
+    return (await this.txOpen).sinceToken;
+  }
+
   /** Closes output event stream */
   public async complete() {
     if (this._completed) return;
@@ -1209,16 +1239,32 @@ export class PlTransaction {
    *   with `traverseWasStopped = true` and their children are not visited.
    *   This wire field accepts only one filter. Compose multiple rules via
    *   `treeFilter.and(...)` / `treeFilter.or(...)`.
+   *   Deprecated, and ignored outright under `changedSinceToken`: a stop rule prunes on
+   *   mutable state, so on a delta walk it would hide a changed subtree behind a resource
+   *   that merely flipped a gate, and expose one the caller never held when it flipped back.
    * @param opts.includeKv         - When true, each yielded item includes KV entries.
    * @param opts.maxDepth          - Optional depth cap.
+   * @param opts.changedSinceToken - A token from {@link getNextSinceToken}. Yields only the
+   *   resources whose own change token is newer than it: an unchanged resource produces no
+   *   frame at all and the walk ends there, so a change beneath one arrives only once
+   *   something on the path down to it changes too. A response may reference resources it
+   *   does not carry; read those back with `unconditionalDepth`. A token the server cannot
+   *   use is answered with the full tree, never an error.
+   * @param opts.unconditionalDepth - Emit every resource at or below this depth whatever its
+   *   change token says, the seed being depth 0. This is how a caller reads back what a delta
+   *   referenced but did not carry. Ignored without `changedSinceToken`. Explicitly optional:
+   *   absent differs from 0, which takes the seeds alone.
    */
   public resourceTree(
     seeds: (ResourceData | SignedResourceId)[],
     opts?: {
       fieldFilter?: ResourceAPI_Tree_Filter;
+      /** @deprecated prune with `changedSinceToken` instead; ignored under one. */
       traverseStopRules?: ResourceAPI_Tree_Filter;
       includeKv?: boolean;
       maxDepth?: number;
+      changedSinceToken?: Uint8Array;
+      unconditionalDepth?: number;
     },
   ): AsyncIterable<ResourceTreeFrame> {
     if (seeds.length === 0) {
@@ -1245,8 +1291,9 @@ export class PlTransaction {
         includeKv: opts?.includeKv ?? false,
         maxDepth: opts?.maxDepth,
         showSoftDeletes: false,
-        // Empty token requests the full tree — this call has no continuation to resume.
-        changedSinceToken: new Uint8Array(0),
+        // Empty requests the full tree.
+        changedSinceToken: opts?.changedSinceToken ?? new Uint8Array(0),
+        unconditionalDepth: opts?.unconditionalDepth,
       },
     });
 
@@ -1268,7 +1315,8 @@ export class PlTransaction {
               }
 
               if (!frame.resource) {
-                // Stop-marker frame: no resource body; server advertised treeStopMarker:v1.
+                // Stop-marker frame: a traverseStopRules match, sent without a body. Cannot
+                // arrive under changedSinceToken, where stop rules do not apply.
                 const id = createSignedResourceId(
                   frame.resourceId,
                   toResourceSignature(frame.resourceSignature),
