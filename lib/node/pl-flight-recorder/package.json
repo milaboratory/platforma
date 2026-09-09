@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-flight-recorder",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Crash-survivable diagnostics for the block model layer: records join shapes and memory, and explains an out-of-memory death after the fact",
   "keywords": [],
   "license": "UNLICENSED",
