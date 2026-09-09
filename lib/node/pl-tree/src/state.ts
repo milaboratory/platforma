@@ -521,6 +521,45 @@ export class PlTreeState {
     let addedCount = 0;
     let firstAdded: SignedResourceId | undefined;
 
+    // Diagnostic context for unexpectedTransitionError, refreshed once per resource. It lives
+    // out here so the loop body allocates neither a closure nor a snapshot per resource on the
+    // path where nothing goes wrong. Only the mutable half of BasicResourceData needs
+    // capturing: id, kind, type and data are readonly on PlTreeResource, so they are read back
+    // from the resource when the message is built.
+    let errRd: ExtendedResourceData;
+    let errRes: PlTreeResource | undefined;
+    let errOriginalResourceId: OptionalSignedResourceId = NullSignedResourceId;
+    let errError: OptionalSignedResourceId = NullSignedResourceId;
+    let errInputsLocked = false;
+    let errOutputsLocked = false;
+    let errResourceReady = false;
+    let errFinal = false;
+    const unexpectedTransitionError = (reason: string): never => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { fields, ...rdWithoutFields } = errRd;
+      const statBeforeMutation: BasicResourceData | undefined =
+        errRes === undefined
+          ? undefined
+          : {
+              id: errRes.id,
+              kind: errRes.kind,
+              type: errRes.type,
+              data: errRes.data,
+              resourceReady: errResourceReady,
+              inputsLocked: errInputsLocked,
+              outputsLocked: errOutputsLocked,
+              error: errError,
+              originalResourceId: errOriginalResourceId,
+              final: errFinal,
+            };
+      this.invalidateTree();
+      throw new TreeStateUpdateError(
+        `Unexpected resource state transition (${reason}): ${stringifyWithResourceId(
+          rdWithoutFields,
+        )} -> ${stringifyWithResourceId(statBeforeMutation)}`,
+      );
+    };
+
     // patching / creating resources
     for (const rd of resourceData) {
       let resource = this.resources.get(rd.id);
@@ -530,20 +569,17 @@ export class PlTreeState {
       // they never change; this flag isolates value/flag-only changes from real metadata churn.
       let metadataChanged = false;
 
-      const statBeforeMutation = resource?.basicState;
-      const unexpectedTransitionError = (reason: string): never => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { fields, ...rdWithoutFields } = rd;
-        this.invalidateTree();
-        throw new TreeStateUpdateError(
-          `Unexpected resource state transition (${reason}): ${stringifyWithResourceId(
-            rdWithoutFields,
-          )} -> ${stringifyWithResourceId(statBeforeMutation)}`,
-        );
-      };
+      errRd = rd;
+      errRes = resource;
 
       if (resource !== undefined) {
         // updating existing resource
+        errOriginalResourceId = resource.originalResourceId;
+        errError = resource.error;
+        errInputsLocked = resource.inputsLocked;
+        errOutputsLocked = resource.outputsLocked;
+        errResourceReady = resource.resourceReady;
+        errFinal = resource.finalFlag;
 
         if (resource.finalState)
           unexpectedTransitionError("resource state can\t be updated after it is marked as final");
