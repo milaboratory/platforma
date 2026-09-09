@@ -6,7 +6,12 @@ import {
   TestHelpers,
 } from "@milaboratories/pl-client";
 import { PlTreeState } from "./state";
-import { constructTreeLoadingRequest, initialTreeLoadingStat, loadTreeState } from "./sync";
+import {
+  constructTreeLoadingRequest,
+  initialTreeLoadingStat,
+  loadTreeState,
+  resolveTreeLoadingAlgorithm,
+} from "./sync";
 import type { TraversalMode } from "./sync";
 import { Computable } from "@milaboratories/computable";
 import { TestStructuralResourceType1 } from "./test_utils";
@@ -540,4 +545,39 @@ test("orphan-invariant-preserved: error referent streamed alongside stop marker"
   const ids = result.map((r) => r.id).sort();
   expect(ids).toEqual(["NG:0x1", "NG:0xE"]);
   // No throw means the invariant held throughout loadTreeState
+});
+
+//
+// Algorithm selection. These pin the contract that a capable backend is polled with a token
+// by default, and that an unavailable preference degrades rather than throwing.
+//
+
+test("auto prefers delta, then streaming, then BFS", () => {
+  expect(resolveTreeLoadingAlgorithm("auto", ["treeChangedSince:v1", "treeFilter:v2"])).toBe(
+    "backend-delta",
+  );
+  // Delta needs no treeFilter:v2 of its own.
+  expect(resolveTreeLoadingAlgorithm("auto", ["treeChangedSince:v1"])).toBe("backend-delta");
+  expect(resolveTreeLoadingAlgorithm("auto", ["treeFilter:v2"])).toBe("backend-streaming");
+  expect(resolveTreeLoadingAlgorithm("auto", [])).toBe("client-bfs");
+});
+
+test("an explicit mode is honoured over what auto would pick", () => {
+  const capable = ["treeChangedSince:v1", "treeFilter:v2"];
+  expect(resolveTreeLoadingAlgorithm("client-bfs", capable)).toBe("client-bfs");
+  expect(resolveTreeLoadingAlgorithm("backend-streaming", capable)).toBe("backend-streaming");
+  expect(resolveTreeLoadingAlgorithm("backend-delta", capable)).toBe("backend-delta");
+});
+
+test("backend-delta degrades to the best available path, with a warning, never a throw", () => {
+  const warnings: string[] = [];
+  const logger = { warn: (m: string) => warnings.push(m) };
+
+  expect(resolveTreeLoadingAlgorithm("backend-delta", ["treeFilter:v2"], logger)).toBe(
+    "backend-streaming",
+  );
+  expect(resolveTreeLoadingAlgorithm("backend-delta", [], logger)).toBe("client-bfs");
+
+  expect(warnings).toHaveLength(2);
+  for (const w of warnings) expect(w).toContain("treeChangedSince:v1");
 });
