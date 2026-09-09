@@ -150,7 +150,7 @@ test("a quiet parent: a change under an unchanged resource still arrives", async
 
       // A KV write on the child does not rewrite the root, so the root stays quiet. With
       // finalisation on the child is its own seed, so the walk reaches it anyway. This is
-      // the assertion that prices USE_FINALISATION: with it off, it is expected to fail.
+      // the assertion that justifies seeding the frontier rather than the roots.
       await pl.withWriteTx(
         "DeltaQuietParent",
         async (tx) => {

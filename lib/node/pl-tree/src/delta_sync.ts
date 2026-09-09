@@ -5,20 +5,6 @@ import { TreeStateUpdateError } from "./state";
 import type { TreeLoadingRequest, TreeLoadingStat } from "./sync";
 import { collectStatsForResource } from "./sync";
 
-/**
- * Seed the delta walk at every non-final resource, not at the roots alone.
- *
- * Required, not an optimisation: the backend ends a walk at the first unchanged resource, so a
- * root-seeded poll never reaches a change under an unchanged parent. Measured at 0 of 3
- * changes delivered with this off.
- *
- * A const, and read once at module load, because it shapes the request and the change token
- * carries no shape - a tree may not change its seeding mid-life while holding one.
- * `PL_TREE_NO_FINALISATION=1` flips it for a whole process, which is how the benchmark
- * prices it.
- */
-const USE_FINALISATION = process.env.PL_TREE_NO_FINALISATION !== "1";
-
 /** Emit everything at or below this depth from a resolution seed, whatever its change token
  * says. Bounds emission, not descent - the server scans the subtree regardless.
  *
@@ -83,13 +69,18 @@ export async function loadDeltaTreeState(
     );
   }
 
-  // The seed set changes every poll and the token is deliberately NOT discarded for it,
-  // though api.proto counts it as a shape input. Safe because every seed is a resource the
-  // mirror already holds, so a change can only widen the result, and widening hides nothing.
+  // Seed at every non-final resource, not the roots. Required, not an optimisation: the
+  // backend ends a walk at the first unchanged resource, so a root-seeded poll never reaches a
+  // change under a quiet parent - measured at 0 of 3 changes delivered. algorithm_equivalence
+  // fails on its KV step if this is ever narrowed back to the roots.
+  //
+  // The seed set changes every poll and the token is deliberately NOT discarded for it, though
+  // api.proto counts it as a shape input. Safe because every seed is a resource the mirror
+  // already holds, so a change can only widen the result, and widening hides nothing.
   // Discarding per poll would make every poll a full read and defeat the mechanism.
   //
   // The roots stand in when the frontier is empty: resourceTree needs at least one seed.
-  const seeds = USE_FINALISATION && seedResources.length > 0 ? seedResources : [...roots];
+  const seeds = seedResources.length > 0 ? seedResources : [...roots];
   if (seeds.length === 0) return [];
 
   const collected = new Map<SignedResourceId, ExtendedResourceData>();
