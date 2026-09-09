@@ -6,12 +6,13 @@ import type { TreeLoadingRequest, TreeLoadingStat } from "./sync";
 import { collectStatsForResource } from "./sync";
 
 /** Emit everything at or below this depth from a resolution seed, whatever its change token
- * says. Bounds emission, not descent - the server scans the subtree regardless.
+ * says. It bounds descent as well as emission: under a token the walk otherwise ends at the
+ * first unchanged resource (api.proto, changed_since_token), so without this a round returns
+ * the seeds alone and a newly attached subtree costs one sequential round trip per level.
  *
- * Deep on purpose. At 0 a round returns the seeds alone, so a newly attached subtree costs one
- * sequential round trip per level; deep enough to clear the subtree resolves it in one. The
- * extra bytes are near-free: a resolution seed is an id the mirror does not hold, so its
- * descendants are mostly unheld too and would have been fetched anyway. */
+ * Deep enough to clear a subtree in one round, which is the trade: real server-side walk and
+ * downlink for those levels, against a round trip each at ~1.4s on a slow link. Not free -
+ * lower it if resolution rounds ever dominate a poll. */
 const RESOLUTION_DEPTH = 32;
 
 /** Every id a body points at. Exactly what `updateFromResourceData` refcounts, and it throws
@@ -159,6 +160,11 @@ export async function loadDeltaTreeState(
 
   await consume(seeds);
 
+  // Captured before the resolution rounds. They fetch unconditionally by design, so counting
+  // afterwards lets a modest unheld subtree inflate the total past a small mirror and report a
+  // refused token that was never refused.
+  const collectedFromPoll = collected.size;
+
   // A body may reference a resource the response did not carry - a field repointed at one we
   // never held. Ids already asked for are never re-requested, so the loop terminates: the id
   // set is finite and each round removes at least one.
@@ -193,11 +199,11 @@ export async function loadDeltaTreeState(
   if (
     changedSinceToken !== undefined &&
     knownResources.size > 0 &&
-    collected.size >= knownResources.size
+    collectedFromPoll >= knownResources.size
   ) {
     if (stats) stats.deltaSuspectedFullAnswers++;
     logger?.warn(
-      `delta poll: sent a token but received ${collected.size} resources against a mirror of ` +
+      `delta poll: sent a token but received ${collectedFromPoll} resources against a mirror of ` +
         `${knownResources.size}; the backend may have refused the token (instance change or ` +
         `rewound numbering), in which case this poll cost a full tree read`,
     );
