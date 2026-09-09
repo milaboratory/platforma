@@ -29,7 +29,6 @@ import { DropdownOverlay } from "../../utils/DropdownOverlay";
 import { refDebounced } from "@vueuse/core";
 import { useWatchFetch } from "../../composition/useWatchFetch.ts";
 import { getErrorMessage } from "../../helpers/error.ts";
-import { hasTextOverflow } from "../../helpers/dom";
 import type { ListOptionBase } from "@platforma-sdk/model";
 import { PlSvg } from "../PlSvg";
 import SvgRequired from "../../assets/images/required.svg?raw";
@@ -199,21 +198,9 @@ const textValue = computed(() => {
   return item?.label || (model.value ? props.formatValue(model.value) : "");
 });
 
-const valueRef = ref<HTMLElement>();
-const valueTruncated = ref(false);
-
-// Measured on hover, right before the browser decides whether to show the
-// tooltip, so layout changes after mount are always accounted for.
-const onFieldMouseEnter = () => {
-  valueTruncated.value = hasTextOverflow(valueRef.value);
-};
-
-// Native tooltip with the full selected value, only when it is actually cut
-// with an ellipsis; the value layer itself has `pointer-events: none`, so the
-// title goes on the field wrapper.
-const fieldTitle = computed(() =>
-  !data.open && valueTruncated.value && textValue.value ? textValue.value : undefined,
-);
+// Native tooltip with the full selected value; the value layer itself has
+// `pointer-events: none`, so the title goes on the field wrapper.
+const fieldTitle = computed(() => (!data.open && textValue.value ? textValue.value : undefined));
 
 const computedPlaceholder = computed(() => {
   if (!data.open && model.value) {
@@ -401,7 +388,7 @@ watch(
       @focusout="onFocusOut"
     >
       <div class="pl-autocomplete__container">
-        <div class="pl-autocomplete__field" :title="fieldTitle" @mouseenter="onFieldMouseEnter">
+        <div class="pl-autocomplete__field" :title="fieldTitle">
           <input
             ref="input"
             v-model="search"
@@ -414,7 +401,7 @@ watch(
             @focus="onInputFocus"
           />
 
-          <div v-if="!data.open" ref="valueRef" class="input-value">
+          <div v-if="!data.open" class="input-value">
             <LongText> {{ textValue }} </LongText>
           </div>
 
