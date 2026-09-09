@@ -90,16 +90,3 @@ export function detectOutside(e: { x: number; y: number }, el: HTMLElement) {
   const rect = el.getBoundingClientRect();
   return e.x < rect.x || e.x > rect.x + rect.width || e.y < rect.y || e.y > rect.y + rect.height;
 }
-
-/**
- * True when `el` or any of its descendants clips its content horizontally,
- * i.e. the text is cut with an ellipsis and not fully visible.
- */
-export function hasTextOverflow(el: HTMLElement | undefined | null): boolean {
-  if (!el) return false;
-  if (el.scrollWidth > el.clientWidth) return true;
-  for (const child of el.querySelectorAll<HTMLElement>("*")) {
-    if (child.scrollWidth > child.clientWidth) return true;
-  }
-  return false;
-}

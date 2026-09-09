@@ -11,7 +11,6 @@ export default {
 import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
 import { getErrorMessage } from "../../helpers/error.ts";
-import { hasTextOverflow } from "../../helpers/dom";
 import { tap } from "../../helpers/functions";
 import { deepEqual } from "../../helpers/objects";
 import { normalizeListOptions } from "../../helpers/utils";
@@ -212,20 +211,11 @@ const textValue = computed(() => {
   return item?.label;
 });
 
-const valueRef = ref<HTMLElement>();
-const valueTruncated = ref(false);
-
-// Measured on hover, right before the browser decides whether to show the
-// tooltip, so layout changes after mount are always accounted for.
-const onFieldMouseEnter = () => {
-  valueTruncated.value = hasTextOverflow(valueRef.value);
-};
-
-// Native tooltip with the full selected value, only when it is actually cut
-// with an ellipsis. The `.input-value` layer has `pointer-events: none`, so the
-// title must sit on the field wrapper, which is what actually receives the hover.
+// Native tooltip with the full selected value. The `.input-value` layer has
+// `pointer-events: none`, so the title must sit on the field wrapper, which is
+// what actually receives the hover.
 const fieldTitle = computed(() => {
-  if (data.open || !valueTruncated.value) return undefined;
+  if (data.open) return undefined;
   if (isMissing.value) return props.missingValueLabel;
   return textValue.value !== undefined ? String(textValue.value) : undefined;
 });
@@ -376,7 +366,7 @@ watchPostEffect(() => {
       @focusout="onFocusOut"
     >
       <div class="pl-dropdown__container">
-        <div class="pl-dropdown__field" :title="fieldTitle" @mouseenter="onFieldMouseEnter">
+        <div class="pl-dropdown__field" :title="fieldTitle">
           <input
             ref="input"
             v-model="data.search"
@@ -389,7 +379,7 @@ watchPostEffect(() => {
             @focus="onInputFocus"
           />
 
-          <div v-if="!data.open" ref="valueRef" class="input-value">
+          <div v-if="!data.open" class="input-value">
             <LongText v-if="isMissing" class="input-value--missing">
               {{ missingValueLabel }}
             </LongText>
