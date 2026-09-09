@@ -10,7 +10,7 @@ import type { FieldData } from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
 
 /**
- * Cost comparison across the tree loading algorithms, and finalisation on vs off.
+ * Cost comparison across the tree loading algorithms, crossed with pruning on and off.
  *
  * Asserts nothing, and no-ops without `PL_TREE_BENCH=1`. Drives `loadTreeState` directly so
  * each poll is one deliberate round and the stat object is visible, neither of which is true
@@ -89,7 +89,7 @@ async function seedTree(
 }
 
 /** One mutation between polls: a KV write on a leaf. The parent is not rewritten, so this is
- * the quiet-parent shape - which is exactly what the finalisation arms differ on. */
+ * the quiet-parent shape, which is the case frontier seeding exists to reach. */
 async function touchLeaf(pl: PlClient, leaf: SignedResourceId, arm: string, round: number) {
   await pl.withWriteTx(
     "BenchTouch",

@@ -72,7 +72,10 @@ export type SynchronizedTreeOps = {
   /** ResourceTree field filter for modern backend path. */
   fieldFilter?: Filter;
 
-  /** ResourceTree traversal stop rules for modern backend path. */
+  /** ResourceTree traversal stop rules for the streaming path.
+   * @deprecated the backend ignores these under a change token, and the delta algorithm - what
+   * `auto` now picks on a capable backend - never sends them. They still prune a
+   * `backend-streaming` walk and a token-less delta poll's fallback. */
   traverseStopRules?: Filter;
 
   /** Interval after last sync to sleep before the next one */

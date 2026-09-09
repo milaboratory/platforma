@@ -36,8 +36,8 @@ export interface TreeLoadingRequest {
    * @deprecated prune with {@link changedSinceToken} instead; ignored by the backend under one. */
   readonly traverseStopRules?: Filter;
 
-  /** The tree's roots. Delta seeds at these when finalisation is off, and when the
-   * non-final frontier is empty. */
+  /** The tree's roots. Delta seeds at these only when the non-final frontier is empty;
+   * resourceTree requires at least one seed. */
   readonly roots: readonly SignedResourceId[];
 
   /** Every id the mirror currently holds, final or not. Delta uses it to tell a reference it
@@ -162,7 +162,7 @@ export type TreeLoadingStat = ResourceUpdateStat & {
   /** BFS path: requested resources that no longer exist (undefined reply). */
   bfsResourcesNotFound: number;
   /** Delta path: seed ids handed to the backend, summed over every round of the poll.
-   * This is what finalisation costs: the frontier is many seeds, the roots are few. */
+   * This is what seeding the whole frontier costs on the uplink. */
   deltaSeedsSent: number;
   /** Delta path: extra rounds spent resolving references a delta body pointed at but the
    * response did not carry. */
