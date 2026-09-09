@@ -17,8 +17,12 @@ import type { TreeLoadingRequest, TreeLoadingStat } from "./sync";
  * const rather than an option because both settings shape the request, and the change token
  * carries no request shape, so a tree may not change its mind mid-life without discarding the
  * token it holds.
+ *
+ * `PL_TREE_NO_FINALISATION=1` turns it off for a whole process. That exists so the benchmark
+ * can run the other arm without threading an option through the API, and is read once here at
+ * module load, which is what keeps it immutable for every tree in the process.
  */
-const USE_FINALISATION = true;
+const USE_FINALISATION = process.env.PL_TREE_NO_FINALISATION !== "1";
 
 /** Depth used by a resolution round. 0 takes the named seeds and nothing below them, which is
  * the least the apply invariant needs: a body may reference resources the delta did not carry,
