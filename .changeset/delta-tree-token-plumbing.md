@@ -1,5 +1,5 @@
 ---
-"@milaboratories/pl-client": patch
+"@milaboratories/pl-client": minor
 ---
 
 Carry the delta tree change token through `PlTransaction`. `getNextSinceToken()` returns the

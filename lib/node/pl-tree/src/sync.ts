@@ -170,6 +170,14 @@ export type TreeLoadingStat = ResourceUpdateStat & {
   /** Delta path: extra rounds spent resolving references a delta body pointed at but the
    * response did not carry. */
   deltaResolutionRounds: number;
+  /** Delta path: polls that sent a token and got back a response the size of the whole
+   * mirror, which is what a token the server refused looks like from here.
+   *
+   * Rejection is silent by design - a foreign-instance or rewound token is answered with the
+   * full tree, never an error - so without this a tree paying full-tree cost on every poll
+   * after a backend instance swap is indistinguishable from a healthy one. Heuristic, not a
+   * signal from the server: a genuinely large change set trips it too. */
+  deltaSuspectedFullAnswers: number;
 };
 
 export function initialTreeLoadingStat(): TreeLoadingStat {
@@ -195,6 +203,7 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
     bfsResourcesNotFound: 0,
     deltaSeedsSent: 0,
     deltaResolutionRounds: 0,
+    deltaSuspectedFullAnswers: 0,
     resourcesNew: 0,
     resourcesChanged: 0,
     resourcesUnchanged: 0,
@@ -236,7 +245,7 @@ BFS fetches wasted on unchanged: ${stat.bfsRequestsWasted}
 Used streaming: ${stat.usedStreaming}
 [backend] rounds: ${stat.streamRounds}, resource frames: ${stat.resourceFrames}, stop-marker frames: ${stat.stopMarkerFrames}, stop->follow-up: ${stat.stopMarkersFollowUp}, traverse-stopped: ${stat.traverseWasStoppedCount}
 [bfs] resources requested: ${stat.bfsResourcesRequested}, not found: ${stat.bfsResourcesNotFound}
-[delta] seeds sent: ${stat.deltaSeedsSent}, resolution rounds: ${stat.deltaResolutionRounds}`;
+[delta] seeds sent: ${stat.deltaSeedsSent}, resolution rounds: ${stat.deltaResolutionRounds}, suspected full answers: ${stat.deltaSuspectedFullAnswers}`;
 }
 
 function supportsResourceTreeTraversal(capabilities: readonly string[] = []): boolean {

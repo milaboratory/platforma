@@ -222,6 +222,82 @@ describe("final resources", () => {
   });
 });
 
+describe("diagnostics", () => {
+  test("warns when stop rules are supplied to a token-less poll", async () => {
+    const warnings: string[] = [];
+    const { tx } = txReturning([[]]);
+
+    await loadDeltaTreeState(
+      tx,
+      request({
+        seedResources: ["NG:0x1"],
+        knownResources: new Set(["NG:0x1"]),
+        traverseStopRules: { marker: "stop" },
+        changedSinceToken: undefined,
+      }),
+      undefined,
+      { warn: (m) => warnings.push(m) },
+    );
+
+    expect(warnings.some((w) => w.includes("unpruned"))).toBe(true);
+  });
+
+  test("does not warn about stop rules when a token makes them moot", async () => {
+    const warnings: string[] = [];
+    const { tx } = txReturning([[]]);
+
+    await loadDeltaTreeState(
+      tx,
+      request({
+        seedResources: ["NG:0x1"],
+        knownResources: new Set(["NG:0x1"]),
+        traverseStopRules: { marker: "stop" },
+      }),
+      undefined,
+      { warn: (m) => warnings.push(m) },
+    );
+
+    expect(warnings).toEqual([]);
+  });
+
+  test("flags a token poll answered with the whole mirror as a suspected rejection", async () => {
+    const stats: TreeLoadingStat = initialTreeLoadingStat();
+    const warnings: string[] = [];
+    // Two held resources, and the response carries both: what a refused token looks like.
+    const { tx } = txReturning([[frame("NG:0x1"), frame("NG:0x2")]]);
+
+    await loadDeltaTreeState(
+      tx,
+      request({
+        seedResources: ["NG:0x1", "NG:0x2"],
+        roots: ["NG:0x1"],
+        knownResources: new Set(["NG:0x1", "NG:0x2"]),
+      }),
+      stats,
+      { warn: (m) => warnings.push(m) },
+    );
+
+    expect(stats.deltaSuspectedFullAnswers).toBe(1);
+    expect(warnings.some((w) => w.includes("refused the token"))).toBe(true);
+  });
+
+  test("does not flag an ordinary delta that moved one resource of many", async () => {
+    const stats: TreeLoadingStat = initialTreeLoadingStat();
+    const { tx } = txReturning([[frame("NG:0x1")]]);
+
+    await loadDeltaTreeState(
+      tx,
+      request({
+        seedResources: ["NG:0x1", "NG:0x2", "NG:0x3"],
+        knownResources: new Set(["NG:0x1", "NG:0x2", "NG:0x3"]),
+      }),
+      stats,
+    );
+
+    expect(stats.deltaSuspectedFullAnswers).toBe(0);
+  });
+});
+
 describe("reference resolution", () => {
   test("resolves a reference the delta did not carry, at unconditional depth 0", async () => {
     const stats: TreeLoadingStat = initialTreeLoadingStat();

@@ -1,5 +1,5 @@
 ---
-"@milaboratories/pl-client": patch
+"@milaboratories/pl-client": minor
 ---
 
 Sync the plapi protocol with the delta tree contract and add the `treeChangedSince:v1`
