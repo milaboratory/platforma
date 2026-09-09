@@ -581,3 +581,36 @@ test("backend-delta degrades to the best available path, with a warning, never a
   expect(warnings).toHaveLength(2);
   for (const w of warnings) expect(w).toContain("treeChangedSince:v1");
 });
+
+test("loadTreeState routes into the delta path and passes the token through", async () => {
+  const received: { seeds?: string[]; token?: Uint8Array; stopRules?: unknown } = {};
+  const tx = {
+    resourceTree: (seeds: string[], opts: Record<string, unknown>) => {
+      received.seeds = seeds;
+      received.token = opts.changedSinceToken as Uint8Array;
+      received.stopRules = opts.traverseStopRules;
+      return (async function* () {})();
+    },
+  } as unknown as Parameters<typeof loadTreeState>[0];
+
+  const request = {
+    seedResources: ["NG:0x1"],
+    finalResources: new Set<string>(),
+    roots: ["NG:0x1"],
+    knownResources: new Set<string>(["NG:0x1"]),
+    changedSinceToken: new Uint8Array([9]),
+  } as unknown as Parameters<typeof loadTreeState>[1];
+
+  const stat = initialTreeLoadingStat();
+  // Via the mode, not by calling loadDeltaTreeState directly: this is the only test that
+  // proves the dispatch in loadTreeState reaches delta at all.
+  await loadTreeState(tx, request, stat, ["treeChangedSince:v1"], "auto", { warn: () => {} });
+
+  expect(received.seeds).toEqual(["NG:0x1"]);
+  expect(received.token).toEqual(new Uint8Array([9]));
+  expect(received.stopRules).toBeUndefined();
+  // True for delta as well as streaming: it marks a backend path, which is what state.ts
+  // reads to decide the BFS-only wasted-fetch attribution.
+  expect(stat.usedStreaming).toBe(true);
+  expect(stat.deltaSeedsSent).toBe(1);
+});

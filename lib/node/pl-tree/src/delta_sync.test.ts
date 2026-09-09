@@ -66,6 +66,12 @@ function request(over: Partial<Record<keyof TreeLoadingRequest, unknown>> = {}) 
   } as unknown as TreeLoadingRequest;
 }
 
+/** The seeding branch this process runs. It is a module-load const in delta_sync.ts, so a
+ * test cannot flip it; instead each seeding test asserts the branch that is live, and the
+ * other branch is covered by the same file re-run with the env var set (which is what the
+ * benchmark does). */
+const FINALISATION = process.env.PL_TREE_NO_FINALISATION !== "1";
+
 describe("seeding", () => {
   test("seeds the non-final frontier, not the roots, and passes the token", async () => {
     const { tx, calls } = txReturning([[]]);
@@ -76,15 +82,20 @@ describe("seeding", () => {
         seedResources: ["NG:0x1", "NG:0x2"],
         roots: ["NG:root"],
         knownResources: new Set(["NG:0x1", "NG:0x2", "NG:root"]),
-        fieldFilter: {},
+        fieldFilter: { marker: "field" },
+        // constructTreeLoadingRequest still populates this and the ML passes one, so the
+        // request genuinely carries stop rules here: the assertion below has to see the
+        // delta path drop them rather than never having had them.
+        traverseStopRules: { marker: "stop" },
       }),
     );
 
     expect(calls).toHaveLength(1);
-    expect(calls[0]?.seeds).toEqual(["NG:0x1", "NG:0x2"]);
+    // Finalisation on seeds every non-final resource; off seeds the roots alone.
+    expect(calls[0]?.seeds).toEqual(FINALISATION ? ["NG:0x1", "NG:0x2"] : ["NG:root"]);
     expect(calls[0]?.opts.includeKv).toBe(true);
     expect(calls[0]?.opts.changedSinceToken).toEqual(new Uint8Array([7]));
-    expect(calls[0]?.opts.fieldFilter).toEqual({});
+    expect(calls[0]?.opts.fieldFilter).toEqual({ marker: "field" });
     // Stop rules are inert under a token, so the delta walk must not send them.
     expect(calls[0]?.opts.traverseStopRules).toBeUndefined();
   });
@@ -168,6 +179,49 @@ describe("delta response", () => {
   });
 });
 
+describe("final resources", () => {
+  test("skips a body for a resource the mirror already marked final", async () => {
+    const stats: TreeLoadingStat = initialTreeLoadingStat();
+    // A token-less poll (first poll after a warm start, or after a token discard) is a full
+    // walk with no stop rules, so the backend emits bodies for final resources sitting under
+    // a non-final seed. updateFromResourceData throws on any body for a held final resource,
+    // so the batch must not carry them.
+    const { tx } = txReturning([[frame("NG:0x1"), frame("NG:0xFINAL")]]);
+
+    const result = await loadDeltaTreeState(
+      tx,
+      request({
+        seedResources: ["NG:0x1"],
+        finalResources: new Set(["NG:0xFINAL"]),
+        knownResources: new Set(["NG:0x1", "NG:0xFINAL"]),
+        changedSinceToken: undefined,
+      }),
+      stats,
+    );
+
+    expect(result.map((r) => r.id)).toEqual(["NG:0x1"]);
+    expect(stats.finalResourcesSkipped).toBe(1);
+  });
+
+  test("a skipped final resource still satisfies references pointing at it", async () => {
+    // Dropping it from the batch must not make it look unresolved: it is in the mirror.
+    const { tx, calls } = txReturning([
+      [frame("NG:0x1", { fields: [field("out", "NG:0xFINAL")] }), frame("NG:0xFINAL")],
+    ]);
+
+    await loadDeltaTreeState(
+      tx,
+      request({
+        seedResources: ["NG:0x1"],
+        finalResources: new Set(["NG:0xFINAL"]),
+        knownResources: new Set(["NG:0x1", "NG:0xFINAL"]),
+      }),
+    );
+
+    expect(calls).toHaveLength(1);
+  });
+});
+
 describe("reference resolution", () => {
   test("resolves a reference the delta did not carry, at unconditional depth 0", async () => {
     const stats: TreeLoadingStat = initialTreeLoadingStat();
@@ -221,7 +275,9 @@ describe("reference resolution", () => {
       request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
     );
 
-    expect(calls.map((c) => c.seeds)).toEqual([["NG:0x1"], ["NG:0xA"], ["NG:0xB"]]);
+    // Only the resolution rounds are under test here, so the first (seeding) call is
+    // excluded: which ids seed the poll is the seeding tests' business.
+    expect(calls.slice(1).map((c) => c.seeds)).toEqual([["NG:0xA"], ["NG:0xB"]]);
     expect(result).toHaveLength(3);
   });
 

@@ -148,11 +148,13 @@ export type TreeLoadingStat = ResourceUpdateStat & {
   stopMarkersSkipped: number;
   /** Number of follow-up resourceTree() calls issued to resolve unknown stop markers. */
   stopMarkerFollowUpRoundTrips: number;
-  /** Streaming (resourceTree) path: resourceTree() streams consumed (1, or 2 with a follow-up). */
+  /** Backend paths: resourceTree() streams consumed. Streaming spends 1, or 2 with a
+   * follow-up; delta spends 1 plus one per resolution round. */
   streamRounds: number;
-  /** Streaming path: resource frames received. */
+  /** Backend paths: resource frames received. */
   resourceFrames: number;
-  /** Streaming path: stopMarker frames received (both skipped and follow-up). */
+  /** Backend paths: stopMarker frames received. Streaming expects these; on delta they are a
+   * contract violation and are warned about. */
   stopMarkerFrames: number;
   /** Streaming path: stop markers that were not final locally and triggered a follow-up fetch. */
   stopMarkersFollowUp: number;
@@ -232,7 +234,7 @@ Unchanged bytes (wasted downlink): ${stat.bytesUnchanged}
 Changed with stable metadata: ${stat.metadataStableChanged}
 BFS fetches wasted on unchanged: ${stat.bfsRequestsWasted}
 Used streaming: ${stat.usedStreaming}
-[streaming] rounds: ${stat.streamRounds}, resource frames: ${stat.resourceFrames}, stop-marker frames: ${stat.stopMarkerFrames}, stop->follow-up: ${stat.stopMarkersFollowUp}, traverse-stopped: ${stat.traverseWasStoppedCount}
+[backend] rounds: ${stat.streamRounds}, resource frames: ${stat.resourceFrames}, stop-marker frames: ${stat.stopMarkerFrames}, stop->follow-up: ${stat.stopMarkersFollowUp}, traverse-stopped: ${stat.traverseWasStoppedCount}
 [bfs] resources requested: ${stat.bfsResourcesRequested}, not found: ${stat.bfsResourcesNotFound}
 [delta] seeds sent: ${stat.deltaSeedsSent}, resolution rounds: ${stat.deltaResolutionRounds}`;
 }
@@ -510,7 +512,10 @@ export async function loadTreeState(
     // A tree passes its pinned algorithm here, which resolves to itself. The mode form is
     // kept for callers that run a single load.
     const algorithm = resolveTreeLoadingAlgorithm(mode, capabilities, logger);
-    if (stats) stats.usedStreaming = algorithm === "backend-streaming";
+    // True for both backend paths, not just streaming. state.ts reads this to decide whether
+    // an unchanged resource cost a wasted per-resource fetch, which is a BFS-only concept:
+    // leaving it false for delta reports phantom "BFS fetches wasted" on a delta tree.
+    if (stats) stats.usedStreaming = algorithm !== "client-bfs";
 
     switch (algorithm) {
       case "backend-delta":
