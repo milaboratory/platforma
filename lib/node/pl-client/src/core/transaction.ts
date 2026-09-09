@@ -742,6 +742,10 @@ export class PlTransaction {
             ...this.toSignedResourceId(rId),
             loadFields: loadFields,
             showSoftDeletes: false,
+            // Empty means "send the body whatever its change token says". These are the
+            // on-demand single reads: a caller asks for what it does not hold, so a token
+            // here could only suppress the one body it came for.
+            changedSinceToken: new Uint8Array(0),
           },
         },
         (r) => protoToResource(notEmpty(r.resourceGet.resource)),
@@ -1014,6 +1018,9 @@ export class PlTransaction {
             ...this.toSignedResourceId(rId),
             startFrom: "",
             limit: 0,
+            // Empty means "send every record whatever its owner's change token says", for
+            // the same reason as the single resource read above.
+            changedSinceToken: new Uint8Array(0),
           },
         },
         (r) => r.map((e) => e.resourceKeyValueList.record!),
