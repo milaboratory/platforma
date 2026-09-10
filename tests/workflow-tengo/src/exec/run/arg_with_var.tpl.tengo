@@ -7,12 +7,13 @@ ll := import("@platforma-sdk/workflow-tengo:ll")
 
 self.defineOutputs(["out"])
 
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
 self.body(func(inputs) {
 	run := exec.builder().
 		cpu(1).ram("50Mi").
-		cmd("/usr/bin/env").
-		argWithVar("{'bash'}").
-		arg("-c").
+		software(shellSw).
+		argWithVar("{'-c'}").
 		arg("echo -n $TEST_ENV$TEST_ENV_2"). // -n means no newline. It's needed for test assertions.
 		envWithVar("TEST_ENV", "{5-1}"). // evaluates to 4
 		envWithVar("TEST_ENV_2", "\\{2\\}"). // evaluates to {2}

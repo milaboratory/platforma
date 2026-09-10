@@ -7,8 +7,11 @@ file := import("@platforma-sdk/workflow-tengo:file")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 json := import("json")
 smart := import("@platforma-sdk/workflow-tengo:smart")
+assets := import("@platforma-sdk/workflow-tengo:assets")
 
 self.defineOutputs("csvFile")
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
 self.body(func(inputs){
 	// map with csv as text
@@ -21,7 +24,9 @@ self.body(func(inputs){
 	for k, csv in csvDataMap {
 		e := exec.builder().
 			cpu(1).ram("50Mi").
-			cmd("env").
+			software(shellSw).
+			arg("-c").
+			arg("true").
 			writeFile("data.csv", csv).
 			saveFile("data.csv").
 			run()
