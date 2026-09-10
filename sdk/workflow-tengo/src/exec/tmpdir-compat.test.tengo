@@ -4,17 +4,56 @@ text := import("text")
 
 _wrapper := ["sh", "./" + compat.SCRIPT_FILE_NAME]
 
-// TestIsNeededFollowsEitherFlag checks the one decision the whole compatibility layer hangs on.
-// Either flag means the backend is new enough to be left alone; only a backend that reports
-// neither leaves the temporary directory to the SDK.
-TestIsNeededFollowsEitherFlag := func() {
-	test.isTrue(compat.isNeeded({supportsScratchSpaceRequests: false, hasScratchSpace: false}),
-		"a backend reporting neither flag needs the workaround")
+// TestIsNeededWhenNeitherFlagIsReported covers a backend from before scratch space existed. It
+// neither understands the request nor serves the storage, so the SDK provides the directory
+// whatever size was asked for.
+TestIsNeededWhenNeitherFlagIsReported := func() {
+	feats := {supportsScratchSpaceRequests: false, hasScratchSpace: false}
 
-	test.isFalse(compat.isNeeded({supportsScratchSpaceRequests: true, hasScratchSpace: false}),
+	test.isTrue(compat.isNeeded(feats, false),
+		"a backend reporting neither flag needs the workaround")
+	test.isTrue(compat.isNeeded(feats, true),
+		"a size changes nothing where the backend serves no scratch storage")
+}
+
+// TestIsNeededNeverWhenTheRequestIsUnderstood checks the flag that settles it alone: such a
+// backend guarantees both variables itself, at any size.
+TestIsNeededNeverWhenTheRequestIsUnderstood := func() {
+	feats := {supportsScratchSpaceRequests: true, hasScratchSpace: false}
+
+	test.isFalse(compat.isNeeded(feats, false),
 		"a backend that understands the request guarantees TMPDIR itself")
-	test.isFalse(compat.isNeeded({supportsScratchSpaceRequests: false, hasScratchSpace: true}))
-	test.isFalse(compat.isNeeded({supportsScratchSpaceRequests: true, hasScratchSpace: true}))
+	test.isFalse(compat.isNeeded(feats, true))
+	test.isFalse(compat.isNeeded({supportsScratchSpaceRequests: true, hasScratchSpace: true}, false))
+	test.isFalse(compat.isNeeded({supportsScratchSpaceRequests: true, hasScratchSpace: true}, true))
+}
+
+// TestIsNeededOnlyForASizelessRequestInTheScratchWindow pins the 4.4.0-4.4.3 window, which the two
+// flags identify exactly: scratch storage reported, the request not yet understood. There a sized
+// request already has TMPDIR and a scratch path naming the real device, while a sizeless one has
+// neither - so the size, and only the size, decides.
+TestIsNeededOnlyForASizelessRequestInTheScratchWindow := func() {
+	feats := {supportsScratchSpaceRequests: false, hasScratchSpace: true}
+
+	test.isFalse(compat.isNeeded(feats, true),
+		"a sized request there names the real scratch device and must not be redirected")
+	test.isTrue(compat.isNeeded(feats, false),
+		"a sizeless request there gets no TMPDIR, and a scratch path naming the workdir root")
+}
+
+// TestIsSizedRequestCountsAFormulaAsSized checks the rule the window's decision rests on. The
+// decision is taken before a formula is resolved, so a formula has to count as sized: reading it
+// the other way would redirect a command away from the scratch device it asked for.
+TestIsSizedRequestCountsAFormulaAsSized := func() {
+	test.isFalse(compat.isSizedRequest(undefined, undefined),
+		"no request at all is not a size")
+	test.isFalse(compat.isSizedRequest(0, undefined),
+		"0 asks for the directory alone, which is not a size")
+
+	test.isTrue(compat.isSizedRequest("500GiB", undefined))
+	test.isTrue(compat.isSizedRequest(17179869184, undefined))
+	test.isTrue(compat.isSizedRequest(undefined, {op: "size"}),
+		"a formula counts as sized: its value is not known when this is decided")
 }
 
 // TestScriptMakesTheDirectoryAndExecs pins the three things the script must do. The directory

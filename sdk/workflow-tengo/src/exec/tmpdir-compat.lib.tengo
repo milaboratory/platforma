@@ -72,18 +72,46 @@ exec "$@"
 
 // isNeeded reports whether the backend leaves the temporary directory to the SDK.
 //
-// Either flag means the backend is new enough to be left alone: 'supports' says it understands the
-// request and guarantees TMPDIR, 'has' says a deployment old enough to predate the guarantee at
-// least serves scratch storage.
+// Current SDK contract sounds: any command execution gets TMPDIR and TMP pointing into
+// <workdir>/.pl/tmp
 //
-// One deliberate gap, on 4.4.0 through 4.4.3 only. Those backends decide TMPDIR from the SIZE of
-// the request - TmpdirFor returns a path only above zero - so a deployment reporting scratch
-// storage takes this direct branch and still gives a SIZELESS request no TMPDIR. Wrapping it
-// instead would rewrite '{system.scratch.path}' away from the real scratch device, which is worse.
-// The contract therefore holds before 4.4.0 and from 4.4.4 on, and that is by decision: the only
-// deployments in the 4.4.0-4.4.3 window report scratch storage and are known to diverge here.
-isNeeded := func(feats) {
-	return !feats.supportsScratchSpaceRequests && !feats.hasScratchSpace
+// To maintain it, we need compatibility hacks for older backends
+//
+// scratchSized must be true only when the block asked for a size above zero.
+isNeeded := func(feats, scratchSized) {
+	if feats.supportsScratchSpaceRequests {
+		// >= 4.4.4: no hacks, all is fine
+		return false
+	}
+
+	if feats.hasScratchSpace {
+		// 4.4.0 - 4.4.3: zero scratch request violates contract - need the hack
+		return !scratchSized
+	}
+
+	// before 4.4.0: no TMPDIR at all in any case - need the hack
+	return true
+}
+
+// isSizedRequest reports whether the block asked for scratch space of a size above zero, which is
+// what isNeeded's second argument needs.
+//
+// A FORMULA counts as sized even though its value is not known yet. The decision here is taken
+// before formula fallback resolution, and reading it the other way round is the expensive mistake:
+// treating a formula as sizeless would wrap a command in the 4.4.0-4.4.3 window and point it at
+// the working directory instead of the scratch device it asked for. A formula that resolves to
+// zero is therefore left without the wrapper - which is the same thing that happens on a backend
+// that cannot evaluate the formula at all, where the request is dropped outright.
+isSizedRequest := func(scratchFreeSpace, scratchFormulaAst) {
+	if !is_undefined(scratchFormulaAst) {
+		return true
+	}
+
+	if is_undefined(scratchFreeSpace) {
+		return false
+	}
+
+	return scratchFreeSpace != 0
 }
 
 // isWindows reports whether the runner puts commands on a Windows host, judged by the path
@@ -113,7 +141,7 @@ _assertNotWindows := func() {
 	ll.assert(!isWindows(),
 		"exec.builder: this Platforma Backend is too old to provide a temporary directory (TMPDIR),"+
 			" and the workaround for it is POSIX-shell only, so it cannot run on Windows."+
-			" Update Platforma Backend to a version reporting 'supportsScratchSpaceRequests'.")
+			" Update Platforma Backend to a version >=4.4.4")
 }
 
 // patchSoftwareDescriptor routes a software's command through the wrapper.
@@ -189,6 +217,7 @@ export ll.toStrict({
 
 	script: script,
 	isNeeded: isNeeded,
+	isSizedRequest: isSizedRequest,
 	isWindows: isWindows,
 	patchSoftwareDescriptor: patchSoftwareDescriptor,
 	wrapCommand: wrapCommand,
