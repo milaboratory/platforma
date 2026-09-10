@@ -147,21 +147,72 @@ TestWrapCommandReturnsShellAndPrefix := func() {
 		"the original command becomes the first thing the script execs")
 }
 
-// TestRewriteScratchPath checks the expression rewrite. A backend from before the contract has no
-// 'system.scratch' at all, so the expression fails to evaluate rather than rendering empty - the
-// rewrite is what keeps a block using it alive.
-TestRewriteScratchPath := func() {
-	test.isEqual(".pl/tmp", compat.rewriteScratchPath("{system.scratch.path}"))
+// TestRewriteScratchPathBareForm checks the path rewrite. A backend from before the contract has
+// no 'system.scratch' at all, so the expression fails to evaluate rather than rendering empty -
+// the rewrite is what keeps a block using it alive.
+TestRewriteScratchPathBareForm := func() {
+	test.isEqual(".pl/tmp", compat.rewriteScratchExpressions("{system.scratch.path}"))
 
-	test.isEqual(".pl/tmp/chunk", compat.rewriteScratchPath("{system.scratch.path}/chunk"),
+	test.isEqual(".pl/tmp/chunk", compat.rewriteScratchExpressions("{system.scratch.path}/chunk"),
 		"a path built on top of the expression must still resolve")
 
 	test.isEqual("--tmp=.pl/tmp --other=.pl/tmp",
-		compat.rewriteScratchPath("--tmp={system.scratch.path} --other={system.scratch.path}"),
+		compat.rewriteScratchExpressions("--tmp={system.scratch.path} --other={system.scratch.path}"),
 		"every occurrence, not just the first")
+}
 
-	test.isEqual("{system.cpu}", compat.rewriteScratchPath("{system.cpu}"),
+// TestRewriteScratchSizeBareForm checks every unit the backend answers with. A block asking how
+// much scratch space it got is told 0, which is the truth on such a backend: it has a temporary
+// directory and no device sized behind it.
+TestRewriteScratchSizeBareForm := func() {
+	units := ["bytes", "b", "kb", "mb", "gb", "kib", "mib", "gib"]
+
+	for unit in units {
+		test.isEqual("0", compat.rewriteScratchExpressions("{system.scratch." + unit + "}"),
+			"unit " + unit + " must rewrite to 0")
+	}
+
+	test.isEqual("--spill-at=0",
+		compat.rewriteScratchExpressions("--spill-at={system.scratch.gib}"))
+}
+
+// TestRewriteScratchSizeDoesNotCorruptLongerUnits pins the ordering trap. The substitution is
+// textual, so a shorter unit name that is a prefix of a longer one - 'b' inside 'bytes' - would
+// leave '0ytes' behind if the longer names were not replaced first.
+TestRewriteScratchSizeDoesNotCorruptLongerUnits := func() {
+	test.isEqual("0", compat.rewriteScratchExpressions("{system.scratch.bytes}"),
+		"'bytes' must not be cut short by the rule for 'b'")
+
+	test.isEqual("0 0",
+		compat.rewriteScratchExpressions("{system.scratch.bytes} {system.scratch.b}"),
+		"both must resolve when they appear together")
+
+	test.isEqual("{0 + 0}",
+		compat.rewriteScratchExpressions("{system.scratch.bytes + system.scratch.b}"),
+		"and inside one expression as well")
+}
+
+// TestRewriteScratchInsideLargerExpression checks the shape a bare-form rule cannot reach. The
+// expression still has to evaluate on the backend, so the variable is replaced where it stands
+// rather than the whole expression being swallowed - and the path is quoted, being a string where
+// the units are numbers.
+TestRewriteScratchInsideLargerExpression := func() {
+	test.isEqual("{0 * 2}", compat.rewriteScratchExpressions("{system.scratch.gib * 2}"),
+		"a computed size keeps evaluating, now against 0")
+
+	test.isEqual("{'.pl/tmp' + '/chunk'}",
+		compat.rewriteScratchExpressions("{system.scratch.path + '/chunk'}"),
+		"a computed path needs the replacement quoted as a string")
+}
+
+// TestRewriteLeavesEverythingElseAlone checks that the rewrite is confined to scratch. Every other
+// expression still has to reach the backend, which is the only thing that can render it.
+TestRewriteLeavesEverythingElseAlone := func() {
+	test.isEqual("{system.cpu}", compat.rewriteScratchExpressions("{system.cpu}"),
 		"every other expression is left for the backend to render")
 
-	test.isEqual("plain", compat.rewriteScratchPath("plain"))
+	test.isEqual("{system.ram.gib}", compat.rewriteScratchExpressions("{system.ram.gib}"),
+		"a unit on another variable must not be touched")
+
+	test.isEqual("plain", compat.rewriteScratchExpressions("plain"))
 }

@@ -1351,17 +1351,19 @@ builder := func() {
 			if tmpdirCompatNeeded {
 				filesToWrite[tmpdirCompat.SCRIPT_FILE_NAME] = tmpdirCompat.script()
 
-				// '{system.scratch.path}' does not exist on such a backend - the expression fails
-				// to evaluate rather than rendering empty - so it is rewritten to the same
-				// directory, named relative to the working directory the command runs in.
-				args = slices.map(args, tmpdirCompat.rewriteScratchPath)
+				// 'system.scratch' does not exist on such a backend - an expression naming it
+				// fails to evaluate rather than rendering empty - so every reference to it is
+				// removed. The path becomes the directory the wrapper creates, named relative
+				// to the working directory the command runs in, and the size becomes 0: there
+				// is somewhere to write, and no device sized behind it.
+				args = slices.map(args, tmpdirCompat.rewriteScratchExpressions)
 				argsTyped = slices.map(argsTyped, func(a) {
-					a.value = tmpdirCompat.rewriteScratchPath(a.value)
+					a.value = tmpdirCompat.rewriteScratchExpressions(a.value)
 					return a
 				})
-				envs = maps.mapValues(envs, tmpdirCompat.rewriteScratchPath)
+				envs = maps.mapValues(envs, tmpdirCompat.rewriteScratchExpressions)
 				envsTyped = maps.mapValues(envsTyped, func(e) {
-					e.value = tmpdirCompat.rewriteScratchPath(e.value)
+					e.value = tmpdirCompat.rewriteScratchExpressions(e.value)
 					return e
 				})
 
