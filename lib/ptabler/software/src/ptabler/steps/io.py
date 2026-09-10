@@ -140,6 +140,25 @@ class ReadParquet(BaseReadLogic, tag="read_parquet"):
         """
         return pl.scan_parquet(file_path, **scan_kwargs)
 
+def _replace_preserving_mode(temp_path: str, file_path: str) -> None:
+    """
+    Moves a finished sink file onto its target path, keeping the mode the target had.
+
+    os.replace swaps in a new inode, so the target would otherwise come back with the
+    temporary file's mode. A workdir file the backend staged writable at 0o600 has that
+    mode for a reason, and a block that writes it must not hand back something read-only.
+    """
+    try:
+        existing_mode = os.stat(file_path).st_mode
+    except FileNotFoundError:
+        existing_mode = None
+
+    if existing_mode is not None:
+        os.chmod(temp_path, existing_mode)
+
+    os.replace(temp_path, file_path)
+
+
 class BaseWriteLogic(PStep):
     """
     Abstract base class for PSteps that write tables to files.
@@ -173,10 +192,19 @@ class BaseWriteLogic(PStep):
             selected_lf = lf_to_write.select(self.columns)
         
         file_path = os.path.join(ctx.settings.root_folder, normalize_path(self.file))
-        sink_plan = self._do_sink(selected_lf, file_path)
+
+        # Sink to a sibling temporary file and move it into place once every sink has
+        # been collected. A workflow is allowed to read and write one path — read_csv
+        # then write_csv over the same file — and the read is lazy, so sinking straight
+        # to file_path truncates a file polars is still reading. On a local filesystem
+        # that survives on cached pages; on a network filesystem the mapping goes away
+        # underneath the reader and the process takes SIGBUS.
+        temp_path = f"{file_path}.ptabler-partial"
+        sink_plan = self._do_sink(selected_lf, temp_path)
 
         # Add the sink plan to the context for later execution
         ctx.add_sink(sink_plan)
+        ctx.chain_task(lambda: _replace_preserving_mode(temp_path, file_path))
 
 class WriteCsv(BaseWriteLogic, tag="write_csv"):
     """
