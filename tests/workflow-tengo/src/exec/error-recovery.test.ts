@@ -6,7 +6,7 @@ import type { ExpectStatic } from "vitest";
 import { randomUUID } from "node:crypto";
 
 /**
- * MILAB-6771: a failed computation must keep its inputs, so a retry re-runs only the
+ * A failed computation must keep its inputs, so a retry re-runs only the
  * step that failed.
  *
  * The chain is `exec.run.two_execs_second_fails`: stage 1 succeeds and writes a file,
@@ -56,13 +56,23 @@ async function fetchTree(rid: SignedResourceId, depth = 20): Promise<TreeResourc
   try {
     const res = await fetch(url);
     if (!res.ok) {
-      console.log(`[milab6771] tree dump unavailable: HTTP ${res.status} for ${id}`);
+      console.log(`[recovery] tree dump unavailable: HTTP ${res.status} for ${id}`);
       return undefined;
     }
     return (await res.json()) as TreeResource;
   } catch (e) {
-    console.log(`[milab6771] tree dump unavailable (${String(e)}). Is --debug-enabled set?`);
+    console.log(`[recovery] tree dump unavailable (${String(e)}). Is --debug-enabled set?`);
     return undefined;
+  }
+}
+
+/** Whether the debug API is reachable at all. */
+async function debugApiAvailable(): Promise<boolean> {
+  try {
+    const res = await fetch(`${debugEndpoint()}/db/stats`);
+    return res.ok;
+  } catch {
+    return false;
   }
 }
 
@@ -198,7 +208,7 @@ async function dump(label: string, rid: SignedResourceId): Promise<TreeFacts | u
   if (!tree) return undefined;
   const facts = walkTree(tree);
   console.log(
-    `\n===== [milab6771] TREE ${label} =====\n${facts.text}\n` +
+    `\n===== [recovery] TREE ${label} =====\n${facts.text}\n` +
       `----- ${facts.resourceIds.size} unique resources, ` +
       `${facts.heldForRecovery.length} held for recovery, ` +
       `${facts.recovered.length} recovered field(s) -----\n`,
@@ -219,9 +229,21 @@ async function dump(label: string, rid: SignedResourceId): Promise<TreeFacts | u
 async function runRecoveryScenario(
   helper: TplTestHelpers,
   expect: ExpectStatic,
+  skip: (note?: string) => void,
   opts: { label: string; template: string; errorFragment: string },
 ): Promise<void> {
-  const payload = `milab6771-${randomUUID()}`;
+  // Every meaningful assertion below reads the resource tree over the debug API. Where
+  // it is absent the scenario has nothing to check, so report it as skipped rather
+  // than let it pass on the strength of the two error assertions alone.
+  if (!(await debugApiAvailable())) {
+    skip(
+      `debug API unreachable at ${debugEndpoint()}; run the backend with --debug-enabled ` +
+        "or set PL_DEBUG_ENDPOINT",
+    );
+    return;
+  }
+
+  const payload = `recovery-${randomUUID()}`;
   const render = () =>
     helper.renderTemplate(false, opts.template, ["main"], (tx) => ({
       payload: tx.createValue(Pl.JsonObject, JSON.stringify(payload)),
@@ -249,16 +271,14 @@ async function runRecoveryScenario(
 
   const afterSecond = await dump(`${opts.label} :: AFTER SECOND CALL`, second.resultEntry.rid);
 
-  if (!afterError || !afterSecond) {
-    console.log(
-      `[milab6771] ${opts.label}: debug API not reachable; skipping tree assertions. ` +
-        "Set PL_DEBUG_ENDPOINT or run the backend with --debug-enabled.",
-    );
-    return;
-  }
+  // Availability was checked up front, so a missing dump here means the endpoint died
+  // mid-scenario. That is a real problem, not a reason to pass.
+  expect(afterError, "tree dump after the first failure").toBeDefined();
+  expect(afterSecond, "tree dump after the retry").toBeDefined();
+  if (!afterError || !afterSecond) return;
 
   console.log(
-    `\n===== [milab6771] ${opts.label}: HELD FOR RECOVERY (${afterError.heldForRecovery.length}) =====`,
+    `\n===== [recovery] ${opts.label}: HELD FOR RECOVERY (${afterError.heldForRecovery.length}) =====`,
   );
   for (const h of afterError.heldForRecovery) {
     console.log(`  ${h.field}  ->  ${h.type}  ${h.resource}`);
@@ -275,16 +295,16 @@ async function runRecoveryScenario(
     .map((ok, i) => (ok ? heldIds[i] : undefined))
     .filter((id): id is string => id !== undefined);
   console.log(
-    `\n===== [milab6771] ${opts.label}: HELD RESOURCES STILL ALIVE AFTER RETRY =====\n` +
+    `\n===== [recovery] ${opts.label}: HELD RESOURCES STILL ALIVE AFTER RETRY =====\n` +
       `${alive.length}/${heldIds.length}: ${alive.join(", ")}\n`,
   );
   expect(alive.length).toBe(heldIds.length);
 }
 
 tplTest(
-  "milab6771: failing exec keeps upstream result, retry does not re-run it",
-  async ({ helper, expect }) => {
-    await runRecoveryScenario(helper, expect, {
+  "failing exec keeps the upstream result, so a retry does not re-run it",
+  async ({ helper, expect, skip }) => {
+    await runRecoveryScenario(helper, expect, skip, {
       label: "flat",
       template: "exec.run.two_execs_second_fails",
       errorFragment: "stage2 died on purpose",
@@ -293,9 +313,9 @@ tplTest(
 );
 
 tplTest(
-  "milab6771: nested templates, exec fails in the deepest one",
-  async ({ helper, expect }) => {
-    await runRecoveryScenario(helper, expect, {
+  "nested templates: exec fails in the deepest one",
+  async ({ helper, expect, skip }) => {
+    await runRecoveryScenario(helper, expect, skip, {
       label: "nested-exec-fails",
       template: "exec.run.nested_outer_exec_fails",
       errorFragment: "stage2 died on purpose",
@@ -304,9 +324,9 @@ tplTest(
 );
 
 tplTest(
-  "milab6771: nested templates, exec succeeds and an intermediate template throws",
-  async ({ helper, expect }) => {
-    await runRecoveryScenario(helper, expect, {
+  "nested templates: exec succeeds and an intermediate template throws",
+  async ({ helper, expect, skip }) => {
+    await runRecoveryScenario(helper, expect, skip, {
       label: "nested-mid-throws",
       template: "exec.run.nested_outer_mid_throws",
       errorFragment: "intermediate template failed on purpose",

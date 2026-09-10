@@ -1,5 +1,5 @@
 /**
- * MILAB-6771 fixture: two chained execs where the second one fails.
+ * two chained execs where the second one fails.
  *
  * Stage 1 is the expensive step that succeeds; stage 2 consumes its file and exits
  * non-zero. Both commands are deterministic, so stage 1's CID is stable across
@@ -18,7 +18,7 @@ self.defineOutputs(["main"])
 
 self.body(func(inputs) {
 	stage1 := exec.builder().
-		name("milab6771-stage1").
+		name("recovery-stage1").
 		cpu(1).ram("50Mi").
 		inLightQueue().
 		cmd("/usr/bin/env").
@@ -29,7 +29,7 @@ self.body(func(inputs) {
 		run()
 
 	stage2 := exec.builder().
-		name("milab6771-stage2").
+		name("recovery-stage2").
 		cpu(1).ram("50Mi").
 		inLightQueue().
 		cmd("/usr/bin/env").

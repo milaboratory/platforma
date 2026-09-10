@@ -1,5 +1,5 @@
 /**
- * MILAB-6771 fixture: exec succeeds, then an intermediate template throws.
+ * exec succeeds, then an intermediate template throws.
  *
  * The thrower consumes the exec's output, so the command runs before the failure. A
  * retry must not re-run it.

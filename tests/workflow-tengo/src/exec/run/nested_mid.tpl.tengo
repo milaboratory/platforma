@@ -1,5 +1,5 @@
 /**
- * MILAB-6771 fixture: middle layer of a nested chain. Renders the failing two-exec
+ * middle layer of a nested chain. Renders the failing two-exec
  * chain and forwards its output, so the error has to cross a template boundary.
  */
 

@@ -1,5 +1,5 @@
 /**
- * MILAB-6771 fixture: one exec that succeeds. Used as the expensive upstream step in
+ * one exec that succeeds. Used as the expensive upstream step in
  * the case where an intermediate template, not the command, is what fails.
  */
 
@@ -11,7 +11,7 @@ self.defineOutputs(["main"])
 
 self.body(func(inputs) {
 	run := exec.builder().
-		name("milab6771-okstage").
+		name("recovery-okstage").
 		cpu(1).ram("50Mi").
 		inLightQueue().
 		cmd("/usr/bin/env").
