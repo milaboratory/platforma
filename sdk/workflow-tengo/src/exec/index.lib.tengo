@@ -19,6 +19,7 @@ constants := import(":constants")
 canonical := import(":canonical")
 monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
+tmpdirCompat := import(":exec.tmpdir-compat")
 execFormula := import(":exec.formula")
 units := import(":units")
 feats := import(":feats")
@@ -1333,6 +1334,48 @@ builder := func() {
 				sets.add(filesContentToSave, stderr)
 			}
 
+			// --- Temporary directory on a backend that does not provide one ---------------
+			// A current backend guarantees TMPDIR and TMP to every command that asked for scratch
+			// space. An older one does not, so the SDK provides them itself: a small script staged
+			// into the working directory makes the directory and execs the real command behind it.
+			// See :exec.tmpdir-compat for why it has to be a file, and why the directory cannot be
+			// created any other way.
+			tmpdirCompatNeeded := tmpdirCompat.isNeeded(feats)
+			if tmpdirCompatNeeded {
+				filesToWrite[tmpdirCompat.SCRIPT_FILE_NAME] = tmpdirCompat.script()
+
+				// '{system.scratch.path}' does not exist on such a backend - the expression fails
+				// to evaluate rather than rendering empty - so it is rewritten to the same
+				// directory, named relative to the working directory the command runs in.
+				args = slices.map(args, tmpdirCompat.rewriteScratchPath)
+				argsTyped = slices.map(argsTyped, func(a) {
+					a.value = tmpdirCompat.rewriteScratchPath(a.value)
+					return a
+				})
+				envs = maps.mapValues(envs, tmpdirCompat.rewriteScratchPath)
+				envsTyped = maps.mapValues(envsTyped, func(e) {
+					e.value = tmpdirCompat.rewriteScratchPath(e.value)
+					return e
+				})
+
+				// A command a block spelled out itself. Software goes through its descriptor
+				// instead, further down, because that is where its command really lives.
+				if is_undefined(soft) {
+					wrapped := tmpdirCompat.wrapCommand(cmd)
+					cmd = wrapped.cmd
+					// Both lists, or an exec that used argExpr would lose the wrapper: the typed
+					// list is what the backend reads whenever it is sent at all.
+					// Not append(prefix, args...): tengo rejects a zero-length spread, and a
+					// command with no arguments at all is the common case.
+					args = tmpdirCompat.concat(wrapped.prependArgs, args)
+					argsTyped = tmpdirCompat.concat(
+						slices.map(wrapped.prependArgs, func(a) {
+							return { type: execConstants.ARG_TYPE_STRING, value: a }
+						}),
+						argsTyped)
+				}
+			}
+
 			// We don't want these values to be encoded as JSON's since
 			// values are pure bytes.
 			// Thus, we create a resource with a custom type here manually.
@@ -1493,7 +1536,15 @@ builder := func() {
 			}
 			// Scratch space stands on its own: it needs no cpu/ram companion, and a VRAM-style
 			// formula leaves the static field unset for the pure template to compute.
-			if !is_undefined(scratchFreeSpace) { quotaData.scratchFreeSpace = scratchFreeSpace }
+			// Always sent, defaulting to 0. The backend reads three states here and all three
+			// carry meaning: absent means "a block built before this contract, give it the
+			// environment it was tested on", 0 means "current SDK, no device wanted, but I do
+			// want a temporary directory", and a size means both. Leaving the field out when a
+			// block asked for nothing would make every current block look like an old one.
+			//
+			// Costs no deduplication: quotaData rides metaExecInputs below, which is excluded
+			// from the exec CID.
+			quotaData.scratchFreeSpace = is_undefined(scratchFreeSpace) ? 0 : scratchFreeSpace
 			metaExecInputs := {
 				quota: smart.createJsonResource(quotaData)
 			}
@@ -1542,10 +1593,14 @@ builder := func() {
 
 			if !is_undefined(soft) {
 				pureExecInputs.softwareInfo = soft.resource
+				descriptor := ll.fromStrict(soft.descriptor)
+				if tmpdirCompatNeeded {
+					descriptor = tmpdirCompat.patchSoftwareDescriptor(descriptor, feats.isDockerAvailable)
+				}
 				pureExecInputs.runOptions.software = {
 					name: soft.name,
 					version: soft.version,
-					descriptor: ll.fromStrict(soft.descriptor)
+					descriptor: descriptor
 				}
 			}
 
