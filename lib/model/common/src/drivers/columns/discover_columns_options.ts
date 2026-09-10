@@ -46,6 +46,12 @@ export interface DiscoverColumnsOptions {
   anchors?: Record<string, AnchorEntry>;
   /** Maximum linker hops. Default: 4 when anchors present, 0 otherwise. */
   maxHops?: number;
+  /**
+   * Walk linkers fine → coarse instead of coarse → fine, to discover the
+   * roots above the anchors rather than the leaves below them. Default: false.
+   * Ignored if no anchors, or when `maxHops` is 0.
+   */
+  reverseLinkers?: boolean;
 }
 
 /**
@@ -58,13 +64,26 @@ export type ColumnsDiscoverOptions = DiscoverColumnsOptions;
 
 /**
  * Options accepted by `ColumnsCollection.filter` / driver `.filter`. Traversal
- * scope is fixed by the source collection, so `mode` / `maxHops` are not part
- * of the filter surface — only `include` / `exclude` / `anchors`.
+ * scope is fixed by the source collection, so `mode` / `maxHops` /
+ * `reverseLinkers` are not part of the filter surface — only `include` /
+ * `exclude` / `anchors`.
  */
-export type ColumnsFilterOptions = Omit<DiscoverColumnsOptions, "mode" | "maxHops">;
+export type ColumnsFilterOptions = Omit<
+  DiscoverColumnsOptions,
+  "mode" | "maxHops" | "reverseLinkers"
+>;
 
-/** Translate a {@link MatchingMode} into the boolean-flag form the spec driver consumes. */
-export function matchingModeToConstraints(mode: MatchingMode): DiscoverColumnsConstraints {
+/**
+ * Translate a {@link MatchingMode} into the boolean-flag form the spec driver
+ * consumes. `reverseLinkers` is orthogonal to the mode — it selects the linker
+ * traversal direction, not the axes matching behaviour — so it is threaded
+ * through unchanged and omitted when false.
+ */
+export function matchingModeToConstraints(
+  mode: MatchingMode,
+  reverseLinkers?: boolean,
+): DiscoverColumnsConstraints {
+  const direction = reverseLinkers ? { reverseLinkers: true } : {};
   switch (mode) {
     case "enrichment":
       return {
@@ -72,6 +91,7 @@ export function matchingModeToConstraints(mode: MatchingMode): DiscoverColumnsCo
         allowFloatingHitAxes: false,
         allowSourceQualifications: true,
         allowHitQualifications: true,
+        ...direction,
       };
     case "related":
       return {
@@ -79,6 +99,7 @@ export function matchingModeToConstraints(mode: MatchingMode): DiscoverColumnsCo
         allowFloatingHitAxes: true,
         allowSourceQualifications: true,
         allowHitQualifications: true,
+        ...direction,
       };
     case "exact":
       return {
@@ -86,6 +107,7 @@ export function matchingModeToConstraints(mode: MatchingMode): DiscoverColumnsCo
         allowFloatingHitAxes: false,
         allowSourceQualifications: false,
         allowHitQualifications: false,
+        ...direction,
       };
   }
 }

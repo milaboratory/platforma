@@ -286,7 +286,7 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
       excludeColumns: options.exclude
         ? convertColumnSelectorToMultiColumnSelector(options.exclude)
         : undefined,
-      constraints: matchingModeToConstraints(options.mode ?? "enrichment"),
+      constraints: matchingModeToConstraints(options.mode ?? "enrichment", options.reverseLinkers),
       maxHops: options.maxHops ?? (hasAnchors ? 4 : 0),
       axes: anchorsList.map((anchorId) => {
         const spec =
