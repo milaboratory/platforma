@@ -41,6 +41,9 @@ async function fetchWithRetry(url: string): Promise<Response> {
   }
 }
 
+/** Resolves a package's `latest` dist-tag. Injectable so tests do not reach the registry. */
+export type LatestVersionResolver = (packageName: string) => Promise<string>;
+
 async function getLatestVersion(packageName: string): Promise<string> {
   const res = await fetchWithRetry(`https://registry.npmjs.org/-/package/${packageName}/dist-tags`);
 
@@ -91,7 +94,13 @@ interface Change {
   to: string;
 }
 
-export async function updatePackages(cwd?: string): Promise<void> {
+export async function updatePackages(
+  cwd?: string,
+  /** Defaults to a live registry lookup. Tests pass a stub: any catalog carrying an unpinned
+   * `@platforma-sdk/*` or `@milaboratories/*` package would otherwise fetch npmjs.org, which
+   * made them fail whenever a response outran vitest's 5s budget. */
+  resolveLatestVersion: LatestVersionResolver = getLatestVersion,
+): Promise<void> {
   const workspacePath = path.resolve(cwd ?? process.cwd(), "pnpm-workspace.yaml");
 
   let content: string;
@@ -117,7 +126,7 @@ export async function updatePackages(cwd?: string): Promise<void> {
   const pinned: Change[] = [];
 
   // Fetch latest versions for all SDK packages in parallel
-  const latestVersions = await Promise.all(sdkPackages.map((pkg) => getLatestVersion(pkg)));
+  const latestVersions = await Promise.all(sdkPackages.map((pkg) => resolveLatestVersion(pkg)));
 
   for (let i = 0; i < sdkPackages.length; i++) {
     const packageName = sdkPackages[i];
