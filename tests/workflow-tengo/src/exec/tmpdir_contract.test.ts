@@ -20,6 +20,7 @@ tplTest(
       false,
       "exec.run.tmpdir_contract",
       ["tmpdir"],
+      () => ({}),
     );
 
     const reported = await result
@@ -36,6 +37,9 @@ tplTest(
 
     expect(tmpdir).not.toHaveLength(0);
     expect(tmp).toBe(tmpdir);
+    // Reported resolved by the template, so this compares directories rather than spellings: a
+    // current backend renders {system.scratch.path} absolute, while the SDK's compatibility
+    // wrapper can only rewrite it relative to the working directory.
     expect(scratchPath).toBe(tmpdir);
 
     // Wherever it is backed, the directory is the one the contract names.

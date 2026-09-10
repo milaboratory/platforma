@@ -62,9 +62,13 @@ _assertValidGpuRequest := func(amount, ctx) {
 }
 // A scratch request is a size string ("500GiB") or a number of bytes, with the same 16MiB floor
 // that catches a bytes-where-GiB-was-meant mistake.
+//
+// Exactly 0 is the one number below that floor which is accepted, because it is not a size at all:
+// it asks for the temporary directory the backend guarantees to every request, without a device
+// behind it. Anything between 1 byte and 16MiB stays a mistake.
 _assertValidScratchRequest := func(amount, ctx) {
 	validation.assertType(amount, ["or", "number", "string"], ctx + ": scratch space amount must be a number of bytes or a size string like '500GiB'")
-	ll.assert(is_string(amount) || amount >= 16 * units.MiB, ctx + ": scratch space in bytes should be at least 16MiB (did you pass bytes instead of GiB?)")
+	ll.assert(is_string(amount) || amount == 0 || amount >= 16 * units.MiB, ctx + ": scratch space in bytes should be at least 16MiB, or exactly 0 to ask only for a temporary directory (did you pass bytes instead of GiB?)")
 }
 
 /**
@@ -1544,7 +1548,14 @@ builder := func() {
 			//
 			// Costs no deduplication: quotaData rides metaExecInputs below, which is excluded
 			// from the exec CID.
-			quotaData.scratchFreeSpace = is_undefined(scratchFreeSpace) ? 0 : scratchFreeSpace
+			//
+			// Sent as a size STRING, never a bare number, whichever way the block spelled it: the
+			// backend parses this field through UnmarshalText, so a JSON number does not merely
+			// fail this exec - it fails to parse the quota and takes the runner controller down
+			// with it. The 'b' suffix is the same spelling the formula fallback above uses.
+			scratchRequest := is_undefined(scratchFreeSpace) ? 0 : scratchFreeSpace
+			if is_int(scratchRequest) { scratchRequest = string(scratchRequest) + "b" }
+			quotaData.scratchFreeSpace = scratchRequest
 			metaExecInputs := {
 				quota: smart.createJsonResource(quotaData)
 			}
