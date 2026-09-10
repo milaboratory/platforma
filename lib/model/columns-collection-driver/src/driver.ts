@@ -37,6 +37,7 @@ import {
   isPlRef,
   isEmptySpecDelta,
   matchingModeToConstraints,
+  resolveAnchorSide,
   reconstructSpecFromId,
   stringifyColumnDiscoveredId,
 } from "@milaboratories/pl-model-common";
@@ -267,7 +268,9 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
       specMap.set(id, reconstructSpecFromId(spec, id));
     }
 
-    const anchors = options.anchors;
+    // Which key the caller used says where the given columns sit in the
+    // hierarchy, which is what fixes the linker traversal direction.
+    const { anchors, anchorsAre } = resolveAnchorSide(options);
     const hasAnchors = anchors !== undefined && Object.keys(anchors).length > 0;
     const anchorsRec = hasAnchors ? resolveAnchors(anchors, specMap, specDriver) : undefined;
     const anchorsList = anchorsRec ? Object.values(anchorsRec) : [];
@@ -286,7 +289,7 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
       excludeColumns: options.exclude
         ? convertColumnSelectorToMultiColumnSelector(options.exclude)
         : undefined,
-      constraints: matchingModeToConstraints(options.mode ?? "enrichment", options.reverseLinkers),
+      constraints: matchingModeToConstraints(options.mode ?? "enrichment", anchorsAre),
       maxHops: options.maxHops ?? (hasAnchors ? 4 : 0),
       axes: anchorsList.map((anchorId) => {
         const spec =
