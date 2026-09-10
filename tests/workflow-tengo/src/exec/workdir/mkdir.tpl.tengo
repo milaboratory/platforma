@@ -10,16 +10,18 @@
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
 
 self.defineOutputs(["dirs"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
 self.body(func(inputs) {
 	run := exec.builder().
 		cpu(1).ram("50Mi").
 		mkDir("embeddings").
 		mkDir("a/b/c").
-		cmd("/usr/bin/env").
-		arg("bash").
+		software(shellSw).
 		arg("-c").
 		arg("for d in embeddings a a/b a/b/c; do if [ -d $d ]; then echo ok:$d; else echo missing:$d; fi; done; echo ---top---; ls -A").
 		saveStdoutContent().
