@@ -44,7 +44,7 @@ async function fetchWithRetry(url: string): Promise<Response> {
 /** Resolves a package's `latest` dist-tag. Injectable so tests do not reach the registry. */
 export type LatestVersionResolver = (packageName: string) => Promise<string>;
 
-async function getLatestVersion(packageName: string): Promise<string> {
+export async function getLatestVersion(packageName: string): Promise<string> {
   const res = await fetchWithRetry(`https://registry.npmjs.org/-/package/${packageName}/dist-tags`);
 
   const tags = (await res.json()) as Record<string, string>;
