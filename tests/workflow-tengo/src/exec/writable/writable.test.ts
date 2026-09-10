@@ -63,9 +63,10 @@ tplTest.concurrent.for([
       expect((settled as Error).message).toMatch(/Exited with code/);
     }
   },
-  // A Kubernetes deploy runs each command as its own Job, so the writable cases —
-  // which have to schedule a pod, pull the image and let ptabler finish, twice in
-  // 'add' mode — do not fit the 15s default. The read-only cases stay well inside
-  // it because they fail as soon as pt cannot open the file.
-  60_000,
+  // A Kubernetes deploy runs each command as its own Job, and the measured cost of one
+  // of these cases there is around 143s — a pod scheduled, an image pulled and ptabler
+  // run to completion, twice over in 'add' mode. The budget is set above that so a slow
+  // run reports whatever the command actually did; at 15s, and then at 60s, every such
+  // case came back as a bare timeout and hid its own error.
+  300_000,
 );
