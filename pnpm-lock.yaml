@@ -61,8 +61,8 @@ catalogs:
       specifier: ^2.1.1
       version: 2.1.1
     '@platforma-open/milaboratories.software-test-utils':
-      specifier: ^1.1.7
-      version: 1.1.7
+      specifier: ^1.2.0
+      version: 1.2.0
     '@protobuf-ts/grpc-transport':
       specifier: 2.11.1
       version: 2.11.1
@@ -1152,7 +1152,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.software-test-utils':
         specifier: 'catalog:'
-        version: 1.1.7
+        version: 1.2.0
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
@@ -1593,7 +1593,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.software-test-utils':
         specifier: 'catalog:'
-        version: 1.1.7
+        version: 1.2.0
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
@@ -1911,7 +1911,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.software-test-utils':
         specifier: 'catalog:'
-        version: 1.1.7
+        version: 1.2.0
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
@@ -4318,7 +4318,7 @@ importers:
         version: link:../../lib/node/ts-helpers
       '@platforma-open/milaboratories.software-test-utils':
         specifier: 'catalog:'
-        version: 1.1.7
+        version: 1.2.0
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../tools/tengo-builder
@@ -6265,8 +6265,8 @@ packages:
   '@platforma-open/milaboratories.software-small-binaries@2.1.1':
     resolution: {integrity: sha512-KN1PR7YgUUfx1dxh/TtcoWpSZbOXbRxXzQuJ505qHuXuE0spYwC7bXnvJsEYbEwRcPMa0foTrjBnPNORE4yr+Q==}
 
-  '@platforma-open/milaboratories.software-test-utils.docker-images@1.1.2':
-    resolution: {integrity: sha512-KLih91Biwao8JcIk3J1zwQiHmiAzChgMfmcVqUxXjoipZPSc43OBwqX4x8sarSZCWSzUBLT5bfLWO5VG8kJaRg==}
+  '@platforma-open/milaboratories.software-test-utils.docker-images@1.2.0':
+    resolution: {integrity: sha512-oNNqwXivrwogScraCAreXZnC1WhVvO1WOQjRmP/baSLHkcGW22napLBvKIS5ccxGdfVCmSE4TC0ke8a8DQ7kGA==}
 
   '@platforma-open/milaboratories.software-test-utils.guided-command@1.1.6':
     resolution: {integrity: sha512-wzsuP40HBaao04npEI7Diq/5dAhpSZvIJDZzrqWUmJ5UHsEw/3aOE2SASW/W4vWEsu3EBmne0b7HoHVN2KF6Jw==}
@@ -6292,8 +6292,8 @@ packages:
   '@platforma-open/milaboratories.software-test-utils.small-asset@1.1.7':
     resolution: {integrity: sha512-c+ChMmsXglruBhiOABTcrkoRk/guh0Mtp6ZQmYJNKYmNAMfwkV4WsjZbl1sUuh1v5PNw5AdeiRdxkPc6XvIeWw==}
 
-  '@platforma-open/milaboratories.software-test-utils@1.1.7':
-    resolution: {integrity: sha512-Jo1IcQMAJlvrNyxNpiGzRb2+jtvpiBLU3lGHS6Kr3/D/kkVPuZRtFXVwFa8XaIBy1XggHKiUPeZAhaRdlXyxRA==}
+  '@platforma-open/milaboratories.software-test-utils@1.2.0':
+    resolution: {integrity: sha512-01jofa3vr34MShm0vbNbO/zyiVhGd9fi6PnbZMFK27cvrCWooByuqAuV1hzo/0LuxaL8+qv5k+YOwFaFA9dPPQ==}
 
   '@protobuf-ts/grpc-transport@2.11.1':
     resolution: {integrity: sha512-l6wrcFffY+tuNnuyrNCkRM8hDIsAZVLA8Mn7PKdVyYxITosYh60qW663p9kL6TWXYuDCL3oxH8ih3vLKTDyhtg==}
@@ -12160,7 +12160,7 @@ snapshots:
       '@platforma-open/milaboratories.software-small-binaries.mnz-client': 1.6.5
       '@platforma-open/milaboratories.software-small-binaries.table-converter': 1.3.5
 
-  '@platforma-open/milaboratories.software-test-utils.docker-images@1.1.2': {}
+  '@platforma-open/milaboratories.software-test-utils.docker-images@1.2.0': {}
 
   '@platforma-open/milaboratories.software-test-utils.guided-command@1.1.6': {}
 
@@ -12178,11 +12178,11 @@ snapshots:
 
   '@platforma-open/milaboratories.software-test-utils.small-asset@1.1.7': {}
 
-  '@platforma-open/milaboratories.software-test-utils@1.1.7':
+  '@platforma-open/milaboratories.software-test-utils@1.2.0':
     dependencies:
       '@platforma-open/milaboratories.software-small-binaries.hello-world': 1.1.7
       '@platforma-open/milaboratories.software-small-binaries.hello-world-py': 1.0.10
-      '@platforma-open/milaboratories.software-test-utils.docker-images': 1.1.2
+      '@platforma-open/milaboratories.software-test-utils.docker-images': 1.2.0
       '@platforma-open/milaboratories.software-test-utils.guided-command': 1.1.6
       '@platforma-open/milaboratories.software-test-utils.java-stub': 1.0.7
       '@platforma-open/milaboratories.software-test-utils.python-stub': 1.0.7
