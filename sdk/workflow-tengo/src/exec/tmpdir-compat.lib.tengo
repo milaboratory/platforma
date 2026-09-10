@@ -1,0 +1,190 @@
+/** Compatibility layer: give a command TMPDIR and TMP on a backend that does not.
+ *
+ * A current backend guarantees both, pointed at '<workdir>/.pl/tmp', to every command that asked
+ * for scratch space - any size, including none. A backend from before that contract sets TMPDIR
+ * only for a sized request, or not at all, and has no '{system.scratch.path}' to render.
+ *
+ * The SDK closes the gap itself rather than leaving blocks to branch on a flag. Two obstacles
+ * shaped how:
+ *
+ *   - Nothing the SDK sends can CREATE '<workdir>/.pl/tmp' on such a backend. Workdir fill refuses
+ *     every path under '.pl', which is reserved for platform files, and has done since v4.3.2.
+ *     So the directory is made at run time, by a script, with mkdir -p.
+ *
+ *   - The SDK cannot tell a Kubernetes deployment from a laptop: plapi.getExecutors() reports
+ *     runner TYPES ('executor' / 'batch'), and the k8s driver is 'executor', same as docker and a
+ *     bare binary. So the same wrapper has to work everywhere.
+ *
+ * The wrapper never touches the command a block wrote. It receives the fully rendered command as
+ * "$@", so the backend still renders every expression over the original argument list and the
+ * script only ever sees the result.
+ *
+ * Everything about the workaround lives in this file. Deleting it is how the workaround goes away
+ * once no supported backend needs it.
+ */
+
+ll := import(":ll")
+text := import("text")
+
+// SCRIPT_FILE_NAME is the wrapper's name in the working directory.
+//
+// Fixed, not per-run: a file's name and content are part of the exec CID, so a stable name keeps
+// identical commands deduplicating. It sits at the workdir root and NOT under '.pl/', because
+// workdir fill refuses that directory - the hash suffix is there so it cannot collide with a name
+// a block chose.
+SCRIPT_FILE_NAME := ".pl-run-compat-f9b7eca1b8.sh"
+
+// SCRATCH_PATH_EXPRESSION is the command expression a block writes to name its temporary
+// directory. A backend from before the contract has no 'system.scratch' at all, so the expression
+// does not render empty - expr.Eval returns nil and the command dies with "variable is not
+// defined". Rewriting it is what keeps such a block running.
+SCRATCH_PATH_EXPRESSION := "{system.scratch.path}"
+
+// WORKDIR_TMP_REL_PATH is the temporary directory relative to the working directory - the same
+// place the current backend points TMPDIR at. The command's working directory IS the workdir, so
+// the relative form names the same directory without the SDK having to know its absolute path.
+WORKDIR_TMP_REL_PATH := ".pl/tmp"
+
+// script returns the wrapper's text.
+//
+// Held in a FILE, never passed as an inline 'sh -c' script: the Kubernetes job script runs the
+// command as `sh -c "$PL_JOB_CMD_AND_ARGS"`, so an inline script would be parsed by that outer
+// shell first and "$@" would expand there, empty. Text in a file never passes through it.
+script := func() {
+	return `#!/bin/sh
+
+# Compatibility layer between a current workflow-tengo SDK and a Platforma Backend from before
+# the temporary-directory contract. Update the backend and this file stops appearing here.
+#
+# Written by exec.tmpdirCompat in @platforma-sdk/workflow-tengo.
+
+wd="${PL_JOB_WORKDIR:-$PWD}"
+tmp="$wd/` + WORKDIR_TMP_REL_PATH + `"
+mkdir -p "$tmp"
+
+TMPDIR="$tmp"
+TMP="$tmp"
+export TMPDIR TMP
+
+exec "$@"
+`
+}
+
+// isNeeded reports whether the backend leaves the temporary directory to the SDK.
+//
+// Either flag means the backend is new enough to be left alone: 'supports' says it understands the
+// request and guarantees TMPDIR, 'has' says a deployment old enough to predate the guarantee at
+// least serves scratch storage.
+isNeeded := func(feats) {
+	return !feats.supportsScratchSpaceRequests && !feats.hasScratchSpace
+}
+
+// isWindows reports whether the runner puts commands on a Windows host, judged by the path
+// separator the backend reports. Docker is checked before this: a container is Linux whatever the
+// runner runs on.
+isWindows := func() {
+	return ll.pathSeparator == "\\"
+}
+
+// concat returns prefix followed by tail.
+//
+// Not append(prefix, tail...): tengo's append rejects a zero-length spread with "wrong number of
+// arguments", so an image that declares no entrypoint would blow up on the happy path.
+concat := func(prefix, tail) {
+	result := copy(prefix)
+	for item in tail {
+		result = append(result, item)
+	}
+
+	return result
+}
+
+// _assertNotWindows refuses the workaround on Windows. Windows ships only as a built-in backend
+// whose version we control, so the answer there is to update it rather than to keep a second,
+// cmd.exe-shaped wrapper alive.
+_assertNotWindows := func() {
+	ll.assert(!isWindows(),
+		"exec.builder: this Platforma Backend is too old to provide a temporary directory (TMPDIR),"+
+			" and the workaround for it is POSIX-shell only, so it cannot run on Windows."+
+			" Update Platforma Backend to a version reporting 'supportsScratchSpaceRequests'.")
+}
+
+// patchSoftwareDescriptor routes a software's command through the wrapper.
+//
+// All three execution shapes carry their command as '<kind>.cmd', an array of '[command, args...]',
+// so all three are patched the same way - except docker, where the image's ENTRYPOINT is the right
+// hook: 'cmd' then arrives at the script as "$@" untouched, which is what the proof of concept
+// validated.
+//
+// An image that already declares an entrypoint keeps it, moved behind the script, so replacing the
+// entrypoint never silently drops the image's own.
+//
+// Takes and returns a plain (non-strict) descriptor map.
+patchSoftwareDescriptor := func(descriptor, isDockerAvailable) {
+	if isDockerAvailable && !is_undefined(descriptor.docker) {
+		docker := ll.fromStrict(descriptor.docker)
+
+		entrypoint := docker.entrypoint
+		if is_undefined(entrypoint) { entrypoint = [] }
+		docker.entrypoint = concat(["sh", "./" + SCRIPT_FILE_NAME], entrypoint)
+
+		descriptor.docker = docker
+		return descriptor
+	}
+
+	// A bare binary, or a locally built package during block development. Both run on the runner
+	// host, so the wrapper has to be a shell the host actually has.
+	_assertNotWindows()
+
+	for kind in ["local", "binary"] {
+		if is_undefined(descriptor[kind]) { continue }
+
+		pkg := ll.fromStrict(descriptor[kind])
+		ll.assert(is_array(pkg.cmd) && len(pkg.cmd) != 0,
+			"exec.tmpdirCompat: software descriptor %q has no 'cmd' to wrap", kind)
+
+		pkg.cmd = concat(["sh", "./" + SCRIPT_FILE_NAME], pkg.cmd)
+		descriptor[kind] = pkg
+	}
+
+	return descriptor
+}
+
+// wrapCommand routes a command a block spelled out itself - exec.builder().cmd(...), with no
+// software behind it - through the wrapper. Returns the new cmd and the arguments to PREPEND.
+//
+// The caller must prepend to the typed argument list as well, or an exec that used argExpr would
+// lose the wrapper.
+wrapCommand := func(cmd) {
+	_assertNotWindows()
+
+	return {
+		cmd: "sh",
+		prependArgs: ["./" + SCRIPT_FILE_NAME, cmd]
+	}
+}
+
+// rewriteScratchPath replaces '{system.scratch.path}' with the relative temporary directory in one
+// argument or environment value. Anything else in the string is left for the backend to render, so
+// an expression that mixed the path into a larger one still evaluates.
+rewriteScratchPath := func(value) {
+	if !is_string(value) {
+		return value
+	}
+
+	return text.replace(value, SCRATCH_PATH_EXPRESSION, WORKDIR_TMP_REL_PATH, -1)
+}
+
+export ll.toStrict({
+	SCRIPT_FILE_NAME: SCRIPT_FILE_NAME,
+	WORKDIR_TMP_REL_PATH: WORKDIR_TMP_REL_PATH,
+	SCRATCH_PATH_EXPRESSION: SCRATCH_PATH_EXPRESSION,
+
+	script: script,
+	isNeeded: isNeeded,
+	isWindows: isWindows,
+	patchSoftwareDescriptor: patchSoftwareDescriptor,
+	wrapCommand: wrapCommand,
+	rewriteScratchPath: rewriteScratchPath,
+	concat: concat
+})
