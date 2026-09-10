@@ -53,7 +53,12 @@ tplTest.concurrent.for([
       // Content roundtrip is intentionally not asserted — pt truncates the
       // target before reading all source rows (same path read+write race),
       // so the output is a partial TSV. We only care that the write succeeded.
-      expect(settled).not.toBeInstanceOf(Error);
+      // Report the message rather than the type: toBeInstanceOf prints only that the
+      // value was an Error, so the reason pt could not write never reached the failure
+      // output and the k8s run could not be told apart from a slow one.
+      if (settled instanceof Error) {
+        expect.fail(`pt failed with { writable: true }: ${settled.message}`);
+      }
       expect(settled).toBeTypeOf("string");
       expect(settled).toMatch(/^a\tb/);
     } else {
