@@ -13,12 +13,17 @@ jobs:
     outputs:
       has-pending: ${{ steps.check.outputs.has-pending }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       # hz-ubuntu-dind has Node baked in the hostedtoolcache but not on PATH;
       # set it up (cache hit on the baked 22.x) so `npx` is available.
+      #
+      # Pinned to v4 deliberately. v5 acts on the "packageManager": "pnpm@..." field
+      # in package.json and then fails with "Unable to locate executable file: pnpm",
+      # because this runner has no pnpm and this job does not need one - it only wants
+      # npx. Moving to v5 means installing pnpm here purely to satisfy the detection.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
