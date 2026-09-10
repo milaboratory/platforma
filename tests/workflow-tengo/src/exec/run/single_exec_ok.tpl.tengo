@@ -1,0 +1,27 @@
+/**
+ * MILAB-6771 fixture: one exec that succeeds. Used as the expensive upstream step in
+ * the case where an intermediate template, not the command, is what fails.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+fmt := import("fmt")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	run := exec.builder().
+		name("milab6771-okstage").
+		cpu(1).ram("50Mi").
+		inLightQueue().
+		cmd("/usr/bin/env").
+		arg("bash").
+		arg("-c").
+		arg(fmt.sprintf("echo %q > out.txt", inputs.payload)).
+		saveFileContent("out.txt").
+		run()
+
+	return {
+		main: run.getFileContent("out.txt")
+	}
+})
