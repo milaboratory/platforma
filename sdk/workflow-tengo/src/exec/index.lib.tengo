@@ -1344,7 +1344,10 @@ builder := func() {
 			// into the working directory makes the directory and execs the real command behind it.
 			// See :exec.tmpdir-compat for why it has to be a file, and why the directory cannot be
 			// created any other way.
-			tmpdirCompatNeeded := tmpdirCompat.isNeeded(feats)
+			tmpdirCompatNeeded := tmpdirCompat.isNeeded(
+				feats,
+				tmpdirCompat.isSizedRequest(scratchFreeSpace, scratchFormulaAst)
+			)
 			if tmpdirCompatNeeded {
 				filesToWrite[tmpdirCompat.SCRIPT_FILE_NAME] = tmpdirCompat.script()
 

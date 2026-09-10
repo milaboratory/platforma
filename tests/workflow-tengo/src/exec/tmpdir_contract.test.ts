@@ -12,10 +12,10 @@ import { tplTest } from "@platforma-sdk/test";
  * The template fails the command outright if either variable is unset, so a green run here means
  * the values arrived, not merely that the exec completed.
  *
- * One backend window is knowingly out of scope: 4.4.0 through 4.4.3 report scratch storage but
- * decide TMPDIR from the size of the request, so a sizeless request gets none and this test fails
- * against them by design. See exec.tmpdirCompat.isNeeded. The contract holds before 4.4.0 and from
- * 4.4.4 on.
+ * Three backend shapes reach the same result here and the test cannot tell them apart, which is
+ * the point: one that guarantees the directory itself, one from before scratch space existed, and
+ * a 4.4.0-4.4.3 backend that reports scratch storage but gives a sizeless request no TMPDIR. The
+ * last two get it from the SDK's wrapper. See exec.tmpdirCompat.isNeeded.
  */
 tplTest(
   "tmpdir-and-scratch-path-agree",
