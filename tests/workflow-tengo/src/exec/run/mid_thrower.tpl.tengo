@@ -1,5 +1,5 @@
 /**
- * MILAB-6771 fixture: an intermediate template that fails on purpose.
+ * an intermediate template that fails on purpose.
  *
  * It takes the upstream exec's result as an input, so by the time this body runs the
  * command has already succeeded. The failure therefore comes from template code, not

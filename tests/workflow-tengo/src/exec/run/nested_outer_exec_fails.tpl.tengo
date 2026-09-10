@@ -1,5 +1,5 @@
 /**
- * MILAB-6771 fixture: outer layer of a nested chain whose deepest template runs the
+ * outer layer of a nested chain whose deepest template runs the
  * failing exec. Two template boundaries sit between the render root and the failure.
  */
 
