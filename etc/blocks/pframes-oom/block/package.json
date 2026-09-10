@@ -1,0 +1,55 @@
+{
+  "name": "@milaboratories/milaboratories.test-pframes-oom",
+  "version": "1.0.0",
+  "private": true,
+  "files": [
+    "dist",
+    "block-pack"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "sources": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "ts-builder build --target block-facade && block-tools pack",
+    "prepublishOnly": "block-tools publish -r s3://milab-euce1-prod-pkgs-s3-block-registry/aux/dev/?region=eu-central-1 --registry-serve-url https://aux-blocks.pl-open.science",
+    "do-pack": "shx rm -f package.tgz && pnpm pack && shx mv *.tgz package.tgz",
+    "check": "ts-builder type-check --target block-facade"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@milaboratories/milaboratories.test-pframes-oom.kind": "workspace:*",
+    "@milaboratories/milaboratories.test-pframes-oom.model": "workspace:*",
+    "@milaboratories/milaboratories.test-pframes-oom.ui": "workspace:*",
+    "@milaboratories/milaboratories.test-pframes-oom.workflow": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/block-tools": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
+    "shx": "catalog:",
+    "typescript": "catalog:"
+  },
+  "block": {
+    "components": {
+      "workflow": "@milaboratories/milaboratories.test-pframes-oom.workflow/dist/tengo/tpl/main.plj.gz",
+      "model": "@milaboratories/milaboratories.test-pframes-oom.model/dist/model.json",
+      "ui": "@milaboratories/milaboratories.test-pframes-oom.ui/dist"
+    },
+    "meta": {
+      "title": "PFrames OOM reproducer",
+      "description": "Manually trigger a large native pframes join to reproduce memory exhaustion.",
+      "organization": {
+        "name": "MiLaboratories Inc",
+        "url": "https://milaboratories.com/"
+      },
+      "marketplaceRanking": 10
+    }
+  }
+}
