@@ -34,7 +34,7 @@ tplTest(
 
     expect(reported).toBeDefined();
 
-    const [tmpdir, tmp, scratchPath, probe] = reported!.split(" ");
+    const [tmpdir, tmp, scratchPath, scratchGiB, probe] = reported!.split(" ");
 
     // The probe file the command wrote and read back: proof the directory is writable, not just
     // that a path was set. On an old backend this is what shows the wrapper's mkdir -p ran.
@@ -49,5 +49,10 @@ tplTest(
 
     // Wherever it is backed, the directory is the one the contract names.
     expect(tmpdir).toContain(".pl/tmp");
+
+    // The size a sizeless request is answered with. A backend that renders the expression says 0
+    // because 0 was asked for; one that has no such variable would kill the command outright, so
+    // the SDK rewrites it to the same 0. Either way the block reads a number, not an error.
+    expect(scratchGiB).toBe("0");
   },
 );

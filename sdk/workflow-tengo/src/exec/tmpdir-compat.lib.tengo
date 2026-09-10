@@ -2,7 +2,8 @@
  *
  * A current backend guarantees both, pointed at '<workdir>/.pl/tmp', to every command that asked
  * for scratch space - any size, including none. A backend from before that contract sets TMPDIR
- * only for a sized request, or not at all, and has no '{system.scratch.path}' to render.
+ * only for a sized request, or not at all, and has no '{system.scratch.path}' and 
+ * '{system.scratch.<size>}' to render.
  *
  * The SDK closes the gap itself rather than leaving blocks to branch on a flag. Two obstacles
  * shaped how:
@@ -11,16 +12,19 @@
  *     every path under '.pl', which is reserved for platform files, and has done since v4.3.2.
  *     So the directory is made at run time, by a script, with mkdir -p.
  *
- *   - The SDK cannot tell a Kubernetes deployment from a laptop: plapi.getExecutors() reports
- *     runner TYPES ('executor' / 'batch'), and the k8s driver is 'executor', same as docker and a
- *     bare binary. So the same wrapper has to work everywhere.
+ *   - The SDK does not where it runs: on linux server in Kubernetes or on laptop. But it can tell
+ *     if it is Windows machine and if commands will be run in containers.
  *
- * The wrapper never touches the command a block wrote. It receives the fully rendered command as
- * "$@", so the backend still renders every expression over the original argument list and the
- * script only ever sees the result.
+ * For backends prior 4.4.4 executed on non-windows systems we apply wrapper shell script
+ * that modifies command's env variables setting TMPDIR and TMP vars accordingly with 4.4.4 and abve.
+ * We intentionally ignore Windows hosts as this is builtin-only backends we can update easily
+ * along with Desktop App.
  *
  * Everything about the workaround lives in this file. Deleting it is how the workaround goes away
  * once no supported backend needs it.
+ *
+ * The really dirty part is how we deal with expr variables (system.scratch.*): we have to
+ * track their usage and treat them on tengo side for backends before 4.4.0
  */
 
 ll := import(":ll")
@@ -34,11 +38,18 @@ text := import("text")
 // a block chose.
 SCRIPT_FILE_NAME := ".pl-run-compat-f9b7eca1b8.sh"
 
-// SCRATCH_PATH_EXPRESSION is the command expression a block writes to name its temporary
-// directory. A backend from before the contract has no 'system.scratch' at all, so the expression
-// does not render empty - expr.Eval returns nil and the command dies with "variable is not
-// defined". Rewriting it is what keeps such a block running.
-SCRATCH_PATH_EXPRESSION := "{system.scratch.path}"
+// SCRATCH_PATH_VARIABLE and SCRATCH_SIZE_VARIABLES are the command-expression variables a block
+// writes to ask about its scratch space. A backend from before the contract has no 'system.scratch'
+// at all, so these do not render empty - expr.Eval returns nil and the command dies with "variable
+// is not defined". Rewriting them is what keeps such a block running.
+//
+// SCRATCH_SIZE_VARIABLES lists every unit the backend answers with, and lists them LONGEST FIRST.
+// The substitution is textual, so 'system.scratch.b' would otherwise match inside
+// 'system.scratch.bytes' and leave '0ytes' behind.
+SCRATCH_PATH_VARIABLE := "system.scratch.path"
+SCRATCH_SIZE_VARIABLES := ["system.scratch.bytes", "system.scratch.gib", "system.scratch.kib",
+	"system.scratch.mib", "system.scratch.gb", "system.scratch.kb", "system.scratch.mb",
+	"system.scratch.b"]
 
 // WORKDIR_TMP_REL_PATH is the temporary directory relative to the working directory - the same
 // place the current backend points TMPDIR at. The command's working directory IS the workdir, so
@@ -199,21 +210,54 @@ wrapCommand := func(cmd) {
 	}
 }
 
-// rewriteScratchPath replaces '{system.scratch.path}' with the relative temporary directory in one
-// argument or environment value. Anything else in the string is left for the backend to render, so
-// an expression that mixed the path into a larger one still evaluates.
-rewriteScratchPath := func(value) {
+// rewriteScratchExpressions removes every reference to 'system.scratch' from one argument or
+// environment value, so a block that asks about its scratch space still runs on a backend that has
+// no such variable to answer with.
+//
+// The size becomes 0 and the path becomes the temporary directory the wrapper creates, which is the
+// truth on such a backend: there is a directory to write into, and no device sized behind it. A
+// block reading the size to decide how much to spill therefore sees "nothing promised" rather than
+// a number no one honours.
+//
+// Two shapes are handled, because a command expression can be a whole argument or one piece of a
+// larger string:
+//
+//   - The bare form, '{system.scratch.gib}', is replaced with the value itself. That leaves no
+//     braces, so it does not depend on the backend evaluating anything.
+//   - Inside any remaining expression, the variable is replaced where it stands, so
+//     '{system.scratch.gib * 2}' keeps evaluating - now against 0. The path is quoted there,
+//     because it is a string where the units are numbers.
+//
+// Every other expression is left for the backend to render.
+rewriteScratchExpressions := func(value) {
 	if !is_string(value) {
 		return value
 	}
 
-	return text.replace(value, SCRATCH_PATH_EXPRESSION, WORKDIR_TMP_REL_PATH, -1)
+	// Bare forms first: each leaves no expression behind, so nothing below can match it again.
+	value = text.replace(value, "{" + SCRATCH_PATH_VARIABLE + "}", WORKDIR_TMP_REL_PATH, -1)
+	for variable in SCRATCH_SIZE_VARIABLES {
+		value = text.replace(value, "{" + variable + "}", "0", -1)
+	}
+
+	if !text.contains(value, "system.scratch.") {
+		return value
+	}
+
+	// What is left sits inside a larger expression, which the backend still evaluates.
+	value = text.replace(value, SCRATCH_PATH_VARIABLE, "'" + WORKDIR_TMP_REL_PATH + "'", -1)
+	for variable in SCRATCH_SIZE_VARIABLES {
+		value = text.replace(value, variable, "0", -1)
+	}
+
+	return value
 }
 
 export ll.toStrict({
 	SCRIPT_FILE_NAME: SCRIPT_FILE_NAME,
 	WORKDIR_TMP_REL_PATH: WORKDIR_TMP_REL_PATH,
-	SCRATCH_PATH_EXPRESSION: SCRATCH_PATH_EXPRESSION,
+	SCRATCH_PATH_VARIABLE: SCRATCH_PATH_VARIABLE,
+	SCRATCH_SIZE_VARIABLES: SCRATCH_SIZE_VARIABLES,
 
 	script: script,
 	isNeeded: isNeeded,
@@ -221,6 +265,6 @@ export ll.toStrict({
 	isWindows: isWindows,
 	patchSoftwareDescriptor: patchSoftwareDescriptor,
 	wrapCommand: wrapCommand,
-	rewriteScratchPath: rewriteScratchPath,
+	rewriteScratchExpressions: rewriteScratchExpressions,
 	concat: concat
 })

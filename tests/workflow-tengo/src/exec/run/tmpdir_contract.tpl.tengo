@@ -51,10 +51,14 @@ self.body(func(inputs) {
 			// the working directory, because the SDK never learns the absolute path. Both name the
 			// same directory, and 'cd && pwd' is what proves it - while also proving the path is a
 			// directory the command can actually reach.
-			"printf '%s %s %s %s' \"$TMPDIR\" \"$TMP\" \"$(cd \"$1\" && pwd)\" \"$(cat \"$TMPDIR/probe.txt\")\""
+			"printf '%s %s %s %s %s' \"$TMPDIR\" \"$TMP\" \"$(cd \"$1\" && pwd)\" \"$2\" \"$(cat \"$TMPDIR/probe.txt\")\""
 		).
 		arg("sh"). // $0 for the inline script
 		argExpr("{system.scratch.path}").
+		// The size, which a request of 0 answers with 0 on a backend that renders it. On one that
+		// does not, the SDK rewrites the expression to the same 0 - so a block reading the size is
+		// told "nothing promised" instead of dying on an undefined variable.
+		argExpr("{system.scratch.gib}").
 		saveStdoutContent().
 		run()
 
