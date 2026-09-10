@@ -4,8 +4,15 @@
 "@milaboratories/columns-collection-driver": minor
 ---
 
-Add `reverseLinkers` to column discovery, to walk linkers fine → coarse and find the roots above the anchors instead of the leaves below them
+Column discovery can now walk linkers up the hierarchy: pass `leaves` instead of `anchors` to find what contains the given columns
 
-Discovery entered linkers on the many-side and exited on the one-side (e.g. `sample` → `cell`). `DiscoverColumnsOptions.reverseLinkers` flips the entry side so the traversal walks `cell` → `sample`. Only the traversal rule is reversed — linker columns are still read as-is, so results stay correct against the real linkers.
+Discovery only ever walked down — anchored on `sample`, it reached `cell`, but there was no way to go from `cell` to the `sample`-level columns above it. The direction is now expressed by which key you fill in, so there is no new flag:
 
-The flag is optional and omitted from the request when false, so existing discovery calls are unchanged. It is traversal scope, so — like `mode` and `maxHops` — it is not part of the `.filter()` surface. Requires the pframes-rs engine support from platforma-open/pframes-rs#295.
+```ts
+collection.discover({ anchors: { s: sampleRef }, maxHops: 4 }); // down to what they contain
+collection.discover({ leaves: { c: cellRef }, maxHops: 4 }); // up to what contains them
+```
+
+The two keys are mutually exclusive; `resolveAnchorSide` resolves them into the request's `anchorsAre` discriminator. Only the traversal rule changes — linker columns are still read as-is, so results stay correct against the real linkers. `leaves` is not part of the `.filter()` surface, which pins `maxHops: 0`.
+
+Existing `anchors` calls are unchanged, down to a byte-identical request. Requires the engine support from platforma-open/pframes-rs#295.

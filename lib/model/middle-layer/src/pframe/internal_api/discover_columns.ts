@@ -58,18 +58,14 @@ export interface DiscoverColumnsConstraints {
   /** Allow hit column axes to be qualified (contextDomain extended) */
   allowHitQualifications: boolean;
   /**
-   * Read linker columns fine → coarse instead of coarse → fine.
+   * Where the anchors the caller supplies sit in the hierarchy a linker
+   * expresses. `"roots"` (the default) walks down to what the anchors contain;
+   * `"leaves"` walks up to what contains them.
    *
-   * A linker's axes split into a one-side and a many-side. By default a
-   * traversal enters on the many-side and exits on the one-side (e.g.
-   * `sample` → `cell`), which finds the leaves below an anchor. Setting this
-   * flips the entry side, so the traversal walks `cell` → `sample` and finds
-   * the roots above the anchor instead.
-   *
-   * Only the traversal rule is reversed — linker columns themselves are read
-   * as-is. Omit or set `false` for the default direction.
+   * Only the traversal rule changes — linker columns themselves are read as-is.
+   * Omit for the default direction.
    */
-  reverseLinkers?: boolean;
+  anchorsAre?: "roots" | "leaves";
 }
 
 /** V2 request with separate include/exclude filters */
