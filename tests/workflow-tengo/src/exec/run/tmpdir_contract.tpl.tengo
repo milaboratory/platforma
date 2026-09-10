@@ -46,7 +46,12 @@ self.body(func(inputs) {
 			": \"${TMPDIR:?TMPDIR is not set}\"; " +
 			": \"${TMP:?TMP is not set}\"; " +
 			"printf probe > \"$TMPDIR/probe.txt\"; " +
-			"printf '%s %s %s %s' \"$TMPDIR\" \"$TMP\" \"$1\" \"$(cat \"$TMPDIR/probe.txt\")\""
+			// The scratch path is reported RESOLVED, not as it arrived. A current backend renders
+			// it absolute; the compatibility wrapper can only rewrite it to '.pl/tmp' relative to
+			// the working directory, because the SDK never learns the absolute path. Both name the
+			// same directory, and 'cd && pwd' is what proves it - while also proving the path is a
+			// directory the command can actually reach.
+			"printf '%s %s %s %s' \"$TMPDIR\" \"$TMP\" \"$(cd \"$1\" && pwd)\" \"$(cat \"$TMPDIR/probe.txt\")\""
 		).
 		arg("sh"). // $0 for the inline script
 		argExpr("{system.scratch.path}").
