@@ -30,6 +30,6 @@ tplTest.concurrent("exec error: command exits with non-zero code", async ({ help
   // must mention the exit code
   expect(msg).toMatch(/Exited with code 1/);
   // must contain original command arguments so the user can identify what failed
-  expect(msg).toContain("/usr/bin/env");
-  expect(msg).toContain("bash");
+  expect(msg).toContain("sh");
+  expect(msg).toContain(`exit ${exitCode}`);
 });
