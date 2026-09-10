@@ -19,3 +19,7 @@ Two consequences worth knowing:
 - A block no longer needs to branch on `hasScratchSpace` to arrange its own temporary storage.
 - On Windows the workaround cannot run, so an old backend there is refused with an error naming
   the fix. Windows ships only as a built-in backend, whose version is ours to update.
+- One backend window is knowingly excluded: 4.4.0 through 4.4.3 report scratch storage but decide
+  `TMPDIR` from the size of the request, so a request of `0` gets none there. Wrapping those would
+  rewrite `{system.scratch.path}` away from the real scratch device, which is worse. The guarantee
+  therefore holds before 4.4.0 and from 4.4.4 on.
