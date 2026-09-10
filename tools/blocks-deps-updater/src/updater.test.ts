@@ -5,6 +5,13 @@ import dedent from "dedent";
 import { describe, expect, it } from "vitest";
 import { updatePackages } from "./updater";
 
+/** Stand-in for the registry. A unit test asserting catalog rewriting has no business
+ * depending on npmjs.org being reachable, let alone fast. */
+const fakeLatest =
+  (versions: Record<string, string> = {}) =>
+  async (packageName: string) =>
+    versions[packageName] ?? "9.9.9";
+
 async function tmpDir(): Promise<AsyncDisposable & { path: string }> {
   // TODO: migrate to `mkdtempDisposable` after migration to Node.js 24
   const dirPath = await fs.mkdtemp(path.join(os.tmpdir(), "deps-updater-test-"));
@@ -34,7 +41,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n",
     );
 
-    await updatePackages(dir.path);
+    await updatePackages(dir.path, fakeLatest());
 
     expect(await readWorkspace(dir.path)).toBe(
       dedent`
@@ -56,7 +63,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n",
     );
 
-    await updatePackages(dir.path);
+    await updatePackages(dir.path, fakeLatest());
 
     const result = await readWorkspace(dir.path);
     expect(result).toContain("ag-grid-enterprise: ~34.1.2");
@@ -76,7 +83,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n",
     );
 
-    await updatePackages(dir.path);
+    await updatePackages(dir.path, fakeLatest());
 
     const result = await readWorkspace(dir.path);
     expect(result).toContain("ag-grid-enterprise");
@@ -94,7 +101,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n";
     await writeWorkspace(dir.path, content);
 
-    await updatePackages(dir.path);
+    await updatePackages(dir.path, fakeLatest());
 
     expect(await readWorkspace(dir.path)).toBe(content);
   });
@@ -110,7 +117,7 @@ describe("pinned versions enforcement", () => {
     await writeWorkspace(dir.path, content);
 
     const before = (await fs.stat(path.join(dir.path, "pnpm-workspace.yaml"))).mtimeMs;
-    await updatePackages(dir.path);
+    await updatePackages(dir.path, fakeLatest());
     const after = (await fs.stat(path.join(dir.path, "pnpm-workspace.yaml"))).mtimeMs;
 
     expect(after).toBe(before);
@@ -127,7 +134,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n";
     await writeWorkspace(dir.path, content);
 
-    await updatePackages(dir.path);
+    await updatePackages(dir.path, fakeLatest());
 
     const result = await readWorkspace(dir.path);
     expect(result).not.toContain("ag-grid");
@@ -148,7 +155,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n",
     );
 
-    await updatePackages(dir.path);
+    await updatePackages(dir.path, fakeLatest());
 
     const result = await readWorkspace(dir.path);
     expect(result).toContain("# workspace config");
@@ -170,7 +177,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n",
     );
 
-    await updatePackages(dir.path);
+    await updatePackages(dir.path, fakeLatest());
 
     expect(await readWorkspace(dir.path)).toBe(
       dedent`
@@ -199,7 +206,7 @@ describe("pinned versions enforcement", () => {
       ` + "\n",
     );
 
-    await updatePackages(dir.path);
+    await updatePackages(dir.path, fakeLatest());
 
     const result = await readWorkspace(dir.path);
     expect(result).toContain("~34.1.2");
