@@ -1,0 +1,46 @@
+/**
+ * MILAB-6771 fixture: two chained execs where the second one fails.
+ *
+ * Stage 1 is the expensive step that succeeds; stage 2 consumes its file and exits
+ * non-zero. Both commands are deterministic, so stage 1's CID is stable across
+ * renders and a surviving result can be recovered instead of recomputed.
+ *
+ * Stage 1's result is deliberately NOT exposed as a template output. An output field
+ * would hold it from GC on its own and the test would pass without the feature under
+ * test doing anything.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+fmt := import("fmt")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	stage1 := exec.builder().
+		name("milab6771-stage1").
+		cpu(1).ram("50Mi").
+		inLightQueue().
+		cmd("/usr/bin/env").
+		arg("bash").
+		arg("-c").
+		arg(fmt.sprintf("echo %q > mid.txt", inputs.payload)).
+		saveFile("mid.txt").
+		run()
+
+	stage2 := exec.builder().
+		name("milab6771-stage2").
+		cpu(1).ram("50Mi").
+		inLightQueue().
+		cmd("/usr/bin/env").
+		arg("bash").
+		arg("-c").
+		arg("cat mid.txt >&2; echo 'stage2 died on purpose' >&2; exit 42").
+		addFile("mid.txt", stage1.getFile("mid.txt")).
+		saveStdoutContent().
+		run()
+
+	return {
+		main: stage2.getStdoutContent()
+	}
+})

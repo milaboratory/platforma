@@ -1,0 +1,22 @@
+/**
+ * MILAB-6771 fixture: middle layer of a nested chain. Renders the failing two-exec
+ * chain and forwards its output, so the error has to cross a template boundary.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+innerTpl := assets.importTemplate(":exec.run.two_execs_second_fails")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	run := render.create(innerTpl, {
+		payload: inputs.payload
+	})
+
+	return {
+		main: run.output("main")
+	}
+})
