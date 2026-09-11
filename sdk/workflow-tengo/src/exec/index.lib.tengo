@@ -19,6 +19,7 @@ constants := import(":constants")
 canonical := import(":canonical")
 monetization := import(":exec.monetization_internal")
 execConstants := import(":exec.constants")
+tmpdirCompat := import(":exec.tmpdir-compat")
 execFormula := import(":exec.formula")
 units := import(":units")
 feats := import(":feats")
@@ -61,9 +62,13 @@ _assertValidGpuRequest := func(amount, ctx) {
 }
 // A scratch request is a size string ("500GiB") or a number of bytes, with the same 16MiB floor
 // that catches a bytes-where-GiB-was-meant mistake.
+//
+// Exactly 0 is the one number below that floor which is accepted, because it is not a size at all:
+// it asks for the temporary directory the backend guarantees to every request, without a device
+// behind it. Anything between 1 byte and 16MiB stays a mistake.
 _assertValidScratchRequest := func(amount, ctx) {
 	validation.assertType(amount, ["or", "number", "string"], ctx + ": scratch space amount must be a number of bytes or a size string like '500GiB'")
-	ll.assert(is_string(amount) || amount >= 16 * units.MiB, ctx + ": scratch space in bytes should be at least 16MiB (did you pass bytes instead of GiB?)")
+	ll.assert(is_string(amount) || amount == 0 || amount >= 16 * units.MiB, ctx + ": scratch space in bytes should be at least 16MiB, or exactly 0 to ask only for a temporary directory (did you pass bytes instead of GiB?)")
 }
 
 /**
@@ -1333,6 +1338,53 @@ builder := func() {
 				sets.add(filesContentToSave, stderr)
 			}
 
+			// --- Temporary directory on a backend that does not provide one ---------------
+			// A current backend guarantees TMPDIR and TMP to every command that asked for scratch
+			// space. An older one does not, so the SDK provides them itself: a small script staged
+			// into the working directory makes the directory and execs the real command behind it.
+			// See :exec.tmpdir-compat for why it has to be a file, and why the directory cannot be
+			// created any other way.
+			tmpdirCompatNeeded := tmpdirCompat.isNeeded(
+				feats,
+				tmpdirCompat.isSizedRequest(scratchFreeSpace, scratchFormulaAst)
+			)
+			if tmpdirCompatNeeded {
+				filesToWrite[tmpdirCompat.SCRIPT_FILE_NAME] = tmpdirCompat.script()
+
+				// 'system.scratch' does not exist on such a backend - an expression naming it
+				// fails to evaluate rather than rendering empty - so every reference to it is
+				// removed. The path becomes the directory the wrapper creates, named relative
+				// to the working directory the command runs in, and the size becomes 0: there
+				// is somewhere to write, and no device sized behind it.
+				args = slices.map(args, tmpdirCompat.rewriteScratchExpressions)
+				argsTyped = slices.map(argsTyped, func(a) {
+					a.value = tmpdirCompat.rewriteScratchExpressions(a.value)
+					return a
+				})
+				envs = maps.mapValues(envs, tmpdirCompat.rewriteScratchExpressions)
+				envsTyped = maps.mapValues(envsTyped, func(e) {
+					e.value = tmpdirCompat.rewriteScratchExpressions(e.value)
+					return e
+				})
+
+				// A command a block spelled out itself. Software goes through its descriptor
+				// instead, further down, because that is where its command really lives.
+				if is_undefined(soft) {
+					wrapped := tmpdirCompat.wrapCommand(cmd)
+					cmd = wrapped.cmd
+					// Both lists, or an exec that used argExpr would lose the wrapper: the typed
+					// list is what the backend reads whenever it is sent at all.
+					// Not append(prefix, args...): tengo rejects a zero-length spread, and a
+					// command with no arguments at all is the common case.
+					args = tmpdirCompat.concat(wrapped.prependArgs, args)
+					argsTyped = tmpdirCompat.concat(
+						slices.map(wrapped.prependArgs, func(a) {
+							return { type: execConstants.ARG_TYPE_STRING, value: a }
+						}),
+						argsTyped)
+				}
+			}
+
 			// We don't want these values to be encoded as JSON's since
 			// values are pure bytes.
 			// Thus, we create a resource with a custom type here manually.
@@ -1493,7 +1545,22 @@ builder := func() {
 			}
 			// Scratch space stands on its own: it needs no cpu/ram companion, and a VRAM-style
 			// formula leaves the static field unset for the pure template to compute.
-			if !is_undefined(scratchFreeSpace) { quotaData.scratchFreeSpace = scratchFreeSpace }
+			// Always sent, defaulting to 0. The backend reads three states here and all three
+			// carry meaning: absent means "a block built before this contract, give it the
+			// environment it was tested on", 0 means "current SDK, no device wanted, but I do
+			// want a temporary directory", and a size means both. Leaving the field out when a
+			// block asked for nothing would make every current block look like an old one.
+			//
+			// Costs no deduplication: quotaData rides metaExecInputs below, which is excluded
+			// from the exec CID.
+			//
+			// Sent as a size STRING, never a bare number, whichever way the block spelled it: the
+			// backend parses this field through UnmarshalText, so a JSON number does not merely
+			// fail this exec - it fails to parse the quota and takes the runner controller down
+			// with it. The 'b' suffix is the same spelling the formula fallback above uses.
+			scratchRequest := is_undefined(scratchFreeSpace) ? 0 : scratchFreeSpace
+			if is_int(scratchRequest) { scratchRequest = string(scratchRequest) + "b" }
+			quotaData.scratchFreeSpace = scratchRequest
 			metaExecInputs := {
 				quota: smart.createJsonResource(quotaData)
 			}
@@ -1542,10 +1609,14 @@ builder := func() {
 
 			if !is_undefined(soft) {
 				pureExecInputs.softwareInfo = soft.resource
+				descriptor := ll.fromStrict(soft.descriptor)
+				if tmpdirCompatNeeded {
+					descriptor = tmpdirCompat.patchSoftwareDescriptor(descriptor, feats.isDockerAvailable)
+				}
 				pureExecInputs.runOptions.software = {
 					name: soft.name,
 					version: soft.version,
-					descriptor: ll.fromStrict(soft.descriptor)
+					descriptor: descriptor
 				}
 			}
 
