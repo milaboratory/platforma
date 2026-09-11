@@ -142,6 +142,12 @@ export type EnrichmentStep = EnrichmentLinkerStep;
  * (`canonicalize({ __isRef: true, blockId, name })`) which the workflow decodes
  * to a PlRef before resolving. For a prerun-sourced hop, supply a resolved
  * `{spec, data}` map in place of the id — `tableBuilder` accepts both.
+ *
+ * @deprecated Pass a `ColumnDiscoveredId` instead. It says the same thing —
+ * a hit plus the linker route to it — without restricting the hit and the hops
+ * to bare global ids, and the workflow now normalizes this form into it
+ * (`pframes.column-id.fromEnrichmentRef`). Kept working for existing callers;
+ * no removal date.
  */
 export type EnrichmentRef = {
   readonly __isEnrichment: "v1";

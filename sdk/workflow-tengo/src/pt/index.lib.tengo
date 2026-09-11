@@ -12,6 +12,7 @@ pframesBuilder := import(":pframes.builder")
 pframesConstants := import(":pframes.constants")
 pframesUtil := import(":pframes.util")
 pframesSpec := import(":pframes.spec")
+columnId := import(":pframes.column-id")
 render := import(":render")
 maps := import(":maps")
 canonical := import(":canonical")
@@ -764,8 +765,45 @@ workflow := func() {
 			}
 
 			for column in columns {
-				decoded := json.decode(column)
 				aliases = append(aliases, exp.col(column))
+
+				// A rich `ColumnUniversalId` states how to reach its column, so ask
+				// it instead of guessing from the presence of a field: a Discovered
+				// id becomes a real linker join, a Filtered one is sliced by
+				// ptabler, and a bare or spec-patched leaf is a plain column. Pool
+				// keys that are not ids at all — multi-result element keys,
+				// caller-supplied query keys — keep the original path.
+				if columnId.isUniversalId(column) {
+					unwrapped := columnId.unwrap(column)
+					hasRoute := !is_undefined(unwrapped.discovery) &&
+						!is_undefined(unwrapped.discovery.path) &&
+						len(unwrapped.discovery.path) > 0
+
+					if hasRoute {
+						queryEntry := bundle.getQueryEntry(column)
+						entries = append(entries,
+							p._rawQueryEntry(queryEntry.columns, queryEntry.joinEntry))
+					} else if !is_undefined(unwrapped.axisFilters) && len(unwrapped.axisFilters) > 0 {
+						entries = append(entries, p.slicedColumn(
+							column,
+							bundle.getColumn(column, {
+								keepColumns: true,
+								ignoreNonPartitioned: true
+							}),
+							slices.map(unwrapped.axisFilters, func(axisFilter) {
+								return {
+									axisIndex: axisFilter[0],
+									constant: axisFilter[1]
+								}
+							})
+						))
+					} else {
+						entries = append(entries, p.column(column, bundle.getColumn(column)))
+					}
+					continue
+				}
+
+				decoded := json.decode(column)
 
 				if (is_undefined(decoded.axisFilters)) {
 					entry := p.column(column, bundle.getColumn(decoded))
