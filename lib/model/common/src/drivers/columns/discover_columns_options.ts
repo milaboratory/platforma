@@ -85,6 +85,15 @@ export type ColumnsFilterOptions = Omit<DiscoverColumnsOptions, "mode" | "maxHop
  * Which key the caller used *is* the statement about where the given columns
  * sit in the hierarchy, so there is no separate direction option to pass.
  *
+ * Note that `leaves` are anchors too: both keys name columns that are already
+ * integrated and that discovery pins to. `anchors` in the result is therefore
+ * the general term — the returned `anchorsAre` says which end of a linker the
+ * caller put them on, and nothing but the key name is dropped here.
+ *
+ * The engine takes one axes integration plus that one discriminator, so the
+ * two keys cannot stay separate all the way down; carrying two arrays on the
+ * wire would encode a boolean as field presence and be collapsed on arrival.
+ *
  * @throws if both `anchors` and `leaves` are given.
  */
 export function resolveAnchorSide(options: Pick<DiscoverColumnsOptions, "anchors" | "leaves">): {
