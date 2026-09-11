@@ -1,6 +1,8 @@
 import polars as pl
 import os
-from typing import List, Optional, Dict, Any 
+import stat
+import tempfile
+from typing import List, Optional, Dict, Any
 import msgspec
 
 from ptabler.common import toPolarsType, PType
@@ -140,6 +142,73 @@ class ReadParquet(BaseReadLogic, tag="read_parquet"):
         """
         return pl.scan_parquet(file_path, **scan_kwargs)
 
+PARTIAL_SUFFIX = ".ptabler-partial"
+
+
+def _create_partial_output(file_path: str) -> str:
+    """
+    Creates the file a sink writes into, already carrying the mode its target will need.
+
+    The name is unique, so two steps writing one target never share a partial file and
+    neither can land on a name the workflow's own data uses.
+
+    The mode is set here rather than at the move because the sink starts writing as soon
+    as it is collected: a target restricted to 0o600 whose partial file was created under
+    the umask would be readable by anyone with the workspace for as long as the write
+    takes. mkstemp opens at 0o600, so the window never exists, and the target's own mode
+    is applied before any row is written.
+    """
+    directory, name = os.path.split(file_path)
+    handle, temp_path = tempfile.mkstemp(
+        dir=directory or ".", prefix=f".{name}.", suffix=PARTIAL_SUFFIX
+    )
+    os.close(handle)
+
+    target_mode = _target_mode(file_path)
+    if target_mode is not None:
+        os.chmod(temp_path, target_mode)
+
+    return temp_path
+
+
+def _target_mode(file_path: str) -> Optional[int]:
+    """Returns the mode of an existing target, or None when the write creates it."""
+    try:
+        return stat.S_IMODE(os.stat(file_path).st_mode)
+    except FileNotFoundError:
+        return None
+
+
+def _target_refuses_writes(file_path: str) -> bool:
+    """
+    Reports whether an existing target would reject a write through its own mode.
+
+    The backend hands a block its workdir files read-only unless the workflow asked for
+    a writable copy, and that mode is the whole enforcement. A path that does not exist
+    yet refuses nothing — the write creates it.
+    """
+    return os.path.exists(file_path) and not os.access(file_path, os.W_OK)
+
+
+def _replace_preserving_mode(temp_path: str, file_path: str) -> None:
+    """
+    Moves a finished sink file onto its target path, keeping the mode the target had.
+
+    os.replace swaps in a new inode, so the target would otherwise come back with the
+    partial file's mode. A workdir file the backend staged writable at 0o600 has that
+    mode for a reason, and a block that writes it must not hand back something read-only.
+
+    The partial file was created carrying this mode already, and polars truncates rather
+    than recreates it, so this re-applies what is usually the same mode. It is here for
+    the case where that stops holding.
+    """
+    target_mode = _target_mode(file_path)
+    if target_mode is not None:
+        os.chmod(temp_path, target_mode)
+
+    os.replace(temp_path, file_path)
+
+
 class BaseWriteLogic(PStep):
     """
     Abstract base class for PSteps that write tables to files.
@@ -173,10 +242,28 @@ class BaseWriteLogic(PStep):
             selected_lf = lf_to_write.select(self.columns)
         
         file_path = os.path.join(ctx.settings.root_folder, normalize_path(self.file))
-        sink_plan = self._do_sink(selected_lf, file_path)
+
+        # Sink to a sibling temporary file and move it into place once every sink has
+        # been collected. A workflow is allowed to read and write one path — read_csv
+        # then write_csv over the same file — and the read is lazy, so sinking straight
+        # to file_path truncates a file polars is still reading. On a local filesystem
+        # that survives on cached pages; on a network filesystem the mapping goes away
+        # underneath the reader and the process takes SIGBUS.
+        if _target_refuses_writes(file_path):
+            # The mode of an existing target is the only thing standing between a block
+            # and a file it was given read-only, and a partial file would walk straight
+            # past it: os.replace needs the directory to be writable, never the file.
+            # Sink onto the target so the write fails the way the caller expects.
+            ctx.add_sink(self._do_sink(selected_lf, file_path))
+            return
+
+        temp_path = _create_partial_output(file_path)
+        sink_plan = self._do_sink(selected_lf, temp_path)
 
         # Add the sink plan to the context for later execution
         ctx.add_sink(sink_plan)
+        ctx.add_partial_output(temp_path)
+        ctx.chain_task(lambda: _replace_preserving_mode(temp_path, file_path))
 
 class WriteCsv(BaseWriteLogic, tag="write_csv"):
     """

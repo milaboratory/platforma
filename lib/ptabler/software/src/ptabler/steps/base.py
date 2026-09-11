@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 import msgspec
@@ -26,6 +27,7 @@ class StepContext:
         self._table_space = initial_table_space if initial_table_space is not None else {}
         self._lazy_frames: list[pl.LazyFrame] = []
         self._chained_tasks: list[callable] = []
+        self._partial_outputs: list[str] = []
     
     @property
     def settings(self) -> GlobalSettings:
@@ -81,6 +83,39 @@ class StepContext:
         self._chained_tasks.append(task)
     
     
+    def add_partial_output(self, path: str):
+        """
+        Records a file a sink writes before it is moved onto its target.
+
+        A run that fails leaves those behind, and in a block's working directory a
+        leftover file is not inert — it is collected as part of the block's output. The
+        workflow removes whatever is still registered here once execution ends.
+
+        Args:
+            path: Absolute path of the partial file
+        """
+        self._partial_outputs.append(path)
+
+    @property
+    def partial_outputs(self) -> list[str]:
+        """Returns the partial sink files recorded so far (read-only)."""
+        return self._partial_outputs
+
+    def cleanup_partial_outputs(self):
+        """
+        Removes every partial sink file still recorded, and forgets them.
+
+        A partial file that reached its target has already been moved off the disk path
+        this holds, so removing what is left removes only the writes that never landed.
+        Safe to call more than once.
+        """
+        for partial_output in self._partial_outputs:
+            try:
+                os.remove(partial_output)
+            except FileNotFoundError:
+                pass
+        self._partial_outputs = []
+
     def into_parts(self) -> tuple[dict[str, pl.LazyFrame], list[pl.LazyFrame], list[callable]]:
         """
         Destructs the StepContext and returns its internal state.
