@@ -198,8 +198,9 @@ def _replace_preserving_mode(temp_path: str, file_path: str) -> None:
     partial file's mode. A workdir file the backend staged writable at 0o600 has that
     mode for a reason, and a block that writes it must not hand back something read-only.
 
-    The mode is re-applied here because polars may recreate the path rather than truncate
-    the file created up front.
+    The partial file was created carrying this mode already, and polars truncates rather
+    than recreates it, so this re-applies what is usually the same mode. It is here for
+    the case where that stops holding.
     """
     target_mode = _target_mode(file_path)
     if target_mode is not None:

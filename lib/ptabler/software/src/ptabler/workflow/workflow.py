@@ -79,6 +79,13 @@ class PWorkflow(msgspec.Struct):
             table space, sink operations, and chained tasks.
             If `lazy` is False, executes sink operations and chained tasks,
             then returns `None`.
+
+        A writing step opens the file its sink will fill while the step runs, so a lazy
+        call returns with those already on disk, listed in `StepContext.partial_outputs`.
+        They belong to the caller from that point: run the sinks and the chained tasks to
+        move them onto their targets, and call `StepContext.cleanup_partial_outputs` for
+        whatever is left. A non-lazy call does both itself. A leftover partial file in a
+        block's working directory is collected as part of the block's output.
         """
         spill_dir_created = False
         spill_path = None
@@ -123,12 +130,11 @@ class PWorkflow(msgspec.Struct):
             # A sink that raised leaves its partial file behind, and in a block's working
             # directory that file is not inert — it is collected as part of the block's
             # output. Whatever reached its target has already been moved off this list.
+            #
+            # A lazy run has not written them yet, so they belong to the caller that took
+            # the context; cleanup_partial_outputs is how it hands them back.
             if ctx is not None and not lazy:
-                for partial_output in ctx.partial_outputs:
-                    try:
-                        os.remove(partial_output)
-                    except FileNotFoundError:
-                        pass
+                ctx.cleanup_partial_outputs()
 
             if spill_dir_created and spill_path is not None and spill_path.exists():
                 shutil.rmtree(spill_path, ignore_errors=True)
