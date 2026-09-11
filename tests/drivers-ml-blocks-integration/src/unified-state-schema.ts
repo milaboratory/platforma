@@ -1,5 +1,5 @@
 import type { ResourceType } from "@milaboratories/pl-client";
-import { z } from "zod";
+import * as v from "valibot";
 
 export type DumpedNode = {
   type: ResourceType;
@@ -10,26 +10,26 @@ export type DumpedNode = {
   error?: string;
 };
 
-/** Zod schema for ResourceType */
-const ResourceTypeSchema = z.object({
-  name: z.string(),
-  version: z.string(),
+/** Valibot schema for ResourceType */
+const ResourceTypeSchema = v.object({
+  name: v.string(),
+  version: v.string(),
 });
 
-/** Zod schema for DumpedNode (recursive) */
-const DumpedNodeSchema: z.ZodType<DumpedNode> = z.lazy(() =>
-  z.object({
+/** Valibot schema for DumpedNode (recursive) */
+const DumpedNodeSchema: v.GenericSchema<DumpedNode> = v.lazy(() =>
+  v.object({
     type: ResourceTypeSchema,
-    data: z.unknown().optional(),
-    inputs: z.record(z.string(), DumpedNodeSchema).optional(),
-    outputs: z.record(z.string(), DumpedNodeSchema).optional(),
-    dynamics: z.record(z.string(), DumpedNodeSchema).optional(),
-    error: z.string().optional(),
+    data: v.optional(v.unknown()),
+    inputs: v.optional(v.record(v.string(), DumpedNodeSchema)),
+    outputs: v.optional(v.record(v.string(), DumpedNodeSchema)),
+    dynamics: v.optional(v.record(v.string(), DumpedNodeSchema)),
+    error: v.optional(v.string()),
   }),
 );
 
 /**
- * Zod schema for BlockDump (schema v2)
+ * Valibot schema for BlockDump (schema v2)
  *
  * Schema v2 uses separate fields for args and UI state:
  * - currentArgs: Current arguments edited by user
@@ -39,23 +39,23 @@ const DumpedNodeSchema: z.ZodType<DumpedNode> = z.lazy(() =>
  * Production fields are optional as they're not present in early states.
  * See: stage1.md for schema evolution details.
  */
-export const BlockDumpSchemaV2 = z.object({
-  blockId: z.string(),
+export const BlockDumpSchemaV2 = v.object({
+  blockId: v.string(),
   currentArgs: DumpedNodeSchema,
   blockSettings: DumpedNodeSchema,
   uiState: DumpedNodeSchema,
-  prodArgs: DumpedNodeSchema.optional(),
-  prodUiCtx: DumpedNodeSchema.optional(),
-  prodOutput: DumpedNodeSchema.optional(),
-  prodCtx: DumpedNodeSchema.optional(),
-  prodCtxPrevious: DumpedNodeSchema.optional(),
+  prodArgs: v.optional(DumpedNodeSchema),
+  prodUiCtx: v.optional(DumpedNodeSchema),
+  prodOutput: v.optional(DumpedNodeSchema),
+  prodCtx: v.optional(DumpedNodeSchema),
+  prodCtxPrevious: v.optional(DumpedNodeSchema),
 });
 
-/** Zod schema for array of BlockDump (schema v2) */
-export const BlockDumpArraySchemaV2 = z.array(BlockDumpSchemaV2);
+/** Valibot schema for array of BlockDump (schema v2) */
+export const BlockDumpArraySchemaV2 = v.array(BlockDumpSchemaV2);
 
 /**
- * Zod schema for BlockDump (schema v3 - future)
+ * Valibot schema for BlockDump (schema v3 - future)
  *
  * Schema v3 introduces unified state management:
  * - state: Single unified field containing all persistent state
@@ -68,24 +68,24 @@ export const BlockDumpArraySchemaV2 = z.array(BlockDumpSchemaV2);
  *
  * See: stage1.md and stage1-implementation-plan.md for full specification.
  */
-export const BlockDumpSchemaUnified = z.object({
-  blockId: z.string(),
+export const BlockDumpSchemaUnified = v.object({
+  blockId: v.string(),
   // Core v3 fields
-  state: DumpedNodeSchema.optional(), // Unified state (v3)
+  state: v.optional(DumpedNodeSchema), // Unified state (v3)
   blockSettings: DumpedNodeSchema,
   // Args fields
   currentArgs: DumpedNodeSchema, // Snapshot at production run time
-  prodArgs: DumpedNodeSchema.optional(), // Derived args for production
-  stagingArgs: DumpedNodeSchema.optional(), // Derived args for staging (v3)
+  prodArgs: v.optional(DumpedNodeSchema), // Derived args for production
+  stagingArgs: v.optional(DumpedNodeSchema), // Derived args for staging (v3)
   // Production context and output
-  prodUiCtx: DumpedNodeSchema.optional(),
-  prodOutput: DumpedNodeSchema.optional(),
-  prodCtx: DumpedNodeSchema.optional(),
-  prodCtxPrevious: DumpedNodeSchema.optional(),
+  prodUiCtx: v.optional(DumpedNodeSchema),
+  prodOutput: v.optional(DumpedNodeSchema),
+  prodCtx: v.optional(DumpedNodeSchema),
+  prodCtxPrevious: v.optional(DumpedNodeSchema),
 });
 
-/** Zod schema for array of BlockDump (schema v3 - future) */
-export const BlockDumpArraySchemaUnified = z.array(BlockDumpSchemaUnified);
+/** Valibot schema for array of BlockDump (schema v3 - future) */
+export const BlockDumpArraySchemaUnified = v.array(BlockDumpSchemaUnified);
 
 export type BlockDumpUnified =
   | {
@@ -118,4 +118,4 @@ export type ProjectDump =
     }
   | undefined;
 
-export type BlockDumpValidatorUnified = z.ZodType<BlockDumpUnified[]>;
+export type BlockDumpValidatorUnified = v.GenericSchema<BlockDumpUnified[]>;

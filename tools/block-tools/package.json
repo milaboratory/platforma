@@ -50,8 +50,8 @@
     "mime-types": "catalog:",
     "tar": "catalog:",
     "undici": "catalog:",
-    "yaml": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:",
+    "yaml": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

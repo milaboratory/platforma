@@ -32,7 +32,7 @@
     "@milaboratories/pl-error-like": "workspace:*",
     "canonicalize": "catalog:",
     "es-toolkit": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

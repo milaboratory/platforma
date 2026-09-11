@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import type * as sdk from "@milaboratories/pl-model-common";
 import type { Signer } from "@milaboratories/ts-helpers";
 import { ImportFileHandleIndexData, ImportFileHandleUploadData } from "../types";
@@ -38,12 +39,16 @@ export function createUploadImportHandle(
 
 export function parseUploadHandle(handle: sdk.ImportFileHandleUpload): ImportFileHandleUploadData {
   const url = new URL(handle);
-  return ImportFileHandleUploadData.parse(
+  return v.parse(
+    ImportFileHandleUploadData,
     JSON.parse(decodeURIComponent(url.pathname.substring(1))),
   );
 }
 
 export function parseIndexHandle(handle: sdk.ImportFileHandleIndex): ImportFileHandleIndexData {
   const url = new URL(handle);
-  return ImportFileHandleIndexData.parse(JSON.parse(decodeURIComponent(url.pathname.substring(1))));
+  return v.parse(
+    ImportFileHandleIndexData,
+    JSON.parse(decodeURIComponent(url.pathname.substring(1))),
+  );
 }

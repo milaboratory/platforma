@@ -1,30 +1,39 @@
-import { z } from "zod";
+import * as v from "valibot";
 import { PlRegAddress } from "../common_types";
 import { SemVer } from "@milaboratories/pl-model-middle-layer";
 
-export const PlPackageConfigData = z.object({
-  organization: z.string(),
-  package: z.string(),
-  version: SemVer.optional(),
-  files: z.record(z.string().regex(/^[^/]+$/), z.string()).default({}),
-  meta: z.object({}).passthrough(),
+export const PlPackageConfigData = v.object({
+  organization: v.string(),
+  package: v.string(),
+  version: v.optional(SemVer),
+  files: v.optional(v.record(v.pipe(v.string(), v.regex(/^[^/]+$/)), v.string()), {}),
+  meta: v.looseObject({}),
 });
 
-export const PlRegCommonConfigData = z.object({
-  registries: z.record(z.string(), PlRegAddress).default({}),
-  registry: z.string().optional(),
+export const PlRegCommonConfigData = v.object({
+  registries: v.optional(v.record(v.string(), PlRegAddress), {}),
+  registry: v.optional(v.string()),
 });
-export type PlRegCommonConfigData = z.infer<typeof PlRegCommonConfigData>;
+export type PlRegCommonConfigData = v.InferOutput<typeof PlRegCommonConfigData>;
 
-export const PlRegFullPackageConfigData = PlRegCommonConfigData.merge(PlPackageConfigData).required(
-  { registry: true, version: true },
-);
-export type PlRegFullPackageConfigData = z.infer<typeof PlRegFullPackageConfigData>;
-export const PlRegPackageConfigDataShard = PlRegFullPackageConfigData.partial().required({
-  registries: true,
-  files: true,
+export const PlRegFullPackageConfigData = v.object({
+  ...PlRegCommonConfigData.entries,
+  ...PlPackageConfigData.entries,
+  registry: v.string(),
+  version: SemVer,
 });
-export type PlRegPackageConfigDataShard = z.infer<typeof PlRegPackageConfigDataShard>;
+export type PlRegFullPackageConfigData = v.InferOutput<typeof PlRegFullPackageConfigData>;
+
+/**
+ * Every field optional except `registries` and `files`, which keep their `{}`
+ * defaults so a shard can be merged key-by-key without null checks.
+ */
+export const PlRegPackageConfigDataShard = v.object({
+  ...v.partial(PlRegFullPackageConfigData).entries,
+  registries: PlRegCommonConfigData.entries.registries,
+  files: PlPackageConfigData.entries.files,
+});
+export type PlRegPackageConfigDataShard = v.InferOutput<typeof PlRegPackageConfigDataShard>;
 
 export const PlPackageJsonConfigFile = "pl.package.json";
 export const PlPackageYamlConfigFile = "pl.package.yaml";

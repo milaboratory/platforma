@@ -27,7 +27,7 @@
   "dependencies": {
     "@milaboratories/milaboratories.transfer-files.kind": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

@@ -7,13 +7,13 @@ import {
   readAnnotation,
 } from "@platforma-sdk/model";
 import { kind } from "@milaboratories/milaboratories.test-sum-numbers.kind";
-import { z } from "zod";
+import * as v from "valibot";
 
-export const BlockData = z.object({
-  sources: z.array(PlRef).optional(),
+export const BlockData = v.object({
+  sources: v.optional(v.array(PlRef)),
 });
 
-export type BlockData = z.infer<typeof BlockData>;
+export type BlockData = v.InferOutput<typeof BlockData>;
 
 // `params` is optional — a block may be created without a template supplying
 // them — so every kind-declared field keeps a fallback default.

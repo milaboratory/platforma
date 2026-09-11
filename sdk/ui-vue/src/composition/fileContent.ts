@@ -3,10 +3,24 @@ import { getRawPlatformaInstance } from "@platforma-sdk/model";
 import { LRUCache } from "lru-cache";
 import type { ComputedRef, ShallowRef, EffectScope } from "vue";
 import { computed, shallowRef, getCurrentScope, onScopeDispose, effectScope } from "vue";
-import type { ZodSchema, SafeParseReturnType } from "zod";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { Fetcher } from "@milaboratories/helpers";
 
 type FileHandle = BlobHandleAndSize["handle"];
+
+/** File content is read synchronously, so an async schema cannot be honoured.
+ * Standard Schema allows `validate` to return a promise; treat that as a failure
+ * rather than block or return a promise from a computed. */
+function validateSync<T>(
+  schema: StandardSchemaV1<unknown, T>,
+  value: unknown,
+): StandardSchemaV1.Result<T> {
+  const result = schema["~standard"].validate(value);
+  if (result instanceof Promise) {
+    return { issues: [{ message: "Asynchronous schemas are not supported here" }] };
+  }
+  return result;
+}
 
 export type ReactiveFileContentOps = {
   /** Maximum size in bytes of file content to cache */
@@ -22,8 +36,8 @@ const DefaultReactiveFileContentOps: ReactiveFileContentOps = {
 class FileContentData {
   private _str: string | undefined = undefined;
   private _rawJson: unknown | undefined = undefined;
-  private _zodSchema: ZodSchema | undefined = undefined;
-  private _validatedJson: SafeParseReturnType<unknown, unknown> | undefined = undefined;
+  private _schema: StandardSchemaV1 | undefined = undefined;
+  private _validatedJson: StandardSchemaV1.Result<unknown> | undefined = undefined;
 
   constructor(public readonly bytes: Uint8Array) {}
 
@@ -37,12 +51,15 @@ class FileContentData {
     return this._rawJson;
   }
 
-  public validatedJson<T>(schema: ZodSchema<T>): T | undefined {
-    if (this._zodSchema !== schema) {
-      this._validatedJson = schema.safeParse(this.rawJson);
-      this._zodSchema = schema;
+  public validatedJson<T>(schema: StandardSchemaV1<unknown, T>): T | undefined {
+    if (this._schema !== schema) {
+      this._validatedJson = validateSync(schema, this.rawJson);
+      this._schema = schema;
     }
-    return this._validatedJson?.success ? (this._validatedJson.data as T) : undefined;
+    if (this._validatedJson === undefined || this._validatedJson.issues !== undefined) {
+      return undefined;
+    }
+    return this._validatedJson.value as T;
   }
 }
 
@@ -213,10 +230,13 @@ export class ReactiveFileContent {
     return computed(() => dataRef.value?.str);
   }
 
-  public getContentJson<T>(handle: FileHandle, schema: ZodSchema<T>): ComputedRef<T | undefined>;
+  public getContentJson<T>(
+    handle: FileHandle,
+    schema: StandardSchemaV1<unknown, T>,
+  ): ComputedRef<T | undefined>;
   public getContentJson<T>(
     handle: FileHandle | undefined,
-    schema: ZodSchema<T>,
+    schema: StandardSchemaV1<unknown, T>,
   ): ComputedRef<T | undefined> | undefined;
   public getContentJson<T = unknown>(handle: FileHandle): ComputedRef<T | undefined>;
   public getContentJson<T = unknown>(
@@ -224,11 +244,11 @@ export class ReactiveFileContent {
   ): ComputedRef<T | undefined> | undefined;
   public getContentJson<T>(
     handle: FileHandle | undefined,
-    schema?: ZodSchema<T>,
+    schema?: StandardSchemaV1<unknown, T>,
   ): ComputedRef<T | undefined> | undefined;
   public getContentJson<T>(
     handle: FileHandle | undefined,
-    schema?: ZodSchema<T>,
+    schema?: StandardSchemaV1<unknown, T>,
   ): ComputedRef<T | undefined> | undefined {
     if (handle === undefined) return undefined;
     const dataRef = this.getDataRef(handle);

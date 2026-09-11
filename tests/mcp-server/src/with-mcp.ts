@@ -2,8 +2,7 @@ import type { PlClient } from "@milaboratories/pl-client";
 import { MiddleLayer, TestHelpers } from "@milaboratories/pl-middle-layer";
 import { PlMcpServer } from "@milaboratories/pl-mcp-server";
 import type { McpSecret } from "@milaboratories/pl-mcp-server";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/client";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 

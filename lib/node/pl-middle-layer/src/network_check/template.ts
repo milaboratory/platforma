@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import type { FieldId, FieldRef, PlClient, ResourceData } from "@milaboratories/pl-client";
 import {
   type PlTransaction,
@@ -127,7 +128,8 @@ export async function runUploadFile(
     const progress = await getFieldValue(pl, result.progress);
 
     if (isUpload(progress)) {
-      const uploadData = ImportFileHandleUploadData.parse(
+      const uploadData = v.parse(
+        ImportFileHandleUploadData,
         JSON.parse(notEmpty(progress.data?.toString())),
       );
       const isUploadSignMatch = isSignMatch(signer, uploadData.localPath, uploadData.pathSignature);
@@ -205,7 +207,7 @@ export async function runDownloadFile(
       logger,
       uploadClient,
       progress,
-      ImportFileHandleUploadData.parse(JSON.parse(notEmpty(progress.data?.toString()))),
+      v.parse(ImportFileHandleUploadData, JSON.parse(notEmpty(progress.data?.toString()))),
       () => false,
       {
         nPartsWithThisUploadSpeed: 1,

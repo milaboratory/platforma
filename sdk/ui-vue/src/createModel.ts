@@ -1,7 +1,7 @@
 import { reactive, computed, ref, watch, unref } from "vue";
 import type { ModelOptions, Model } from "./types";
 import { deepClone, isJsonEqual } from "@milaboratories/helpers";
-import { identity, ensureError, isZodError, formatZodError } from "./utils";
+import { identity, ensureError, isSchemaError, formatSchemaError } from "./utils";
 
 export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<M> {
   const validate = options.validate ?? identity;
@@ -35,8 +35,8 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
 
   const setError = (cause: unknown) => {
     const err = ensureError(cause);
-    if (isZodError(err)) {
-      error.value = Error(formatZodError(err)); // @todo temp
+    if (isSchemaError(err)) {
+      error.value = Error(formatSchemaError(err)); // @todo temp
     } else {
       error.value = err;
     }

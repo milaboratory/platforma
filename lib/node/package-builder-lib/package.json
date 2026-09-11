@@ -37,9 +37,9 @@
     "@milaboratories/resolve-helper": "workspace:*",
     "archiver": "catalog:",
     "undici": "catalog:",
+    "valibot": "catalog:",
     "winston": "catalog:",
-    "yaml": "catalog:",
-    "zod": "catalog:"
+    "yaml": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

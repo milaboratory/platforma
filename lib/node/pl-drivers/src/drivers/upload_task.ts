@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import type { Watcher } from "@milaboratories/computable";
 import { ChangeSource } from "@milaboratories/computable";
 import {
@@ -251,7 +252,7 @@ function newProgress(res: ImportResourceSnapshot, signer: Signer) {
   let isUploadSignMatch: boolean | undefined;
   let uploadData: ImportFileHandleUploadData | undefined;
   if (isUpload(res)) {
-    uploadData = ImportFileHandleUploadData.parse(res.data);
+    uploadData = v.parse(ImportFileHandleUploadData, res.data);
     isUploadSignMatch = isSignMatch(signer, uploadData.localPath, uploadData.pathSignature);
   }
 

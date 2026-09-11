@@ -1,4 +1,5 @@
 import { computed, watch, ref } from "vue";
+import * as v from "valibot";
 import { useSdkPlugin } from "../../defineApp";
 import { Response } from "./validation";
 import { useIntervalFn } from "@vueuse/core";
@@ -25,11 +26,15 @@ export function useInfo() {
     return inputData.value && "__mnzDate" in inputData.value;
   });
 
-  const parsed = computed(() => Response.safeParse(app.value?.model.outputs["__mnzInfo"]));
+  const parsed = computed(() => v.safeParse(Response, app.value?.model.outputs["__mnzInfo"]));
 
-  const currentInfo = computed<Response | undefined>(() => parsed.value?.data);
+  const currentInfo = computed<Response | undefined>(() =>
+    parsed.value.success ? parsed.value.output : undefined,
+  );
 
-  const error = computed(() => parsed.value?.error ?? info.value?.response?.error);
+  const error = computed(() =>
+    parsed.value.success ? info.value?.response?.error : new v.ValiError(parsed.value.issues),
+  );
 
   const info = ref<Response | undefined>(undefined);
 

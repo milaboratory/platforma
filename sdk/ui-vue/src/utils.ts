@@ -1,6 +1,5 @@
 import type { ErrorLike, OutputWithStatus } from "@platforma-sdk/model";
 import type { OptionalResult } from "./types";
-import type { ZodError } from "zod";
 
 export class UnresolvedError extends Error {
   name = "UnresolvedError";
@@ -77,14 +76,35 @@ export const ensureError = (cause: unknown) => {
   return Error(String(cause));
 };
 
-export const isZodError = (err: Error): err is ZodError => {
-  return err.name === "ZodError";
+/** One entry of a validation error's `issues` array. Valibot and zod both carry
+ * `message`; they disagree on `path`, which valibot fills with segment objects
+ * and zod with the raw keys. */
+type SchemaIssue = { message: string; path?: readonly unknown[] };
+
+/** A validation error from any library that follows the `issues` convention.
+ * Matched by shape, so a block still validating with zod keeps working. */
+export type SchemaError = Error & { issues: readonly SchemaIssue[] };
+
+export const isSchemaError = (err: Error): err is SchemaError => {
+  return Array.isArray((err as { issues?: unknown }).issues);
 };
 
-export const formatZodError = (err: ZodError) => {
-  const { formErrors, fieldErrors } = err.flatten();
-  const _fieldErrors = Object.entries(fieldErrors).map(([field, errors]) => {
-    return field + ":" + errors?.join(",");
-  });
-  return formErrors.concat(_fieldErrors).join("; ");
+const issuePath = (path: readonly unknown[] | undefined): string => {
+  if (path === undefined) return "";
+  return path
+    .map((segment) =>
+      typeof segment === "object" && segment !== null && "key" in segment
+        ? (segment as { key: unknown }).key
+        : segment,
+    )
+    .join(".");
+};
+
+export const formatSchemaError = (err: SchemaError): string => {
+  return err.issues
+    .map((issue) => {
+      const path = issuePath(issue.path);
+      return path ? `${path}: ${issue.message}` : issue.message;
+    })
+    .join("; ");
 };

@@ -3,6 +3,7 @@ import type {
   ManifestFileInfo,
 } from "@milaboratories/pl-model-middle-layer";
 import { BlockPackManifest, BlockPackManifestFile } from "@milaboratories/pl-model-middle-layer";
+import * as v from "valibot";
 import type { BlockKindReference } from "@milaboratories/pl-model-common";
 import type { CompiledTemplateV3 } from "@milaboratories/pl-model-backend";
 import type { BlockPackDescriptionAbsolute } from "./model";
@@ -114,7 +115,7 @@ export async function buildBlockPackDist(
     }),
   );
 
-  const manifest: BlockPackManifest = BlockPackManifest.parse({
+  const manifest: BlockPackManifest = v.parse(BlockPackManifest, {
     schema: "v2",
     description: {
       ...descriptionRelative,

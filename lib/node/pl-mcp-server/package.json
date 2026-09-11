@@ -30,9 +30,11 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "catalog:",
+    "@modelcontextprotocol/node": "catalog:",
+    "@modelcontextprotocol/server": "catalog:",
+    "@valibot/to-json-schema": "catalog:",
     "quickjs-emscripten": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as v from "valibot";
 import {
   ContentExplicitBase64,
   ContentExplicitBytes,
@@ -6,7 +6,7 @@ import {
   DescriptionContentText,
 } from "./content_types";
 
-export const BlockPlatform = z.enum([
+export const BlockPlatform = v.picklist([
   "windows-x64",
   "windows-aarch64",
   "macosx-x64",
@@ -14,7 +14,7 @@ export const BlockPlatform = z.enum([
   "linux-x64",
   "linux-aarch64",
 ]);
-export type BlockPlatform = z.infer<typeof BlockPlatform>;
+export type BlockPlatform = v.InferOutput<typeof BlockPlatform>;
 
 /**
  * Static metadata a block author ships: title, descriptions, logos, social
@@ -23,8 +23,8 @@ export type BlockPlatform = z.infer<typeof BlockPlatform>;
  * shape carries `package.json` form (loose strings), manifest form (relative
  * paths), and embedded form (inlined base64 or bytes).
  *
- * Forward-compatibility: the boundary zod schemas (`BlockPackMeta(...)` and
- * `organization`) use `.passthrough()` so that unknown sibling fields survive
+ * Forward-compatibility: the boundary valibot schemas (`BlockPackMeta(...)` and
+ * `organization`) use `v.looseObject` so that unknown sibling fields survive
  * parse/round-trip verbatim. A registry mutator that predates a new meta
  * field must not silently strip it (otherwise mark-stable / refresh-overview
  * / restore-overview would quietly undo publishes). Code consuming these
@@ -55,61 +55,57 @@ export type BlockPackMeta<LongString, Binary> = {
 };
 
 export function BlockPackMeta<
-  const LongStringType extends z.ZodTypeAny,
-  const BinaryType extends z.ZodTypeAny,
+  const LongStringType extends v.GenericSchema,
+  const BinaryType extends v.GenericSchema,
 >(longString: LongStringType, binary: BinaryType) {
-  return z
-    .object({
-      title: z.string(),
-      description: z.string(),
-      longDescription: longString.optional(),
-      changelog: longString.optional(),
-      logo: binary.optional(),
-      url: z.string().url().optional(),
-      docs: z.string().url().optional(),
-      support: z.union([z.string().url(), z.string().email()]).optional(),
-      tags: z.array(z.string()).optional(),
-      organization: z
-        .object({
-          name: z.string(),
-          url: z.string().url(),
-          logo: binary.optional(),
-        })
-        .passthrough(),
-      /**
-       * The order of blocks on the "marketplace" (higher values push block higher to the top of the list).
-       * `undefined` value or absent field is treated exactly the same as number `0`.
-       */
-      marketplaceRanking: z.number().optional(),
-      /**
-       * If true, the block is deprecated and should not be used.
-       */
-      deprecated: z.boolean().optional(),
-      /**
-       * The URL to the Terms of Service for the block. If provided checkbox with link to this URL should be shown in order to add block.
-       */
-      termsOfServiceUrl: z.string().url().optional(),
-      /**
-       * Supported operating systems.
-       * If not provided, the block is supported on all operating systems.
-       */
-      supportedPlatforms: z.array(BlockPlatform).optional(),
-      /**
-       * Runtime capabilities the block needs from the backend (e.g.
-       * "wasm:v1"). Desktop refuses to install if any listed token is
-       * missing from the backend's `serverInfo.capabilities`.
-       *
-       * Tokens follow the backend's `<feature>:<version>` format defined in
-       * `core/pl/platform/api/plapiserver/server_capabilities.go`. The
-       * schema itself accepts loose strings (not an enum) so future
-       * capabilities don't break Desktops that ship before each token is
-       * added — the same forward-compat property `BlockPackMeta` itself
-       * enjoys at the field level, applied recursively at the token level.
-       */
-      requiredCapabilities: z.array(z.string()).optional(),
-    })
-    .passthrough();
-  // `.passthrough()` is intentional — see forward-compat note on
+  return v.looseObject({
+    title: v.string(),
+    description: v.string(),
+    longDescription: v.optional(longString),
+    changelog: v.optional(longString),
+    logo: v.optional(binary),
+    url: v.optional(v.pipe(v.string(), v.url())),
+    docs: v.optional(v.pipe(v.string(), v.url())),
+    support: v.optional(v.union([v.pipe(v.string(), v.url()), v.pipe(v.string(), v.email())])),
+    tags: v.optional(v.array(v.string())),
+    organization: v.looseObject({
+      name: v.string(),
+      url: v.pipe(v.string(), v.url()),
+      logo: v.optional(binary),
+    }),
+    /**
+     * The order of blocks on the "marketplace" (higher values push block higher to the top of the list).
+     * `undefined` value or absent field is treated exactly the same as number `0`.
+     */
+    marketplaceRanking: v.optional(v.number()),
+    /**
+     * If true, the block is deprecated and should not be used.
+     */
+    deprecated: v.optional(v.boolean()),
+    /**
+     * The URL to the Terms of Service for the block. If provided checkbox with link to this URL should be shown in order to add block.
+     */
+    termsOfServiceUrl: v.optional(v.pipe(v.string(), v.url())),
+    /**
+     * Supported operating systems.
+     * If not provided, the block is supported on all operating systems.
+     */
+    supportedPlatforms: v.optional(v.array(BlockPlatform)),
+    /**
+     * Runtime capabilities the block needs from the backend (e.g.
+     * "wasm:v1"). Desktop refuses to install if any listed token is
+     * missing from the backend's `serverInfo.capabilities`.
+     *
+     * Tokens follow the backend's `<feature>:<version>` format defined in
+     * `core/pl/platform/api/plapiserver/server_capabilities.go`. The
+     * schema itself accepts loose strings (not an enum) so future
+     * capabilities don't break Desktops that ship before each token is
+     * added — the same forward-compat property `BlockPackMeta` itself
+     * enjoys at the field level, applied recursively at the token level.
+     */
+    requiredCapabilities: v.optional(v.array(v.string())),
+  });
+  // `v.looseObject` is intentional — see forward-compat note on
   // `BlockPackMeta` type above.
 }
 
@@ -117,10 +113,10 @@ export const BlockPackMetaDescriptionRaw = BlockPackMeta(
   DescriptionContentText,
   DescriptionContentBinary,
 );
-export type BlockPackMetaDescriptionRaw = z.infer<typeof BlockPackMetaDescriptionRaw>;
+export type BlockPackMetaDescriptionRaw = v.InferOutput<typeof BlockPackMetaDescriptionRaw>;
 
-export const BlockPackMetaEmbeddedBase64 = BlockPackMeta(z.string(), ContentExplicitBase64);
-export type BlockPackMetaEmbeddedBase64 = z.infer<typeof BlockPackMetaEmbeddedBase64>;
+export const BlockPackMetaEmbeddedBase64 = BlockPackMeta(v.string(), ContentExplicitBase64);
+export type BlockPackMetaEmbeddedBase64 = v.InferOutput<typeof BlockPackMetaEmbeddedBase64>;
 
-export const BlockPackMetaEmbeddedBytes = BlockPackMeta(z.string(), ContentExplicitBytes);
-export type BlockPackMetaEmbeddedBytes = z.infer<typeof BlockPackMetaEmbeddedBytes>;
+export const BlockPackMetaEmbeddedBytes = BlockPackMeta(v.string(), ContentExplicitBytes);
+export type BlockPackMetaEmbeddedBytes = v.InferOutput<typeof BlockPackMetaEmbeddedBytes>;

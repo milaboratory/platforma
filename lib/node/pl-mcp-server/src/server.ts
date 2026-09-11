@@ -1,5 +1,5 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { McpServer } from "@modelcontextprotocol/server";
+import { NodeStreamableHTTPServerTransport } from "@modelcontextprotocol/node";
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http";
 import { randomUUID } from "node:crypto";
 import type { MiddleLayer } from "@milaboratories/pl-middle-layer";
@@ -94,7 +94,7 @@ export class PlMcpServer {
   private readonly secret: McpSecret;
   private readonly callbacks: PlMcpServerCallbacks;
   private httpServer: Server | undefined;
-  private readonly transports = new Map<string, StreamableHTTPServerTransport>();
+  private readonly transports = new Map<string, NodeStreamableHTTPServerTransport>();
 
   constructor(options: PlMcpServerOptions) {
     this.ml = options.middleLayer ?? null;
@@ -152,7 +152,7 @@ export class PlMcpServer {
         }
 
         // New session — create transport and connect MCP server
-        const transport = new StreamableHTTPServerTransport({
+        const transport = new NodeStreamableHTTPServerTransport({
           sessionIdGenerator: () => randomUUID(),
         });
         transport.onclose = () => {

@@ -1,54 +1,48 @@
 /** We store all info about the connection on the server,
  * so that another client could read the file and connect from another machine. */
-import { z } from "zod";
+import * as v from "valibot";
 
 //
 // Types
 //
 
-export const PortPair = z
-  .object({
-    local: z.number(),
-    remote: z.number(),
-  })
-  .passthrough();
+export const PortPair = v.looseObject({
+  local: v.number(),
+  remote: v.number(),
+});
 /** The pair of ports for forwarding. */
-export type PortPair = z.infer<typeof PortPair>;
+export type PortPair = v.InferOutput<typeof PortPair>;
 
-export const SshPlPorts = z
-  .object({
-    grpc: PortPair,
-    http: PortPair.optional(),
-    monitoring: PortPair,
-    debug: PortPair,
-    /** @deprecated */
-    minioPort: PortPair,
-    /** @deprecated */
-    minioConsolePort: PortPair,
-  })
-  .passthrough();
+export const SshPlPorts = v.looseObject({
+  grpc: PortPair,
+  http: v.optional(PortPair),
+  monitoring: PortPair,
+  debug: PortPair,
+  /** @deprecated */
+  minioPort: PortPair,
+  /** @deprecated */
+  minioConsolePort: PortPair,
+});
 /** All info about ports that are forwarded. */
-export type SshPlPorts = z.infer<typeof SshPlPorts>;
+export type SshPlPorts = v.InferOutput<typeof SshPlPorts>;
 
-export const ConnectionInfo = z
-  .object({
-    plUser: z.string(),
-    plPassword: z.string(),
-    ports: SshPlPorts,
+export const ConnectionInfo = v.looseObject({
+  plUser: v.string(),
+  plPassword: v.string(),
+  ports: SshPlPorts,
 
-    // It's false by default because it was added later,
-    // and in some deployments there won't be useGlobalAccess flag in the file.
-    useGlobalAccess: z.boolean().default(false),
+  // It's false by default because it was added later,
+  // and in some deployments there won't be useGlobalAccess flag in the file.
+  useGlobalAccess: v.optional(v.boolean(), false),
 
-    // We added the field afterwards, the pl backend was this version.
-    plVersion: z.string().default("1.18.3"),
+  // We added the field afterwards, the pl backend was this version.
+  plVersion: v.optional(v.string(), "1.18.3"),
 
-    // It's true by default because it was added later and previous installation use minio.
-    minioIsUsed: z.boolean().default(true),
-  })
-  .passthrough();
+  // It's true by default because it was added later and previous installation use minio.
+  minioIsUsed: v.optional(v.boolean(), true),
+});
 /** The content of the file that holds all the info about the connection on the remote server. */
-export type ConnectionInfo = z.infer<typeof ConnectionInfo>;
+export type ConnectionInfo = v.InferOutput<typeof ConnectionInfo>;
 
 //
 // Funcs
@@ -73,7 +67,7 @@ export function newConnectionInfo(
 }
 
 export function parseConnectionInfo(content: string): ConnectionInfo {
-  return ConnectionInfo.parse(JSON.parse(content));
+  return v.parse(ConnectionInfo, JSON.parse(content));
 }
 
 export function stringifyConnectionInfo(conn: ConnectionInfo): string {

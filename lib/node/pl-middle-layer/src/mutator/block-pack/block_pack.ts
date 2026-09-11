@@ -26,7 +26,7 @@ import { LRUCache } from "lru-cache";
 import canonicalize from "canonicalize";
 import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import { WorkerManager } from "../../worker/WorkerManager";
-import { z } from "zod";
+import * as v from "valibot";
 
 type PreparedCacheKey = Branded<string, "PreparedCacheKey">;
 
@@ -41,17 +41,17 @@ function tSlash(str: string): string {
 }
 
 function parseStringConfig(configContent: string): BlockConfigContainer {
-  const res = z.record(z.string(), z.unknown()).safeParse(JSON.parse(configContent));
+  const res = v.safeParse(v.record(v.string(), v.unknown()), JSON.parse(configContent));
 
   if (!res.success) {
     throw new Error("Invalid config content");
   }
 
-  if (!Code.safeParse(res.data.code).success) {
+  if (!v.safeParse(Code, res.output.code).success) {
     throw new Error("parseStringConfig:No code bundle");
   }
 
-  return res.data as BlockConfigContainer;
+  return res.output as BlockConfigContainer;
 }
 
 function parseBufferConfig(buffer: ArrayBuffer): BlockConfigContainer {

@@ -15,7 +15,7 @@ export class ModelAPIVersionMismatchError extends Error {
 
 /** Pl Backend throws arbitrary errors, and we're trying to parse them here. */
 
-import { z } from "zod";
+import * as v from "valibot";
 import type { SignedResourceId, ResourceType } from "@milaboratories/pl-client";
 import { resourceIdToString, resourceTypeToString } from "@milaboratories/pl-client";
 import { notEmpty } from "@milaboratories/ts-helpers";
@@ -204,12 +204,10 @@ ${this.rawBackendMessage}
 /**
  * How the Pl backend represents an error.
  */
-const backendErrorSchema = z
-  .object({
-    errorType: z.string().default(""),
-    message: z.string(),
-  })
-  .passthrough();
+const backendErrorSchema = v.looseObject({
+  errorType: v.optional(v.string(), ""),
+  message: v.string(),
+});
 
 /**
  * Parses a Pl error and suberrors from the Pl backend.
@@ -220,17 +218,17 @@ export function parsePlError(
   resourceType?: ResourceType,
   field?: string,
 ): PlErrorReport {
-  const parsed = backendErrorSchema.safeParse(JSON.parse(error));
+  const parsed = v.safeParse(backendErrorSchema, JSON.parse(error));
   if (!parsed.success) {
     throw new Error(`parsePlError: failed to parse the message, got ${error}`);
   }
 
-  const errors = parseSubErrors(parsed.data.message);
+  const errors = parseSubErrors(parsed.output.message);
 
   return new PlErrorReport(
     error,
-    parsed.data.errorType,
-    parsed.data.message,
+    parsed.output.errorType,
+    parsed.output.message,
     errors,
 
     field,

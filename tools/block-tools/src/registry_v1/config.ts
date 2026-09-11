@@ -1,4 +1,5 @@
 import YAML from "yaml";
+import * as v from "valibot";
 import { tryLoadFile } from "../util";
 import {
   PlPackageJsonConfigFile,
@@ -28,17 +29,21 @@ function mergeConfigs(
 async function tryLoadJsonConfigFromFile(
   file: string,
 ): Promise<PlRegPackageConfigDataShard | undefined> {
-  return tryLoadFile(file, (buf) => PlRegPackageConfigDataShard.parse(JSON.parse(buf.toString())));
+  return tryLoadFile(file, (buf) =>
+    v.parse(PlRegPackageConfigDataShard, JSON.parse(buf.toString())),
+  );
 }
 
 async function tryLoadYamlConfigFromFile(
   file: string,
 ): Promise<PlRegPackageConfigDataShard | undefined> {
-  return tryLoadFile(file, (buf) => PlRegPackageConfigDataShard.parse(YAML.parse(buf.toString())));
+  return tryLoadFile(file, (buf) =>
+    v.parse(PlRegPackageConfigDataShard, YAML.parse(buf.toString())),
+  );
 }
 
 async function loadConfigShard(): Promise<PlRegPackageConfigDataShard> {
-  let conf = PlRegPackageConfigDataShard.parse({});
+  let conf = v.parse(PlRegPackageConfigDataShard, {});
 
   conf = mergeConfigs(conf, await tryLoadJsonConfigFromFile("./.pl.reg.json"));
   conf = mergeConfigs(conf, await tryLoadYamlConfigFromFile("./.pl.reg.yaml"));
@@ -86,6 +91,6 @@ export class PlRegPackageConfig {
 export async function getConfig(finalShard: PlRegPackageConfigDataShard) {
   const confShard = await loadConfigShard();
   return new PlRegPackageConfig(
-    PlRegFullPackageConfigData.parse(mergeConfigs(confShard, finalShard)),
+    v.parse(PlRegFullPackageConfigData, mergeConfigs(confShard, finalShard)),
   );
 }

@@ -1,57 +1,59 @@
 import stringify from "json-stringify-safe";
-import { z } from "zod";
+import * as v from "valibot";
 
-// We want to define StandardErrorLike and PlErrorLike, it's a way to define recursive types in zod.
-// https://zod.dev/?id=recursive-types
-// We need zod to parse error strings into these objects for keeping new UI and old blocks compatible.
+// We want to define StandardErrorLike and PlErrorLike, it's a way to define recursive types in valibot.
+// https://valibot.dev/guides/other/#recursive-schema
+// We need valibot to parse error strings into these objects for keeping new UI and old blocks compatible.
 
-export const BasePlErrorLike = z.object({
-  type: z.literal("PlError"),
-  name: z.string(),
-  message: z.string(),
+export const BasePlErrorLike = v.object({
+  type: v.literal("PlError"),
+  name: v.string(),
+  message: v.string(),
   /** The message with all details needed for SDK developers. */
-  fullMessage: z.string().optional(),
-  stack: z.string().optional(),
+  fullMessage: v.optional(v.string()),
+  stack: v.optional(v.string()),
 });
 
 /** Known Pl backend and ML errors. */
-export type PlErrorLike = z.infer<typeof BasePlErrorLike> & {
+export type PlErrorLike = v.InferOutput<typeof BasePlErrorLike> & {
   cause?: ErrorLike;
   errors?: ErrorLike[];
 };
 
-export const PlErrorLike: z.ZodType<PlErrorLike> = BasePlErrorLike.extend({
-  cause: z.lazy(() => ErrorLike).optional(),
-  errors: z.lazy(() => ErrorLike.array()).optional(),
+export const PlErrorLike: v.GenericSchema<PlErrorLike> = v.object({
+  ...BasePlErrorLike.entries,
+  cause: v.optional(v.lazy(() => ErrorLike)),
+  errors: v.optional(v.array(v.lazy(() => ErrorLike))),
 });
 
-const BaseStandardErrorLike = z.object({
-  type: z.literal("StandardError"),
-  name: z.string(),
-  message: z.string(),
-  stack: z.string().optional(),
+const BaseStandardErrorLike = v.object({
+  type: v.literal("StandardError"),
+  name: v.string(),
+  message: v.string(),
+  stack: v.optional(v.string()),
 });
 
 /** Others unknown errors that could be thrown by the client. */
-export type StandardErrorLike = z.infer<typeof BaseStandardErrorLike> & {
+export type StandardErrorLike = v.InferOutput<typeof BaseStandardErrorLike> & {
   cause?: ErrorLike;
   errors?: ErrorLike[];
 };
 
-export const StandardErrorLike: z.ZodType<StandardErrorLike> = BaseStandardErrorLike.extend({
-  cause: z.lazy(() => ErrorLike).optional(),
-  errors: z.lazy(() => ErrorLike.array()).optional(),
+export const StandardErrorLike: v.GenericSchema<StandardErrorLike> = v.object({
+  ...BaseStandardErrorLike.entries,
+  cause: v.optional(v.lazy(() => ErrorLike)),
+  errors: v.optional(v.array(v.lazy(() => ErrorLike))),
 });
 
-export const ErrorLike = z.union([StandardErrorLike, PlErrorLike]);
-export type ErrorLike = z.infer<typeof ErrorLike>;
+export const ErrorLike = v.union([StandardErrorLike, PlErrorLike]);
+export type ErrorLike = v.InferOutput<typeof ErrorLike>;
 
 /** Converts everything into ErrorLike. */
 export function ensureErrorLike(error: unknown): ErrorLike {
-  const result = ErrorShape.safeParse(error);
+  const result = v.safeParse(ErrorShape, error);
 
   if (result.success) {
-    const err = result.data;
+    const err = result.output;
 
     if (
       err.name === "PlQuickJSError" ||
@@ -104,7 +106,16 @@ export function parseErrorLikeSafe(err: string):
       error: Error;
     } {
   try {
-    return ErrorLike.safeParse(JSON.parse(err));
+    const result = v.safeParse(ErrorLike, JSON.parse(err));
+
+    if (result.success) {
+      return { success: true, data: result.output };
+    }
+
+    return {
+      success: false,
+      error: new Error(`parseErrorLikeSafe: not an ErrorLike: ${v.summarize(result.issues)}`),
+    };
   } catch (e) {
     return {
       success: false,
@@ -113,22 +124,23 @@ export function parseErrorLikeSafe(err: string):
   }
 }
 
-// We want to define ErrorShape schema just to parse it above, it's a way to define recursive types in zod.
-// https://zod.dev/?id=recursive-types
+// We want to define ErrorShape schema just to parse it above, it's a way to define recursive types in valibot.
+// https://valibot.dev/guides/other/#recursive-schema
 
-const baseErrorShape = z.object({
-  name: z.string(),
-  message: z.string(),
-  fullMessage: z.string().optional(),
-  stack: z.string().optional(),
+const baseErrorShape = v.object({
+  name: v.string(),
+  message: v.string(),
+  fullMessage: v.optional(v.string()),
+  stack: v.optional(v.string()),
 });
 
-type ErrorShape = z.infer<typeof baseErrorShape> & {
+type ErrorShape = v.InferOutput<typeof baseErrorShape> & {
   cause?: ErrorShape;
   errors?: ErrorShape[];
 };
 
-const ErrorShape: z.ZodType<ErrorShape> = baseErrorShape.extend({
-  cause: z.lazy(() => ErrorShape).optional(),
-  errors: z.lazy(() => ErrorShape.array()).optional(),
+const ErrorShape: v.GenericSchema<ErrorShape> = v.object({
+  ...baseErrorShape.entries,
+  cause: v.optional(v.lazy(() => ErrorShape)),
+  errors: v.optional(v.array(v.lazy(() => ErrorShape))),
 });
