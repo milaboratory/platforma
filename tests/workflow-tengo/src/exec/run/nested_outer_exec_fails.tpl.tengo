@@ -1,0 +1,22 @@
+/**
+ * outer layer of a nested chain whose deepest template runs the
+ * failing exec. Two template boundaries sit between the render root and the failure.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+midTpl := assets.importTemplate(":exec.run.nested_mid")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	run := render.create(midTpl, {
+		payload: inputs.payload
+	})
+
+	return {
+		main: run.output("main")
+	}
+})
