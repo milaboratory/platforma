@@ -81,15 +81,6 @@ export interface DiscoverColumnsConstraints {
   allowSourceQualifications: boolean;
   /** Allow hit column axes to be qualified (contextDomain extended) */
   allowHitQualifications: boolean;
-  /**
-   * Where the anchors the caller supplies sit in the hierarchy a linker
-   * expresses. `"roots"` (the default) walks down to what the anchors contain;
-   * `"leaves"` walks up to what contains them.
-   *
-   * Only the traversal rule changes — linker columns themselves are read as-is.
-   * Omit for the default direction.
-   */
-  anchorsAre?: "roots" | "leaves";
 }
 
 /** Request for discovering columns compatible with a given axes integration */
@@ -98,8 +89,16 @@ export interface DiscoverColumnsRequest {
   includeColumns?: MultiColumnSelector[];
   /** Exclude columns matching these selectors (OR-ed); applied after include filter */
   excludeColumns?: MultiColumnSelector[];
-  /** Already integrated axes with qualifications */
-  axes: ColumnAxesWithQualifications[];
+  /**
+   * Anchors at the coarse end: discovery walks down to what they contain.
+   * Mutually exclusive with {@link DiscoverColumnsRequest.leafAxes}.
+   */
+  axes?: ColumnAxesWithQualifications[];
+  /**
+   * Anchors at the fine end: discovery walks up to what contains them.
+   * Mutually exclusive with {@link DiscoverColumnsRequest.axes}.
+   */
+  leafAxes?: ColumnAxesWithQualifications[];
   /** Maximum number of hops allowed between provided axes integration and returned hits (0 = direct only) */
   maxHops?: number;
   /** Constraints controlling axes matching and qualification behavior */
