@@ -8,11 +8,12 @@ ll := import("@platforma-sdk/workflow-tengo:ll")
 
 self.defineOutputs(["token"])
 
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
 self.body(func(inputs) {
 	run := exec.builder().
 		cpu(1).ram("50Mi").
-		cmd("/usr/bin/env").
-		arg("bash").
+		software(shellSw).
 		arg("-c").
 		arg("echo -n $PLATFORMA_MNZ_JWT"). // -n means no newline. It's needed for test assertions.
 		enableMnz("MIFAKEMIFAKEMIFAKE"). // a fake product key so our mnz client response with a fake response without changing prod db.
