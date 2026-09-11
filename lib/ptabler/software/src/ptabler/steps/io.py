@@ -1,6 +1,8 @@
 import polars as pl
 import os
-from typing import List, Optional, Dict, Any 
+import stat
+import tempfile
+from typing import List, Optional, Dict, Any
 import msgspec
 
 from ptabler.common import toPolarsType, PType
@@ -140,21 +142,57 @@ class ReadParquet(BaseReadLogic, tag="read_parquet"):
         """
         return pl.scan_parquet(file_path, **scan_kwargs)
 
+PARTIAL_SUFFIX = ".ptabler-partial"
+
+
+def _create_partial_output(file_path: str) -> str:
+    """
+    Creates the file a sink writes into, already carrying the mode its target will need.
+
+    The name is unique, so two steps writing one target never share a partial file and
+    neither can land on a name the workflow's own data uses.
+
+    The mode is set here rather than at the move because the sink starts writing as soon
+    as it is collected: a target restricted to 0o600 whose partial file was created under
+    the umask would be readable by anyone with the workspace for as long as the write
+    takes. mkstemp opens at 0o600, so the window never exists, and the target's own mode
+    is applied before any row is written.
+    """
+    directory, name = os.path.split(file_path)
+    handle, temp_path = tempfile.mkstemp(
+        dir=directory or ".", prefix=f".{name}.", suffix=PARTIAL_SUFFIX
+    )
+    os.close(handle)
+
+    target_mode = _target_mode(file_path)
+    if target_mode is not None:
+        os.chmod(temp_path, target_mode)
+
+    return temp_path
+
+
+def _target_mode(file_path: str) -> Optional[int]:
+    """Returns the mode of an existing target, or None when the write creates it."""
+    try:
+        return stat.S_IMODE(os.stat(file_path).st_mode)
+    except FileNotFoundError:
+        return None
+
+
 def _replace_preserving_mode(temp_path: str, file_path: str) -> None:
     """
     Moves a finished sink file onto its target path, keeping the mode the target had.
 
     os.replace swaps in a new inode, so the target would otherwise come back with the
-    temporary file's mode. A workdir file the backend staged writable at 0o600 has that
+    partial file's mode. A workdir file the backend staged writable at 0o600 has that
     mode for a reason, and a block that writes it must not hand back something read-only.
-    """
-    try:
-        existing_mode = os.stat(file_path).st_mode
-    except FileNotFoundError:
-        existing_mode = None
 
-    if existing_mode is not None:
-        os.chmod(temp_path, existing_mode)
+    The mode is re-applied here because polars may recreate the path rather than truncate
+    the file created up front.
+    """
+    target_mode = _target_mode(file_path)
+    if target_mode is not None:
+        os.chmod(temp_path, target_mode)
 
     os.replace(temp_path, file_path)
 
@@ -199,11 +237,12 @@ class BaseWriteLogic(PStep):
         # to file_path truncates a file polars is still reading. On a local filesystem
         # that survives on cached pages; on a network filesystem the mapping goes away
         # underneath the reader and the process takes SIGBUS.
-        temp_path = f"{file_path}.ptabler-partial"
+        temp_path = _create_partial_output(file_path)
         sink_plan = self._do_sink(selected_lf, temp_path)
 
         # Add the sink plan to the context for later execution
         ctx.add_sink(sink_plan)
+        ctx.add_partial_output(temp_path)
         ctx.chain_task(lambda: _replace_preserving_mode(temp_path, file_path))
 
 class WriteCsv(BaseWriteLogic, tag="write_csv"):
