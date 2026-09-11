@@ -179,6 +179,17 @@ def _target_mode(file_path: str) -> Optional[int]:
         return None
 
 
+def _target_refuses_writes(file_path: str) -> bool:
+    """
+    Reports whether an existing target would reject a write through its own mode.
+
+    The backend hands a block its workdir files read-only unless the workflow asked for
+    a writable copy, and that mode is the whole enforcement. A path that does not exist
+    yet refuses nothing — the write creates it.
+    """
+    return os.path.exists(file_path) and not os.access(file_path, os.W_OK)
+
+
 def _replace_preserving_mode(temp_path: str, file_path: str) -> None:
     """
     Moves a finished sink file onto its target path, keeping the mode the target had.
@@ -237,6 +248,14 @@ class BaseWriteLogic(PStep):
         # to file_path truncates a file polars is still reading. On a local filesystem
         # that survives on cached pages; on a network filesystem the mapping goes away
         # underneath the reader and the process takes SIGBUS.
+        if _target_refuses_writes(file_path):
+            # The mode of an existing target is the only thing standing between a block
+            # and a file it was given read-only, and a partial file would walk straight
+            # past it: os.replace needs the directory to be writable, never the file.
+            # Sink onto the target so the write fails the way the caller expects.
+            ctx.add_sink(self._do_sink(selected_lf, file_path))
+            return
+
         temp_path = _create_partial_output(file_path)
         sink_plan = self._do_sink(selected_lf, temp_path)
 

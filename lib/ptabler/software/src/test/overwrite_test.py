@@ -99,6 +99,20 @@ class OverwriteInPlaceTests(unittest.TestCase):
 
             self.assertEqual([], self._partials_in(root))
 
+    def test_a_read_only_target_still_refuses_the_write(self):
+        # The mode of a workdir file is the whole enforcement behind exec.builder's
+        # { writable: false }. Moving a partial file into place would ignore it, because
+        # os.replace asks the directory for permission and never the file.
+        with tempfile.TemporaryDirectory() as root:
+            target = self._write_source(root)
+            os.chmod(target, 0o400)
+
+            with self.assertRaises(Exception):
+                self._run_overwrite(root)
+
+            self.assertEqual(TSV, open(target).read(), "the target must be left untouched")
+            self.assertEqual([], self._partials_in(root))
+
     def test_writing_a_new_file_still_works(self):
         with tempfile.TemporaryDirectory() as root:
             self._write_source(root, "in.tsv")
