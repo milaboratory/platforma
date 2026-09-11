@@ -113,6 +113,26 @@ class OverwriteInPlaceTests(unittest.TestCase):
             self.assertEqual(TSV, open(target).read(), "the target must be left untouched")
             self.assertEqual([], self._partials_in(root))
 
+    def test_a_lazy_run_hands_its_partial_files_to_the_caller(self):
+        # A writing step opens its partial file while the step runs, so a lazy call
+        # returns with them on disk and nothing has moved them anywhere yet. The caller
+        # took the context, so it owns them, and cleanup_partial_outputs is the handle.
+        with tempfile.TemporaryDirectory() as root:
+            self._write_source(root)
+
+            ctx = PWorkflow(workflow=[
+                ReadCsv(file="data.tsv", name="t", delimiter="\t"),
+                WriteCsv(table="t", file="out.tsv", delimiter="\t"),
+            ]).execute(global_settings=GlobalSettings(root_folder=root), lazy=True)
+
+            self.assertEqual(1, len(ctx.partial_outputs))
+            self.assertEqual(1, len(self._partials_in(root)), "the file is open before collection")
+
+            ctx.cleanup_partial_outputs()
+
+            self.assertEqual([], self._partials_in(root))
+            self.assertEqual([], ctx.partial_outputs)
+
     def test_writing_a_new_file_still_works(self):
         with tempfile.TemporaryDirectory() as root:
             self._write_source(root, "in.tsv")

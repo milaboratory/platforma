@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 import msgspec
@@ -99,6 +100,21 @@ class StepContext:
     def partial_outputs(self) -> list[str]:
         """Returns the partial sink files recorded so far (read-only)."""
         return self._partial_outputs
+
+    def cleanup_partial_outputs(self):
+        """
+        Removes every partial sink file still recorded, and forgets them.
+
+        A partial file that reached its target has already been moved off the disk path
+        this holds, so removing what is left removes only the writes that never landed.
+        Safe to call more than once.
+        """
+        for partial_output in self._partial_outputs:
+            try:
+                os.remove(partial_output)
+            except FileNotFoundError:
+                pass
+        self._partial_outputs = []
 
     def into_parts(self) -> tuple[dict[str, pl.LazyFrame], list[pl.LazyFrame], list[callable]]:
         """
