@@ -84,10 +84,11 @@ test("set_block_data and get_block_state", { timeout: 30_000 }, async () => {
     const state = parseResult(
       await client.callTool({
         name: "get_block_state",
-        arguments: { projectId, blockId },
+        arguments: { projectId, blockIds: [blockId] },
       }),
-    ) as { data: unknown; outputs: unknown };
-    expect(state.data).toEqual({ numbers: [10, 20, 30] });
+    ) as Record<string, { ok: boolean; value?: { data: unknown } }>;
+    expect(state[blockId].ok).toBe(true);
+    expect(state[blockId].value?.data).toEqual({ numbers: [10, 20, 30] });
 
     await client.callTool({ name: "close_project", arguments: { projectId } });
     await client.callTool({ name: "delete_project", arguments: { projectId } });
