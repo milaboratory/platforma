@@ -269,8 +269,8 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     }
 
     // Which key the caller used says where the given columns sit in the
-    // hierarchy, which is what fixes the linker traversal direction.
-    const { anchors, anchorsAre } = resolveAnchorSide(options);
+    // hierarchy, and it is carried down as the shape of the request.
+    const { anchors, axesKey } = resolveAnchorSide(options);
     const hasAnchors = anchors !== undefined && Object.keys(anchors).length > 0;
     const anchorsRec = hasAnchors ? resolveAnchors(anchors, specMap, specDriver) : undefined;
     const anchorsList = anchorsRec ? Object.values(anchorsRec) : [];
@@ -289,9 +289,9 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
       excludeColumns: options.exclude
         ? convertColumnSelectorToMultiColumnSelector(options.exclude)
         : undefined,
-      constraints: matchingModeToConstraints(options.mode ?? "enrichment", anchorsAre),
+      constraints: matchingModeToConstraints(options.mode ?? "enrichment"),
       maxHops: options.maxHops ?? (hasAnchors ? 4 : 0),
-      axes: anchorsList.map((anchorId) => {
+      [axesKey]: anchorsList.map((anchorId) => {
         const spec =
           specMap.get(anchorId) ??
           throwError(`ColumnsCollectionDriverImpl: anchor "${anchorId}" lost from effective specs`);
