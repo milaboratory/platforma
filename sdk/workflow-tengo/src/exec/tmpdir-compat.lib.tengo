@@ -12,11 +12,11 @@
  *     every path under '.pl', which is reserved for platform files, and has done since v4.3.2.
  *     So the directory is made at run time, by a script, with mkdir -p.
  *
- *   - The SDK does not where it runs: on linux server in Kubernetes or on laptop. But it can tell
- *     if it is Windows machine and if commands will be run in containers.
+ *   - The SDK does not know if it runs on linux server or on laptop. But it knows if it is Windows
+ *     machine and if commands will be run in containers.
  *
- * For backends prior 4.4.4 executed on non-windows systems we apply wrapper shell script
- * that modifies command's env variables setting TMPDIR and TMP vars accordingly with 4.4.4 and abve.
+ * For backends prior 4.4.5 executed on non-windows systems we apply wrapper shell script
+ * that modifies command's env variables setting TMPDIR and TMP vars accordingly with 4.4.5 and abve.
  * We intentionally ignore Windows hosts as this is builtin-only backends we can update easily
  * along with Desktop App.
  *
@@ -91,12 +91,12 @@ exec "$@"
 // scratchSized must be true only when the block asked for a size above zero.
 isNeeded := func(feats, scratchSized) {
 	if feats.supportsScratchSpaceRequests {
-		// >= 4.4.4: no hacks, all is fine
+		// >= 4.4.5: no hacks, all is fine
 		return false
 	}
 
 	if feats.hasScratchSpace {
-		// 4.4.0 - 4.4.3: zero scratch request violates contract - need the hack
+		// 4.4.0 - 4.4.4: zero scratch request violates contract - need the hack
 		return !scratchSized
 	}
 
@@ -152,7 +152,7 @@ _assertNotWindows := func() {
 	ll.assert(!isWindows(),
 		"exec.builder: this Platforma Backend is too old to provide a temporary directory (TMPDIR),"+
 			" and the workaround for it is POSIX-shell only, so it cannot run on Windows."+
-			" Update Platforma Backend to a version >=4.4.4")
+			" Update Platforma Backend to a version >=4.4.5")
 }
 
 // patchSoftwareDescriptor routes a software's command through the wrapper.
