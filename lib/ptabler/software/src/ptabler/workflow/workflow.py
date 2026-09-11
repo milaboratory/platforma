@@ -1,4 +1,5 @@
 import msgspec
+import os
 import polars as pl
 import shutil
 from pathlib import Path
@@ -81,7 +82,8 @@ class PWorkflow(msgspec.Struct):
         """
         spill_dir_created = False
         spill_path = None
-        
+        ctx = None
+
         if global_settings.spill_folder is not None:
             spill_path = Path(global_settings.spill_folder)
             if not spill_path.exists():
@@ -118,5 +120,15 @@ class PWorkflow(msgspec.Struct):
                 return None
         
         finally:
+            # A sink that raised leaves its partial file behind, and in a block's working
+            # directory that file is not inert — it is collected as part of the block's
+            # output. Whatever reached its target has already been moved off this list.
+            if ctx is not None and not lazy:
+                for partial_output in ctx.partial_outputs:
+                    try:
+                        os.remove(partial_output)
+                    except FileNotFoundError:
+                        pass
+
             if spill_dir_created and spill_path is not None and spill_path.exists():
                 shutil.rmtree(spill_path, ignore_errors=True)

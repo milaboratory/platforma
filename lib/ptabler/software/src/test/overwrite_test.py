@@ -3,8 +3,13 @@ import stat
 import tempfile
 import unittest
 
+import polars as pl
+
 from ptabler.workflow import PWorkflow
 from ptabler.steps import GlobalSettings, ReadCsv, WriteCsv
+from ptabler.steps.io import PARTIAL_SUFFIX
+
+TSV = "a\tb\n1\t2\n3\t4\n"
 
 
 class OverwriteInPlaceTests(unittest.TestCase):
@@ -14,49 +19,97 @@ class OverwriteInPlaceTests(unittest.TestCase):
     filesystem cached pages hide that, on a network filesystem the reader takes SIGBUS.
     """
 
-    def _run_overwrite(self, root: str, name: str) -> None:
+    def _write_source(self, root: str, name: str = "data.tsv") -> str:
+        path = os.path.join(root, name)
+        with open(path, "w") as handle:
+            handle.write(TSV)
+        return path
+
+    def _run_overwrite(self, root: str, name: str = "data.tsv") -> None:
         PWorkflow(workflow=[
             ReadCsv(file=name, name="t", delimiter="\t"),
             WriteCsv(table="t", file=name, delimiter="\t"),
         ]).execute(global_settings=GlobalSettings(root_folder=root))
 
+    def _partials_in(self, root: str) -> list[str]:
+        return [n for n in os.listdir(root) if n.endswith(PARTIAL_SUFFIX)]
+
+    def test_overwrite_keeps_every_row_and_column(self):
+        with tempfile.TemporaryDirectory() as root:
+            target = self._write_source(root)
+
+            self._run_overwrite(root)
+
+            written = pl.read_csv(target, separator="\t")
+            self.assertEqual(["a", "b"], written.columns)
+            self.assertEqual([[1, 3], [2, 4]], [written["a"].to_list(), written["b"].to_list()])
+
     def test_overwrite_leaves_no_partial_file_behind(self):
         with tempfile.TemporaryDirectory() as root:
-            target = os.path.join(root, "data.tsv")
-            with open(target, "w") as handle:
-                handle.write("a\tb\n1\t2\n3\t4\n")
+            self._write_source(root)
 
-            self._run_overwrite(root, "data.tsv")
+            self._run_overwrite(root)
 
-            self.assertTrue(os.path.exists(target))
-            leftovers = [n for n in os.listdir(root) if n.endswith(".ptabler-partial")]
-            self.assertEqual([], leftovers, "the temporary sink file must be moved into place")
+            self.assertEqual([], self._partials_in(root))
 
     def test_overwrite_keeps_the_mode_the_target_had(self):
         # The backend stages a workdir file writable at 0o600 on purpose, and moving the
-        # sink into place must not hand back something with the temporary file's mode.
+        # sink into place must not hand back something with the partial file's mode.
         with tempfile.TemporaryDirectory() as root:
-            target = os.path.join(root, "data.tsv")
-            with open(target, "w") as handle:
-                handle.write("a\tb\n1\t2\n")
+            target = self._write_source(root)
             os.chmod(target, 0o600)
 
-            self._run_overwrite(root, "data.tsv")
+            self._run_overwrite(root)
 
             mode = stat.S_IMODE(os.stat(target).st_mode)
             self.assertEqual(0o600, mode, f"mode became {oct(mode)}")
 
+    def test_two_writers_of_one_target_do_not_share_a_partial_file(self):
+        # Both sinks are collected before either is moved into place, so a partial name
+        # derived from the target alone would have them writing over each other.
+        with tempfile.TemporaryDirectory() as root:
+            self._write_source(root)
+
+            PWorkflow(workflow=[
+                ReadCsv(file="data.tsv", name="t", delimiter="\t"),
+                WriteCsv(table="t", file="out.tsv", delimiter="\t"),
+                WriteCsv(table="t", file="out.tsv", delimiter="\t"),
+            ]).execute(global_settings=GlobalSettings(root_folder=root))
+
+            written = pl.read_csv(os.path.join(root, "out.tsv"), separator="\t")
+            self.assertEqual([1, 3], written["a"].to_list())
+            self.assertEqual([], self._partials_in(root))
+
+    def test_a_failed_run_leaves_no_partial_file_behind(self):
+        # A leftover partial in a block's working directory is collected as part of the
+        # block's output, so a run that raises must not leave one.
+        with tempfile.TemporaryDirectory() as root:
+            self._write_source(root)
+
+            # The column is missing, which polars only discovers when the sink is
+            # collected — by then the partial file exists, which is the case that
+            # would otherwise leave one behind.
+            with self.assertRaises(Exception):
+                PWorkflow(workflow=[
+                    ReadCsv(file="data.tsv", name="t", delimiter="\t"),
+                    WriteCsv(
+                        table="t", file="out.tsv", delimiter="\t", columns=["absent_column"]
+                    ),
+                ]).execute(global_settings=GlobalSettings(root_folder=root))
+
+            self.assertEqual([], self._partials_in(root))
+
     def test_writing_a_new_file_still_works(self):
         with tempfile.TemporaryDirectory() as root:
-            with open(os.path.join(root, "in.tsv"), "w") as handle:
-                handle.write("a\tb\n1\t2\n")
+            self._write_source(root, "in.tsv")
 
             PWorkflow(workflow=[
                 ReadCsv(file="in.tsv", name="t", delimiter="\t"),
                 WriteCsv(table="t", file="out.tsv", delimiter="\t"),
             ]).execute(global_settings=GlobalSettings(root_folder=root))
 
-            self.assertTrue(os.path.exists(os.path.join(root, "out.tsv")))
+            written = pl.read_csv(os.path.join(root, "out.tsv"), separator="\t")
+            self.assertEqual([1, 3], written["a"].to_list())
 
 
 if __name__ == "__main__":
