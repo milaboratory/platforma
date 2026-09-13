@@ -1,0 +1,218 @@
+test := import("@platforma-sdk/workflow-tengo:test")
+compat := import(":exec.tmpdir-compat")
+text := import("text")
+
+_wrapper := ["sh", "./" + compat.SCRIPT_FILE_NAME]
+
+// TestIsNeededWhenNeitherFlagIsReported covers a backend from before scratch space existed. It
+// neither understands the request nor serves the storage, so the SDK provides the directory
+// whatever size was asked for.
+TestIsNeededWhenNeitherFlagIsReported := func() {
+	feats := {supportsScratchSpaceRequests: false, hasScratchSpace: false}
+
+	test.isTrue(compat.isNeeded(feats, false),
+		"a backend reporting neither flag needs the workaround")
+	test.isTrue(compat.isNeeded(feats, true),
+		"a size changes nothing where the backend serves no scratch storage")
+}
+
+// TestIsNeededNeverWhenTheRequestIsUnderstood checks the flag that settles it alone: such a
+// backend guarantees both variables itself, at any size.
+TestIsNeededNeverWhenTheRequestIsUnderstood := func() {
+	feats := {supportsScratchSpaceRequests: true, hasScratchSpace: false}
+
+	test.isFalse(compat.isNeeded(feats, false),
+		"a backend that understands the request guarantees TMPDIR itself")
+	test.isFalse(compat.isNeeded(feats, true))
+	test.isFalse(compat.isNeeded({supportsScratchSpaceRequests: true, hasScratchSpace: true}, false))
+	test.isFalse(compat.isNeeded({supportsScratchSpaceRequests: true, hasScratchSpace: true}, true))
+}
+
+// TestIsNeededOnlyForASizelessRequestInTheScratchWindow pins the 4.4.0-4.4.3 window, which the two
+// flags identify exactly: scratch storage reported, the request not yet understood. There a sized
+// request already has TMPDIR and a scratch path naming the real device, while a sizeless one has
+// neither - so the size, and only the size, decides.
+TestIsNeededOnlyForASizelessRequestInTheScratchWindow := func() {
+	feats := {supportsScratchSpaceRequests: false, hasScratchSpace: true}
+
+	test.isFalse(compat.isNeeded(feats, true),
+		"a sized request there names the real scratch device and must not be redirected")
+	test.isTrue(compat.isNeeded(feats, false),
+		"a sizeless request there gets no TMPDIR, and a scratch path naming the workdir root")
+}
+
+// TestIsSizedRequestCountsAFormulaAsSized checks the rule the window's decision rests on. The
+// decision is taken before a formula is resolved, so a formula has to count as sized: reading it
+// the other way would redirect a command away from the scratch device it asked for.
+TestIsSizedRequestCountsAFormulaAsSized := func() {
+	test.isFalse(compat.isSizedRequest(undefined, undefined),
+		"no request at all is not a size")
+	test.isFalse(compat.isSizedRequest(0, undefined),
+		"0 asks for the directory alone, which is not a size")
+
+	test.isTrue(compat.isSizedRequest("500GiB", undefined))
+	test.isTrue(compat.isSizedRequest(17179869184, undefined))
+	test.isTrue(compat.isSizedRequest(undefined, {op: "size"}),
+		"a formula counts as sized: its value is not known when this is decided")
+}
+
+// TestScriptMakesTheDirectoryAndExecs pins the three things the script must do. The directory
+// cannot be created any other way on an old backend - workdir fill refuses everything under
+// '.pl' - so the mkdir is the whole reason the script exists.
+TestScriptMakesTheDirectoryAndExecs := func() {
+	script := compat.script()
+
+	test.isTrue(text.contains(script, "mkdir -p"),
+		"the script must create the directory: nothing else can on an old backend")
+	test.isTrue(text.contains(script, compat.WORKDIR_TMP_REL_PATH),
+		"it must be the same directory a current backend points TMPDIR at")
+	test.isTrue(text.contains(script, "export TMPDIR TMP"),
+		"both spellings must be exported, not just TMPDIR")
+	test.isTrue(text.contains(script, `exec "$@"`),
+		"the command must arrive untouched as \"$@\" and replace the shell")
+}
+
+// TestDockerPatchGoesThroughEntrypoint checks the container shape. The image's 'cmd' must stay
+// exactly as it was, because that is what reaches the script as "$@".
+TestDockerPatchGoesThroughEntrypoint := func() {
+	descriptor := {docker: {cmd: ["/app/bin/tool", "--flag"], entrypoint: []}}
+
+	patched := compat.patchSoftwareDescriptor(descriptor, true)
+
+	test.isEqual(_wrapper, patched.docker.entrypoint)
+	test.isEqual(["/app/bin/tool", "--flag"], patched.docker.cmd,
+		"the command a block built must not be touched")
+}
+
+// TestDockerPatchKeepsAnExistingEntrypoint checks that replacing the entrypoint never silently
+// drops the image's own: it moves behind the script instead.
+TestDockerPatchKeepsAnExistingEntrypoint := func() {
+	descriptor := {docker: {cmd: ["--flag"], entrypoint: ["/app/entry.sh"]}}
+
+	patched := compat.patchSoftwareDescriptor(descriptor, true)
+
+	test.isEqual(["sh", "./" + compat.SCRIPT_FILE_NAME, "/app/entry.sh"],
+		patched.docker.entrypoint,
+		"an image that declares an entrypoint keeps it, behind the wrapper")
+}
+
+// TestBinaryPatchPrependsToCmd checks the bare-binary shape. All non-docker descriptors carry
+// their command as '[command, args...]', so the wrapper goes in front of it.
+TestBinaryPatchPrependsToCmd := func() {
+	descriptor := {binary: {cmd: ["{pkg}/bin/tool", "--flag"]}}
+
+	patched := compat.patchSoftwareDescriptor(descriptor, false)
+
+	test.isEqual(["sh", "./" + compat.SCRIPT_FILE_NAME, "{pkg}/bin/tool", "--flag"],
+		patched.binary.cmd)
+}
+
+// TestBinaryPatchIgnoredWhenDockerWins checks the ordering that matters: a container is Linux
+// whatever the runner is, so docker is decided first and the binary section is left alone.
+TestBinaryPatchIgnoredWhenDockerWins := func() {
+	descriptor := {
+		docker: {cmd: ["/app/bin/tool"], entrypoint: []},
+		binary: {cmd: ["{pkg}/bin/tool"]}
+	}
+
+	patched := compat.patchSoftwareDescriptor(descriptor, true)
+
+	test.isEqual(_wrapper, patched.docker.entrypoint)
+	test.isEqual(["{pkg}/bin/tool"], patched.binary.cmd,
+		"only the shape that will actually run gets patched")
+}
+
+// TestBinaryPatchFallsBackWhenDockerIsUnavailable checks that a descriptor carrying BOTH shapes
+// still works where docker is switched off: the binary section is what will run, so it is what
+// gets wrapped.
+TestBinaryPatchFallsBackWhenDockerIsUnavailable := func() {
+	descriptor := {
+		docker: {cmd: ["/app/bin/tool"], entrypoint: []},
+		binary: {cmd: ["{pkg}/bin/tool"]}
+	}
+
+	patched := compat.patchSoftwareDescriptor(descriptor, false)
+
+	test.isEqual(["sh", "./" + compat.SCRIPT_FILE_NAME, "{pkg}/bin/tool"], patched.binary.cmd)
+	test.isEqual([], patched.docker.entrypoint, "the shape that will not run stays untouched")
+}
+
+// TestWrapCommandReturnsShellAndPrefix checks the shape for a command a block spelled out itself,
+// with no software behind it.
+TestWrapCommandReturnsShellAndPrefix := func() {
+	wrapped := compat.wrapCommand("mytool")
+
+	test.isEqual("sh", wrapped.cmd)
+	test.isEqual(["./" + compat.SCRIPT_FILE_NAME, "mytool"], wrapped.prependArgs,
+		"the original command becomes the first thing the script execs")
+}
+
+// TestRewriteScratchPathBareForm checks the path rewrite. A backend from before the contract has
+// no 'system.scratch' at all, so the expression fails to evaluate rather than rendering empty -
+// the rewrite is what keeps a block using it alive.
+TestRewriteScratchPathBareForm := func() {
+	test.isEqual(".pl/tmp", compat.rewriteScratchExpressions("{system.scratch.path}"))
+
+	test.isEqual(".pl/tmp/chunk", compat.rewriteScratchExpressions("{system.scratch.path}/chunk"),
+		"a path built on top of the expression must still resolve")
+
+	test.isEqual("--tmp=.pl/tmp --other=.pl/tmp",
+		compat.rewriteScratchExpressions("--tmp={system.scratch.path} --other={system.scratch.path}"),
+		"every occurrence, not just the first")
+}
+
+// TestRewriteScratchSizeBareForm checks every unit the backend answers with. A block asking how
+// much scratch space it got is told 0, which is the truth on such a backend: it has a temporary
+// directory and no device sized behind it.
+TestRewriteScratchSizeBareForm := func() {
+	units := ["bytes", "b", "kb", "mb", "gb", "kib", "mib", "gib"]
+
+	for unit in units {
+		test.isEqual("0", compat.rewriteScratchExpressions("{system.scratch." + unit + "}"),
+			"unit " + unit + " must rewrite to 0")
+	}
+
+	test.isEqual("--spill-at=0",
+		compat.rewriteScratchExpressions("--spill-at={system.scratch.gib}"))
+}
+
+// TestRewriteScratchSizeDoesNotCorruptLongerUnits pins the ordering trap. The substitution is
+// textual, so a shorter unit name that is a prefix of a longer one - 'b' inside 'bytes' - would
+// leave '0ytes' behind if the longer names were not replaced first.
+TestRewriteScratchSizeDoesNotCorruptLongerUnits := func() {
+	test.isEqual("0", compat.rewriteScratchExpressions("{system.scratch.bytes}"),
+		"'bytes' must not be cut short by the rule for 'b'")
+
+	test.isEqual("0 0",
+		compat.rewriteScratchExpressions("{system.scratch.bytes} {system.scratch.b}"),
+		"both must resolve when they appear together")
+
+	test.isEqual("{0 + 0}",
+		compat.rewriteScratchExpressions("{system.scratch.bytes + system.scratch.b}"),
+		"and inside one expression as well")
+}
+
+// TestRewriteScratchInsideLargerExpression checks the shape a bare-form rule cannot reach. The
+// expression still has to evaluate on the backend, so the variable is replaced where it stands
+// rather than the whole expression being swallowed - and the path is quoted, being a string where
+// the units are numbers.
+TestRewriteScratchInsideLargerExpression := func() {
+	test.isEqual("{0 * 2}", compat.rewriteScratchExpressions("{system.scratch.gib * 2}"),
+		"a computed size keeps evaluating, now against 0")
+
+	test.isEqual("{'.pl/tmp' + '/chunk'}",
+		compat.rewriteScratchExpressions("{system.scratch.path + '/chunk'}"),
+		"a computed path needs the replacement quoted as a string")
+}
+
+// TestRewriteLeavesEverythingElseAlone checks that the rewrite is confined to scratch. Every other
+// expression still has to reach the backend, which is the only thing that can render it.
+TestRewriteLeavesEverythingElseAlone := func() {
+	test.isEqual("{system.cpu}", compat.rewriteScratchExpressions("{system.cpu}"),
+		"every other expression is left for the backend to render")
+
+	test.isEqual("{system.ram.gib}", compat.rewriteScratchExpressions("{system.ram.gib}"),
+		"a unit on another variable must not be touched")
+
+	test.isEqual("plain", compat.rewriteScratchExpressions("plain"))
+}

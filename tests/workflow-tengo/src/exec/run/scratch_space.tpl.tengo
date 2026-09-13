@@ -11,7 +11,13 @@ self.body(func(inputs) {
 	 * dropped somewhere in the middle.
 	 *
 	 * Local execution has no dedicated scratch device, so the path is the command's working
-	 * directory — which is exactly what the runner promises when it cannot do better. */
+	 * directory — which is exactly what the runner promises when it cannot do better.
+	 *
+	 * The path is reported RESOLVED, not as it arrived. A backend that renders
+	 * '{system.scratch.path}' gives an absolute one; on a backend that has no such expression the
+	 * SDK rewrites it to a path relative to the working directory, because it never learns the
+	 * absolute one. Both name the same directory, and 'cd && pwd' is what proves it — while also
+	 * proving the path is a directory the command can actually reach. */
 	run := exec.builder().
 		cmd("sh").
 		resources({
@@ -25,7 +31,7 @@ self.body(func(inputs) {
 			}
 		}).
 		arg("-c").
-		arg("printf '%s %s' \"$1\" \"$2\"").
+		arg("printf '%s %s' \"$1\" \"$(cd \"$2\" && pwd)\"").
 		arg("sh"). // $0 for the inline script
 		argExpr("{system.scratch.gib}").
 		argExpr("{system.scratch.path}").

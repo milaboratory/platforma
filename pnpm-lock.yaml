@@ -61,8 +61,8 @@ catalogs:
       specifier: ^2.1.1
       version: 2.1.1
     '@platforma-open/milaboratories.software-test-utils':
-      specifier: ^1.1.6
-      version: 1.1.1
+      specifier: ^1.2.0
+      version: 1.2.0
     '@protobuf-ts/grpc-transport':
       specifier: 2.11.1
       version: 2.11.1
@@ -1152,7 +1152,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.software-test-utils':
         specifier: 'catalog:'
-        version: 1.1.1
+        version: 1.2.0
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
@@ -1593,7 +1593,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.software-test-utils':
         specifier: 'catalog:'
-        version: 1.1.1
+        version: 1.2.0
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
@@ -1911,7 +1911,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.software-test-utils':
         specifier: 'catalog:'
-        version: 1.1.1
+        version: 1.2.0
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../../tools/tengo-builder
@@ -4346,7 +4346,7 @@ importers:
         version: link:../../lib/node/ts-helpers
       '@platforma-open/milaboratories.software-test-utils':
         specifier: 'catalog:'
-        version: 1.1.1
+        version: 1.2.0
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../tools/tengo-builder
@@ -6278,12 +6278,6 @@ packages:
   '@platforma-open/milaboratories.software-small-binaries.hello-world-py@1.0.10':
     resolution: {integrity: sha512-16BGRLIrsVW+YIaXwWLX6Nbm80PS5mQJEclHhjNbRrRTLHPaKI4RygZfBC0lLNzvHBiTXU4Qkh1+WmdovkshDg==}
 
-  '@platforma-open/milaboratories.software-small-binaries.hello-world-py@1.0.9':
-    resolution: {integrity: sha512-pCg5NZREkrzBqx7jXv14MQMGWh2nfB9JJMn4MoF0lYJjLGkXpyFyYSVErW8IIvbNHcFLE5tU1pG7zilP/wSPvg==}
-
-  '@platforma-open/milaboratories.software-small-binaries.hello-world@1.1.4':
-    resolution: {integrity: sha512-cN8zSWqn2PzO7xI3XLkWNySEOZ5TACH4zzbgTSnG6lWsqk0z/9gkubvYe4GUVWm2pAlngSw/nEju8CdcD7xmNA==}
-
   '@platforma-open/milaboratories.software-small-binaries.hello-world@1.1.7':
     resolution: {integrity: sha512-CqXbfFld2l6Y/8rtcZXRPsa5kqNnaS3QWUxrcfMYwNxultbhLzjZGdqSR7ejV9xRWilXpeg6DdZJIKF3+KDH8g==}
 
@@ -6299,35 +6293,35 @@ packages:
   '@platforma-open/milaboratories.software-small-binaries@2.1.1':
     resolution: {integrity: sha512-KN1PR7YgUUfx1dxh/TtcoWpSZbOXbRxXzQuJ505qHuXuE0spYwC7bXnvJsEYbEwRcPMa0foTrjBnPNORE4yr+Q==}
 
-  '@platforma-open/milaboratories.software-test-utils.docker-images@1.1.0':
-    resolution: {integrity: sha512-LJyDo1kfM2Cw6TE2mIi04ntLCReRYDGtw2pwAdry9fXXtP/EtGQTw3Sfe5Mq7i/d7Pg9oCpF1behBoH4Nly9Jw==}
+  '@platforma-open/milaboratories.software-test-utils.docker-images@1.2.0':
+    resolution: {integrity: sha512-oNNqwXivrwogScraCAreXZnC1WhVvO1WOQjRmP/baSLHkcGW22napLBvKIS5ccxGdfVCmSE4TC0ke8a8DQ7kGA==}
 
-  '@platforma-open/milaboratories.software-test-utils.guided-command@1.1.3':
-    resolution: {integrity: sha512-v45++DKXrOFmJQBZBiSymF3H1+IG4tFAwp6NYNOm1Ev2qKBsrXCcm0spRSFLuWm3nbZRYuOpIsqzHaNCErmyvA==}
+  '@platforma-open/milaboratories.software-test-utils.guided-command@1.1.6':
+    resolution: {integrity: sha512-wzsuP40HBaao04npEI7Diq/5dAhpSZvIJDZzrqWUmJ5UHsEw/3aOE2SASW/W4vWEsu3EBmne0b7HoHVN2KF6Jw==}
 
-  '@platforma-open/milaboratories.software-test-utils.java-stub@1.0.5':
-    resolution: {integrity: sha512-73JkM/EtaRXNFVq+MlFPw1+RQ56ldbuC4spLw2DoKhyP2UStA5kqVUZObyKe9SZpWjJpQ1nDhCCSx4X472We8Q==}
+  '@platforma-open/milaboratories.software-test-utils.java-stub@1.0.7':
+    resolution: {integrity: sha512-H9QiIOMQJvT9ELoqo+jWRjBwkhacZS1w4M4rs4NnrhUVF/wpNzF6ZzfWnCSv4jHNLJEHFqG+uLymAjuDgOOc6w==}
 
-  '@platforma-open/milaboratories.software-test-utils.python-stub@1.0.5':
-    resolution: {integrity: sha512-tGt9KL65zZsCrtzU9szE+9qlsJkE2i99wb2qKCspAq5xxBEBVHI336xrJeAWo7XjdKwlFsLPIEweguprlEew1w==}
+  '@platforma-open/milaboratories.software-test-utils.python-stub@1.0.7':
+    resolution: {integrity: sha512-as4XIBdIY42sqV/fNk8sEQRNl5jeUHZhMQ2ul7X8GS5SmPHLuD0TBSgmZYottSaTIt+4l2kySPo+A9Xzdp9OyQ==}
 
-  '@platforma-open/milaboratories.software-test-utils.read-with-sleep@1.1.3':
-    resolution: {integrity: sha512-H+DuQ86tsHqv+fKlhcaGkRcg+Yzfesov37qN51TtITFbVYZc9FM5kPHpoXc7QXbPAnXCe4qx1qu3SG3hrcAMbA==}
+  '@platforma-open/milaboratories.software-test-utils.read-with-sleep@1.1.6':
+    resolution: {integrity: sha512-8Pg46xK1I+G5NMkQnryTJEAwaq/86tshJ6e7sV9YJfWmeHjiv1jCSUP4bDM5dRNLk/0sKjhEJ4swpZkbe6eJAA==}
 
-  '@platforma-open/milaboratories.software-test-utils.runenv-java-stub@1.0.7':
-    resolution: {integrity: sha512-E+C3meLzp7Alo56S//fQVbtsrHq3IbUX5LfbZIgT9zBoX0r2iM0hj4JZuHDSsvLoCDAPFHFsZ4j4KalJj52seQ==}
+  '@platforma-open/milaboratories.software-test-utils.runenv-java-stub@1.0.8':
+    resolution: {integrity: sha512-yuvhpZQ3ErsGJnOhjw285QMfCICM17tmM74mNAQyN0YXFHOs6mLcdL/KMH98SB5Y4dQxIyqGqQJWfYMqZOWHIQ==}
 
-  '@platforma-open/milaboratories.software-test-utils.runenv-python-stub@1.0.8':
-    resolution: {integrity: sha512-/8zTUvq/0WPXVVRnfPw9vlW/4VDljjVHHZ0CV3LvhGyHuGwV2wWxjSV5iZQnBUtUI4RvRSdAgLrLTmh0kYvyKg==}
+  '@platforma-open/milaboratories.software-test-utils.runenv-python-stub@1.0.9':
+    resolution: {integrity: sha512-0NjzM+vBOMhN13frMxHoeX5lcKTW0tYrgfIAY0zRprXxluUm/tFm31PYIOI9zPHY6STrExQ3fq5ZJQTAXs7Ckw==}
 
-  '@platforma-open/milaboratories.software-test-utils.sleep@1.1.3':
-    resolution: {integrity: sha512-c/ifFAzIZXuCMIcvcGJu5CxahyII6cJs2K1IxOccuGHMD88UsHKW4+W0F8oJ8jsyML1dx5AR9LTRqnGDVFpyJg==}
+  '@platforma-open/milaboratories.software-test-utils.sleep@1.1.6':
+    resolution: {integrity: sha512-Tm/cNLbB82NKiBf84glhALN8gAJIA6S3oAotvTFxlsg7KPGd1Lzt5I0cKol6o8ykZEu19cfpgjhZ5R6iCQWf2Q==}
 
-  '@platforma-open/milaboratories.software-test-utils.small-asset@1.1.6':
-    resolution: {integrity: sha512-bYxb22fq1MkSTq+nucQSsy4b/h/D4PRsZCoKGYEcEstDJwffRo4OZNwG+Oh/Ru+P8w3VRcprK744TPbU/IXFZg==}
+  '@platforma-open/milaboratories.software-test-utils.small-asset@1.1.7':
+    resolution: {integrity: sha512-c+ChMmsXglruBhiOABTcrkoRk/guh0Mtp6ZQmYJNKYmNAMfwkV4WsjZbl1sUuh1v5PNw5AdeiRdxkPc6XvIeWw==}
 
-  '@platforma-open/milaboratories.software-test-utils@1.1.1':
-    resolution: {integrity: sha512-hifh8Y27H5F/nGW2zvk1/PV7Qyx7qI5s7CiZsstHbGHAm0+cUEGI09ZcFbFpBfKzdX2Qu73U5BiUPHevGGlpeQ==}
+  '@platforma-open/milaboratories.software-test-utils@1.2.0':
+    resolution: {integrity: sha512-01jofa3vr34MShm0vbNbO/zyiVhGd9fi6PnbZMFK27cvrCWooByuqAuV1hzo/0LuxaL8+qv5k+YOwFaFA9dPPQ==}
 
   '@protobuf-ts/grpc-transport@2.11.1':
     resolution: {integrity: sha512-l6wrcFffY+tuNnuyrNCkRM8hDIsAZVLA8Mn7PKdVyYxITosYh60qW663p9kL6TWXYuDCL3oxH8ih3vLKTDyhtg==}
@@ -12148,10 +12142,6 @@ snapshots:
 
   '@platforma-open/milaboratories.software-small-binaries.hello-world-py@1.0.10': {}
 
-  '@platforma-open/milaboratories.software-small-binaries.hello-world-py@1.0.9': {}
-
-  '@platforma-open/milaboratories.software-small-binaries.hello-world@1.1.4': {}
-
   '@platforma-open/milaboratories.software-small-binaries.hello-world@1.1.7': {}
 
   '@platforma-open/milaboratories.software-small-binaries.line-counter@1.1.1': {}
@@ -12168,37 +12158,37 @@ snapshots:
       '@platforma-open/milaboratories.software-small-binaries.mnz-client': 1.6.5
       '@platforma-open/milaboratories.software-small-binaries.table-converter': 1.3.5
 
-  '@platforma-open/milaboratories.software-test-utils.docker-images@1.1.0': {}
+  '@platforma-open/milaboratories.software-test-utils.docker-images@1.2.0': {}
 
-  '@platforma-open/milaboratories.software-test-utils.guided-command@1.1.3': {}
+  '@platforma-open/milaboratories.software-test-utils.guided-command@1.1.6': {}
 
-  '@platforma-open/milaboratories.software-test-utils.java-stub@1.0.5': {}
+  '@platforma-open/milaboratories.software-test-utils.java-stub@1.0.7': {}
 
-  '@platforma-open/milaboratories.software-test-utils.python-stub@1.0.5': {}
+  '@platforma-open/milaboratories.software-test-utils.python-stub@1.0.7': {}
 
-  '@platforma-open/milaboratories.software-test-utils.read-with-sleep@1.1.3': {}
+  '@platforma-open/milaboratories.software-test-utils.read-with-sleep@1.1.6': {}
 
-  '@platforma-open/milaboratories.software-test-utils.runenv-java-stub@1.0.7': {}
+  '@platforma-open/milaboratories.software-test-utils.runenv-java-stub@1.0.8': {}
 
-  '@platforma-open/milaboratories.software-test-utils.runenv-python-stub@1.0.8': {}
+  '@platforma-open/milaboratories.software-test-utils.runenv-python-stub@1.0.9': {}
 
-  '@platforma-open/milaboratories.software-test-utils.sleep@1.1.3': {}
+  '@platforma-open/milaboratories.software-test-utils.sleep@1.1.6': {}
 
-  '@platforma-open/milaboratories.software-test-utils.small-asset@1.1.6': {}
+  '@platforma-open/milaboratories.software-test-utils.small-asset@1.1.7': {}
 
-  '@platforma-open/milaboratories.software-test-utils@1.1.1':
+  '@platforma-open/milaboratories.software-test-utils@1.2.0':
     dependencies:
-      '@platforma-open/milaboratories.software-small-binaries.hello-world': 1.1.4
-      '@platforma-open/milaboratories.software-small-binaries.hello-world-py': 1.0.9
-      '@platforma-open/milaboratories.software-test-utils.docker-images': 1.1.0
-      '@platforma-open/milaboratories.software-test-utils.guided-command': 1.1.3
-      '@platforma-open/milaboratories.software-test-utils.java-stub': 1.0.5
-      '@platforma-open/milaboratories.software-test-utils.python-stub': 1.0.5
-      '@platforma-open/milaboratories.software-test-utils.read-with-sleep': 1.1.3
-      '@platforma-open/milaboratories.software-test-utils.runenv-java-stub': 1.0.7
-      '@platforma-open/milaboratories.software-test-utils.runenv-python-stub': 1.0.8
-      '@platforma-open/milaboratories.software-test-utils.sleep': 1.1.3
-      '@platforma-open/milaboratories.software-test-utils.small-asset': 1.1.6
+      '@platforma-open/milaboratories.software-small-binaries.hello-world': 1.1.7
+      '@platforma-open/milaboratories.software-small-binaries.hello-world-py': 1.0.10
+      '@platforma-open/milaboratories.software-test-utils.docker-images': 1.2.0
+      '@platforma-open/milaboratories.software-test-utils.guided-command': 1.1.6
+      '@platforma-open/milaboratories.software-test-utils.java-stub': 1.0.7
+      '@platforma-open/milaboratories.software-test-utils.python-stub': 1.0.7
+      '@platforma-open/milaboratories.software-test-utils.read-with-sleep': 1.1.6
+      '@platforma-open/milaboratories.software-test-utils.runenv-java-stub': 1.0.8
+      '@platforma-open/milaboratories.software-test-utils.runenv-python-stub': 1.0.9
+      '@platforma-open/milaboratories.software-test-utils.sleep': 1.1.6
+      '@platforma-open/milaboratories.software-test-utils.small-asset': 1.1.7
 
   '@protobuf-ts/grpc-transport@2.11.1(@grpc/grpc-js@1.14.4)':
     dependencies:
