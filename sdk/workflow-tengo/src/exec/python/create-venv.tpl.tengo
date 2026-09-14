@@ -11,6 +11,7 @@ workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
 assets := import(":assets")
 path := import(":path")
+maps := import(":maps")
 validation := import(":validation")
 runenv := import(":exec.runenv")
 internal := import(":exec.python.internal")
@@ -22,14 +23,25 @@ pkg := import(":exec.package")
  *
  * @param pythonPackage: smart.reference - python run environment.
  * @param pythonDescriptor: desc.runEnvScheme - python run environment descriptor.
+ * @param dependencies: {"string": smart.reference} - dependency files installed into the venv after
+ *                                                    this save; bound into the venv's identity.
  * @return venv: smart.reference - python virtual environment.
  */
-_createVenv := func(pythonPackage, pythonDescriptor) {
-	wdBefore := workdir.builder().
+_createVenv := func(pythonPackage, pythonDescriptor, dependencies) {
+	// getKeys returns sorted keys: the order reaches the saved 'paths' list, and an unstable order
+	// would give one environment two identities.
+	depNames := maps.getKeys(dependencies)
+
+	wdBuilder := workdir.builder().
 		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
 		cpu(pkg.DEFAULT_ALLOCATION_CPU).
-		mem(pkg.DEFAULT_ALLOCATION_RAM).
-		build()
+		mem(pkg.DEFAULT_ALLOCATION_RAM)
+
+	for depName in depNames {
+		wdBuilder.addFile(depName, dependencies[depName])
+	}
+
+	wdBefore := wdBuilder.build()
 
 	// DEPRECATED: remove after 15 Mar 2025
 	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
@@ -71,6 +83,14 @@ _createVenv := func(pythonPackage, pythonDescriptor) {
 		addPath("venv").
 		addPackage("python", pythonPackage)
 
+	// Dependency specs are saved into the environment, as conda saves env-spec.yaml and R saves
+	// renv.lock. Required: dependencies are installed AFTER this save, so the environment's content
+	// hash would otherwise be a function of the interpreter alone, and two environments built from
+	// one interpreter would deduplicate onto whichever was registered first.
+	for depName in depNames {
+		runEnvSaver.addPath(depName)
+	}
+
 	return runEnvSaver.build().runEnv()
 }
 
@@ -106,7 +126,7 @@ self.body(func(inputs) {
 	pythonPackage := inputs.python
 	pythonDescriptor := inputs.pythonDescriptor
 
-	venv := _createVenv(pythonPackage, pythonDescriptor)
+	venv := _createVenv(pythonPackage, pythonDescriptor, inputs.dependencies)
 
     venvParams := _pythonVenvBinDir(pythonPackage, pythonDescriptor)
 
