@@ -8,7 +8,7 @@ import msgspec
 from ptabler.common import toPolarsType, PType
 
 from .base import PStep, StepContext
-from .util import step_file_identity, step_file_path
+from .util import physical_file, step_file_identity, step_file_path
 
 class ColumnSchema(msgspec.Struct, frozen=True, omit_defaults=True):
     """Defines the schema for a single column, mirroring the TS definition."""
@@ -266,19 +266,25 @@ class BaseWriteLogic(PStep):
 
         The rows go to a sibling partial file instead. The move onto the target is
         chained behind collect_all, by which point every read has finished.
+
+        The target is the physical file, not the path as written. os.replace does not
+        follow a symlink, so an alias handed straight to it would end up a regular file
+        while the rows it stood for never moved.
         """
-        if _target_refuses_writes(file_path):
+        target_path = physical_file(file_path)
+
+        if _target_refuses_writes(target_path):
             # A partial file would walk straight past the target's mode, because
             # os.replace asks the directory for permission and never the file. Sink onto
             # the target instead, so the write fails the way the caller expects.
-            ctx.add_sink(self._do_sink(selected_lf, file_path))
+            ctx.add_sink(self._do_sink(selected_lf, target_path))
             return
 
-        temp_path = _create_partial_output(file_path)
+        temp_path = _create_partial_output(target_path)
 
         ctx.add_sink(self._do_sink(selected_lf, temp_path))
         ctx.add_partial_output(temp_path)
-        ctx.chain_task(lambda: _replace_preserving_mode(temp_path, file_path))
+        ctx.chain_task(lambda: _replace_preserving_mode(temp_path, target_path))
 
 class WriteCsv(BaseWriteLogic, tag="write_csv"):
     """

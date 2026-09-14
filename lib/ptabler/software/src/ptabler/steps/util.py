@@ -12,12 +12,21 @@ def step_file_path(root_folder, file: str) -> str:
     return os.path.join(root_folder, normalize_path(file))
 
 
-def step_file_identity(root_folder, file: str) -> str:
+def physical_file(file_path: str) -> str:
     """
-    Returns the key two steps share when their `file` fields name one file.
+    Returns the file a path ends at, following every symlink along the way.
 
-    'a.tsv', './a.tsv' and a symlink pointing at it are one file. Comparing the paths as
-    they were written would miss two of the three. For comparison only: the read and the
-    write still use the path the workflow asked for.
+    Two steps name one file when this matches. 'a.tsv', './a.tsv' and a symlink pointing
+    at it are one file, and comparing the paths as written would miss two of the three.
+
+    A rewrite also has to land its bytes here rather than on the path it was given.
+    os.replace does not follow a symlink: handed the alias it would drop a regular file
+    in the alias's place and leave the file it pointed at holding the old rows.
     """
-    return os.path.realpath(step_file_path(root_folder, file))
+    return os.path.realpath(file_path)
+
+
+def step_file_identity(root_folder, file: str) -> str:
+    """Returns the file a step's `file` field ends at. A direct sink still uses the path
+    the workflow asked for; polars follows the symlink on its own."""
+    return physical_file(step_file_path(root_folder, file))

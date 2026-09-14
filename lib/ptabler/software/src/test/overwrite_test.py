@@ -158,6 +158,32 @@ class OverwriteInPlaceTests(unittest.TestCase):
 
             ctx.cleanup_partial_outputs()
 
+    def test_a_rewrite_through_a_symlink_writes_the_file_it_points_at(self):
+        with tempfile.TemporaryDirectory() as root:
+            target = self._write_source(root, "real.tsv")
+            link = os.path.join(root, "link.tsv")
+            os.symlink(target, link)
+
+            self._run_overwrite(root, "link.tsv")
+
+            self.assertTrue(os.path.islink(link), "the symlink was replaced by a file")
+            written = pl.read_csv(target, separator="\t")
+            self.assertEqual([1, 3], written["a"].to_list())
+
+    def test_a_write_through_an_alias_of_what_it_reads_is_a_rewrite(self):
+        with tempfile.TemporaryDirectory() as root:
+            target = self._write_source(root, "real.tsv")
+            link = os.path.join(root, "link.tsv")
+            os.symlink(target, link)
+
+            PWorkflow(workflow=[
+                ReadCsv(file="real.tsv", name="t", delimiter="\t"),
+                WriteCsv(table="t", file="link.tsv", delimiter="\t"),
+            ]).execute(global_settings=GlobalSettings(root_folder=root))
+
+            self.assertTrue(os.path.islink(link), "the symlink was replaced by a file")
+            self.assertEqual([], self._partials_in(root))
+
     def test_writing_a_new_file_still_works(self):
         with tempfile.TemporaryDirectory() as root:
             self._write_source(root, "in.tsv")
