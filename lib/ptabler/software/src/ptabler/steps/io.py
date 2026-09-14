@@ -149,14 +149,14 @@ def _create_partial_output(file_path: str) -> str:
     """
     Creates the file a rewrite sinks into, already carrying the mode its target will need.
 
-    The name is unique, so two steps rewriting one target never share a partial file and
+    The name is unique. Two steps rewriting one target never share a partial file, and
     neither can land on a name the workflow's own data uses.
 
-    The mode is set here rather than at the move because the sink starts writing as soon
-    as it is collected: a target restricted to 0o600 whose partial file was created under
-    the umask would be readable by anyone with the workspace for as long as the write
-    takes. mkstemp opens at 0o600, so the window never exists, and the target's own mode
-    is applied before any row is written.
+    The mode is set here rather than at the move, because the sink starts writing as
+    soon as it is collected. Take a target restricted to 0o600. A partial file created
+    under the umask would be readable by anyone holding the workspace, for as long as the
+    write takes. mkstemp opens at 0o600, so that window never exists, and the target's
+    own mode is applied before any row is written.
     """
     directory, name = os.path.split(file_path)
     handle, temp_path = tempfile.mkstemp(
@@ -184,8 +184,8 @@ def _target_refuses_writes(file_path: str) -> bool:
     Reports whether an existing target would reject a write through its own mode.
 
     Only a rewrite has to ask. A write that goes straight to its file finds out from the
-    filesystem, but a rewrite writes somewhere else first and would then move the result
-    on top — past a mode that was the whole point.
+    filesystem. A rewrite writes somewhere else first and would then move the result on
+    top, past a mode that was the whole point.
 
     The backend hands a block its workdir files read-only unless the workflow asked for
     a writable copy. A path that does not exist yet refuses nothing — the write creates it.
@@ -199,7 +199,7 @@ def _replace_preserving_mode(temp_path: str, file_path: str) -> None:
 
     os.replace swaps in a new inode, so the target would otherwise come back with the
     partial file's mode. A workdir file the backend staged writable at 0o600 has that
-    mode for a reason, and a block that writes it must not hand back something read-only.
+    mode for a reason. A block that writes it must not hand back something read-only.
 
     The partial file was created carrying this mode already, and polars truncates rather
     than recreates it, so this re-applies what is usually the same mode. It is here for
@@ -260,10 +260,12 @@ class BaseWriteLogic(PStep):
         Sinks a write whose file the same workflow also reads.
 
         The sink cannot go to file_path. The read is lazy and still open, so truncating
-        the file there takes the data out from under polars mid-read: a local filesystem
-        survives that on cached pages, a network filesystem does not and the process ends
-        on SIGBUS. So the rows go to a sibling partial file, and the move onto the target
-        is chained behind collect_all, where every read has finished.
+        the file there takes the data out from under polars mid-read. A local filesystem
+        survives that on cached pages. A network filesystem does not, and the process
+        ends on SIGBUS.
+
+        The rows go to a sibling partial file instead. The move onto the target is
+        chained behind collect_all, by which point every read has finished.
         """
         if _target_refuses_writes(file_path):
             # A partial file would walk straight past the target's mode, because

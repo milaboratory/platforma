@@ -41,9 +41,9 @@ class StepContext:
         """
         Returns the file identities this workflow both reads and writes (read-only).
 
-        A write to one of them is a rewrite: the only write that cannot go straight to its
-        file. The workflow fills this before any step runs, because a write step may
-        appear ahead of the read it collides with. It is empty for almost every workflow.
+        A write to one of them is a rewrite. It cannot go straight to its own file, and
+        every other write can. The workflow fills this before any step runs, because a
+        write step may appear ahead of the read it collides with.
         """
         return self._overwrite_targets
     
@@ -100,12 +100,11 @@ class StepContext:
         """
         Records the file a rewrite sinks into before it is moved onto its target.
 
-        Only a rewrite registers anything here, so an ordinary workflow leaves this empty
-        and nothing below has any work to do.
+        Only a rewrite registers anything here. An ordinary workflow leaves it empty.
 
-        A run that fails leaves the partial file behind, and in a block's working
-        directory a leftover file is not inert — it is collected as part of the block's
-        output. The workflow removes whatever is still registered here once execution ends.
+        A run that fails leaves the partial file behind. In a block's working directory
+        that file is not inert: it is collected as part of the block's output. The
+        workflow removes whatever is still registered here once execution ends.
 
         Args:
             path: Absolute path of the partial file
@@ -122,8 +121,8 @@ class StepContext:
         Removes every partial file still recorded, and forgets them.
 
         A partial file that reached its target has already been moved off the disk path
-        this holds, so removing what is left removes only the rewrites that never landed.
-        A workflow with no rewrite in it has nothing recorded. Safe to call more than once.
+        this holds. Removing what is left removes only the rewrites that never landed.
+        A workflow with no rewrite in it has nothing recorded. Safe to call twice.
         """
         for partial_output in self._partial_outputs:
             try:

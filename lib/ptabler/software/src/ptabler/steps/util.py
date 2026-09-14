@@ -16,8 +16,8 @@ def step_file_identity(root_folder, file: str) -> str:
     """
     Returns the key two steps share when their `file` fields name one file.
 
-    'a.tsv', './a.tsv' and a symlink pointing at it are the same file, so comparing the
-    paths as they were written would miss two of the three. Only for comparison — the
-    read and the write still use the path the workflow asked for.
+    'a.tsv', './a.tsv' and a symlink pointing at it are one file. Comparing the paths as
+    they were written would miss two of the three. For comparison only: the read and the
+    write still use the path the workflow asked for.
     """
     return os.path.realpath(step_file_path(root_folder, file))
