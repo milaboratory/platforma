@@ -15,8 +15,9 @@ TSV = "a\tb\n1\t2\n3\t4\n"
 class OverwriteInPlaceTests(unittest.TestCase):
     """
     A workflow may read a file and write the result back over the same path. The read is
-    lazy, so the sink must not truncate the file polars is still reading: on a local
-    filesystem cached pages hide that, on a network filesystem the reader takes SIGBUS.
+    lazy, so the sink must not truncate the file polars is still reading. A local
+    filesystem hides that behind cached pages. A network filesystem does not, and the
+    reader takes SIGBUS.
     """
 
     def _write_source(self, root: str, name: str = "data.tsv") -> str:
@@ -53,8 +54,6 @@ class OverwriteInPlaceTests(unittest.TestCase):
             self.assertEqual([], self._partials_in(root))
 
     def test_overwrite_keeps_the_mode_the_target_had(self):
-        # The backend stages a workdir file writable at 0o600 on purpose, and moving the
-        # sink into place must not hand back something with the partial file's mode.
         with tempfile.TemporaryDirectory() as root:
             target = self._write_source(root)
             os.chmod(target, 0o600)
@@ -65,8 +64,6 @@ class OverwriteInPlaceTests(unittest.TestCase):
             self.assertEqual(0o600, mode, f"mode became {oct(mode)}")
 
     def test_two_writers_of_one_target_do_not_share_a_partial_file(self):
-        # Both sinks are collected before either is moved into place, so a partial name
-        # derived from the target alone would have them writing over each other.
         with tempfile.TemporaryDirectory() as root:
             self._write_source(root)
 
@@ -81,14 +78,9 @@ class OverwriteInPlaceTests(unittest.TestCase):
             self.assertEqual([], self._partials_in(root))
 
     def test_a_failed_run_leaves_no_partial_file_behind(self):
-        # A leftover partial in a block's working directory is collected as part of the
-        # block's output, so a run that raises must not leave one.
         with tempfile.TemporaryDirectory() as root:
             self._write_source(root)
 
-            # The column is missing, which polars only discovers when the sink is
-            # collected — by then the partial file exists, which is the case that
-            # would otherwise leave one behind.
             with self.assertRaises(Exception):
                 PWorkflow(workflow=[
                     ReadCsv(file="data.tsv", name="t", delimiter="\t"),
@@ -100,9 +92,6 @@ class OverwriteInPlaceTests(unittest.TestCase):
             self.assertEqual([], self._partials_in(root))
 
     def test_a_read_only_target_still_refuses_the_write(self):
-        # The mode of a workdir file is the whole enforcement behind exec.builder's
-        # { writable: false }. Moving a partial file into place would ignore it, because
-        # os.replace asks the directory for permission and never the file.
         with tempfile.TemporaryDirectory() as root:
             target = self._write_source(root)
             os.chmod(target, 0o400)
@@ -114,9 +103,6 @@ class OverwriteInPlaceTests(unittest.TestCase):
             self.assertEqual([], self._partials_in(root))
 
     def test_a_lazy_run_hands_its_partial_files_to_the_caller(self):
-        # A writing step opens its partial file while the step runs, so a lazy call
-        # returns with them on disk and nothing has moved them anywhere yet. The caller
-        # took the context, so it owns them, and cleanup_partial_outputs is the handle.
         with tempfile.TemporaryDirectory() as root:
             self._write_source(root)
 
@@ -134,8 +120,6 @@ class OverwriteInPlaceTests(unittest.TestCase):
             self.assertEqual([], ctx.partial_outputs)
 
     def test_a_write_the_workflow_does_not_read_needs_no_partial_file(self):
-        # Every write but the colliding one keeps the direct sink, so the partial file,
-        # the chained move and the cleanup never enter an ordinary workflow at all.
         with tempfile.TemporaryDirectory() as root:
             self._write_source(root, "in.tsv")
 
@@ -148,8 +132,6 @@ class OverwriteInPlaceTests(unittest.TestCase):
             self.assertEqual([], self._partials_in(root))
 
     def test_a_path_spelled_two_ways_is_still_one_file(self):
-        # './data.tsv' and 'data.tsv' are the same file, and a write that compared the
-        # paths as written would take the direct sink and truncate its own reader.
         with tempfile.TemporaryDirectory() as root:
             target = self._write_source(root)
 
@@ -163,8 +145,6 @@ class OverwriteInPlaceTests(unittest.TestCase):
             self.assertEqual([], self._partials_in(root))
 
     def test_a_write_ahead_of_the_read_it_collides_with_is_still_found(self):
-        # The steps are scanned before any of them runs, so the order they appear in does
-        # not decide whether the collision is seen.
         with tempfile.TemporaryDirectory() as root:
             self._write_source(root, "seed.tsv")
 
