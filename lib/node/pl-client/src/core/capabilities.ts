@@ -18,6 +18,10 @@ export type BackendCapability =
   | "auth:v2"
   | "treeFilter:v2"
   | "wasm:v1"
+  // Advertised only where the deployment actually has scratch storage, not merely where the
+  // build understands a 'scratchFreeSpace' request: a client that sees this stops arranging
+  // its own temporary storage. Off unless pl was started with --has-scratch-space.
+  | "scratchSpace:v1"
   // Project-sharing capability tokens.
   | "crossTreeRefs:v1" // cross-color field attach (accept a foreign-colored shared envelope)
   | "userListing:v1" // list users for the recipient picker
