@@ -28,20 +28,12 @@ pkg := import(":exec.package")
  * @return venv: smart.reference - python virtual environment.
  */
 _createVenv := func(pythonPackage, pythonDescriptor, dependencies) {
-	// getKeys returns sorted keys: the order reaches the saved 'paths' list, and an unstable order
-	// would give one environment two identities.
-	depNames := maps.getKeys(dependencies)
-
-	wdBuilder := workdir.builder().
+	wdBefore := workdir.builder().
 		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
 		cpu(pkg.DEFAULT_ALLOCATION_CPU).
-		mem(pkg.DEFAULT_ALLOCATION_RAM)
-
-	for depName in depNames {
-		wdBuilder.addFile(depName, dependencies[depName])
-	}
-
-	wdBefore := wdBuilder.build()
+		mem(pkg.DEFAULT_ALLOCATION_RAM).
+		addFiles(dependencies).
+		build()
 
 	// DEPRECATED: remove after 15 Mar 2025
 	t := feats.commandExpressions ? constants.ARG_TYPE_EXPRESSION : constants.ARG_TYPE_VAR
@@ -87,7 +79,10 @@ _createVenv := func(pythonPackage, pythonDescriptor, dependencies) {
 	// renv.lock. Required: dependencies are installed AFTER this save, so the environment's content
 	// hash would otherwise be a function of the interpreter alone, and two environments built from
 	// one interpreter would deduplicate onto whichever was registered first.
-	for depName in depNames {
+	//
+	// getKeys returns sorted keys, and the order matters here: these paths are serialized into the
+	// saver's settings, so an unstable order would give one environment two identities.
+	for depName in maps.getKeys(dependencies) {
 		runEnvSaver.addPath(depName)
 	}
 
