@@ -23,16 +23,17 @@ pkg := import(":exec.package")
  *
  * @param pythonPackage: smart.reference - python run environment.
  * @param pythonDescriptor: desc.runEnvScheme - python run environment descriptor.
- * @param dependencies: {"string": smart.reference} - dependency files installed into the venv after
- *                                                    this save; bound into the venv's identity.
+ * @param dependencySpecs: {"string": smart.reference} - dependency spec files keyed by file name;
+ *                                                        saved into the environment so its content
+ *                                                        hash reflects what gets installed.
  * @return venv: smart.reference - python virtual environment.
  */
-_createVenv := func(pythonPackage, pythonDescriptor, dependencies) {
+_createVenv := func(pythonPackage, pythonDescriptor, dependencySpecs) {
 	wdBefore := workdir.builder().
 		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
 		cpu(pkg.DEFAULT_ALLOCATION_CPU).
 		mem(pkg.DEFAULT_ALLOCATION_RAM).
-		addFiles(dependencies).
+		addFiles(dependencySpecs).
 		build()
 
 	// DEPRECATED: remove after 15 Mar 2025
@@ -82,8 +83,8 @@ _createVenv := func(pythonPackage, pythonDescriptor, dependencies) {
 	//
 	// getKeys returns sorted keys, and the order matters: these paths are serialized into the
 	// saver's settings resource, whose bytes are its identity.
-	for depName in maps.getKeys(dependencies) {
-		runEnvSaver.addPath(depName)
+	for fileName in maps.getKeys(dependencySpecs) {
+		runEnvSaver.addPath(fileName)
 	}
 
 	return runEnvSaver.build().runEnv()
@@ -121,7 +122,7 @@ self.body(func(inputs) {
 	pythonPackage := inputs.python
 	pythonDescriptor := inputs.pythonDescriptor
 
-	venv := _createVenv(pythonPackage, pythonDescriptor, inputs.dependencies)
+	venv := _createVenv(pythonPackage, pythonDescriptor, inputs.dependencySpecs)
 
     venvParams := _pythonVenvBinDir(pythonPackage, pythonDescriptor)
 
