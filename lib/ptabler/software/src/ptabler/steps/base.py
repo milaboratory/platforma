@@ -41,9 +41,9 @@ class StepContext:
         """
         Returns the file identities this workflow both reads and writes (read-only).
 
-        A write to one of them is the only write that cannot go straight to its file, so
-        every other write keeps the direct sink. The workflow computes the set before any
-        step runs, because a write step may appear ahead of the read it collides with.
+        A write to one of them is a rewrite: the only write that cannot go straight to its
+        file. The workflow fills this before any step runs, because a write step may
+        appear ahead of the read it collides with. It is empty for almost every workflow.
         """
         return self._overwrite_targets
     
@@ -98,11 +98,14 @@ class StepContext:
     
     def add_partial_output(self, path: str):
         """
-        Records a file a sink writes before it is moved onto its target.
+        Records the file a rewrite sinks into before it is moved onto its target.
 
-        A run that fails leaves those behind, and in a block's working directory a
-        leftover file is not inert — it is collected as part of the block's output. The
-        workflow removes whatever is still registered here once execution ends.
+        Only a rewrite registers anything here, so an ordinary workflow leaves this empty
+        and nothing below has any work to do.
+
+        A run that fails leaves the partial file behind, and in a block's working
+        directory a leftover file is not inert — it is collected as part of the block's
+        output. The workflow removes whatever is still registered here once execution ends.
 
         Args:
             path: Absolute path of the partial file
@@ -111,16 +114,16 @@ class StepContext:
 
     @property
     def partial_outputs(self) -> list[str]:
-        """Returns the partial sink files recorded so far (read-only)."""
+        """Returns the partial files the rewrites recorded so far (read-only)."""
         return self._partial_outputs
 
     def cleanup_partial_outputs(self):
         """
-        Removes every partial sink file still recorded, and forgets them.
+        Removes every partial file still recorded, and forgets them.
 
         A partial file that reached its target has already been moved off the disk path
-        this holds, so removing what is left removes only the writes that never landed.
-        Safe to call more than once.
+        this holds, so removing what is left removes only the rewrites that never landed.
+        A workflow with no rewrite in it has nothing recorded. Safe to call more than once.
         """
         for partial_output in self._partial_outputs:
             try:
