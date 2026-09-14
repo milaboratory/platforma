@@ -11,12 +11,16 @@ workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
 assets := import(":assets")
 path := import(":path")
-maps := import(":maps")
 validation := import(":validation")
 runenv := import(":exec.runenv")
 internal := import(":exec.python.internal")
 constants := import(":exec.constants")
 pkg := import(":exec.package")
+
+// Directory inside a python run environment holding the dependency specs it was built from.
+// Conda and R each save one spec file at the environment root; python may declare several, so they
+// go under a single directory and the saved path list stays constant.
+_DEPS_DIR_NAME := "deps"
 
 /**
  * Creates new python virtual environment using given python interpreter (python run environment) and descriptor.
@@ -28,11 +32,16 @@ pkg := import(":exec.package")
  * @return venv: smart.reference - python virtual environment.
  */
 _createVenv := func(pythonPackage, pythonDescriptor, dependencies) {
+	depFiles := {}
+	for depName, depRef in dependencies {
+		depFiles[path.join(_DEPS_DIR_NAME, depName)] = depRef
+	}
+
 	wdBefore := workdir.builder().
 		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
 		cpu(pkg.DEFAULT_ALLOCATION_CPU).
 		mem(pkg.DEFAULT_ALLOCATION_RAM).
-		addFiles(dependencies).
+		addFiles(depFiles).
 		build()
 
 	// DEPRECATED: remove after 15 Mar 2025
@@ -80,10 +89,10 @@ _createVenv := func(pythonPackage, pythonDescriptor, dependencies) {
 	// hash would otherwise be a function of the interpreter alone, and two environments built from
 	// one interpreter would deduplicate onto whichever was registered first.
 	//
-	// getKeys returns sorted keys, and the order matters here: these paths are serialized into the
-	// saver's settings, so an unstable order would give one environment two identities.
-	for depName in maps.getKeys(dependencies) {
-		runEnvSaver.addPath(depName)
+	// Guarded because the directory only exists when a dependency was added, and the saver fails on
+	// a path that is not in the workdir.
+	if len(depFiles) > 0 {
+		runEnvSaver.addPath(_DEPS_DIR_NAME)
 	}
 
 	return runEnvSaver.build().runEnv()
