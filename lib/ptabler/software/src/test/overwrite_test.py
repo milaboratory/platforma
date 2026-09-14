@@ -122,7 +122,7 @@ class OverwriteInPlaceTests(unittest.TestCase):
 
             ctx = PWorkflow(workflow=[
                 ReadCsv(file="data.tsv", name="t", delimiter="\t"),
-                WriteCsv(table="t", file="out.tsv", delimiter="\t"),
+                WriteCsv(table="t", file="data.tsv", delimiter="\t"),
             ]).execute(global_settings=GlobalSettings(root_folder=root), lazy=True)
 
             self.assertEqual(1, len(ctx.partial_outputs))
@@ -132,6 +132,51 @@ class OverwriteInPlaceTests(unittest.TestCase):
 
             self.assertEqual([], self._partials_in(root))
             self.assertEqual([], ctx.partial_outputs)
+
+    def test_a_write_the_workflow_does_not_read_needs_no_partial_file(self):
+        # Every write but the colliding one keeps the direct sink, so the partial file,
+        # the chained move and the cleanup never enter an ordinary workflow at all.
+        with tempfile.TemporaryDirectory() as root:
+            self._write_source(root, "in.tsv")
+
+            ctx = PWorkflow(workflow=[
+                ReadCsv(file="in.tsv", name="t", delimiter="\t"),
+                WriteCsv(table="t", file="out.tsv", delimiter="\t"),
+            ]).execute(global_settings=GlobalSettings(root_folder=root), lazy=True)
+
+            self.assertEqual([], ctx.partial_outputs)
+            self.assertEqual([], self._partials_in(root))
+
+    def test_a_path_spelled_two_ways_is_still_one_file(self):
+        # './data.tsv' and 'data.tsv' are the same file, and a write that compared the
+        # paths as written would take the direct sink and truncate its own reader.
+        with tempfile.TemporaryDirectory() as root:
+            target = self._write_source(root)
+
+            PWorkflow(workflow=[
+                ReadCsv(file="./data.tsv", name="t", delimiter="\t"),
+                WriteCsv(table="t", file="data.tsv", delimiter="\t"),
+            ]).execute(global_settings=GlobalSettings(root_folder=root))
+
+            written = pl.read_csv(target, separator="\t")
+            self.assertEqual([1, 3], written["a"].to_list())
+            self.assertEqual([], self._partials_in(root))
+
+    def test_a_write_ahead_of_the_read_it_collides_with_is_still_found(self):
+        # The steps are scanned before any of them runs, so the order they appear in does
+        # not decide whether the collision is seen.
+        with tempfile.TemporaryDirectory() as root:
+            self._write_source(root, "seed.tsv")
+
+            ctx = PWorkflow(workflow=[
+                ReadCsv(file="seed.tsv", name="t", delimiter="\t"),
+                WriteCsv(table="t", file="data.tsv", delimiter="\t"),
+                ReadCsv(file="data.tsv", name="u", delimiter="\t"),
+            ]).execute(global_settings=GlobalSettings(root_folder=root), lazy=True)
+
+            self.assertEqual(1, len(ctx.partial_outputs))
+
+            ctx.cleanup_partial_outputs()
 
     def test_writing_a_new_file_still_works(self):
         with tempfile.TemporaryDirectory() as root:

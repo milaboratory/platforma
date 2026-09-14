@@ -8,7 +8,7 @@ import msgspec
 from ptabler.common import toPolarsType, PType
 
 from .base import PStep, StepContext
-from .util import normalize_path
+from .util import step_file_identity, step_file_path
 
 class ColumnSchema(msgspec.Struct, frozen=True, omit_defaults=True):
     """Defines the schema for a single column, mirroring the TS definition."""
@@ -72,7 +72,7 @@ class BaseReadLogic(PStep):
         if self.ignore_errors is not None:
             scan_kwargs["ignore_errors"] = self.ignore_errors
 
-        file_path = os.path.join(ctx.settings.root_folder, normalize_path(self.file))
+        file_path = step_file_path(ctx.settings.root_folder, self.file)
         lazy_frame = self._do_scan(file_path, scan_kwargs)
         
         ctx.put_table(self.name, lazy_frame)
@@ -241,14 +241,20 @@ class BaseWriteLogic(PStep):
         if self.columns:
             selected_lf = lf_to_write.select(self.columns)
         
-        file_path = os.path.join(ctx.settings.root_folder, normalize_path(self.file))
+        file_path = step_file_path(ctx.settings.root_folder, self.file)
 
-        # Sink to a sibling temporary file and move it into place once every sink has
-        # been collected. A workflow is allowed to read and write one path — read_csv
-        # then write_csv over the same file — and the read is lazy, so sinking straight
-        # to file_path truncates a file polars is still reading. On a local filesystem
-        # that survives on cached pages; on a network filesystem the mapping goes away
-        # underneath the reader and the process takes SIGBUS.
+        # A write the workflow does not also read has nothing to collide with, so it
+        # sinks straight to its file and none of what follows applies to it.
+        if step_file_identity(ctx.settings.root_folder, self.file) not in ctx.overwrite_targets:
+            ctx.add_sink(self._do_sink(selected_lf, file_path))
+            return
+
+        # This one the workflow also reads. Sink to a sibling temporary file and move it
+        # into place once every sink has been collected — read_csv then write_csv over
+        # the same file, and the read is lazy, so sinking straight to file_path truncates
+        # a file polars is still reading. On a local filesystem that survives on cached
+        # pages; on a network filesystem the mapping goes away underneath the reader and
+        # the process takes SIGBUS.
         if _target_refuses_writes(file_path):
             # The mode of an existing target is the only thing standing between a block
             # and a file it was given read-only, and a partial file would walk straight
