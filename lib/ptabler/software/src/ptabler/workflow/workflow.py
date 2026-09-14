@@ -25,9 +25,9 @@ class PWorkflow(msgspec.Struct):
         """
         Returns the files this workflow both reads and writes.
 
-        Only a write to one of these needs to land somewhere else first: the read is lazy
-        and still open when the sink would truncate it. Every other write goes straight to
-        its file, which is what all but one workflow does.
+        A write to one of these is a rewrite and cannot sink to its own file: the read is
+        lazy and still open when the sink would truncate it. Every other write goes
+        straight to its file, which is what every workflow but the rewriting one does.
 
         The whole workflow is scanned before any step runs, because a write step is
         allowed to appear ahead of the read it collides with.
@@ -103,13 +103,15 @@ class PWorkflow(msgspec.Struct):
             If `lazy` is False, executes sink operations and chained tasks,
             then returns `None`.
 
-        A step writing over a file the workflow also reads opens the file its sink will
-        fill while the step runs, so a lazy call returns with those already on disk,
-        listed in `StepContext.partial_outputs`.
-        They belong to the caller from that point: run the sinks and the chained tasks to
-        move them onto their targets, and call `StepContext.cleanup_partial_outputs` for
-        whatever is left. A non-lazy call does both itself. A leftover partial file in a
-        block's working directory is collected as part of the block's output.
+        A workflow that writes over a file it also reads has partial files to account
+        for; one that does not has none, and the rest of this does not apply to it.
+
+        A rewrite opens its partial file while the step runs, so a lazy call returns with
+        them already on disk, listed in `StepContext.partial_outputs`. They belong to the
+        caller from that point: run the sinks and the chained tasks to move them onto
+        their targets, and call `StepContext.cleanup_partial_outputs` for whatever is
+        left. A non-lazy call does both itself. A leftover partial file in a block's
+        working directory is collected as part of the block's output.
         """
         spill_dir_created = False
         spill_path = None
@@ -152,9 +154,10 @@ class PWorkflow(msgspec.Struct):
                 return None
         
         finally:
-            # A sink that raised leaves its partial file behind, and in a block's working
-            # directory that file is not inert — it is collected as part of the block's
-            # output. Whatever reached its target has already been moved off this list.
+            # A rewrite that raised leaves its partial file behind, and in a block's
+            # working directory that file is not inert — it is collected as part of the
+            # block's output. Whatever reached its target has already been moved off this
+            # list, and a workflow with no rewrite in it recorded nothing at all.
             #
             # A lazy run has not written them yet, so they belong to the caller that took
             # the context; cleanup_partial_outputs is how it hands them back.
