@@ -8,14 +8,14 @@
     "./dist/**/*"
   ],
   "scripts": {
-    "build": "rm -rf ./dist && block-tools software build",
-    "do-pack": "rm -f *.tgz && block-tools software build && pnpm pack && mv platforma-open-milaboratories.software-venv-identity-test-*.tgz package.tgz"
+    "build": "rm -rf ./dist && env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local block-tools software build"
   },
   "devDependencies": {
     "@platforma-open/milaboratories.runenv-python-3": "catalog:",
     "@platforma-sdk/block-tools": "workspace:*"
   },
   "block-software": {
+    "requireDocker": false,
     "entrypoints": {
       "deps-a": {
         "binary": {
