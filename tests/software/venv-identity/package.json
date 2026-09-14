@@ -1,0 +1,58 @@
+{
+  "name": "@platforma-open/milaboratories.software-venv-identity-test",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Two python entrypoints sharing one interpreter and differing only in their requirements file. Used to prove each gets its own virtual environment.",
+  "type": "module",
+  "files": [
+    "./dist/**/*"
+  ],
+  "scripts": {
+    "build": "rm -rf ./dist && block-tools software build",
+    "do-pack": "rm -f *.tgz && block-tools software build && pnpm pack && mv platforma-open-milaboratories.software-venv-identity-test-*.tgz package.tgz"
+  },
+  "devDependencies": {
+    "@platforma-open/milaboratories.runenv-python-3": "catalog:",
+    "@platforma-sdk/block-tools": "workspace:*"
+  },
+  "block-software": {
+    "entrypoints": {
+      "deps-a": {
+        "binary": {
+          "artifact": {
+            "type": "python",
+            "registry": "platforma-open",
+            "environment": "@platforma-open/milaboratories.runenv-python-3:3.12.10",
+            "dependencies": {
+              "toolset": "pip",
+              "requirements": "requirements-a.txt"
+            },
+            "root": "./src"
+          },
+          "cmd": [
+            "python",
+            "{pkg}/where-am-i.py"
+          ]
+        }
+      },
+      "deps-b": {
+        "binary": {
+          "artifact": {
+            "type": "python",
+            "registry": "platforma-open",
+            "environment": "@platforma-open/milaboratories.runenv-python-3:3.12.10",
+            "dependencies": {
+              "toolset": "pip",
+              "requirements": "requirements-b.txt"
+            },
+            "root": "./src"
+          },
+          "cmd": [
+            "python",
+            "{pkg}/where-am-i.py"
+          ]
+        }
+      }
+    }
+  }
+}
