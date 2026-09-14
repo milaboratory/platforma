@@ -1,5 +1,12 @@
 # @milaboratories/pl-client
 
+## 3.16.1
+
+### Patch Changes
+
+- 0aa8615: Recognise the `scratchSpace:v1` backend capability, advertised only where the deployment
+  actually has scratch storage.
+
 ## 3.16.0
 
 ### Minor Changes
