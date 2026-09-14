@@ -5,6 +5,10 @@ desc := import(":exec.descriptor")
 pythonVenvInputSchema := {
 	"toolset": "string",
 	"dependencies": {"any": validation.reference},
+
+	// Same references as 'dependencies', keyed by the file name each one carries in the software
+	// package, so the venv saves them under the names their authors gave them.
+	"dependencySpecs": {"any": validation.reference},
 	// software: validation.reference,
 
 	"pythonDescriptor": desc.runEnvScheme,
