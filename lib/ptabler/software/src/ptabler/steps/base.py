@@ -22,17 +22,30 @@ class StepContext:
         self,
         settings: GlobalSettings,
         initial_table_space: TableSpace | None = None,
+        overwrite_targets: set[str] | None = None,
     ):
         self._settings = settings
         self._table_space = initial_table_space if initial_table_space is not None else {}
         self._lazy_frames: list[pl.LazyFrame] = []
         self._chained_tasks: list[callable] = []
         self._partial_outputs: list[str] = []
+        self._overwrite_targets = overwrite_targets if overwrite_targets is not None else set()
     
     @property
     def settings(self) -> GlobalSettings:
         """Returns the global settings (read-only)."""
         return self._settings
+
+    @property
+    def overwrite_targets(self) -> set[str]:
+        """
+        Returns the file identities this workflow both reads and writes (read-only).
+
+        A write to one of them is the only write that cannot go straight to its file, so
+        every other write keeps the direct sink. The workflow computes the set before any
+        step runs, because a write step may appear ahead of the read it collides with.
+        """
+        return self._overwrite_targets
     
     def get_table(self, table_name: str) -> pl.LazyFrame:
         """
