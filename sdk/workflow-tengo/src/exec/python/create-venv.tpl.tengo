@@ -23,12 +23,20 @@ pkg := import(":exec.package")
  *
  * @param pythonPackage: smart.reference - python run environment.
  * @param pythonDescriptor: desc.runEnvScheme - python run environment descriptor.
- * @param dependencySpecs: {"string": smart.reference} - dependency spec files keyed by file name;
- *                                                        saved into the environment so its content
- *                                                        hash reflects what gets installed.
+ * @param dependencies: {"string": smart.reference} - dependency spec files keyed by dependency name.
+ * @param dependencyFileNames: {"string": "string"} - file name each dependency carries in the
+ *                                                    software package, keyed by dependency name.
+ *                                                    The spec files are saved into the environment
+ *                                                    under these names, so its content hash
+ *                                                    reflects what gets installed.
  * @return venv: smart.reference - python virtual environment.
  */
-_createVenv := func(pythonPackage, pythonDescriptor, dependencySpecs) {
+_createVenv := func(pythonPackage, pythonDescriptor, dependencies, dependencyFileNames) {
+	dependencySpecs := {}
+	for depName, fileName in dependencyFileNames {
+		dependencySpecs[fileName] = dependencies[depName]
+	}
+
 	wdBefore := workdir.builder().
 		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
 		cpu(pkg.DEFAULT_ALLOCATION_CPU).
@@ -122,7 +130,7 @@ self.body(func(inputs) {
 	pythonPackage := inputs.python
 	pythonDescriptor := inputs.pythonDescriptor
 
-	venv := _createVenv(pythonPackage, pythonDescriptor, inputs.dependencySpecs)
+	venv := _createVenv(pythonPackage, pythonDescriptor, inputs.dependencies, inputs.dependencyFileNames)
 
     venvParams := _pythonVenvBinDir(pythonPackage, pythonDescriptor)
 

@@ -6,9 +6,10 @@ pythonVenvInputSchema := {
 	"toolset": "string",
 	"dependencies": {"any": validation.reference},
 
-	// Same references as 'dependencies', keyed by the file name each one carries in the software
-	// package, so the venv saves them under the names their authors gave them.
-	"dependencySpecs": {"any": validation.reference},
+	// Name each dependency carries as a file in the software package, keyed the same way as
+	// 'dependencies'. The venv saves the spec files under these names, so the names their authors
+	// gave them survive into the environment.
+	"dependencyFileNames": {"any": "string"},
 	// software: validation.reference,
 
 	"pythonDescriptor": desc.runEnvScheme,
