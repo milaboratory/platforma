@@ -1,0 +1,10 @@
+{
+  "extends": "@milaboratories/ts-configs/block/facade",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": ".",
+    "resolveJsonModule": true
+  },
+  "include": ["src/**/*", "package.json"],
+  "exclude": ["dist", "node_modules"]
+}
