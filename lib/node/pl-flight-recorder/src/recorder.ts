@@ -34,6 +34,14 @@ export type Recorder = {
   readonly file: string;
   /** Appends one record and returns its sequence number. Never throws. */
   event(type: string, payload?: Record<string, unknown>): number;
+  /**
+   * Appends a record that every later segment of the log gets again.
+   *
+   * For a fact stated once that the rest of the log is unreadable without — what
+   * a block id stands for, say. Written once per `key`; a rotation that discards
+   * the original rewrites it, so a long session cannot outlive its own legend.
+   */
+  sticky(key: string, type: string, payload?: Record<string, unknown>): void;
   /** Memory reading for the calling thread; `rss` is process-wide. */
   memorySnapshot(): MemorySnapshot;
   /** Writes the terminating record. Its absence is how a crash is detected. */
@@ -48,7 +56,7 @@ export type SessionFileInfo = {
   crashed: boolean;
 };
 
-export type ParsedSession = {
+type ParsedSession = {
   file: string;
   records: FlightRecord[];
   /** True when the last line was cut mid-write by the kill. */
@@ -84,6 +92,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
     header: undefined,
     baselineMem: undefined,
     openBegins: new Map(),
+    sticky: new Map(),
   };
 
   const memorySnapshot = (): MemorySnapshot => {
@@ -114,10 +123,22 @@ export function openRecorder(options: RecorderOptions): Recorder {
     return seq;
   };
 
+  const sticky = (key: string, type: string, payload?: Record<string, unknown>): void => {
+    if (state.sticky.has(key)) return;
+    // The preamble is rewritten in full at every rotation, so it has to stay
+    // small: past the cap the legend is left as it is rather than crowding out
+    // the records that explain the crash.
+    if (state.sticky.size >= MAX_STICKY_RECORDS) return;
+    const seq = event(type, payload);
+    const record = { ...payload, seq, type } as FlightRecord;
+    state.sticky.set(key, record);
+  };
+
   const recorder: Recorder = {
     sessionId,
     file,
     event,
+    sticky,
     memorySnapshot,
     close(reason = "normal") {
       if (state.closed) return;
@@ -237,6 +258,9 @@ export function sessionIdFromFile(file: string): string {
 
 // Internals
 
+/** How many sticky records a session may keep, bounding the rewritten preamble. */
+const MAX_STICKY_RECORDS = 64;
+
 type WriterState = {
   fd: number;
   bytes: number;
@@ -249,6 +273,8 @@ type WriterState = {
   baselineMem: MemorySnapshot | undefined;
   /** Begin records with no end yet, keyed by their sequence number. */
   openBegins: Map<number, FlightRecord>;
+  /** Records rewritten into every later segment, keyed by the caller's key. */
+  sticky: Map<string, FlightRecord>;
 };
 
 /** Cap on carried-forward begins, so a leak cannot make the preamble unbounded. */
@@ -326,6 +352,9 @@ function writePreamble(state: WriterState): void {
       mem: state.baselineMem,
       carriedForward: true,
     });
+  }
+  for (const record of state.sticky.values()) {
+    emitPreambleRecord(state, { ...record, carriedForward: true });
   }
   // Original sequence numbers are kept, which is what lets an end record in a
   // later segment pair with a begin first written in an overwritten one.

@@ -20,7 +20,7 @@ export type MemorySnapshot = {
   heapLimit: number;
 };
 
-export type FlightRecordBase = {
+type FlightRecordBase = {
   /** Monotonically increasing within one session; used to pair begin with end. */
   seq: number;
   /** Milliseconds since process start, for durations. */
@@ -53,8 +53,34 @@ export type SamplerRecord = FlightRecordBase & {
   type: "mem-sampler";
   rss: number;
   peakRss: number;
+  /** Highest resident size the kernel has seen for this process. */
+  maxRss?: number;
   freeMemory: number;
   totalMemory: number;
+  /** Where the machine's memory actually is, refreshed less often than `rss`. */
+  machine?: MachineMemory;
+};
+
+/**
+ * The machine's own account of its memory.
+ *
+ * Resident size is not the whole story on a machine under pressure: macOS moves
+ * pages out of a process's resident set into the compressor, and both Unixes
+ * swap, so a process can appear to shrink while the memory it asked for is still
+ * held. These readings are what a resident-size curve has to be read against.
+ */
+export type MachineMemory = {
+  /** Bytes of process memory the compressor holds, counted before compression. */
+  compressedStored?: number;
+  /** Physical bytes the compressor itself occupies. */
+  compressedOccupied?: number;
+  swapUsed?: number;
+  swapTotal?: number;
+  anonymous?: number;
+  fileBacked?: number;
+  wired?: number;
+  /** Why the reading is missing, when it is. */
+  unavailable?: string;
 };
 
 /** Written by the parent when a supervised thread or process dies. */
@@ -83,6 +109,23 @@ export type CrashMarker = {
   exitCode?: number;
   signal?: string;
   stderrTail?: string;
+  /**
+   * What memory looked like when the death was observed, taken by the parent.
+   *
+   * Without it a marker reading `worker-exit` with exit code 1 is
+   * indistinguishable from an ordinary application error, and a reader who
+   * starts here would classify an exhausted machine as a bug in the code that
+   * happened to be running.
+   */
+  memoryAtDeath?: {
+    /** Resident size of the parent process, which hosts the dying worker. */
+    rss: number;
+    /** Highest resident size the kernel recorded for it. */
+    maxRss: number;
+    freeMemory: number;
+    totalMemory: number;
+    machine?: MachineMemory;
+  };
 };
 
 export type CrashReason =
