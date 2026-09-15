@@ -4266,6 +4266,15 @@ importers:
         specifier: workspace:*
         version: link:../../../tools/package-builder
 
+  tests/software/venv-identity:
+    devDependencies:
+      '@platforma-open/milaboratories.runenv-python-3':
+        specifier: 'catalog:'
+        version: 1.13.1
+      '@platforma-sdk/block-tools':
+        specifier: workspace:*
+        version: link:../../../tools/block-tools
+
   tests/tengo-builder:
     devDependencies:
       '@platforma-sdk/tengo-builder':
@@ -4347,6 +4356,9 @@ importers:
       '@platforma-open/milaboratories.software-test-utils':
         specifier: 'catalog:'
         version: 1.2.0
+      '@platforma-open/milaboratories.software-venv-identity-test':
+        specifier: workspace:*
+        version: link:../software/venv-identity
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../tools/tengo-builder
