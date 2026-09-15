@@ -1,4 +1,4 @@
-import { isColumnUniversalKey, remapColumnIdBlockIds } from "../drivers";
+import { BlockScopedDomain, isColumnUniversalKey, remapColumnIdBlockIds } from "../drivers";
 
 /**
  * Point every column identifier in a block's params at the blocks of the project being built.
@@ -19,9 +19,9 @@ import { isColumnUniversalKey, remapColumnIdBlockIds } from "../drivers";
  * knows — from being rewritten along with it, and what re-sorts a qualifications map whose
  * keys are identifiers.
  *
- * A domain reached on its own is the exception, and `relocateDomain` below says why: an axis
- * is qualified by the block that produced it, so a domain entry naming one of this template's
- * own entries is a reference like any other.
+ * A domain reached on its own is the exception, and `relocateDomain` below says why: an axis is
+ * qualified by the block that produced it. Only the domain keys known to name a block are
+ * repointed — matching an entry id is not on its own evidence of a reference.
  *
  * An id the map does not mention is left as it is. That is the ordering rule doing its work:
  * a caller building the map as it creates blocks passes only the entries already created, so
@@ -63,19 +63,23 @@ export function relocateBlockIds<T>(params: T, blockIds: ReadonlyMap<string, str
   };
 
   /**
-   * A domain's entries, repointed at the project being built: an axis a block produced names
-   * that block in its domain, so those are references like any other.
+   * The block-naming entries of a domain, repointed at the project being built: an axis a block
+   * produced names that block in its domain, so those are references like any other.
+   *
+   * Only the keys {@link BlockScopedDomain} lists, because a template's entry ids are arbitrary
+   * non-empty strings — a hand-written template may name an entry `closest`, and a qualifier
+   * reading `closest` is not a reference to it. Matching the map is not on its own enough to
+   * tell one from the other; the key is.
    *
    * Reached only from the generic object case — inside an identifier this package recognizes a
    * domain is spec data and stays as it is, which is what keeps an overridden column's
-   * `specOverrides.domain` untouched. Still not textual: an entry is repointed only when its
-   * value IS one of the caller's entry ids, so `"IGHeavy"` cannot be caught by it.
+   * `specOverrides.domain` untouched.
    */
   const relocateDomain = (domain: Record<string, unknown>): Record<string, unknown> =>
     Object.fromEntries(
       Object.entries(domain).map(([key, value]) => [
         key,
-        typeof value === "string" ? remapBlockId(value) : walk(value),
+        typeof value === "string" && BlockScopedDomain.has(key) ? remapBlockId(value) : walk(value),
       ]),
     );
 
