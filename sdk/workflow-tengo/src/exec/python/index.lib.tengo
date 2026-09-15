@@ -131,21 +131,13 @@ pythonVenvBuilder := func() {
 		build: func() {
 			depsMap := runenv.loadFilesFromPackage(softwareRef, dependencies)
 
-			// loadFilesFromPackage keys its result by dependency name, which install-deps reads;
-			// re-key the same references by file name so the venv can save requirements.txt under
-			// that name rather than under the key "requirements".
-			depSpecs := {}
-			for depName, fileName in dependencies {
-				depSpecs[fileName] = depsMap[depName]
-			}
-
 			archive := pkg.get(pythonDescriptor.registry, pythonDescriptor.package).archive()
 			pythonPkg := pkg.install(archive).package()
 
 			pyVenvInputs := {
 				toolset: toolset,
 				dependencies: depsMap,
-				dependencySpecs: depSpecs,
+				dependencyFileNames: dependencies,
 				// software: softwareRef,
 				pythonDescriptor: pythonDescriptor,
 				python: pythonPkg,
