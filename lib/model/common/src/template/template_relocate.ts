@@ -1,3 +1,5 @@
+import { isPlainObject } from "es-toolkit";
+
 import { BlockScopedDomain, isColumnUniversalKey, remapColumnIdBlockIds } from "../drivers";
 
 /**
@@ -84,8 +86,4 @@ export function relocateBlockIds<T>(params: T, blockIds: ReadonlyMap<string, str
     );
 
   return walk(params) as T;
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
