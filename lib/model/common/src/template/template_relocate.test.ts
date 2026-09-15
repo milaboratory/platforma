@@ -142,6 +142,15 @@ describe("relocateBlockIds", () => {
       });
     });
 
+    test("a qualifier that merely collides with an entry id is NOT a reference", () => {
+      // Entry ids are validated only as non-empty strings, so a hand-written template names its
+      // entries readably. `algo` is a qualifier of the data, and an entry called `closest` does
+      // not make it one: matching the map is not evidence, the key is.
+      const params = { method: { domain: { algo: "closest", chain: "IGHeavy" } } };
+
+      expect(relocateBlockIds(params, to("closest", "new"))).toEqual(params);
+    });
+
     test("a domain INSIDE a recognized identifier is still spec data, and stays", () => {
       // The boundary of the rule above. This id is taken apart by the structural remapper,
       // which never descends to the generic object case, so its overrides are untouched.
