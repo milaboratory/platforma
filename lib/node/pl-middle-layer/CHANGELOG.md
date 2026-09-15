@@ -1,5 +1,28 @@
 # @milaboratories/pl-middle-layer
 
+## 1.71.5
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+- Updated dependencies [f2ed96c]
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pf-driver@1.9.2
+  - @platforma-sdk/workflow-tengo@6.10.1
+  - @milaboratories/pl-model-common@1.49.0
+  - @platforma-sdk/model@1.83.17
+  - @milaboratories/pf-spec-driver@1.5.2
+  - @milaboratories/columns-collection-driver@0.2.5
+  - @milaboratories/pl-model-middle-layer@1.32.1
+  - @milaboratories/pl-client@3.16.2
+  - @milaboratories/pl-deployments@3.0.17
+  - @milaboratories/pl-drivers@1.16.21
+  - @milaboratories/pl-flight-recorder@0.2.1
+  - @platforma-sdk/block-tools@2.15.2
+  - @milaboratories/pl-model-backend@1.4.25
+  - @milaboratories/pl-errors@1.4.40
+  - @milaboratories/pl-tree@1.14.4
+
 ## 1.71.4
 
 ### Patch Changes

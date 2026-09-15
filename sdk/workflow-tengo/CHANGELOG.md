@@ -1,5 +1,14 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.10.1
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+- Updated dependencies [f2ed96c]
+  - @platforma-open/milaboratories.software-ptabler@2.1.9
+  - @platforma-open/milaboratories.software-ptexter@1.2.4
+
 ## 6.10.0
 
 ### Minor Changes

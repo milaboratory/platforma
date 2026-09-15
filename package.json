@@ -64,7 +64,10 @@
   "pnpm": {
     "overrides": {
       "@microsoft/api-extractor>typescript": "npm:@typescript/typescript6@6.0.2"
-    }
+    },
+    "neverBuiltDependencies": [
+      "better-sqlite3"
+    ]
   },
   "//": {
     "@platforma-open/milaboratories.software-ptabler": "file:/Users/dbolotin/mi/core/ptabler/software/package.tgz",

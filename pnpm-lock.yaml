@@ -34,11 +34,11 @@ catalogs:
       specifier: ^7.0.1
       version: 7.0.1
     '@milaboratories/pframes-rs-node':
-      specifier: 1.1.56
-      version: 1.1.56
+      specifier: 1.1.60
+      version: 1.1.60
     '@milaboratories/pframes-rs-wasip2':
-      specifier: 1.1.56
-      version: 1.1.56
+      specifier: 1.1.60
+      version: 1.1.60
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.9
       version: 2.2.9
@@ -52,8 +52,8 @@ catalogs:
       specifier: ^2.0.1
       version: 2.0.1
     '@platforma-open/milaboratories.runenv-python-3':
-      specifier: 1.11.4
-      version: 1.11.4
+      specifier: 1.13.1
+      version: 1.13.1
     '@platforma-open/milaboratories.software-conda-empty':
       specifier: ^1.0.1
       version: 1.0.1
@@ -2537,7 +2537,7 @@ importers:
         version: link:../../../tools/build-configs
       '@milaboratories/pframes-rs-wasip2':
         specifier: 'catalog:'
-        version: 1.1.56
+        version: 1.1.60
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../../tools/ts-builder
@@ -2715,7 +2715,7 @@ importers:
         version: link:../../../tools/ts-configs
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.11.4
+        version: 1.13.1
       '@types/archiver':
         specifier: 'catalog:'
         version: 6.0.3
@@ -2745,7 +2745,7 @@ importers:
         version: link:../../model/pf-spec
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.1.56(encoding@0.1.13)
+        version: 1.1.60(encoding@0.1.13)
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../../model/common
@@ -3256,7 +3256,7 @@ importers:
         version: link:../../model/pf-spec-driver
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.1.56(encoding@0.1.13)
+        version: 1.1.60(encoding@0.1.13)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -3544,7 +3544,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.11.4
+        version: 1.13.1
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../tools/block-tools
@@ -3553,7 +3553,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.11.4
+        version: 1.13.1
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../tools/block-tools
@@ -3947,7 +3947,7 @@ importers:
     dependencies:
       '@milaboratories/pframes-rs-wasip2':
         specifier: 'catalog:'
-        version: 1.1.56
+        version: 1.1.60
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 2.2.9
@@ -5669,15 +5669,15 @@ packages:
     resolution: {integrity: sha512-zOkD4aWNbembwI+AsPTz7nmWC1VPA4rwGBc+Nd5jPpKVh7rCtZwQrlOP5mVqRVMKIAjb1nU8kzzCGfqNPqfJjA==}
     engines: {node: '>=22'}
 
-  '@milaboratories/pframes-rs-node@1.1.56':
-    resolution: {integrity: sha512-H6qltcR+HHb2kAy0U0zP90rqmv/MZGGkdXIyf89FUZTpoHOlXG4Ahxq7wXp9vviUczci4cLl2L0Q+dL2XGcsUA==}
+  '@milaboratories/pframes-rs-node@1.1.60':
+    resolution: {integrity: sha512-RXyBVAcFY6mu/Msgl6J78VK84fZ7PpRsb26t1cRV8ehJmRfQFweasEy0u6wVAT/Z+kH9wSnKV0+SFbTuqMS05A==}
 
-  '@milaboratories/pframes-rs-serv@1.1.56':
-    resolution: {integrity: sha512-Pi0CRuvkfL+PqdgQ8im0MW5tqVjUvJ8hJbOG7v5pS45adg8tuq4TyrAoWN7un9ZWQ6KRLypUD+7eXCwhjOwADg==}
+  '@milaboratories/pframes-rs-serv@1.1.60':
+    resolution: {integrity: sha512-n0hcdYPxCbEtQ0ixiFrPBgyFoe/7tpM8G+mbBhgFSZLB4azwmEJHFkkT9DTW41c7jFIbRshXf3CQDjF/rOExbQ==}
     hasBin: true
 
-  '@milaboratories/pframes-rs-wasip2@1.1.56':
-    resolution: {integrity: sha512-54bhC6XCAVO09J/sqVwEKA4hhTa27BDDNdH8BE+6+LvjBVkg/qq2/f0MzdrVijrmagbr97F1zgj5wIgUqwCSoA==}
+  '@milaboratories/pframes-rs-wasip2@1.1.60':
+    resolution: {integrity: sha512-7P2Xgm5IcHl7yooaLAHxt+Fgv8Hqj8oF4MH5PjcqkyXOlx8sKrC+19Vow2QcVLVUt/cOxnxXODe/1K8ej1mAbQ==}
 
   '@milaboratories/pl-error-like@1.12.10':
     resolution: {integrity: sha512-iHmnLG5lxJqcymUmEL8onCDGEADk1S/5RNACQ5yfTCNcCkUc+7hYrDHQpFmWXPPGC9sG+NTBxt4wr5m8UsLm2g==}
@@ -6248,6 +6248,9 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
+  '@platforma-open/milaboratories.runenv-python-3.10.21-clustcr@0.2.0':
+    resolution: {integrity: sha512-EKDjVVTzxSgWvfaitCxwqg/3i01NvRSvKk3KrWKgPa89rOW2Zjmwbtv6uZa+nUF3LRvwKSEUm1nOSYaSLq35+A==}
+
   '@platforma-open/milaboratories.runenv-python-3.12.10-atls@1.2.7':
     resolution: {integrity: sha512-vJiU68NKgyupW5meeWB/pZZ8y5wewPV6/EcRQ2BwUhSyikDQrn83XzBlc/nTu9UmbYmBqQTrt59x0qKtcC0ILw==}
 
@@ -6256,6 +6259,9 @@ packages:
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-h5ad@1.1.5':
     resolution: {integrity: sha512-cuGk6NMBocvNePoMTnDW4z8eIF5RQdDcgwuPHg9atW9/veOOp02p5jk0EwxmnbMSVV0yDwRMd+0crQAQqW9bCA==}
+
+  '@platforma-open/milaboratories.runenv-python-3.12.10-hilary@0.2.0':
+    resolution: {integrity: sha512-/wtxkJoYWkWGI6/Kn+ZdWSRbxN1oAVQniDfa55830ZjvuvhkGM+16Mzme5VhFDeRJdNE4S874SZGOyf4KpSGEQ==}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-humanness@0.2.0':
     resolution: {integrity: sha512-YjKFPXe+caABLre5oZTwAxFHvVCEb5K8rVTEIUBhFYMtfLipVIix0LXi6LxWoOYdhoEeKgIc4zlWFDKs1xaEoQ==}
@@ -6266,8 +6272,8 @@ packages:
   '@platforma-open/milaboratories.runenv-python-3.12.10-pgen@0.2.0':
     resolution: {integrity: sha512-+4pEVwRZaBAm0716NoNdK9cfF4E7jtsRUpcAWYCuPbbZJ3Q7bgfgq8bEhcck8No97l9jWN2rAeJegA9UQy5FgQ==}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10-rapids@1.7.0':
-    resolution: {integrity: sha512-nChTh2Fk9KW1yLfqDb1Bb1BBDQRNoZZ2jRMLH76wEa3l0g1ZHG52wCkwzXz6fztvru0Em52PH4KdENp4hUTNMw==}
+  '@platforma-open/milaboratories.runenv-python-3.12.10-rapids@1.7.2':
+    resolution: {integrity: sha512-rCG+R9WjdopEtEgJcSWNRIWhpo1ABGnA7rPn0BF6ufvLOtKXOGtaGENI7BJlkEaLb2Cbh2XUUgS5l2r5WGhIRw==}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-sccoda@1.3.6':
     resolution: {integrity: sha512-NAacPe2uFxf5zqDAa70bblP4ZicvA52lVyzhV7IzlyeEIClAsGatLbitMnRghc2TepwYhQY4EbvElkKDFaSSGw==}
@@ -6278,11 +6284,11 @@ packages:
   '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda@0.2.0':
     resolution: {integrity: sha512-PRGkgsVY08tQvoucU8fJmeCF+x9XjiHHjNTbxWqddqx2EZpiUvmylkxtU8i8xJW13cesAI+xHv3NsVUXQaRDqA==}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.24':
-    resolution: {integrity: sha512-5ne8Fmlhu1YKB5RYgq4c/AvYzb+sUY4hzv/bKIj0E3aDgJdMYO6M6lMicDzQTMagrGRu9FIhDewIgo++TX3+Yw==}
+  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.25':
+    resolution: {integrity: sha512-WlthF3GYT7ZlWOTMpTS0+Z6z5fQhpGiVZUiS307FqMyuA4jB8+w83uET/xAZ8oDW6Vt7R56FOZ6WGm/rRvlMhg==}
 
-  '@platforma-open/milaboratories.runenv-python-3@1.11.4':
-    resolution: {integrity: sha512-bxMOj9sN6/jn+iaR62R5vShdLgcJDZoCH/qKOoKaBHNp4LYZfgBKwGf6rGU5aXAoAAF/DcNsYrWguUT1HIvA7A==}
+  '@platforma-open/milaboratories.runenv-python-3@1.13.1':
+    resolution: {integrity: sha512-d2FEIpUXQAkn17s3cJFsWbC/lmdJbkuopGZ+GSgyjoh56VScdE2X2LdMGZO1CRh3Qb1PlFgc8UWFnTJDLzwFTA==}
 
   '@platforma-open/milaboratories.software-conda-empty@1.0.1':
     resolution: {integrity: sha512-nftT6/lXdHvDu7Wedc3HCXiLrzHrIl7B4/8jRGgP5EAJy4agIrAk95Ht7/DGBzGIqXUkRdgN2XB46LxMWt1l3g==}
@@ -7665,16 +7671,13 @@ packages:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
 
-  better-sqlite3@12.10.0:
-    resolution: {integrity: sha512-CyzaZRQKyHkB2ZInfTTl2nvT33EbDpjkLEbE8/Zck3Ll6O0qqvuGdrJ45HgtH+HykRg88ITY3AdreBGN70aBSQ==}
-    engines: {node: 20.x || 22.x || 23.x || 24.x || 25.x || 26.x}
+  better-sqlite3@13.0.3:
+    resolution: {integrity: sha512-RbOBxmLBG8uvFUc15X9+9SFemKcQ0WBuISBVkpuiaUB2qblC8UWlHEjdWVoZ8AdhSwmoEgsiXKfopX0CQxaACQ==}
+    engines: {node: '>=22'}
 
   binaryen@130.0.0:
     resolution: {integrity: sha512-XDrb+zql0RbFPKgj7MuH9zOc78R3Fa/P/VSGnnpdwYsvNZPWjcMYMdAkKCOQEL2A7yqgjSMTDRFp6gfSDW+/QQ==}
     hasBin: true
-
-  bindings@1.5.0:
-    resolution: {integrity: sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==}
 
   bl@1.2.3:
     resolution: {integrity: sha512-pvcNpa0UU69UT341rO6AYy4FVAIkUHuZXRIWbq+zHnsVcRzDDjIAhGuuYoi0d//cwIwtt4pkpKycWEfjdV+vww==}
@@ -7995,10 +7998,6 @@ packages:
   decimal.js@10.4.3:
     resolution: {integrity: sha512-VBBaLc1MgL5XpzgIP7ny5Z6Nx3UrRkIViUkPUdtl9aya5amy3De1gsUUSB1g3+3sExYNjCAsAznmukyxCb1GRA==}
 
-  decompress-response@6.0.0:
-    resolution: {integrity: sha512-aW35yZM6Bb/4oJlZncMH2LCoZtJXTRxES17vE3hoRiowU2kWHaJKFkSBDnDR+cm9J+9QhXmREyIfv0pji9ejCQ==}
-    engines: {node: '>=10'}
-
   decompress-tar@4.1.1:
     resolution: {integrity: sha512-JdJMaCrGpB5fESVyxwpCx4Jdj2AagLmv3y58Qy4GE6HMVjWz1FeVQk1Ct4Kye7PftcdOo/7U7UKzYBJgqnGeUQ==}
     engines: {node: '>=4'}
@@ -8026,10 +8025,6 @@ packages:
     peerDependenciesMeta:
       babel-plugin-macros:
         optional: true
-
-  deep-extend@0.6.0:
-    resolution: {integrity: sha512-LOHxIOaPYdHlJRtCQfDIVZtfw/ufM8+rVj649RIHzcm/vGwQRXFt6OPqIFWsm2XEMrNIEtWR64sY1LEKD2vAOA==}
-    engines: {node: '>=4.0.0'}
 
   deepmerge@4.3.1:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
@@ -8220,10 +8215,6 @@ packages:
     resolution: {integrity: sha512-adbxcyWV46qiHyvSp50TKt05tB4tK3HcmF7/nxfAdhnox83seTDbwnaqKO4sXRy7roHAIFqJP/Rw/AuEbX61LA==}
     engines: {node: '>=6'}
 
-  expand-template@2.0.3:
-    resolution: {integrity: sha512-XYfuKMvj4O35f/pOXLObndIRvyQ+/+6AhODh+OKWj9S9498pHHn/IMszH+gt0fBCRWMNfk1ZSp5x3AifmnI2vg==}
-    engines: {node: '>=6'}
-
   expect-type@1.3.0:
     resolution: {integrity: sha512-knvyeauYhqjOYvQ66MznSMs83wmHrCycNEN6Ao+2AeYEfxUIkuiVxdEa1qlGEPK+We3n0THiDciYSsCcgW/DoA==}
     engines: {node: '>=12.0.0'}
@@ -8301,9 +8292,6 @@ packages:
   file-type@6.2.0:
     resolution: {integrity: sha512-YPcTBDV+2Tm0VqjybVd32MHdlEGAtuxS3VAYsumFokDSMG+ROT5wawGlnHDoz7bfMcMDt9hxuXvXwoKUx2fkOg==}
     engines: {node: '>=4'}
-
-  file-uri-to-path@1.0.0:
-    resolution: {integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==}
 
   fill-range@7.1.1:
     resolution: {integrity: sha512-YsGpe3WHLK8ZYi4tWDg2Jy3ebRz2rXowDxnld4bkQB00cc/1Zw9AWnC0i9ztDJitivtQvaI9KaLyKrc+hBW0yg==}
@@ -8408,9 +8396,6 @@ packages:
   get-tsconfig@5.0.0-beta.5:
     resolution: {integrity: sha512-/6gFNr0N04nob252sTQxyFLi3eKFRqIg1I87YcqAMT1i6SQrSF6KujUEQrtrjMV0H/eejTCltLdDSTEMzHbnsQ==}
     engines: {node: '>=20.20.0'}
-
-  github-from-package@0.0.0:
-    resolution: {integrity: sha512-SyHy3T1v2NUXn29OsWdxmK6RwHD+vkj3v8en8AOBZ1wBQ/hCAQ5bAQTD02kW4W9tUp/3Qh6J8r9EvntiyCmOOw==}
 
   glob-parent@5.1.2:
     resolution: {integrity: sha512-AOIgSQCepiJYwP3ARnGx+5VnTu2HBYdzbGP45eLw1vr3zB3vZLeyed1sC9hnbcOc9/SrMyM5RPQrkGz4aS9Zow==}
@@ -8907,10 +8892,6 @@ packages:
     resolution: {integrity: sha512-Lbgzdk0h4juoQ9fCKXW4by0UJqj+nOOrI9MJ1sSj4nI8aI2eo1qmvQEie4VD1glsS250n15LsWsYtCugiStS5A==}
     engines: {node: '>=18'}
 
-  mimic-response@3.1.0:
-    resolution: {integrity: sha512-z0yWI+4FDrrweS8Zmt4Ej5HdJmky15+L2e6Wgn3+iK5fWzb6T3fhNFq2+MeTRb064c6Wr4N/wv0DzQTjNzHNGQ==}
-    engines: {node: '>=10'}
-
   minimatch@10.1.1:
     resolution: {integrity: sha512-enIvLvRAFZYXJzkCYG5RKmPfrFArdLv+R+lbQ53BmIMLIry74bjKzX6iHAm8WYamJkhSSEabrWN5D97XnKObjQ==}
     engines: {node: 20 || >=22}
@@ -8989,9 +8970,6 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  napi-build-utils@2.0.0:
-    resolution: {integrity: sha512-GEbrYkbfF7MoNaoh2iGG84Mnf/WZfB0GdGEsM8wz7Expx/LlWf5U8t9nvJKXSp3qr5IsEbK04cBGhol/KwOsWA==}
-
   negotiator@1.0.0:
     resolution: {integrity: sha512-8Ofs/AUQh8MaEcrlq5xOX0CQ9ypTF5dl78mjlMNfOK08fzpgTHQRQPBxcPlEtIw0yRpws+Zo/3r+5WRby7u3Gg==}
     engines: {node: '>= 0.6'}
@@ -8999,12 +8977,12 @@ packages:
   nice-try@1.0.5:
     resolution: {integrity: sha512-1nh45deeb5olNY7eX82BkPO7SSxR5SSYJiPTrTdFUVYwAl8CKMA5N9PjTYkHiRjisVcxcQ1HXdLhx2qxxJzLNQ==}
 
-  node-abi@3.92.0:
-    resolution: {integrity: sha512-KdHvFWZjEKDf0cakgFjebl371GPsISX2oZHcuyKqM7DtogIsHrqKeLTo8wBHxaXRAQlY2PsPlZmfo+9ZCxEREQ==}
-    engines: {node: '>=10'}
-
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
+
+  node-addon-api@8.9.2:
+    resolution: {integrity: sha512-VijLXbi3UACN69I0JVXJsX4tjACjNoQDgv2gTF6sx2wWEi8tkSg2eX8p5gSIFi8z2+DL3oHmY6OyKce38SDolg==}
+    engines: {node: ^18 || ^20 || >= 21}
 
   node-fetch@2.7.0:
     resolution: {integrity: sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==}
@@ -9263,12 +9241,6 @@ packages:
     resolution: {integrity: sha512-OW/rX8O/jXnm82Ey1k44pObPtdblfiuWnrd8X7GJ7emImCOstunGbXUpp7HdBrFQX6rJzn3sPT397Wp5aCwCHg==}
     engines: {node: ^10 || ^12 || >=14}
 
-  prebuild-install@7.1.3:
-    resolution: {integrity: sha512-8Mf2cbV7x1cXPUILADGI3wuhfqWvtiLA1iclTDbFRZkgRQS0NqsPZphna9V+HyTEadheuPmjaJMsbzKQFOzLug==}
-    engines: {node: '>=10'}
-    deprecated: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
-    hasBin: true
-
   prettier@2.8.8:
     resolution: {integrity: sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==}
     engines: {node: '>=10.13.0'}
@@ -9343,10 +9315,6 @@ packages:
   raw-body@3.0.2:
     resolution: {integrity: sha512-K5zQjDllxWkf7Z5xJdV0/B0WTNqx6vxG70zJE4N0kBs4LovmEYWJzQGxC9bS9RAKu3bgM40lrd5zoLJ12MQ5BA==}
     engines: {node: '>= 0.10'}
-
-  rc@1.2.8:
-    resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
-    hasBin: true
 
   read-yaml-file@1.1.0:
     resolution: {integrity: sha512-VIMnQi/Z4HT2Fxuwg5KrY174U1VdUIASQVWXXyqtNRtxSr9IYkn1rsI6Tb6HsrHCmB7gVpNwX6JxPTHcH6IoTA==}
@@ -9604,12 +9572,6 @@ packages:
     resolution: {integrity: sha512-bzyZ1e88w9O1iNJbKnOlvYTrWPDl46O1bG0D3XInv+9tkPrxrN8jUUTiFlDkkmKWgn1M6CfIA13SuGqOa9Korw==}
     engines: {node: '>=14'}
 
-  simple-concat@1.0.1:
-    resolution: {integrity: sha512-cSFtAPtRhljv69IK0hTVZQ+OfE9nePi/rtJmw5UjHeVyVroEqJXP1sFztKUy1qU+xvz3u/sfYJLa947b7nAN2Q==}
-
-  simple-get@4.0.1:
-    resolution: {integrity: sha512-brv7p5WgH0jmQJr1ZDDfKDOSeWWg+OVypG99A/5vYGPqJ6pxiaHLy8nxtFjBA7oMa01ebA9gfh1uMCFqOuXxvA==}
-
   simple-swizzle@0.2.2:
     resolution: {integrity: sha512-JA//kQgZtbuY83m+xT+tXJkmJncGMTFT+C+g2h2R9uxkYIrE2yy9sgmcLhCnw57/WSD+Eh3J97FPEDFnbXnDUg==}
 
@@ -9698,10 +9660,6 @@ packages:
 
   strip-eof@1.0.0:
     resolution: {integrity: sha512-7FCwGGmx8mD5xQd3RPUvnSpUXHM3BWuzjtpD4TXsfcZ9EL4azvVVUscFYwD9nx8Kh+uCBC00XBtAykoMHwTh8Q==}
-    engines: {node: '>=0.10.0'}
-
-  strip-json-comments@2.0.1:
-    resolution: {integrity: sha512-4gB8na07fecVVkOI6Rs4e7T6NOTki5EmL7TUduTs6bu3EdnSycntVJ4re8kgZA+wx9IueI2Y11bfbgwtzuE0KQ==}
     engines: {node: '>=0.10.0'}
 
   strip-json-comments@3.1.1:
@@ -9850,9 +9808,6 @@ packages:
   tsyringe@4.10.0:
     resolution: {integrity: sha512-axr3IdNuVIxnaK5XGEUFTu3YmAQ6lllgrvqfEoR16g/HGnYY/6We4oWENtAnzK6/LpJ2ur9PAb80RBt7/U4ugw==}
     engines: {node: '>= 6.0.0'}
-
-  tunnel-agent@0.6.0:
-    resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
 
   turbo-darwin-64@2.5.3:
     resolution: {integrity: sha512-YSItEVBUIvAGPUDpAB9etEmSqZI3T6BHrkBkeSErvICXn3dfqXUfeLx35LfptLDEbrzFUdwYFNmt8QXOwe9yaw==}
@@ -11654,27 +11609,27 @@ snapshots:
 
   '@milaboratories/helpers@1.14.2': {}
 
-  '@milaboratories/pframes-rs-node@1.1.56(encoding@0.1.13)':
+  '@milaboratories/pframes-rs-node@1.1.60(encoding@0.1.13)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.3(encoding@0.1.13)
       '@milaboratories/helpers': 1.14.2
-      '@milaboratories/pframes-rs-serv': 1.1.56
+      '@milaboratories/pframes-rs-serv': 1.1.60
       '@milaboratories/pl-model-common': 1.46.2
       ulid: 3.0.2
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-serv@1.1.56':
+  '@milaboratories/pframes-rs-serv@1.1.60':
     dependencies:
       '@milaboratories/helpers': 1.14.2
       '@milaboratories/pl-model-common': 1.46.2
       '@milaboratories/pl-model-middle-layer': 1.30.7
-      better-sqlite3: 12.10.0
+      better-sqlite3: 13.0.3
       commander: 14.0.3
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasip2@1.1.56': {}
+  '@milaboratories/pframes-rs-wasip2@1.1.60': {}
 
   '@milaboratories/pl-error-like@1.12.10':
     dependencies:
@@ -12114,11 +12069,15 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
+  '@platforma-open/milaboratories.runenv-python-3.10.21-clustcr@0.2.0': {}
+
   '@platforma-open/milaboratories.runenv-python-3.12.10-atls@1.2.7': {}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-clustering@0.1.1': {}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-h5ad@1.1.5': {}
+
+  '@platforma-open/milaboratories.runenv-python-3.12.10-hilary@0.2.0': {}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-humanness@0.2.0': {}
 
@@ -12126,7 +12085,7 @@ snapshots:
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-pgen@0.2.0': {}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10-rapids@1.7.0': {}
+  '@platforma-open/milaboratories.runenv-python-3.12.10-rapids@1.7.2': {}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-sccoda@1.3.6': {}
 
@@ -12134,18 +12093,20 @@ snapshots:
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda@0.2.0': {}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.24': {}
+  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.25': {}
 
-  '@platforma-open/milaboratories.runenv-python-3@1.11.4':
+  '@platforma-open/milaboratories.runenv-python-3@1.13.1':
     dependencies:
-      '@platforma-open/milaboratories.runenv-python-3.12.10': 1.3.24
+      '@platforma-open/milaboratories.runenv-python-3.10.21-clustcr': 0.2.0
+      '@platforma-open/milaboratories.runenv-python-3.12.10': 1.3.25
       '@platforma-open/milaboratories.runenv-python-3.12.10-atls': 1.2.7
       '@platforma-open/milaboratories.runenv-python-3.12.10-clustering': 0.1.1
       '@platforma-open/milaboratories.runenv-python-3.12.10-h5ad': 1.1.5
+      '@platforma-open/milaboratories.runenv-python-3.12.10-hilary': 0.2.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-humanness': 0.2.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-parapred': 1.1.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-pgen': 0.2.0
-      '@platforma-open/milaboratories.runenv-python-3.12.10-rapids': 1.7.0
+      '@platforma-open/milaboratories.runenv-python-3.12.10-rapids': 1.7.2
       '@platforma-open/milaboratories.runenv-python-3.12.10-sccoda': 1.3.6
       '@platforma-open/milaboratories.runenv-python-3.12.10-scientific-slim': 1.1.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda': 0.2.0
@@ -13537,16 +13498,11 @@ snapshots:
     dependencies:
       is-windows: 1.0.2
 
-  better-sqlite3@12.10.0:
+  better-sqlite3@13.0.3:
     dependencies:
-      bindings: 1.5.0
-      prebuild-install: 7.1.3
+      node-addon-api: 8.9.2
 
   binaryen@130.0.0: {}
-
-  bindings@1.5.0:
-    dependencies:
-      file-uri-to-path: 1.0.0
 
   bl@1.2.3:
     dependencies:
@@ -13860,10 +13816,6 @@ snapshots:
 
   decimal.js@10.4.3: {}
 
-  decompress-response@6.0.0:
-    dependencies:
-      mimic-response: 3.1.0
-
   decompress-tar@4.1.1:
     dependencies:
       file-type: 5.2.0
@@ -13903,8 +13855,6 @@ snapshots:
       strip-dirs: 2.1.0
 
   dedent@1.7.0: {}
-
-  deep-extend@0.6.0: {}
 
   deepmerge@4.3.1: {}
 
@@ -14122,8 +14072,6 @@ snapshots:
       signal-exit: 3.0.7
       strip-eof: 1.0.0
 
-  expand-template@2.0.3: {}
-
   expect-type@1.3.0: {}
 
   express-rate-limit@8.3.1(express@5.2.1):
@@ -14218,8 +14166,6 @@ snapshots:
   file-type@5.2.0: {}
 
   file-type@6.2.0: {}
-
-  file-uri-to-path@1.0.0: {}
 
   fill-range@7.1.1:
     dependencies:
@@ -14336,8 +14282,6 @@ snapshots:
   get-tsconfig@5.0.0-beta.5:
     dependencies:
       resolve-pkg-maps: 1.0.0
-
-  github-from-package@0.0.0: {}
 
   glob-parent@5.1.2:
     dependencies:
@@ -14793,8 +14737,6 @@ snapshots:
     dependencies:
       mime-db: 1.54.0
 
-  mimic-response@3.1.0: {}
-
   minimatch@10.1.1:
     dependencies:
       '@isaacs/brace-expansion': 5.0.0
@@ -14861,18 +14803,14 @@ snapshots:
 
   nanoid@3.3.11: {}
 
-  napi-build-utils@2.0.0: {}
-
   negotiator@1.0.0: {}
 
   nice-try@1.0.5: {}
 
-  node-abi@3.92.0:
-    dependencies:
-      semver: 7.7.2
-
   node-addon-api@7.1.1:
     optional: true
+
+  node-addon-api@8.9.2: {}
 
   node-fetch@2.7.0(encoding@0.1.13):
     dependencies:
@@ -15144,21 +15082,6 @@ snapshots:
       picocolors: 1.1.1
       source-map-js: 1.2.1
 
-  prebuild-install@7.1.3:
-    dependencies:
-      detect-libc: 2.0.3
-      expand-template: 2.0.3
-      github-from-package: 0.0.0
-      minimist: 1.2.8
-      mkdirp-classic: 0.5.3
-      napi-build-utils: 2.0.0
-      node-abi: 3.92.0
-      pump: 3.0.2
-      rc: 1.2.8
-      simple-get: 4.0.1
-      tar-fs: 2.0.1
-      tunnel-agent: 0.6.0
-
   prettier@2.8.8: {}
 
   process-nextick-args@2.0.1: {}
@@ -15242,13 +15165,6 @@ snapshots:
       http-errors: 2.0.1
       iconv-lite: 0.7.2
       unpipe: 1.0.0
-
-  rc@1.2.8:
-    dependencies:
-      deep-extend: 0.6.0
-      ini: 1.3.8
-      minimist: 1.2.8
-      strip-json-comments: 2.0.1
 
   read-yaml-file@1.1.0:
     dependencies:
@@ -15579,14 +15495,6 @@ snapshots:
 
   signal-exit@4.1.0: {}
 
-  simple-concat@1.0.1: {}
-
-  simple-get@4.0.1:
-    dependencies:
-      decompress-response: 6.0.0
-      once: 1.4.0
-      simple-concat: 1.0.1
-
   simple-swizzle@0.2.2:
     dependencies:
       is-arrayish: 0.3.2
@@ -15681,8 +15589,6 @@ snapshots:
       is-natural-number: 4.0.1
 
   strip-eof@1.0.0: {}
-
-  strip-json-comments@2.0.1: {}
 
   strip-json-comments@3.1.1:
     optional: true
@@ -15855,10 +15761,6 @@ snapshots:
   tsyringe@4.10.0:
     dependencies:
       tslib: 1.14.1
-
-  tunnel-agent@0.6.0:
-    dependencies:
-      safe-buffer: 5.2.1
 
   turbo-darwin-64@2.5.3:
     optional: true
