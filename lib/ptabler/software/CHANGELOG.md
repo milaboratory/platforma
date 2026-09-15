@@ -1,5 +1,11 @@
 # @platforma-open/software-ptabler
 
+## 2.1.9
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+
 ## 2.1.8
 
 ### Patch Changes
