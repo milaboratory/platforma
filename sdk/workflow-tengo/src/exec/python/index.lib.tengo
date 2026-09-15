@@ -137,6 +137,7 @@ pythonVenvBuilder := func() {
 			pyVenvInputs := {
 				toolset: toolset,
 				dependencies: depsMap,
+				dependencyFileNames: dependencies,
 				// software: softwareRef,
 				pythonDescriptor: pythonDescriptor,
 				python: pythonPkg,

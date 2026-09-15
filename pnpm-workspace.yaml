@@ -151,6 +151,7 @@ packages:
 
   - tests/workflow-tengo
   - tests/workflow-tengo/wasm-fixture
+  - tests/software/venv-identity
   - tests/helper
   - tests/block-repo
   - tests/config-local-ml-integration
