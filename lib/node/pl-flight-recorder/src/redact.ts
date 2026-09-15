@@ -16,16 +16,16 @@ import { summarizeData, type DataSummary } from "./data_summary";
  */
 
 /** Keys whose string value is schema, kept as written. */
-export const SCHEMA_KEYS = new Set(["type", "name", "valueType", "kind", "operator", "mode"]);
+const SCHEMA_KEYS = new Set(["type", "name", "valueType", "kind", "operator", "mode"]);
 
 /** Keys under which every string is schema, at any depth (axis identity). */
-export const SCHEMA_SUBTREE_KEYS = new Set(["domain", "contextDomain"]);
+const SCHEMA_SUBTREE_KEYS = new Set(["domain", "contextDomain"]);
 
 /** Keys never descended into; summarised by counts instead. */
-export const SUMMARISED_KEYS = new Set(["data", "dataInfo"]);
+const SUMMARISED_KEYS = new Set(["data", "dataInfo"]);
 
 /** Keys reduced to a cardinality, because their contents are values. */
-export const COUNTED_KEYS = new Set(["references", "parts"]);
+const COUNTED_KEYS = new Set(["references", "parts"]);
 
 export type RedactionStats = {
   hashedStrings: number;
@@ -36,7 +36,7 @@ export type RedactionStats = {
   budgetExhausted: boolean;
 };
 
-export type RedactOptions = {
+type RedactOptions = {
   maxDepth?: number;
   maxArrayItems?: number;
   maxStringLength?: number;
@@ -44,7 +44,7 @@ export type RedactOptions = {
   maxNodes?: number;
 };
 
-export type HashedString = { h: string; n: number };
+type HashedString = { h: string; n: number };
 
 /** Redacts a definition, returning the new value and what had to be elided. */
 export function redact(
@@ -73,7 +73,7 @@ export function redact(
 }
 
 /** Stable short hash plus the original length. Never reversible to the value. */
-export function hashString(value: string): HashedString {
+function hashString(value: string): HashedString {
   return {
     h: crypto.createHash("sha256").update(value).digest("hex").slice(0, 12),
     n: value.length,

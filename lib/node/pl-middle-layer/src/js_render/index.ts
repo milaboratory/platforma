@@ -1,5 +1,6 @@
 import type { MiddleLayerEnvironment } from "../middle_layer/middle_layer";
 import type { BlockCodeWithInfo, ConfigRenderLambda } from "@platforma-sdk/model";
+import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import type { ComputableRenderingOps } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
 import type { QuickJSWASMModule } from "quickjs-emscripten";
@@ -87,6 +88,7 @@ export function computableFromRF(
   codeWithInfo: BlockCodeWithInfo,
   configKey: string,
   ops: Partial<ComputableRenderingOps> = {},
+  blockPack?: BlockPackSpec,
 ): Computable<unknown> {
   // adding configKey to reload all outputs on block-pack update
   const key = `${ctx.blockId}#lambda#${configKey}#${fh.handle}`;
@@ -133,6 +135,10 @@ export function computableFromRF(
       const flightRecorder = env.driverKit.flightRecorder;
       const renderInfo = {
         blockId: ctx.blockId,
+        // A block id is unique to one project; these say which code it is, so a
+        // log can be read against the right version without the project.
+        ...describeBlockPack(blockPack),
+        sdkVersion: codeWithInfo.sdkVersion,
         key,
         lambda: fh.handle,
         // The sandbox has its own 8 MB ceiling, so the model's own objects can
@@ -256,4 +262,29 @@ export function executeSingleLambda(
   } finally {
     scope.dispose();
   }
+}
+
+/**
+ * The part of a block pack that names the code, and nothing else.
+ *
+ * Registry packs carry an organization, name and version, which is what a reader
+ * needs to open the right source. Local and development packs carry a filesystem
+ * path instead; the path is deliberately not recorded — it identifies the
+ * machine rather than the code, and its `type` already says that no published
+ * version exists to look up.
+ */
+function describeBlockPack(spec: BlockPackSpec | undefined): {
+  block?: string;
+  blockVersion?: string;
+  blockSource?: string;
+} {
+  if (spec === undefined) return {};
+  if (spec.type === "from-registry-v1" || spec.type === "from-registry-v2") {
+    return {
+      block: `${spec.id.organization}:${spec.id.name}`,
+      blockVersion: spec.id.version,
+      blockSource: spec.type,
+    };
+  }
+  return { block: "(unpublished)", blockSource: spec.type };
 }

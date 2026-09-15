@@ -17,7 +17,7 @@ import type { Recorder } from "./recorder";
  * pool entry.
  */
 
-export type HandleOrigin = {
+type HandleOrigin = {
   /** Sequence number of the record holding the definition. */
   seq: number;
   op: string;
@@ -30,7 +30,7 @@ export type HandleRegistry = {
   observe(handle: string, observed: { rows?: number; columns?: number }): void;
 };
 
-export type ModelDriverLike<H> = {
+type ModelDriverLike<H> = {
   createPFrame(def: never): H;
   createPTable(def: never): H;
   createPTableV2(def: never): H;
@@ -38,8 +38,13 @@ export type ModelDriverLike<H> = {
 
 export type RenderInfo = {
   blockId?: string;
+  /** What the block is, as `organization:name` — not the id it has in a project. */
   block?: string;
   blockVersion?: string;
+  /** Where the block came from: a registry, a local pack, a dev folder. */
+  blockSource?: string;
+  /** SDK the block's model was built against. */
+  sdkVersion?: string;
   key?: string;
   argsHash?: string;
   /** Which lambda of the block's model is being rendered. */
@@ -285,9 +290,17 @@ export function recordModelRenderSync<T>(
   fn: () => T,
 ): T {
   if (!recorder) return fn();
-  const { getStats, ...plain } = info;
+  // The identity is written once as its own record and referred to by block id
+  // thereafter; repeating it on every render would be the same four fields over
+  // and over in the log a crash has to fit into.
+  const { getStats, block: _b, blockVersion: _v, blockSource: _s, sdkVersion: _k, ...plain } = info;
+  announceBlock(recorder, info);
   const begin = recorder.event("render-begin", { ...plain, mem: recorder.memorySnapshot() });
   const startedAt = performance.now();
+  // Driver calls the model makes while this render runs belong to this block.
+  // Recorded here rather than inferred later: an inference has to survive log
+  // rotation and cannot see a call made after the render that caused it returned.
+  openRenders.push(info.blockId);
   try {
     const result = fn();
     recorder.event("render-end", {
@@ -307,10 +320,31 @@ export function recordModelRenderSync<T>(
       mem: recorder.memorySnapshot(),
     });
     throw error;
+  } finally {
+    openRenders.pop();
   }
 }
 
 // Internals
+
+/** Blocks whose renders are open, innermost last. */
+const openRenders: (string | undefined)[] = [];
+
+/**
+ * Writes what a block actually is, once per session.
+ *
+ * A block id is unique to a project, so on its own it names nothing a reader can
+ * open: the package, its version and the SDK it was built against are what point
+ * at the code that ran. Written as a sticky record, so a session long enough to
+ * rotate its log away from the first render does not lose the legend for every
+ * id in what survives.
+ */
+function announceBlock(recorder: Recorder, info: RenderInfo): void {
+  const { blockId, block, blockVersion, blockSource, sdkVersion } = info;
+  if (blockId === undefined || block === undefined) return;
+  const identity = `${blockId}\u0000${block}\u0000${blockVersion}\u0000${sdkVersion}`;
+  recorder.sticky(identity, "block", { blockId, block, blockVersion, blockSource, sdkVersion });
+}
 
 function record<R>(
   recorder: Recorder,
@@ -332,7 +366,11 @@ function record<R>(
   // native engine, which can allocate. It gets a begin/end pair like any other
   // operation, so a death inside it is attributed to it and not to the render
   // around it.
-  const seq = recorder.event(`${op}-begin`, { def: digest, mem: recorder.memorySnapshot() });
+  const seq = recorder.event(`${op}-begin`, {
+    def: digest,
+    blockId: openRenders.at(-1),
+    mem: recorder.memorySnapshot(),
+  });
   const startedAt = performance.now();
 
   let result: R;

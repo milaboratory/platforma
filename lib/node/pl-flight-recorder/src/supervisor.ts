@@ -1,9 +1,11 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { CRASH_FILE_PREFIX, type CrashMarker, type CrashReason } from "./events";
+import { readMachineMemory } from "./machine_memory";
 import { listSessions, sessionIdFromFile } from "./recorder";
 
-export type CrashMarkerInput = {
+type CrashMarkerInput = {
   /** Session id the parent assigned to the worker. Omitted, the marker carries no identity. */
   sessionId?: string;
   reason?: CrashReason;
@@ -64,6 +66,7 @@ export function writeCrashMarker(dir: string, input: CrashMarkerInput = {}): str
     exitCode: input.code,
     signal: input.signal,
     stderrTail: truncate(input.stderrTail ?? "", 4000),
+    memoryAtDeath: memoryNow(),
   };
   const file = path.join(dir, `${CRASH_FILE_PREFIX}-${marker.wall}.ndjson`);
   fs.writeFileSync(file, `${JSON.stringify(marker)}\n`);
@@ -127,6 +130,30 @@ export function superviseWorker(
 }
 
 // Internals
+
+/**
+ * The parent's view of memory at the moment it saw the death.
+ *
+ * The dying thread cannot take this reading, and the sampler's last one predates
+ * the end by up to its interval. Taken here it is contemporaneous with the exit
+ * code it sits beside, which is what stops an exhausted machine from reading as
+ * an ordinary failure.
+ */
+function memoryNow(): CrashMarker["memoryAtDeath"] {
+  try {
+    return {
+      rss: process.memoryUsage.rss(),
+      maxRss: process.resourceUsage().maxRSS * 1024,
+      freeMemory: os.freemem(),
+      totalMemory: os.totalmem(),
+      machine: readMachineMemory(),
+    };
+  } catch {
+    // A marker without memory is still a marker; failing to take the reading
+    // must never cost the record of the death itself.
+    return undefined;
+  }
+}
 
 // Advisory only, for a human reading a directory by hand: the dying session has
 // no terminating record, so among the sessions that look dead this names the one

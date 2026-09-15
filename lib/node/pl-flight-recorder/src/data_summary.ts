@@ -22,13 +22,29 @@ export type DataSummary = {
   partsWithStats?: number;
   rows?: number;
   bytes?: number;
+  /**
+   * Distinct values per axis, in the order the column declares its axes.
+   *
+   * A join's output is bounded by the product of its inputs, but reached only
+   * when every record shares one key; how far below that bound the real result
+   * sits is decided by how many distinct keys there are. Without this the size
+   * of a join can only ever be bounded, never stated.
+   */
+  axisCardinality?: number[];
+  /** Set when the entries were too many to count distinct keys over. */
+  axisCardinalityUncounted?: boolean;
 };
 
 export function summarizeData(data: unknown): DataSummary {
   if (data === null || data === undefined) return { kind: "absent" };
   if (Array.isArray(data)) {
     // Inline values, built inside the model sandbox.
-    return { kind: "inline", entries: data.length, approxBytes: approxInlineBytes(data) };
+    return {
+      kind: "inline",
+      entries: data.length,
+      approxBytes: approxInlineBytes(data),
+      ...inlineAxisCardinality(data),
+    };
   }
   if (typeof data !== "object") return { kind: typeof data };
 
@@ -78,6 +94,33 @@ function summarizeParquet(info: { [key: string]: unknown }): DataSummary {
     rows: withStats > 0 ? rows : undefined,
     bytes: withStats > 0 ? bytes : undefined,
   };
+}
+
+/**
+ * How many entries may be walked to count distinct axis keys.
+ *
+ * Counting is exact and needs a set per axis, so it costs memory in proportion
+ * to the distinct keys it finds — which is the wrong thing to spend in the
+ * situation this code exists to diagnose. Past the cap the count is declined
+ * rather than approximated, so a number that is present is always true.
+ */
+const CARDINALITY_LIMIT = 100_000;
+
+function inlineAxisCardinality(values: unknown[]): {
+  axisCardinality?: number[];
+  axisCardinalityUncounted?: boolean;
+} {
+  if (values.length > CARDINALITY_LIMIT) return { axisCardinalityUncounted: true };
+  const firstKey = (values[0] as { key?: unknown } | undefined)?.key;
+  if (!Array.isArray(firstKey)) return {};
+
+  const seen = firstKey.map(() => new Set<unknown>());
+  for (const entry of values) {
+    const key = (entry as { key?: unknown }).key;
+    if (!Array.isArray(key) || key.length !== seen.length) return {};
+    for (const [axis, value] of key.entries()) seen[axis].add(value);
+  }
+  return { axisCardinality: seen.map((set) => set.size) };
 }
 
 // Sampled rather than measured: walking millions of entries to size them is
