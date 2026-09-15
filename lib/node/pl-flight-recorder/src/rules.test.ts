@@ -1,106 +1,75 @@
 import { describe, expect, test } from "vitest";
 import { digestDef } from "./digest";
-import { inputRowsMax, joinShapes, structuralFindings } from "./rules";
+import { inputRowsMax, joinShapes } from "./rules";
 
 /**
- * The rules are exercised through the real path: a definition is redacted first,
- * then read. Anything the redaction drops is therefore also missing here, which
- * is the point — a rule that only works on the raw definition would never fire
- * in production.
+ * Shapes are read through the real path: a definition is redacted first, then
+ * walked. Anything the redaction drops is therefore also missing here, which is
+ * the point — a reading that only works on the raw definition would never be
+ * available in production.
  */
 
-describe("structural findings, tree API", () => {
-  test("identical axes produce no finding", () => {
+describe("join shapes, tree API", () => {
+  test("sides keyed alike share their axis and their largest input is known", () => {
     const def = ptableDef(
       inner([
         column("a", [axis("pl7.app/sampleId")], 100),
         column("b", [axis("pl7.app/sampleId")], 200),
       ]),
     );
-    expect(findings(def, "PTableDef")).toEqual([]);
     const shape = shapes(def, "PTableDef")[0];
     expect(shape.sharedAxes).toEqual(["String|pl7.app/sampleId|"]);
     expect(shape.inputRowsMax).toBe(200);
+    expect(shape.disjointPairs).toEqual([]);
   });
 
-  test("siblings with no shared axis are a cross join with a row bound", () => {
+  test("sides sharing no axis are reported as disjoint, with the product they bound", () => {
     const def = ptableDef(
       inner([column("a", [axis("s")], 384), column("b", [axis("c")], 2_400_000)]),
     );
-    const cross = findings(def, "PTableDef").find((f) => f.rule === "cross-join");
-    expect(cross?.severity).toBe("critical");
-    expect(shapes(def, "PTableDef")[0].rowsUpperBound).toBe(384 * 2_400_000);
+    const shape = shapes(def, "PTableDef")[0];
+    expect(shape.disjointPairs).toEqual([[0, 1]]);
+    expect(shape.rowsUpperBound).toBe(384 * 2_400_000);
   });
 
-  test("same axis under different domains is named as a domain mismatch", () => {
+  test("an axis under two domains is not a shared axis", () => {
     const def = ptableDef(
       inner([
         column("a", [axis("pl7.app/vdj/clonotypeKey", { "pl7.app/vdj/chain": "IGH" })], 100),
         column("b", [axis("pl7.app/vdj/clonotypeKey", { "pl7.app/vdj/chain": "IGK" })], 200),
       ]),
     );
-    const mismatch = findings(def, "PTableDef").find((f) => f.rule === "axis-domain-mismatch");
-    expect(mismatch?.severity).toBe("high");
-    expect(mismatch?.domains).toHaveLength(2);
+    const shape = shapes(def, "PTableDef")[0];
+    expect(shape.sharedAxes).toEqual([]);
+    expect(shape.axisUnion).toHaveLength(2);
   });
 
-  test("fan-out is reported for an inner join that still has a working key", () => {
-    const def = ptableDef(
-      inner([column("a", [axis("s")], 100), column("b", [axis("s"), axis("c")], 5000)]),
-    );
-    expect(findings(def, "PTableDef").map((f) => f.rule)).toEqual(["partial-key-fan-out"]);
-  });
-
-  test("fan-out is not restated on a cartesian node", () => {
-    const def = ptableDef(inner([column("a", [axis("s")], 10), column("b", [axis("c")], 10)]));
-    expect(findings(def, "PTableDef").some((f) => f.rule === "partial-key-fan-out")).toBe(false);
-  });
-
-  test("an outer join's narrower secondary is not a finding", () => {
-    const def = ptableDef({
-      type: "outer",
-      primary: column("a", [axis("s"), axis("c")], 1000),
-      secondary: [column("b", [axis("c")], 50)],
-    });
-    expect(findings(def, "PTableDef")).toEqual([]);
-  });
-
-  test("a nested join is reached and reported by its path", () => {
+  test("a nested join is reached and carries its own path", () => {
     const def = ptableDef(
       inner([
         column("a", [axis("s")], 10),
         inner([column("b", [axis("s")], 20), column("c", [axis("z")], 30)]),
       ]),
     );
-    const cross = findings(def, "PTableDef").find((f) => f.rule === "cross-join");
-    expect(cross?.path).toBe("root/inner[1]");
+    const nested = shapes(def, "PTableDef").find((shape) => shape.path === "root/inner[1]");
+    expect(nested?.disjointPairs).toEqual([[0, 1]]);
   });
 });
 
-describe("structural findings, V2 query API", () => {
-  test("the same cross join is found in a V2 query", () => {
+describe("join shapes, V2 query API", () => {
+  test("the same disjoint join is read out of a V2 query", () => {
     const def = {
       query: v2Join("innerJoin", [
         column("a", [axis("s")], 384),
         column("b", [axis("c")], 2_400_000),
       ]),
     };
-    const found = findings(def, "PTableDefV2");
-    expect(found.map((f) => f.rule)).toContain("cross-join");
-    expect(shapes(def, "PTableDefV2")[0].rowsUpperBound).toBe(384 * 2_400_000);
+    const shape = shapes(def, "PTableDefV2")[0];
+    expect(shape.disjointPairs).toEqual([[0, 1]]);
+    expect(shape.rowsUpperBound).toBe(384 * 2_400_000);
   });
 
-  test("a V2 domain mismatch is found through the entry wrapper", () => {
-    const def = {
-      query: v2Join("innerJoin", [
-        column("a", [axis("pl7.app/vdj/clonotypeKey", { chain: "IGH" })], 100),
-        column("b", [axis("pl7.app/vdj/clonotypeKey", { chain: "IGK" })], 200),
-      ]),
-    };
-    expect(findings(def, "PTableDefV2").map((f) => f.rule)).toContain("axis-domain-mismatch");
-  });
-
-  test("a healthy V2 outer join yields nothing", () => {
+  test("a driven join's narrower secondary still shares the key it joins on", () => {
     const def = {
       query: {
         type: "outerJoin",
@@ -108,7 +77,9 @@ describe("structural findings, V2 query API", () => {
         secondary: [{ entry: column("b", [axis("c")], 50) }],
       },
     };
-    expect(findings(def, "PTableDefV2")).toEqual([]);
+    const shape = shapes(def, "PTableDefV2")[0];
+    expect(shape.sharedAxes).toEqual(["String|c|"]);
+    expect(shape.disjointPairs).toEqual([]);
   });
 });
 
@@ -139,10 +110,6 @@ describe("declared input rows", () => {
 });
 
 // Internals
-
-function findings(def: unknown, kind: "PTableDef" | "PTableDefV2") {
-  return structuralFindings(digestDef(kind, def).def);
-}
 
 function shapes(def: unknown, kind: "PTableDef" | "PTableDefV2") {
   return joinShapes(digestDef(kind, def).def);

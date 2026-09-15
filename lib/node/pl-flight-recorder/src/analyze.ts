@@ -9,7 +9,7 @@ import type {
 import { SAMPLER_FILE_PREFIX, SESSION_END_RECORD, SESSION_RECORD } from "./events";
 import { listSessions, readSession, sessionIdFromFile, sessionStartFromId } from "./recorder";
 import { readCrashMarkers } from "./supervisor";
-import { inputRowsMax, joinShapes, structuralFindings, type FindingSeverity } from "./rules";
+import { axesUnder, axisKey, columnsUnder, inputRowsMax, joinShapes } from "./rules";
 
 /**
  * Turns a flight log into an attributed cause.
@@ -22,7 +22,7 @@ import { inputRowsMax, joinShapes, structuralFindings, type FindingSeverity } fr
  * together they name a specific call in a specific block.
  */
 
-export const THRESHOLDS = {
+const THRESHOLDS = {
   /** Fraction of the heap ceiling above which the heap counts as exhausted. */
   heapPressure: 0.85,
   nativeGrowthBytes: 512 * 1024 * 1024,
@@ -39,16 +39,13 @@ export const THRESHOLDS = {
   machineRssShare: 0.25,
 } as const;
 
-export type Finding = {
-  rule: string;
-  severity: FindingSeverity;
-  detail: string;
-  seq?: number;
-  path?: string;
-  join?: string;
-  source?: string;
-  block?: string;
-};
+/**
+ * Bounds assumed for a value whose type does not fix a width, such as a string.
+ * The floor is the offset such a value costs even when empty; the ceiling is
+ * wide enough to cover the identifiers and keys blocks actually carry.
+ */
+const VARIABLE_FLOOR = 4;
+const VARIABLE_CEILING = 64;
 
 export type MemoryAnalysis = {
   samplerPresent: boolean;
@@ -64,7 +61,26 @@ export type MemoryAnalysis = {
   externalGrowth?: number;
   arrayBuffersGrowth?: number;
   worstStallMs: number;
+  /**
+   * Highest resident size the kernel recorded, which no sampling interval can
+   * miss and which therefore bounds `peakRss` from above.
+   */
+  peakMaxRss?: number;
+  /**
+   * Most process memory the compressor held at once, counted before compression.
+   *
+   * This is the memory that leaves a resident-size curve without being released:
+   * a falling `rss` against a rising figure here is the OS taking pages away, not
+   * the process giving them back.
+   */
+  peakCompressedStored?: number;
+  peakSwapUsed?: number;
+  worstFreeShare?: number;
   freeMemoryAtDeath?: number;
+  /** Lowest free-memory reading of the session, not only the last one. */
+  minFreeMemory?: number;
+  /** How much resident memory was given back between the peak and the last sample. */
+  rssReleasedFromPeak?: number;
   totalMemory?: number;
 };
 
@@ -76,8 +92,22 @@ export type OperationSummary = {
   end?: Record<string, unknown>;
   ms?: number;
   failed?: boolean;
+  /** Wall clock when the operation returned; absent while it is still open. */
+  endWall?: number;
   rssDelta?: number;
   heapDelta?: number;
+  /** Block whose render was open around this operation, where one was. */
+  block?: string;
+  /** How `block` was established, since an inherited one is weaker evidence. */
+  blockFrom?: "recorded" | "enclosing-render" | "creating-call";
+  /**
+   * Operations that were also open during this one's window, as `op#seq`.
+   *
+   * A resident-size delta measures the whole process over an interval, so it
+   * belongs to this operation alone only when nothing else was running. Where
+   * this list is not empty the delta is the interval's, not the operation's.
+   */
+  concurrent?: string[];
 };
 
 export type RenderSummary = {
@@ -91,15 +121,6 @@ export type RenderSummary = {
   stats?: { serOutBytes?: number; serInBytes?: number; [key: string]: unknown };
 };
 
-export type Verdict = {
-  outcome: string;
-  peakRss: number;
-  where: string;
-  memoryRegion?: string;
-  likelyCause?: string;
-  summary: string;
-};
-
 export type SessionAnalysis = {
   file: string;
   sessionId: string;
@@ -107,9 +128,19 @@ export type SessionAnalysis = {
   truncatedTail: boolean;
   endedReason?: string;
   crashMarker?: CrashMarker;
+  /**
+   * True when a crash marker exists but more than one session could own it.
+   *
+   * The marker is then attached to none of them: naming the wrong session would
+   * be worse than naming none, and the fact that one is going unclaimed is itself
+   * worth knowing.
+   */
+  crashMarkerAmbiguous?: boolean;
   env?: SessionEnvironment;
   role?: string;
   meta?: Record<string, unknown>;
+  /** What each block id in this log actually is, keyed by block id. */
+  blocks: Record<string, BlockIdentity>;
   recordCount: number;
   /**
    * How many times the log rotated. Each rotation re-emits the session header,
@@ -124,9 +155,56 @@ export type SessionAnalysis = {
   /** The innermost operation that started and never returned. */
   inFlightAtDeath?: OperationSummary;
   renders: RenderSummary[];
-  findings: Finding[];
-  verdict: Verdict;
+  /** What the definition asked for, next to what the process spent. */
+  requestedSize: RequestedSize;
   timeline: Record<string, unknown>[];
+};
+
+/**
+ * What the definition asked for, next to what the process spent.
+ *
+ * Both are measurements, and they are reported as measurements. The report does
+ * not decide from them whose fault a crash is: it sees one run, cannot reproduce
+ * it, and knows nothing of what the block was meant to do. Reading these two
+ * numbers together is the reader's job.
+ */
+export type BlockIdentity = {
+  /** Package the block came from, as `organization:name`. */
+  block?: string;
+  blockVersion?: string;
+  blockSource?: string;
+  sdkVersion?: string;
+};
+
+export type RequestedSize = {
+  /** Rows the definition could produce at most. */
+  requestedRows?: number;
+  /** Bytes a row needs, per the value types of its axes and columns. */
+  bytesPerRow?: { floor: number; ceiling: number };
+  /** Smallest the result could be. */
+  floorBytes?: number;
+  /** Largest it plausibly could be. */
+  ceilingBytes?: number;
+  /** Resident growth actually observed, up to the peak. */
+  observedBytes: number;
+  /** True when a value type does not fix a width, which is why the size is a range. */
+  variableWidth: boolean;
+  /** Axes the sides of the outermost join have in common. */
+  sharedAxes?: string[];
+  /** Axes present on only some sides, which is what makes a join replicate. */
+  unsharedAxes?: string[];
+  /** Distinct values of each shared axis, where every side could be counted. */
+  sharedAxisCardinality?: number[];
+  /**
+   * Rows the join produces if its inputs are spread evenly over the shared key.
+   *
+   * The bound above is what one group would produce; this is what the counted
+   * number of groups produces. They coincide when there is a single group, and
+   * the real result lies between them whenever the spread is uneven.
+   */
+  rowsIfEvenlySpread?: number;
+  /** Why no size is given, when none is. */
+  unavailable?: string;
 };
 
 /** Analyzes the newest crashed session in a directory, else the newest session. */
@@ -162,15 +240,6 @@ export function analyzeSession(file: string, dir: string = path.dirname(file)): 
   const operations = pairOperations(records);
   const inFlight = operations.filter((op) => !op.end);
 
-  const findings = [
-    ...classifyCrashMarker(crashMarker),
-    ...ambiguousMarkerFinding(attribution.ambiguous),
-    ...classifyMemory(memory, header.env, crashMarker),
-    ...collectStructural(records),
-    ...collectEmpirical(records, operations, definitionBySeq(records)),
-    ...stallFindings(memory),
-  ].sort(bySeverity);
-
   return {
     file,
     sessionId,
@@ -178,6 +247,8 @@ export function analyzeSession(file: string, dir: string = path.dirname(file)): 
     truncatedTail,
     endedReason: ended?.reason as string | undefined,
     crashMarker,
+    ...(attribution.ambiguous ? { crashMarkerAmbiguous: true } : {}),
+    blocks: blockIdentities(records),
     env: header.env,
     role: header.role,
     meta: header.meta,
@@ -191,65 +262,22 @@ export function analyzeSession(file: string, dir: string = path.dirname(file)): 
     inFlight,
     inFlightAtDeath: inFlight.at(-1),
     renders: summarizeRenders(records),
-    findings,
-    verdict: buildVerdict({
-      crashed: !ended,
-      memory,
-      inFlight,
-      findings,
-      crashMarker,
-      blockOf: enclosingRenders(records),
-    }),
-    timeline: records.slice(-40).map(compactRecord),
+    requestedSize: measureRequest(records, memory),
+    // Memory samples are excluded before the tail is cut, not after. A session
+    // that died inside one long native call writes nothing but samples at the
+    // end, so cutting first leaves the tail empty in exactly the case where the
+    // last operations matter most; the samples are already drawn as a curve.
+    timeline: records
+      .filter((record) => record.type !== "mem-sampler" && record.type !== "mem-self")
+      .slice(-40)
+      .map(compactRecord),
   };
-}
-
-/** Thousands separators, or `unknown` when the count was never observed. */
-export function formatCount(value: number | undefined): string {
-  return typeof value === "number" ? value.toLocaleString("en-US") : "unknown";
-}
-
-/** Binary byte units, or `unknown`. */
-export function formatBytes(value: number | undefined): string {
-  if (typeof value !== "number") return "unknown";
-  const units = ["B", "KiB", "MiB", "GiB", "TiB"];
-  let index = 0;
-  let scaled = Math.abs(value);
-  while (scaled >= 1024 && index < units.length - 1) {
-    scaled /= 1024;
-    index++;
-  }
-  const digits = scaled < 10 && index > 0 ? 1 : 0;
-  return `${value < 0 ? "-" : ""}${scaled.toFixed(digits)} ${units[index]}`;
 }
 
 // Internals
 
 const CLOCK_TOLERANCE_MS = THRESHOLDS.clockToleranceMs;
 const MAX_RIVAL_SESSIONS = THRESHOLDS.maxRivalSessions;
-
-const SEVERITY_ORDER: Record<FindingSeverity, number> = {
-  critical: 0,
-  high: 1,
-  medium: 2,
-  low: 3,
-};
-
-const REGION_RULES = [
-  "js-heap-exhaustion-confirmed",
-  "js-heap-exhaustion",
-  "off-heap-buffer-growth",
-  "native-allocation-growth",
-  "machine-memory-exhausted",
-];
-
-const CAUSE_RULES = [
-  "cross-join",
-  "axis-domain-mismatch",
-  "join-amplification",
-  "unbounded-getData",
-  "huge-inline-column",
-];
 
 /**
  * The marker for a session is the one whose assigned id names it.
@@ -329,7 +357,7 @@ function analyzeMemory(
   const selfSeries = records
     .filter((record) => record.mem)
     .map((record) => ({ wall: record.wall, ...record.mem! }));
-  const rssSeries = samples.length
+  const rssSeries: MemoryAnalysis["rssSeries"] = samples.length
     ? samples.map((s) => ({ wall: s.wall, rss: s.rss, freeMemory: s.freeMemory }))
     : selfSeries.map((s) => ({ wall: s.wall, rss: s.rss }));
 
@@ -337,11 +365,13 @@ function analyzeMemory(
   const lastSample = samples.at(-1);
   const heapLimit = last?.heapLimit ?? env?.heapLimit;
 
+  const peakRss = Math.max(0, ...rssSeries.map((sample) => sample.rss ?? 0));
+
   return {
     samplerPresent: samples.length > 0,
     sampleCount: rssSeries.length,
     rssSeries,
-    peakRss: Math.max(0, ...rssSeries.map((s) => s.rss ?? 0)),
+    peakRss,
     rssAtDeath: lastSample?.rss ?? last?.rss,
     rssGrowth: rssSeries.length ? (rssSeries.at(-1)?.rss ?? 0) - (rssSeries[0].rss ?? 0) : 0,
     heapUsedAtDeath: last?.heapUsed,
@@ -357,9 +387,28 @@ function analyzeMemory(
         .filter((record) => record.type === "mem-self")
         .map((record) => (record.stallMs as number | undefined) ?? 0),
     ),
+    peakMaxRss: maxOf(samples.map((sample) => sample.maxRss)),
+    peakCompressedStored: maxOf(samples.map((sample) => sample.machine?.compressedStored)),
+    peakSwapUsed: maxOf(samples.map((sample) => sample.machine?.swapUsed)),
+    worstFreeShare:
+      lastSample?.totalMemory && minOf(samples.map((s) => s.freeMemory)) !== undefined
+        ? (minOf(samples.map((s) => s.freeMemory)) ?? 0) / lastSample.totalMemory
+        : undefined,
     freeMemoryAtDeath: lastSample?.freeMemory,
+    minFreeMemory: minOf(rssSeries.map((sample) => sample.freeMemory)),
+    rssReleasedFromPeak: peakRss - (lastSample?.rss ?? last?.rss ?? peakRss),
     totalMemory: lastSample?.totalMemory ?? env?.totalMemory,
   };
+}
+
+function minOf(values: (number | undefined)[]): number | undefined {
+  const known = values.filter((value): value is number => typeof value === "number");
+  return known.length ? Math.min(...known) : undefined;
+}
+
+function maxOf(values: (number | undefined)[]): number | undefined {
+  const known = values.filter((value): value is number => typeof value === "number");
+  return known.length ? Math.max(...known) : undefined;
 }
 
 function growth(series: Record<string, number | undefined>[], key: string): number | undefined {
@@ -396,6 +445,7 @@ function pairOperations(records: FlightRecord[]): OperationSummary[] {
     if (!summary) continue;
     summary.end = compactRecord(record);
     summary.ms = record.ms as number | undefined;
+    summary.endWall = record.wall;
     summary.failed = record.type.endsWith("-error");
     const beginMem = beginMemory.get(summary.seq);
     if (beginMem && record.mem) {
@@ -403,29 +453,95 @@ function pairOperations(records: FlightRecord[]): OperationSummary[] {
       summary.heapDelta = record.mem.heapUsed - beginMem.heapUsed;
     }
   }
+  markConcurrency(operations);
+  attributeToBlocks(operations, records);
   return operations;
 }
 
-function collectStructural(records: FlightRecord[]): Finding[] {
+/**
+ * Says which block each operation belongs to, and how that was established.
+ *
+ * Three sources, weakest last. The call may carry the id itself, recorded while
+ * the render that made it was open. Failing that the render enclosing it by
+ * sequence number names it. Failing that — the case that matters, a driver call
+ * the block's UI made long after any render returned — it is inherited from the
+ * call that created the table it operates on, which `joinSeq` points at.
+ */
+function attributeToBlocks(operations: OperationSummary[], records: FlightRecord[]): void {
   const enclosing = enclosingRenders(records);
-  const out: Finding[] = [];
-  for (const record of records) {
-    // Rules run here rather than at record time, so they can be revised against
-    // logs that already exist and cost nothing on the hot path.
-    for (const finding of structuralFindings(recordedDef(record))) {
-      out.push({
-        rule: finding.rule,
-        severity: finding.severity,
-        detail: finding.detail,
-        path: finding.path,
-        join: finding.join,
-        source: record.type,
-        seq: record.seq,
-        block: (record.blockId as string | undefined) ?? enclosing.get(record.seq),
-      });
+  const bySeq = new Map(operations.map((op) => [op.seq, op]));
+
+  for (const op of operations) {
+    const recorded = op.info.blockId as string | undefined;
+    if (recorded !== undefined) {
+      op.block = recorded;
+      op.blockFrom = "recorded";
+      continue;
+    }
+    const enclosed = enclosing.get(op.seq);
+    if (enclosed !== undefined) {
+      op.block = enclosed;
+      op.blockFrom = "enclosing-render";
     }
   }
+
+  // Resolved after the direct sources, so an inherited identity is only ever
+  // taken from a call that has one of its own.
+  for (const op of operations) {
+    if (op.block !== undefined) continue;
+    const joinSeq = op.info.joinSeq as number | undefined;
+    const creator = joinSeq === undefined ? undefined : bySeq.get(joinSeq);
+    if (creator?.block === undefined) continue;
+    op.block = creator.block;
+    op.blockFrom = "creating-call";
+  }
+}
+
+/** What every block id in the log stands for, from the records that announced it. */
+function blockIdentities(records: FlightRecord[]): Record<string, BlockIdentity> {
+  const out: Record<string, BlockIdentity> = {};
+  for (const record of records) {
+    if (record.type !== "block") continue;
+    const blockId = record.blockId as string | undefined;
+    if (blockId === undefined) continue;
+    out[blockId] = {
+      block: record.block as string | undefined,
+      blockVersion: record.blockVersion as string | undefined,
+      blockSource: record.blockSource as string | undefined,
+      sdkVersion: record.sdkVersion as string | undefined,
+    };
+  }
   return out;
+}
+
+/**
+ * Names, for each completed operation, the operations that overlapped it.
+ *
+ * Resident size is a property of the process, so the change across one
+ * operation's window is only that operation's doing when its window was to
+ * itself. A long native call that never returns keeps allocating while unrelated
+ * renders start and finish inside it, and those renders would otherwise be
+ * credited with memory they never touched. Whether an overlap invalidates a
+ * delta is left to the reader: an operation that merely contains another is a
+ * different matter from two running side by side, and the log does not say which
+ * of them was executing.
+ */
+function markConcurrency(operations: OperationSummary[]): void {
+  for (const op of operations) {
+    const endWall = op.endWall;
+    if (endWall === undefined) continue;
+    const overlapping = operations
+      .filter(
+        (other) =>
+          other !== op &&
+          other.wall <= endWall &&
+          // An operation with no end was still open, so it covers everything after
+          // it began — which is exactly the case that misattributes the most.
+          (other.endWall ?? Number.POSITIVE_INFINITY) >= op.wall,
+      )
+      .map((other) => `${other.op}#${other.seq}`);
+    if (overlapping.length > 0) op.concurrent = overlapping;
+  }
 }
 
 /**
@@ -453,207 +569,6 @@ function enclosingRenders(records: FlightRecord[]): Map<number, string> {
     if (innermost?.blockId) out.set(record.seq, innermost.blockId);
   }
   return out;
-}
-
-function collectEmpirical(
-  records: FlightRecord[],
-  operations: OperationSummary[],
-  definitions: Map<number, unknown>,
-): Finding[] {
-  const out: Finding[] = [];
-  const beginBySeq = new Map(records.map((record) => [record.seq, record]));
-  for (const record of records) {
-    if (record.type === "getShape-end") {
-      // The observed row count is compared against what the definition of the
-      // table declared as input, which is looked up here rather than carried on
-      // the record.
-      const begin = record.begin === undefined ? undefined : beginBySeq.get(record.begin);
-      const joinSeq = begin?.joinSeq as number | undefined;
-      const declared = joinSeq === undefined ? undefined : inputRowsMax(definitions.get(joinSeq));
-      const rows = record.rows as number | undefined;
-      const amplification =
-        typeof rows === "number" && typeof declared === "number" && declared > 0
-          ? Math.round((rows / declared) * 100) / 100
-          : undefined;
-      if ((amplification ?? 0) >= THRESHOLDS.amplification) {
-        out.push({
-          rule: "join-amplification",
-          severity: "critical",
-          seq: record.seq,
-          detail: `join produced ${formatCount(rows)} rows from at most ${formatCount(
-            declared,
-          )} declared input rows (x${amplification})`,
-        });
-      }
-    }
-    const tableRows = (record.tableRows as number | undefined) ?? 0;
-    if (
-      record.type === "getData-begin" &&
-      record.unbounded &&
-      tableRows > THRESHOLDS.unboundedRows
-    ) {
-      out.push({
-        rule: "unbounded-getData",
-        severity: "critical",
-        seq: record.seq,
-        detail: `getData with no row range on a ${formatCount(tableRows)}-row table pulls the whole table into the JS heap`,
-      });
-    }
-    const returnedBytes = (record.returnedBytes as number | undefined) ?? 0;
-    if (record.type === "getData-end" && returnedBytes >= THRESHOLDS.returnedBytes) {
-      out.push({
-        rule: "large-getData-result",
-        severity: "high",
-        seq: record.seq,
-        detail: `${formatBytes(returnedBytes)} of column data returned into JS in one call`,
-      });
-    }
-    if (record.type.startsWith("createP")) {
-      for (const inline of inlineColumns(recordedDef(record))) {
-        if ((inline.entries ?? 0) < THRESHOLDS.inlineEntries) continue;
-        out.push({
-          rule: "huge-inline-column",
-          severity: "high",
-          seq: record.seq,
-          detail: `model passed an inline column of ${formatCount(inline.entries)} entries (~${formatBytes(
-            inline.approxBytes,
-          )}) through the sandbox`,
-        });
-      }
-    }
-  }
-  for (const op of operations) {
-    if ((op.rssDelta ?? 0) < THRESHOLDS.nativeGrowthBytes) continue;
-    out.push({
-      rule: "operation-memory-spike",
-      severity: "high",
-      seq: op.seq,
-      detail: `${op.op} grew RSS by ${formatBytes(op.rssDelta)} (heap ${formatBytes(op.heapDelta ?? 0)})`,
-    });
-  }
-  return out;
-}
-
-function classifyCrashMarker(marker: CrashMarker | undefined): Finding[] {
-  if (!marker) return [];
-  const explanation: Record<string, string> = {
-    "js-heap-out-of-memory":
-      "the supervisor received ERR_WORKER_OUT_OF_MEMORY: the middle-layer thread exceeded its V8 heap limit",
-    "abort-or-fatal-allocation-failure":
-      "the process aborted on a fatal allocation failure (V8 fatal out-of-memory, or a failed native allocation)",
-    "killed-by-os":
-      "the OS killed the process (SIGKILL), which is what an out-of-memory kill looks like",
-  };
-  const firstLine = marker.message ? marker.message.split("\n")[0] : "";
-  return [
-    {
-      rule:
-        marker.reason === "js-heap-out-of-memory"
-          ? "js-heap-exhaustion-confirmed"
-          : `crash-${marker.reason}`,
-      severity: "critical",
-      source: "supervisor",
-      detail: `${explanation[marker.reason] ?? marker.reason}${firstLine ? ` — ${firstLine}` : ""}`,
-    },
-  ];
-}
-
-function ambiguousMarkerFinding(ambiguous: boolean): Finding[] {
-  if (!ambiguous) return [];
-  return [
-    {
-      rule: "unattributed-crash-marker",
-      severity: "medium",
-      detail:
-        "a crash marker sits in this session's time window, but another session in the same directory also stopped writing around then, so it is not attributed to either — spawn the worker with an assigned session id to remove the ambiguity",
-    },
-  ];
-}
-
-function classifyMemory(
-  memory: MemoryAnalysis,
-  env: SessionEnvironment | undefined,
-  crashMarker: CrashMarker | undefined,
-): Finding[] {
-  const out: Finding[] = [];
-
-  // On macOS `os.freemem()` sits near zero at all times because the kernel keeps
-  // free pages in the file cache, so a low reading alone means nothing: the
-  // process itself has to be large before the OS can plausibly have killed it.
-  const rssShare = memory.totalMemory ? (memory.rssAtDeath ?? 0) / memory.totalMemory : 0;
-  if (
-    memory.freeMemoryAtDeath !== undefined &&
-    memory.totalMemory &&
-    memory.freeMemoryAtDeath < memory.totalMemory * 0.03 &&
-    rssShare > THRESHOLDS.machineRssShare
-  ) {
-    out.push({
-      rule: "machine-memory-exhausted",
-      severity: "critical",
-      detail: `process held ${formatBytes(memory.rssAtDeath)} (${Math.round(rssShare * 100)}%) of ${formatBytes(
-        memory.totalMemory,
-      )} with ${formatBytes(memory.freeMemoryAtDeath)} free — the OS, not V8, ended the process`,
-    });
-  }
-
-  // The last in-thread heap reading predates a synchronous blow-up, so a low
-  // reading is not evidence of a healthy heap. Say so rather than conclude.
-  if (
-    !crashMarker &&
-    memory.heapPressure !== undefined &&
-    memory.heapPressure < THRESHOLDS.heapPressure &&
-    memory.worstStallMs >= THRESHOLDS.stallMs
-  ) {
-    out.push({
-      rule: "heap-reading-stale",
-      severity: "medium",
-      detail: `last JS heap reading is ${formatBytes(memory.heapUsedAtDeath)} but the thread was blocked for ${Math.round(
-        memory.worstStallMs,
-      )}ms before the log ends, so the heap was never sampled near the crash`,
-    });
-  }
-
-  if ((memory.heapPressure ?? 0) >= THRESHOLDS.heapPressure) {
-    const flag = env?.maxOldSpaceSize ? ` (--max-old-space-size=${env.maxOldSpaceSize})` : "";
-    out.push({
-      rule: "js-heap-exhaustion",
-      severity: "critical",
-      detail: `JS heap at ${Math.round((memory.heapPressure ?? 0) * 100)}% of its ${formatBytes(
-        memory.heapLimit,
-      )} limit${flag}`,
-    });
-  }
-
-  const offHeap = (memory.externalGrowth ?? 0) + (memory.arrayBuffersGrowth ?? 0);
-  const heapGrowth = memory.heapGrowth ?? 0;
-  if (memory.rssGrowth >= THRESHOLDS.nativeGrowthBytes && heapGrowth < memory.rssGrowth / 4) {
-    const offHeapDominant = offHeap >= THRESHOLDS.nativeGrowthBytes;
-    out.push({
-      rule: offHeapDominant ? "off-heap-buffer-growth" : "native-allocation-growth",
-      severity: "critical",
-      detail: offHeapDominant
-        ? `RSS grew ${formatBytes(memory.rssGrowth)} while the JS heap grew ${formatBytes(
-            heapGrowth,
-          )}; off-heap ArrayBuffer/external allocation grew ${formatBytes(offHeap)} — the growth is buffers handed out by the pframes engine, not JavaScript objects. Raising --max-old-space-size will not help.`
-        : `RSS grew ${formatBytes(memory.rssGrowth)} while the JS heap grew only ${formatBytes(
-            heapGrowth,
-          )} — the allocation is native (pframes engine / Arrow buffers), not JavaScript. Raising --max-old-space-size will not help.`,
-    });
-  }
-  return out;
-}
-
-function stallFindings(memory: MemoryAnalysis): Finding[] {
-  if (memory.worstStallMs < THRESHOLDS.stallMs) return [];
-  return [
-    {
-      rule: "event-loop-stall",
-      severity: "medium",
-      detail: `the recorded thread was blocked for ${Math.round(
-        memory.worstStallMs,
-      )}ms — synchronous work (model evaluation, or a blocking native call)`,
-    },
-  ];
 }
 
 function summarizeRenders(records: FlightRecord[]): RenderSummary[] {
@@ -685,66 +600,91 @@ function summarizeRenders(records: FlightRecord[]): RenderSummary[] {
   return out;
 }
 
-function buildVerdict(input: {
-  crashed: boolean;
-  memory: MemoryAnalysis;
-  inFlight: OperationSummary[];
-  findings: Finding[];
-  crashMarker?: CrashMarker;
-  /** Block whose render was open at each sequence number. */
-  blockOf: Map<number, string>;
-}): Verdict {
-  const { crashed, memory, inFlight, findings, crashMarker, blockOf } = input;
-  const gun = inFlight.at(-1);
-  const region = findings.find((finding) => REGION_RULES.includes(finding.rule));
-  const cause = findings.find((finding) => CAUSE_RULES.includes(finding.rule));
+/**
+ * Measures what the last recorded definition asked for, against what the process
+ * spent reaching for it.
+ *
+ * Row count times row width bounds the result: the value types fix a width for
+ * numbers and only a range for strings, so the size is reported as a range too.
+ * No conclusion is drawn here. A result far smaller than the memory spent and one
+ * that accounts for all of it mean very different things, but which of them holds
+ * is read off the numbers by someone who can reproduce the run.
+ */
+function measureRequest(records: FlightRecord[], memory: MemoryAnalysis): RequestedSize {
+  const observedBytes = Math.max(0, memory.peakRss - (memory.rssSeries[0]?.rss ?? 0));
 
-  // A driver call carries no block identity of its own, so it is taken from the
-  // render that was open around it rather than from whichever finding happens
-  // to have one.
-  const blockId =
-    (gun?.info?.blockId as string | undefined) ??
-    (gun === undefined ? undefined : blockOf.get(gun.seq)) ??
-    findings.find((finding) => finding.block)?.block;
+  // The definition the process was carrying is the last one it recorded.
+  const def = records
+    .map(recordedDef)
+    .filter((value) => value !== undefined)
+    .at(-1);
+  const shape = def === undefined ? undefined : joinShapes(def)[0];
+  const requestedRows = shape?.rowsUpperBound;
+  if (def === undefined || shape === undefined || requestedRows === undefined) {
+    return {
+      observedBytes,
+      variableWidth: false,
+      unavailable:
+        def === undefined
+          ? "no join definition was recorded"
+          : "the inputs of the join have no known row count",
+    };
+  }
+
+  // Axes are materialized as columns of the result alongside the values, so both
+  // count toward the width of a row.
+  const types = [
+    ...axesUnder(def).map((axis) => axis.type),
+    ...columnsUnder(def).map((column) => column.valueType),
+  ];
+  const bytesPerRow = {
+    floor: sum(types.map((type) => valueWidth(type) ?? VARIABLE_FLOOR)),
+    ceiling: sum(types.map((type) => valueWidth(type) ?? VARIABLE_CEILING)),
+  };
+  // Axis keys carry type and domain so that rules can compare them exactly; a
+  // reader needs the name that was written in the model.
+  const names = new Map(axesUnder(def).map((axis) => [axisKey(axis), axis.name]));
+  const name = (key: string) => names.get(key) ?? key;
+
   return {
-    outcome: crashed
-      ? `session ended without shutdown${
-          crashMarker ? ` — supervisor reported ${crashMarker.reason}` : " (no supervisor marker)"
-        }`
-      : "clean shutdown",
-    peakRss: memory.peakRss,
-    where: gun
-      ? `${gun.op} started at seq ${gun.seq} and never returned${blockId ? ` (block ${blockId})` : ""}`
-      : "no operation was in flight",
-    memoryRegion: region?.rule,
-    likelyCause: cause?.rule ?? findings[0]?.rule,
-    summary: [
-      crashed ? "Process died without running shutdown." : "Session closed normally.",
-      gun ? `Last unfinished operation: ${gun.op} (seq ${gun.seq}).` : undefined,
-      region?.detail,
-      cause ? `Probable cause: ${cause.rule} — ${cause.detail}` : undefined,
-    ]
-      .filter(Boolean)
-      .join(" "),
+    requestedRows,
+    bytesPerRow,
+    floorBytes: requestedRows * bytesPerRow.floor,
+    ceilingBytes: requestedRows * bytesPerRow.ceiling,
+    observedBytes,
+    variableWidth: types.some((type) => valueWidth(type) === undefined),
+    sharedAxes: shape.sharedAxes.map(name),
+    unsharedAxes: shape.axisUnion.filter((axis) => !shape.sharedAxes.includes(axis)).map(name),
+    sharedAxisCardinality: shape.sharedAxisCardinality,
+    rowsIfEvenlySpread: evenlySpreadRows(requestedRows, shape.sharedAxisCardinality),
   };
 }
 
-function inlineColumns(
-  def: unknown,
-  acc: { entries?: number; approxBytes?: number }[] = [],
-): { entries?: number; approxBytes?: number }[] {
-  if (!def || typeof def !== "object") return acc;
-  const node = def as Record<string, unknown>;
-  const data = node.data as { kind?: string; entries?: number; approxBytes?: number } | undefined;
-  if (data?.kind === "inline") acc.push(data);
-  for (const value of Object.values(node)) {
-    if (Array.isArray(value)) {
-      for (const child of value) inlineColumns(child, acc);
-    } else if (value && typeof value === "object") {
-      inlineColumns(value, acc);
-    }
+function evenlySpreadRows(
+  requestedRows: number,
+  cardinality: number[] | undefined,
+): number | undefined {
+  if (!cardinality || cardinality.length === 0) return undefined;
+  const groups = cardinality.reduce((total, count) => total * count, 1);
+  return groups > 0 ? Math.round(requestedRows / groups) : undefined;
+}
+
+function sum(values: number[]): number {
+  return values.reduce((total, value) => total + value, 0);
+}
+
+/** Bytes one value occupies, or undefined when the type does not fix a width. */
+function valueWidth(type: string | undefined): number | undefined {
+  switch (type) {
+    case "Int":
+    case "Float":
+      return 4;
+    case "Long":
+    case "Double":
+      return 8;
+    default:
+      return undefined;
   }
-  return acc;
 }
 
 function compactRecord(record: FlightRecord): Record<string, unknown> {
@@ -778,18 +718,4 @@ function recordedDef(record: FlightRecord): unknown {
 function recordedDefFrom(digest: unknown): unknown {
   if (!digest || typeof digest !== "object") return undefined;
   return (digest as { def?: unknown }).def;
-}
-
-/** Definition of each creation call, keyed by the sequence number of its record. */
-function definitionBySeq(records: FlightRecord[]): Map<number, unknown> {
-  const out = new Map<number, unknown>();
-  for (const record of records) {
-    const def = recordedDef(record);
-    if (def !== undefined) out.set(record.seq, def);
-  }
-  return out;
-}
-
-function bySeverity(lhs: Finding, rhs: Finding): number {
-  return (SEVERITY_ORDER[lhs.severity] ?? 9) - (SEVERITY_ORDER[rhs.severity] ?? 9);
 }

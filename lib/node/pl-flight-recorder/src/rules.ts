@@ -21,27 +21,13 @@ import type { DataSummary } from "./data_summary";
  * both the original tree API and the V2 query API are read by the same walk.
  */
 
-export type FindingSeverity = "critical" | "high" | "medium" | "low";
-
-export type StructuralFinding = {
-  rule: "cross-join" | "axis-domain-mismatch" | "partial-key-fan-out";
-  severity: FindingSeverity;
-  /** Position in the definition, e.g. `root/innerJoin[1]`. */
-  path: string;
-  join: string;
-  detail: string;
-  rowsUpperBound?: number;
-  domains?: { domain: string; children: number[] }[];
-  missing?: { index: number; missing: string[] }[];
-};
-
-export type AxisDescriptor = {
+type AxisDescriptor = {
   name: string;
   type: string;
   domain?: Record<string, string>;
 };
 
-export type JoinShape = {
+type JoinShape = {
   join: string;
   path: string;
   childCount: number;
@@ -51,6 +37,14 @@ export type JoinShape = {
   inputRowsMax?: number;
   /** Loose but true: no join of these inputs can exceed the product of their rows. */
   rowsUpperBound?: number;
+  /**
+   * Distinct values of each shared axis, as counted on the side that has fewest.
+   *
+   * The upper bound above is reached only when every record falls in one group.
+   * These counts say how many groups there are, which is what separates a join
+   * that really does produce its bound from one that merely could.
+   */
+  sharedAxisCardinality?: number[];
 };
 
 // The discriminators are pinned to the model's own literal types, so renaming a
@@ -78,13 +72,6 @@ const DRIVEN_JOINS: ReadonlySet<string> = new Set(["outer", "outerJoin", "linker
   | QueryJoinType
 )[]);
 
-/** Structural findings for a recorded definition, most specific first. */
-export function structuralFindings(def: unknown): StructuralFinding[] {
-  const findings: StructuralFinding[] = [];
-  visit(def, "root", (node, path) => collect(node, path, findings));
-  return findings;
-}
-
 /** Shape of every join node in a definition, outermost first. */
 export function joinShapes(def: unknown): JoinShape[] {
   const shapes: JoinShape[] = [];
@@ -106,13 +93,8 @@ export function axisKey(axis: AxisDescriptor): string {
   return `${axis.type}|${axis.name}|${canonicalDomain(axis.domain)}`;
 }
 
-/** Axis identity ignoring domain, used to spot near-miss axes that fail to join. */
-export function axisNameKey(axis: AxisDescriptor): string {
-  return `${axis.type}|${axis.name}`;
-}
-
 /** True when a node is a join, by its discriminator. */
-export function isJoinNode(node: unknown): boolean {
+function isJoinNode(node: unknown): boolean {
   const type = discriminator(node);
   return (
     type !== undefined &&
@@ -124,7 +106,7 @@ export function isJoinNode(node: unknown): boolean {
  * A join's children, by position. The V2 API wraps each child in `{ entry }`;
  * that wrapper is left in place because every read here descends through it.
  */
-export function joinChildren(node: unknown): unknown[] {
+function joinChildren(node: unknown): unknown[] {
   const record = asRecord(node);
   if (!record) return [];
   if (Array.isArray(record.entries)) return record.entries;
@@ -137,6 +119,15 @@ export function axesUnder(node: unknown): AxisDescriptor[] {
   const out = new Map<string, AxisDescriptor>();
   gatherAxes(node, out, 0);
   return [...out.values()];
+}
+
+type ColumnDescriptor = { name?: string; valueType?: string };
+
+/** Every leaf column a definition reads, in walk order. */
+export function columnsUnder(def: unknown): ColumnDescriptor[] {
+  const out: ColumnDescriptor[] = [];
+  gatherColumns(def, out, 0);
+  return out;
 }
 
 // Internals
@@ -189,84 +180,51 @@ function shapeOf(node: unknown, path: string): JoinShape {
     disjointPairs,
     inputRowsMax: known.length > 0 ? Math.max(...known) : undefined,
     rowsUpperBound: known.length === rows.length && known.length > 0 ? product(known) : undefined,
+    sharedAxisCardinality: sharedCardinality(
+      children,
+      [...union].filter((key) => keySets.every((set) => set.has(key))),
+    ),
   };
 }
 
-function collect(node: unknown, path: string, findings: StructuralFinding[]): void {
-  const shape = shapeOf(node, path);
-  const children = joinChildren(node);
-
-  if (shape.disjointPairs.length > 0) {
-    findings.push({
-      rule: "cross-join",
-      severity: "critical",
-      path,
-      join: shape.join,
-      detail: `join siblings share no axis: pairs ${JSON.stringify(shape.disjointPairs)}`,
-      rowsUpperBound: shape.rowsUpperBound,
-    });
-  }
-
-  for (const nearMiss of nearMissAxes(children)) {
-    findings.push({
-      rule: "axis-domain-mismatch",
-      severity: "high",
-      path,
-      join: shape.join,
-      detail: `axis ${nearMiss.axis} appears with ${nearMiss.domains.length} different domains`,
-      domains: nearMiss.domains,
-    });
-  }
-
-  // Fan-out is worth reporting only where the node still has a working join key
-  // and its entries are peers; on a cartesian node it restates the cross-join,
-  // and on a driven join a narrower secondary is the intended behaviour.
-  if (!INTERSECT_JOINS.has(shape.join) || shape.disjointPairs.length > 0) return;
-  const missing = children
-    .map((child, index) => {
-      const own = new Set(axesUnder(child).map(axisKey));
-      return { index, missing: shape.axisUnion.filter((key) => !own.has(key)) };
-    })
-    .filter((entry) => entry.missing.length > 0);
-  if (missing.length === 0) return;
-  findings.push({
-    rule: "partial-key-fan-out",
-    severity: "medium",
-    path,
-    join: shape.join,
-    detail: `${missing.length} sibling(s) lack part of the node's axis union and get replicated`,
-    missing,
+/**
+ * Distinct values of each shared axis, taken from the side that has fewest.
+ *
+ * An inner join keeps only keys both sides carry, so the smaller count is the
+ * one that survives it. A count is reported only when every side knows its own:
+ * a missing one would silently turn the minimum into a guess.
+ */
+function sharedCardinality(children: unknown[], sharedAxes: string[]): number[] | undefined {
+  if (sharedAxes.length === 0 || children.length === 0) return undefined;
+  const perChild = children.map((child) => axisCardinalities(child));
+  const counts = sharedAxes.map((axis) => {
+    const known = perChild.map((map) => map.get(axis)).filter((n) => n !== undefined);
+    return known.length === perChild.length ? Math.min(...known) : undefined;
   });
+  return counts.every((count) => count !== undefined) ? counts : undefined;
 }
 
-// Axes agreeing on name and type but disagreeing on domain never match as a
-// join key, which turns an intended join into a product or an empty result.
-function nearMissAxes(
-  children: unknown[],
-): { axis: string; domains: { domain: string; children: number[] }[] }[] {
-  const byName = new Map<string, Map<string, Set<number>>>();
-  for (const [index, child] of children.entries()) {
-    for (const axis of axesUnder(child)) {
-      const nameKey = axisNameKey(axis);
-      let perDomain = byName.get(nameKey);
-      if (!perDomain) byName.set(nameKey, (perDomain = new Map()));
-      const domainKey = canonicalDomain(axis.domain);
-      let indices = perDomain.get(domainKey);
-      if (!indices) perDomain.set(domainKey, (indices = new Set()));
-      indices.add(index);
+/** Distinct values per axis of every leaf column under a node, keyed by axis. */
+function axisCardinalities(node: unknown, depth = 0, out = new Map<string, number>()) {
+  if (depth > MAX_WALK_DEPTH || !isTraversable(node)) return out;
+  const record = asRecord(node);
+  const spec = asRecord(record?.spec);
+  const axes = spec?.axesSpec;
+  const counts = (asRecord(record?.data) as { axisCardinality?: unknown } | undefined)
+    ?.axisCardinality;
+  if (Array.isArray(axes) && Array.isArray(counts) && axes.length === counts.length) {
+    for (const [index, item] of axes.entries()) {
+      const axis = asAxis(item);
+      const count = counts[index];
+      if (!axis || typeof count !== "number") continue;
+      const key = axisKey(axis);
+      // The smallest count wins: it is the one an intersecting join leaves.
+      const seen = out.get(key);
+      out.set(key, seen === undefined ? count : Math.min(seen, count));
     }
+    return out;
   }
-  const out: { axis: string; domains: { domain: string; children: number[] }[] }[] = [];
-  for (const [axis, perDomain] of byName) {
-    if (perDomain.size < 2) continue;
-    out.push({
-      axis,
-      domains: [...perDomain.entries()].map(([domain, indices]) => ({
-        domain: domain || "(none)",
-        children: [...indices],
-      })),
-    });
-  }
+  for (const child of childValues(node)) axisCardinalities(child, depth + 1, out);
   return out;
 }
 
@@ -306,6 +264,22 @@ function ownRows(node: unknown): number | undefined {
     if (typeof summary.entries === "number") return summary.entries;
   }
   return undefined;
+}
+
+function gatherColumns(node: unknown, out: ColumnDescriptor[], depth: number): void {
+  if (depth > MAX_WALK_DEPTH || !isTraversable(node)) return;
+  const record = asRecord(node);
+  const spec = asRecord(record?.spec);
+  // A column is anything carrying a spec with axes; that is what the digest
+  // preserves for both the tree API and the query API.
+  if (spec && Array.isArray(spec.axesSpec)) {
+    out.push({
+      name: typeof spec.name === "string" ? spec.name : undefined,
+      valueType: typeof spec.valueType === "string" ? spec.valueType : undefined,
+    });
+    return;
+  }
+  for (const child of childValues(node)) gatherColumns(child, out, depth + 1);
 }
 
 function gatherAxes(node: unknown, out: Map<string, AxisDescriptor>, depth: number): void {

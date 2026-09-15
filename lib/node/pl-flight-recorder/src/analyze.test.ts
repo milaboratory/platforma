@@ -5,10 +5,10 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { openRecorder, listSessions, type Recorder } from "./recorder";
 import { readCrashMarkers, writeCrashMarker } from "./supervisor";
 import { analyzeLatest, analyzeSession } from "./analyze";
-import { renderReport } from "./report";
 import {
   createHandleRegistry,
   recordModelRender,
+  recordModelRenderSync,
   wrapDataDriver,
   wrapModelDriver,
 } from "./instrument";
@@ -47,7 +47,7 @@ describe("crash detection", () => {
     const analysis = analyzeLatest(dir, { preferCrashed: false })!;
     expect(analysis.crashed).toBe(false);
     expect(analysis.inFlight).toEqual([]);
-    expect(analysis.verdict.where).toBe("no operation was in flight");
+    expect(analysis.inFlightAtDeath).toBeUndefined();
   });
 
   test("the innermost unfinished operation is the smoking gun", () => {
@@ -60,12 +60,15 @@ describe("crash detection", () => {
     const analysis = analyzeLatest(dir)!;
     expect(analysis.inFlight.map((op) => op.op)).toEqual(["render", "getData"]);
     expect(analysis.inFlightAtDeath?.op).toBe("getData");
-    expect(analysis.findings.map((f) => f.rule)).toContain("unbounded-getData");
+    // The call's own fields travel with it, so what it asked for is readable
+    // without the analysis having to characterise it.
+    expect(analysis.inFlightAtDeath?.info).toMatchObject({ unbounded: true, tableRows: 5_000_000 });
+    expect(analysis.inFlightAtDeath?.block).toBe("block-7");
   });
 });
 
-describe("cause classification", () => {
-  test("a supervisor marker turns an inferred heap death into a confirmed one", () => {
+describe("memory readings", () => {
+  test("the supervisor's reason for the death is carried through unaltered", () => {
     const recorder = openRecorder({ dir });
     recorder.event("getData-begin", { handle: "t1" });
     writeCrashMarker(dir, {
@@ -76,21 +79,226 @@ describe("cause classification", () => {
 
     const analysis = analyzeSession(recorder.file, dir);
     expect(analysis.crashMarker?.reason).toBe("js-heap-out-of-memory");
-    expect(analysis.verdict.memoryRegion).toBe("js-heap-exhaustion-confirmed");
+    expect(analysis.crashMarker?.errorCode).toBe("ERR_WORKER_OUT_OF_MEMORY");
   });
 
-  test("a low free-memory reading alone does not accuse the OS", () => {
-    // A small process on a machine whose free pages sit in the file cache, which
-    // is the permanent state of affairs on macOS.
-    const sessionId = seedSession(dir, { rss: 200 * 1024 * 1024, freeMemory: 1024 * 1024 });
-    const analysis = analyzeSession(path.join(dir, `flight-${sessionId}.ndjson`), dir);
-    expect(analysis.findings.map((f) => f.rule)).not.toContain("machine-memory-exhausted");
+  test("the marker carries memory, so a bare exit code cannot be read as a clean failure", () => {
+    const recorder = openRecorder({ dir });
+    recorder.event("getShape-begin", { handle: "t1" });
+    writeCrashMarker(dir, { reason: "worker-exit", code: 1, sessionId: recorder.sessionId });
+
+    const { crashMarker } = analyzeSession(recorder.file, dir);
+    // On its own `worker-exit` with exit code 1 looks like an ordinary error;
+    // the reading taken beside it is what says whether memory was the reason.
+    expect(crashMarker?.reason).toBe("worker-exit");
+    expect(crashMarker?.memoryAtDeath?.rss).toBeGreaterThan(0);
+    expect(crashMarker?.memoryAtDeath?.totalMemory).toBeGreaterThan(0);
+    expect(crashMarker?.memoryAtDeath?.maxRss).toBeGreaterThanOrEqual(
+      crashMarker?.memoryAtDeath?.rss ?? 0,
+    );
   });
 
-  test("a process holding most of the machine's memory does accuse the OS", () => {
-    const sessionId = seedSession(dir, { rss: 40 * 1024 ** 3, freeMemory: 1024 * 1024 });
-    const analysis = analyzeSession(path.join(dir, `flight-${sessionId}.ndjson`), dir);
-    expect(analysis.findings.map((f) => f.rule)).toContain("machine-memory-exhausted");
+  test("the peak and the worst free reading are kept, not only the last sample", () => {
+    // What an OS under pressure produces: the process is reclaimed back down, so
+    // the final reading is comfortable while the machine never was.
+    const sessionId = seedSession(dir, [
+      { rss: 2 * 1024 ** 3, freeMemory: 20 * 1024 ** 3 },
+      { rss: 40 * 1024 ** 3, freeMemory: 1024 * 1024 },
+      { rss: 4 * 1024 ** 3, freeMemory: 18 * 1024 ** 3 },
+    ]);
+    const { memory } = analyzeSession(path.join(dir, `flight-${sessionId}.ndjson`), dir);
+    expect(memory.peakRss).toBe(40 * 1024 ** 3);
+    expect(memory.rssAtDeath).toBe(4 * 1024 ** 3);
+    expect(memory.minFreeMemory).toBe(1024 * 1024);
+    // The gap between the peak and the end is what a falling curve hides.
+    expect(memory.rssReleasedFromPeak).toBe(36 * 1024 ** 3);
+  });
+});
+
+describe("what was asked for", () => {
+  test("a join's own size is measured and reported next to the memory spent", () => {
+    const recorder = openRecorder({ dir });
+    const modelDriver = wrapModelDriver(fakeModelDriver(), recorder, createHandleRegistry());
+    // 32,345 rows a side over a shared axis: 1,046,199,025 rows of 2 String axes
+    // and 2 Int values.
+    modelDriver.createPTable(fanOutDef(32_345));
+    writeSampler(dir, recorder.sessionId, [
+      { rss: 512 * 1024 ** 2, freeMemory: 30 * 1024 ** 3 },
+      { rss: 18 * 1024 ** 3, freeMemory: 1024 ** 3 },
+    ]);
+
+    const { requestedSize } = analyzeSession(recorder.file, dir);
+    expect(requestedSize.requestedRows).toBe(32_345 * 32_345);
+    expect(requestedSize.floorBytes).toBeLessThan(requestedSize.ceilingBytes ?? 0);
+    expect(requestedSize.observedBytes).toBeGreaterThan(17 * 1024 ** 3);
+    // The axes are reported so a reader can see why the join replicates; no
+    // conclusion about the size is drawn for them.
+    expect(requestedSize.sharedAxes).toEqual(["shared"]);
+    expect(requestedSize.unsharedAxes).toEqual(["left", "right"]);
+    expect(requestedSize).not.toHaveProperty("owner");
+  });
+
+  test("a definition too small to explain the memory is still only measured", () => {
+    const recorder = openRecorder({ dir });
+    const modelDriver = wrapModelDriver(fakeModelDriver(), recorder, createHandleRegistry());
+    modelDriver.createPTable(fanOutDef(100));
+    writeSampler(dir, recorder.sessionId, [
+      { rss: 512 * 1024 ** 2, freeMemory: 30 * 1024 ** 3 },
+      { rss: 18 * 1024 ** 3, freeMemory: 1024 ** 3 },
+    ]);
+
+    const { requestedSize } = analyzeSession(recorder.file, dir);
+    expect(requestedSize.requestedRows).toBe(10_000);
+    // Four orders of magnitude apart, and the report still says only that.
+    expect(requestedSize.ceilingBytes).toBeLessThan(requestedSize.observedBytes / 1000);
+    expect(requestedSize.unavailable).toBeUndefined();
+  });
+
+  test("a session with no definition says the size was not established", () => {
+    const recorder = openRecorder({ dir });
+    recorder.event("getShape-begin", { handle: "t1" });
+    writeSampler(dir, recorder.sessionId, [{ rss: 18 * 1024 ** 3, freeMemory: 1024 ** 3 }]);
+
+    const { requestedSize } = analyzeSession(recorder.file, dir);
+    expect(requestedSize.requestedRows).toBeUndefined();
+    expect(requestedSize.unavailable).toContain("no join definition");
+  });
+});
+
+describe("which code was running", () => {
+  test("a block id is written out once into what it actually is", () => {
+    const recorder = openRecorder({ dir });
+    const identity = {
+      blockId: "b1",
+      block: "milaboratories:clonotype-table",
+      blockVersion: "2.4.1",
+      blockSource: "from-registry-v2",
+      sdkVersion: "1.83.9",
+    };
+    // Rendered repeatedly, as a block is: the identity is written once.
+    for (let i = 0; i < 5; i++) {
+      recordModelRenderSync(recorder, { ...identity, lambda: "title" }, () => undefined);
+    }
+
+    const analysis = analyzeSession(recorder.file, dir);
+    expect(analysis.blocks.b1).toEqual({
+      block: "milaboratories:clonotype-table",
+      blockVersion: "2.4.1",
+      blockSource: "from-registry-v2",
+      sdkVersion: "1.83.9",
+    });
+    const announcements = analysis.timeline.filter((record) => record.type === "block");
+    expect(announcements.length).toBeLessThanOrEqual(1);
+  });
+
+  test("a long session does not outlive the legend for its own block ids", () => {
+    const recorder = openRecorder({ dir, maxFileBytes: 1800 });
+    recordModelRenderSync(
+      recorder,
+      {
+        blockId: "b1",
+        block: "milaboratories:clonotype-table",
+        blockVersion: "2.4.1",
+        sdkVersion: "1.83.9",
+      },
+      () => undefined,
+    );
+    // Rotated until the segment holding the original announcement is gone.
+    rotateUntilEarliestSegmentLost(recorder);
+
+    const analysis = analyzeSession(recorder.file, dir);
+    expect(analysis.rotations).toBeGreaterThan(1);
+    // Without carrying it forward every block id in what survives would be
+    // unresolvable — which is the whole of the identity being lost.
+    expect(analysis.blocks.b1?.block).toBe("milaboratories:clonotype-table");
+    expect(analysis.blocks.b1?.blockVersion).toBe("2.4.1");
+  });
+
+  test("a driver call made inside a render carries the block that made it", () => {
+    const recorder = openRecorder({ dir });
+    const modelDriver = wrapModelDriver(fakeModelDriver(), recorder, createHandleRegistry());
+    recordModelRenderSync(recorder, { blockId: "b1", block: "org:b" }, () => {
+      modelDriver.createPTable(inlineFanOutDef(10, 1));
+    });
+
+    const { attribution } = analyzeSession(recorder.file, dir);
+    const created = attribution.find((op) => op.op === "createPTable");
+    expect(created?.block).toBe("b1");
+    // Written while the render ran, not reconstructed from sequence numbers.
+    expect(created?.blockFrom).toBe("recorded");
+  });
+
+  test("a call made after every render has returned inherits the block from its table", () => {
+    const recorder = openRecorder({ dir });
+    const registry = createHandleRegistry();
+    const modelDriver = wrapModelDriver(fakeModelDriver(), recorder, registry);
+    let handle = "";
+    recordModelRenderSync(recorder, { blockId: "b1", block: "org:b" }, () => {
+      handle = modelDriver.createPTable(inlineFanOutDef(10, 1)) as string;
+    });
+    // What the block's UI does: it asks for the shape long after the render that
+    // built the table is over, so nothing encloses the call.
+    const origin = registry.get(handle);
+    recorder.event("getShape-begin", { handle, joinSeq: origin?.seq });
+
+    const { inFlightAtDeath } = analyzeSession(recorder.file, dir);
+    expect(inFlightAtDeath?.op).toBe("getShape");
+    expect(inFlightAtDeath?.block).toBe("b1");
+    expect(inFlightAtDeath?.blockFrom).toBe("creating-call");
+  });
+});
+
+describe("how large the join really is", () => {
+  test("a single shared group makes the bound the answer, not a ceiling", () => {
+    const recorder = openRecorder({ dir });
+    const modelDriver = wrapModelDriver(fakeModelDriver(), recorder, createHandleRegistry());
+    // The shape the client crashed on: both sides keyed on one constant axis, so
+    // every record on one side meets every record on the other.
+    modelDriver.createPTable(inlineFanOutDef(200, 1));
+
+    const { requestedSize } = analyzeSession(recorder.file, dir);
+    expect(requestedSize.requestedRows).toBe(200 * 200);
+    expect(requestedSize.sharedAxisCardinality).toEqual([1]);
+    // One group, so the worst case and the even spread are the same number.
+    expect(requestedSize.rowsIfEvenlySpread).toBe(200 * 200);
+  });
+
+  test("many groups separate what a join could produce from what it will", () => {
+    const recorder = openRecorder({ dir });
+    const modelDriver = wrapModelDriver(fakeModelDriver(), recorder, createHandleRegistry());
+    modelDriver.createPTable(inlineFanOutDef(200, 50));
+
+    const { requestedSize } = analyzeSession(recorder.file, dir);
+    expect(requestedSize.requestedRows).toBe(200 * 200);
+    expect(requestedSize.sharedAxisCardinality).toEqual([50]);
+    expect(requestedSize.rowsIfEvenlySpread).toBe(800);
+  });
+});
+
+describe("log legibility", () => {
+  test("the definition measured is the one the process was carrying", () => {
+    const recorder = openRecorder({ dir });
+    const modelDriver = wrapModelDriver(fakeModelDriver(), recorder, createHandleRegistry());
+    // What a user adjusting a size control produces: the same join re-recorded at
+    // every intermediate value.
+    for (const rows of [30, 300, 3_000]) modelDriver.createPTable(fanOutDef(rows));
+
+    const { requestedSize } = analyzeSession(recorder.file, dir);
+    expect(requestedSize.requestedRows).toBe(3_000 * 3_000);
+  });
+
+  test("the tail keeps operations when the session ends inside a long native call", () => {
+    const recorder = openRecorder({ dir });
+    recorder.event("render-begin", { blockId: "b1" });
+    recorder.event("getShape-begin", { handle: "t1" });
+    // A blocking native call writes nothing of its own; only the sampler keeps
+    // going, and it writes far more records than the tail is long.
+    for (let i = 0; i < 60; i++) recorder.event("mem-self", recorder.memorySnapshot());
+
+    const analysis = analyzeSession(recorder.file, dir);
+    const types = analysis.timeline.map((record) => record.type);
+    expect(types).toContain("getShape-begin");
+    expect(types).not.toContain("mem-self");
   });
 });
 
@@ -125,19 +333,17 @@ describe("instrumentation through to the report", () => {
     );
 
     const analysis = analyzeSession(recorder.file, dir);
-    const rules = analysis.findings.map((finding) => finding.rule);
-    expect(rules).toContain("cross-join");
-    expect(rules).toContain("join-amplification");
-    expect(rules).toContain("unbounded-getData");
     expect(analysis.renders[0].blockId).toBe("block-clonotype-table-7");
     expect(analysis.renders[0].stats?.serOutBytes).toBe(1_204_880);
 
-    const report = renderReport(analysis);
-    expect(report).toContain("Verdict — cross-join");
-    expect(report).toContain("block-clonotype-table-7");
-    expect(report).toContain("DISJOINT");
-    // The join that produced the failing handle is the one rendered.
-    expect(report).toContain("rowsUpperBound=921,600,000");
+    // The join the failing handle came from is the one measured, and the sides
+    // share no axis at all, which is why the product is what it is.
+    expect(analysis.requestedSize.requestedRows).toBe(921_600_000);
+    expect(analysis.requestedSize.sharedAxes).toEqual([]);
+    // Every driver call is tied to the render it was made under.
+    for (const op of analysis.attribution.concat(analysis.inFlight)) {
+      expect(op.block).toBe("block-clonotype-table-7");
+    }
   });
 
   test("an unfinished getUniqueValues is the operation in flight", async () => {
@@ -217,10 +423,9 @@ describe("review findings", () => {
 
     const analysis = analyzeSession(recorder.file, dir);
     expect(analysis.inFlightAtDeath?.op).toBe("createPTable");
-    expect(analysis.verdict.where).toContain("createPTable");
-    expect(analysis.verdict.where).toContain("block-7");
-    expect(renderReport(analysis)).toContain("Definition in flight");
-    expect(renderReport(analysis)).toContain("DISJOINT");
+    expect(analysis.inFlightAtDeath?.block).toBe("block-7");
+    // The definition it died on is still measurable from the truncated log.
+    expect(analysis.requestedSize.requestedRows).toBeGreaterThan(0);
   });
 
   test("a rotated session keeps its header and pairs operations across segments", () => {
@@ -248,7 +453,6 @@ describe("review findings", () => {
     expect(analysis.meta).toEqual({ appVersion: "rot" });
     // The loss is reported rather than implied.
     expect(analysis.rotations).toBe(1);
-    expect(renderReport(analysis)).toContain("Log rotations");
     // getShape began before rotation and ended after it; only getData is open.
     expect(analysis.inFlight.map((op) => op.op)).toEqual(["getData"]);
     expect(analysis.attribution.some((op) => op.op === "getShape")).toBe(true);
@@ -275,8 +479,7 @@ describe("review findings", () => {
       "createPTable#3",
     ]);
     expect(analysis.inFlightAtDeath?.op).toBe("createPTable");
-    expect(analysis.verdict.where).toContain("createPTable");
-    expect(analysis.verdict.where).toContain("block-7");
+    expect(analysis.inFlightAtDeath?.block).toBe("block-7");
   });
 
   test("a render that spans rotation stops attributing calls once it has returned", () => {
@@ -297,10 +500,10 @@ describe("review findings", () => {
     });
 
     const analysis = analyzeSession(recorder.file, dir);
-    expect(analysis.inFlight.map((op) => op.op)).toEqual(["createPTable"]);
-    const crossJoin = analysis.findings.find((f) => f.rule === "cross-join");
-    expect(crossJoin).toBeDefined();
-    expect(crossJoin?.block).toBeUndefined();
+    const [inFlight] = analysis.inFlight;
+    expect(inFlight.op).toBe("createPTable");
+    // The only render is over, so this call belongs to no block and none is named.
+    expect(inFlight.block).toBeUndefined();
   });
 
   test("the earliest memory reading survives rotation, so growth is not understated", () => {
@@ -367,7 +570,7 @@ describe("review findings", () => {
     expect(analyzeSession(clean.file, dir).crashMarker).toBeUndefined();
     const olderAnalysis = analyzeSession(older.file, dir);
     expect(olderAnalysis.crashMarker).toBeUndefined();
-    expect(olderAnalysis.findings.map((f) => f.rule)).toContain("unattributed-crash-marker");
+    expect(olderAnalysis.crashMarkerAmbiguous).toBe(true);
   });
 
   test("an assigned session id binds the marker even while a newer session is live", () => {
@@ -383,9 +586,7 @@ describe("review findings", () => {
     live.event("getShape-end", { begin: 2, mem: live.memorySnapshot() });
 
     expect(analyzeSession(dying.file, dir).crashMarker?.sessionId).toBe(dying.sessionId);
-    expect(analyzeSession(dying.file, dir).verdict.memoryRegion).toBe(
-      "js-heap-exhaustion-confirmed",
-    );
+    expect(analyzeSession(dying.file, dir).crashMarker?.reason).toBe("js-heap-out-of-memory");
     expect(analyzeSession(live.file, dir).crashMarker).toBeUndefined();
   });
 
@@ -427,7 +628,7 @@ describe("review findings", () => {
     for (const session of [first, second]) {
       const analysis = analyzeSession(session.file, dir);
       expect(analysis.crashMarker).toBeUndefined();
-      expect(analysis.findings.map((f) => f.rule)).toContain("unattributed-crash-marker");
+      expect(analysis.crashMarkerAmbiguous).toBe(true);
     }
   });
 
@@ -487,6 +688,65 @@ function fakeModelDriver(): FakeModelDriver {
   };
 }
 
+/**
+ * The reproducer's shape with inline data: two sides keyed on a shared group
+ * axis, each with a private item axis, `rows` records spread over `groups`.
+ */
+function inlineFanOutDef(rows: number, groups: number): unknown {
+  const column = (name: string, own: string) => ({
+    type: "column",
+    column: {
+      id: `id-${name}`,
+      spec: {
+        kind: "PColumn",
+        name,
+        valueType: "Int",
+        axesSpec: [
+          { type: "Int", name: "group" },
+          { type: "Int", name: own },
+        ],
+      },
+      data: Array.from({ length: rows }, (_, i) => ({ key: [i % groups, i], val: i })),
+    },
+  });
+  return {
+    src: { type: "inner", entries: [column("a", "left"), column("b", "right")] },
+    partitionFilters: [],
+    filters: [],
+    sorting: [],
+  };
+}
+
+/** An inner join keyed on a shared axis whose sides each add one of their own. */
+function fanOutDef(rows: number): unknown {
+  const column = (name: string, own: string) => ({
+    type: "column",
+    column: {
+      id: `id-${name}`,
+      spec: {
+        kind: "PColumn",
+        name,
+        valueType: "Int",
+        axesSpec: [
+          { type: "String", name: "shared" },
+          { type: "String", name: own },
+        ],
+      },
+      data: {
+        type: "ParquetPartitioned",
+        partitionKeyLength: 1,
+        parts: { "[0]": { data: "b", stats: { numberOfRows: rows } } },
+      },
+    },
+  });
+  return {
+    src: { type: "inner", entries: [column("a", "left"), column("b", "right")] },
+    partitionFilters: [],
+    filters: [],
+    sorting: [],
+  };
+}
+
 function crossJoinDef(): unknown {
   const column = (name: string, axisName: string, rows: number) => ({
     type: "column",
@@ -519,21 +779,52 @@ function crossJoinDef(): unknown {
   };
 }
 
+/** Writes a sampler log beside an already-open session. */
+function writeSampler(
+  dir: string,
+  sessionId: string,
+  samples: { rss: number; freeMemory: number }[],
+): void {
+  let peakRss = 0;
+  const lines = samples.map((sample, index) => {
+    peakRss = Math.max(peakRss, sample.rss);
+    return JSON.stringify({
+      seq: index + 1,
+      t: index + 1,
+      wall: Date.now() + index,
+      type: "mem-sampler",
+      rss: sample.rss,
+      peakRss,
+      freeMemory: sample.freeMemory,
+      totalMemory: 48 * 1024 ** 3,
+    });
+  });
+  fs.writeFileSync(path.join(dir, `mem-${sessionId}.ndjson`), `${lines.join("\n")}\n`);
+}
+
 /** Writes a minimal crashed session plus a sampler series with chosen numbers. */
-function seedSession(dir: string, sample: { rss: number; freeMemory: number }): string {
+function seedSession(
+  dir: string,
+  samples: { rss: number; freeMemory: number } | { rss: number; freeMemory: number }[],
+): string {
   const recorder = openRecorder({ dir });
   recorder.event("getData-begin", { handle: "t1" });
   const sessionId = recorder.sessionId;
-  const line = JSON.stringify({
-    seq: 1,
-    t: 1,
-    wall: Date.now(),
-    type: "mem-sampler",
-    rss: sample.rss,
-    peakRss: sample.rss,
-    freeMemory: sample.freeMemory,
-    totalMemory: 48 * 1024 ** 3,
+  const series = Array.isArray(samples) ? samples : [samples];
+  let peakRss = 0;
+  const lines = series.map((sample, index) => {
+    peakRss = Math.max(peakRss, sample.rss);
+    return JSON.stringify({
+      seq: index + 1,
+      t: index + 1,
+      wall: Date.now() + index,
+      type: "mem-sampler",
+      rss: sample.rss,
+      peakRss,
+      freeMemory: sample.freeMemory,
+      totalMemory: 48 * 1024 ** 3,
+    });
   });
-  fs.writeFileSync(path.join(dir, `mem-${sessionId}.ndjson`), `${line}\n`);
+  fs.writeFileSync(path.join(dir, `mem-${sessionId}.ndjson`), `${lines.join("\n")}\n`);
   return sessionId;
 }

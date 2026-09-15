@@ -2,7 +2,7 @@ import path from "node:path";
 import { Worker } from "node:worker_threads";
 import { SAMPLER_FILE_PREFIX } from "./events";
 
-export type MemorySamplerOptions = {
+type MemorySamplerOptions = {
   dir: string;
   sessionId: string;
   /** Sampling period; 250 ms is roughly four short appends per second. */
