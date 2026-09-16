@@ -115,6 +115,12 @@ exec "$@"
 //   - End with 'exit /b %ERRORLEVEL%'. There is no 'exec' here: without this the batch file's own
 //     exit code, not the command's, is what the runner reads.
 //
+// It reads '%CD%' rather than PL_JOB_WORKDIR, which the POSIX script prefers. Only the local_exec
+// driver ever reaches a Windows host, and it names the working directory to the process instead of
+// exporting it - PL_JOB_WORKDIR comes from the k8s and google batch drivers, which are Linux. A
+// variable that can only arrive from somewhere else would be a way to get the directory wrong, not
+// a fallback.
+//
 // CRLF line endings, because a batch file with bare LF endings is read wrongly by cmd.exe.
 scriptWindows := func() {
 	return text.join([
@@ -128,9 +134,7 @@ scriptWindows := func() {
 		"",
 		"setlocal",
 		"",
-		"set \"pl_wd=%PL_JOB_WORKDIR%\"",
-		"if not defined pl_wd set \"pl_wd=%CD%\"",
-		"set \"pl_tmp=%pl_wd%\\" + WORKDIR_TMP_REL_PATH_WINDOWS + "\"",
+		"set \"pl_tmp=%CD%\\" + WORKDIR_TMP_REL_PATH_WINDOWS + "\"",
 		"if not exist \"%pl_tmp%\" md \"%pl_tmp%\"",
 		"",
 		"set \"TMPDIR=%pl_tmp%\"",
