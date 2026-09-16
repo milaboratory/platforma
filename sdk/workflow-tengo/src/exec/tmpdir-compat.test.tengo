@@ -102,6 +102,10 @@ TestWindowsScriptMakesTheDirectoryAndForwards := func() {
 		"there is no 'exec' here - without this the batch file's exit code is what is read")
 	test.isTrue(text.contains(script, "\r\n"),
 		"CRLF: cmd.exe reads a bare-LF batch file wrongly")
+	test.isTrue(!text.contains(script, "\n\n"),
+		"every line ending, not only some: a blank line here would mean a bare LF survived")
+	test.isTrue(!text.contains(script, "\r\r"),
+		"and none doubled: the source is normalised down before up, so a CRLF checkout is safe")
 }
 
 // TestWindowsPathIsNotSubstitutedIntoExpressions guards the trap that keeps the two spellings

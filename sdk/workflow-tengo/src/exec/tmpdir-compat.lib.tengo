@@ -99,6 +99,16 @@ exec "$@"
 `
 }
 
+// _toCRLF returns text with every line ending as CRLF, whichever way it arrived.
+//
+// cmd.exe reads a batch file with bare LF endings wrongly, and the source below cannot simply be
+// written with CRLF: this repository has no .gitattributes, so a checkout on a machine with
+// core.autocrlf enabled would rewrite it. Normalising down and then up gives the same result from
+// either checkout.
+_toCRLF := func(value) {
+	return text.replace(text.replace(value, "\r\n", "\n", -1), "\n", "\r\n", -1)
+}
+
 // scriptWindows returns the batch wrapper's text, for a command running on a Windows host.
 //
 // Held in a FILE for the same reason the POSIX one is, and interpreted by the cmd.exe the runner
@@ -120,31 +130,26 @@ exec "$@"
 // exporting it - PL_JOB_WORKDIR comes from the k8s and google batch drivers, which are Linux. A
 // variable that can only arrive from somewhere else would be a way to get the directory wrong, not
 // a fallback.
-//
-// CRLF line endings, because a batch file with bare LF endings is read wrongly by cmd.exe.
 scriptWindows := func() {
-	return text.join([
-		"@echo off",
-		"",
-		"rem Compatibility layer between a current workflow-tengo SDK and a Platforma Backend from",
-		"rem before the temporary-directory contract. Update the backend and this file stops",
-		"rem appearing here.",
-		"rem",
-		"rem Written by exec.tmpdirCompat in @platforma-sdk/workflow-tengo.",
-		"",
-		"setlocal",
-		"",
-		"set \"pl_tmp=%CD%\\" + WORKDIR_TMP_REL_PATH_WINDOWS + "\"",
-		"if not exist \"%pl_tmp%\" md \"%pl_tmp%\"",
-		"",
-		"set \"TMPDIR=%pl_tmp%\"",
-		"set \"TMP=%pl_tmp%\"",
-		"set \"TEMP=%pl_tmp%\"",
-		"",
-		"%*",
-		"exit /b %ERRORLEVEL%",
-		""
-	], "\r\n")
+	return _toCRLF(`@echo off
+
+rem Compatibility layer between a current workflow-tengo SDK and a Platforma Backend from before
+rem the temporary-directory contract. Update the backend and this file stops appearing here.
+rem
+rem Written by exec.tmpdirCompat in @platforma-sdk/workflow-tengo.
+
+setlocal
+
+set "pl_tmp=%CD%\` + WORKDIR_TMP_REL_PATH_WINDOWS + `"
+if not exist "%pl_tmp%" md "%pl_tmp%"
+
+set "TMPDIR=%pl_tmp%"
+set "TMP=%pl_tmp%"
+set "TEMP=%pl_tmp%"
+
+%*
+exit /b %ERRORLEVEL%
+`)
 }
 
 // isNeeded reports whether the backend leaves the temporary directory to the SDK.
