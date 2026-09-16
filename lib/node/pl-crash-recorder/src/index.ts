@@ -9,11 +9,11 @@ export {
 } from "./recorder";
 
 export {
-  openFlightSession,
-  FLIGHT_DIR_ENV,
-  FLIGHT_SESSION_ENV,
-  type FlightSession,
-  type FlightSessionOptions,
+  openRecordingSession,
+  CRASH_DIR_ENV,
+  CRASH_SESSION_ENV,
+  type RecordingSession,
+  type RecordingSessionOptions,
 } from "./session";
 
 export {
@@ -33,7 +33,7 @@ export {
 } from "./instrument";
 
 export {
-  type FlightRecord,
+  type LogRecord,
   type MemorySnapshot,
   type SamplerRecord,
   type MachineMemory,

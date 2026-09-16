@@ -9,7 +9,7 @@ import type { DeadlineSettings } from "./context";
 import { JsExecutionContext } from "./context";
 import type { BlockContextAny } from "../middle_layer/block_ctx";
 import { getDebugFlags } from "../debug";
-import { recordModelRenderSync } from "@milaboratories/pl-flight-recorder";
+import { recordModelRenderSync } from "@milaboratories/pl-crash-recorder";
 
 /** Memory ceiling applied to every QuickJS runtime that evaluates model code. */
 const QUICK_JS_MEMORY_LIMIT = 1024 * 1024 * 8;
@@ -132,7 +132,7 @@ export function computableFromRF(
         { computableCtx: cCtx, blockCtx: ctx, mlEnv: env },
       );
 
-      const flightRecorder = env.driverKit.flightRecorder;
+      const crashRecorder = env.driverKit.crashRecorder;
       const renderInfo = {
         blockId: ctx.blockId,
         // A block id is unique to one project; these say which code it is, so a
@@ -148,7 +148,7 @@ export function computableFromRF(
         getStats: () => ({ ...rCtx.stats }),
       };
 
-      return recordModelRenderSync(flightRecorder, renderInfo, () => {
+      return recordModelRenderSync(crashRecorder, renderInfo, () => {
         rCtx.evaluateBundle(code.content);
         const result = rCtx.runCallback(fh.handle);
 
@@ -184,7 +184,7 @@ export function computableFromRF(
             // A deferred render resumes here, potentially many times, and each
             // resumption can build joins of its own, so each gets its own span.
             return recordModelRenderSync(
-              flightRecorder,
+              crashRecorder,
               { ...renderInfo, recalculation: recalculationCounter },
               () => {
                 // resolving futures

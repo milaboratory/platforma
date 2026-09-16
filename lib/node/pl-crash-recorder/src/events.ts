@@ -1,9 +1,9 @@
 /**
- * Record types written to a flight log.
+ * Record types written to a crash log.
  *
  * The log is append-only NDJSON, one record per line, and is read back by
  * tooling that may be older or newer than the writer, so every field beyond
- * {@link FlightRecordBase} is optional and unknown record types are skipped
+ * {@link LogRecordBase} is optional and unknown record types are skipped
  * rather than rejected.
  */
 
@@ -20,7 +20,7 @@ export type MemorySnapshot = {
   heapLimit: number;
 };
 
-type FlightRecordBase = {
+type LogRecordBase = {
   /** Monotonically increasing within one session; used to pair begin with end. */
   seq: number;
   /** Milliseconds since process start, for durations. */
@@ -30,7 +30,7 @@ type FlightRecordBase = {
   type: string;
 };
 
-export type FlightRecord = FlightRecordBase & {
+export type LogRecord = LogRecordBase & {
   mem?: MemorySnapshot;
   /** Sequence number of the matching begin record, on end and error records. */
   begin?: number;
@@ -49,7 +49,7 @@ export type SessionEnvironment = {
 };
 
 /** Written by the sampler thread to its own sibling file. */
-export type SamplerRecord = FlightRecordBase & {
+export type SamplerRecord = LogRecordBase & {
   type: "mem-sampler";
   rss: number;
   peakRss: number;
@@ -95,7 +95,7 @@ export type CrashMarker = {
    */
   sessionId?: string;
   /**
-   * Advisory only: the newest open flight log at the moment of death. A
+   * Advisory only: the newest open crash log at the moment of death. A
    * concurrent live session can make this wrong, so it is never matched against
    * — it exists to help a human read a directory by hand.
    */
@@ -140,6 +140,6 @@ export const SESSION_RECORD = "session";
 /** Earliest memory reading of a session, rewritten into every rotated segment. */
 export const MEM_BASELINE_RECORD = "mem-baseline";
 export const SESSION_END_RECORD = "session-end";
-export const FLIGHT_FILE_PREFIX = "flight";
-export const SAMPLER_FILE_PREFIX = "mem";
-export const CRASH_FILE_PREFIX = "crash";
+export const SESSION_FILE_PREFIX = "session";
+export const SAMPLER_FILE_PREFIX = "memory";
+export const DEATH_FILE_PREFIX = "death";
