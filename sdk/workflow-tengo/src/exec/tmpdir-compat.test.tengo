@@ -94,7 +94,7 @@ TestWindowsScriptMakesTheDirectoryAndForwards := func() {
 
 	test.isTrue(text.contains(script, "md \"%pl_tmp%\""),
 		"the directory cannot be created any other way on an old backend")
-	test.isTrue(text.contains(script, `set "pl_tmp=%pl_wd%\.pl\tmp"`),
+	test.isTrue(text.contains(script, `set "pl_tmp=%CD%\.pl\tmp"`),
 		"and it must be spelled for cmd.exe: 'md .pl/tmp' is read as a switch")
 	test.isTrue(text.contains(script, "%*"),
 		"the whole command line is forwarded: '%1 %2 ...' would drop the tenth argument")
