@@ -25,12 +25,17 @@ export type DataSummary = {
   /**
    * Distinct values per axis, in the order the column declares its axes.
    *
-   * A join's output is bounded by the product of its inputs, but reached only
-   * when every record shares one key; how far below that bound the real result
-   * sits is decided by how many distinct keys there are. Without this the size
-   * of a join can only ever be bounded, never stated.
+   * Counted independently, so multiplying them gives an upper bound on the
+   * distinct key tuples rather than their number: axes are usually correlated,
+   * and a product invents combinations that never occur. Use `distinctKeys`
+   * where the key in question is the whole tuple.
    */
   axisCardinality?: number[];
+  /**
+   * Distinct whole key tuples, which is exact where a join keys on every axis
+   * the column has — the ordinary case for two columns sharing their key.
+   */
+  distinctKeys?: number;
   /** Set when the entries were too many to count distinct keys over. */
   axisCardinalityUncounted?: boolean;
 };
@@ -108,19 +113,24 @@ const CARDINALITY_LIMIT = 100_000;
 
 function inlineAxisCardinality(values: unknown[]): {
   axisCardinality?: number[];
+  distinctKeys?: number;
   axisCardinalityUncounted?: boolean;
 } {
   if (values.length > CARDINALITY_LIMIT) return { axisCardinalityUncounted: true };
   const firstKey = (values[0] as { key?: unknown } | undefined)?.key;
   if (!Array.isArray(firstKey)) return {};
 
-  const seen = firstKey.map(() => new Set<unknown>());
+  const perAxis = firstKey.map(() => new Set<unknown>());
+  // Counted alongside the per-axis sets rather than derived from them: the two
+  // are equal only when the axes vary independently, which they rarely do.
+  const tuples = new Set<string>();
   for (const entry of values) {
     const key = (entry as { key?: unknown }).key;
-    if (!Array.isArray(key) || key.length !== seen.length) return {};
-    for (const [axis, value] of key.entries()) seen[axis].add(value);
+    if (!Array.isArray(key) || key.length !== perAxis.length) return {};
+    for (const [axis, value] of key.entries()) perAxis[axis].add(value);
+    tuples.add(key.map((value) => String(value)).join("\u0000"));
   }
-  return { axisCardinality: seen.map((set) => set.size) };
+  return { axisCardinality: perAxis.map((set) => set.size), distinctKeys: tuples.size };
 }
 
 // Sampled rather than measured: walking millions of entries to size them is
