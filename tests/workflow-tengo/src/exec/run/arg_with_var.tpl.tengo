@@ -14,7 +14,7 @@ self.body(func(inputs) {
 		cpu(1).ram("50Mi").
 		software(shellSw).
 		argWithVar("{'-c'}").
-		arg("echo -n $TEST_ENV$TEST_ENV_2"). // -n means no newline. It's needed for test assertions.
+		arg("printf %s $TEST_ENV$TEST_ENV_2"). // printf writes no trailing newline. The shell entrypoint is POSIX sh, whose echo prints "-n" as text instead of reading it as a flag.
 		envWithVar("TEST_ENV", "{5-1}"). // evaluates to 4
 		envWithVar("TEST_ENV_2", "\\{2\\}"). // evaluates to {2}
 	saveStdoutContent().
