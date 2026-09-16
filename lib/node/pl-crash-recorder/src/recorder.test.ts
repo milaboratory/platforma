@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { listSessions, openRecorder, type Recorder } from "./recorder";
+import { DEATH_FILE_PREFIX } from "./events";
 import { readCrashMarkers, writeCrashMarker } from "./supervisor";
 import { createHandleRegistry, recordModelRenderSync, wrapModelDriver } from "./instrument";
 import { startHostSampler } from "./host_sampler";
@@ -254,8 +255,19 @@ describe("crash markers", () => {
 
   test("an unparseable marker is skipped rather than failing the rest", () => {
     writeCrashMarker(dir, { reason: "worker-exit" });
+    // Named like a marker, so it reaches the parse rather than being filtered
+    // out by name — which is the path this test exists to cover.
+    fs.writeFileSync(path.join(dir, `${DEATH_FILE_PREFIX}-999.ndjson`), "{ not json\n");
+
+    expect(readCrashMarkers(dir)).toHaveLength(1);
+  });
+
+  test("a file that is not a marker is passed over without being read", () => {
+    writeCrashMarker(dir, { reason: "worker-exit" });
     fs.writeFileSync(path.join(dir, "crash-999.ndjson"), "{ not json\n");
 
+    // Logs written under an earlier name share the directory; they are not
+    // markers now, and failing to parse one would be reading the wrong file.
     expect(readCrashMarkers(dir)).toHaveLength(1);
   });
 });
