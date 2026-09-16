@@ -1,9 +1,10 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
-import { CRASH_FILE_PREFIX, type CrashMarker, type CrashReason } from "./events";
+import { DEATH_FILE_PREFIX, type CrashMarker, type CrashReason } from "./events";
 import { listSessions, sessionIdFromFile } from "./recorder";
 
-export type CrashMarkerInput = {
+type CrashMarkerInput = {
   /** Session id the parent assigned to the worker. Omitted, the marker carries no identity. */
   sessionId?: string;
   reason?: CrashReason;
@@ -15,7 +16,7 @@ export type CrashMarkerInput = {
 
 export type SuperviseOptions = {
   /**
-   * The session id handed to the worker at spawn (see `FLIGHT_SESSION_ENV`).
+   * The session id handed to the worker at spawn (see `CRASH_SESSION_ENV`).
    * With it the marker names the dying session with certainty. Without it the
    * analyzer has to attribute the marker by timing, and will decline to
    * attribute it at all when more than one session looks dead.
@@ -48,7 +49,7 @@ export function writeCrashMarker(dir: string, input: CrashMarkerInput = {}): str
   fs.mkdirSync(dir, { recursive: true });
   const error = input.error as (Error & { code?: string }) | undefined;
   // Only an id the parent handed to the worker is certain, and only a certain
-  // id goes in `sessionId`. Reading the newest open flight log names whichever
+  // id goes in `sessionId`. Reading the newest open crash log names whichever
   // session wrote last, which a concurrent live session makes wrong; recorded
   // as identity that would misattribute the death and, worse, stop the session
   // that actually died from claiming the marker. So it is advisory only.
@@ -64,8 +65,9 @@ export function writeCrashMarker(dir: string, input: CrashMarkerInput = {}): str
     exitCode: input.code,
     signal: input.signal,
     stderrTail: truncate(input.stderrTail ?? "", 4000),
+    memoryAtDeath: memoryNow(),
   };
-  const file = path.join(dir, `${CRASH_FILE_PREFIX}-${marker.wall}.ndjson`);
+  const file = path.join(dir, `${DEATH_FILE_PREFIX}-${marker.wall}.ndjson`);
   fs.writeFileSync(file, `${JSON.stringify(marker)}\n`);
   return file;
 }
@@ -80,7 +82,7 @@ export function readCrashMarkers(dir: string): CrashMarker[] {
   }
   const markers: CrashMarker[] = [];
   for (const name of names) {
-    if (!name.startsWith(`${CRASH_FILE_PREFIX}-`) || !name.endsWith(".ndjson")) continue;
+    if (!name.startsWith(`${DEATH_FILE_PREFIX}-`) || !name.endsWith(".ndjson")) continue;
     try {
       const first = fs.readFileSync(path.join(dir, name), "utf8").split("\n")[0];
       markers.push(JSON.parse(first) as CrashMarker);
@@ -127,6 +129,37 @@ export function superviseWorker(
 }
 
 // Internals
+
+/**
+ * The parent's view of memory at the moment it saw the death.
+ *
+ * The dying thread cannot take this reading, and the sampler's last one predates
+ * the end by up to its interval. Taken here it is contemporaneous with the exit
+ * code it sits beside, which is what stops an exhausted machine from reading as
+ * an ordinary failure.
+ *
+ * Every reading here is a syscall. The machine's compressor and swap totals are
+ * deliberately not among them: on macOS they cost a subprocess, and this runs on
+ * the parent's event loop inside the worker's error handler, before the marker
+ * is written and before the caller learns of the death. A fork is exactly what
+ * becomes slow or impossible on the exhausted machine this code exists for, so
+ * the fuller picture is left to the sampler, whose last reading is at most one
+ * interval old and sits in the same bundle.
+ */
+function memoryNow(): CrashMarker["memoryAtDeath"] {
+  try {
+    return {
+      rss: process.memoryUsage.rss(),
+      maxRss: process.resourceUsage().maxRSS * 1024,
+      freeMemory: os.freemem(),
+      totalMemory: os.totalmem(),
+    };
+  } catch {
+    // A marker without memory is still a marker; failing to take the reading
+    // must never cost the record of the death itself.
+    return undefined;
+  }
+}
 
 // Advisory only, for a human reading a directory by hand: the dying session has
 // no terminating record, so among the sessions that look dead this names the one
