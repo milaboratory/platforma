@@ -1349,7 +1349,17 @@ builder := func() {
 				tmpdirCompat.isSizedRequest(scratchFreeSpace, scratchFormulaAst)
 			)
 			if tmpdirCompatNeeded {
-				filesToWrite[tmpdirCompat.SCRIPT_FILE_NAME] = tmpdirCompat.script()
+				// Only the wrapper that will actually run is staged, and which one that is
+				// depends on where the command lands: a container is Linux whatever the host
+				// is, while a command on the host needs the interpreter that host has.
+				inContainer := false
+				if !is_undefined(soft) {
+					inContainer = tmpdirCompat.usesDocker(
+						ll.fromStrict(soft.descriptor), feats.isDockerAvailable)
+				}
+				for name, content in tmpdirCompat.filesToStage(inContainer) {
+					filesToWrite[name] = content
+				}
 
 				// 'system.scratch' does not exist on such a backend - an expression naming it
 				// fails to evaluate rather than rendering empty - so every reference to it is
