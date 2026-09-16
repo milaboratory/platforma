@@ -3,17 +3,17 @@ import path from "node:path";
 import os from "node:os";
 import v8 from "node:v8";
 import {
-  FLIGHT_FILE_PREFIX,
+  SESSION_FILE_PREFIX,
   MEM_BASELINE_RECORD,
   SESSION_END_RECORD,
   SESSION_RECORD,
-  type FlightRecord,
+  type LogRecord,
   type MemorySnapshot,
   type SessionEnvironment,
 } from "./events";
 
 export type RecorderOptions = {
-  /** Directory holding flight logs; created if absent. */
+  /** Directory holding crash logs; created if absent. */
   dir: string;
   /** Which part of the app is recording, e.g. `middle-layer`. */
   role?: string;
@@ -34,6 +34,18 @@ export type Recorder = {
   readonly file: string;
   /** Appends one record and returns its sequence number. Never throws. */
   event(type: string, payload?: Record<string, unknown>): number;
+  /**
+   * Appends a record that every later segment of the log gets again.
+   *
+   * For a fact stated once that the rest of the log is unreadable without — what
+   * a block id stands for, say. Written once per `key`; a rotation that discards
+   * the original rewrites it, so a long session cannot outlive its own legend.
+   *
+   * Past a cap on how many such facts a session may carry, the record is still
+   * written once and marked `notRetained`: it then survives only until the
+   * rotation that discards it.
+   */
+  sticky(key: string, type: string, payload?: Record<string, unknown>): void;
   /** Memory reading for the calling thread; `rss` is process-wide. */
   memorySnapshot(): MemorySnapshot;
   /** Writes the terminating record. Its absence is how a crash is detected. */
@@ -48,15 +60,15 @@ export type SessionFileInfo = {
   crashed: boolean;
 };
 
-export type ParsedSession = {
+type ParsedSession = {
   file: string;
-  records: FlightRecord[];
+  records: LogRecord[];
   /** True when the last line was cut mid-write by the kill. */
   truncatedTail: boolean;
 };
 
 /**
- * Opens a flight log for this process and writes the session header.
+ * Opens a crash log for this process and writes the session header.
  *
  * Records are appended with a synchronous write rather than through a stream:
  * the process being recorded dies without warning — V8 fatal out-of-memory, a
@@ -74,7 +86,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
   } = options;
   fs.mkdirSync(dir, { recursive: true });
 
-  const file = path.join(dir, `${FLIGHT_FILE_PREFIX}-${sessionId}.ndjson`);
+  const file = path.join(dir, `${SESSION_FILE_PREFIX}-${sessionId}.ndjson`);
   const state: WriterState = {
     fd: fs.openSync(file, "a"),
     bytes: 0,
@@ -84,6 +96,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
     header: undefined,
     baselineMem: undefined,
     openBegins: new Map(),
+    sticky: new Map(),
   };
 
   const memorySnapshot = (): MemorySnapshot => {
@@ -101,7 +114,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
   const event = (type: string, payload: Record<string, unknown> = {}): number => {
     if (state.closed) return -1;
     const seq = ++state.seq;
-    const record: FlightRecord = {
+    const record: LogRecord = {
       seq,
       t: monotonic(),
       wall: Date.now(),
@@ -114,10 +127,25 @@ export function openRecorder(options: RecorderOptions): Recorder {
     return seq;
   };
 
+  const sticky = (key: string, type: string, payload?: Record<string, unknown>): void => {
+    if (state.sticky.has(key)) return;
+    // The preamble is rewritten in full at every rotation, so it cannot grow
+    // without bound. Past the cap the fact is still written once — losing it
+    // entirely would leave records naming a block nothing can identify — and
+    // only its survival across rotation is given up. The record says so, so a
+    // reader can tell a missing legend from one that was never written.
+    const retained = state.sticky.size < MAX_STICKY_RECORDS;
+    const seq = event(type, retained ? payload : { ...payload, notRetained: true });
+    if (!retained) return;
+    const record = { ...payload, seq, type } as LogRecord;
+    state.sticky.set(key, record);
+  };
+
   const recorder: Recorder = {
     sessionId,
     file,
     event,
+    sticky,
     memorySnapshot,
     close(reason = "normal") {
       if (state.closed) return;
@@ -161,7 +189,7 @@ export function startSelfSampler(recorder: Recorder, intervalMs = 500): () => vo
   return () => clearInterval(timer);
 }
 
-/** Flight logs in a directory, newest first, each flagged as crashed or clean. */
+/** Crash logs in a directory, newest first, each flagged as crashed or clean. */
 export function listSessions(dir: string): SessionFileInfo[] {
   let names: string[];
   try {
@@ -170,7 +198,7 @@ export function listSessions(dir: string): SessionFileInfo[] {
     return [];
   }
   return names
-    .filter((name) => name.startsWith(`${FLIGHT_FILE_PREFIX}-`) && name.endsWith(".ndjson"))
+    .filter((name) => name.startsWith(`${SESSION_FILE_PREFIX}-`) && name.endsWith(".ndjson"))
     .map((name) => {
       const file = path.join(dir, name);
       const stat = fs.statSync(file);
@@ -180,7 +208,7 @@ export function listSessions(dir: string): SessionFileInfo[] {
 }
 
 /**
- * Parses a flight log, tolerating a final line cut short by a hard kill.
+ * Parses a crash log, tolerating a final line cut short by a hard kill.
  *
  * A rotated session spans two files: the parked `.1` segment holds the original
  * header and the earlier operations, the active file holds the tail. Both are
@@ -188,14 +216,14 @@ export function listSessions(dir: string): SessionFileInfo[] {
  * other; sequence numbers run across the boundary.
  */
 export function readSession(file: string): ParsedSession {
-  const records: FlightRecord[] = [];
+  const records: LogRecord[] = [];
   let truncatedTail = false;
   const parked = `${file}.1`;
   if (fs.existsSync(parked)) {
     for (const line of fs.readFileSync(parked, "utf8").split("\n")) {
       if (line === "") continue;
       try {
-        records.push(JSON.parse(line) as FlightRecord);
+        records.push(JSON.parse(line) as LogRecord);
       } catch {
         // A damaged line in the parked segment costs one record, not the session.
       }
@@ -205,7 +233,7 @@ export function readSession(file: string): ParsedSession {
   for (const [index, line] of lines.entries()) {
     if (line === "") continue;
     try {
-      records.push(JSON.parse(line) as FlightRecord);
+      records.push(JSON.parse(line) as LogRecord);
     } catch {
       if (index >= lines.length - 2) truncatedTail = true;
     }
@@ -229,13 +257,18 @@ export function sessionStartFromId(sessionId: string): number {
   return Number.isFinite(start) ? start : 0;
 }
 
-/** Session id embedded in a flight log's file name. */
+/** Session id embedded in a crash log's file name. */
 export function sessionIdFromFile(file: string): string {
-  const match = path.basename(file).match(/^flight-(.+)\.ndjson(\.1)?$/);
+  const match = path
+    .basename(file)
+    .match(new RegExp(`^${SESSION_FILE_PREFIX}-(.+)\\.ndjson(\\.1)?$`));
   return match ? match[1] : path.basename(file);
 }
 
 // Internals
+
+/** How many sticky records a session may keep, bounding the rewritten preamble. */
+const MAX_STICKY_RECORDS = 64;
 
 type WriterState = {
   fd: number;
@@ -248,7 +281,9 @@ type WriterState = {
   /** Earliest memory reading of the session, so growth stays measurable. */
   baselineMem: MemorySnapshot | undefined;
   /** Begin records with no end yet, keyed by their sequence number. */
-  openBegins: Map<number, FlightRecord>;
+  openBegins: Map<number, LogRecord>;
+  /** Records rewritten into every later segment, keyed by the caller's key. */
+  sticky: Map<string, LogRecord>;
 };
 
 /** Cap on carried-forward begins, so a leak cannot make the preamble unbounded. */
@@ -258,7 +293,7 @@ function writeLine(
   state: WriterState,
   file: string,
   maxFileBytes: number,
-  record: FlightRecord,
+  record: LogRecord,
 ): void {
   let line: string;
   try {
@@ -327,6 +362,9 @@ function writePreamble(state: WriterState): void {
       carriedForward: true,
     });
   }
+  for (const record of state.sticky.values()) {
+    emitPreambleRecord(state, { ...record, carriedForward: true });
+  }
   // Original sequence numbers are kept, which is what lets an end record in a
   // later segment pair with a begin first written in an overwritten one.
   for (const begin of state.openBegins.values()) {
@@ -334,7 +372,7 @@ function writePreamble(state: WriterState): void {
   }
 }
 
-function emitPreambleRecord(state: WriterState, record: FlightRecord): void {
+function emitPreambleRecord(state: WriterState, record: LogRecord): void {
   try {
     const line = `${JSON.stringify(record, bigintSafe)}\n`;
     fs.writeSync(state.fd, line);
@@ -347,7 +385,7 @@ function emitPreambleRecord(state: WriterState, record: FlightRecord): void {
 
 // Open operations are tracked by the same suffix convention the analyzer pairs
 // on, so the recorder needs no separate vocabulary for them.
-function trackOpenOperation(state: WriterState, record: FlightRecord): void {
+function trackOpenOperation(state: WriterState, record: LogRecord): void {
   if (record.type.endsWith("-begin")) {
     if (state.openBegins.size < MAX_CARRIED_BEGINS) state.openBegins.set(record.seq, record);
     return;

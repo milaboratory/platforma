@@ -9,19 +9,6 @@ import { redact, type RedactionStats } from "./redact";
  * rules can be revised against logs that already exist.
  */
 
-export const REDACTION = {
-  kept: [
-    "definition shape",
-    "column and axis names",
-    "value types",
-    "axis domains",
-    "filter operators",
-    "row, byte and partition counts",
-  ],
-  hashed: ["filter reference values", "annotation values", "column ids", "every other string"],
-  dropped: ["cell values", "inline column payloads", "partition keys"],
-} as const;
-
 export type DefKind = "PTableDef" | "PTableDefV2" | "PFrameDef";
 
 export type DefDigest = {

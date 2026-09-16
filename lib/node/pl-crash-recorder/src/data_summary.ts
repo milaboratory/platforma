@@ -22,13 +22,34 @@ export type DataSummary = {
   partsWithStats?: number;
   rows?: number;
   bytes?: number;
+  /**
+   * Distinct values per axis, in the order the column declares its axes.
+   *
+   * Counted independently, so multiplying them gives an upper bound on the
+   * distinct key tuples rather than their number: axes are usually correlated,
+   * and a product invents combinations that never occur. Use `distinctKeys`
+   * where the key in question is the whole tuple.
+   */
+  axisCardinality?: number[];
+  /**
+   * Distinct whole key tuples, which is exact where a join keys on every axis
+   * the column has — the ordinary case for two columns sharing their key.
+   */
+  distinctKeys?: number;
+  /** Set when the entries were too many to count distinct keys over. */
+  axisCardinalityUncounted?: boolean;
 };
 
 export function summarizeData(data: unknown): DataSummary {
   if (data === null || data === undefined) return { kind: "absent" };
   if (Array.isArray(data)) {
     // Inline values, built inside the model sandbox.
-    return { kind: "inline", entries: data.length, approxBytes: approxInlineBytes(data) };
+    return {
+      kind: "inline",
+      entries: data.length,
+      approxBytes: approxInlineBytes(data),
+      ...inlineAxisCardinality(data),
+    };
   }
   if (typeof data !== "object") return { kind: typeof data };
 
@@ -78,6 +99,38 @@ function summarizeParquet(info: { [key: string]: unknown }): DataSummary {
     rows: withStats > 0 ? rows : undefined,
     bytes: withStats > 0 ? bytes : undefined,
   };
+}
+
+/**
+ * How many entries may be walked to count distinct axis keys.
+ *
+ * Counting is exact and needs a set per axis, so it costs memory in proportion
+ * to the distinct keys it finds — which is the wrong thing to spend in the
+ * situation this code exists to diagnose. Past the cap the count is declined
+ * rather than approximated, so a number that is present is always true.
+ */
+const CARDINALITY_LIMIT = 100_000;
+
+function inlineAxisCardinality(values: unknown[]): {
+  axisCardinality?: number[];
+  distinctKeys?: number;
+  axisCardinalityUncounted?: boolean;
+} {
+  if (values.length > CARDINALITY_LIMIT) return { axisCardinalityUncounted: true };
+  const firstKey = (values[0] as { key?: unknown } | undefined)?.key;
+  if (!Array.isArray(firstKey)) return {};
+
+  const perAxis = firstKey.map(() => new Set<unknown>());
+  // Counted alongside the per-axis sets rather than derived from them: the two
+  // are equal only when the axes vary independently, which they rarely do.
+  const tuples = new Set<string>();
+  for (const entry of values) {
+    const key = (entry as { key?: unknown }).key;
+    if (!Array.isArray(key) || key.length !== perAxis.length) return {};
+    for (const [axis, value] of key.entries()) perAxis[axis].add(value);
+    tuples.add(key.map((value) => String(value)).join("\u0000"));
+  }
+  return { axisCardinality: perAxis.map((set) => set.size), distinctKeys: tuples.size };
 }
 
 // Sampled rather than measured: walking millions of entries to size them is
