@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.71.8
+
+### Patch Changes
+
+- Updated dependencies [f91337f]
+  - @milaboratories/pl-crash-recorder@0.3.0
+
 ## 1.71.7
 
 ### Patch Changes
