@@ -32,18 +32,6 @@ export {
   type RenderInfo,
 } from "./instrument";
 
-// The analysis is the offline half: nothing in the application calls it, and
-// nothing should. It is how a bundle of logs is read after the fact.
-export {
-  analyzeSession,
-  analyzeLatest,
-  type SessionAnalysis,
-  type MemoryAnalysis,
-  type OperationSummary,
-  type RenderSummary,
-  type RequestedSize,
-} from "./analyze";
-
 export {
   type FlightRecord,
   type MemorySnapshot,
