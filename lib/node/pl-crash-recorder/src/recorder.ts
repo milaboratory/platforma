@@ -40,6 +40,10 @@ export type Recorder = {
    * For a fact stated once that the rest of the log is unreadable without — what
    * a block id stands for, say. Written once per `key`; a rotation that discards
    * the original rewrites it, so a long session cannot outlive its own legend.
+   *
+   * Past a cap on how many such facts a session may carry, the record is still
+   * written once and marked `notRetained`: it then survives only until the
+   * rotation that discards it.
    */
   sticky(key: string, type: string, payload?: Record<string, unknown>): void;
   /** Memory reading for the calling thread; `rss` is process-wide. */
@@ -125,11 +129,14 @@ export function openRecorder(options: RecorderOptions): Recorder {
 
   const sticky = (key: string, type: string, payload?: Record<string, unknown>): void => {
     if (state.sticky.has(key)) return;
-    // The preamble is rewritten in full at every rotation, so it has to stay
-    // small: past the cap the legend is left as it is rather than crowding out
-    // the records that explain the crash.
-    if (state.sticky.size >= MAX_STICKY_RECORDS) return;
-    const seq = event(type, payload);
+    // The preamble is rewritten in full at every rotation, so it cannot grow
+    // without bound. Past the cap the fact is still written once — losing it
+    // entirely would leave records naming a block nothing can identify — and
+    // only its survival across rotation is given up. The record says so, so a
+    // reader can tell a missing legend from one that was never written.
+    const retained = state.sticky.size < MAX_STICKY_RECORDS;
+    const seq = event(type, retained ? payload : { ...payload, notRetained: true });
+    if (!retained) return;
     const record = { ...payload, seq, type } as LogRecord;
     state.sticky.set(key, record);
   };

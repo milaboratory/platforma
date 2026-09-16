@@ -2,7 +2,6 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { DEATH_FILE_PREFIX, type CrashMarker, type CrashReason } from "./events";
-import { readMachineMemory } from "./machine_memory";
 import { listSessions, sessionIdFromFile } from "./recorder";
 
 type CrashMarkerInput = {
@@ -138,6 +137,14 @@ export function superviseWorker(
  * the end by up to its interval. Taken here it is contemporaneous with the exit
  * code it sits beside, which is what stops an exhausted machine from reading as
  * an ordinary failure.
+ *
+ * Every reading here is a syscall. The machine's compressor and swap totals are
+ * deliberately not among them: on macOS they cost a subprocess, and this runs on
+ * the parent's event loop inside the worker's error handler, before the marker
+ * is written and before the caller learns of the death. A fork is exactly what
+ * becomes slow or impossible on the exhausted machine this code exists for, so
+ * the fuller picture is left to the sampler, whose last reading is at most one
+ * interval old and sits in the same bundle.
  */
 function memoryNow(): CrashMarker["memoryAtDeath"] {
   try {
@@ -146,7 +153,6 @@ function memoryNow(): CrashMarker["memoryAtDeath"] {
       maxRss: process.resourceUsage().maxRSS * 1024,
       freeMemory: os.freemem(),
       totalMemory: os.totalmem(),
-      machine: readMachineMemory(),
     };
   } catch {
     // A marker without memory is still a marker; failing to take the reading

@@ -124,7 +124,6 @@ export type CrashMarker = {
     maxRss: number;
     freeMemory: number;
     totalMemory: number;
-    machine?: MachineMemory;
   };
 };
 

@@ -147,6 +147,43 @@ describe("what a record says about the code that made it", () => {
   });
 });
 
+describe("what a definition records about its keys", () => {
+  test("distinct tuples are counted, not inferred from the axes", () => {
+    const recorder = openRecorder({ dir });
+    const driver = wrapModelDriver(fakeModelDriver(), recorder, createHandleRegistry());
+    // Two axes that vary together: four records, two values on each axis, but
+    // only two key tuples. Multiplying the per-axis counts would say four.
+    driver.createPTable(
+      columnDef([
+        [1, "a"],
+        [1, "a"],
+        [2, "b"],
+        [2, "b"],
+      ]),
+    );
+
+    const def = recordsOf(recorder).find((r) => r.type === "createPTable-begin")?.def;
+    const data = def?.def?.src?.entries?.[0]?.column?.data;
+    expect(data.axisCardinality).toEqual([2, 2]);
+    expect(data.distinctKeys).toBe(2);
+  });
+
+  test("counting is declined rather than approximated past the cap", () => {
+    const recorder = openRecorder({ dir });
+    const driver = wrapModelDriver(fakeModelDriver(), recorder, createHandleRegistry());
+    driver.createPTable(
+      columnDef(Array.from({ length: 100_001 }, (_, i) => [i, String(i)] as [number, string])),
+    );
+
+    const def = recordsOf(recorder).find((r) => r.type === "createPTable-begin")?.def;
+    const data = def?.def?.src?.entries?.[0]?.column?.data;
+    // A number that is present is always true; here none is, and the log says so.
+    expect(data.axisCardinality).toBeUndefined();
+    expect(data.distinctKeys).toBeUndefined();
+    expect(data.axisCardinalityUncounted).toBe(true);
+  });
+});
+
 describe("crash markers", () => {
   test("a marker names the session the parent assigned, and carries memory", () => {
     const recorder = openRecorder({ dir });
@@ -180,6 +217,36 @@ describe("crash markers", () => {
 });
 
 // Internals
+
+/** One column whose records carry the given two-part keys. */
+function columnDef(keys: [number, string][]): unknown {
+  return {
+    src: {
+      type: "inner",
+      entries: [
+        {
+          type: "column",
+          column: {
+            id: "c",
+            spec: {
+              kind: "PColumn",
+              name: "x",
+              valueType: "Int",
+              axesSpec: [
+                { type: "Int", name: "a" },
+                { type: "String", name: "b" },
+              ],
+            },
+            data: keys.map((key, i) => ({ key, val: i })),
+          },
+        },
+      ],
+    },
+    partitionFilters: [],
+    filters: [],
+    sorting: [],
+  };
+}
 
 /** A driver that returns handles and does nothing, so only the recording shows. */
 function fakeModelDriver() {
