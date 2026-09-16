@@ -16,9 +16,11 @@
  *     machine and if commands will be run in containers.
  *
  * For backends prior 4.4.5 executed on non-windows systems we apply wrapper shell script
- * that modifies command's env variables setting TMPDIR and TMP vars accordingly with 4.4.5 and abve.
- * We intentionally ignore Windows hosts as this is builtin-only backends we can update easily
- * along with Desktop App.
+ * that modifies command's env variables setting TMPDIR and TMP vars accordingly with 4.4.5 and above.
+ * We intentionally leave Windows hosts alone: the wrapper is POSIX-shell only, so a command there
+ * runs exactly as it did before this layer existed. Windows ships only as a built-in backend, whose
+ * version we update along with the Desktop App. A command inside a container is still wrapped,
+ * whatever the host is: the container is Linux.
  *
  * Everything about the workaround lives in this file. Deleting it is how the workaround goes away
  * once no supported backend needs it.
@@ -145,16 +147,6 @@ concat := func(prefix, tail) {
 	return result
 }
 
-// _assertNotWindows refuses the workaround on Windows. Windows ships only as a built-in backend
-// whose version we control, so the answer there is to update it rather than to keep a second,
-// cmd.exe-shaped wrapper alive.
-_assertNotWindows := func() {
-	ll.assert(!isWindows(),
-		"exec.builder: this Platforma Backend is too old to provide a temporary directory (TMPDIR),"+
-			" and the workaround for it is POSIX-shell only, so it cannot run on Windows."+
-			" Update Platforma Backend to a version >=4.4.5")
-}
-
 // patchSoftwareDescriptor routes a software's command through the wrapper.
 //
 // All three execution shapes carry their command as '<kind>.cmd', an array of '[command, args...]',
@@ -179,8 +171,13 @@ patchSoftwareDescriptor := func(descriptor, isDockerAvailable) {
 	}
 
 	// A bare binary, or a locally built package during block development. Both run on the runner
-	// host, so the wrapper has to be a shell the host actually has.
-	_assertNotWindows()
+	// host, so the wrapper has to be a shell the host actually has. Windows has none, so the
+	// command is left as it is: the block keeps the behaviour it had before this compatibility
+	// layer existed, instead of failing outright. Windows ships only as a built-in backend, whose
+	// version is ours to update.
+	if isWindows() {
+		return descriptor
+	}
 
 	for kind in ["local", "binary"] {
 		if is_undefined(descriptor[kind]) { continue }
@@ -202,7 +199,13 @@ patchSoftwareDescriptor := func(descriptor, isDockerAvailable) {
 // The caller must prepend to the typed argument list as well, or an exec that used argExpr would
 // lose the wrapper.
 wrapCommand := func(cmd) {
-	_assertNotWindows()
+	// No POSIX shell on the host: the command stays unwrapped, as in patchSoftwareDescriptor.
+	if isWindows() {
+		return {
+			cmd: cmd,
+			prependArgs: []
+		}
+	}
 
 	return {
 		cmd: "sh",
