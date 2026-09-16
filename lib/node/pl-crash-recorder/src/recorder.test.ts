@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { listSessions, openRecorder, type Recorder } from "./recorder";
 import { readCrashMarkers, writeCrashMarker } from "./supervisor";
 import { createHandleRegistry, recordModelRenderSync, wrapModelDriver } from "./instrument";
+import { startHostSampler } from "./host_sampler";
 
 /**
  * What the recorder must guarantee about the log it leaves behind.
@@ -181,6 +182,49 @@ describe("what a definition records about its keys", () => {
     expect(data.axisCardinality).toBeUndefined();
     expect(data.distinctKeys).toBeUndefined();
     expect(data.axisCardinalityUncounted).toBe(true);
+  });
+});
+
+describe("host readings", () => {
+  test("attribution is written beside the session, not into it", async () => {
+    const recorder = openRecorder({ dir });
+    const sampler = startHostSampler({
+      dir,
+      sessionId: recorder.sessionId,
+      intervalMs: 5,
+      read: () => ({ private: 42 * 1024 ** 3, swapUsed: 1024 ** 3 }),
+    });
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    sampler.stop();
+
+    // A separate file: the session log belongs to another thread, with its own
+    // descriptor and sequence, and a second writer would corrupt both.
+    expect(sampler.file).not.toBe(recorder.file);
+    expect(path.basename(sampler.file)).toBe(`host-${recorder.sessionId}.ndjson`);
+    const records = fs
+      .readFileSync(sampler.file, "utf8")
+      .split("\n")
+      .filter(Boolean)
+      .map((l) => JSON.parse(l) as Record<string, any>);
+    expect(records.length).toBeGreaterThan(0);
+    expect(records[0].type).toBe("mem-host");
+    expect(records[0].private).toBe(42 * 1024 ** 3);
+  });
+
+  test("a reading that throws costs the reading, not the application", async () => {
+    const recorder = openRecorder({ dir });
+    const sampler = startHostSampler({
+      dir,
+      sessionId: recorder.sessionId,
+      intervalMs: 5,
+      read: () => {
+        throw new Error("no such counter on this platform");
+      },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    sampler.stop();
+
+    expect(fs.readFileSync(sampler.file, "utf8")).toBe("");
   });
 });
 

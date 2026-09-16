@@ -62,6 +62,27 @@ export type SamplerRecord = LogRecordBase & {
 };
 
 /**
+ * A reading only the application process can take.
+ *
+ * Resident size falls when the OS compresses or pages a process out, so it
+ * cannot say whether the memory was released or merely moved. Private bytes can:
+ * they are unshared and stay committed until the process actually gives them
+ * back. That is the difference between "our process is holding this" and "the
+ * machine is short of memory for some other reason", which nothing else here
+ * distinguishes.
+ */
+export type HostRecord = LogRecordBase & {
+  type: "mem-host";
+  /** Unshared, still-committed bytes of the process hosting the middle layer. */
+  private?: number;
+  /** What the machine has paged out, where the platform reports it. */
+  swapUsed?: number;
+  swapTotal?: number;
+  /** The same figure per process, where the host can enumerate its own. */
+  processes?: { pid: number; name?: string; private?: number }[];
+};
+
+/**
  * The machine's own account of its memory.
  *
  * Resident size is not the whole story on a machine under pressure: macOS moves
@@ -139,6 +160,7 @@ export const SESSION_RECORD = "session";
 /** Earliest memory reading of a session, rewritten into every rotated segment. */
 export const MEM_BASELINE_RECORD = "mem-baseline";
 export const SESSION_END_RECORD = "session-end";
+export const HOST_FILE_PREFIX = "host";
 export const SESSION_FILE_PREFIX = "session";
 export const SAMPLER_FILE_PREFIX = "memory";
 export const DEATH_FILE_PREFIX = "death";
