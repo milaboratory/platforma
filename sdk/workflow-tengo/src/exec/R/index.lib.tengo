@@ -2,7 +2,6 @@ times := import("times")
 
 ll := import(":ll")
 validation := import(":validation")
-smart := import(":smart")
 pkg := import(":exec.package")
 internal := import(":exec.R.internal")
 desc := import(":exec.descriptor")
