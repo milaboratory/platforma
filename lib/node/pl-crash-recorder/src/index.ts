@@ -17,6 +17,13 @@ export {
 } from "./session";
 
 export {
+  startHostSampler,
+  type HostSampler,
+  type HostSamplerOptions,
+  type HostReading,
+} from "./host_sampler";
+
+export {
   readCrashMarkers,
   superviseWorker,
   type SupervisedWorker,
@@ -36,6 +43,7 @@ export {
   type LogRecord,
   type MemorySnapshot,
   type SamplerRecord,
+  type HostRecord,
   type MachineMemory,
   type CrashMarker,
   type CrashReason,
