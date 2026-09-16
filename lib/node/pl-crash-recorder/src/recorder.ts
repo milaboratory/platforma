@@ -3,17 +3,17 @@ import path from "node:path";
 import os from "node:os";
 import v8 from "node:v8";
 import {
-  FLIGHT_FILE_PREFIX,
+  SESSION_FILE_PREFIX,
   MEM_BASELINE_RECORD,
   SESSION_END_RECORD,
   SESSION_RECORD,
-  type FlightRecord,
+  type LogRecord,
   type MemorySnapshot,
   type SessionEnvironment,
 } from "./events";
 
 export type RecorderOptions = {
-  /** Directory holding flight logs; created if absent. */
+  /** Directory holding crash logs; created if absent. */
   dir: string;
   /** Which part of the app is recording, e.g. `middle-layer`. */
   role?: string;
@@ -58,13 +58,13 @@ export type SessionFileInfo = {
 
 type ParsedSession = {
   file: string;
-  records: FlightRecord[];
+  records: LogRecord[];
   /** True when the last line was cut mid-write by the kill. */
   truncatedTail: boolean;
 };
 
 /**
- * Opens a flight log for this process and writes the session header.
+ * Opens a crash log for this process and writes the session header.
  *
  * Records are appended with a synchronous write rather than through a stream:
  * the process being recorded dies without warning — V8 fatal out-of-memory, a
@@ -82,7 +82,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
   } = options;
   fs.mkdirSync(dir, { recursive: true });
 
-  const file = path.join(dir, `${FLIGHT_FILE_PREFIX}-${sessionId}.ndjson`);
+  const file = path.join(dir, `${SESSION_FILE_PREFIX}-${sessionId}.ndjson`);
   const state: WriterState = {
     fd: fs.openSync(file, "a"),
     bytes: 0,
@@ -110,7 +110,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
   const event = (type: string, payload: Record<string, unknown> = {}): number => {
     if (state.closed) return -1;
     const seq = ++state.seq;
-    const record: FlightRecord = {
+    const record: LogRecord = {
       seq,
       t: monotonic(),
       wall: Date.now(),
@@ -130,7 +130,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
     // the records that explain the crash.
     if (state.sticky.size >= MAX_STICKY_RECORDS) return;
     const seq = event(type, payload);
-    const record = { ...payload, seq, type } as FlightRecord;
+    const record = { ...payload, seq, type } as LogRecord;
     state.sticky.set(key, record);
   };
 
@@ -182,7 +182,7 @@ export function startSelfSampler(recorder: Recorder, intervalMs = 500): () => vo
   return () => clearInterval(timer);
 }
 
-/** Flight logs in a directory, newest first, each flagged as crashed or clean. */
+/** Crash logs in a directory, newest first, each flagged as crashed or clean. */
 export function listSessions(dir: string): SessionFileInfo[] {
   let names: string[];
   try {
@@ -191,7 +191,7 @@ export function listSessions(dir: string): SessionFileInfo[] {
     return [];
   }
   return names
-    .filter((name) => name.startsWith(`${FLIGHT_FILE_PREFIX}-`) && name.endsWith(".ndjson"))
+    .filter((name) => name.startsWith(`${SESSION_FILE_PREFIX}-`) && name.endsWith(".ndjson"))
     .map((name) => {
       const file = path.join(dir, name);
       const stat = fs.statSync(file);
@@ -201,7 +201,7 @@ export function listSessions(dir: string): SessionFileInfo[] {
 }
 
 /**
- * Parses a flight log, tolerating a final line cut short by a hard kill.
+ * Parses a crash log, tolerating a final line cut short by a hard kill.
  *
  * A rotated session spans two files: the parked `.1` segment holds the original
  * header and the earlier operations, the active file holds the tail. Both are
@@ -209,14 +209,14 @@ export function listSessions(dir: string): SessionFileInfo[] {
  * other; sequence numbers run across the boundary.
  */
 export function readSession(file: string): ParsedSession {
-  const records: FlightRecord[] = [];
+  const records: LogRecord[] = [];
   let truncatedTail = false;
   const parked = `${file}.1`;
   if (fs.existsSync(parked)) {
     for (const line of fs.readFileSync(parked, "utf8").split("\n")) {
       if (line === "") continue;
       try {
-        records.push(JSON.parse(line) as FlightRecord);
+        records.push(JSON.parse(line) as LogRecord);
       } catch {
         // A damaged line in the parked segment costs one record, not the session.
       }
@@ -226,7 +226,7 @@ export function readSession(file: string): ParsedSession {
   for (const [index, line] of lines.entries()) {
     if (line === "") continue;
     try {
-      records.push(JSON.parse(line) as FlightRecord);
+      records.push(JSON.parse(line) as LogRecord);
     } catch {
       if (index >= lines.length - 2) truncatedTail = true;
     }
@@ -250,9 +250,11 @@ export function sessionStartFromId(sessionId: string): number {
   return Number.isFinite(start) ? start : 0;
 }
 
-/** Session id embedded in a flight log's file name. */
+/** Session id embedded in a crash log's file name. */
 export function sessionIdFromFile(file: string): string {
-  const match = path.basename(file).match(/^flight-(.+)\.ndjson(\.1)?$/);
+  const match = path
+    .basename(file)
+    .match(new RegExp(`^${SESSION_FILE_PREFIX}-(.+)\\.ndjson(\\.1)?$`));
   return match ? match[1] : path.basename(file);
 }
 
@@ -272,9 +274,9 @@ type WriterState = {
   /** Earliest memory reading of the session, so growth stays measurable. */
   baselineMem: MemorySnapshot | undefined;
   /** Begin records with no end yet, keyed by their sequence number. */
-  openBegins: Map<number, FlightRecord>;
+  openBegins: Map<number, LogRecord>;
   /** Records rewritten into every later segment, keyed by the caller's key. */
-  sticky: Map<string, FlightRecord>;
+  sticky: Map<string, LogRecord>;
 };
 
 /** Cap on carried-forward begins, so a leak cannot make the preamble unbounded. */
@@ -284,7 +286,7 @@ function writeLine(
   state: WriterState,
   file: string,
   maxFileBytes: number,
-  record: FlightRecord,
+  record: LogRecord,
 ): void {
   let line: string;
   try {
@@ -363,7 +365,7 @@ function writePreamble(state: WriterState): void {
   }
 }
 
-function emitPreambleRecord(state: WriterState, record: FlightRecord): void {
+function emitPreambleRecord(state: WriterState, record: LogRecord): void {
   try {
     const line = `${JSON.stringify(record, bigintSafe)}\n`;
     fs.writeSync(state.fd, line);
@@ -376,7 +378,7 @@ function emitPreambleRecord(state: WriterState, record: FlightRecord): void {
 
 // Open operations are tracked by the same suffix convention the analyzer pairs
 // on, so the recorder needs no separate vocabulary for them.
-function trackOpenOperation(state: WriterState, record: FlightRecord): void {
+function trackOpenOperation(state: WriterState, record: LogRecord): void {
   if (record.type.endsWith("-begin")) {
     if (state.openBegins.size < MAX_CARRIED_BEGINS) state.openBegins.set(record.seq, record);
     return;

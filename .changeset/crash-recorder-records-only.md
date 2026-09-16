@@ -1,10 +1,10 @@
 ---
-"@milaboratories/pl-flight-recorder": minor
+"@milaboratories/pl-crash-recorder": minor
 ---
 
 Collect evidence about a crash; stop drawing conclusions from it.
 
-- Remove the rendered report, the verdict, and the analysis behind them. `renderReport`, `Verdict`, `Finding`, `analyzeSession` and the rules that read a definition are gone. What a crash means needs the block's intent and usually a reproduction, neither of which the crashing machine has; a conclusion shipped from it would be read as the answer. The package now records and nothing else — ~1100 lines of reading code no longer travel inside the application that produced the logs. Reading them is a workspace tool, in the `flight-logs` skill.
+- Remove the rendered report, the verdict, and the analysis behind them. `renderReport`, `Verdict`, `Finding`, `analyzeSession` and the rules that read a definition are gone. What a crash means needs the block's intent and usually a reproduction, neither of which the crashing machine has; a conclusion shipped from it would be read as the answer. The package now records and nothing else — ~1100 lines of reading code no longer travel inside the application that produced the logs. Reading them is a workspace tool, in the `platforma-logs` skill.
 - Cover the recording guarantees directly rather than through a reader: that a killed session is detectable, that rotation carries the header, the earliest memory reading, the open begins and the sticky records, that a driver call records the block whose render made it, and that no value from a definition reaches the log.
 - Sample where the machine's memory actually is, not only what is resident. A process under pressure has its pages moved into the macOS compressor or out to swap, so resident size falls while the memory it asked for is still held — which made a peak of 17 GiB out of a run that a task manager showed at 46 GB. Each sampler record now carries the kernel's own high-water resident mark, and once a second the compressor, swap, anonymous, file-backed and wired totals.
 - Name the operations that overlapped each completed one. A resident-size delta measures the whole process over an interval, so a 28 ms render that ran inside an unfinished native call was being credited with gigabytes it never touched. The overlap is reported; whether it invalidates a delta is left to the reader.

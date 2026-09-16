@@ -17,7 +17,7 @@ import { createHandleRegistry, recordModelRenderSync, wrapModelDriver } from "./
 let dir: string;
 
 beforeEach(() => {
-  dir = fs.mkdtempSync(path.join(os.tmpdir(), "flight-recorder-"));
+  dir = fs.mkdtempSync(path.join(os.tmpdir(), "crash-recorder-"));
 });
 
 afterEach(() => {
@@ -105,11 +105,7 @@ describe("rotation", () => {
 describe("what a record says about the code that made it", () => {
   test("a driver call made inside a render carries that render's block", () => {
     const recorder = openRecorder({ dir });
-    const driver = wrapModelDriver(
-      { createPFrame: () => "f", createPTable: () => "t", createPTableV2: () => "t2" },
-      recorder,
-      createHandleRegistry(),
-    );
+    const driver = wrapModelDriver(fakeModelDriver(), recorder, createHandleRegistry());
     recordModelRenderSync(recorder, { blockId: "b1", block: "org:name" }, () => {
       driver.createPTable({ src: { type: "inner", entries: [] } });
     });
@@ -120,11 +116,7 @@ describe("what a record says about the code that made it", () => {
 
   test("a driver call made outside every render claims no block", () => {
     const recorder = openRecorder({ dir });
-    const driver = wrapModelDriver(
-      { createPFrame: () => "f", createPTable: () => "t", createPTableV2: () => "t2" },
-      recorder,
-      createHandleRegistry(),
-    );
+    const driver = wrapModelDriver(fakeModelDriver(), recorder, createHandleRegistry());
     driver.createPTable({ src: { type: "inner", entries: [] } });
 
     const created = recordsOf(recorder).find((r) => r.type === "createPTable-begin");
@@ -133,11 +125,7 @@ describe("what a record says about the code that made it", () => {
 
   test("a definition is recorded without the values it was built from", () => {
     const recorder = openRecorder({ dir });
-    const driver = wrapModelDriver(
-      { createPFrame: () => "f", createPTable: () => "t", createPTableV2: () => "t2" },
-      recorder,
-      createHandleRegistry(),
-    );
+    const driver = wrapModelDriver(fakeModelDriver(), recorder, createHandleRegistry());
     const secret = "PATIENT-0007-CDR3";
     driver.createPTable({
       src: {
@@ -192,6 +180,15 @@ describe("crash markers", () => {
 });
 
 // Internals
+
+/** A driver that returns handles and does nothing, so only the recording shows. */
+function fakeModelDriver() {
+  return {
+    createPFrame: (_def: unknown) => "f",
+    createPTable: (_def: unknown) => "t",
+    createPTableV2: (_def: unknown) => "t2",
+  };
+}
 
 function recordsOf(recorder: Recorder): Record<string, any>[] {
   return fs
