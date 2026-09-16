@@ -35,4 +35,8 @@ tplTest.concurrent(
     expect(listing).not.toContain("[");
     expect(listing).not.toContain("]");
   },
+  // A Kubernetes deploy runs the command as its own Job, and a pod scheduled plus an
+  // image pulled costs far more than the 15s default. At that budget the case came back
+  // as a bare timeout and hid whatever the command actually printed.
+  300_000,
 );
