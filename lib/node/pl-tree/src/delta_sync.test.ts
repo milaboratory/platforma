@@ -427,31 +427,33 @@ describe("reference resolution", () => {
     expect(calls[1]?.seeds).toEqual(["NG:0xSHARED"]);
   });
 
-  test("gives up after a bounded number of rounds rather than looping on round trips", async () => {
-    // A backend that always answers with one more unknown reference. Without a cap this walks
-    // one sequential round trip per link, forever.
+  test("follows a deep reference chain to the end instead of erroring on its depth", async () => {
+    // Each answer introduces one more unknown reference, so the walk costs one sequential
+    // round trip per link. How deep a tree chains is the backend's business, not a fault
+    // here, so this must resolve rather than throw: a round cap would turn a legal tree shape
+    // into a desktop error. Terminates because the chain is finite and `fetched` only grows.
+    const DEPTH = 12;
     let n = 0;
     const tx = {
       resourceTree: () => {
         const id = `NG:0xCHAIN${n++}`;
         return (async function* () {
-          yield frame(id, { fields: [field("next", `NG:0xCHAIN${n}`)] });
+          yield frame(id, n < DEPTH ? { fields: [field("next", `NG:0xCHAIN${n}`)] } : {});
         })();
       },
     } as unknown as Parameters<typeof loadDeltaTreeState>[0];
 
-    await expect(
-      loadDeltaTreeState(
-        tx,
-        request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
-      ),
-      // The class, not just the message: synchronized_tree rebuilds and discards the token
-      // only for TreeStateUpdateError. A plain Error is logged and the identical request
-      // retried forever.
-    ).rejects.toThrow(TreeStateUpdateError);
-    // Pinned: each round is a sequential round trip, and the cap is what stops an unbounded
-    // chain costing more than the full re-read the rebuild it escalates to performs.
-    expect(n).toBe(4);
+    const stats = initialTreeLoadingStat();
+    const result = await loadDeltaTreeState(
+      tx,
+      request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
+      stats,
+    );
+
+    expect(result).toHaveLength(DEPTH);
+    // One seeding call plus one resolution round per remaining link.
+    expect(n).toBe(DEPTH);
+    expect(stats.deltaResolutionRounds).toBe(DEPTH - 1);
   });
 
   test("throws with the ids rather than letting the apply invalidate the tree", async () => {
