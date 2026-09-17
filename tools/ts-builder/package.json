@@ -18,7 +18,7 @@
   "scripts": {
     "build": "rolldown -c",
     "watch": "rolldown -c --watch",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz",
     "check": "oxlint && oxfmt --check && tsc --noEmit",
     "fmt": "oxlint --fix && oxfmt"
   },
@@ -42,5 +42,8 @@
     "vite-plugin-externalize-deps": "catalog:",
     "vite-plugin-lib-inject-css": "catalog:",
     "vue-tsc": "catalog:"
+  },
+  "devDependencies": {
+    "shx": "catalog:"
   }
 }
