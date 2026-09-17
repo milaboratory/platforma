@@ -1,5 +1,26 @@
 # @milaboratories/pl-middle-layer
 
+## 1.71.10
+
+### Patch Changes
+
+- 4068d5c: `auto` now resolves to `backend-delta` whenever the backend advertises
+  `treeChangedSince:v1`, falling back to `backend-streaming` and then `client-bfs`. This
+  changes which algorithm an existing caller gets, without any change on their side.
+  `MI_TREE_TRAVERSAL` accepts `backend-delta` too.
+- Updated dependencies [3e33e3c]
+- Updated dependencies [4068d5c]
+- Updated dependencies [13aff26]
+- Updated dependencies [ddc7746]
+- Updated dependencies [37707e3]
+  - @milaboratories/pl-tree@1.15.0
+  - @milaboratories/pl-client@3.17.0
+  - @milaboratories/pl-drivers@1.16.22
+  - @milaboratories/pl-model-backend@1.4.26
+  - @milaboratories/pl-errors@1.4.41
+  - @platforma-sdk/block-tools@2.15.3
+  - @platforma-sdk/workflow-tengo@6.10.4
+
 ## 1.71.9
 
 ### Patch Changes
