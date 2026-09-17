@@ -63,6 +63,7 @@ for (const name of SDK_CATALOG_PACKAGES) {
 export const INFRA_CATALOG_FLOOR: Record<string, string> = {
   turbo: "~2.8.11",
   shx: "~0.4.0",
+  "cross-env": "~10.1.0",
   "@changesets/cli": "~2.29.8",
   vitest: "~4.0.18",
   typescript: "~5.9.3",

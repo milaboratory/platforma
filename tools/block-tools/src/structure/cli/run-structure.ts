@@ -6,6 +6,7 @@
 // cross-block state).
 
 import path from "node:path";
+import { globSync, statSync } from "node:fs";
 import { NodeFileSystem } from "../engine/fs/node";
 import { NodeTemplateProvider } from "../engine/templates";
 import { run as engineRun, type Change } from "../engine/runner";
@@ -90,6 +91,22 @@ export async function runStructureForPath(input: RunStructureInput): Promise<Run
 }
 
 /** One-line-per-change summary for CLI output. */
+/** Expand glob patterns among the positional block paths. POSIX shells expand
+ *  them before the CLI sees them, but cmd.exe does not — so on Windows
+ *  `structure check etc/blocks/*` would otherwise receive the literal pattern
+ *  and fail with "No workspace packages found". Only directories are kept, and
+ *  arguments carrying no glob metacharacter pass through untouched. */
+export function expandBlockPaths(paths: string[]): string[] {
+  const expanded = paths.flatMap((p) => {
+    if (!/[*?[]/.test(p)) return [p];
+    return globSync(p)
+      .filter((match) => statSync(match, { throwIfNoEntry: false })?.isDirectory() === true)
+      .map((match) => match.split(path.sep).join("/"))
+      .sort();
+  });
+  return [...new Set(expanded)];
+}
+
 export function formatChanges(blockPath: string, changes: Change[]): string {
   if (changes.length === 0) return `  ${blockPath}: up to date (0 changes)`;
   const lines = changes.map(
