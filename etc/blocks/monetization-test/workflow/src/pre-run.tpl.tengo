@@ -1,6 +1,5 @@
 self := import("@platforma-sdk/workflow-tengo:workflow")
 monetization := import("@platforma-sdk/workflow-tengo:exec.monetization")
-ll := import("@platforma-sdk/workflow-tengo:ll")
 file := import("@platforma-sdk/workflow-tengo:file")
 
 
