@@ -32,4 +32,8 @@ tplTest.concurrent("exec error: command exits with non-zero code", async ({ help
   // must contain original command arguments so the user can identify what failed
   expect(msg).toContain("sh");
   expect(msg).toContain(`exit ${exitCode}`);
-});
+},
+// A Kubernetes deploy runs the command as its own Job, and a pod scheduled plus an image
+// pulled already costs more than the 15s default. At that budget the case reported a bare
+// timeout and never reached the assertions on the error message.
+300_000);
