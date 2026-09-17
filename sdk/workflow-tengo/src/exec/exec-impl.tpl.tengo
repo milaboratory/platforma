@@ -87,7 +87,8 @@ inputSchema := {
 		queue: "string",
 		"cpu,?": "number",
 		"ram,?": ["or", "number", "string"],
-		"gpuMemory,?": "string"
+		"gpuMemory,?": "string",
+		"scratchFreeSpace,?": ["or", "number", "string"]
 	}
 }
 
@@ -167,6 +168,9 @@ self.body(func(inputs) {
 	}
 	if !is_undefined(quota.gpuMemory) {
 		computeRequest.gpuMemory = quota.gpuMemory
+	}
+	if !is_undefined(quota.scratchFreeSpace) {
+		computeRequest.scratchFreeSpace = quota.scratchFreeSpace
 	}
 	computeAllocationRef := delayedCompAlloc.create(wdBefore, computeRequest)
 

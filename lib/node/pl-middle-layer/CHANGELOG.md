@@ -1,5 +1,125 @@
 # @milaboratories/pl-middle-layer
 
+## 1.71.8
+
+### Patch Changes
+
+- Updated dependencies [f91337f]
+  - @milaboratories/pl-crash-recorder@0.3.0
+
+## 1.71.7
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@6.10.3
+
+## 1.71.6
+
+### Patch Changes
+
+- Updated dependencies [7104497]
+  - @platforma-sdk/workflow-tengo@6.10.2
+
+## 1.71.5
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+- Updated dependencies [f2ed96c]
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pf-driver@1.9.2
+  - @platforma-sdk/workflow-tengo@6.10.1
+  - @milaboratories/pl-model-common@1.49.0
+  - @platforma-sdk/model@1.83.17
+  - @milaboratories/pf-spec-driver@1.5.2
+  - @milaboratories/columns-collection-driver@0.2.5
+  - @milaboratories/pl-model-middle-layer@1.32.1
+  - @milaboratories/pl-client@3.16.2
+  - @milaboratories/pl-deployments@3.0.17
+  - @milaboratories/pl-drivers@1.16.21
+  - @milaboratories/pl-flight-recorder@0.2.1
+  - @platforma-sdk/block-tools@2.15.2
+  - @milaboratories/pl-model-backend@1.4.25
+  - @milaboratories/pl-errors@1.4.40
+  - @milaboratories/pl-tree@1.14.4
+
+## 1.71.4
+
+### Patch Changes
+
+- Updated dependencies [f107d76]
+  - @platforma-sdk/workflow-tengo@6.10.0
+
+## 1.71.3
+
+### Patch Changes
+
+- Updated dependencies [0aa8615]
+  - @milaboratories/pl-client@3.16.1
+  - @milaboratories/pl-model-backend@1.4.24
+  - @milaboratories/pl-drivers@1.16.20
+  - @milaboratories/pl-errors@1.4.39
+  - @milaboratories/pl-tree@1.14.3
+  - @platforma-sdk/block-tools@2.15.1
+  - @platforma-sdk/workflow-tengo@6.9.0
+
+## 1.71.2
+
+### Patch Changes
+
+- f532ce7: Add a crash-survivable flight recorder for the block model layer.
+
+  Records every join a block model builds and every row it reads back, so an
+  out-of-memory death that leaves no other trace can be explained after the fact:
+  which block, which join, which call was in flight, and which memory region ran
+  out. Records are appended synchronously because the process being observed dies
+  without running any shutdown path, and an out-of-band sampler thread keeps the
+  resident-memory curve intact while the observed thread is blocked.
+
+  Join trees are reduced to a redacted digest — schema, row and byte counts, never
+  values — and two structural faults are detected from specs alone, before any data
+  is read: join siblings that share no axis, and axes that agree on name and type
+  but disagree on domain.
+
+  Recording is opt-in: it is enabled by pointing `MI_FLIGHT_RECORDER_DIR` at a
+  directory, and is inert otherwise.
+
+- Updated dependencies [f532ce7]
+  - @milaboratories/pl-flight-recorder@0.2.0
+
+## 1.71.1
+
+### Patch Changes
+
+- Updated dependencies [064df22]
+  - @platforma-sdk/block-tools@2.15.0
+
+## 1.71.0
+
+### Minor Changes
+
+- 9a6d54d: A stored template is shared without inspecting its document. `shareTemplate` no longer refuses a template holding a block installed from a local folder and returns `{ shareId }`; `checkTemplateShareable` and `unshareableTemplateEntries` are gone. An entry the recipient cannot resolve is reported to them where they preview or apply the template.
+
+## 1.70.0
+
+### Minor Changes
+
+- d8b9666: `TemplateExportProblem` carries `blockLabel`, the block's label from the project structure, so a UI can name the block that stops an export instead of showing its id.
+
+## 1.69.2
+
+### Patch Changes
+
+- Updated dependencies [1b1c13c]
+  - @platforma-sdk/model@1.83.9
+
+## 1.69.1
+
+### Patch Changes
+
+- Updated dependencies [a578da8]
+  - @platforma-sdk/workflow-tengo@6.9.0
+
 ## 1.69.0
 
 ### Minor Changes

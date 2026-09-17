@@ -1,5 +1,82 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.10.3
+
+### Patch Changes
+
+- Updated dependencies [cdbc497]
+  - @platforma-open/milaboratories.software-ptabler@2.1.10
+
+## 6.10.2
+
+### Patch Changes
+
+- 7104497: Save python dependency specs into the run environment so its identity reflects them
+
+  A python run environment was saved holding only the bare venv, and its dependencies were installed
+  afterwards. Its content hash was therefore a function of the interpreter alone, so two environments
+  built from one interpreter were indistinguishable and deduplication handed every software whichever
+  was registered first — a script could run under another package's venv and fail to import a
+  dependency it declares.
+
+  The dependency files are now written into the environment before it is saved, as conda already does
+  with `env-spec.yaml` and R with `renv.lock`.
+
+## 6.10.1
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+- Updated dependencies [f2ed96c]
+  - @platforma-open/milaboratories.software-ptabler@2.1.9
+  - @platforma-open/milaboratories.software-ptexter@1.2.4
+
+## 6.10.0
+
+### Minor Changes
+
+- f107d76: A command that asks for scratch space always gets TMPDIR and TMP, on every backend.
+
+  `exec.builder().resources({ onCPU: { scratchFreeSpace: … } })` now guarantees both variables,
+  pointed at `<workdir>/.pl/tmp` — the same location `{system.scratch.path}` names. A size is still
+  what decides whether a fast device sits behind that path; `0` asks for the directory alone.
+
+  Backends that provide this themselves are used directly. On one that does not, the SDK stages a
+  small POSIX shell script into the working directory and routes the command through it: the script
+  creates the directory, exports both variables, and `exec`s the command with its arguments
+  untouched. `{system.scratch.path}` is rewritten to a workdir-relative path on those backends too,
+  where the expression would otherwise fail to evaluate at all rather than render empty.
+
+  Two consequences worth knowing:
+
+  - A block no longer needs to branch on `hasScratchSpace` to arrange its own temporary storage.
+  - On Windows the workaround cannot run, so an old backend there is refused with an error naming
+    the fix. Windows ships only as a built-in backend, whose version is ours to update.
+  - Which backends get the workaround is decided per request, not per backend. 4.4.0 through 4.4.3
+    report scratch storage but still decide `TMPDIR` from the _size_ asked for, so a sized request
+    there is left alone — it already names the real scratch device — while a request of `0`, which
+    those backends answer with no `TMPDIR` and a scratch path naming the working directory root, gets
+    the wrapper like any older backend.
+
+## 6.9.0
+
+### Minor Changes
+
+- a578da8: Add `scratchFreeSpace` to `exec.builder().resources({ ... })`.
+
+  A command can now ask for disposable disk space for its temporary files, in either the `onCPU`
+  or the `onGPU` block, and the backend points `TMPDIR` at storage sized for the request instead
+  of the small temporary directory every job shares. Ask for it when a command writes large
+  intermediate data — sorting, indexing, alignment. The size can be a fixed value or an
+  `exec.formula` computed from the input data, and the command reads back the location it really
+  got with `{system.scratch.path}` and the size with `{system.scratch.gib}`.
+
+  Scratch space is an optimisation, never a precondition: a deployment that cannot serve the size
+  caps it, one that has no scratch storage ignores the request, and a scratch formula that cannot
+  be evaluated drops the request rather than failing the exec — where a `ram` or `cpu` formula
+  would error. A `.staticFallback(...)` on a scratch formula is inert, since the backends that
+  would consult it are the same ones that ignore the request altogether.
+
 ## 6.8.3
 
 ### Patch Changes
