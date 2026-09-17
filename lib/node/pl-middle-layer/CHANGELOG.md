@@ -1,5 +1,38 @@
 # @milaboratories/pl-middle-layer
 
+## 1.71.10
+
+### Patch Changes
+
+- 4068d5c: `auto` now resolves to `backend-delta` whenever the backend advertises
+  `treeChangedSince:v1`, falling back to `backend-streaming` and then `client-bfs`. This
+  changes which algorithm an existing caller gets, without any change on their side.
+  `MI_TREE_TRAVERSAL` accepts `backend-delta` too.
+- Updated dependencies [3e33e3c]
+- Updated dependencies [4068d5c]
+- Updated dependencies [13aff26]
+- Updated dependencies [ddc7746]
+- Updated dependencies [37707e3]
+  - @milaboratories/pl-tree@1.15.0
+  - @milaboratories/pl-client@3.17.0
+  - @milaboratories/pl-drivers@1.16.22
+  - @milaboratories/pl-model-backend@1.4.26
+  - @milaboratories/pl-errors@1.4.41
+  - @platforma-sdk/block-tools@2.15.3
+  - @platforma-sdk/workflow-tengo@6.10.4
+
+## 1.71.9
+
+### Patch Changes
+
+- 31a3f60: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.61. The Linux pframes-rs-node addon no longer ships debug info. Its download shrinks from 208 MB to about 28 MB. Bump runenv-python-3 to 1.13.2, which bundles polars-pf 1.1.61 for ptabler.
+- Updated dependencies [31a3f60]
+- Updated dependencies [d326918]
+  - @milaboratories/pf-driver@1.9.3
+  - @platforma-sdk/workflow-tengo@6.10.4
+  - @platforma-sdk/model@1.83.17
+  - @milaboratories/pf-spec-driver@1.5.3
+
 ## 1.71.8
 
 ### Patch Changes

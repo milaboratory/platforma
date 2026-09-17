@@ -15,10 +15,14 @@
  *   - The SDK does not know if it runs on linux server or on laptop. But it knows if it is Windows
  *     machine and if commands will be run in containers.
  *
- * For backends prior 4.4.5 executed on non-windows systems we apply wrapper shell script
- * that modifies command's env variables setting TMPDIR and TMP vars accordingly with 4.4.5 and abve.
- * We intentionally ignore Windows hosts as this is builtin-only backends we can update easily
- * along with Desktop App.
+ * For backends prior 4.4.5 the SDK routes the command through a wrapper script that makes the
+ * directory and exports the variables 4.4.5 sets itself. There are two wrappers, because there are
+ * two interpreters: a POSIX shell script for a command on a unix host or in a container, and a
+ * batch file for a command on a Windows host. Which one is staged follows the shape that will
+ * actually run - a container is Linux whatever the host is.
+ *
+ * The Windows wrapper also sets TEMP, which is what GetTempPath - and so most native software -
+ * reads first. TMPDIR alone would be ignored there.
  *
  * Everything about the workaround lives in this file. Deleting it is how the workaround goes away
  * once no supported backend needs it.
@@ -38,6 +42,12 @@ text := import("text")
 // a block chose.
 SCRIPT_FILE_NAME := ".pl-run-compat-f9b7eca1b8.sh"
 
+// SCRIPT_FILE_NAME_WINDOWS is the same wrapper for a command running on a Windows host, where
+// there is no POSIX shell to interpret the other one. The '.cmd' extension is what makes cmd.exe
+// interpret it; a '.ps1' would be refused outright by the default PowerShell execution policy,
+// while a batch file needs no privilege at all - Windows has no execute bit.
+SCRIPT_FILE_NAME_WINDOWS := ".pl-run-compat-f9b7eca1b8.cmd"
+
 // SCRATCH_PATH_VARIABLE and SCRATCH_SIZE_VARIABLES are the command-expression variables a block
 // writes to ask about its scratch space. A backend from before the contract has no 'system.scratch'
 // at all, so these do not render empty - expr.Eval returns nil and the command dies with "variable
@@ -55,6 +65,14 @@ SCRATCH_SIZE_VARIABLES := ["system.scratch.bytes", "system.scratch.gib", "system
 // place the current backend points TMPDIR at. The command's working directory IS the workdir, so
 // the relative form names the same directory without the SDK having to know its absolute path.
 WORKDIR_TMP_REL_PATH := ".pl/tmp"
+
+// WORKDIR_TMP_REL_PATH_WINDOWS is the same directory spelled for cmd.exe, and is used ONLY inside
+// the batch wrapper: 'md .pl/tmp' fails there, because cmd reads a forward slash as the start of a
+// switch. It is deliberately not what rewriteScratchExpressions substitutes - a backslash inside
+// a quoted expr-lang string would be read as an escape sequence, so '.pl\tmp' would reach the
+// command as '.pl<TAB>mp'. The forward-slash form is accepted by every Windows API a command
+// passes a path to, so the rewrite keeps using it on both hosts.
+WORKDIR_TMP_REL_PATH_WINDOWS := ".pl\\tmp"
 
 // script returns the wrapper's text.
 //
@@ -79,6 +97,59 @@ export TMPDIR TMP
 
 exec "$@"
 `
+}
+
+// _toCRLF returns text with every line ending as CRLF, whichever way it arrived.
+//
+// cmd.exe reads a batch file with bare LF endings wrongly, and the source below cannot simply be
+// written with CRLF: this repository has no .gitattributes, so a checkout on a machine with
+// core.autocrlf enabled would rewrite it. Normalising down and then up gives the same result from
+// either checkout.
+_toCRLF := func(value) {
+	return text.replace(text.replace(value, "\r\n", "\n", -1), "\n", "\r\n", -1)
+}
+
+// scriptWindows returns the batch wrapper's text, for a command running on a Windows host.
+//
+// Held in a FILE for the same reason the POSIX one is, and interpreted by the cmd.exe the runner
+// already starts every local command with - so the wrapper adds no process to the tree, and the
+// exit code still travels the way it did.
+//
+// Three things it must do that the POSIX script does not:
+//
+//   - Set TEMP as well. Win32 GetTempPath, which most native software reaches the temporary
+//     directory through, reads TMP then TEMP and never TMPDIR. TMPDIR is set too, for the MSYS
+//     and Python tooling that run environments ship.
+//   - Forward the command with '%*', the raw remainder of the command line. Naming '%1 %2 ...'
+//     instead would drop everything past the ninth argument.
+//   - End with 'exit /b %ERRORLEVEL%'. There is no 'exec' here: without this the batch file's own
+//     exit code, not the command's, is what the runner reads.
+//
+// It reads '%CD%' rather than PL_JOB_WORKDIR, which the POSIX script prefers. Only the local_exec
+// driver ever reaches a Windows host, and it names the working directory to the process instead of
+// exporting it - PL_JOB_WORKDIR comes from the k8s and google batch drivers, which are Linux. A
+// variable that can only arrive from somewhere else would be a way to get the directory wrong, not
+// a fallback.
+scriptWindows := func() {
+	return _toCRLF(`@echo off
+
+rem Compatibility layer between a current workflow-tengo SDK and a Platforma Backend from before
+rem the temporary-directory contract. Update the backend and this file stops appearing here.
+rem
+rem Written by exec.tmpdirCompat in @platforma-sdk/workflow-tengo.
+
+setlocal
+
+set "pl_tmp=%CD%\` + WORKDIR_TMP_REL_PATH_WINDOWS + `"
+if not exist "%pl_tmp%" md "%pl_tmp%"
+
+set "TMPDIR=%pl_tmp%"
+set "TMP=%pl_tmp%"
+set "TEMP=%pl_tmp%"
+
+%*
+exit /b %ERRORLEVEL%
+`)
 }
 
 // isNeeded reports whether the backend leaves the temporary directory to the SDK.
@@ -145,14 +216,46 @@ concat := func(prefix, tail) {
 	return result
 }
 
-// _assertNotWindows refuses the workaround on Windows. Windows ships only as a built-in backend
-// whose version we control, so the answer there is to update it rather than to keep a second,
-// cmd.exe-shaped wrapper alive.
-_assertNotWindows := func() {
-	ll.assert(!isWindows(),
-		"exec.builder: this Platforma Backend is too old to provide a temporary directory (TMPDIR),"+
-			" and the workaround for it is POSIX-shell only, so it cannot run on Windows."+
-			" Update Platforma Backend to a version >=4.4.5")
+// usesDocker reports whether a software will run in a container, which decides everything else
+// here: a container is Linux whatever the host is, so it gets the POSIX wrapper even on Windows.
+//
+// One function, used both to choose the wrapper to stage and to choose the shape to patch, so the
+// two cannot disagree - staging the batch file while patching the docker entrypoint would leave a
+// container looking for a script that was never written.
+usesDocker := func(descriptor, isDockerAvailable) {
+	return isDockerAvailable && !is_undefined(descriptor.docker)
+}
+
+// wrapperPrefix returns the tokens that go in front of a command to route it through the wrapper.
+//
+// POSIX: the shell is named explicitly and the script is an argument to it, so the file needs no
+// execute bit. Windows: the batch file IS the command, because the runner already starts every
+// local command through 'cmd.exe /c' and cmd interprets a '.cmd' itself. The '.\' prefix is
+// deliberate - cmd reads a leading './' as the start of a switch, and a bare name would be looked
+// up along PATH before the working directory.
+wrapperPrefix := func(inContainer) {
+	if !inContainer && isWindows() {
+		return [".\\" + SCRIPT_FILE_NAME_WINDOWS]
+	}
+
+	return ["sh", "./" + SCRIPT_FILE_NAME]
+}
+
+// filesToStage returns the wrapper files to write into the working directory, keyed by name.
+//
+// Only the one that will run is staged. Writing both would be harmless at run time but is not
+// free: a file's name and content are part of the exec CID, so an unused file would change the
+// identity of every command and throw away the cache of all of them.
+filesToStage := func(inContainer) {
+	files := {}
+
+	if !inContainer && isWindows() {
+		files[SCRIPT_FILE_NAME_WINDOWS] = scriptWindows()
+		return files
+	}
+
+	files[SCRIPT_FILE_NAME] = script()
+	return files
 }
 
 // patchSoftwareDescriptor routes a software's command through the wrapper.
@@ -167,21 +270,20 @@ _assertNotWindows := func() {
 //
 // Takes and returns a plain (non-strict) descriptor map.
 patchSoftwareDescriptor := func(descriptor, isDockerAvailable) {
-	if isDockerAvailable && !is_undefined(descriptor.docker) {
+	if usesDocker(descriptor, isDockerAvailable) {
 		docker := ll.fromStrict(descriptor.docker)
 
 		entrypoint := docker.entrypoint
 		if is_undefined(entrypoint) { entrypoint = [] }
-		docker.entrypoint = concat(["sh", "./" + SCRIPT_FILE_NAME], entrypoint)
+		docker.entrypoint = concat(wrapperPrefix(true), entrypoint)
 
 		descriptor.docker = docker
 		return descriptor
 	}
 
 	// A bare binary, or a locally built package during block development. Both run on the runner
-	// host, so the wrapper has to be a shell the host actually has.
-	_assertNotWindows()
-
+	// host, so the wrapper has to be one the host can interpret - a shell script on unix, a batch
+	// file on Windows.
 	for kind in ["local", "binary"] {
 		if is_undefined(descriptor[kind]) { continue }
 
@@ -189,7 +291,7 @@ patchSoftwareDescriptor := func(descriptor, isDockerAvailable) {
 		ll.assert(is_array(pkg.cmd) && len(pkg.cmd) != 0,
 			"exec.tmpdirCompat: software descriptor %q has no 'cmd' to wrap", kind)
 
-		pkg.cmd = concat(["sh", "./" + SCRIPT_FILE_NAME], pkg.cmd)
+		pkg.cmd = concat(wrapperPrefix(false), pkg.cmd)
 		descriptor[kind] = pkg
 	}
 
@@ -202,11 +304,11 @@ patchSoftwareDescriptor := func(descriptor, isDockerAvailable) {
 // The caller must prepend to the typed argument list as well, or an exec that used argExpr would
 // lose the wrapper.
 wrapCommand := func(cmd) {
-	_assertNotWindows()
+	prefix := wrapperPrefix(false)
 
 	return {
-		cmd: "sh",
-		prependArgs: ["./" + SCRIPT_FILE_NAME, cmd]
+		cmd: prefix[0],
+		prependArgs: concat(prefix[1:], [cmd])
 	}
 }
 
@@ -255,11 +357,17 @@ rewriteScratchExpressions := func(value) {
 
 export ll.toStrict({
 	SCRIPT_FILE_NAME: SCRIPT_FILE_NAME,
+	SCRIPT_FILE_NAME_WINDOWS: SCRIPT_FILE_NAME_WINDOWS,
 	WORKDIR_TMP_REL_PATH: WORKDIR_TMP_REL_PATH,
+	WORKDIR_TMP_REL_PATH_WINDOWS: WORKDIR_TMP_REL_PATH_WINDOWS,
 	SCRATCH_PATH_VARIABLE: SCRATCH_PATH_VARIABLE,
 	SCRATCH_SIZE_VARIABLES: SCRATCH_SIZE_VARIABLES,
 
 	script: script,
+	scriptWindows: scriptWindows,
+	filesToStage: filesToStage,
+	usesDocker: usesDocker,
+	wrapperPrefix: wrapperPrefix,
 	isNeeded: isNeeded,
 	isSizedRequest: isSizedRequest,
 	isWindows: isWindows,
