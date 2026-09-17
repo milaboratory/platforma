@@ -90,7 +90,6 @@ export async function runStructureForPath(input: RunStructureInput): Promise<Run
   return { blockPath: input.blockPath, changes: result.changes };
 }
 
-/** One-line-per-change summary for CLI output. */
 /** Expand glob patterns among the positional block paths. POSIX shells expand
  *  them before the CLI sees them, but cmd.exe does not — so on Windows
  *  `structure check etc/blocks/*` would otherwise receive the literal pattern
@@ -107,6 +106,7 @@ export function expandBlockPaths(paths: string[]): string[] {
   return [...new Set(expanded)];
 }
 
+/** One-line-per-change summary for CLI output. */
 export function formatChanges(blockPath: string, changes: Change[]): string {
   if (changes.length === 0) return `  ${blockPath}: up to date (0 changes)`;
   const lines = changes.map(
