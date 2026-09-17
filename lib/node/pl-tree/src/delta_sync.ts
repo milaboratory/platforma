@@ -27,11 +27,6 @@ function referencesOf(resource: ExtendedResourceData): SignedResourceId[] {
   return refs;
 }
 
-/** Rounds before giving up and rebuilding. Each is a sequential round trip and the rebuild it
- * escalates to is a single one, so this has to stay small: with RESOLUTION_DEPTH clearing a
- * subtree per round, needing more than a few means something is wrong rather than deep. */
-const MAX_RESOLUTION_ROUNDS = 3;
-
 /**
  * One delta poll: hand the backend this transaction's change token, take only what is newer.
  *
@@ -166,17 +161,15 @@ export async function loadDeltaTreeState(
   const collectedFromPoll = collected.size;
 
   // A body may reference a resource the response did not carry - a field repointed at one we
-  // never held. Ids already asked for are never re-requested, so the loop terminates: the id
-  // set is finite and each round removes at least one.
+  // never held. Ids already asked for are never re-requested, so the loop terminates: the tree
+  // is finite and `fetched` only grows.
+  //
+  // Deliberately unbounded on rounds. A round-count cap would turn a legal tree shape into a
+  // desktop error, since how deep the references chain is a property of what the backend
+  // allowed rather than of anything wrong here, and the streaming path's stop-marker follow-up
+  // loop has always run on the same assumption.
   const fetched = new Set<SignedResourceId>();
-  let rounds = 0;
   while (missing.size > 0) {
-    if (++rounds > MAX_RESOLUTION_ROUNDS) {
-      throw new TreeStateUpdateError(
-        `delta poll: ${missing.size} reference(s) still unresolved after ${MAX_RESOLUTION_ROUNDS} rounds`,
-      );
-    }
-
     const round = pending.splice(0).filter((id) => !fetched.has(id) && missing.has(id));
     if (round.length === 0) {
       // Asked for all of these and none arrived; a soft-deleted referent gets here, since
