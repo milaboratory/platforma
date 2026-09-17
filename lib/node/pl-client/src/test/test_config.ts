@@ -52,8 +52,20 @@ export function getTestConfig(): TestConfig {
   return conf as TestConfig;
 }
 
-/** Default request timeout for tests (ms) */
-export const TEST_REQUEST_TIMEOUT = 500;
+/**
+ * Default request timeout for tests (ms).
+ *
+ * Kept short so a hung call fails the test instead of the suite's own budget. A deploy the
+ * tests reach over cluster DNS needs more than that on first contact, where the deadline
+ * covers name resolution too:
+ *
+ *   RpcError: Deadline exceeded after 0.500s,waiting for name resolution
+ *
+ * That call builds the shared client, so the whole file dies with it and retries only
+ * repeat the error against an undefined client. PL_TEST_REQUEST_TIMEOUT raises the budget
+ * where resolution is slow, and every other environment keeps the short one.
+ */
+export const TEST_REQUEST_TIMEOUT = Number(process.env.PL_TEST_REQUEST_TIMEOUT ?? 500);
 
 /** Returns PlClientConfig with reduced timeout for tests */
 export function plAddressToTestConfig(address: string): PlClientConfig {
