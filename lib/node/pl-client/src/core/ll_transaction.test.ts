@@ -158,6 +158,9 @@ test("check timeout error type (active)", async () => {
             resourceId: id,
             loadFields: false,
             resourceSignature,
+            showSoftDeletes: false,
+            // Required bytes field: undefined fails serialization and kills the tx stream.
+            changedSinceToken: new Uint8Array(0),
           },
         },
         false,
@@ -232,6 +235,9 @@ test("check is abort error (active)", async () => {
             resourceId: id,
             loadFields: false,
             resourceSignature,
+            showSoftDeletes: false,
+            // Required bytes field: undefined fails serialization and kills the tx stream.
+            changedSinceToken: new Uint8Array(0),
           },
         },
         false,
