@@ -77,13 +77,23 @@ function resolveScript(scriptName) {
       process.exit(1);
     }
 
-    // Tokenize the script value, collecting leading KEY=value env vars
+    // Tokenize the script value, collecting leading KEY=value env vars.
+    // `cross-env` is the portable spelling of the same assignment, so it is
+    // transparent here: drop the wrapper and keep reading the vars behind it.
     const tokens = value.split(/\s+/);
     let i = 0;
-    while (i < tokens.length && /^\w+=\S+$/.test(tokens[i])) {
-      const [k, ...rest] = tokens[i].split("=");
-      env[k] = rest.join("=");
-      i++;
+    while (i < tokens.length) {
+      if (/^\w+=\S+$/.test(tokens[i])) {
+        const [k, ...v] = tokens[i].split("=");
+        env[k] = v.join("=");
+        i++;
+        continue;
+      }
+      if (tokens[i] === "cross-env" || tokens[i] === "cross-env-shell") {
+        i++;
+        continue;
+      }
+      break;
     }
     const rest = tokens.slice(i);
 
