@@ -48,4 +48,3 @@ export type { TemplateExportProblem } from "./template_export";
 
 // The template share path. Whether a template may be shared at all is a question a UI asks about
 // a template it is merely displaying, so the check and its problem type are public.
-export { unshareableTemplateEntries, type TemplateShareProblem } from "./template_share";

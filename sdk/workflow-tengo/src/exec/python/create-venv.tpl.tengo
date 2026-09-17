@@ -11,6 +11,7 @@ workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
 assets := import(":assets")
 path := import(":path")
+maps := import(":maps")
 validation := import(":validation")
 runenv := import(":exec.runenv")
 internal := import(":exec.python.internal")
@@ -22,13 +23,25 @@ pkg := import(":exec.package")
  *
  * @param pythonPackage: smart.reference - python run environment.
  * @param pythonDescriptor: desc.runEnvScheme - python run environment descriptor.
+ * @param dependencies: {"string": smart.reference} - dependency spec files keyed by dependency name.
+ * @param dependencyFileNames: {"string": "string"} - file name each dependency carries in the
+ *                                                    software package, keyed by dependency name.
+ *                                                    The spec files are saved into the environment
+ *                                                    under these names, so its content hash
+ *                                                    reflects what gets installed.
  * @return venv: smart.reference - python virtual environment.
  */
-_createVenv := func(pythonPackage, pythonDescriptor) {
+_createVenv := func(pythonPackage, pythonDescriptor, dependencies, dependencyFileNames) {
+	dependencySpecs := {}
+	for depName, fileName in dependencyFileNames {
+		dependencySpecs[fileName] = dependencies[depName]
+	}
+
 	wdBefore := workdir.builder().
 		inQueue(pkg.DEFAULT_ALLOCATION_QUEUE).
 		cpu(pkg.DEFAULT_ALLOCATION_CPU).
 		mem(pkg.DEFAULT_ALLOCATION_RAM).
+		addFiles(dependencySpecs).
 		build()
 
 	// DEPRECATED: remove after 15 Mar 2025
@@ -71,6 +84,17 @@ _createVenv := func(pythonPackage, pythonDescriptor) {
 		addPath("venv").
 		addPackage("python", pythonPackage)
 
+	// Dependency specs are saved into the environment, as conda saves env-spec.yaml and R saves
+	// renv.lock. Required: dependencies are installed AFTER this save, so the environment's content
+	// hash would otherwise be a function of the interpreter alone, and two environments built from
+	// one interpreter would deduplicate onto whichever was registered first.
+	//
+	// getKeys returns sorted keys, and the order matters: these paths are serialized into the
+	// saver's settings resource, whose bytes are its identity.
+	for fileName in maps.getKeys(dependencySpecs) {
+		runEnvSaver.addPath(fileName)
+	}
+
 	return runEnvSaver.build().runEnv()
 }
 
@@ -106,7 +130,7 @@ self.body(func(inputs) {
 	pythonPackage := inputs.python
 	pythonDescriptor := inputs.pythonDescriptor
 
-	venv := _createVenv(pythonPackage, pythonDescriptor)
+	venv := _createVenv(pythonPackage, pythonDescriptor, inputs.dependencies, inputs.dependencyFileNames)
 
     venvParams := _pythonVenvBinDir(pythonPackage, pythonDescriptor)
 

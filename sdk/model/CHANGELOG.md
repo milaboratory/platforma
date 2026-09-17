@@ -1,5 +1,20 @@
 # @platforma-sdk/model
 
+## 1.83.17
+
+### Patch Changes
+
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pl-model-common@1.49.0
+  - @milaboratories/pl-model-middle-layer@1.32.1
+  - @milaboratories/ptabler-expression-js@1.2.39
+
+## 1.83.9
+
+### Patch Changes
+
+- 1b1c13c: Drop the "Ambiguous PObjectId" warning from the PlDataTable column resolver. Several recipes wrapping the same underlying column is expected (e.g. one column filtered by different axis values), so the message was noise. First match still wins.
+
 ## 1.83.0
 
 ### Minor Changes

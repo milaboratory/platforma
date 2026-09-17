@@ -75,8 +75,6 @@ import {
   type ShareProjectsOptions,
   type ShareTemplateOptions,
 } from "../model/sharing_model";
-import type { TemplateShareProblem } from "../model/template_share";
-import { unshareableTemplateEntries } from "../model/template_share";
 import {
   buildShareEnvelope,
   buildTemplateShareEnvelope,
@@ -1002,9 +1000,10 @@ export class MiddleLayer {
    * The cost of that is the donor's receipt: nobody can write an acceptance onto a read-only
    * envelope, so a template share never reports who accepted it.
    *
-   * A template holding a block installed from a folder on this machine is refused rather than sent,
-   * with every offending entry named. {@link checkTemplateShareable} answers the same question
-   * without attempting the share, so a UI can state it on the template itself.
+   * Nothing about the document is checked: a stored template is shareable by virtue of existing.
+   * An entry the recipient cannot resolve — a block installed from a folder on the sender's
+   * machine, say — is theirs to see when they preview or apply it, where every unresolvable entry
+   * is named anyway.
    *
    * @param id template to share
    * @param options recipients XOR everyone, plus the title recipients see
@@ -1013,8 +1012,7 @@ export class MiddleLayer {
     id: TemplateId,
     options: ShareTemplateOptions,
   ): Promise<ShareTemplateOutcome> {
-    const loaded = await this.loadShareableTemplate(id);
-    if (!loaded.ok) return { ok: false, problems: loaded.problems };
+    const template = await this.loadTemplateForShare(id);
 
     const everyone = "everyone" in options;
     const sender = this.currentUserLogin ?? "";
@@ -1026,7 +1024,7 @@ export class MiddleLayer {
       const { envelope, data } = buildTemplateShareEnvelope(
         tx,
         this.sharingOutboxResourceId,
-        loaded.template,
+        template,
         { sender, title: options.title, expiresAt },
       );
       shareId = data.shareId;
@@ -1037,29 +1035,16 @@ export class MiddleLayer {
     });
 
     await this.sharingOutboxTree.refreshState();
-    return { ok: true, shareId: shareId! };
+    return { shareId: shareId! };
   }
 
-  /**
-   * Every entry of a stored template that stands in the way of sharing it, empty for a template
-   * that can be shared. Reads the template and nothing else, so a UI can state the refusal on the
-   * template itself instead of only when the user tries to share it.
-   */
-  public async checkTemplateShareable(id: TemplateId): Promise<readonly TemplateShareProblem[]> {
-    const stored = await this.getTemplateData(id);
-    return unshareableTemplateEntries(stored.document);
-  }
-
-  /** The document and the label of a template that may be shared, or every entry that stops it.
-   *  The label is what the recipient's own list will show, so it travels with the document. */
-  private async loadShareableTemplate(
+  /** The document and the label of a template about to be shared. The label is what the
+   *  recipient's own list will show, so it travels with the document. */
+  private async loadTemplateForShare(
     id: TemplateId,
-  ): Promise<
-    | { ok: true; template: { document: ProjectTemplateV1; label: string } }
-    | { ok: false; problems: readonly TemplateShareProblem[] }
-  > {
+  ): Promise<{ document: ProjectTemplateV1; label: string }> {
     const rid = await this.resolveTemplateId(id);
-    const template = await this.pl.withReadTx("MLReadTemplateForShare", async (tx) => {
+    return await this.pl.withReadTx("MLReadTemplateForShare", async (tx) => {
       const rd = await tx.getResourceData(rid, false);
       if (rd.data === undefined) throw new Error(`Template ${id} carries no document.`);
       return {
@@ -1067,10 +1052,6 @@ export class MiddleLayer {
         label: await tx.getKValueJson<string>(rid, TemplateLabelKey),
       };
     });
-
-    const problems = unshareableTemplateEntries(template.document);
-    if (problems.length > 0) return { ok: false, problems };
-    return { ok: true, template };
   }
 
   /**
@@ -1092,8 +1073,7 @@ export class MiddleLayer {
    * `opts.templateId` is required for, and only used by, a share that carries a template: a stored
    * template is immutable, so an improved one is a different template and the share cannot re-read
    * the one it started from — the caller names the new target. Every other option means the same
-   * thing for both kinds of share. Sharing the named template must be permitted (see
-   * {@link checkTemplateShareable}) or this throws.
+   * thing for both kinds of share.
    */
   public async changeShare(
     shareId: ShareId,
@@ -1105,14 +1085,9 @@ export class MiddleLayer {
       templateId?: TemplateId;
     } = {},
   ): Promise<void> {
-    // Read outside the write tx: it is two round-trips of its own, and the refusal it can produce
-    // must be raised before anything is torn down.
+    // Read outside the write tx: it is two round-trips of its own.
     const target =
-      opts.templateId === undefined ? undefined : await this.loadShareableTemplate(opts.templateId);
-    if (target !== undefined && !target.ok)
-      throw new Error(
-        `changeShare: template ${opts.templateId} cannot be shared: ${describeShareProblems(target.problems)}`,
-      );
+      opts.templateId === undefined ? undefined : await this.loadTemplateForShare(opts.templateId);
 
     await this.pl.withWriteTx("MLChangeShare", async (tx) => {
       const old = await this.resolveOutboxEnvelope(tx, shareId);
@@ -1137,17 +1112,12 @@ export class MiddleLayer {
 
         // Same shareId, same outbox field name — detach the old field before rebuilding, or they collide.
         tx.removeField(field(this.sharingOutboxResourceId, old.fieldName));
-        const { envelope } = buildTemplateShareEnvelope(
-          tx,
-          this.sharingOutboxResourceId,
-          target.template,
-          {
-            sender: self,
-            title: opts.title === undefined ? old.data.title : opts.title.trim(),
-            expiresAt: everyone ? null : Date.now() + this.env.ops.envelopeTtlMs,
-            shareId, // SAME shareId — the essence of change
-          },
-        );
+        const { envelope } = buildTemplateShareEnvelope(tx, this.sharingOutboxResourceId, target, {
+          sender: self,
+          title: opts.title === undefined ? old.data.title : opts.title.trim(),
+          expiresAt: everyone ? null : Date.now() + this.env.ops.envelopeTtlMs,
+          shareId, // SAME shareId — the essence of change
+        });
 
         // Nothing to transfer: a read-only grant cannot write an acceptance, so a template share
         // never accumulated one.
@@ -1828,9 +1798,3 @@ export class MiddleLayer {
 //
 // Internals
 //
-
-/** Refusal reasons as one line, each naming the entry it belongs to, so a throw that escapes to a
- *  log still says which block stands in the way. */
-function describeShareProblems(problems: readonly TemplateShareProblem[]): string {
-  return problems.map((p) => `${p.entryId}: ${p.error}`).join("; ");
-}

@@ -20,7 +20,6 @@ import type { MiddleLayerEnvironment } from "./middle_layer";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import type { Branded, ProjectTemplateV1 } from "@milaboratories/pl-model-common";
 import type { TemplateExportProblem } from "../model/template_export";
-import type { TemplateShareProblem } from "../model/template_share";
 import type { ShareId } from "../model/sharing_model";
 import type { AppliedEntry, TemplateApplyProblem } from "../model/template_apply";
 import type { ProjectId } from "../model/project_model";
@@ -80,10 +79,8 @@ export type SaveProjectAsTemplateOutcome =
   | { readonly ok: true; readonly templateId: TemplateId }
   | { readonly ok: false; readonly problems: readonly TemplateExportProblem[] };
 
-/** What sharing a stored template yields: the share's logical id, or every entry in the way. */
-export type ShareTemplateOutcome =
-  | { readonly ok: true; readonly shareId: ShareId }
-  | { readonly ok: false; readonly problems: readonly TemplateShareProblem[] };
+/** What sharing a stored template yields: the share's logical id. */
+export type ShareTemplateOutcome = { readonly shareId: ShareId };
 
 /**
  * What applying a stored template yields.

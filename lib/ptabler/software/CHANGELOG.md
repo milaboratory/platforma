@@ -1,5 +1,19 @@
 # @platforma-open/software-ptabler
 
+## 2.1.10
+
+### Patch Changes
+
+- cdbc497: Writing a table back over the file it was read from no longer crashes.
+
+  The read is lazy, so sinking straight to the target truncated a file polars was still reading. A local filesystem hides that behind cached pages; a network filesystem does not, and the process died with a bus error. A write to a file the same workflow also reads now lands in a sibling temporary file that is moved into place once every sink has been collected, carrying the target's mode across so a file staged writable stays writable. Every other write keeps the direct sink it always had.
+
+## 2.1.9
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+
 ## 2.1.8
 
 ### Patch Changes

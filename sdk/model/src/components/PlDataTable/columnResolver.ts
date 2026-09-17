@@ -20,10 +20,7 @@ import type { ColumnRecipe } from "../../columns";
  */
 export type ColumnResolver = (ref: PTableColumnId) => PTableColumnId | undefined;
 
-export function createColumnResolver(
-  columns: ColumnRecipe[],
-  deps?: { warn?: (msg: string) => void },
-): ColumnResolver {
+export function createColumnResolver(columns: ColumnRecipe[]): ColumnResolver {
   const axisIds: AxisId[] = [];
   for (const c of columns) {
     for (const ax of c.getSpec().axesSpec) {
@@ -36,14 +33,7 @@ export function createColumnResolver(
   for (const c of columns) {
     byFullId.set(c.id, c);
     const pid = extractPObjectId(c.id);
-    const existing = byPObjectId.get(pid);
-    if (existing === undefined) {
-      byPObjectId.set(pid, c);
-    } else if (existing.id !== c.id) {
-      deps?.warn?.(
-        `Ambiguous PObjectId ${pid}: recipe ids ${existing.id} and ${c.id} both match — keeping first.`,
-      );
-    }
+    if (!byPObjectId.has(pid)) byPObjectId.set(pid, c);
   }
 
   return (ref: PTableColumnId): PTableColumnId | undefined => {

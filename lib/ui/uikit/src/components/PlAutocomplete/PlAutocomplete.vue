@@ -198,6 +198,10 @@ const textValue = computed(() => {
   return item?.label || (model.value ? props.formatValue(model.value) : "");
 });
 
+// Native tooltip with the full selected value; the value layer itself has
+// `pointer-events: none`, so the title goes on the field wrapper.
+const fieldTitle = computed(() => (!data.open && textValue.value ? textValue.value : undefined));
+
 const computedPlaceholder = computed(() => {
   if (!data.open && model.value) {
     return "";
@@ -384,7 +388,7 @@ watch(
       @focusout="onFocusOut"
     >
       <div class="pl-autocomplete__container">
-        <div class="pl-autocomplete__field">
+        <div class="pl-autocomplete__field" :title="fieldTitle">
           <input
             ref="input"
             v-model="search"

@@ -1,0 +1,26 @@
+/** Runs two python entrypoints that share one interpreter and differ only in their
+ * requirements file, reporting the virtual environment each one actually ran in. */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+self.defineOutputs(["venvA", "venvB"])
+
+swA := assets.importSoftware("@platforma-open/milaboratories.software-venv-identity-test:deps-a")
+swB := assets.importSoftware("@platforma-open/milaboratories.software-venv-identity-test:deps-b")
+
+_whereAmI := func(sw) {
+	return exec.builder().
+		software(sw).
+		saveStdoutContent().
+		run().
+		getStdoutContent()
+}
+
+self.body(func(inputs) {
+	return {
+		venvA: _whereAmI(swA),
+		venvB: _whereAmI(swB)
+	}
+})
