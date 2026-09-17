@@ -1,5 +1,13 @@
 # @milaboratories/pl-errors
 
+## 1.4.41
+
+### Patch Changes
+
+- Updated dependencies [13aff26]
+- Updated dependencies [ddc7746]
+  - @milaboratories/pl-client@3.17.0
+
 ## 1.4.40
 
 ### Patch Changes
