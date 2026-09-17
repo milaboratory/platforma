@@ -2,9 +2,8 @@ import type { SpawnSyncReturns } from "node:child_process";
 import { spawnSync } from "node:child_process";
 import { Command } from "commander";
 import { compile, savePacks, getPackageInfo } from "../compiler/main";
-import { createLogger } from "../compiler/util";
+import { createLogger, getTengoFiles } from "../compiler/util";
 import * as opts from "../shared/basecmd";
-import * as fs from "node:fs";
 import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 import type * as winston from "winston";
@@ -160,29 +159,6 @@ https://marketplace.visualstudio.com/items?itemName=jaydenlin.ctags-support`);
   checkRunError(result, "failed to generate ctags");
 
   logger.info("Generation of tags is done.");
-}
-
-function getTengoFiles(dir: string, depth: number): string[] {
-  if (depth === 0) {
-    return [];
-  }
-
-  const files = fs.readdirSync(dir, { withFileTypes: true });
-
-  let tengoFiles: string[] = [];
-  files.forEach((file) => {
-    const absPath = path.join(dir, file.name);
-
-    if (file.isDirectory()) {
-      tengoFiles = tengoFiles.concat(getTengoFiles(absPath, depth - 1));
-    }
-
-    if (!file.isDirectory() && file.name.endsWith(".tengo")) {
-      tengoFiles.push(absPath);
-    }
-  });
-
-  return tengoFiles;
 }
 
 function toRelativePath(dir: string, files: string[]): string[] {
