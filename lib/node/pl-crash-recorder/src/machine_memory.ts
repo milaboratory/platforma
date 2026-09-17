@@ -14,10 +14,24 @@ export function readMachineMemory(): MachineMemory {
   try {
     if (process.platform === "darwin") return readDarwin();
     if (process.platform === "linux") return readLinux();
-    return { unavailable: `not implemented for ${process.platform}` };
+    return { unavailable: machineMemoryUnsupported() };
   } catch (error: unknown) {
     return { unavailable: error instanceof Error ? error.message : String(error) };
   }
+}
+
+/**
+ * Names what the machine-wide reading would have contributed, for platforms
+ * where it cannot be taken at all.
+ *
+ * A reader who finds no compressor or swap figures needs to know whether the
+ * machine had none or the sampler never asked, and where the equivalent evidence
+ * is instead. Callers record it once: it is a property of the platform and
+ * repeating it every second buries the curve it was meant to explain.
+ */
+export function machineMemoryUnsupportedReason(): string | undefined {
+  if (process.platform === "darwin" || process.platform === "linux") return undefined;
+  return machineMemoryUnsupported();
 }
 
 // Internals
@@ -67,4 +81,13 @@ function readLinux(): MachineMemory {
     // Linux has no compressor of its own; zram, where present, reports as swap.
     wired: kb("Unevictable"),
   };
+}
+
+function machineMemoryUnsupported(): string {
+  return (
+    `no machine-wide memory source on ${process.platform}: ` +
+    "compressor, swap and anonymous/file-backed totals are not sampled " +
+    "(vm_stat and sysctl are macOS-only, /proc/meminfo Linux-only). " +
+    "Per-process committed bytes are recorded instead, as `private` in the host log."
+  );
 }
