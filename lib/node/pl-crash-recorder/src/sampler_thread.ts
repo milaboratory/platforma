@@ -20,8 +20,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import { workerData } from "node:worker_threads";
-import type { SamplerRecord } from "./events";
-import { readMachineMemory } from "./machine_memory";
+import type { MachineMemory, SamplerRecord } from "./events";
+import { machineMemoryUnsupportedReason, readMachineMemory } from "./machine_memory";
 
 type SamplerWorkerData = { file: string; intervalMs: number; machineIntervalMs?: number };
 
@@ -30,6 +30,11 @@ const fd = fs.openSync(file, "a");
 let seq = 0;
 let peakRss = 0;
 let machineDueAt = 0;
+// A platform with no source for the machine-wide reading, or one whose source
+// failed, will not acquire one mid-session. Either is stated once on the record
+// that first noticed and never sampled again.
+let machineReason: string | undefined = machineMemoryUnsupportedReason();
+let machineStopped = machineReason !== undefined;
 
 setInterval(() => {
   const rss = process.memoryUsage.rss();
@@ -37,8 +42,15 @@ setInterval(() => {
   const now = Date.now();
   // Taken on the first tick and then on its own schedule, so the curve keeps its
   // sampling rate while the costlier reading stays occasional.
-  const machine = now >= machineDueAt ? readMachineMemory() : undefined;
-  if (machine) machineDueAt = now + machineIntervalMs;
+  let machine: MachineMemory | undefined;
+  if (machineReason !== undefined) {
+    machine = { unavailable: machineReason };
+    machineReason = undefined;
+  } else if (!machineStopped && now >= machineDueAt) {
+    machine = readMachineMemory();
+    machineDueAt = now + machineIntervalMs;
+    if (machine.unavailable !== undefined) machineStopped = true;
+  }
   const record: SamplerRecord = {
     seq: ++seq,
     t: Math.round(performance.now() * 1000) / 1000,
