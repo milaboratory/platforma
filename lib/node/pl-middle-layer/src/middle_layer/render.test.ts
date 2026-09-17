@@ -37,10 +37,9 @@ export async function withMl(
 /**
  * The timeout covers the whole wait, not one change notification: the block is
  * fetched from the remote registry and then run, so the budget must fit a cold
- * download on a CI runner. Other callers of this helper across the repo pass
- * 15-50s for the same reason.
+ * download on a CI runner.
  */
-export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 30000) {
+export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 10_000) {
   const abortSignal = AbortSignal.timeout(timeout);
   const overview = prj.overview;
   const state = prj.getBlockState(blockId);
