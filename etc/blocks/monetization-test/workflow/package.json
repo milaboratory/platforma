@@ -9,7 +9,7 @@
     "format": "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'",
     "test": "vitest run --coverage",
     "fmt": "ts-builder format",
-    "check": "pl-tengo check"
+    "check": "pl-tengo imports && pl-tengo check"
   },
   "dependencies": {
     "@platforma-sdk/workflow-tengo": "workspace:*"
