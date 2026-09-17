@@ -49,13 +49,13 @@ self.body(func(inputs) {
     // getBlobSize (a metadata read, no pre-exec). Both dimensions carry a
     // .staticFallback so the run also resolves on backends that cannot evaluate
     // resource formulas (no getBlobSize).
-    //     ram = between(2 GiB + 4 * size, 2 GiB, 64 GiB)
+    //     ram = between(2 GiB + 4 * size, 2 GiB, 128 GiB)
     //     cpu = between(2 + size / 16 GiB, 2, 8)
     f := exec.formula
     ramReq := mem
     if is_undefined(ramReq) {
         ramReq = f.size({ default: 0 }).times(4).plus(f.gib(2)).
-            between(f.gib(2), f.gib(64)).
+            between(f.gib(2), f.gib(128)).
             staticFallback("4GiB")
     }
     cpuReq := cpu

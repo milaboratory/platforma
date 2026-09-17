@@ -880,7 +880,7 @@ workflow := func() {
 		 *                                    120 * units.GiB
 		 *
 		 * If not set, the RAM request is sized from the input data volume:
-		 * `between(2 GiB + 4 × size, 2 GiB, 64 GiB)`. Setting an explicit value overrides this.
+		 * `between(2 GiB + 4 × size, 2 GiB, 128 GiB)`. Setting an explicit value overrides this.
 		 *
 		 * @return builder
 		 */
