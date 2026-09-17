@@ -30,34 +30,6 @@ export function runCommand(
   });
 }
 
-export function runNativeCommand(
-  command: string,
-  args: string[],
-  env?: Record<string, string>,
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const prettyCommand = command.includes("/") ? command.split("/").pop() : command;
-    const prettyArgs = args.map((arg) => {
-      if (arg.includes(join("tools", "ts-builder", "dist"))) {
-        return arg.split(join("tools", "ts-builder", "dist"))[1];
-      }
-      return arg;
-    });
-    console.log(`↳ ${prettyCommand} ${prettyArgs.join(" ")}`);
-
-    const child = spawn(command, args, {
-      stdio: "inherit",
-      env: env ? { ...process.env, ...env } : process.env,
-    });
-
-    child.on("error", reject);
-    child.on("close", (code) => {
-      if (code === 0) resolve();
-      else reject(new Error(`Command failed with exit code ${code}`));
-    });
-  });
-}
-
 export async function executeCommand(
   command: string,
   args: string[],
@@ -65,20 +37,6 @@ export async function executeCommand(
 ): Promise<void> {
   try {
     await runCommand(command, args, env);
-  } catch (error) {
-    const message = `Command failed: ${command} ${args.join(" ")}`;
-    console.error(message, error);
-    process.exit(1);
-  }
-}
-
-export async function executeNativeCommand(
-  command: string,
-  args: string[],
-  env?: Record<string, string>,
-): Promise<void> {
-  try {
-    await runNativeCommand(command, args, env);
   } catch (error) {
     const message = `Command failed: ${command} ${args.join(" ")}`;
     console.error(message, error);
