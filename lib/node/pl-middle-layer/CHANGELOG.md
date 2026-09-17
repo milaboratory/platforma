@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.71.9
+
+### Patch Changes
+
+- 31a3f60: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.61. The Linux pframes-rs-node addon no longer ships debug info. Its download shrinks from 208 MB to about 28 MB. Bump runenv-python-3 to 1.13.2, which bundles polars-pf 1.1.61 for ptabler.
+- Updated dependencies [31a3f60]
+- Updated dependencies [d326918]
+  - @milaboratories/pf-driver@1.9.3
+  - @platforma-sdk/workflow-tengo@6.10.4
+  - @platforma-sdk/model@1.83.17
+  - @milaboratories/pf-spec-driver@1.5.3
+
 ## 1.71.8
 
 ### Patch Changes

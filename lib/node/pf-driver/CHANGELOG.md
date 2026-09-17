@@ -1,5 +1,13 @@
 # @milaboratories/pf-driver
 
+## 1.9.3
+
+### Patch Changes
+
+- 31a3f60: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.61. The Linux pframes-rs-node addon no longer ships debug info. Its download shrinks from 208 MB to about 28 MB. Bump runenv-python-3 to 1.13.2, which bundles polars-pf 1.1.61 for ptabler.
+- Updated dependencies [31a3f60]
+  - @milaboratories/pf-spec@1.0.3
+
 ## 1.9.2
 
 ### Patch Changes
