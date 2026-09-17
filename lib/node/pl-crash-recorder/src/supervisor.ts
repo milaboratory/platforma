@@ -14,6 +14,9 @@ type CrashMarkerInput = {
   stderrTail?: string;
 };
 
+/** A crash marker together with the file holding it. */
+export type StoredCrashMarker = CrashMarker & { file: string };
+
 export type SuperviseOptions = {
   /**
    * The session id handed to the worker at spawn (see `CRASH_SESSION_ENV`).
@@ -72,20 +75,27 @@ export function writeCrashMarker(dir: string, input: CrashMarkerInput = {}): str
   return file;
 }
 
-/** Crash markers in a directory, oldest first. */
-export function readCrashMarkers(dir: string): CrashMarker[] {
+/**
+ * Crash markers in a directory, oldest first, each with the file it came from.
+ *
+ * The path travels with the marker so that a caller collecting the evidence — to
+ * attach to a report, say — never has to spell the file name itself and cannot
+ * drift from the one this module writes.
+ */
+export function readCrashMarkers(dir: string): StoredCrashMarker[] {
   let names: string[];
   try {
     names = fs.readdirSync(dir);
   } catch {
     return [];
   }
-  const markers: CrashMarker[] = [];
+  const markers: StoredCrashMarker[] = [];
   for (const name of names) {
     if (!name.startsWith(`${DEATH_FILE_PREFIX}-`) || !name.endsWith(".ndjson")) continue;
+    const file = path.join(dir, name);
     try {
-      const first = fs.readFileSync(path.join(dir, name), "utf8").split("\n")[0];
-      markers.push(JSON.parse(first) as CrashMarker);
+      const first = fs.readFileSync(file, "utf8").split("\n")[0];
+      markers.push({ ...(JSON.parse(first) as CrashMarker), file });
     } catch {
       // A marker that cannot be parsed is skipped; it is one line of evidence,
       // not the report.
