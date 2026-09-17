@@ -98,6 +98,7 @@ export async function loadDeltaTreeState(
       }
   };
 
+  let warnedStopMarker = false;
   const consume = async (walkSeeds: SignedResourceId[], unconditionalDepth?: number) => {
     if (stats) {
       stats.roundTrips++;
@@ -111,9 +112,23 @@ export async function loadDeltaTreeState(
       changedSinceToken,
       unconditionalDepth,
     })) {
-      // We send no stop rules, so the server cannot emit one (api.proto: traverse_was_stopped
-      // is always false when traverse_stop_rules was absent).
-      if (frame.frameKind === "stopMarker") continue;
+      // A body-less frame. The client reads that as a stop marker, and a stop marker can only
+      // follow traverse_stop_rules, which this path never sends. Nothing here needs it, so it
+      // is skipped - but not silently: reaching this means the backend put a meaning on a
+      // body-less frame that this client does not know, and a quiet skip would leave no trace
+      // of it. Warn once per poll rather than per frame, since a contract change would emit
+      // one of these for every resource visited.
+      if (frame.frameKind === "stopMarker") {
+        if (!warnedStopMarker) {
+          warnedStopMarker = true;
+          logger?.warn(
+            `delta poll: ignoring a body-less frame for ${frame.id}; this poll sent no ` +
+              `traverse stop rules, so the backend is using body-less frames for something ` +
+              `this client does not interpret`,
+          );
+        }
+        continue;
+      }
 
       if (stats) stats.resourceFrames++;
 

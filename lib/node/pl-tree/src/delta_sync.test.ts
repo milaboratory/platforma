@@ -154,19 +154,6 @@ describe("delta response", () => {
     expect(stats.prunedFields).toBe(1);
     expect(stats.retrievedFields).toBe(1);
   });
-
-  test("ignores a stop-marker frame, which the server cannot emit for a delta walk", async () => {
-    const { tx } = txReturning([
-      [{ frameKind: "stopMarker", id: "NG:0x5", traverseWasStopped: true }, frame("NG:0x1")],
-    ]);
-
-    const result = await loadDeltaTreeState(
-      tx,
-      request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
-    );
-
-    expect(result.map((r) => r.id)).toEqual(["NG:0x1"]);
-  });
 });
 
 test("copies every resource property off the frame", async () => {
@@ -454,6 +441,33 @@ describe("reference resolution", () => {
     // One seeding call plus one resolution round per remaining link.
     expect(n).toBe(DEPTH);
     expect(stats.deltaResolutionRounds).toBe(DEPTH - 1);
+  });
+
+  test("skips a body-less frame but says so", async () => {
+    // The client reads "no body" as a stop marker, and stop markers only follow
+    // traverse_stop_rules, which delta never sends. Nothing here needs the frame, so the poll
+    // carries on - but it must leave a trace, or a backend that starts using body-less frames
+    // for something else changes delta's behaviour with nothing in the log to show for it.
+    const warnings: string[] = [];
+    const { tx } = txReturning([
+      [
+        { frameKind: "stopMarker", id: "NG:0xSTOP", traverseWasStopped: true } as unknown as Frame,
+        frame("NG:0x1"),
+      ],
+    ]);
+
+    const result = await loadDeltaTreeState(
+      tx,
+      request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
+      undefined,
+      { warn: (m: string) => warnings.push(m) },
+    );
+
+    expect(result.map((r) => r.id)).toEqual(["NG:0x1"]);
+    // Exactly one, and only once: a contract change would put a body-less frame on every
+    // resource visited, and one line per frame would bury the log.
+    const skipped = warnings.filter((w) => w.includes("NG:0xSTOP"));
+    expect(skipped).toHaveLength(1);
   });
 
   test("throws with the ids rather than letting the apply invalidate the tree", async () => {
