@@ -21,6 +21,54 @@ export function readMachineMemory(): MachineMemory {
 }
 
 /**
+ * Decides what each sampler tick should record about machine-wide memory.
+ *
+ * Three things are being balanced. The reading costs a subprocess, so it is
+ * taken on its own interval rather than with every sample. Repeating an
+ * unchanged failure every second buries the resident-size curve it sits beside,
+ * so a reason is written once and not again while it still holds. And a failure
+ * is not the end of the matter: a `vm_stat` that timed out did so under load,
+ * which is precisely the moment its figures are worth having a second later —
+ * so the source keeps being tried, and a reading that comes back is recorded.
+ *
+ * Only an unsupported platform stops it for good, because that is the one
+ * condition a running process cannot get out of.
+ */
+export function createMachineMemoryReader(options: {
+  intervalMs: number;
+  read?: () => MachineMemory;
+  unsupportedReason?: () => string | undefined;
+}): (now: number) => MachineMemory | undefined {
+  const read = options.read ?? readMachineMemory;
+  const unsupported = (options.unsupportedReason ?? machineMemoryUnsupportedReason)();
+
+  let pending = unsupported;
+  let dueAt = 0;
+  let statedFailure: string | undefined;
+
+  return (now: number): MachineMemory | undefined => {
+    if (pending !== undefined) {
+      const reason = pending;
+      pending = undefined;
+      return { unavailable: reason };
+    }
+    if (unsupported !== undefined || now < dueAt) return undefined;
+
+    dueAt = now + options.intervalMs;
+    const reading = read();
+    if (reading.unavailable === undefined) {
+      // A recovery is worth seeing: the gap in the series ends where the
+      // figures resume.
+      statedFailure = undefined;
+      return reading;
+    }
+    if (reading.unavailable === statedFailure) return undefined;
+    statedFailure = reading.unavailable;
+    return reading;
+  };
+}
+
+/**
  * Names what the machine-wide reading would have contributed, for platforms
  * where it cannot be taken at all.
  *
