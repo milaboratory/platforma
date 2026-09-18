@@ -1,5 +1,12 @@
 # @milaboratories/pl-flight-recorder
 
+## 0.3.1
+
+### Patch Changes
+
+- 6bb6c70: Hand out the file a crash marker was read from. The one record the parent contributes — the reason the child died, and memory at the moment it stopped answering — reached a report only if the consumer spelled the file name itself, which is how the rename to `death-` dropped it. `readCrashMarkers` now returns the path beside each marker, so the name is spelled in one place.
+- 6f5690c: Say once what a platform cannot measure, and say what that is. A Windows session carried thirty-four copies of "not implemented for win32" in thirty-five seconds — a line naming neither what is missing nor where to find it, repeated until it buried the memory curve it sat beside. The reason is now recorded on the first sample only: it names the figures that cannot be taken there, why (vm_stat and sysctl are macOS-only, /proc/meminfo Linux-only), and points at the per-process private bytes the host log carries instead. A source that fails outright is treated the same way — recorded once, not retried.
+
 ## 0.3.0
 
 ### Minor Changes
