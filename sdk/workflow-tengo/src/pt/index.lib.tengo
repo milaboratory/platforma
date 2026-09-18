@@ -1,4 +1,6 @@
 ll := import(":ll")
+units := import(":units")
+sizing := import(":pt.sizing")
 exp := import(":pt.expression")
 util := import(":pt.util")
 assets := import(":assets")
@@ -899,12 +901,23 @@ workflow := func() {
 		 * `.mem()` replaces the formula and ignores input volume. `.mem()` overrides this
 		 * floor when a caller sets both.
 		 *
+		 * The floor must not exceed the 256 GiB ceiling. Raising the ceiling to match
+		 * would return the floor for every input, which is the flat pin this setter
+		 * exists to avoid. Use `.mem()` if a fixed request above the ceiling is wanted.
+		 *
+		 * The floor governs whenever `size` is small, and `f.size()` counts only files
+		 * attached with `addFile()`. A run whose input is a non-partitioned JSON
+		 * p-column measures zero and always receives exactly the floor.
+		 *
 		 * @param amount: number - lower bound in bytes, e.g. `12 * units.GiB`
 		 * @return builder
 		 */
 		memFloor: func(amount) {
 			ll.assert(is_int(amount) && amount > 0,
 				"pt.workflow.memFloor: expected a positive number of bytes, got %v", amount)
+			ll.assert(amount <= sizing.RAM_CAP_GIB * units.GiB,
+				"pt.workflow.memFloor: floor of %v bytes exceeds the %d GiB ceiling of the auto-sized request. Use .mem() for a fixed request above the ceiling.",
+				amount, sizing.RAM_CAP_GIB)
 			memFloor = amount
 			return self
 		},
