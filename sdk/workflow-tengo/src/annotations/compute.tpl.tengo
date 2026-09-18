@@ -1,4 +1,5 @@
 pt := import(":pt")
+units := import(":units")
 wf := import(":workflow")
 self := import(":tpl")
 util := import(":annotations.util")
@@ -53,7 +54,11 @@ self.body(func(inputs) {
 		otherwise(pt.lit(undefined)).
 		alias(ANNOTATION_HEADER)
 
-	wf := pt.workflow().cpu(1).mem("12GiB")
+	// 12 GiB is a floor, not a pin: a flat .mem() switches off input-volume auto-sizing
+	// entirely, and this run reads a column bundle whose volume scales with whatever the
+	// user annotated. cpu(1) is deliberate -- POLARS_MAX_THREADS follows the grant, and
+	// fewer threads need less RAM for the same input.
+	wf := pt.workflow().cpu(1).memFloor(12 * units.GiB)
 
 	dfData := wf.frameFromColumnBundle(columnBundle, {
 		axes: resultColumnSpec.axesSpec,

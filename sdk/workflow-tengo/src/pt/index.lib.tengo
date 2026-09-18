@@ -409,6 +409,7 @@ workflow := func() {
 
 	cpu := undefined
 	mem := undefined
+	memFloor := undefined
 	inputCache := undefined
 	queue := execConstants.MEDIUM_QUEUE
 
@@ -890,6 +891,25 @@ workflow := func() {
 		},
 
 		/**
+		 * Raises the lower bound of the auto-sized RAM request without switching
+		 * auto-sizing off, for a run with a known fixed cost that still scales with its
+		 * input. The request becomes `between(2 GiB + 7 × size, floor, 256 GiB)`.
+		 *
+		 * Prefer this to `.mem()` whenever the intent is "at least this much". A flat
+		 * `.mem()` replaces the formula outright and is blind to input volume.
+		 * Ignored when `.mem()` is also set — an explicit request always wins.
+		 *
+		 * @param amount: number - lower bound in bytes, e.g. `12 * units.GiB`
+		 * @return builder
+		 */
+		memFloor: func(amount) {
+			ll.assert(is_int(amount) && amount > 0,
+				"pt.workflow.memFloor: expected a positive number of bytes, got %v", amount)
+			memFloor = amount
+			return self
+		},
+
+		/**
 		 * Sets the cache duration for the execution's inputs.
 		 *
 		 * This is useful for an execution that is part of a sequence that might be re-rendered soon.
@@ -997,6 +1017,7 @@ workflow := func() {
 				queue: queue,
 				cpu: cpu,
 				mem: mem,
+				memFloor: memFloor,
 				inputCache: inputCache
 			}
 			ptResult := render.create(workflowRunTpl, runInputs, {
