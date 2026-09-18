@@ -40,3 +40,11 @@ leaves auto-sizing on. `annotations/compute` used a flat `.mem("12GiB")`, which 
 input volume even though the run reads a column bundle. It now takes 12 GiB as a floor
 and the measured slope above it. Use `memFloor()` rather than `mem()` when the intent
 is "at least this much".
+
+`memFloor()` rejects a floor above the 256 GiB ceiling. Raising the ceiling to match
+would make `between(floor, floor)` return the floor for every input, which is the flat
+pin the setter exists to avoid. Use `mem()` for a fixed request above the ceiling.
+
+The two formulas move out of the template body into `:pt.sizing`, so they can be unit
+tested against a fake metric resolver rather than only read. `pt/sizing.test.tengo`
+covers the floor, the slope, both ceilings and the CPU curve.

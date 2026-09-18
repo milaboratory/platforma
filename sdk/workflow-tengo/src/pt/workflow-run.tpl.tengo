@@ -2,6 +2,7 @@ assets := import(":assets")
 exec := import(":exec")
 ll := import(":ll")
 util := import(":pt.util")
+sizing := import(":pt.sizing")
 pframesUtil := import(":pframes.util")
 
 self := import(":tpl.light")
@@ -43,52 +44,15 @@ self.body(func(inputs) {
         arg("--spill-dir").arg(spillFolder).
         writeFile("workflow_sc.json", workflowJsonStruct);
     // Size the ptabler run from total input volume, unless the block author sets cpu or
-    // mem. An explicit request always wins. f.size() sums the stored blob size of every
-    // input file through getBlobSize, a metadata read with no pre-exec. Both dimensions
-    // carry a .staticFallback, so the run also resolves on a backend that cannot
-    // evaluate resource formulas.
-    //     ram = between(2 GiB + 6 * size, memFloor or 2 GiB, 256 GiB)
-    //     cpu = between(2 + size / 16 GiB, 2, 8)
-    //
-    // Measured need per GiB of input, per plan shape, at 8 Polars threads:
-    //     concat + aggregate with max_by   4.94   <- the steepest one reachable here
-    //     bulk export                      2.92
-    //     single-cell export               1.40
-    //     write_frame                      4.13 x^0.68, sub-linear
-    // One formula serves every shape, so it carries the steepest. The cpu formula below
-    // clamps to 8, and no call site sets cpu without also setting mem, so 8 threads is
-    // the ceiling this formula runs at. The same aggregate shape needs 6.85 at 32
-    // threads, which only a site that pins cpu above 8 and leaves mem auto would reach.
-    //
-    // The slope is 6, above the 4.94 it must cover. The margin is deliberate. The fits
-    // are against uncompressed TSV bytes, and f.size() reports stored blob bytes, so a
-    // parquet input understates the volume the plan decodes.
-    //
-    // The shallower shapes are over-granted. This is deliberate. The backend clamps an
-    // oversized request without a log and sets pod requests == limits, so an over-grant
-    // costs concurrency and an under-grant costs an OOM kill with no traceback.
-    //
-    // Polars streaming has no disk spill. --spill-dir reaches only DataFusion's
-    // pframe_source and DuckDB's write_frame sort. Any .over() window or sort becomes a
-    // full in-memory materialisation. Do not size this run as if anything spills.
-    f := exec.formula
+    // mem. An explicit request always wins. The formulas, the measured slopes behind
+    // them and the thread ceiling they assume live in :pt.sizing.
     ramReq := mem
     if is_undefined(ramReq) {
-        floor := f.gib(2)
-        fallback := "4GiB"
-        if !is_undefined(memFloor) {
-            floor = f.const(memFloor)
-            fallback = memFloor
-        }
-        ramReq = f.size({ default: 0 }).times(6).plus(f.gib(2)).
-            between(floor, f.gib(256)).
-            staticFallback(fallback)
+        ramReq = sizing.ramFormula(memFloor)
     }
     cpuReq := cpu
     if is_undefined(cpuReq) {
-        cpuReq = f.size({ default: 0 }).dividedByFloor(f.gib(16)).plus(f.const(2)).
-            between(f.const(2), f.const(8)).
-            staticFallback(2)
+        cpuReq = sizing.cpuFormula()
     }
     ptCmd.resources({
         onCPU: {
