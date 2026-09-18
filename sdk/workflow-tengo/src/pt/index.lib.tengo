@@ -881,7 +881,7 @@ workflow := func() {
 		 *                                    120 * units.GiB
 		 *
 		 * If not set, the RAM request is sized from the input data volume:
-		 * `between(2 GiB + 7 × size, 2 GiB, 256 GiB)`. Setting an explicit value overrides this.
+		 * `between(2 GiB + 6 × size, 2 GiB, 256 GiB)`. Setting an explicit value overrides this.
 		 *
 		 * @return builder
 		 */
@@ -893,7 +893,7 @@ workflow := func() {
 		/**
 		 * Raises the lower bound of the auto-sized RAM request. Auto-sizing stays on, so
 		 * the request still follows input volume above the floor:
-		 * `between(2 GiB + 7 × size, floor, 256 GiB)`.
+		 * `between(2 GiB + 6 × size, floor, 256 GiB)`.
 		 *
 		 * Use this, not `.mem()`, when the intent is "at least this much". A flat
 		 * `.mem()` replaces the formula and ignores input volume. `.mem()` overrides this

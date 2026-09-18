@@ -12,9 +12,9 @@
 //      Bare ints auto-wrap to const.
 //   2. resolveAst() turns each { op: "metric", tag } into a concrete
 //      { op: "metricSum", files } via the builder's tag -> files map, and rejects
-//      lineCount on a non-text file. A metric with NO tag reads every input file of
-//      the exec. A metric with a tag reads only the files under that tag. Either
-//      case collapses to its { default } when it resolves to no files.
+//      lineCount on a non-text file. A metric with NO tag reads every file added
+//      with addFile(). A metric with a tag reads only the files under that tag.
+//      Either case collapses to its { default } when it resolves to no files.
 //   3. referencedMetricFiles() lists the files needing a line-counter pre-exec
 //      (lineCount); size reads the blob size inline, so it needs none.
 //   The resolved AST rides to the exec as a META input — CID-transparent
@@ -410,9 +410,12 @@ _const := func(n) { ll.assert(is_int(n), "exec.formula: unit amount must be an i
 
 export {
 	// size: total blob bytes of the input files the metric reads (no pre-exec).
-	//   f.size() with no tag reads EVERY input file of the exec. f.size("tag") reads
-	//   only the files under that tag. { default: n } gives the value when the metric
-	//   resolves to no files, and resolveAst fails if no default was given.
+	//   f.size() with no tag reads every file added with addFile(). f.size("tag")
+	//   reads only the files under that tag. A file created with writeFile() is NOT
+	//   counted: allFiles comes from filesToAdd, never filesToWrite. That excludes a
+	//   non-partitioned JSON p-column, which pframes.util attaches with writeFile,
+	//   and every .spec and .datainfo sidecar. { default: n } gives the value when
+	//   the metric resolves to no files, and resolveAst fails if no default was given.
 	// lineCount: total NEWLINE characters across the referenced files — a file
 	//   with N newlines reports N, so a final line without a trailing newline is
 	//   NOT counted. Requires a pre-exec line-counter pass, so it is supported
