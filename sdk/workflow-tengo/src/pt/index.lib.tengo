@@ -1,4 +1,6 @@
 ll := import(":ll")
+units := import(":units")
+sizing := import(":pt.sizing")
 exp := import(":pt.expression")
 util := import(":pt.util")
 assets := import(":assets")
@@ -409,6 +411,7 @@ workflow := func() {
 
 	cpu := undefined
 	mem := undefined
+	memFloor := undefined
 	inputCache := undefined
 	queue := execConstants.MEDIUM_QUEUE
 
@@ -880,12 +883,42 @@ workflow := func() {
 		 *                                    120 * units.GiB
 		 *
 		 * If not set, the RAM request is sized from the input data volume:
-		 * `between(2 GiB + 4 × size, 2 GiB, 64 GiB)`. Setting an explicit value overrides this.
+		 * `between(2 GiB + 6 × size, 2 GiB, 256 GiB)`. Setting an explicit value overrides this.
 		 *
 		 * @return builder
 		 */
 		mem: func(amount) {
 			mem = amount
+			return self
+		},
+
+		/**
+		 * Raises the lower bound of the auto-sized RAM request. Auto-sizing stays on, so
+		 * the request still follows input volume above the floor:
+		 * `between(2 GiB + 6 × size, floor, 256 GiB)`.
+		 *
+		 * Use this, not `.mem()`, when the intent is "at least this much". A flat
+		 * `.mem()` replaces the formula and ignores input volume. `.mem()` overrides this
+		 * floor when a caller sets both.
+		 *
+		 * The floor must not exceed the 256 GiB ceiling. Raising the ceiling to match
+		 * would return the floor for every input, which is the flat pin this setter
+		 * exists to avoid. Use `.mem()` if a fixed request above the ceiling is wanted.
+		 *
+		 * The floor governs whenever `size` is small, and `f.size()` counts only files
+		 * attached with `addFile()`. A run whose input is a non-partitioned JSON
+		 * p-column measures zero and always receives exactly the floor.
+		 *
+		 * @param amount: number - lower bound in bytes, e.g. `12 * units.GiB`
+		 * @return builder
+		 */
+		memFloor: func(amount) {
+			ll.assert(is_int(amount) && amount > 0,
+				"pt.workflow.memFloor: expected a positive number of bytes, got %v", amount)
+			ll.assert(amount <= sizing.RAM_CAP_GIB * units.GiB,
+				"pt.workflow.memFloor: floor of %v bytes exceeds the %d GiB ceiling of the auto-sized request. Use .mem() for a fixed request above the ceiling.",
+				amount, sizing.RAM_CAP_GIB)
+			memFloor = amount
 			return self
 		},
 
@@ -997,6 +1030,7 @@ workflow := func() {
 				queue: queue,
 				cpu: cpu,
 				mem: mem,
+				memFloor: memFloor,
 				inputCache: inputCache
 			}
 			ptResult := render.create(workflowRunTpl, runInputs, {
