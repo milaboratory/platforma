@@ -27,6 +27,7 @@ self.body(func(inputs) {
     cpu := inputs.cpu
     mem := inputs.mem
     inputCache := inputs.inputCache
+    memFloor := inputs.memFloor
 
     workdirProcessorName := "import_dir";
     inFramesFolder := "input_frame"
@@ -46,7 +47,7 @@ self.body(func(inputs) {
     // stored blob size of all input files via getBlobSize (a metadata read, no
     // pre-exec). Both dimensions carry a .staticFallback so the run also resolves on
     // backends that cannot evaluate resource formulas (no getBlobSize).
-    //     ram = between(2 GiB + 7 * size, 2 GiB, 256 GiB)
+    //     ram = between(2 GiB + 7 * size, memFloor or 2 GiB, 256 GiB)
     //     cpu = between(2 + size / 16 GiB, 2, 8)
     //
     // 7 rounds up the measured slope of the steepest plan shape in the estate at
@@ -73,9 +74,15 @@ self.body(func(inputs) {
     f := exec.formula
     ramReq := mem
     if is_undefined(ramReq) {
+        floor := f.gib(2)
+        fallback := "4GiB"
+        if !is_undefined(memFloor) {
+            floor = f.const(memFloor)
+            fallback = memFloor
+        }
         ramReq = f.size({ default: 0 }).times(7).plus(f.gib(2)).
-            between(f.gib(2), f.gib(256)).
-            staticFallback("4GiB")
+            between(floor, f.gib(256)).
+            staticFallback(fallback)
     }
     cpuReq := cpu
     if is_undefined(cpuReq) {

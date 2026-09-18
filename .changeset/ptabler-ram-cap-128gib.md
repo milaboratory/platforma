@@ -2,7 +2,7 @@
 "@platforma-sdk/workflow-tengo": minor
 ---
 
-pt: size the default ptabler RAM request from the measured worst-case plan shape
+pt: size the default ptabler RAM request from the measured worst-case plan shape, and add `memFloor()`
 
 The default request becomes `between(2 GiB + 7 * size, 2 GiB, 256 GiB)`, from
 `between(2 GiB + 4 * size, 2 GiB, 64 GiB)`. Blocks that set an explicit `mem()` are
@@ -21,3 +21,10 @@ Shapes shallower than the worst case are now over-granted — bulk export needs 
 and single-cell export `1.40 x`. That is deliberate: the backend silently clamps an
 oversized request and sets pod requests == limits, so over-granting costs concurrency
 while under-granting costs an OOM kill with no traceback.
+
+Also adds `pt.workflow().memFloor(bytes)`, which raises the lower bound of the
+auto-sized request without switching auto-sizing off. `annotations/compute` used a
+flat `.mem("12GiB")`, which was blind to input volume even though it reads a column
+bundle whose size scales with whatever the user annotated; it now takes 12 GiB as a
+floor and the measured slope above it. Prefer `memFloor()` over `mem()` whenever the
+intent is "at least this much".
