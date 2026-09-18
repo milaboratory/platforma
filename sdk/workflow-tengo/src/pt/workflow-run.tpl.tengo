@@ -47,16 +47,22 @@ self.body(func(inputs) {
     // input file through getBlobSize, a metadata read with no pre-exec. Both dimensions
     // carry a .staticFallback, so the run also resolves on a backend that cannot
     // evaluate resource formulas.
-    //     ram = between(2 GiB + 7 * size, memFloor or 2 GiB, 256 GiB)
+    //     ram = between(2 GiB + 6 * size, memFloor or 2 GiB, 256 GiB)
     //     cpu = between(2 + size / 16 GiB, 2, 8)
     //
-    // Measured need per GiB of input, per plan shape:
-    //     concat + aggregate with max_by   6.85   <- the slope covers this one
+    // Measured need per GiB of input, per plan shape, at 8 Polars threads:
+    //     concat + aggregate with max_by   4.94   <- the steepest one reachable here
     //     bulk export                      2.92
     //     single-cell export               1.40
     //     write_frame                      4.13 x^0.68, sub-linear
-    // One formula serves every shape, so it carries the steepest. The DSL takes integer
-    // operands only, so 7 is 6.85 rounded up.
+    // One formula serves every shape, so it carries the steepest. The cpu formula below
+    // clamps to 8, and no call site sets cpu without also setting mem, so 8 threads is
+    // the ceiling this formula runs at. The same aggregate shape needs 6.85 at 32
+    // threads, which only a site that pins cpu above 8 and leaves mem auto would reach.
+    //
+    // The slope is 6, above the 4.94 it must cover. The margin is deliberate. The fits
+    // are against uncompressed TSV bytes, and f.size() reports stored blob bytes, so a
+    // parquet input understates the volume the plan decodes.
     //
     // The shallower shapes are over-granted. This is deliberate. The backend clamps an
     // oversized request without a log and sets pod requests == limits, so an over-grant
@@ -74,7 +80,7 @@ self.body(func(inputs) {
             floor = f.const(memFloor)
             fallback = memFloor
         }
-        ramReq = f.size({ default: 0 }).times(7).plus(f.gib(2)).
+        ramReq = f.size({ default: 0 }).times(6).plus(f.gib(2)).
             between(floor, f.gib(256)).
             staticFallback(fallback)
     }
