@@ -891,13 +891,13 @@ workflow := func() {
 		},
 
 		/**
-		 * Raises the lower bound of the auto-sized RAM request without switching
-		 * auto-sizing off, for a run with a known fixed cost that still scales with its
-		 * input. The request becomes `between(2 GiB + 7 × size, floor, 256 GiB)`.
+		 * Raises the lower bound of the auto-sized RAM request. Auto-sizing stays on, so
+		 * the request still follows input volume above the floor:
+		 * `between(2 GiB + 7 × size, floor, 256 GiB)`.
 		 *
-		 * Prefer this to `.mem()` whenever the intent is "at least this much". A flat
-		 * `.mem()` replaces the formula outright and is blind to input volume.
-		 * Ignored when `.mem()` is also set — an explicit request always wins.
+		 * Use this, not `.mem()`, when the intent is "at least this much". A flat
+		 * `.mem()` replaces the formula and ignores input volume. `.mem()` overrides this
+		 * floor when a caller sets both.
 		 *
 		 * @param amount: number - lower bound in bytes, e.g. `12 * units.GiB`
 		 * @return builder
