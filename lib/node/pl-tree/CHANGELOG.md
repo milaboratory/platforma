@@ -1,5 +1,12 @@
 # @milaboratories/pl-tree
 
+## 1.15.1
+
+### Patch Changes
+
+- 6cfda51: Make `PlTreeState.updateFromResourceData` 11% faster on a steady tree-sync poll and 23% faster on a first load, mainly by walking stored fields and kv entries in lockstep with the incoming ones instead of hashing every freshly decoded name.
+- 6310b85: Fix a `RangeError: Maximum call stack size exceeded` in `loadTreeStateViaResourceTree` when a stop-marker follow-up round returns a very large number of resources, which left the synchronized tree permanently failing on every poll.
+
 ## 1.15.0
 
 ### Minor Changes
