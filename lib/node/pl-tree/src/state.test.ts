@@ -1,5 +1,7 @@
 import { expect, test } from "vitest";
 import { Computable } from "@milaboratories/computable";
+import type { Watcher } from "@milaboratories/computable";
+import type { FieldData } from "@milaboratories/pl-client";
 import {
   createSignedResourceId,
   DefaultFinalResourceDataPredicate,
@@ -19,6 +21,15 @@ import {
 } from "./test_utils";
 
 const rid = createSignedResourceId;
+
+/** Minimal Watcher for tests that read tree state directly, outside a Computable. */
+class NoopWatcher implements Watcher {
+  isChanged = false;
+  markChanged(): void {
+    this.isChanged = true;
+  }
+}
+const w = () => new NoopWatcher();
 
 test("simple tree test 1", async () => {
   const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
@@ -316,4 +327,150 @@ test("exception - ready without locks 2", () => {
       },
     ]),
   ).toThrow(/ready without input or output lock/);
+});
+
+// The field and kv update loops walk the stored entries in lockstep with the incoming ones
+// and only fall back to a hash lookup once the two orders diverge. These cover the
+// divergence shapes: reordering, an insertion in the middle, a removal. A reorder that
+// changes nothing must invalidate nothing and must not disturb refCounts, which is what
+// pins the fallback: mistaking a reordered field for a new one still leaves the right field
+// set behind, but double-counts the reference and fires spurious change notifications.
+
+const rootRes = (fields: FieldData[]) => [{ ...TestDynamicRootState1, fields }];
+
+test("a pure field reorder changes nothing and invalidates nothing", () => {
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
+  tree.updateFromResourceData(rootRes([dField("a"), dField("b"), dField("c")]));
+
+  const watcher = w();
+  const root = tree.get(watcher, TestDynamicRootId1);
+  root.listDynamicFields(watcher);
+  for (const name of ["a", "b", "c"]) root.getField(watcher, name, () => {});
+  expect(watcher.isChanged).toStrictEqual(false);
+
+  tree.updateFromResourceData(rootRes([dField("c"), dField("b"), dField("a")]));
+
+  expect(watcher.isChanged).toStrictEqual(false);
+  expect(
+    tree
+      .get(w(), TestDynamicRootId1)
+      .fields.map((f) => f.name)
+      .sort(),
+  ).toStrictEqual(["a", "b", "c"]);
+});
+
+test("field inserted mid-order, then removed, is tracked", () => {
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
+  const names = () =>
+    tree
+      .get(w(), TestDynamicRootId1)
+      .fields.map((f) => f.name)
+      .sort();
+
+  tree.updateFromResourceData(rootRes([dField("a"), dField("c")]));
+  expect(names()).toStrictEqual(["a", "c"]);
+
+  // "b" appears between two fields that are already stored: the walk diverges at "b"
+  tree.updateFromResourceData(rootRes([dField("a"), dField("b"), dField("c")]));
+  expect(names()).toStrictEqual(["a", "b", "c"]);
+
+  // and disappears again, in a shuffled order
+  tree.updateFromResourceData(rootRes([dField("c"), dField("a")]));
+  expect(names()).toStrictEqual(["a", "c"]);
+});
+
+test("reordering fields does not inflate refCounts", () => {
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
+  const leaf = (n: bigint) => ({
+    ...TestValueResourceState1,
+    id: rid(n),
+    data: new TextEncoder().encode(`v${n}`),
+  });
+
+  tree.updateFromResourceData([
+    {
+      ...TestDynamicRootState1,
+      fields: [dField("a", rid(1n)), dField("b", rid(2n))],
+    },
+    leaf(1n),
+    leaf(2n),
+  ]);
+
+  // reorder and repoint in one update: the two fields swap targets
+  tree.updateFromResourceData([
+    {
+      ...TestDynamicRootState1,
+      fields: [dField("b", rid(1n)), dField("a", rid(2n))],
+    },
+    leaf(1n),
+    leaf(2n),
+  ]);
+
+  const byName = new Map(tree.get(w(), TestDynamicRootId1).fields.map((f) => [f.name, f.value]));
+  expect(byName.get("a")).toStrictEqual(rid(2n));
+  expect(byName.get("b")).toStrictEqual(rid(1n));
+
+  // dropping "a" must collect leaf 2: its refCount has to be exactly 1, so a reorder that
+  // was mistaken for an insertion (and double-incremented) would leave it alive here
+  tree.updateFromResourceData(rootRes([dField("b", rid(1n))]));
+  expect(tree.get(w(), rid(1n)).getDataAsString()).toStrictEqual("v1");
+  expect(() => tree.get(w(), rid(2n))).toThrow(/not found/);
+});
+
+test("kv reordering neither invalidates watchers nor loses entries", () => {
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
+  const kvOf = (entries: [string, string][]) => [
+    {
+      ...TestDynamicRootState1,
+      fields: [],
+      kv: entries.map(([key, value]) => ({ key, value: Buffer.from(value) })),
+    },
+  ];
+  const read = (key: string) => tree.get(w(), TestDynamicRootId1).getKeyValueString(w(), key);
+
+  tree.updateFromResourceData(
+    kvOf([
+      ["k1", "one"],
+      ["k2", "two"],
+    ]),
+  );
+  expect([read("k1"), read("k2")]).toStrictEqual(["one", "two"]);
+
+  // reversed order, same values: no watcher may fire
+  const watcher = w();
+  const root = tree.get(watcher, TestDynamicRootId1);
+  root.getKeyValue(watcher, "k1");
+  root.getKeyValue(watcher, "k2");
+  tree.updateFromResourceData(
+    kvOf([
+      ["k2", "two"],
+      ["k1", "one"],
+    ]),
+  );
+  expect(watcher.isChanged).toStrictEqual(false);
+
+  // a key inserted before the stored ones, so the walk diverges immediately
+  tree.updateFromResourceData(
+    kvOf([
+      ["k0", "zero"],
+      ["k2", "two"],
+      ["k1", "ONE"],
+    ]),
+  );
+  expect([read("k0"), read("k1"), read("k2")]).toStrictEqual(["zero", "ONE", "two"]);
+
+  // and a deletion
+  tree.updateFromResourceData(kvOf([["k1", "ONE"]]));
+  expect([read("k0"), read("k1"), read("k2")]).toStrictEqual([undefined, "ONE", undefined]);
+});
+
+test("removal of a typed field still throws after a reorder", () => {
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
+
+  tree.updateFromResourceData(rootRes([iField("a"), iField("b"), dField("c")]));
+
+  // reordered, and the input field "b" is gone: the removal scan must still see it
+  expect(() => tree.updateFromResourceData(rootRes([dField("c"), iField("a")]))).toThrow(
+    /removal of Input field b/,
+  );
 });
