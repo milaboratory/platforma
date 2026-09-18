@@ -45,7 +45,7 @@
     },
     "test": {
       "inputs": ["$TURBO_DEFAULT$"],
-      "env": ["TEST_CACHE_CRUTCH"],
+      "env": ["TEST_CACHE_CRUTCH", "PL_TEST_TIMEOUT"],
       "outputs": ["./coverage/**", "test-report.junit.xml"],
       "dependsOn": ["build"],
       "passThroughEnv": [
@@ -57,7 +57,6 @@
         "PL_TEST_K8S",
         "PL_TEST_REQUEST_TIMEOUT",
         "PL_TEST_RUN_SLOW",
-        "PL_TEST_TIMEOUT",
         "LONG_TEST_TIMEOUT",
         "DEBUG",
         "MI_LICENSE",
