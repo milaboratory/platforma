@@ -41,21 +41,40 @@ self.body(func(inputs) {
         arg("--frame-dir").arg(inFramesFolder).
         arg("--spill-dir").arg(spillFolder).
         writeFile("workflow_sc.json", workflowJsonStruct);
-    // Size the ptabler (Polars) run from the total input data volume, unless the
-    // block author set an explicit cpu/mem (an explicit request always wins).
-    // ptabler runs Polars in lazy + streaming mode with disk spill (--spill-dir),
-    // so peak RAM stays a modest multiple of the input size rather than the whole
-    // dataset. f.size() sums the stored (parquet) blob size of all input files via
-    // getBlobSize (a metadata read, no pre-exec). Both dimensions carry a
-    // .staticFallback so the run also resolves on backends that cannot evaluate
-    // resource formulas (no getBlobSize).
-    //     ram = between(2 GiB + 4 * size, 2 GiB, 128 GiB)
+    // Size the ptabler run from the total input data volume, unless the block author
+    // set an explicit cpu/mem (an explicit request always wins). f.size() sums the
+    // stored blob size of all input files via getBlobSize (a metadata read, no
+    // pre-exec). Both dimensions carry a .staticFallback so the run also resolves on
+    // backends that cannot evaluate resource formulas (no getBlobSize).
+    //     ram = between(2 GiB + 7 * size, 2 GiB, 256 GiB)
     //     cpu = between(2 + size / 16 GiB, 2, 8)
+    //
+    // 7 rounds up the measured slope of the steepest plan shape in the estate at
+    // production thread counts: concat + aggregate with max_by, fitted over 7 real
+    // inputs from 0.5 to 11.6 GiB at POLARS_MAX_THREADS=32 (need = -0.03 + 6.85 x
+    // input_GiB, R2 0.996, log-log exponent 0.95). The same shape fits 4.94 at 8
+    // threads and 4.09 at 2, so a slope fitted at 8 threads under-grants production
+    // by 39 %. One formula serves every shape, so it has to carry the steepest.
+    // The DSL takes integer operands only, and 7 clears 6.85 with the intercept to
+    // spare, so the fitted value is rounded up rather than expressed as a ratio.
+    //
+    // No shape in the estate grows faster than its input -- every measured log-log
+    // exponent is at or below 1, and write_frame is sub-linear (4.13 x^0.68 over 37x
+    // of input). The shallower shapes are therefore over-granted: bulk export needs
+    // 2.92 per GiB and single-cell export 1.40, so both ask for roughly 2.5x to 5x
+    // need. That is deliberate. The backend clamps an oversized request silently and
+    // sets pod requests == limits, so the cost of over-granting is concurrency, not
+    // failure, while the cost of under-granting is an OOM kill with no traceback.
+    //
+    // Polars' streaming engine has no disk spill, and --spill-dir reaches only
+    // DataFusion's pframe_source and DuckDB's write_frame sort. Any .over() window or
+    // sort is lowered to a full in-memory materialisation. Do not size this run on the
+    // assumption that anything streams to disk.
     f := exec.formula
     ramReq := mem
     if is_undefined(ramReq) {
-        ramReq = f.size({ default: 0 }).times(4).plus(f.gib(2)).
-            between(f.gib(2), f.gib(128)).
+        ramReq = f.size({ default: 0 }).times(7).plus(f.gib(2)).
+            between(f.gib(2), f.gib(256)).
             staticFallback("4GiB")
     }
     cpuReq := cpu

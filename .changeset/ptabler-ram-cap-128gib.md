@@ -1,9 +1,23 @@
 ---
-"@platforma-sdk/workflow-tengo": patch
+"@platforma-sdk/workflow-tengo": minor
 ---
 
-Raise the default ptabler RAM cap from 64 GiB to 128 GiB.
+pt: size the default ptabler RAM request from the measured worst-case plan shape
 
-The default sizing formula is now `ram = between(2 GiB + 4 × size, 2 GiB, 128 GiB)`. The floor, the multiplier, the `4GiB` static fallback and the CPU formula are unchanged, so runs whose input volume keeps them under 64 GiB request exactly what they did before. Only runs that were pinned at the old ceiling — inputs above ~15.5 GiB of stored parquet — ask for more.
+The default request becomes `between(2 GiB + 7 * size, 2 GiB, 256 GiB)`, from
+`between(2 GiB + 4 * size, 2 GiB, 64 GiB)`. Blocks that set an explicit `mem()` are
+unaffected — an explicit request always wins. The CPU formula, the 2 GiB floor and the
+`4GiB` static fallback are unchanged.
 
-Blocks that set an explicit `mem` are unaffected; an explicit request still wins.
+The old `4 x` slope was below the requirement of the steepest plan shape in the estate.
+A concat + aggregate plan using `max_by` needs `6.85 x` its input at
+`POLARS_MAX_THREADS=32`, fitted over 7 real inputs from 0.5 to 11.6 GiB (R2 0.996), so
+`2 + 4x` was OOM-killed at every input from 1 GiB upward wherever that shape ran
+unpinned. The same shape fits `4.94 x` at 8 threads, which is why slopes measured at 8
+threads under-reported production by 39 %. 7 is 6.85 rounded up to an integer, which is
+all the formula DSL accepts.
+
+Shapes shallower than the worst case are now over-granted — bulk export needs `2.92 x`
+and single-cell export `1.40 x`. That is deliberate: the backend silently clamps an
+oversized request and sets pod requests == limits, so over-granting costs concurrency
+while under-granting costs an OOM kill with no traceback.
