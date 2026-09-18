@@ -52,13 +52,23 @@ export function getTestConfig(): TestConfig {
   return conf as TestConfig;
 }
 
-/** Default request timeout for tests (ms) */
+/** Request timeout (ms) for a test address that states none. Short, so a local
+ * backend that stops answering fails the case instead of retrying to the end of
+ * the test budget. */
 export const TEST_REQUEST_TIMEOUT = 500;
 
-/** Returns PlClientConfig with reduced timeout for tests */
+/** True when the address carries an explicit `request-timeout` query parameter. */
+function addressStatesRequestTimeout(address: string): boolean {
+  if (address.indexOf("://") === -1) return false;
+  return new URL(address).searchParams.has("request-timeout");
+}
+
+/** Returns PlClientConfig with the test request timeout. A remote backend (the
+ * Kubernetes e2e) is reached over cluster DNS and needs more than the local
+ * budget, so an address that states its own `request-timeout` keeps it. */
 export function plAddressToTestConfig(address: string): PlClientConfig {
   const plConf = plAddressToConfig(address);
-  plConf.defaultRequestTimeout = TEST_REQUEST_TIMEOUT;
+  if (!addressStatesRequestTimeout(address)) plConf.defaultRequestTimeout = TEST_REQUEST_TIMEOUT;
   return plConf;
 }
 
