@@ -5,8 +5,11 @@ exec := import("@platforma-sdk/workflow-tengo:exec")
 xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
 times := import("times")
+assets := import("@platforma-sdk/workflow-tengo:assets")
 
 self.defineOutputs("pf")
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
 self.body(func(inputs){
 
@@ -15,7 +18,9 @@ self.body(func(inputs){
 
 	e := exec.builder().
 		cpu(1).ram("50000kb").
-		cmd("env").
+		software(shellSw).
+		arg("-c").
+		arg("true").
 		writeFile("data.csv", csv).
 		saveFile("data.csv").
 		run()

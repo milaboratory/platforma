@@ -1,7 +1,10 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
 exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
 
 self.defineOutputs(["scratch"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
 self.body(func(inputs) {
 	/* Closes the loop on a scratch space request: the size asked for here travels through
@@ -19,7 +22,7 @@ self.body(func(inputs) {
 	 * absolute one. Both name the same directory, and 'cd && pwd' is what proves it — while also
 	 * proving the path is a directory the command can actually reach. */
 	run := exec.builder().
-		cmd("sh").
+		software(shellSw).
 		resources({
 			// Every number here is the smallest that still runs: the test is about the scratch
 			// request reaching the command, so it must not compete for resources with whatever

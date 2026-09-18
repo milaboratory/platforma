@@ -53,7 +53,12 @@ tplTest.concurrent.for([
       // Content roundtrip is intentionally not asserted — pt truncates the
       // target before reading all source rows (same path read+write race),
       // so the output is a partial TSV. We only care that the write succeeded.
-      expect(settled).not.toBeInstanceOf(Error);
+      // Report the message rather than the type: toBeInstanceOf prints only that the
+      // value was an Error, so the reason pt could not write never reached the failure
+      // output and the k8s run could not be told apart from a slow one.
+      if (settled instanceof Error) {
+        expect.fail(`pt failed with { writable: true }: ${settled.message}`);
+      }
       expect(settled).toBeTypeOf("string");
       expect(settled).toMatch(/^a\tb/);
     } else {
@@ -63,4 +68,10 @@ tplTest.concurrent.for([
       expect((settled as Error).message).toMatch(/Exited with code/);
     }
   },
+  // A Kubernetes deploy runs each command as its own Job, and the measured cost of one
+  // of these cases there is around 143s — a pod scheduled, an image pulled and ptabler
+  // run to completion, twice over in 'add' mode. The budget is set above that so a slow
+  // run reports whatever the command actually did; at 15s, and then at 60s, every such
+  // case came back as a bare timeout and hid its own error.
+  300_000,
 );
