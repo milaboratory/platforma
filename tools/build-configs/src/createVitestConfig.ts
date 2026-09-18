@@ -43,6 +43,7 @@ export const createVitestConfig = (overrides: ViteUserConfig = {}): ViteUserConf
   return mergeConfig(
     {
       test: {
+        testTimeout: Number(process.env.PL_TEST_TIMEOUT ?? 5_000),
         pool: "forks",
         watch: false,
         passWithNoTests: true,
