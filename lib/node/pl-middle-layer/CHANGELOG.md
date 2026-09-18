@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.71.11
+
+### Patch Changes
+
+- Updated dependencies [6bb6c70]
+- Updated dependencies [6f5690c]
+- Updated dependencies [fbf82fc]
+- Updated dependencies [17536f5]
+  - @milaboratories/pl-crash-recorder@0.3.1
+  - @platforma-sdk/block-tools@2.16.0
+  - @platforma-sdk/workflow-tengo@6.10.5
+
 ## 1.71.10
 
 ### Patch Changes
