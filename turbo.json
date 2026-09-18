@@ -45,7 +45,7 @@
     },
     "test": {
       "inputs": ["$TURBO_DEFAULT$"],
-      "env": ["TEST_CACHE_CRUTCH"],
+      "env": ["TEST_CACHE_CRUTCH", "PL_TEST_TIMEOUT"],
       "outputs": ["./coverage/**", "test-report.junit.xml"],
       "dependsOn": ["build"],
       "passThroughEnv": [
