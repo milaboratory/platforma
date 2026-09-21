@@ -47,6 +47,12 @@ export function buildAllCommand(name = "build"): Command {
       core.allPlatforms = flags["all-platforms"];
       core.fullDirHash = flags["full-dir-hash"];
 
+      // Up front, not at descriptor-writing time: the answer comes from package.json
+      // alone, so a CI run that cannot produce a runnable release should not spend
+      // minutes building archives and images before saying so. buildSwJsonFiles
+      // re-checks the selection it writes, so nothing depends on this call.
+      core.assertDockerCoverage();
+
       const isDevLocal = core.buildMode === "dev-local";
 
       // Docker build defaults to OFF outside CI — including dev-local. Block

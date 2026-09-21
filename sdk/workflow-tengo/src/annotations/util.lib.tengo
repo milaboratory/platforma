@@ -1,5 +1,4 @@
 hex := import("hex")
-rand := import("rand")
 text := import("text")
 
 ll := import(":ll")

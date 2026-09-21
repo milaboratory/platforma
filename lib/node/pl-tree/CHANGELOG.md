@@ -1,5 +1,52 @@
 # @milaboratories/pl-tree
 
+## 1.15.1
+
+### Patch Changes
+
+- 6cfda51: Make `PlTreeState.updateFromResourceData` 11% faster on a steady tree-sync poll and 23% faster on a first load, mainly by walking stored fields and kv entries in lockstep with the incoming ones instead of hashing every freshly decoded name.
+- 6310b85: Fix a `RangeError: Maximum call stack size exceeded` in `loadTreeStateViaResourceTree` when a stop-marker follow-up round returns a very large number of resources, which left the synchronized tree permanently failing on every poll.
+
+## 1.15.0
+
+### Minor Changes
+
+- 3e33e3c: Add the `backend-delta` tree loading algorithm: it hands the backend the change token its
+  transaction was opened at and takes only the resources that changed since, resolving
+  references a delta pointed at but did not carry. Requires the `treeChangedSince:v1` backend
+  capability. `TreeLoadingRequest` gains the required members `roots` and `knownResources`, and
+  an optional `changedSinceToken`.
+- 4068d5c: `auto` now resolves to `backend-delta` whenever the backend advertises
+  `treeChangedSince:v1`, falling back to `backend-streaming` and then `client-bfs`. This
+  changes which algorithm an existing caller gets, without any change on their side.
+  `MI_TREE_TRAVERSAL` accepts `backend-delta` too.
+
+### Patch Changes
+
+- 37707e3: Resolve the tree loading algorithm once, when a synchronized tree is created, instead of on
+  every poll. `resolveTreeLoadingAlgorithm` holds the `auto` rule and the fallbacks for a
+  preference the backend cannot serve; the tree logs the algorithm it will run and keeps it for
+  its life.
+- Updated dependencies [13aff26]
+- Updated dependencies [ddc7746]
+  - @milaboratories/pl-client@3.17.0
+  - @milaboratories/pl-errors@1.4.41
+
+## 1.14.4
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.16.2
+- @milaboratories/pl-errors@1.4.40
+
+## 1.14.3
+
+### Patch Changes
+
+- Updated dependencies [0aa8615]
+  - @milaboratories/pl-client@3.16.1
+  - @milaboratories/pl-errors@1.4.39
+
 ## 1.14.2
 
 ### Patch Changes

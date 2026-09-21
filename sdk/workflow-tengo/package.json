@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/workflow-tengo",
-  "version": "6.9.0",
+  "version": "6.11.0",
   "description": "Tengo SDK library",
   "type": "module",
   "types": "./dist/index.d.ts",
@@ -16,8 +16,8 @@
     "./dist/**/*"
   ],
   "scripts": {
-    "type-check": "pl-tengo check",
-    "build": "rm -rf dist && ./scripts/build.sh",
+    "types:check": "pl-tengo imports && pl-tengo check",
+    "build": "rm -rf dist && pl-tengo build",
     "test": "pl-tengo test",
     "format": "/usr/bin/env emacs --quick --script ./scripts/format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./scripts/format-stdin.el",

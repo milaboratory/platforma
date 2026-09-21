@@ -1,5 +1,17 @@
 # @milaboratories/uikit
 
+## 2.15.30
+
+### Patch Changes
+
+- @platforma-sdk/model@1.83.17
+
+## 2.15.29
+
+### Patch Changes
+
+- b659a5d: PlDropdown, PlDropdownLegacy, PlAutocomplete: show the full selected value as a native tooltip on hover when it is truncated with an ellipsis
+
 ## 2.15.28
 
 ### Patch Changes

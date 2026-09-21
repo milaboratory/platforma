@@ -91,26 +91,19 @@ test("an entry nothing can resolve creates no project, and every entry is report
   });
 });
 
-test("a template holding a block from a folder on this machine is refused rather than shared", async () => {
+test("a template holding a block from a folder on this machine is shared like any other", async () => {
   await withMl(async (ml) => {
-    const stored = await storeTemplate(ml, "Built here", {
-      schemaVersion: 1,
-      document: documentOf(entry("a"), entry("b", LOCAL_FOLDER)),
-    });
+    const document = documentOf(entry("a"), entry("b", LOCAL_FOLDER));
+    const stored = await storeTemplate(ml, "Built here", { schemaVersion: 1, document });
 
-    // Asked of a template that is merely being displayed, so the refusal can be stated on the
-    // template itself instead of only once the user has tried to send it.
-    expect((await ml.checkTemplateShareable(stored.id)).map((p) => p.entryId)).toStrictEqual(["b"]);
+    // A stored template is shareable by existing. Whether the recipient can resolve every entry
+    // is their question, answered where they preview or apply it — not a gate on sending.
+    // With everyone, like the other share tests here: a named recipient must already exist on
+    // the backend, and the test server has no second user.
+    const shared = await ml.shareTemplate(stored.id, { everyone: true, title: "Built here" });
 
-    const outcome = await ml.shareTemplate(stored.id, {
-      recipients: ["colleague"],
-      title: "Built here",
-    });
-
-    if (outcome.ok) throw new Error("a template with a file: entry must not be shareable");
-    expect(outcome.problems.map((p) => p.entryId)).toStrictEqual(["b"]);
-    // Refused before anything was written: no envelope, so nothing to revoke.
-    expect((await ml.outgoingShares.getValue()) ?? []).toStrictEqual([]);
+    const outgoing = await ml.outgoingShares.awaitStableValue();
+    expect((outgoing ?? []).map((s) => s.shareId)).toStrictEqual([shared.shareId]);
   });
 });
 
@@ -142,7 +135,6 @@ test("an accepted template share lands on the acceptor's shelf and builds nothin
     });
 
     const shared = await ml.shareTemplate(stored.id, { everyone: true, title: "A pipeline" });
-    if (!shared.ok) throw new Error(`share refused: ${JSON.stringify(shared.problems)}`);
 
     const outcome = await ml.acceptShare([shared.shareId]);
 
@@ -175,7 +167,6 @@ test("a changed template share keeps its id, and whoever already responded is no
     });
 
     const shared = await ml.shareTemplate(first.id, { everyone: true, title: "First" });
-    if (!shared.ok) throw new Error(`share refused: ${JSON.stringify(shared.problems)}`);
 
     // Someone responds to the share, which is what the replace below must not undo.
     const accept = await ml.acceptShare([shared.shareId]);
@@ -186,7 +177,7 @@ test("a changed template share keeps its id, and whoever already responded is no
     await ml.changeShare(shared.shareId, { templateId: second.id, title: "Second" });
 
     const outgoing = (await ml.outgoingShares.getValue()) ?? [];
-    expect(outgoing.map((s) => s.shareId)).toStrictEqual([shared.shareId]);
+    expect((outgoing ?? []).map((s) => s.shareId)).toStrictEqual([shared.shareId]);
     expect(outgoing[0]).toMatchObject({
       payloadKind: "template",
       title: "Second",
