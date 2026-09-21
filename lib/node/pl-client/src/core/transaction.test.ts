@@ -1,4 +1,4 @@
-import { withTempRoot } from "../test/test_config";
+import { withAdminTempRoot } from "../test/test_config";
 import { StructTestResource, ValueTestResource } from "../helpers/pl";
 import { field, toGlobalFieldId, toGlobalResourceId } from "./transaction";
 import { RecoverablePlError } from "./errors";
@@ -7,7 +7,7 @@ import { test, expect } from "vitest";
 import { StatefulPromise } from "./StatefulPromise";
 
 test("get field", async () => {
-  await withTempRoot(async (pl) => {
+  await withAdminTempRoot(async (pl) => {
     const [rr0, theField1] = await pl.withWriteTx("resource1", async (tx) => {
       const r0 = tx.createStruct(StructTestResource);
       const r1 = tx.createStruct(StructTestResource);
@@ -54,7 +54,7 @@ test("get field", async () => {
 });
 
 test("handle absent resource error", async () => {
-  await withTempRoot(async (pl) => {
+  await withAdminTempRoot(async (pl) => {
     const [rr0, ff0] = await pl.withWriteTx("testCreateResource", async (tx) => {
       const r0 = tx.createStruct(StructTestResource);
       const f0 = { resourceId: tx.clientRoot, fieldName: "test0" };
@@ -114,7 +114,7 @@ test("handle absent resource error", async () => {
 });
 
 test("handle KV storage", async () => {
-  await withTempRoot(async (pl) => {
+  await withAdminTempRoot(async (pl) => {
     await pl.withWriteTx("writeKV", async (tx) => {
       tx.setKValue(tx.clientRoot, "a", "a");
       tx.setKValue(tx.clientRoot, "b", "b");
@@ -151,7 +151,7 @@ test("handle KV storage", async () => {
 });
 
 test("handle empty KV storage", async () => {
-  await withTempRoot(async (pl) => {
+  await withAdminTempRoot(async (pl) => {
     await pl.withReadTx("testReadIndividualAndList", async (tx) => {
       expect(await tx.listKeyValuesString(tx.clientRoot)).toEqual([]);
     });
@@ -159,7 +159,7 @@ test("handle empty KV storage", async () => {
 });
 
 test("handle KV storage 2", async () => {
-  await withTempRoot(async (pl) => {
+  await withAdminTempRoot(async (pl) => {
     const r1 = await pl.withWriteTx("writeKV", async (tx) => {
       const rr1 = tx.createEphemeral(StructTestResource);
       tx.createField(field(rr1, "a"), "Dynamic", rr1);
