@@ -209,13 +209,15 @@ export async function getTestLLClient(confOverrides: Partial<PlClientConfig> = {
   return await LLPlClient.build({ ...conf, ...confOverrides }, { auth });
 }
 
+/** Returns a config logged in as the admin test user, or the ordinary test config where no
+ * admin credentials are set. A backend that needs no auth, and one whose single test user
+ * already holds the admin role, both leave PL_TEST_ADMIN_USER and PL_TEST_ADMIN_PASSWORD
+ * unset, and a test that asks for admin must still run there. */
 export async function getTestAdminClientConf(): Promise<{ conf: PlClientConfig; auth: AuthOps }> {
   const tConf = getTestConfig();
 
   if (tConf.test_admin_user === undefined || tConf.test_admin_password === undefined)
-    throw new Error(
-      `No admin auth found in config (${CONFIG_FILE}) or env vars: PL_TEST_ADMIN_USER, PL_TEST_ADMIN_PASSWORD`,
-    );
+    return await getTestClientConf();
 
   const plConf = plAddressToTestConfig(tConf.address);
   const uClient = await UnauthenticatedPlClient.build(plConf);
