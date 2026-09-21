@@ -1,4 +1,4 @@
-import { withAdminTempRoot } from "../test/test_config";
+import { withAdminTempRoot, withTempRoot } from "../test/test_config";
 import { StructTestResource, ValueTestResource } from "../helpers/pl";
 import { field, toGlobalFieldId, toGlobalResourceId } from "./transaction";
 import { RecoverablePlError } from "./errors";
