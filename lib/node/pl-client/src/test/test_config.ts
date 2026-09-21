@@ -52,10 +52,20 @@ export function getTestConfig(): TestConfig {
   return conf as TestConfig;
 }
 
-/** Request timeout (ms) for a test address that states none. Short, so a local
- * backend that stops answering fails the case instead of retrying to the end of
- * the test budget. */
-export const TEST_REQUEST_TIMEOUT = 500;
+/**
+ * Default request timeout for tests (ms).
+ *
+ * Kept short so a hung call fails the test instead of the suite's own budget. A deploy the
+ * tests reach over cluster DNS needs more than that on first contact, where the deadline
+ * covers name resolution too:
+ *
+ *   RpcError: Deadline exceeded after 0.500s,waiting for name resolution
+ *
+ * That call builds the shared client, so the whole file dies with it and retries only
+ * repeat the error against an undefined client. PL_TEST_REQUEST_TIMEOUT raises the budget
+ * where resolution is slow, and every other environment keeps the short one.
+ */
+export const TEST_REQUEST_TIMEOUT = Number(process.env.PL_TEST_REQUEST_TIMEOUT ?? 500);
 
 /** True when the address carries an explicit `request-timeout` query parameter. */
 function addressStatesRequestTimeout(address: string): boolean {
@@ -63,9 +73,9 @@ function addressStatesRequestTimeout(address: string): boolean {
   return new URL(address).searchParams.has("request-timeout");
 }
 
-/** Returns PlClientConfig with the test request timeout. A remote backend (the
- * Kubernetes e2e) is reached over cluster DNS and needs more than the local
- * budget, so an address that states its own `request-timeout` keeps it. */
+/** Returns PlClientConfig with the test request timeout. An address that states its own
+ * `request-timeout` keeps it, so one deploy can raise the budget without setting
+ * PL_TEST_REQUEST_TIMEOUT for every suite it runs. */
 export function plAddressToTestConfig(address: string): PlClientConfig {
   const plConf = plAddressToConfig(address);
   if (!addressStatesRequestTimeout(address)) plConf.defaultRequestTimeout = TEST_REQUEST_TIMEOUT;

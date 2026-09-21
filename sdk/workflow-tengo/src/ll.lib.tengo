@@ -2,7 +2,6 @@
 
 plapi := import("plapi")
 fmt := import("fmt")
-log := import("log")
 text := import("text")
 
 /**

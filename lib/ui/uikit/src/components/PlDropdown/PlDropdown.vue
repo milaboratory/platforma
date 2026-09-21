@@ -211,6 +211,15 @@ const textValue = computed(() => {
   return item?.label;
 });
 
+// Native tooltip with the full selected value. The `.input-value` layer has
+// `pointer-events: none`, so the title must sit on the field wrapper, which is
+// what actually receives the hover.
+const fieldTitle = computed(() => {
+  if (data.open) return undefined;
+  if (isMissing.value) return props.missingValueLabel;
+  return textValue.value !== undefined ? String(textValue.value) : undefined;
+});
+
 const computedPlaceholder = computed(() => {
   if (!data.open && hasValue.value) {
     return "";
@@ -357,7 +366,7 @@ watchPostEffect(() => {
       @focusout="onFocusOut"
     >
       <div class="pl-dropdown__container">
-        <div class="pl-dropdown__field">
+        <div class="pl-dropdown__field" :title="fieldTitle">
           <input
             ref="input"
             v-model="data.search"

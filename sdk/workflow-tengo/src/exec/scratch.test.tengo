@@ -67,6 +67,19 @@ TestScratchFormulaNeedsNoFallback := func() {
 		"a scratch formula without a fallback must be accepted: it degrades to no request")
 }
 
+// A request of exactly 0 is the contract's way of asking for the temporary directory alone, with
+// no device behind it. It sits below the 16MiB floor that catches a bytes-where-GiB-was-meant
+// mistake, so it has to be admitted explicitly - and it is the value the SDK now sends by
+// default, which makes this the floor's most travelled edge.
+TestScratchZeroIsAValidRequest := func() {
+	b := exec.builder().
+		cmd("test").
+		resources({ onCPU: { cpu: 1, ram: "2GiB", scratchFreeSpace: 0 } })
+
+	test.isTrue(ll.methodExists(b, "run"),
+		"a request of 0 asks for a temporary directory without a device and must be accepted")
+}
+
 // Note on panic-path coverage: the two rejection contracts — an unknown key next to
 // scratchFreeSpace (a typo must not be silently dropped) and a byte count below the 16MiB
 // floor (a bytes-where-GiB-was-meant mistake) — both go through ll.assert, which is terminal

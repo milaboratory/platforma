@@ -513,6 +513,53 @@ export class PlTreeState {
     const incrementRefs: SignedResourceId[] = [];
     const decrementRefs: SignedResourceId[] = [];
 
+    // `resourcesAdded` is notified once, after the loop: markChanged detaches every watcher on
+    // its first call and no watcher can attach in the middle of this synchronous loop, so a
+    // single notification covers every resource added here. It also builds the marker string
+    // just once, which is worth doing because resourceIdToString on a signed id parses a
+    // BigInt and hex-decodes a Buffer.
+    let addedCount = 0;
+    let firstAdded: SignedResourceId | undefined;
+
+    // Diagnostic context for unexpectedTransitionError, refreshed once per resource. It lives
+    // out here so the loop body allocates neither a closure nor a snapshot per resource on the
+    // path where nothing goes wrong. Only the mutable half of BasicResourceData needs
+    // capturing: id, kind, type and data are readonly on PlTreeResource, so they are read back
+    // from the resource when the message is built.
+    let errRd: ExtendedResourceData;
+    let errRes: PlTreeResource | undefined;
+    let errOriginalResourceId: OptionalSignedResourceId = NullSignedResourceId;
+    let errError: OptionalSignedResourceId = NullSignedResourceId;
+    let errInputsLocked = false;
+    let errOutputsLocked = false;
+    let errResourceReady = false;
+    let errFinal = false;
+    const unexpectedTransitionError = (reason: string): never => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { fields, ...rdWithoutFields } = errRd;
+      const statBeforeMutation: BasicResourceData | undefined =
+        errRes === undefined
+          ? undefined
+          : {
+              id: errRes.id,
+              kind: errRes.kind,
+              type: errRes.type,
+              data: errRes.data,
+              resourceReady: errResourceReady,
+              inputsLocked: errInputsLocked,
+              outputsLocked: errOutputsLocked,
+              error: errError,
+              originalResourceId: errOriginalResourceId,
+              final: errFinal,
+            };
+      this.invalidateTree();
+      throw new TreeStateUpdateError(
+        `Unexpected resource state transition (${reason}): ${stringifyWithResourceId(
+          rdWithoutFields,
+        )} -> ${stringifyWithResourceId(statBeforeMutation)}`,
+      );
+    };
+
     // patching / creating resources
     for (const rd of resourceData) {
       let resource = this.resources.get(rd.id);
@@ -522,20 +569,17 @@ export class PlTreeState {
       // they never change; this flag isolates value/flag-only changes from real metadata churn.
       let metadataChanged = false;
 
-      const statBeforeMutation = resource?.basicState;
-      const unexpectedTransitionError = (reason: string): never => {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { fields, ...rdWithoutFields } = rd;
-        this.invalidateTree();
-        throw new TreeStateUpdateError(
-          `Unexpected resource state transition (${reason}): ${stringifyWithResourceId(
-            rdWithoutFields,
-          )} -> ${stringifyWithResourceId(statBeforeMutation)}`,
-        );
-      };
+      errRd = rd;
+      errRes = resource;
 
       if (resource !== undefined) {
         // updating existing resource
+        errOriginalResourceId = resource.originalResourceId;
+        errError = resource.error;
+        errInputsLocked = resource.inputsLocked;
+        errOutputsLocked = resource.outputsLocked;
+        errResourceReady = resource.resourceReady;
+        errFinal = resource.finalFlag;
 
         if (resource.finalState)
           unexpectedTransitionError("resource state can\t be updated after it is marked as final");
@@ -569,9 +613,27 @@ export class PlTreeState {
           if (stat) stat.errorsAttached++;
         }
 
-        // updating fields
+        // updating fields.
+        //
+        // Fields normally arrive in the order they are already stored, so the stored ones are
+        // walked in lockstep with the incoming ones and matched by direct name comparison
+        // rather than through a fieldsMap lookup: every field name in a poll response is
+        // freshly decoded from protobuf, so V8 has no cached hash for any of them.
+        //
+        // Any divergence (reordering, an insertion, a removal) abandons the walk, and the rest
+        // of the resource resolves through fieldsMap.get, which is always correct. The walk is
+        // abandoned before any fieldsMap.set, so it never observes an insertion made through
+        // the live iterator.
+        let walk: MapIterator<PlTreeField> | undefined =
+          rd.fields.length > 0 ? resource.fieldsMap.values() : undefined;
         for (const fd of rd.fields) {
-          let field = resource.fieldsMap.get(fd.name);
+          let field: PlTreeField | undefined;
+          if (walk !== undefined) {
+            const next = walk.next();
+            if (next.done === true || next.value.name !== fd.name) walk = undefined;
+            else field = next.value;
+          }
+          if (field === undefined) field = resource.fieldsMap.get(fd.name);
 
           if (!field) {
             // new field
@@ -755,11 +817,23 @@ export class PlTreeState {
           if (stat) stat.readyFlips++;
         }
 
-        // syncing kv
+        // syncing kv. Same lockstep walk as the fields above, for the same reason: kv keys
+        // arrive in a stable order and are freshly decoded strings. The walk is only set up
+        // when there is something to compare against, so a resource with no kv allocates no
+        // iterator.
+        let kvWalk: MapIterator<[string, Uint8Array]> | undefined =
+          rd.kv.length > 0 ? resource.kv.entries() : undefined;
         for (const kv of rd.kv) {
-          const current = resource.kv.get(kv.key);
+          let current: Uint8Array | undefined;
+          if (kvWalk !== undefined) {
+            const next = kvWalk.next();
+            if (next.done === true || next.value[0] !== kv.key) kvWalk = undefined;
+            else current = next.value[1];
+          }
+          if (current === undefined) current = resource.kv.get(kv.key);
           if (current === undefined) {
             resource.kv.set(kv.key, kv.value);
+            kvWalk = undefined;
             notEmpty(resource.kvChangedPerKey).markChanged(
               kv.key,
               `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
@@ -832,7 +906,8 @@ export class PlTreeState {
 
         // adding the resource to the heap
         this.resources.set(resource.id, resource);
-        this.resourcesAdded.markChanged(`new resource ${resourceIdToString(resource.id)} added`);
+        if (addedCount === 0) firstAdded = resource.id;
+        addedCount++;
       }
 
       if (stat) {
@@ -848,6 +923,13 @@ export class PlTreeState {
         }
       }
     }
+
+    if (firstAdded !== undefined)
+      this.resourcesAdded.markChanged(
+        addedCount === 1
+          ? `new resource ${resourceIdToString(firstAdded)} added`
+          : `${addedCount} new resources added, first ${resourceIdToString(firstAdded)}`,
+      );
 
     // applying refCount increments
     for (const rid of incrementRefs) {

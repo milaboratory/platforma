@@ -140,8 +140,11 @@ quotaBuilder := func() {
 				amount,
 				["or", "number", "string", "null"],
 				"exec.quota.builder.scratchFreeSpace: scratch space amount should be a number or string")
-			ll.assert(is_undefined(amount) || is_string(amount) || amount > 0,
-				"exec.quota.builder.scratchFreeSpace: amount in bytes should be greater than 0")
+			// 0 is legal and meaningful: it asks for a temporary directory without a device of
+			// its own, which is what the SDK sends for every command that requested no size.
+			// Only a negative amount is nonsense.
+			ll.assert(is_undefined(amount) || is_string(amount) || amount >= 0,
+				"exec.quota.builder.scratchFreeSpace: amount in bytes cannot be negative")
 			scratch_request = amount
 
 			return self

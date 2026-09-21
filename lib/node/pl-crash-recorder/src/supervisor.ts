@@ -1,0 +1,193 @@
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
+import { DEATH_FILE_PREFIX, type CrashMarker, type CrashReason } from "./events";
+import { listSessions, sessionIdFromFile } from "./recorder";
+
+type CrashMarkerInput = {
+  /** Session id the parent assigned to the worker. Omitted, the marker carries no identity. */
+  sessionId?: string;
+  reason?: CrashReason;
+  error?: (Error & { code?: string }) | unknown;
+  code?: number;
+  signal?: string;
+  stderrTail?: string;
+};
+
+/** A crash marker together with the file holding it. */
+export type StoredCrashMarker = CrashMarker & { file: string };
+
+export type SuperviseOptions = {
+  /**
+   * The session id handed to the worker at spawn (see `CRASH_SESSION_ENV`).
+   * With it the marker names the dying session with certainty. Without it the
+   * analyzer has to attribute the marker by timing, and will decline to
+   * attribute it at all when more than one session looks dead.
+   */
+  sessionId?: string;
+  onCrash?: (info: {
+    kind: "error" | "exit";
+    markerFile: string;
+    error?: unknown;
+    code?: number;
+  }) => void;
+};
+
+/** Minimal view of a worker, so callers are not forced to import worker_threads. */
+export type SupervisedWorker = {
+  on(event: "error", listener: (error: Error) => void): unknown;
+  on(event: "exit", listener: (code: number) => void): unknown;
+};
+
+/**
+ * Records an abnormal end observed from outside the dying thread.
+ *
+ * A thread that runs out of heap cannot describe its own death: the last reading
+ * it wrote predates the blow-up, and when the blow-up is synchronous no sampler
+ * tick of its own lands either. The parent is the only place where the cause is
+ * known rather than inferred — Node reports `ERR_WORKER_OUT_OF_MEMORY` to it —
+ * so the parent writes the verdict down on the dead thread's behalf.
+ */
+export function writeCrashMarker(dir: string, input: CrashMarkerInput = {}): string {
+  fs.mkdirSync(dir, { recursive: true });
+  const error = input.error as (Error & { code?: string }) | undefined;
+  // Only an id the parent handed to the worker is certain, and only a certain
+  // id goes in `sessionId`. Reading the newest open crash log names whichever
+  // session wrote last, which a concurrent live session makes wrong; recorded
+  // as identity that would misattribute the death and, worse, stop the session
+  // that actually died from claiming the marker. So it is advisory only.
+  const marker: CrashMarker = {
+    type: "external-crash",
+    wall: Date.now(),
+    sessionId: input.sessionId,
+    guessedSessionId: input.sessionId === undefined ? newestOpenSessionId(dir) : undefined,
+    reason: input.reason ?? classifyReason(input),
+    errorCode: error?.code,
+    errorName: error?.name,
+    message: truncate(String(error?.message ?? input.error ?? ""), 2000),
+    exitCode: input.code,
+    signal: input.signal,
+    stderrTail: truncate(input.stderrTail ?? "", 4000),
+    memoryAtDeath: memoryNow(),
+  };
+  const file = path.join(dir, `${DEATH_FILE_PREFIX}-${marker.wall}.ndjson`);
+  fs.writeFileSync(file, `${JSON.stringify(marker)}\n`);
+  return file;
+}
+
+/**
+ * Crash markers in a directory, oldest first, each with the file it came from.
+ *
+ * The path travels with the marker so that a caller collecting the evidence — to
+ * attach to a report, say — never has to spell the file name itself and cannot
+ * drift from the one this module writes.
+ */
+export function readCrashMarkers(dir: string): StoredCrashMarker[] {
+  let names: string[];
+  try {
+    names = fs.readdirSync(dir);
+  } catch {
+    return [];
+  }
+  const markers: StoredCrashMarker[] = [];
+  for (const name of names) {
+    if (!name.startsWith(`${DEATH_FILE_PREFIX}-`) || !name.endsWith(".ndjson")) continue;
+    const file = path.join(dir, name);
+    try {
+      const first = fs.readFileSync(file, "utf8").split("\n")[0];
+      markers.push({ ...(JSON.parse(first) as CrashMarker), file });
+    } catch {
+      // A marker that cannot be parsed is skipped; it is one line of evidence,
+      // not the report.
+    }
+  }
+  return markers.sort((lhs, rhs) => lhs.wall - rhs.wall);
+}
+
+/**
+ * Attaches crash recording to a middle-layer worker thread.
+ *
+ * A worker whose isolate exhausts its heap dies alone and the parent receives
+ * `ERR_WORKER_OUT_OF_MEMORY`, with or without `resourceLimits`. What
+ * `resourceLimits.maxOldGenerationSizeMb` adds is a chosen ceiling: V8's default
+ * is several gigabytes, so on a small machine the OS can run out of memory and
+ * kill the whole process before V8 ever reports the worker's heap as full — and
+ * then there is no parent left to write anything.
+ */
+export function superviseWorker(
+  worker: SupervisedWorker,
+  dir: string,
+  options: SuperviseOptions = {},
+): void {
+  // One death fires `error` and then `exit`. Only `error` carries the cause, so
+  // a later `exit` must not overwrite it with a bare exit code.
+  let recorded = false;
+  worker.on("error", (error: Error) => {
+    recorded = true;
+    const markerFile = writeCrashMarker(dir, { error, sessionId: options.sessionId });
+    options.onCrash?.({ kind: "error", error, markerFile });
+  });
+  worker.on("exit", (code: number) => {
+    if (code === 0 || recorded) return;
+    const markerFile = writeCrashMarker(dir, {
+      reason: "worker-exit",
+      code,
+      sessionId: options.sessionId,
+    });
+    options.onCrash?.({ kind: "exit", code, markerFile });
+  });
+}
+
+// Internals
+
+/**
+ * The parent's view of memory at the moment it saw the death.
+ *
+ * The dying thread cannot take this reading, and the sampler's last one predates
+ * the end by up to its interval. Taken here it is contemporaneous with the exit
+ * code it sits beside, which is what stops an exhausted machine from reading as
+ * an ordinary failure.
+ *
+ * Every reading here is a syscall. The machine's compressor and swap totals are
+ * deliberately not among them: on macOS they cost a subprocess, and this runs on
+ * the parent's event loop inside the worker's error handler, before the marker
+ * is written and before the caller learns of the death. A fork is exactly what
+ * becomes slow or impossible on the exhausted machine this code exists for, so
+ * the fuller picture is left to the sampler, whose last reading is at most one
+ * interval old and sits in the same bundle.
+ */
+function memoryNow(): CrashMarker["memoryAtDeath"] {
+  try {
+    return {
+      rss: process.memoryUsage.rss(),
+      maxRss: process.resourceUsage().maxRSS * 1024,
+      freeMemory: os.freemem(),
+      totalMemory: os.totalmem(),
+    };
+  } catch {
+    // A marker without memory is still a marker; failing to take the reading
+    // must never cost the record of the death itself.
+    return undefined;
+  }
+}
+
+// Advisory only, for a human reading a directory by hand: the dying session has
+// no terminating record, so among the sessions that look dead this names the one
+// that wrote last. Never used as identity — see `CrashMarker.guessedSessionId`.
+function newestOpenSessionId(dir: string): string | undefined {
+  const open = listSessions(dir).find((session) => session.crashed);
+  return open ? sessionIdFromFile(open.file) : undefined;
+}
+
+function classifyReason({ error, code, signal }: CrashMarkerInput): CrashReason {
+  const errorCode = (error as { code?: string } | undefined)?.code;
+  if (errorCode === "ERR_WORKER_OUT_OF_MEMORY") return "js-heap-out-of-memory";
+  if (signal === "SIGKILL") return "killed-by-os";
+  if (signal === "SIGABRT" || code === 134) return "abort-or-fatal-allocation-failure";
+  if (typeof code === "number" && code !== 0) return "nonzero-exit";
+  return "unknown";
+}
+
+function truncate(value: string, limit: number): string {
+  return value.length > limit ? `${value.slice(0, limit)}…` : value;
+}

@@ -86,6 +86,10 @@ jobs:
         env:
           PL_LICENSE: ${{ secrets.MI_LICENSE }}
           MI_LICENSE: ${{ secrets.MI_LICENSE }}
+          # The local runner serves a scratch request out of the command's working directory,
+          # which is what exec.test.ts's scratch cases assert. pl #2192 made that opt-in, so
+          # without this the backend advertises no scratch and those tests skip themselves.
+          PL_HAS_SCRATCH_SPACE: "true"
         with:
           pl-docker-registry: ${{ format('{0}/{1}', steps.ecr-login.outputs.registry, 'pl') }}
           pl-docker-tag: main

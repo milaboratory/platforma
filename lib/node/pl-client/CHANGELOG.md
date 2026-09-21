@@ -1,5 +1,32 @@
 # @milaboratories/pl-client
 
+## 3.17.0
+
+### Minor Changes
+
+- 13aff26: Sync the plapi protocol with the delta tree contract and add the `treeChangedSince:v1`
+  capability token. `Tree.Request` gains `unconditional_depth`, `traverse_stop_rules` is
+  deprecated in favour of `changed_since_token`, and the retired `resource_unchanged` frame
+  flag is gone.
+- ddc7746: Carry the delta tree change token through `PlTransaction`. `getNextSinceToken()` returns the
+  token the transaction was opened at, and `resourceTree()` accepts `changedSinceToken` plus
+  `unconditionalDepth` to poll with it and to read back what a delta referenced but did not
+  send. `traverseStopRules` is deprecated, and does not apply under a token.
+
+## 3.16.2
+
+### Patch Changes
+
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pl-model-common@1.49.0
+
+## 3.16.1
+
+### Patch Changes
+
+- 0aa8615: Recognise the `scratchSpace:v1` backend capability, advertised only where the deployment
+  actually has scratch storage.
+
 ## 3.16.0
 
 ### Minor Changes

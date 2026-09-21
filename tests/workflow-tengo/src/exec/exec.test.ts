@@ -80,16 +80,20 @@ tplTest.concurrent.for([{ gpuMemory: "16GiB" }])(
  * the whole path — builder, quota, compute allocation, driver — rather than being dropped in
  * the middle.
  *
- * A local backend has no dedicated scratch device, so the path it reports is the command's
- * working directory. That is the documented promise for a runner that cannot do better, and
- * asserting it here keeps the "always a usable location" guarantee honest.
+ * Needs a deployment that actually has scratch storage. Since pl #2192 that is opt-in
+ * (`--has-scratch-space`), and without it `{system.scratch.*}` has nothing to resolve to and
+ * the render fails outright, so the test self-skips on a backend that advertises no scratch.
  */
 // The size is deliberately small: this test is about the request reaching the command, not
 // about how much can be allocated. Once the backend plans real storage capacity, a test that
 // asks for hundreds of gigabytes would start failing on whichever runner happens to be smaller.
 tplTest.concurrent.for([{ scratchFreeSpace: "1GiB", expectedGiB: "1" }])(
   "scratch-space (scratchFreeSpace=$scratchFreeSpace)",
-  async ({ scratchFreeSpace, expectedGiB }, { helper, expect }) => {
+  async ({ scratchFreeSpace, expectedGiB }, { helper, pl, expect, skip }) => {
+    if (!pl.hasCapability("scratchSpace:v1")) {
+      skip("deployment has no scratch storage (pl started without --has-scratch-space)");
+    }
+
     const result = await helper.renderTemplate(
       false,
       "exec.run.scratch_space",
@@ -132,7 +136,11 @@ tplTest.concurrent.for([
   { withFallback: false, expectedGiB: "2" },
 ])(
   "scratch-formula (withFallback=$withFallback)",
-  async ({ withFallback, expectedGiB }, { helper, expect }) => {
+  async ({ withFallback, expectedGiB }, { helper, pl, expect, skip }) => {
+    if (!pl.hasCapability("scratchSpace:v1")) {
+      skip("deployment has no scratch storage (pl started without --has-scratch-space)");
+    }
+
     const result = await helper.renderTemplate(
       false,
       "exec.run.scratch_formula",
