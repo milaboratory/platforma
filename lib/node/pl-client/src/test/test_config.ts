@@ -249,7 +249,7 @@ export async function getTestAdminClient(
 
 export async function withAdminTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promise<T | void> {
   const alternativeRoot = `test_${Date.now()}_${randomUUID()}`;
-  let altRootId: OptionalResourceId = NullResourceId;
+  let altRootId: OptionalSignedResourceId = NullSignedResourceId;
   try {
     const client = await getTestAdminClient(alternativeRoot);
     altRootId = client.clientRoot;
