@@ -46,7 +46,8 @@ export function getTestConfig(): TestConfig {
 
   if (process.env.PL_TEST_PROXY !== undefined) conf.test_proxy = process.env.PL_TEST_PROXY;
 
-  if (process.env.PL_TEST_ADMIN_USER !== undefined) conf.test_admin_user = process.env.PL_TEST_ADMIN_USER;
+  if (process.env.PL_TEST_ADMIN_USER !== undefined)
+    conf.test_admin_user = process.env.PL_TEST_ADMIN_USER;
 
   if (process.env.PL_TEST_ADMIN_PASSWORD !== undefined)
     conf.test_admin_password = process.env.PL_TEST_ADMIN_PASSWORD;
