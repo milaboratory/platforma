@@ -32,11 +32,19 @@ function escapeForRegExp(s: string): string {
 /**
  * Find imports the source does not use.
  *
- * An import is used when its alias appears with a dot somewhere else in the
- * code: 'text.split(...)'. A module passed around as a value, say
- * 'myFunc(text)', counts as unused. This is deliberate: the cost of keeping an
- * import the source no longer needs is nothing, while the cost of dropping one
- * it does need is a broken build.
+ * An import is used when its alias appears anywhere else in the code as a name
+ * of its own: dereferenced ('text.split(...)'), called ('doIt(...)' for a lib
+ * that exports a bare function), or passed as a value ('myFunc(text)').
+ *
+ * Two occurrences do not count. A longer name that merely ends with the alias
+ * ('xtext') is a different name, and a declaration that shadows the alias
+ * ('text := ...') binds the name rather than reading the import.
+ *
+ * Everything else counts, including a member of another value ('opts.text') and
+ * a string literal ('"a text file"'). The check errs this way on purpose:
+ * keeping an import the source no longer needs costs nothing, dropping one it
+ * needs breaks the build. This also keeps the predicate wider than every
+ * earlier one, so a release can only ever report fewer imports, never more.
  *
  * Throws when the source does not parse, with the same line context the
  * compiler reports.
@@ -75,7 +83,7 @@ export function findUnusedImports(
   }
 
   return imports.filter((im) => {
-    const usageRE = new RegExp(`\\b${escapeForRegExp(im.alias)}\\s*\\.`);
+    const usageRE = new RegExp(`(?<!\\w)${escapeForRegExp(im.alias)}\\b(?!\\s*:=)`);
     return !codeLines.some((code, lineNo) => lineNo !== im.lineNo && usageRE.test(code));
   });
 }
