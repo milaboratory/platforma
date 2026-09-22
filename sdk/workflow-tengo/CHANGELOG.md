@@ -1,5 +1,14 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.11.1
+
+### Patch Changes
+
+- 946a752: fix: xsv converter can be launched in k8s installations.
+- Updated dependencies [7b5f8f1]
+  - @platforma-open/milaboratories.software-ptabler@2.1.13
+  - @platforma-open/milaboratories.software-ptexter@1.2.6
+
 ## 6.11.0
 
 ### Minor Changes
