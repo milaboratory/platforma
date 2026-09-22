@@ -14,6 +14,13 @@ function findMonorepoRoot(startDir: string): string | undefined {
   return undefined;
 }
 
+const DEFAULT_TEST_TIMEOUT_MS = 5_000;
+
+function testTimeoutMs(): number {
+  const configured = Number(process.env.PL_TEST_TIMEOUT);
+  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_TEST_TIMEOUT_MS;
+}
+
 export const TestTags = {
   Flaky: "flaky",
 } as const;
@@ -43,6 +50,7 @@ export const createVitestConfig = (overrides: ViteUserConfig = {}): ViteUserConf
   return mergeConfig(
     {
       test: {
+        testTimeout: testTimeoutMs(),
         pool: "forks",
         watch: false,
         passWithNoTests: true,
