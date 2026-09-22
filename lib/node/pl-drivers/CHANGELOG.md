@@ -1,5 +1,17 @@
 # @milaboratories/pl-drivers
 
+## 1.16.24
+
+### Patch Changes
+
+- Updated dependencies [a8e1308]
+  - @milaboratories/pl-client@3.17.1
+  - @milaboratories/pl-tree@1.15.2
+  - @milaboratories/pl-model-common@1.49.0
+  - @milaboratories/computable@2.9.8
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/helpers@1.14.5
+
 ## 1.16.23
 
 ### Patch Changes

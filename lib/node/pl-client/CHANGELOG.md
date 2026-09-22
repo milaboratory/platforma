@@ -1,5 +1,17 @@
 # @milaboratories/pl-client
 
+## 3.17.1
+
+### Patch Changes
+
+- a8e1308: Keep the request timeout the test address states.
+
+  `plAddressToTestConfig` overwrote `defaultRequestTimeout` with the 500ms local budget, so `?request-timeout=3000` on `PL_ADDRESS` had no effect. Against the Kubernetes deploy a call that needs more than 500ms hit the deadline and retried until the case ran out of time. The test budget now applies only to an address that states no timeout of its own.
+
+  - @milaboratories/pl-model-common@1.49.0
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.6
+
 ## 3.17.0
 
 ### Minor Changes
