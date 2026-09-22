@@ -64,6 +64,8 @@ TestScriptMakesTheDirectoryAndExecs := func() {
 
 	test.isTrue(text.contains(script, "mkdir -p"),
 		"the script must create the directory: nothing else can on an old backend")
+	test.isTrue(text.contains(script, "set -eu"),
+		"any failure stops the script: the command never runs without the directory it needs")
 	test.isTrue(text.contains(script, compat.WORKDIR_TMP_REL_PATH),
 		"it must be the same directory a current backend points TMPDIR at")
 	test.isTrue(text.contains(script, "export TMPDIR TMP"),
@@ -94,6 +96,8 @@ TestWindowsScriptMakesTheDirectoryAndForwards := func() {
 
 	test.isTrue(text.contains(script, "md \"%pl_tmp%\""),
 		"the directory cannot be created any other way on an old backend")
+	test.isTrue(text.contains(script, "if not exist \"%pl_tmp%\" exit /b 1"),
+		"a missing directory must stop the run: cmd.exe has no 'set -e'")
 	test.isTrue(text.contains(script, `set "pl_tmp=%CD%\.pl\tmp"`),
 		"and it must be spelled for cmd.exe: 'md .pl/tmp' is read as a switch")
 	test.isTrue(text.contains(script, "%*"),

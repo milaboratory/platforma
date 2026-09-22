@@ -87,6 +87,10 @@ script := func() {
 #
 # Written by exec.tmpdirCompat in @platforma-sdk/workflow-tengo.
 
+# Every step here is a precondition of the command, so any failure stops the script: the command
+# must never start with TMPDIR naming a directory that is not there, and fail far from the cause.
+set -eu
+
 wd="${PL_JOB_WORKDIR:-$PWD}"
 tmp="$wd/` + WORKDIR_TMP_REL_PATH + `"
 mkdir -p "$tmp"
@@ -142,6 +146,9 @@ setlocal
 
 set "pl_tmp=%CD%\` + WORKDIR_TMP_REL_PATH_WINDOWS + `"
 if not exist "%pl_tmp%" md "%pl_tmp%"
+rem cmd.exe has no 'set -e': the command must not start with TMPDIR naming a directory that
+rem is not there, so the absence is checked again rather than trusted to md's exit code.
+if not exist "%pl_tmp%" exit /b 1
 
 set "TMPDIR=%pl_tmp%"
 set "TMP=%pl_tmp%"
