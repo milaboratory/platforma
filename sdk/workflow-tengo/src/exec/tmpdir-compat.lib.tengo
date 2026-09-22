@@ -145,10 +145,12 @@ rem Written by exec.tmpdirCompat in @platforma-sdk/workflow-tengo.
 setlocal
 
 set "pl_tmp=%CD%\` + WORKDIR_TMP_REL_PATH_WINDOWS + `"
-if not exist "%pl_tmp%" md "%pl_tmp%"
-rem cmd.exe has no 'set -e': the command must not start with TMPDIR naming a directory that
-rem is not there, so the absence is checked again rather than trusted to md's exit code.
-if not exist "%pl_tmp%" exit /b 1
+if not exist "%pl_tmp%\." md "%pl_tmp%"
+rem cmd.exe has no 'set -e': the command must not start with TMPDIR naming a directory that is
+rem not there, so the path is tested again rather than md's exit code trusted. The '\.' suffix
+rem makes it a directory test - a plain 'if exist' is true of a regular file sitting there too,
+rem which md would have refused to replace.
+if not exist "%pl_tmp%\." exit /b 1
 
 set "TMPDIR=%pl_tmp%"
 set "TMP=%pl_tmp%"
