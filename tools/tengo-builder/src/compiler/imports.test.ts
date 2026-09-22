@@ -151,8 +151,8 @@ doSomething := func(x) {
   });
 
   test("a declaration that shadows the alias is not a usage", () => {
-    // Only the declaration is excluded. Reads of the shadowing local are bare
-    // references and do count, so this keeps the import in real code.
+    // Only the declaration is excluded. A read of the shadowing local is a bare
+    // reference, and that does count. Real code therefore keeps the import.
     const src = `text := import("text")
 
 doSomething := func() {
@@ -164,7 +164,8 @@ doSomething := func() {
   });
 
   test("the alias as a member of another value still counts as used", () => {
-    // Deliberately wide: never report an import the previous predicate kept.
+    // The check is wide on purpose. It never reports an import that the
+    // previous predicate kept.
     const src = `text := import("text")
 
 doSomething := func(opts) {
