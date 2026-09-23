@@ -312,28 +312,15 @@ function getDefaultHiddenColIds(
 
 // Reload AgGrid when new state arrives from server
 const reloadKey = ref(0);
-// A remount is only ever worth doing a handful of times in a row: this watch has
-// repeatedly been the engine of a remount loop, and a loop costs the user far
-// more (a strobing, unusable table) than the stale column layout that giving up
-// leaves behind.
-const ReloadBurstLimit = 3;
-const ReloadBurstWindowMs = 1000;
-const recentReloads: number[] = [];
-function reloadBudgetAvailable(): boolean {
-  const now = Date.now();
-  while (recentReloads.length > 0 && now - recentReloads[0] > ReloadBurstWindowMs)
-    recentReloads.shift();
-  if (recentReloads.length >= ReloadBurstLimit) return false;
-  recentReloads.push(now);
-  return true;
-}
 watch(
   () => [gridApi.value, gridState.value] as const,
   ([gridApi, gridState]) => {
     if (!gridApi || gridApi.isDestroyed()) return;
     const selfState = makePartialState(gridApi.getState());
-    if (!isJsonEqual(gridState, {}) && !storedStateApplied(gridState, selfState)) {
-      if (!reloadBudgetAvailable()) return;
+    const gridColIds = new Set(
+      (gridApi.getAllGridColumns() ?? []).map((column) => column.getColId() as PlTableColumnIdJson),
+    );
+    if (!isJsonEqual(gridState, {}) && !storedStateApplied(gridState, selfState, gridColIds)) {
       isReloading = true;
       gridOptions.value.initialState = gridState;
       ++reloadKey.value;

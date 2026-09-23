@@ -4,6 +4,10 @@ import { storedStateApplied } from "./grid-state";
 
 const colA = '{"id":"a","type":"column"}' as PlTableColumnIdJson;
 const colB = '{"id":"b","type":"column"}' as PlTableColumnIdJson;
+const dropped = '{"id":"gone","type":"column"}' as PlTableColumnIdJson;
+
+const grid = new Set<PlTableColumnIdJson>([colA, colB]);
+const noColumns = new Set<PlTableColumnIdJson>();
 
 const order = (...ids: PlTableColumnIdJson[]): PlDataTableGridStateCore => ({
   columnOrder: { orderedColIds: ids },
@@ -11,27 +15,68 @@ const order = (...ids: PlTableColumnIdJson[]): PlDataTableGridStateCore => ({
 const hidden = (...ids: PlTableColumnIdJson[]): PlDataTableGridStateCore => ({
   columnVisibility: { hiddenColIds: ids },
 });
+const sorted = (id: PlTableColumnIdJson): PlDataTableGridStateCore => ({
+  sort: { sortModel: [{ colId: id, sort: "asc" }] },
+});
 
 describe("storedStateApplied", () => {
-  it("ignores a field the stored state says nothing about", () => {
-    // The state a table ends up with in the wild: hidden columns were recorded,
-    // the column order never was. AG Grid always reports an order once it has
-    // columns, so treating that as a disagreement asks it to unreport the
-    // order — which no remount can do, and the grid was rebuilt forever.
-    expect(storedStateApplied(hidden(colA), { ...hidden(colA), ...order(colA, colB) })).toBe(true);
+  // Every case below is one a rebuild could not satisfy, so counting it as a
+  // disagreement makes the reload watch rebuild the grid forever.
+  describe("does not ask for what a rebuild cannot deliver", () => {
+    it("ignores a field the stored state says nothing about", () => {
+      expect(
+        storedStateApplied(hidden(colA), { ...hidden(colA), ...order(colA, colB) }, grid),
+      ).toBe(true);
+    });
+
+    it("ignores a column order naming a column the grid no longer has", () => {
+      expect(storedStateApplied(order(colA, dropped, colB), order(colA, colB), grid)).toBe(true);
+    });
+
+    it("ignores a hidden column the grid no longer has", () => {
+      expect(storedStateApplied(hidden(colA, dropped), hidden(colA), grid)).toBe(true);
+    });
+
+    it("ignores a sort on a column the grid no longer has", () => {
+      expect(storedStateApplied(sorted(dropped), {}, grid)).toBe(true);
+    });
+
+    it("asks for nothing while the grid has no columns at all", () => {
+      expect(storedStateApplied({ ...order(colA, colB), ...hidden(colA) }, {}, noColumns)).toBe(
+        true,
+      );
+    });
+
+    it("asks for nothing when the stored state is empty", () => {
+      expect(storedStateApplied({}, order(colA), grid)).toBe(true);
+    });
   });
 
-  it("still reloads for a field the stored state does express", () => {
-    expect(storedStateApplied(hidden(colA), hidden(colB))).toBe(false);
-    expect(storedStateApplied(order(colA, colB), order(colB, colA))).toBe(false);
+  describe("still asks for what a rebuild can deliver", () => {
+    it("reloads for a different hidden set", () => {
+      expect(storedStateApplied(hidden(colA), hidden(colB), grid)).toBe(false);
+    });
+
+    it("reloads for a different order of columns it knows", () => {
+      expect(storedStateApplied(order(colA, colB), order(colB, colA), grid)).toBe(false);
+    });
+
+    it("reloads for a different sort", () => {
+      expect(storedStateApplied(sorted(colA), sorted(colB), grid)).toBe(false);
+    });
+
+    it("ignores where the grid puts columns the stored order does not mention", () => {
+      expect(storedStateApplied(order(colA, colB), order(colA, dropped, colB), grid)).toBe(true);
+    });
   });
 
-  it("treats an absent and an empty columnVisibility / sort as the same", () => {
-    expect(storedStateApplied(hidden(), { columnVisibility: undefined })).toBe(true);
-    expect(storedStateApplied({ sort: { sortModel: [] } }, { sort: undefined })).toBe(true);
-  });
+  describe("treats absent and empty alike, as AG Grid does", () => {
+    it("for columnVisibility", () => {
+      expect(storedStateApplied(hidden(), { columnVisibility: undefined }, grid)).toBe(true);
+    });
 
-  it("asks for nothing when the stored state is empty", () => {
-    expect(storedStateApplied({}, order(colA))).toBe(true);
+    it("for sort", () => {
+      expect(storedStateApplied({ sort: { sortModel: [] } }, { sort: undefined }, grid)).toBe(true);
+    });
   });
 });
