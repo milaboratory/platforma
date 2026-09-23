@@ -32,14 +32,26 @@ function escapeForRegExp(s: string): string {
 /**
  * Find imports the source does not use.
  *
- * An import is used when its alias appears with a dot somewhere else in the
- * code: 'text.split(...)'. A module passed around as a value, say
- * 'myFunc(text)', counts as unused. This is deliberate: the cost of keeping an
- * import the source no longer needs is nothing, while the cost of dropping one
- * it does need is a broken build.
+ * An import counts as used when its alias appears elsewhere in the code as a
+ * name of its own. Three shapes count:
  *
- * Throws when the source does not parse, with the same line context the
- * compiler reports.
+ * - dereferenced: 'text.split(x)'
+ * - called: 'doIt(x)', for a lib that exports a bare function
+ * - passed as a value: 'myFunc(text)'
+ *
+ * Two shapes do not count. A longer name that ends with the alias ('xtext') is
+ * a different name. A declaration that shadows the alias ('text := ...') binds
+ * the name. It does not read the import.
+ *
+ * Every other occurrence counts. This includes a member of another value
+ * ('opts.text') and text inside a string literal ('"a text file"'). The check
+ * is wide on purpose. An import that the source no longer needs costs nothing.
+ * A dropped import that the source needs breaks the build. The predicate must
+ * stay wider than every earlier predicate. A release then reports fewer unused
+ * imports, and never more.
+ *
+ * Throws when the source does not parse. The error carries the same line
+ * context that the compiler reports.
  */
 export function findUnusedImports(
   logger: MiLogger,
@@ -75,7 +87,7 @@ export function findUnusedImports(
   }
 
   return imports.filter((im) => {
-    const usageRE = new RegExp(`\\b${escapeForRegExp(im.alias)}\\s*\\.`);
+    const usageRE = new RegExp(`(?<!\\w)${escapeForRegExp(im.alias)}\\b(?!\\s*:=)`);
     return !codeLines.some((code, lineNo) => lineNo !== im.lineNo && usageRE.test(code));
   });
 }
