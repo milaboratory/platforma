@@ -31,6 +31,7 @@ import { DeferredCircular, ensureNodeVisible } from "./sources/focus-row";
 import { PlAgDataTableRowNumberColId } from "./sources/row-number";
 import type { PlAgCellButtonAxisParams } from "./sources/table-source-v2";
 import { calculateGridOptions, effectiveVisibility } from "./sources/table-source-v2";
+import { storedStateApplied } from "./sources/grid-state";
 import { useTableState } from "./sources/table-state-v2";
 import type {
   PlAgDataTableV2Controller,
@@ -142,8 +143,17 @@ gridOptions.value.onRowDoubleClicked = (event) => {
   if (event.data && event.data.axesKey) emit("rowDoubleClicked", event.data.axesKey);
 };
 gridOptions.value.onStateUpdated = (event) => {
+  const reportedState = makePartialState(event.state);
+  // AG Grid reports an entirely empty state until its columns have been taken
+  // into its own state, and `normalizeGridState` reads the live columns — so
+  // normalizing an empty report invents a state (hidden columns, no column
+  // order) that the grid will never report back, and the reload watch below
+  // would then try to apply it on every remount, forever. Wait for the grid to
+  // say something about itself; it always does once its columns are in.
+  if (isJsonEqual(reportedState, {})) return;
+
   const partialState = normalizeGridState(
-    makePartialState(event.state),
+    reportedState,
     gridState.value,
     event.api,
     getColumnsMeta(),
@@ -300,27 +310,30 @@ function getDefaultHiddenColIds(
     .map((col) => col.getColId() as PlTableColumnIdJson);
 }
 
-// Normalize for comparison: an absent and an empty columnVisibility / sort mean
-// the same thing to AG Grid, and must not count as a state change to reload on.
-function stateForReloadCompare(state: PlDataTableGridStateCore): PlDataTableGridStateCore {
-  const cv = state.columnVisibility;
-  const normalizedCv = !cv || cv.hiddenColIds.length === 0 ? undefined : state.columnVisibility;
-  const sort = state.sort;
-  const normalizedSort = !sort || sort.sortModel.length === 0 ? undefined : sort;
-  return { ...state, columnVisibility: normalizedCv, sort: normalizedSort };
-}
-
 // Reload AgGrid when new state arrives from server
 const reloadKey = ref(0);
+// A remount is only ever worth doing a handful of times in a row: this watch has
+// repeatedly been the engine of a remount loop, and a loop costs the user far
+// more (a strobing, unusable table) than the stale column layout that giving up
+// leaves behind.
+const ReloadBurstLimit = 3;
+const ReloadBurstWindowMs = 1000;
+const recentReloads: number[] = [];
+function reloadBudgetAvailable(): boolean {
+  const now = Date.now();
+  while (recentReloads.length > 0 && now - recentReloads[0] > ReloadBurstWindowMs)
+    recentReloads.shift();
+  if (recentReloads.length >= ReloadBurstLimit) return false;
+  recentReloads.push(now);
+  return true;
+}
 watch(
   () => [gridApi.value, gridState.value] as const,
   ([gridApi, gridState]) => {
     if (!gridApi || gridApi.isDestroyed()) return;
     const selfState = makePartialState(gridApi.getState());
-    if (
-      !isJsonEqual(gridState, {}) &&
-      !isJsonEqual(stateForReloadCompare(gridState), stateForReloadCompare(selfState))
-    ) {
+    if (!isJsonEqual(gridState, {}) && !storedStateApplied(gridState, selfState)) {
+      if (!reloadBudgetAvailable()) return;
       isReloading = true;
       gridOptions.value.initialState = gridState;
       ++reloadKey.value;
