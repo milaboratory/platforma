@@ -303,7 +303,12 @@ export function isDataColumn(value: unknown): value is DataColumnRecipe<PObjectI
 
 const readSpecAccessor = memoizeByEntry(
   ({ accessor, name }: LeafEntry<TreeNodeAccessor>): undefined | TreeNodeAccessor =>
-    accessor.traverse({ field: `${name}.spec`, assertFieldType: "Input", ignoreError: true }),
+    accessor.traverse({
+      field: `${name}.spec`,
+      assertFieldType: "Input",
+      ignoreError: true,
+      pureFieldErrorToUndefined: true,
+    }),
 );
 
 /**

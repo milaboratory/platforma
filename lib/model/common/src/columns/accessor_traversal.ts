@@ -76,6 +76,7 @@ export function findDescendantsByType<A extends AccessorLike<A>>(opts: {
         field: fields[i],
         assertFieldType: "Input",
         ignoreError: true,
+        pureFieldErrorToUndefined: true,
       });
       if (child !== undefined) stack.push({ node: child, path: [...path, fields[i]] });
     }
