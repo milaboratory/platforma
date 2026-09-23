@@ -408,6 +408,22 @@ defineExpose<PlAgDataTableV2Controller>({
 const defaultSelection = createPlSelectionModel();
 let oldSettings: PlDataTableSettingsV2 | null = null;
 const generation = ref(0);
+/**
+ * Calculations started and not yet settled. Which options a settled calculation
+ * may write is a question of generation — a superseded one must write none. Who
+ * takes the loading overlay down is a different question: the last calculation
+ * to settle is the one that knows nothing further is coming, whatever generation
+ * it belonged to. Tying that to the generation too left the overlay up forever
+ * whenever a later settings change superseded a calculation without starting one
+ * of its own.
+ */
+let pendingCalculations = 0;
+function clearLoadingWhenIdle(): void {
+  if (pendingCalculations !== 0) return;
+  const api = gridApi.value;
+  if (!api || api.isDestroyed()) return;
+  api.updateGridOptions({ loading: false });
+}
 watch(
   () => [gridApi.value, settings.value] as const,
   ([gridApi, settings]) => {
@@ -415,7 +431,6 @@ watch(
     if (!gridApi || gridApi.isDestroyed()) return;
     // Verify that this is not a false watch trigger
     if (isJsonEqual(settings, oldSettings)) return;
-    ++generation.value;
     try {
       // Hide no rows overlay if it is shown, or else loading overlay will not be shown
       gridApi.hideOverlay();
@@ -423,6 +438,7 @@ watch(
 
       // No data source selected -> reset state to default
       if (settings.sourceId === null) {
+        ++generation.value;
         gridApi.updateGridOptions({
           loading: true,
           loadingOverlayComponentParams: {
@@ -444,12 +460,19 @@ watch(
         return;
       }
 
+      // The model is between handles — it is recomputing, and the table it already
+      // shows stays valid. Nothing is started here, so the generation must not move:
+      // bumping it would cancel a calculation that is still the right one, and leave
+      // whatever it was going to do (not least taking the loading overlay down)
+      // undone.
       if (
         settings.model?.fullTableHandle === undefined ||
         settings.model?.visibleTableHandle === undefined
       ) {
         return;
       }
+
+      ++generation.value;
 
       // Data source changed -> show full page loader, clear selection
       if (settings.sourceId !== oldSettings?.sourceId) {
@@ -488,6 +511,7 @@ watch(
 
       // Model ready -> calculate new state
       const stateGeneration = generation.value;
+      ++pendingCalculations;
       calculateGridOptions({
         generation,
         pfDriver: getRawPlatformaInstance().pFrameDriver,
@@ -559,10 +583,8 @@ watch(
           console.trace(error);
         })
         .finally(() => {
-          if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
-          gridApi.updateGridOptions({
-            loading: false,
-          });
+          --pendingCalculations;
+          clearLoadingWhenIdle();
         });
       dataRenderedTracker.promise.then(() => emit("newDataRendered"));
     } catch (error: unknown) {
