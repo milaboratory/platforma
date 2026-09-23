@@ -101,6 +101,61 @@ const Host = defineComponent({
 beforeAll(() => activateAgGrid());
 
 describe("PlAgDataTableV2", () => {
+  it("takes the loading overlay down when the model goes between handles", async () => {
+    // What a block re-running does to the table: it is already loading against one
+    // set of handles when the model drops them for a moment on its way to the next.
+    // That settings change starts no calculation of its own, so the one in flight is
+    // the only thing left that can clear the overlay.
+    hoisted.driver.getSpec = async () => {
+      await wait(150);
+      return specs;
+    };
+    hoisted.driver.getShape = async () => ({ rows: 0, columns: specs.length });
+    hoisted.driver.getData = async () => [];
+
+    const sourceId = "src-1";
+    const withHandles = (n: number) => ({
+      sourceId,
+      sheets: [],
+      model: {
+        sourceId,
+        fullTableHandle: `full-${n}`,
+        visibleTableHandle: `visible-${n}`,
+        fullPframeHandle: `pf-${n}`,
+      },
+    });
+    const betweenHandles = { sourceId, sheets: [], model: { sourceId } };
+
+    const wrapper = mount(Host, {
+      attachTo: document.body,
+      props: {
+        settings: withHandles(1),
+        initial: {
+          version: 8,
+          stateCache: [],
+          pTableParams: {
+            sourceId,
+            hiddenColIds: null,
+            sorting: null,
+            filters: null,
+            defaultFilters: null,
+          },
+        },
+        echoMs: 0,
+        pushEveryMs: 1000,
+      },
+    });
+
+    await wait(50); // the first calculation is in flight
+    await wrapper.setProps({ settings: betweenHandles });
+    await wait(900);
+
+    const overlay = (document.body.textContent || "").includes("Loading data...");
+    wrapper.unmount();
+    document.body.innerHTML = "";
+    expect(overlay).toBe(false);
+  });
+
   it("stops recreating the grid once the stored state has been applied", async () => {
     hoisted.driver.getSpec = async () => {
       await wait(40);
