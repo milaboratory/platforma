@@ -100,3 +100,35 @@ TestConstantsMatchTheDocumentedFormula := func() {
 	test.isEqual(2, sizing.CPU_MIN)
 	test.isEqual(8, sizing.CPU_MAX)
 }
+
+// ---- scratch: the documented curve and its threshold ----------------------
+// scratch = size * (16 * (read_frames + 1) + 2 * write_frames), 0 below 16 GiB
+
+_scratch := func(inputBytes, readFrames, writeFrames) {
+	formula := sizing.scratchFormula(readFrames, writeFrames)
+	if is_int(formula) {
+		return formula
+	}
+	resolved := f.resolveAst(formula, {}, ["in.parquet"])
+	return f.evaluateScratch(resolved, {
+		size:      func(files) { return inputBytes },
+		lineCount: func(files) { return 0 }
+	})
+}
+
+TestScratchWithoutFramesIsZero := func() {
+	test.isEqual(0, _scratch(100 * GiB, 0, 0))
+}
+
+TestScratchSlopeCountsFrames := func() {
+	test.isEqual(34 * GiB, _scratch(1 * GiB, 1, 1))    // 16 * 2 + 2
+	test.isEqual(124 * GiB, _scratch(1 * GiB, 6, 6))   // 16 * 7 + 12
+	test.isEqual(36 * GiB, _scratch(2 * GiB, 0, 1))    // 2 * (16 + 2)
+}
+
+TestScratchBelowThresholdIsZero := func() {
+	// One join and one frame need 34 x input: 450 MiB estimates 14.9 GiB, 512 MiB 17 GiB.
+	test.isEqual(0, _scratch(450 * units.MiB, 1, 1))
+	test.isEqual(17 * GiB, _scratch(512 * units.MiB, 1, 1))
+	test.isEqual(0, _scratch(0, 1, 1))
+}

@@ -412,6 +412,7 @@ workflow := func() {
 	cpu := undefined
 	mem := undefined
 	memFloor := undefined
+	scratchFreeSpace := undefined
 	inputCache := undefined
 	queue := execConstants.MEDIUM_QUEUE
 
@@ -923,6 +924,25 @@ workflow := func() {
 		},
 
 		/**
+		 * Sets the scratch space request of the run by hand. ptabler writes its spill files
+		 * (pframes-rs tables, DuckDB sort files, intermediate parquet) there.
+		 *
+		 * If not set, the request is sized from the input data volume and the number of
+		 * read_frame and write_frame steps; see `:pt.sizing`. Set it when a plan spills more
+		 * than that estimate, or `0` to keep the spill in the working directory.
+		 *
+		 * @param amount: number | string - bytes (0 or at least 16 MiB), or a size string
+		 *                such as "200GiB"
+		 * @return builder
+		 */
+		scratchFreeSpace: func(amount) {
+			ll.assert(is_string(amount) || (is_int(amount) && (amount == 0 || amount >= 16 * units.MiB)),
+				"pt.workflow.scratchFreeSpace: expected 0, at least 16 MiB in bytes, or a size string, got %v", amount)
+			scratchFreeSpace = amount
+			return self
+		},
+
+		/**
 		 * Sets the cache duration for the execution's inputs.
 		 *
 		 * This is useful for an execution that is part of a sequence that might be re-rendered soon.
@@ -1031,6 +1051,7 @@ workflow := func() {
 				cpu: cpu,
 				mem: mem,
 				memFloor: memFloor,
+				scratchFreeSpace: scratchFreeSpace,
 				inputCache: inputCache
 			}
 			ptResult := render.create(workflowRunTpl, runInputs, {
