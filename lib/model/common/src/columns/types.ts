@@ -79,6 +79,12 @@ export interface AccessorLike<Self extends AccessorLike<Self>> {
   /** Whether the input-field collection on this node is finalized. */
   getInputsLocked(): boolean;
 
+  /**
+   * Error attached to input field `field`, or `undefined` when the field is
+   * absent or carries no error.
+   */
+  getFieldError(field: string): Error | undefined;
+
   /** Whether this node has a data payload attached. */
   hasData(): boolean;
 

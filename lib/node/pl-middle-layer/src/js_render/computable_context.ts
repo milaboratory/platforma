@@ -168,6 +168,10 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return this.wrapAccessor(this.getAccessor(handle).getError());
   }
 
+  getFieldError(handle: string, field: string): string | undefined {
+    return this.wrapAccessor(this.getAccessor(handle).getField(field)?.error);
+  }
+
   listInputFields(handle: string): string[] {
     return this.getAccessor(handle).listInputFields();
   }
@@ -733,6 +737,13 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
       exportCtxFunction("getError", (handle) => {
         return parent.exportSingleValue(this.getError(vm.getString(handle)), undefined);
+      });
+
+      exportCtxFunction("getFieldError", (handle, field) => {
+        return parent.exportSingleValue(
+          this.getFieldError(vm.getString(handle), vm.getString(field)),
+          undefined,
+        );
       });
 
       exportCtxFunction("listInputFields", (handle) => {

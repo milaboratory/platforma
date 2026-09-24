@@ -37,6 +37,20 @@ function decodeErrorMessage(raw: string): string {
   return raw;
 }
 
+/**
+ * The error a host throws when traversing `field` of `accessor`: the field's
+ * own error, raised when the field has no value. Nothing else can throw here,
+ * since the step asserts no field or resource type.
+ */
+function traversalError(accessor: TreeNodeAccessor, field: string): Error | undefined {
+  try {
+    accessor.traverse({ field, ignoreError: true });
+    return undefined;
+  } catch (error) {
+    return error instanceof Error ? error : new Error(String(error));
+  }
+}
+
 type FieldMapOps = {
   /**
    * Type of fields to iterate over.
@@ -173,6 +187,20 @@ export class TreeNodeAccessor {
       getCfgRenderCtx().getError(this.handle),
       (accsessor) => new TreeNodeAccessor(accsessor, resolvePath),
     );
+  }
+
+  /**
+   * Error attached to field `field`, or `undefined` when the field is absent
+   * or carries no error. A host without `getFieldError` reports only an error
+   * on a field that has no value: traversing that field throws it.
+   */
+  public getFieldError(field: string): Error | undefined {
+    const ctx = getCfgRenderCtx();
+    if (ctx.getFieldError === undefined) return traversalError(this, field);
+    const error = ctx.getFieldError(this.handle, field);
+    if (error === undefined) return undefined;
+    const raw = ctx.getDataAsString(error);
+    return new Error(raw === undefined ? "Field computation failed." : decodeErrorMessage(raw));
   }
 
   public listInputFields(): string[] {
