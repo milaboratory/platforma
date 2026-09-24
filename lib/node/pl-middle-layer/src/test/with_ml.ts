@@ -2,6 +2,7 @@ import path from "path";
 import { randomUUID } from "node:crypto";
 import type { PlClient } from "@milaboratories/pl-client";
 import { TestHelpers } from "@milaboratories/pl-client";
+import { afterAll } from "vitest";
 import { MiddleLayer } from "../middle_layer/middle_layer";
 
 /**
@@ -17,6 +18,37 @@ export async function withMl(
   await TestHelpers.withTempRoot(async (pl: PlClient) => {
     await runMl(pl, cb);
   });
+}
+
+/**
+ * A {@link withMl} for one test file whose temporary roots all outlive their tests and are deleted
+ * together once the file is done. Call it at the top of the file; each test still gets a root of
+ * its own.
+ *
+ * Deleting a root deletes every project in it, and the backend then cleans up each of their
+ * templates one transaction at a time. That cleanup conflicts with any project being created
+ * meanwhile, anywhere, so a file that deleted its roots test by test kept failing its own next
+ * test's writes. Deferred, the cleanup happens once, after the file's last test.
+ */
+export function withMlKeepingRoots(): (
+  cb: (ml: MiddleLayer, workFolder: string) => Promise<void>,
+) => Promise<void> {
+  const roots: string[] = [];
+
+  afterAll(async () => {
+    const owner = await TestHelpers.getTestClient();
+    try {
+      for (const root of roots) await owner.deleteAlternativeRoot(root);
+    } finally {
+      await owner.close();
+    }
+  });
+
+  return async (cb) => {
+    const root = `test_${Date.now()}_${randomUUID()}`;
+    roots.push(root);
+    await runMl(await TestHelpers.getTestClient(root), cb);
+  };
 }
 
 /**

@@ -4,12 +4,16 @@ import { randomUUID } from "node:crypto";
 import type { SignedResourceId } from "@milaboratories/pl-client";
 import { field, isNullSignedResourceId } from "@milaboratories/pl-client";
 import type { FolderId, FoldersMovePlan } from "@milaboratories/pl-model-middle-layer";
-import { withMl, withMlOnUserRoot } from "../test/with_ml";
+import { withMlKeepingRoots, withMlOnUserRoot } from "../test/with_ml";
 import type { ProjectId } from "../model/project_model";
 import type { MiddleLayer } from "./middle_layer";
 import type { FoldersListing } from "./folders";
 import { FoldersDocumentField, FoldersField, ensureFoldersRid } from "./folders";
 import type { TemplateId } from "./template_list";
+
+// The file's roots outlive their tests and are deleted together after the last one, so the
+// backend's cleanup of their projects never runs under this file's own writes.
+const withMl = withMlKeepingRoots();
 
 /**
  * The folder feature end to end against a live backend: the singleton slot, the joined read, the
