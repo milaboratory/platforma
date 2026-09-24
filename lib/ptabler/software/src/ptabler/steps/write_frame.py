@@ -32,6 +32,7 @@ from polars_pf import AxisMapping, ColumnMapping, ConversionParams, convert
 from polars_pf.json.spec import AxisType, ColumnType
 
 from .base import PStep, StepContext
+from .memory import set_duckdb_memory_limit
 from ..common import toPolarsType
 
 __all__ = [
@@ -179,6 +180,9 @@ class WriteFrame(PStep, tag="write_frame"):
         conn = duckdb.connect(database=":memory:")
         try:
             conn.execute("SET temp_directory TO ?;", [spill_dir])
+            memory_log = set_duckdb_memory_limit(conn)
+            if memory_log is not None:
+                print(f"write_frame: {memory_log}", flush=True)
             conn.execute(
                 f"""
                 COPY (SELECT * FROM read_parquet(?) ORDER BY {order_by})
