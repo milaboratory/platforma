@@ -141,7 +141,7 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
     id: PObjectId,
     { ctx }: { ctx?: GlobalCfgRenderCtx } = {},
   ): undefined | DataColumnRecipe<PObjectId> {
-    const registry = new ColumnRegistry(getCtxProviders({ ctx }));
+    const registry = new ColumnRegistry(getCtxProviders({ ctx, id }));
     const leaf = registry.resolve(id);
     if (isNil(leaf)) {
       if (registry.isFinal()) throw new ColumnAbsentError(id);
@@ -214,7 +214,7 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
     id: PObjectId,
     { ctx }: { ctx?: GlobalCfgRenderCtx } = {},
   ): ColumnResolutionStatus {
-    const registry = new ColumnRegistry(getCtxProviders({ ctx }));
+    const registry = new ColumnRegistry(getCtxProviders({ ctx, id }));
     const leaf = registry.resolve(id);
     if (isNil(leaf)) return registry.isFinal() ? "absent" : "resolving";
     return getLeafEntryStatus(leaf);
