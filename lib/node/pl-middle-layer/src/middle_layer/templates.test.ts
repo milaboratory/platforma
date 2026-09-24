@@ -1,7 +1,6 @@
 import { expect, test } from "vitest";
-import * as tp from "node:timers/promises";
-import type { ResourceRef, SignedResourceId } from "@milaboratories/pl-client";
-import { resourceIdToString } from "@milaboratories/pl-client";
+import type { SignedResourceId } from "@milaboratories/pl-client";
+import { field, isNullSignedResourceId, resourceIdToString } from "@milaboratories/pl-client";
 import type {
   BlockKindSelectorReference,
   BlockPackLocationReference,
@@ -11,6 +10,8 @@ import type {
 import { PROJECT_TEMPLATE_SCHEMA_V1 } from "@milaboratories/pl-model-common";
 import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import type { BlockPackProvider } from "../model/template_resolve";
+import type { ShareId } from "../model/sharing_model";
+import { SharingStateField, hiddenField } from "../model/sharing_model";
 import { withMl } from "../test/with_ml";
 import { createTemplate } from "../mutator/template";
 import type { MiddleLayer } from "./middle_layer";
@@ -18,13 +19,17 @@ import type { StoredTemplateData, TemplateId, TemplateListEntry } from "./templa
 import { ensureTemplateListRid } from "./template_list";
 
 /**
- * The stored-template entity against a live backend: rename, apply, share, accept.
+ * The stored-template entity against a live backend: rename, apply, share, copy.
  *
  * Every test here stores its template directly through the mutator rather than by saving a
  * project, so the document under test is the one the test wrote — a `file:` entry, an entry
  * nothing can resolve — none of which a real project would produce. What a real project
  * produces is covered by the round trip in `drivers-ml-blocks-integration`, which has block
  * packs on disk to build one from.
+ *
+ * The test server has one user, so every share here goes to everyone and is checked through
+ * what its donor can see: the outbox, the copies a share produces, and the donor's own
+ * SharingState. The recipient-side list leaves a user's own shares out.
  *
  * Needs a backend, like every `withMl` test in this package, and no gate: `PL_ADDRESS` is
  * either configured or the client fails to connect.
@@ -126,7 +131,7 @@ test("a project holding a block that cannot be written out produces no template"
   });
 });
 
-test("an accepted template share lands on the acceptor's shelf and builds nothing", async () => {
+test("copying a template share lands it among the recipient's templates and builds nothing", async () => {
   await withMl(async (ml) => {
     const stored = await storeTemplate(ml, "A pipeline", {
       schemaVersion: 1,
@@ -136,26 +141,58 @@ test("an accepted template share lands on the acceptor's shelf and builds nothin
 
     const shared = await ml.shareTemplate(stored.id, { everyone: true, title: "A pipeline" });
 
-    const outcome = await ml.acceptShare([shared.shareId]);
+    const outcome = await ml.copyShare([shared.shareId]);
 
     expect(outcome.failed).toStrictEqual([]);
-    expect(outcome.acceptedTemplates).toHaveLength(1);
+    expect(outcome.templates).toHaveLength(1);
     // Nothing is built until the recipient applies it — which is what makes an all-or-nothing
     // apply survivable for them: there is always something left to retry from.
-    expect(outcome.accepted).toStrictEqual([]);
+    expect(outcome.projects).toStrictEqual([]);
     expect(await ml.projectList.awaitStableValue()).toStrictEqual([]);
 
     const list = await awaitTemplateList(ml, (l) => l.length === 2);
-    const accepted = list.find((t) => t.id === outcome.acceptedTemplates[0])!;
-    expect(accepted.label).toBe("A pipeline");
-    // Who sent it, kept as the accepted template's provenance; the donor's own source project
-    // is not part of the payload and does not travel.
-    expect(accepted.sender).toBe(ml.currentUserLogin ?? "");
-    expect(accepted.sourceProjectLabel).toBeUndefined();
+    const copied = list.find((t) => t.id === outcome.templates[0]);
+    if (copied === undefined) throw new Error("the copied template is not in the list");
+    // The original is at the top level too, and one folder never holds two things of one name.
+    expect(copied.label).toBe("A pipeline (Copy)");
+    // Who sent it, kept as the copy's provenance; the donor's own source project is not part of
+    // the payload and does not travel.
+    expect(copied.sender).toBe(ml.currentUserLogin ?? "");
+    expect(copied.sourceProjectLabel).toBeUndefined();
+
+    // A share is a shelf, not an invitation: copying takes nothing off it, so it can be copied
+    // from again, and the second copy is named beside the first.
+    const again = await ml.copyShare([shared.shareId]);
+    expect(again.failed).toStrictEqual([]);
+    expect(again.templates).toHaveLength(1);
+    const relisted = await awaitTemplateList(ml, (l) => l.length === 3);
+    expect(relisted.find((t) => t.id === again.templates[0])?.label).toBe("A pipeline (Copy 2)");
   });
 });
 
-test("a changed template share keeps its id, and whoever already responded is not re-prompted", async () => {
+test("a hidden share stays listed, flagged, until it is unhidden", async () => {
+  await withMl(async (ml) => {
+    const stored = await storeTemplate(ml, "A pipeline", {
+      schemaVersion: 1,
+      document: documentOf(entry("a")),
+    });
+
+    const shared = await ml.shareTemplate(stored.id, { everyone: true, title: "A pipeline" });
+
+    await ml.hideShare(shared.shareId);
+    // Hidden, not gone: the flag the "show hidden" view reads is written on this user's own
+    // SharingState, and nothing about the envelope changed, so the donor is none the wiser.
+    expect(await hiddenFlagWritten(ml, shared.shareId)).toBe(true);
+    const outgoing = (await ml.outgoingShares.getValue()) ?? [];
+    expect(outgoing.map((s) => s.shareId)).toStrictEqual([shared.shareId]);
+
+    // Hiding is the recipient's own choice and theirs to undo.
+    await ml.unhideShare(shared.shareId);
+    expect(await hiddenFlagWritten(ml, shared.shareId)).toBe(false);
+  });
+});
+
+test("replacing a template share leaves one share, under a new id", async () => {
   await withMl(async (ml) => {
     const first = await storeTemplate(ml, "First", {
       schemaVersion: 1,
@@ -168,31 +205,28 @@ test("a changed template share keeps its id, and whoever already responded is no
 
     const shared = await ml.shareTemplate(first.id, { everyone: true, title: "First" });
 
-    // Someone responds to the share, which is what the replace below must not undo.
-    const accept = await ml.acceptShare([shared.shareId]);
-    expect(accept.acceptedTemplates).toHaveLength(1);
+    // Someone takes a copy, which the replace below must neither undo nor hide.
+    const copied = await ml.copyShare([shared.shareId]);
+    expect(copied.templates).toHaveLength(1);
 
-    // A stored template never changes, so an improved one is a different template — the
-    // replace names it rather than re-reading the one the share started from.
-    await ml.changeShare(shared.shareId, { templateId: second.id, title: "Second" });
+    // A stored template never changes, so an improved one is a different template and a different
+    // share. Naming the old one as replaced is what keeps the two from piling up: recipients see
+    // the improved template in place of the old one rather than beside it.
+    const replacement = await ml.shareTemplate(second.id, {
+      everyone: true,
+      title: "Second",
+      replace: [shared.shareId],
+    });
+    expect(replacement.shareId).not.toBe(shared.shareId);
 
     const outgoing = (await ml.outgoingShares.getValue()) ?? [];
-    expect((outgoing ?? []).map((s) => s.shareId)).toStrictEqual([shared.shareId]);
+    expect(outgoing.map((s) => s.shareId)).toStrictEqual([replacement.shareId]);
     expect(outgoing[0]).toMatchObject({
       payloadKind: "template",
       title: "Second",
       template: { label: "Second", blockCount: 2 },
-      // A template share is granted read-only, so no recipient can ever write a reply on the
-      // envelope — a view has to say that rather than render an empty list as "nobody yet".
-      responsesAvailable: false,
     });
     expect(outgoing[0].projects).toStrictEqual([]);
-
-    // The decision the accept recorded is keyed on the shareId, which the change preserved, so
-    // the replaced share is not offered again. A replace that minted a new id would show up
-    // here as a fresh offer.
-    const pending = await settledPendingShareIds(ml);
-    expect(pending).not.toContain(shared.shareId);
   });
 });
 
@@ -220,20 +254,19 @@ type StoredTemplate = { id: TemplateId; rid: SignedResourceId };
  *
  * The middle layer has no way to store an arbitrary document — it only saves a project — so a
  * test that needs a specific document writes it here, exactly as `saveProjectAsTemplate` and
- * the accept path do.
+ * `copyShare` do.
  */
 async function storeTemplate(
   ml: MiddleLayer,
   label: string,
   data: StoredTemplateData,
 ): Promise<StoredTemplate> {
-  let tpl: ResourceRef;
-  await ml.pl.withWriteTx("TestStoreTemplate", async (tx) => {
+  const rid = await ml.pl.withWriteTx("TestStoreTemplate", async (tx) => {
     const listRid = await ensureTemplateListRid(tx);
-    tpl = createTemplate(tx, listRid, label, data);
+    const tpl = createTemplate(tx, listRid, { label }, data);
     await tx.commit();
+    return await tpl.globalId;
   });
-  const rid = await tpl!.globalId;
   return { id: resourceIdToString(rid) as TemplateId, rid };
 }
 
@@ -265,15 +298,13 @@ async function awaitTemplateList(
   }
 }
 
-/**
- * The shareIds currently offered to this user, read after discovery has had a poll to run.
- *
- * Discovery of a just-granted envelope is a poll behind, so reading the view once would say
- * "not offered" about a share that simply had not been seen yet.
- */
-async function settledPendingShareIds(ml: MiddleLayer): Promise<string[]> {
-  await tp.setTimeout(2_000);
-  return ((await ml.pendingShares.getValue()) ?? []).map((s) => s.shareId);
+/** Whether this user's own SharingState holds the hidden flag for a share. */
+async function hiddenFlagWritten(ml: MiddleLayer, shareId: ShareId): Promise<boolean> {
+  return await ml.pl.withReadTx("TestReadShareHidden", async (tx) => {
+    const state = await tx.getField(field(tx.clientRoot, SharingStateField));
+    if (isNullSignedResourceId(state.value)) throw new Error("the SharingState was never created");
+    return (await tx.getFieldIfExists(field(state.value, hiddenField(shareId)))) !== undefined;
+  });
 }
 
 /**

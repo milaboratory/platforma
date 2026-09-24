@@ -4,6 +4,7 @@ export * from "./block_state";
 export * from "./project";
 export * from "./project_list";
 export * from "./project_overview";
+export * from "./folders";
 export * from "./update_info";
 
 export * from "./block_meta";
