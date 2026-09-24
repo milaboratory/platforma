@@ -829,36 +829,6 @@ export class PlTransaction {
   }
 
   /**
-   * Returns the canonical id the server reports for the resource, as raw bytes.
-   *
-   * The canonical id identifies a resource by its content: resources that
-   * deduplication treats as the same get the same value. The server fills it in
-   * at different moments of the resource lifecycle — at creation for resources
-   * without input fields, at deduplication for the rest.
-   *
-   * This is the only accessor for the value. {@link getResourceData} drops it,
-   * because everything that method returns keeps its value for the whole life
-   * of the resource, and the canonical id does not. Nothing here is cached:
-   * every call asks the server.
-   */
-  public getResourceCanonicalId(rId: AnyResourceRef): Promise<Uint8Array> {
-    return this.sendSingleAndParse(
-      {
-        oneofKind: "resourceGet",
-        resourceGet: {
-          ...this.toSignedResourceId(rId),
-          loadFields: false,
-          showSoftDeletes: false,
-          // Always empty: this accessor caches nothing and every call asks the server, so a
-          // token here could only suppress the one body it came for.
-          changedSinceToken: new Uint8Array(0),
-        },
-      },
-      (r) => notEmpty(r.resourceGet.resource).canonicalId,
-    );
-  }
-
-  /**
    * Inform platform that resource will not get any new input fields.
    * This is required, when client creates resource without schema and wants
    * controller to start calculations.

@@ -152,6 +152,7 @@ export async function loadDeltaTreeState(
         resourceReady: frame.resourceReady,
         error: frame.error,
         originalResourceId: frame.originalResourceId,
+        canonicalId: frame.canonicalId,
         final: frame.final,
         inputsLocked: frame.inputsLocked,
         outputsLocked: frame.outputsLocked,

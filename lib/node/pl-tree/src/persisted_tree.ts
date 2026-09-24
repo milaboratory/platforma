@@ -20,6 +20,7 @@
  * | u32 resourceCount, then per resource:                    |
  * |      u64 own globalId                                    |
  * |      u64 originalResourceId          (0 = none)          |
+ * |      bytes canonicalId               (empty = unset)     |
  * |      u64 error                       (0 = none)          |
  * |      u8  kind index                                      |
  * |      str type.name                                       |
@@ -95,7 +96,7 @@ const MAGIC = 0x53544c50;
  *  misread. Only an exact match is accepted: the decoder's job here is to recognise a
  *  format it cannot read, not to migrate it. Invalidation on rule changes is the cache
  *  key's job (the middle layer's build stamp), not this number's. */
-export const PERSISTED_TREE_SCHEMA_VERSION = 1;
+export const PERSISTED_TREE_SCHEMA_VERSION = 2;
 
 /** Payload is deflated. Absent means the payload is stored as-is, which is what a
  *  periodic write falls back to if compression CPU ever becomes a problem. */
@@ -336,6 +337,7 @@ function writePayload(tree: PersistedTree): Buffer {
 function writeResource(w: Writer, res: ExtendedResourceData) {
   w.u64(globalIdOf(res.id));
   w.u64(optionalGlobalIdOf(res.originalResourceId));
+  w.bytes(res.canonicalId);
   w.u64(optionalGlobalIdOf(res.error));
 
   w.u8(indexOfOrThrow(KINDS, res.kind, "resource kind"));
@@ -487,6 +489,7 @@ function readResource(
 ): ExtendedResourceData {
   const id = signed(r.u64());
   const originalResourceId = optionalSigned(r.u64());
+  const canonicalId = r.bytes();
   const error = optionalSigned(r.u64());
 
   const kind = atOrThrow(KINDS, r.u8(), "resource kind");
@@ -514,6 +517,7 @@ function readResource(
   return {
     id,
     originalResourceId,
+    canonicalId,
     error,
     kind,
     type,
@@ -693,7 +697,12 @@ class Reader {
   bytes(): Uint8Array {
     const length = this.u32();
     const at = this.take(length);
-    return Uint8Array.prototype.slice.call(this.src, at, at + length);
+    // Copy into a plain Uint8Array rather than slicing: `src` may be a Buffer, whose species
+    // makes every slice a Buffer too, and a Buffer is not strictly equal to the Uint8Array the
+    // same value arrived as.
+    const out = new Uint8Array(length);
+    out.set(this.src.subarray(at, at + length));
+    return out;
   }
 
   shortBytes(): Uint8Array {
