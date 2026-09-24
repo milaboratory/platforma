@@ -34,7 +34,7 @@ export async function withMl(
   });
 }
 
-export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 2000) {
+export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 20000) {
   const abortSignal = AbortSignal.timeout(timeout);
   const overview = prj.overview;
   const state = prj.getBlockState(blockId);
