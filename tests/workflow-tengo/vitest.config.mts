@@ -1,6 +1,8 @@
 import { createVitestConfig } from "@milaboratories/build-configs";
 import { defineConfig } from "vitest/config";
 
+const maxWorkers = Number(process.env.WORKFLOW_TENGO_MAX_WORKERS);
+
 export default defineConfig(
   createVitestConfig({
     test: {
@@ -8,7 +10,7 @@ export default defineConfig(
       setupFiles: ["./vitest/setup.worker-jitter.ts"],
       testTimeout: 15000,
       maxConcurrency: 1,
-      maxWorkers: 2,
+      maxWorkers: Number.isInteger(maxWorkers) && maxWorkers > 0 ? maxWorkers : 2,
       retry: 2,
       reporters: ["verbose"],
       sequence: {

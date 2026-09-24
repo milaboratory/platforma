@@ -60,6 +60,7 @@
         "PL_TEST_K8S",
         "PL_TEST_REQUEST_TIMEOUT",
         "PL_TEST_RUN_SLOW",
+        "WORKFLOW_TENGO_MAX_WORKERS",
         "LONG_TEST_TIMEOUT",
         "DEBUG",
         "MI_LICENSE",

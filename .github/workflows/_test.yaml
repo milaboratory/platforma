@@ -22,20 +22,28 @@ jobs:
           - shard: tengo-1
             filter: --filter=@platforma-sdk/workflow-tengo-tests
             args: -- --shard=1/2
+            max-workers: 4
           - shard: tengo-2
             filter: --filter=@platforma-sdk/workflow-tengo-tests
             args: -- --shard=2/2
+            max-workers: 4
           - shard: other-a
             filter: >-
               --filter=@milaboratories/drivers-ml-blocks-integration
+              --filter=@milaboratories/mcp-server-tests
+          - shard: other-b
+            filter: >-
               --filter=@milaboratories/pl-deployments
               --filter=@milaboratories/milaboratories.test-filter-column.test
-          - shard: other-b
+              --filter=@milaboratories/milaboratories.test-block-model.test
+          - shard: other-c
             filter: >-
               --filter=!@platforma-sdk/workflow-tengo-tests
               --filter=!@milaboratories/drivers-ml-blocks-integration
+              --filter=!@milaboratories/mcp-server-tests
               --filter=!@milaboratories/pl-deployments
               --filter=!@milaboratories/milaboratories.test-filter-column.test
+              --filter=!@milaboratories/milaboratories.test-block-model.test
     # hz self-hosted DinD runner — this job runs pl-compose (docker compose up a
     # Platforma backend), so it needs a real Docker daemon.
     runs-on: hz-ubuntu-dind
@@ -129,7 +137,7 @@ jobs:
           pl-log-level: info
 
       - name: Explain test cache misses (full test graph, all shards)
-        if: ${{ !inputs.no-cache && matrix.shard == 'other-b' && steps.dry-run.outputs.skip != 'true' }}
+        if: ${{ !inputs.no-cache && matrix.shard == 'other-c' && steps.dry-run.outputs.skip != 'true' }}
         continue-on-error: true
         run: pnpm turbo-why test:local
 
@@ -146,6 +154,7 @@ jobs:
           PL_BUILD_CHANNEL: dev
           PL_BUILD_VARIANT: binary
           PL_BUILD_LOCATION: local
+          WORKFLOW_TENGO_MAX_WORKERS: ${{ matrix.max-workers }}
         run: |
           pnpm exec turbo run test --concurrency 1 --summarize \
             ${{ inputs.no-cache && '--force' || '' }} \
