@@ -1,0 +1,232 @@
+name: Experiment workflow-tengo-tests
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    branches:
+      - main
+    paths:
+      - .github/workflows/zz-experiment-tengo-tests.yaml
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  BODY_LIMIT: "1048576000"
+
+jobs:
+  tengo-tests:
+    name: ${{ matrix.runner }} w${{ matrix.workers }} c${{ matrix.concurrency }} cov=${{ matrix.coverage }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: hz-ubuntu-dind, workers: 2, concurrency: 1, coverage: true }
+          - { runner: hz-ubuntu-dind, workers: 4, concurrency: 1, coverage: true }
+          - { runner: hz-ubuntu-dind, workers: 4, concurrency: 2, coverage: true }
+          - { runner: hz-ubuntu-dind, workers: 8, concurrency: 2, coverage: true }
+          - { runner: hz-ubuntu-dind-heavy, workers: 2, concurrency: 1, coverage: true }
+          - { runner: hz-ubuntu-dind-heavy, workers: 4, concurrency: 2, coverage: true }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Runner resources
+        run: |
+          nproc
+          free -g
+          cat /sys/fs/cgroup/cpu.max 2>/dev/null || true
+          docker info --format '{{.NCPU}} CPU, {{.MemTotal}} bytes' || true
+
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_ZEN_APP_ID }}
+          private-key: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          npmjs-token: ${{ secrets.NPMJS_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
+          aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
+          turbo-s3-bucket: ${{ vars.HZ_CI_TURBO_S3_BUCKET }}
+          turbo-s3-endpoint: https://${{ vars.HZ_CI_TURBO_S3_ENDPOINT }}
+          turbo-s3-region: ${{ vars.HZ_CI_TURBO_S3_REGION }}
+          turbo-s3-access-key: ${{ secrets.HZ_CI_TURBO_S3_ACCESS_KEY }}
+          turbo-s3-secret-key: ${{ secrets.HZ_CI_TURBO_S3_SECRET_KEY }}
+          cache-s3-access-key: ${{ secrets.HZ_CI_CACHE_S3_ACCESS_KEY }}
+          cache-s3-secret-key: ${{ secrets.HZ_CI_CACHE_S3_SECRET_KEY }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      - name: Build
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PL_DOCKER_REGISTRY_PUSH_TO: "quay.io/milaboratories/pl-containers"
+        run: |
+          pnpm run build:dev-local --output-logs=errors-only
+          PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local pnpm build --output-logs=errors-only
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: "true"
+
+      - name: Start Platforma Docker
+        uses: milaboratory/github-ci/actions/docker/pl-compose@v4
+        env:
+          PL_LICENSE: ${{ secrets.MI_LICENSE }}
+          MI_LICENSE: ${{ secrets.MI_LICENSE }}
+          PL_HAS_SCRATCH_SPACE: "true"
+        with:
+          pl-docker-registry: ${{ format('{0}/{1}', steps.ecr-login.outputs.registry, 'pl') }}
+          pl-docker-tag: main
+          pl-test-assets-dir: assets
+          pl-log-level: info
+
+      - name: Run workflow-tengo-tests
+        id: tests
+        working-directory: tests/workflow-tengo
+        env:
+          PL_ADDRESS: "http://127.0.0.1:6345"
+          PL_TEST_USER: ${{ secrets.PL_CI_TEST_USER }}
+          PL_TEST_PASSWORD: ${{ secrets.PL_CI_TEST_PASSWORD }}
+          PL_LICENSE: ${{ secrets.MI_LICENSE }}
+          MI_LICENSE: ${{ secrets.MI_LICENSE }}
+          VITEST_SEED: "20260924"
+        run: |
+          start=$(date +%s)
+          set +e
+          pnpm exec vitest run \
+            --coverage.enabled=${{ matrix.coverage }} \
+            --maxWorkers=${{ matrix.workers }} \
+            --maxConcurrency=${{ matrix.concurrency }} \
+            --reporter=default --reporter=junit --reporter=json \
+            --outputFile.junit=test-report.junit.xml \
+            --outputFile.json=test-report.json
+          code=$?
+          set -e
+          echo "Vitest wall time: $(( $(date +%s) - start ))s, exit code $code" | tee -a "$GITHUB_STEP_SUMMARY"
+          exit $code
+
+      - name: Summarize
+        if: always()
+        working-directory: tests/workflow-tengo
+        run: |
+          [ -f test-report.json ] || exit 0
+          jq -r '
+            "tests: \(.numTotalTests) passed: \(.numPassedTests) failed: \(.numFailedTests)",
+            "slowest files (s):",
+            ([.testResults[] | {f: (.name | sub(".*/tests/workflow-tengo/"; "")), d: ((.endTime - .startTime) / 1000)}]
+              | sort_by(-.d) | .[0:15][] | "  \(.d | floor)  \(.f)")
+          ' test-report.json | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tengo-${{ matrix.runner }}-w${{ matrix.workers }}-c${{ matrix.concurrency }}-cov${{ matrix.coverage }}
+          path: |
+            tests/workflow-tengo/test-report.junit.xml
+            tests/workflow-tengo/test-report.json
+
+  other-tests:
+    name: other ${{ matrix.runner }} turbo-c${{ matrix.concurrency }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runner: hz-ubuntu-dind, concurrency: 1 }
+          - { runner: hz-ubuntu-dind, concurrency: 4 }
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_ZEN_APP_ID }}
+          private-key: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+        with:
+          npmjs-token: ${{ secrets.NPMJS_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
+          aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
+          turbo-s3-bucket: ${{ vars.HZ_CI_TURBO_S3_BUCKET }}
+          turbo-s3-endpoint: https://${{ vars.HZ_CI_TURBO_S3_ENDPOINT }}
+          turbo-s3-region: ${{ vars.HZ_CI_TURBO_S3_REGION }}
+          turbo-s3-access-key: ${{ secrets.HZ_CI_TURBO_S3_ACCESS_KEY }}
+          turbo-s3-secret-key: ${{ secrets.HZ_CI_TURBO_S3_SECRET_KEY }}
+          cache-s3-access-key: ${{ secrets.HZ_CI_CACHE_S3_ACCESS_KEY }}
+          cache-s3-secret-key: ${{ secrets.HZ_CI_CACHE_S3_SECRET_KEY }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      - name: Build
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PL_DOCKER_REGISTRY_PUSH_TO: "quay.io/milaboratories/pl-containers"
+        run: pnpm run build:dev-local --output-logs=errors-only
+
+      - name: Login to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: "true"
+
+      - name: Start Platforma Docker
+        uses: milaboratory/github-ci/actions/docker/pl-compose@v4
+        env:
+          PL_LICENSE: ${{ secrets.MI_LICENSE }}
+          MI_LICENSE: ${{ secrets.MI_LICENSE }}
+          PL_HAS_SCRATCH_SPACE: "true"
+        with:
+          pl-docker-registry: ${{ format('{0}/{1}', steps.ecr-login.outputs.registry, 'pl') }}
+          pl-docker-tag: main
+          pl-test-assets-dir: assets
+          pl-log-level: info
+
+      - name: Run other tests
+        env:
+          PL_ADDRESS: "http://127.0.0.1:6345"
+          PL_TEST_USER: ${{ secrets.PL_CI_TEST_USER }}
+          PL_TEST_PASSWORD: ${{ secrets.PL_CI_TEST_PASSWORD }}
+          PL_LICENSE: ${{ secrets.MI_LICENSE }}
+          MI_LICENSE: ${{ secrets.MI_LICENSE }}
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TEST_CACHE_CRUTCH: ${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.concurrency }}
+          PL_BUILD_CHANNEL: dev
+          PL_BUILD_VARIANT: binary
+          PL_BUILD_LOCATION: local
+        run: |
+          start=$(date +%s)
+          set +e
+          pnpm exec turbo run test --concurrency ${{ matrix.concurrency }} --summarize \
+            --filter='!@platforma-sdk/workflow-tengo-tests' --output-logs=errors-only
+          code=$?
+          set -e
+          echo "Turbo wall time: $(( $(date +%s) - start ))s, exit code $code" | tee -a "$GITHUB_STEP_SUMMARY"
+          exit $code
+
+      - name: Summarize
+        if: always()
+        run: |
+          f=$(ls -t .turbo/runs/*.json 2>/dev/null | head -1)
+          [ -n "$f" ] || exit 0
+          jq -r '.tasks[] | select(.task == "test" and .execution != null and .cache.status != "HIT")
+            | "\(((.execution.endTime - .execution.startTime) / 1000) | floor)s  exit=\(.execution.exitCode)  \(.package)"' "$f" \
+            | sort -rn | head -25 | tee -a "$GITHUB_STEP_SUMMARY"
