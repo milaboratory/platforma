@@ -31,7 +31,7 @@ import { DeferredCircular, ensureNodeVisible } from "./sources/focus-row";
 import { PlAgDataTableRowNumberColId } from "./sources/row-number";
 import type { PlAgCellButtonAxisParams } from "./sources/table-source-v2";
 import { calculateGridOptions, effectiveVisibility } from "./sources/table-source-v2";
-import { storedStateApplied } from "./sources/grid-state";
+import { isStoredStateApplied } from "./sources/grid-state";
 import { useTableState } from "./sources/table-state-v2";
 import type {
   PlAgDataTableV2Controller,
@@ -320,7 +320,7 @@ watch(
     const gridColIds = new Set(
       (gridApi.getAllGridColumns() ?? []).map((column) => column.getColId() as PlTableColumnIdJson),
     );
-    if (!isJsonEqual(gridState, {}) && !storedStateApplied(gridState, selfState, gridColIds)) {
+    if (!isJsonEqual(gridState, {}) && !isStoredStateApplied(gridState, selfState, gridColIds)) {
       isReloading = true;
       gridOptions.value.initialState = gridState;
       ++reloadKey.value;
@@ -395,22 +395,6 @@ defineExpose<PlAgDataTableV2Controller>({
 const defaultSelection = createPlSelectionModel();
 let oldSettings: PlDataTableSettingsV2 | null = null;
 const generation = ref(0);
-/**
- * Calculations started and not yet settled. Which options a settled calculation
- * may write is a question of generation — a superseded one must write none. Who
- * takes the loading overlay down is a different question: the last calculation
- * to settle is the one that knows nothing further is coming, whatever generation
- * it belonged to. Tying that to the generation too left the overlay up forever
- * whenever a later settings change superseded a calculation without starting one
- * of its own.
- */
-let pendingCalculations = 0;
-function clearLoadingWhenIdle(): void {
-  if (pendingCalculations !== 0) return;
-  const api = gridApi.value;
-  if (!api || api.isDestroyed()) return;
-  api.updateGridOptions({ loading: false });
-}
 watch(
   () => [gridApi.value, settings.value] as const,
   ([gridApi, settings]) => {
@@ -447,15 +431,18 @@ watch(
         return;
       }
 
-      // The model is between handles — it is recomputing, and the table it already
-      // shows stays valid. Nothing is started here, so the generation must not move:
-      // bumping it would cancel a calculation that is still the right one, and leave
-      // whatever it was going to do (not least taking the loading overlay down)
-      // undone.
+      // The model is between handles — it is recomputing. Nothing is started here,
+      // so moving the generation would only cancel the calculation in flight and
+      // leave whatever it was going to do (not least taking the loading overlay
+      // down) undone — which is how the table came to sit on "Loading data…"
+      // forever. The exception is a change of source: then the calculation in
+      // flight belongs to the old one and must not be allowed to land under the
+      // new settings.
       if (
         settings.model?.fullTableHandle === undefined ||
         settings.model?.visibleTableHandle === undefined
       ) {
+        if (settings.sourceId !== oldSettings?.sourceId) ++generation.value;
         return;
       }
 
@@ -498,7 +485,6 @@ watch(
 
       // Model ready -> calculate new state
       const stateGeneration = generation.value;
-      ++pendingCalculations;
       calculateGridOptions({
         generation,
         pfDriver: getRawPlatformaInstance().pFrameDriver,
@@ -570,8 +556,12 @@ watch(
           console.trace(error);
         })
         .finally(() => {
-          --pendingCalculations;
-          clearLoadingWhenIdle();
+          // Only the current calculation may take the overlay down: a superseded
+          // one would hide the overlay the newer settings just put up.
+          if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
+          gridApi.updateGridOptions({
+            loading: false,
+          });
         });
       dataRenderedTracker.promise.then(() => emit("newDataRendered"));
     } catch (error: unknown) {
