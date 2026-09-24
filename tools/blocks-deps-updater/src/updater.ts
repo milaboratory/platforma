@@ -18,13 +18,21 @@ function parseRetryAfter(header: string | null): number | null {
   return null;
 }
 
+/** A registry answer that asking again will not improve. Distinguished so the retry loop's own
+ * catch rethrows it: as a plain Error it was thrown inside the try, swallowed there, and a 404
+ * cost three requests and two backoffs before surfacing. */
+class NonRetryableRegistryError extends Error {}
+
 async function fetchWithRetry(url: string): Promise<Response> {
   for (let attempt = 1; ; attempt++) {
     try {
       const res = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) });
       if (res.ok) return res;
       const retryable = res.status === 429 || res.status >= 500;
-      if (!retryable || attempt > RETRY_COUNT) {
+      if (!retryable) {
+        throw new NonRetryableRegistryError(`registry returned HTTP ${res.status}`);
+      }
+      if (attempt > RETRY_COUNT) {
         throw new Error(`registry returned HTTP ${res.status}`);
       }
       // Respect Retry-After header: either delay-seconds or HTTP-date (RFC 9110)
@@ -34,14 +42,17 @@ async function fetchWithRetry(url: string): Promise<Response> {
         continue;
       }
     } catch (err) {
-      if (attempt > RETRY_COUNT) throw err;
+      if (err instanceof NonRetryableRegistryError || attempt > RETRY_COUNT) throw err;
     }
     const delay = RETRY_BASE_MS * 2 ** (attempt - 1) * (0.8 + 0.4 * Math.random());
     await sleep(delay);
   }
 }
 
-async function getLatestVersion(packageName: string): Promise<string> {
+/** Resolves a package's `latest` dist-tag. Injectable so tests do not reach the registry. */
+export type LatestVersionResolver = (packageName: string) => Promise<string>;
+
+export async function getLatestVersion(packageName: string): Promise<string> {
   const res = await fetchWithRetry(`https://registry.npmjs.org/-/package/${packageName}/dist-tags`);
 
   const tags = (await res.json()) as Record<string, string>;
@@ -91,7 +102,13 @@ interface Change {
   to: string;
 }
 
-export async function updatePackages(cwd?: string): Promise<void> {
+export async function updatePackages(
+  cwd?: string,
+  /** Defaults to a live registry lookup. Tests pass a stub: any catalog carrying an unpinned
+   * `@platforma-sdk/*` or `@milaboratories/*` package would otherwise fetch npmjs.org, which
+   * made them fail whenever a response outran vitest's 5s budget. */
+  resolveLatestVersion: LatestVersionResolver = getLatestVersion,
+): Promise<void> {
   const workspacePath = path.resolve(cwd ?? process.cwd(), "pnpm-workspace.yaml");
 
   let content: string;
@@ -117,7 +134,7 @@ export async function updatePackages(cwd?: string): Promise<void> {
   const pinned: Change[] = [];
 
   // Fetch latest versions for all SDK packages in parallel
-  const latestVersions = await Promise.all(sdkPackages.map((pkg) => getLatestVersion(pkg)));
+  const latestVersions = await Promise.all(sdkPackages.map((pkg) => resolveLatestVersion(pkg)));
 
   for (let i = 0; i < sdkPackages.length; i++) {
     const packageName = sdkPackages[i];
