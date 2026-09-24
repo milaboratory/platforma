@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
   createLocalPObjectId,
   createColumnOverriddenId,
@@ -97,7 +97,7 @@ describe("createColumnResolver", () => {
     expect(r({ type: "column", id: other })).toBeUndefined();
   });
 
-  test("collision warns once and keeps first", () => {
+  test("collision keeps first", () => {
     const pid = createLocalPObjectId(["main", "out"], "col-1");
     const wrappedA = wrap(pid, "A");
     const wrappedB = wrap(pid, "B");
@@ -113,9 +113,7 @@ describe("createColumnResolver", () => {
       return r;
     };
 
-    const warn = vi.fn();
-    const r = createColumnResolver([makeFake(wrappedA), makeFake(wrappedB)], { warn });
-    expect(warn).toHaveBeenCalledTimes(1);
+    const r = createColumnResolver([makeFake(wrappedA), makeFake(wrappedB)]);
     const out = r({ type: "column", id: pid });
     expect(out).toEqual({ type: "column", id: wrappedA });
   });

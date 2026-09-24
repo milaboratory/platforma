@@ -37,6 +37,12 @@ const packageJsonSchema = z.object({
 
     artifacts: artifacts.artifactIndexSchema.optional(),
     entrypoints: entrypoints.entrypointListSchema,
+
+    // Opt out of the "every software entrypoint needs a docker image" rule for a
+    // package that is deliberately binary-only. Kept here rather than behind a CLI
+    // flag or env var: the exception belongs to the package, where it is reviewable,
+    // not to whichever CI run happens to build it. See core/docker-coverage.ts.
+    requireDocker: z.boolean().optional(),
   }),
 });
 type packageJson = z.infer<typeof packageJsonSchema>;
@@ -131,6 +137,11 @@ export class PackageInfo {
 
   get isPrivate(): boolean {
     return this.pkgJson.private ?? false;
+  }
+
+  /** Whether every software entrypoint of this package must ship a docker image. */
+  get requireDocker(): boolean {
+    return this.pkgJson["block-software"].requireDocker ?? true;
   }
 
   get binaryRegistries(): binaryRegistryPresets {

@@ -33,7 +33,11 @@ export function workflowPackageJsonInitial(ctx: RunContext): Record<string, unkn
       // No `fmt`: the workflow is Tengo, not TS — nothing for oxlint/oxfmt
       // to process. Tengo is built and checked by pl-tengo.
       build: "shx rm -rf dist && pl-tengo build",
-      check: "pl-tengo check",
+      // `imports` drops the imports the tengo sources do not use. It belongs
+      // to `check`, not `build`: the build task declares every tracked file as
+      // its input, so a command that rewrites sources inside it would change
+      // the inputs turbo has already hashed.
+      check: "pl-tengo imports && pl-tengo check",
       // No `test`: the vitest `test` script is wired by the body rule ONLY
       // when co-located test files exist (a freshly-init'd workflow has none).
       // Tengo source formatter (emacs batch). Falls back to a notice when
@@ -67,7 +71,7 @@ export function workflowPackageJsonRules(): void {
   // No `fmt` script: the workflow is Tengo, not TS — build + check run via
   // pl-tengo; `format` runs the emacs-batch Tengo formatter (no-op when absent).
   ensureScript("build", "shx rm -rf dist && pl-tengo build");
-  ensureScript("check", "pl-tengo check");
+  ensureScript("check", "pl-tengo imports && pl-tengo check");
   ensureScript("format", "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'");
   // The vitest `test` script AND the `vitest` devDep are wired ONLY when the
   // workflow carries co-located integration tests (`src/**/*.test.ts`, incl.

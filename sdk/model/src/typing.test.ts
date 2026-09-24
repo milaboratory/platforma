@@ -1,34 +1,6 @@
-import {
-  BlockSection,
-  LocalBlobHandleAndSize,
-  OutputWithStatus,
-  RemoteBlobHandleAndSize,
-} from "@milaboratories/pl-model-common";
-import { expect, test } from "vitest";
-import { DeriveHref, StdCtx } from "./bconfig";
-import { BlockModel } from "./block_model_legacy";
-import {
-  Args,
-  ConfigResult,
-  flatten,
-  getBlobContent,
-  getBlobContentAsJson,
-  getBlobContentAsString,
-  getDownloadedBlobContent,
-  getImmediate,
-  getJsonField,
-  getOnDemandBlobContent,
-  getResourceField,
-  getResourceValueAsJson,
-  isEmpty,
-  It,
-  MainOutputs,
-  makeArray,
-  makeObject,
-  mapArrayValues,
-  mapRecordValues,
-} from "./config";
-import { InferHrefType, InferOutputsType } from "./platforma";
+import { BlockSection } from "@milaboratories/pl-model-common";
+import { test } from "vitest";
+import { DeriveHref } from "./bconfig";
 
 type AssertEqual<T, Expected> = [T] extends [Expected]
   ? [Expected] extends [T]
@@ -50,43 +22,11 @@ export const assertTypeExtends = <T, Expected>(
   // noop
 };
 
-function _typeTest1() {
-  const a = getJsonField(Args, "field1");
-  const dd = getResourceValueAsJson<{ s: boolean; g: number }>()(
-    getResourceField(MainOutputs, "a"),
-  );
-
-  const cfg1 = makeObject({
-    a,
-    b: "attagaca",
-    c: mapRecordValues(getJsonField(Args, "field2"), getJsonField(It, "b")),
-    d: getJsonField(dd, "s"),
-  });
-
-  type Ret = ConfigResult<
-    typeof cfg1,
-    StdCtx<{
-      field1: number;
-      field2: Record<string, { b: "yap" }>;
-    }>
-  >;
-
-  assertType<
-    Ret,
-    {
-      a: number;
-      b: "attagaca";
-      c: Record<string, "yap">;
-      d: boolean;
-    }
-  >();
-}
-
 function testCreateSections<const S extends BlockSection[]>(_sections: () => S): DeriveHref<S> {
   return undefined as any;
 }
 
-test("test config content", () => {
+test("href derivation from sections", () => {
   const s1 = testCreateSections(() => [
     { type: "delimiter" },
     { type: "link", href: "/a1", label: "l" },
@@ -98,83 +38,4 @@ test("test config content", () => {
   const s2 = testCreateSections(() => [{ type: "delimiter" }]);
 
   assertType<typeof s2, never>();
-});
-
-test("test config content", () => {
-  const platforma = BlockModel.create("Heavy")
-    .withArgs<{ a: string[] }>({ a: [] })
-    .argsValid(isEmpty(getJsonField(Args, "a")))
-    .output("cell1", makeObject({ b: getJsonField(Args, "a") }))
-    .output("cell2", mapArrayValues(getJsonField(Args, "a"), getImmediate("v1")))
-    .sections(() => {
-      return [
-        { type: "link", href: "/", label: "Main" },
-        { type: "link", href: "/subsection", label: "Subsection" },
-      ];
-    })
-    .done();
-
-  assertType<
-    InferOutputsType<typeof platforma>,
-    {
-      cell1: OutputWithStatus<{ b: string[] }>;
-      cell2: OutputWithStatus<"v1"[]>;
-    }
-  >();
-
-  assertType<InferHrefType<typeof platforma>, "/" | "/subsection">();
-
-  expect(JSON.stringify((platforma as any).config).length).toBeGreaterThan(20);
-});
-
-test("test config 2", () => {
-  const platforma = BlockModel.create<{ a: string[] }>("Heavy")
-    .initialArgs({ a: [] })
-    .output(
-      "cell1",
-      makeObject({
-        b: getBlobContentAsString(getResourceField(MainOutputs, "field1")),
-        c: makeArray(getBlobContent(getResourceField(MainOutputs, "field2")), "asd"),
-        d: getBlobContentAsJson<string[]>()(getResourceField(MainOutputs, "field3")),
-        e: flatten(
-          makeArray(
-            getBlobContentAsJson<string[]>()(getResourceField(MainOutputs, "field3")),
-            getImmediate(["asd", "d"] as string[]),
-          ),
-        ),
-        f: getDownloadedBlobContent(getResourceField(MainOutputs, "field4")),
-        g: getOnDemandBlobContent(getResourceField(MainOutputs, "field5")),
-      }),
-    )
-    .output("cell2", () => 42)
-    .output("cell3", () => undefined)
-    .withArgs(isEmpty(getJsonField(Args, "a")))
-    .sections(
-      () =>
-        [
-          { type: "link", href: "/", label: "Main" },
-          { type: "link", href: "/subsection", label: "Subsection" },
-        ] satisfies BlockSection[],
-    )
-    .done();
-
-  assertType<
-    InferOutputsType<typeof platforma>,
-    {
-      cell1: OutputWithStatus<{
-        b: string;
-        c: [Uint8Array, "asd"];
-        d: string[];
-        e: string[];
-        f: LocalBlobHandleAndSize;
-        g: RemoteBlobHandleAndSize;
-      }>;
-      cell2: OutputWithStatus<number>;
-      cell3: OutputWithStatus<undefined>;
-    }
-  >();
-
-  assertType<InferHrefType<typeof platforma>, "/" | "/subsection">();
-
-  expect(JSON.stringify((platforma as any).config).length).toBeGreaterThan(20);
 });

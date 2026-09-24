@@ -1,0 +1,70 @@
+// proc_batch_body_batch_tag — body template that makes the batch decomposition
+// observable from the merged output.
+//
+// Receives batch TSV content as __value__ (string) with columns "key" (batch-key
+// axis) + "heavyChain" (value). For every input row it emits one output row
+// carrying the batch's *fingerprint* — the first key of the batch it belongs to —
+// as the "batchTag" value column.
+//
+// Batches are sorted by the batch-key axes and sliced contiguously, so the first
+// key is a stable per-batch identifier: every row of a batch carries the same
+// tag, distinct tags across the merged output equal the number of batches that
+// actually ran, and the tag values themselves are the batch boundaries. Merging
+// otherwise erases the decomposition, which is why the batch.maxBatches
+// inflation test needs this body.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+text := import("text")
+
+hwSoftware := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+self.defineOutputs(
+	"tsv"
+)
+
+self.body(func(inputs) {
+	batchContent := inputs[pConstants.VALUE_FIELD_NAME]
+
+	if !is_string(batchContent) {
+		ll.panic("expected string batch content, got: %v", batchContent)
+	}
+
+	lines := text.split(batchContent, "\n")
+	for len(lines) > 0 && lines[len(lines) - 1] == "" {
+		lines = lines[:len(lines) - 1]
+	}
+
+	// Input header is "key\theavyChain"; the first data row's key tags the batch.
+	// An empty batch (possible when the orchestrator's record count is an upper
+	// bound) emits a header-only file and therefore no tagged rows at all.
+	tag := ""
+	if len(lines) > 1 {
+		firstFields := text.split(lines[1], "\t")
+		tag = firstFields[0]
+	}
+
+	outLines := ["key\tbatchTag"]
+	for i := 1; i < len(lines); i++ {
+		fields := text.split(lines[i], "\t")
+		outLines = append(outLines, fields[0] + "\t" + tag)
+	}
+	outContent := text.join(outLines, "\n") + "\n"
+
+	// hello-world is an identity run; the transformed file is written directly.
+	run := exec.builder().
+		cpu(1).ram("50Mi").
+		software(hwSoftware).
+		arg("a").
+		writeFile("batch.tsv", outContent).
+		saveFile("batch.tsv").
+		run()
+
+	return {
+		tsv: run.getFile("batch.tsv")
+	}
+})

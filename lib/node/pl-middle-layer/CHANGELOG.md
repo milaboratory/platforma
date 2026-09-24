@@ -1,5 +1,329 @@
 # @milaboratories/pl-middle-layer
 
+## 1.71.13
+
+### Patch Changes
+
+- Updated dependencies [946a752]
+- Updated dependencies [a8e1308]
+  - @platforma-sdk/workflow-tengo@6.11.1
+  - @milaboratories/pl-client@3.17.1
+  - @milaboratories/pl-model-backend@1.4.27
+  - @milaboratories/pl-drivers@1.16.24
+  - @milaboratories/pl-errors@1.4.42
+  - @milaboratories/pl-tree@1.15.2
+  - @milaboratories/columns-collection-driver@0.2.5
+  - @milaboratories/pl-model-common@1.49.0
+  - @milaboratories/pl-model-middle-layer@1.32.1
+  - @milaboratories/pf-spec-driver@1.5.3
+  - @milaboratories/computable@2.9.8
+  - @milaboratories/pf-driver@1.9.3
+  - @milaboratories/pl-crash-recorder@0.3.1
+  - @milaboratories/pl-deployments@3.0.17
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/resolve-helper@1.1.3
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/helpers@1.14.5
+  - @platforma-sdk/model@1.83.17
+  - @platforma-sdk/block-tools@2.16.1
+
+## 1.71.12
+
+### Patch Changes
+
+- Updated dependencies [ff119f5]
+- Updated dependencies [6cfda51]
+- Updated dependencies [6310b85]
+  - @platforma-sdk/workflow-tengo@6.11.0
+  - @milaboratories/pl-tree@1.15.1
+  - @milaboratories/pl-drivers@1.16.23
+
+## 1.71.11
+
+### Patch Changes
+
+- Updated dependencies [6bb6c70]
+- Updated dependencies [6f5690c]
+- Updated dependencies [fbf82fc]
+- Updated dependencies [17536f5]
+  - @milaboratories/pl-crash-recorder@0.3.1
+  - @platforma-sdk/block-tools@2.16.0
+  - @platforma-sdk/workflow-tengo@6.10.5
+
+## 1.71.10
+
+### Patch Changes
+
+- 4068d5c: `auto` now resolves to `backend-delta` whenever the backend advertises
+  `treeChangedSince:v1`, falling back to `backend-streaming` and then `client-bfs`. This
+  changes which algorithm an existing caller gets, without any change on their side.
+  `MI_TREE_TRAVERSAL` accepts `backend-delta` too.
+- Updated dependencies [3e33e3c]
+- Updated dependencies [4068d5c]
+- Updated dependencies [13aff26]
+- Updated dependencies [ddc7746]
+- Updated dependencies [37707e3]
+  - @milaboratories/pl-tree@1.15.0
+  - @milaboratories/pl-client@3.17.0
+  - @milaboratories/pl-drivers@1.16.22
+  - @milaboratories/pl-model-backend@1.4.26
+  - @milaboratories/pl-errors@1.4.41
+  - @platforma-sdk/block-tools@2.15.3
+  - @platforma-sdk/workflow-tengo@6.10.4
+
+## 1.71.9
+
+### Patch Changes
+
+- 31a3f60: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.61. The Linux pframes-rs-node addon no longer ships debug info. Its download shrinks from 208 MB to about 28 MB. Bump runenv-python-3 to 1.13.2, which bundles polars-pf 1.1.61 for ptabler.
+- Updated dependencies [31a3f60]
+- Updated dependencies [d326918]
+  - @milaboratories/pf-driver@1.9.3
+  - @platforma-sdk/workflow-tengo@6.10.4
+  - @platforma-sdk/model@1.83.17
+  - @milaboratories/pf-spec-driver@1.5.3
+
+## 1.71.8
+
+### Patch Changes
+
+- Updated dependencies [f91337f]
+  - @milaboratories/pl-crash-recorder@0.3.0
+
+## 1.71.7
+
+### Patch Changes
+
+- @platforma-sdk/workflow-tengo@6.10.3
+
+## 1.71.6
+
+### Patch Changes
+
+- Updated dependencies [7104497]
+  - @platforma-sdk/workflow-tengo@6.10.2
+
+## 1.71.5
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+- Updated dependencies [f2ed96c]
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pf-driver@1.9.2
+  - @platforma-sdk/workflow-tengo@6.10.1
+  - @milaboratories/pl-model-common@1.49.0
+  - @platforma-sdk/model@1.83.17
+  - @milaboratories/pf-spec-driver@1.5.2
+  - @milaboratories/columns-collection-driver@0.2.5
+  - @milaboratories/pl-model-middle-layer@1.32.1
+  - @milaboratories/pl-client@3.16.2
+  - @milaboratories/pl-deployments@3.0.17
+  - @milaboratories/pl-drivers@1.16.21
+  - @milaboratories/pl-flight-recorder@0.2.1
+  - @platforma-sdk/block-tools@2.15.2
+  - @milaboratories/pl-model-backend@1.4.25
+  - @milaboratories/pl-errors@1.4.40
+  - @milaboratories/pl-tree@1.14.4
+
+## 1.71.4
+
+### Patch Changes
+
+- Updated dependencies [f107d76]
+  - @platforma-sdk/workflow-tengo@6.10.0
+
+## 1.71.3
+
+### Patch Changes
+
+- Updated dependencies [0aa8615]
+  - @milaboratories/pl-client@3.16.1
+  - @milaboratories/pl-model-backend@1.4.24
+  - @milaboratories/pl-drivers@1.16.20
+  - @milaboratories/pl-errors@1.4.39
+  - @milaboratories/pl-tree@1.14.3
+  - @platforma-sdk/block-tools@2.15.1
+  - @platforma-sdk/workflow-tengo@6.9.0
+
+## 1.71.2
+
+### Patch Changes
+
+- f532ce7: Add a crash-survivable flight recorder for the block model layer.
+
+  Records every join a block model builds and every row it reads back, so an
+  out-of-memory death that leaves no other trace can be explained after the fact:
+  which block, which join, which call was in flight, and which memory region ran
+  out. Records are appended synchronously because the process being observed dies
+  without running any shutdown path, and an out-of-band sampler thread keeps the
+  resident-memory curve intact while the observed thread is blocked.
+
+  Join trees are reduced to a redacted digest — schema, row and byte counts, never
+  values — and two structural faults are detected from specs alone, before any data
+  is read: join siblings that share no axis, and axes that agree on name and type
+  but disagree on domain.
+
+  Recording is opt-in: it is enabled by pointing `MI_FLIGHT_RECORDER_DIR` at a
+  directory, and is inert otherwise.
+
+- Updated dependencies [f532ce7]
+  - @milaboratories/pl-flight-recorder@0.2.0
+
+## 1.71.1
+
+### Patch Changes
+
+- Updated dependencies [064df22]
+  - @platforma-sdk/block-tools@2.15.0
+
+## 1.71.0
+
+### Minor Changes
+
+- 9a6d54d: A stored template is shared without inspecting its document. `shareTemplate` no longer refuses a template holding a block installed from a local folder and returns `{ shareId }`; `checkTemplateShareable` and `unshareableTemplateEntries` are gone. An entry the recipient cannot resolve is reported to them where they preview or apply the template.
+
+## 1.70.0
+
+### Minor Changes
+
+- d8b9666: `TemplateExportProblem` carries `blockLabel`, the block's label from the project structure, so a UI can name the block that stops an export instead of showing its id.
+
+## 1.69.2
+
+### Patch Changes
+
+- Updated dependencies [1b1c13c]
+  - @platforma-sdk/model@1.83.9
+
+## 1.69.1
+
+### Patch Changes
+
+- Updated dependencies [a578da8]
+  - @platforma-sdk/workflow-tengo@6.9.0
+
+## 1.69.0
+
+### Minor Changes
+
+- 4ea0a55: Make project templates first-class entities.
+
+  A template is now stored in the user's root rather than only exported to a file: the
+  immutable `template-v1` document lives in an ephemeral resource's data blob, its label and
+  timestamps in KV, and the whole shelf is listed and watched like the project list.
+  `saveProjectAsTemplate`, `renameTemplate`, `deleteTemplate`, `getTemplateData`,
+  `resolveTemplate`, `createProjectFromTemplate` and `shareTemplate` are the new surface.
+
+  A template can also travel: `EnvelopePayload` is now a discriminated union
+  (`{ kind: "projects" }` | `{ kind: "template" }`) and `EnvelopeData.schemaVersion` is 2.
+  A template share is read-only and writes no `acceptance/{login}` receipt — the recipient
+  gets the document on their own shelf and decides when to apply it, so there is no
+  acceptance to report back. A client that does not recognise a payload kind hides that
+  share rather than mis-rendering it.
+
+## 1.68.3
+
+### Patch Changes
+
+- Updated dependencies [5c588be]
+  - @milaboratories/pl-client@3.16.0
+  - @milaboratories/pl-model-backend@1.4.23
+  - @milaboratories/pl-drivers@1.16.19
+  - @milaboratories/pl-errors@1.4.38
+  - @milaboratories/pl-tree@1.14.2
+  - @platforma-sdk/block-tools@2.14.6
+  - @platforma-sdk/workflow-tengo@6.8.3
+
+## 1.68.2
+
+### Patch Changes
+
+- Updated dependencies [46d96ff]
+  - @platforma-sdk/block-tools@2.14.5
+
+## 1.68.1
+
+### Patch Changes
+
+- fd0ae2c: pl-cli: add `admin delete-user`, so a duplicate user account can be removed.
+
+  Multi-provider auth can leave one person with two accounts — an identity that could not be matched by email across a cutover, or a duplicate minted before the backend started refusing two records for one identity. The spare account was not inert: it appeared in the sharing user picker, and the projects in its root kept taking part in deduplication. Nothing removed one.
+
+  `admin delete-user <user>` now does, backed by the new `AuthAPI.DeleteUser` RPC. When the account still owns projects it requires an explicit decision rather than picking a default, since both defaults are wrong to assume:
+
+  - `--move-projects-to <user>` re-attaches every project to another user's root and then deletes the account. It is a move, not a copy: the same project resources are re-homed, so nothing is duplicated and nothing needs re-verifying. A name the target already uses is suffixed rather than overwritten, and the target's project list is created if they never had one.
+  - `--delete-projects` deletes the projects along with the account.
+
+  Both prompt with the affected project list first; `--force` skips that for scripted runs. Deleting an account removes its record, its identity-index entries (login, email and any alternative of either), its grants and its root resource, and frees those values — the person's next sign-in lands on a clean account instead of reviving the deleted one. Requires admin/controller credentials, and refuses to target the account those credentials authenticate as.
+
+  `pl-client` gains `PlClient.deleteUser(login)` (gRPC-only, like `listUsers`). `pl-middle-layer` now exports `ProjectsResourceType`, which a caller writing into another user's root needs.
+
+- Updated dependencies [fd0ae2c]
+  - @milaboratories/pl-client@3.15.0
+  - @milaboratories/pl-model-backend@1.4.22
+  - @milaboratories/pl-drivers@1.16.18
+  - @milaboratories/pl-errors@1.4.37
+  - @milaboratories/pl-tree@1.14.1
+  - @platforma-sdk/block-tools@2.14.4
+  - @platforma-sdk/workflow-tengo@6.8.3
+
+## 1.68.0
+
+### Minor Changes
+
+- 68f19fa: Persist project tree mirrors to disk and restore them on open, so reopening a project transfers what changed rather than the whole tree. On by default, with a kill switch in `treeSnapshotOps`.
+
+### Patch Changes
+
+- Updated dependencies [0634133]
+- Updated dependencies [68f19fa]
+  - @milaboratories/pl-tree@1.14.0
+  - @milaboratories/pl-drivers@1.16.17
+
+## 1.67.6
+
+### Patch Changes
+
+- cbe94c7: Make Run re-render a block whose production failed outright.
+
+  The Run button is enabled whenever a block's production carries an error, but the mutator recognised only one of the two shapes such a failure takes. `productionHasErrors` read the field's `status`, which is derived from the resource the field points at — so it saw a value resource that exists and carries an error, and missed a field whose own error slot is filled and that therefore has no value resource at all. In that second shape `renderProduction` found nothing to re-render for the block and committed an empty transaction: the button was live, the click was accepted, and the block never re-ran.
+
+  Field-level errors are now carried through `ProjectMutator.load` alongside the value reference and counted by `productionHasErrors`, so both shapes reach `requireProductionRendering` and the enable condition the desktop uses for the button once again matches the condition the mutator renders on.
+
+  - @milaboratories/pl-model-backend@1.4.21
+  - @milaboratories/columns-collection-driver@0.2.4
+  - @milaboratories/pl-model-common@1.48.0
+  - @milaboratories/pl-model-middle-layer@1.32.0
+  - @milaboratories/pf-spec-driver@1.5.1
+  - @milaboratories/computable@2.9.8
+  - @milaboratories/pf-driver@1.9.1
+  - @milaboratories/pl-client@3.14.7
+  - @milaboratories/pl-deployments@3.0.16
+  - @milaboratories/pl-drivers@1.16.16
+  - @milaboratories/pl-errors@1.4.36
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/pl-tree@1.13.7
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/helpers@1.14.5
+  - @platforma-sdk/model@1.83.0
+  - @platforma-sdk/block-tools@2.14.3
+  - @milaboratories/resolve-helper@1.1.3
+
+## 1.67.5
+
+### Patch Changes
+
+- Updated dependencies [be89730]
+  - @platforma-sdk/model@1.83.0
+
+## 1.67.4
+
+### Patch Changes
+
+- Updated dependencies [7179e9d]
+  - @platforma-sdk/workflow-tengo@6.8.3
+
 ## 1.67.3
 
 ### Patch Changes

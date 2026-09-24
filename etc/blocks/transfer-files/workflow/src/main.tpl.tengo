@@ -2,7 +2,6 @@ wf := import("@platforma-sdk/workflow-tengo:workflow")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 maps := import("@platforma-sdk/workflow-tengo:maps")
 smart := import("@platforma-sdk/workflow-tengo:smart")
-text := import("text")
 file := import("@platforma-sdk/workflow-tengo:file")
 json := import("json")
 

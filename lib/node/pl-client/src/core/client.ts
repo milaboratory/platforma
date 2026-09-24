@@ -33,6 +33,7 @@ import type { WireConnection } from "./wire";
 import { advisoryLock } from "./advisory_locks";
 import { plAddressToConfig } from "./config";
 import { UserResources } from "./user_resources";
+import type { UserDeletionReport } from "./user_resources";
 import type { BackendCapability } from "./capabilities";
 
 export type TxOps = PlCallOps & {
@@ -205,6 +206,14 @@ export class PlClient {
   /** Lists the users known to the server (login only on the wire). See {@link LLPlClient.listUsers}. */
   public async listUsers(): Promise<AuthAPI_User[]> {
     return await this.ll.listUsers();
+  }
+
+  /**
+   * Deletes a user account and its root resource — with the root, everything still attached
+   * under it. Destructive and irreversible; see {@link UserResources.deleteUser}.
+   */
+  public async deleteUser(login: string): Promise<UserDeletionReport> {
+    return await this.userResources.deleteUser(login);
   }
 
   /**

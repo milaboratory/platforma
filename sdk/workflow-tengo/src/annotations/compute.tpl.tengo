@@ -1,4 +1,5 @@
 pt := import(":pt")
+units := import(":units")
 wf := import(":workflow")
 self := import(":tpl")
 util := import(":annotations.util")
@@ -53,7 +54,16 @@ self.body(func(inputs) {
 		otherwise(pt.lit(undefined)).
 		alias(ANNOTATION_HEADER)
 
-	wf := pt.workflow().cpu(1).mem("12GiB")
+	// 12 GiB is a floor, not a pin. A flat .mem() disables input-volume auto-sizing, and
+	// this run reads a column bundle whose volume follows what the user annotated.
+	//
+	// The floor governs more often than the formula here. f.size() counts only files
+	// attached with addFile(), and a non-partitioned JSON p-column is attached with
+	// writeFile(), so a bundle of those columns measures zero and the grant stays at the
+	// floor. A bundle carrying parquet or partitioned columns does scale, from about
+	// 1.67 GiB of counted input upward. Sizing a JSON-only bundle needs a size metric
+	// that also counts written files, which :exec.formula does not have.
+	wf := pt.workflow().cpu(1).memFloor(12 * units.GiB)
 
 	dfData := wf.frameFromColumnBundle(columnBundle, {
 		axes: resultColumnSpec.axesSpec,

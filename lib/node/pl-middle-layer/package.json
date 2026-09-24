@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.67.3",
+  "version": "1.71.13",
   "description": "Pl Middle Layer",
   "keywords": [],
   "license": "UNLICENSED",
@@ -37,6 +37,7 @@
     "@milaboratories/pf-spec-driver": "workspace:*",
     "@milaboratories/pframes-rs-node": "catalog:",
     "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/pl-crash-recorder": "workspace:*",
     "@milaboratories/pl-deployments": "workspace:*",
     "@milaboratories/pl-drivers": "workspace:*",
     "@milaboratories/pl-errors": "workspace:*",

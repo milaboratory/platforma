@@ -20,6 +20,22 @@ import {
   ProjectsField,
   ProjectsResourceType,
 } from "./project_list";
+import type {
+  CreateProjectFromTemplateOutcome,
+  SaveProjectAsTemplateOutcome,
+  ShareTemplateOutcome,
+  StoredTemplateData,
+  TemplateId,
+  TemplateListEntry,
+} from "./template_list";
+import {
+  createTemplateList,
+  decodeStoredTemplateData,
+  TemplateLabelKey,
+  TemplatesField,
+  TemplatesResourceType,
+} from "./template_list";
+import { createTemplate, deleteTemplate, renameTemplate } from "../mutator/template";
 import {
   createProject,
   duplicateProject,
@@ -31,7 +47,7 @@ import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
 import { extractConfig, ensureError } from "@platforma-sdk/model";
 import type { TemplateApplyProblem, TemplateApplyReport } from "../model/template_apply";
 import { TemplateEntryRejected, kindMismatch } from "../model/template_apply";
-import type { BlockPackProvider } from "../model/template_resolve";
+import type { BlockPackProvider, TemplateResolveOutcome } from "../model/template_resolve";
 import { resolveTemplateEntries } from "../model/template_resolve";
 import type { PreparedTemplateEntry } from "../mutator/template_construct";
 import { applyTemplateEntries } from "../mutator/template_construct";
@@ -45,6 +61,7 @@ import {
   canGrantToEveryone,
   canImpersonate,
   decodeEnvelopeData,
+  envelopeProjectMap,
   isAcceptanceField,
   SharingOutboxField,
   SharingOutboxResourceType,
@@ -56,9 +73,11 @@ import {
   type ProjectFieldUuid,
   type ShareId,
   type ShareProjectsOptions,
+  type ShareTemplateOptions,
 } from "../model/sharing_model";
 import {
   buildShareEnvelope,
+  buildTemplateShareEnvelope,
   copyEnvelopeProjectsIntoList,
   envelopeProjectFieldUuid,
   isEnvelopeProjectField,
@@ -111,6 +130,13 @@ import type { Dispatcher } from "undici";
 import { RetryAgent } from "undici";
 import { getDebugFlags } from "../debug";
 import { ProjectHelper } from "../model/project_helper";
+import type { TreeSnapshotStat } from "./tree_snapshot_store";
+import { TreeSnapshotStore } from "./tree_snapshot_store";
+
+/** How long shutdown waits for close-boundary snapshot writes that are already running. Long
+ *  enough for a ten-megabyte encode and write on ordinary storage, short enough that a wedged
+ *  filesystem does not hold the quit open. */
+const SNAPSHOT_DRAIN_TIMEOUT_MS = 5_000;
 
 export interface MiddleLayerEnvironment {
   dispose(): Promise<void>;
@@ -129,6 +155,9 @@ export interface MiddleLayerEnvironment {
   readonly driverKit: MiddleLayerDriverKit;
   readonly serviceRegistry: ModelServiceRegistry;
   readonly projectHelper: ProjectHelper;
+  /** Persisted project tree mirrors. Undefined when snapshots are switched off, or when the
+   *  client is impersonating another user, in which case nothing is read or written. */
+  readonly treeSnapshots?: TreeSnapshotStore;
 }
 
 /**
@@ -151,16 +180,20 @@ export class MiddleLayer {
     public readonly driverKit: DriverKit,
     public readonly signer: Signer,
     private readonly projectListResourceId: SignedResourceId,
+    private readonly templateListResourceId: SignedResourceId,
     private readonly sharingOutboxResourceId: SignedResourceId,
     private readonly sharingStateResourceId: SignedResourceId,
     private readonly openedProjectsList: WatchableValue<ProjectId[]>,
     private readonly projectListTree: SynchronizedTreeState,
+    private readonly templateListTree: SynchronizedTreeState,
     private readonly sharingOutboxTree: SynchronizedTreeState,
     private readonly sharingStateTree: SynchronizedTreeState,
     private readonly pendingSharesTree: SynchronizedTreeState,
     public readonly blockRegistryProvider: V2RegistryProvider,
     /** Contains a reactive list of projects along with their meta information. */
     public readonly projectList: ComputableStableDefined<ProjectListEntry[]>,
+    /** Contains a reactive list of stored templates along with their labels and provenance. */
+    public readonly templateList: ComputableStableDefined<TemplateListEntry[]>,
     /** Reactive view of the donor's outbox — the shares this user has created.
      *  v1: API only, no UI. */
     public outgoingShares: Computable<OutgoingShare[] | undefined>,
@@ -417,15 +450,37 @@ export class MiddleLayer {
     provider: BlockPackProvider,
     options: { allowUnstable?: boolean; author?: AuthorMarker } = {},
   ): Promise<TemplateApplyReport> {
-    const resolution = await resolveTemplateEntries(document, provider, {
+    const preparation = await this.prepareTemplateEntries(document, provider, {
       allowUnstable: options.allowUnstable ?? false,
     });
-    if (resolution.problems.length > 0) return { added: [], problems: resolution.problems };
+    if (preparation.problems.length > 0) return { added: [], problems: preparation.problems };
+    return await this.applyPreparedEntries(id, document, preparation.prepared, options.author);
+  }
+
+  /**
+   * Stages 1 and 2 of an apply — resolve every entry to a block pack, then prepare every
+   * block — for a document that may not have a project yet.
+   *
+   * Neither stage creates anything, which is what lets a caller run them before it decides to
+   * create a project at all: {@link createProjectFromTemplate} does exactly that, so an
+   * unapplicable template leaves no empty project behind.
+   */
+  private async prepareTemplateEntries(
+    document: ProjectTemplateV1,
+    provider: BlockPackProvider,
+    options: { allowUnstable: boolean },
+  ): Promise<{
+    prepared: Map<string, PreparedTemplateEntry>;
+    problems: TemplateApplyProblem[];
+  }> {
+    const prepared = new Map<string, PreparedTemplateEntry>();
+
+    const resolution = await resolveTemplateEntries(document, provider, options);
+    if (resolution.problems.length > 0) return { prepared, problems: [...resolution.problems] };
 
     // One map, not one per field: resolution reports by entry id, so everything this loop
     // needs about an entry is looked up the same way.
     const byEntryId = new Map(document.blocks.map((entry) => [entry.id, entry]));
-    const prepared = new Map<string, PreparedTemplateEntry>();
     const problems: TemplateApplyProblem[] = [];
 
     for (const entry of resolution.resolved) {
@@ -482,8 +537,21 @@ export class MiddleLayer {
       }
     }
 
-    if (problems.length > 0) return { added: [], problems };
+    return { prepared, problems };
+  }
 
+  /**
+   * Stage 3 of an apply — create the blocks in one transaction, all or nothing.
+   *
+   * An entry it cannot create throws, the transaction is never committed, and the project keeps
+   * none of the blocks the apply had placed.
+   */
+  private async applyPreparedEntries(
+    id: ProjectId,
+    document: ProjectTemplateV1,
+    prepared: Map<string, PreparedTemplateEntry>,
+    author?: AuthorMarker,
+  ): Promise<TemplateApplyReport> {
     const rid = await this.resolveProjectId(id);
     let added: AppliedEntry[] = [];
     try {
@@ -491,7 +559,7 @@ export class MiddleLayer {
         this.env.projectHelper,
         this.pl,
         rid,
-        options.author,
+        author,
         (mut) => {
           added = applyTemplateEntries({
             document,
@@ -514,6 +582,159 @@ export class MiddleLayer {
     }
 
     return { added, problems: [] };
+  }
+
+  //
+  // Template List Manipulation
+  //
+
+  private readonly templateIdCache = new LRUCache<TemplateId, SignedResourceId>({ max: 1024 });
+
+  /**
+   * Saves a project as a template: a snapshot of its blocks and their params, no data.
+   *
+   * The document the export produced is what gets stored; the YAML it also rendered is a
+   * file format, and a stored template is rendered to it only on download.
+   *
+   * A block that cannot be expressed as a template entry stores nothing at all, and every
+   * such block is reported — fixing an unexportable project takes one pass, not one per block.
+   *
+   * @param projectId project to snapshot
+   * @param label label for the template; defaults to the project's own label
+   */
+  public async saveProjectAsTemplate(
+    projectId: ProjectId,
+    label?: string,
+  ): Promise<SaveProjectAsTemplateOutcome> {
+    const outcome = await this.exportProjectAsTemplate(projectId);
+    if (!outcome.ok) return { ok: false, problems: outcome.problems };
+
+    const rid = await this.resolveProjectId(projectId);
+    let tpl: ResourceRef;
+    await this.pl.withWriteTx("MLSaveProjectAsTemplate", async (tx) => {
+      const meta = await tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey);
+      tpl = createTemplate(tx, this.templateListResourceId, label ?? meta.label, {
+        schemaVersion: 1,
+        document: outcome.document,
+        sourceProjectLabel: meta.label,
+      });
+      await tx.commit();
+    });
+    await this.templateListTree.refreshState();
+
+    const signedRid = await tpl!.globalId;
+    const templateId = resourceIdToString(signedRid) as TemplateId;
+    this.templateIdCache.set(templateId, signedRid);
+    return { ok: true, templateId };
+  }
+
+  /** Changes a template's label. The stored document is immutable and stays untouched —
+   *  improving a template means saving a new one. */
+  public async renameTemplate(id: TemplateId, label: string): Promise<void> {
+    const rid = await this.resolveTemplateId(id);
+    await this.pl.withWriteTx("MLRenameTemplate", async (tx) => {
+      renameTemplate(tx, rid, label);
+      await tx.commit();
+    });
+    await this.templateListTree.refreshState();
+  }
+
+  /** Permanently deletes a template from the template list. */
+  public async deleteTemplate(id: TemplateId): Promise<void> {
+    await this.pl.withWriteTx("MLRemoveTemplate", async (tx) => {
+      await deleteTemplate(tx, this.templateListResourceId, id);
+      await tx.commit();
+    });
+    this.templateIdCache.delete(id);
+    await this.templateListTree.refreshState();
+  }
+
+  /** Reads a stored template: its document plus what was true when it was taken. */
+  public async getTemplateData(id: TemplateId): Promise<StoredTemplateData> {
+    const rid = await this.resolveTemplateId(id);
+    return await this.pl.withReadTx("MLGetTemplate", async (tx) => {
+      const rd = await tx.getResourceData(rid, false);
+      if (rd.data === undefined) throw new Error(`Template ${id} carries no document.`);
+      return decodeStoredTemplateData(rd.data);
+    });
+  }
+
+  /**
+   * Where each entry of a stored template would get its block from, and which entries have
+   * nowhere to get one — resolution creates nothing, so this is the preview a UI shows before
+   * offering Apply. {@link createProjectFromTemplate} runs the same stage itself.
+   */
+  public async resolveTemplate(
+    id: TemplateId,
+    provider: BlockPackProvider,
+    options: { allowUnstable?: boolean } = {},
+  ): Promise<TemplateResolveOutcome> {
+    const stored = await this.getTemplateData(id);
+    return await resolveTemplateEntries(stored.document, provider, {
+      allowUnstable: options.allowUnstable ?? false,
+    });
+  }
+
+  /**
+   * Creates one project holding every block the stored template lists, in the template's order.
+   *
+   * Resolution and preparation run before the project exists, so a template with an entry
+   * nothing can supply a block for leaves no empty project in the list. The one write that
+   * follows is all or nothing, and an entry it rejects takes the project with it.
+   *
+   * @param id template to apply
+   * @param label label for the new project
+   * @param provider where each entry's block comes from
+   * @param options `allowUnstable` widens resolution to pre-release implementations
+   */
+  public async createProjectFromTemplate(
+    id: TemplateId,
+    label: string,
+    provider: BlockPackProvider,
+    options: { allowUnstable?: boolean; author?: AuthorMarker } = {},
+  ): Promise<CreateProjectFromTemplateOutcome> {
+    const stored = await this.getTemplateData(id);
+
+    const preparation = await this.prepareTemplateEntries(stored.document, provider, {
+      allowUnstable: options.allowUnstable ?? false,
+    });
+    if (preparation.problems.length > 0) return { ok: false, problems: preparation.problems };
+
+    const projectId = await this.createProject({ label });
+    const report = await this.applyPreparedEntries(
+      projectId,
+      stored.document,
+      preparation.prepared,
+      options.author,
+    );
+    if (report.problems.length > 0) {
+      // The apply is one transaction, so the project holds none of the blocks: it is the empty
+      // project this call created moments ago and nothing else, and leaving it in the list would
+      // show the user a project they never asked for.
+      await this.deleteProject(projectId);
+      return { ok: false, problems: report.problems };
+    }
+    return { ok: true, projectId, added: report.added };
+  }
+
+  /** Resolves a TemplateId to a signed SignedResourceId.
+   * Uses LRU cache with TX-scan fallback. */
+  private async resolveTemplateId(templateId: TemplateId): Promise<SignedResourceId> {
+    const cached = this.templateIdCache.get(templateId);
+    if (cached !== undefined) return cached;
+
+    // Cache miss — scan template list fields to find the matching resource
+    const rid = await this.pl.withReadTx("ResolveTemplateId", async (tx) => {
+      const data = await tx.getResourceData(this.templateListResourceId, true);
+      for (const f of data.fields) {
+        if (isNullSignedResourceId(f.value)) continue;
+        if (resourceIdToString(f.value) === (templateId as string)) return f.value;
+      }
+      throw new Error(`Template ${templateId} not found in template list.`);
+    });
+
+    this.templateIdCache.set(templateId, rid);
+    return rid;
   }
 
   /** Permanently deletes project from the project list, this will result in
@@ -738,23 +959,99 @@ export class MiddleLayer {
         expiresAt,
       });
 
-      // Grant in the same transaction (writable: the cross-color accept rule demands a writable
-      // grant on the envelope). Atomic with the create.
-      const envelopeGid = await envelope.globalId;
-      if (everyone) {
-        // One everyone-grant: empty/ignored target, ANY_AUTHORISED. The backend rewrites
-        // the target to the everyone-user; gated by role + permission ceiling.
-        tx.grantAccess(envelopeGid, "", { writable: true }, GrantType.ANY_AUTHORISED);
-      } else {
-        for (const recipient of options.recipients) {
-          tx.grantAccess(envelopeGid, recipient, { writable: true });
-        }
-      }
+      // Grant in the same transaction, atomic with the create.
+      await this.grantShareEnvelope(tx, envelope, everyone, everyone ? [] : options.recipients, {
+        writable: true,
+      });
 
       await tx.commit();
     });
 
     await this.sharingOutboxTree.refreshState();
+  }
+
+  /**
+   * Grants one freshly built envelope inside the transaction that created it: a single make-public
+   * grant for an everyone-share (empty/ignored target, ANY_AUTHORISED — the backend rewrites the
+   * target to the everyone-user, gated by role + permission ceiling), or one grant per named
+   * recipient.
+   *
+   * `writable` is not a preference. A project pack needs a writable grant because accepting copies
+   * the snapshots out of the envelope, and the cross-color attach rule permits that only to a
+   * writable grant holder. A template share copies nothing — the document sits in the envelope's
+   * own immutable data — so it is granted read-only, and must be: a writable everyone-grant would
+   * hand every user on the server write access to the envelope.
+   */
+  private async grantShareEnvelope(
+    tx: PlTransaction,
+    envelope: ResourceRef,
+    everyone: boolean,
+    recipients: string[],
+    permissions: { writable: boolean },
+  ): Promise<void> {
+    const gid = await envelope.globalId;
+    if (everyone) tx.grantAccess(gid, "", permissions, GrantType.ANY_AUTHORISED);
+    else for (const r of recipients) tx.grantAccess(gid, r, permissions);
+  }
+
+  /**
+   * Shares one stored template. The envelope carries the document itself, so there is no project
+   * snapshot and no resource for the recipient to copy out — which is why the grant is read-only.
+   * The cost of that is the donor's receipt: nobody can write an acceptance onto a read-only
+   * envelope, so a template share never reports who accepted it.
+   *
+   * Nothing about the document is checked: a stored template is shareable by virtue of existing.
+   * An entry the recipient cannot resolve — a block installed from a folder on the sender's
+   * machine, say — is theirs to see when they preview or apply it, where every unresolvable entry
+   * is named anyway.
+   *
+   * @param id template to share
+   * @param options recipients XOR everyone, plus the title recipients see
+   */
+  public async shareTemplate(
+    id: TemplateId,
+    options: ShareTemplateOptions,
+  ): Promise<ShareTemplateOutcome> {
+    const template = await this.loadTemplateForShare(id);
+
+    const everyone = "everyone" in options;
+    const sender = this.currentUserLogin ?? "";
+    // Targeted share: sharedAt + ttl. Share-with-everybody: never expires (null).
+    const expiresAt = everyone ? null : Date.now() + this.env.ops.envelopeTtlMs;
+
+    let shareId: ShareId | undefined;
+    await this.pl.withWriteTx("MLShareTemplate", async (tx) => {
+      const { envelope, data } = buildTemplateShareEnvelope(
+        tx,
+        this.sharingOutboxResourceId,
+        template,
+        { sender, title: options.title, expiresAt },
+      );
+      shareId = data.shareId;
+      await this.grantShareEnvelope(tx, envelope, everyone, everyone ? [] : options.recipients, {
+        writable: false,
+      });
+      await tx.commit();
+    });
+
+    await this.sharingOutboxTree.refreshState();
+    return { shareId: shareId! };
+  }
+
+  /** The document and the label of a template about to be shared. The label is what the
+   *  recipient's own list will show, so it travels with the document. */
+  private async loadTemplateForShare(
+    id: TemplateId,
+  ): Promise<{ document: ProjectTemplateV1; label: string }> {
+    const rid = await this.resolveTemplateId(id);
+    return await this.pl.withReadTx("MLReadTemplateForShare", async (tx) => {
+      const rd = await tx.getResourceData(rid, false);
+      if (rd.data === undefined) throw new Error(`Template ${id} carries no document.`);
+      return {
+        document: decodeStoredTemplateData(rd.data).document,
+        label: await tx.getKValueJson<string>(rid, TemplateLabelKey),
+      };
+    });
   }
 
   /**
@@ -772,6 +1069,11 @@ export class MiddleLayer {
    * existing snapshot (and its timestamp), `remove` drops the project from the pack. A project not
    * in the map defaults to `keep`. Omit the whole map for the legacy auto behavior (live sources
    * updated, gone ones kept) — the everyone-refresh path relies on that.
+   *
+   * `opts.templateId` is required for, and only used by, a share that carries a template: a stored
+   * template is immutable, so an improved one is a different template and the share cannot re-read
+   * the one it started from — the caller names the new target. Every other option means the same
+   * thing for both kinds of share.
    */
   public async changeShare(
     shareId: ShareId,
@@ -780,8 +1082,13 @@ export class MiddleLayer {
       everyone?: boolean;
       title?: string;
       projectActions?: Record<ProjectId, ProjectChangeAction>;
+      templateId?: TemplateId;
     } = {},
   ): Promise<void> {
+    // Read outside the write tx: it is two round-trips of its own.
+    const target =
+      opts.templateId === undefined ? undefined : await this.loadTemplateForShare(opts.templateId);
+
     await this.pl.withWriteTx("MLChangeShare", async (tx) => {
       const old = await this.resolveOutboxEnvelope(tx, shareId);
       if (old === undefined)
@@ -791,6 +1098,33 @@ export class MiddleLayer {
       const grants = await tx.listGrants(old.rid);
       // A targeted share may be upgraded to everyone; an everyone-share can't be narrowed back.
       const everyone = grants.some((g) => isEveryoneUserLogin(g.user)) || opts.everyone === true;
+      const priorRecipients = grants
+        .filter((g) => !isEveryoneUserLogin(g.user) && g.user !== self)
+        .map((g) => g.user);
+
+      if (old.data.payload.kind === "template") {
+        if (target === undefined)
+          throw new Error(
+            `changeShare: share ${shareId} carries a template, so it needs an explicit target ` +
+              "template — a stored template never changes, so an improved one is a different template.",
+          );
+        const recipients = everyone ? [] : (opts.recipients ?? priorRecipients);
+
+        // Same shareId, same outbox field name — detach the old field before rebuilding, or they collide.
+        tx.removeField(field(this.sharingOutboxResourceId, old.fieldName));
+        const { envelope } = buildTemplateShareEnvelope(tx, this.sharingOutboxResourceId, target, {
+          sender: self,
+          title: opts.title === undefined ? old.data.title : opts.title.trim(),
+          expiresAt: everyone ? null : Date.now() + this.env.ops.envelopeTtlMs,
+          shareId, // SAME shareId — the essence of change
+        });
+
+        // Nothing to transfer: a read-only grant cannot write an acceptance, so a template share
+        // never accumulated one.
+        await this.grantShareEnvelope(tx, envelope, everyone, recipients, { writable: false });
+        await tx.commit();
+        return;
+      }
 
       // Read the old envelope's project snapshots (uuid -> rid) and accept/reject records.
       const oldRd = await tx.getResourceData(old.rid, true);
@@ -812,9 +1146,6 @@ export class MiddleLayer {
       const decidedLogins = acceptances.map((a) => a.login);
 
       // Everyone-shares ignore recipients; targeted shares keep decided users plus the edited set.
-      const priorRecipients = grants
-        .filter((g) => !isEveryoneUserLogin(g.user) && g.user !== self)
-        .map((g) => g.user);
       const recipients = everyone
         ? []
         : Array.from(new Set([...(opts.recipients ?? priorRecipients), ...decidedLogins]));
@@ -831,8 +1162,9 @@ export class MiddleLayer {
       // projectActions map, fall back to the legacy auto behavior: update a live source, keep a gone one.
       const actions = opts.projectActions;
       const sources: EnvelopeProjectSource[] = [];
-      for (const uuid of Object.keys(old.data.projects) as ProjectFieldUuid[]) {
-        const { label, source, updatedAt } = old.data.projects[uuid];
+      const oldProjects = envelopeProjectMap(old.data);
+      for (const uuid of Object.keys(oldProjects) as ProjectFieldUuid[]) {
+        const { label, source, updatedAt } = oldProjects[uuid];
         const liveRid = liveProjects.get(source);
 
         const action = actions
@@ -874,9 +1206,7 @@ export class MiddleLayer {
         writeEnvelopeAcceptance(tx, envelope, login, acc.action, acc.timestamp);
       }
 
-      const gid = await envelope.globalId;
-      if (everyone) tx.grantAccess(gid, "", { writable: true }, GrantType.ANY_AUTHORISED);
-      else for (const r of recipients) tx.grantAccess(gid, r, { writable: true });
+      await this.grantShareEnvelope(tx, envelope, everyone, recipients, { writable: true });
 
       await tx.commit();
     });
@@ -909,7 +1239,8 @@ export class MiddleLayer {
         const rd = await tx.getResourceData(f.value, false);
         if (rd.data === undefined) continue;
         const data = decodeEnvelopeData(rd.data);
-        if (Object.values(data.projects).some((p) => wanted.has(p.source)))
+        if (data === undefined) continue;
+        if (Object.values(envelopeProjectMap(data)).some((p) => wanted.has(p.source)))
           out.push({ fieldName: f.name, rid: f.value, shareId: data.shareId });
       }
       return out;
@@ -961,6 +1292,7 @@ export class MiddleLayer {
       const rd = await tx.getResourceData(f.value, false);
       if (rd.data === undefined) continue;
       const data = decodeEnvelopeData(rd.data);
+      if (data === undefined) continue;
       if (data.shareId === shareId) return { fieldName: f.name, rid: f.value, data };
     }
     return undefined;
@@ -986,22 +1318,31 @@ export class MiddleLayer {
   }
 
   /**
-   * Accepts one or more pending shares: duplicates each share's projects into this user's
-   * project list, records the decision per share, and (read-write share) writes the donor-visible
-   * acceptance onto the envelope. Per-share failures (e.g. an expiry race) are collected, not
-   * short-circuited — the rest still get accepted. Accept-all = pass every current pending shareId.
+   * Accepts one or more pending shares. What accepting does depends on what the share carries: a
+   * pack of projects is duplicated into this user's project list, while a template is added to this
+   * user's own template list and builds nothing — the recipient decides later whether to apply it.
+   * Either way the decision is recorded per share, and a read-write share also gets the
+   * donor-visible acceptance written onto its envelope. Per-share failures (e.g. an expiry race)
+   * are collected, not short-circuited — the rest still get accepted. Accept-all = pass every
+   * current pending shareId.
    *
    * `rename` resolves label collisions (same callback contract as {@link duplicateProject}), but
-   * the source lives in the envelope tree, so accept calls the low-level mutator directly.
+   * the source lives in the envelope tree, so accept calls the low-level mutator directly. It does
+   * not apply to a template share, whose label is not required to be unique.
    */
   public async acceptShare(
     shareIds: ShareId[],
     rename?: (previousLabel: string, existingLabels: string[]) => string,
-  ): Promise<{ accepted: ProjectId[]; failed: { shareId: ShareId; error: string }[] }> {
+  ): Promise<{
+    accepted: ProjectId[];
+    acceptedTemplates: TemplateId[];
+    failed: { shareId: ShareId; error: string }[];
+  }> {
     const live = await this.resolveLiveEnvelopes();
     const login = this.currentUserLogin;
 
     const accepted: ProjectId[] = [];
+    const acceptedTemplates: TemplateId[] = [];
     const failed: { shareId: ShareId; error: string }[] = [];
 
     for (const shareId of shareIds) {
@@ -1012,6 +1353,36 @@ export class MiddleLayer {
       }
       try {
         const now = Date.now();
+        const payload = envelope.data.payload;
+
+        if (payload.kind === "template") {
+          const rid = await this.pl.withWriteTx("MLAcceptTemplateShare", async (tx) => {
+            // The template lands on this user's own shelf, keeping who sent it as its provenance.
+            const tpl = createTemplate(tx, this.templateListResourceId, payload.label, {
+              schemaVersion: 1,
+              document: payload.document,
+              sender: payload.from,
+            });
+
+            writeSharingDecision(tx, this.sharingStateResourceId, shareId, {
+              decision: "accepted",
+              timestamp: now,
+              envelopeSharedAt: envelope.data.sharedAt,
+              acceptedProjects: [], // a template share creates no project
+            });
+
+            // No acceptance/{login} on the envelope: the grant is read-only, so the write would be
+            // refused by the backend, and the donor deliberately gave up that receipt.
+            await tx.commit();
+            return await tpl.globalId;
+          });
+
+          const templateId = resourceIdToString(rid) as TemplateId;
+          this.templateIdCache.set(templateId, rid);
+          acceptedTemplates.push(templateId);
+          continue;
+        }
+
         const createdRids = await this.pl.withWriteTx("MLAcceptShare", async (tx) => {
           const created = await copyEnvelopeProjectsIntoList(
             tx,
@@ -1045,8 +1416,12 @@ export class MiddleLayer {
       }
     }
 
-    await Promise.all([this.projectListTree.refreshState(), this.sharingStateTree.refreshState()]);
-    return { accepted, failed };
+    await Promise.all([
+      this.projectListTree.refreshState(),
+      this.templateListTree.refreshState(),
+      this.sharingStateTree.refreshState(),
+    ]);
+    return { accepted, acceptedTemplates, failed };
   }
 
   /** Records rejection of a pending share; it never surfaces again. */
@@ -1104,6 +1479,7 @@ export class MiddleLayer {
           const rd = await tx.getResourceData(f.value, false);
           if (rd.data === undefined) continue;
           const envData = decodeEnvelopeData(rd.data);
+          if (envData === undefined) continue;
           if (envData.expiresAt === null) continue; // never expires
           if (envData.expiresAt <= now) toDelete.push({ fieldName: f.name });
         }
@@ -1132,6 +1508,36 @@ export class MiddleLayer {
 
   private readonly openedProjects = new Map<ProjectId, Project>();
 
+  /** Snapshot writes started by {@link closeProject} and not yet finished. Held only so
+   *  {@link close} can give them a bounded chance to land. */
+  private readonly pendingSnapshotWrites = new Set<Promise<void>>();
+
+  private trackSnapshotWrite(write: Promise<void>): void {
+    this.pendingSnapshotWrites.add(write);
+    void write.finally(() => this.pendingSnapshotWrites.delete(write));
+  }
+
+  /** Waits for close-boundary snapshot writes that are already running, up to `timeoutMs`.
+   *
+   * This starts no work: quitting still performs no snapshot of its own. It only lets a write
+   * that a project close already began finish, so closing a project and immediately quitting
+   * does not routinely lose it. Bounded, because a wedged filesystem must not hang the quit,
+   * and losing the write costs one cold open rather than any correctness. */
+  private async drainSnapshotWrites(timeoutMs: number): Promise<void> {
+    if (this.pendingSnapshotWrites.size === 0) return;
+
+    let timer: NodeJS.Timeout | undefined;
+    const expiry = new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, timeoutMs);
+      timer.unref?.();
+    });
+    try {
+      await Promise.race([Promise.allSettled(this.pendingSnapshotWrites), expiry]);
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+    }
+  }
+
   /** Opens a project, and starts corresponding project maintenance loop. */
   public async openProject(id: ProjectId): Promise<void> {
     if (this.openedProjects.has(id)) throw new Error(`Project ${id} already opened`);
@@ -1145,6 +1551,16 @@ export class MiddleLayer {
     const prj = this.openedProjects.get(id);
     if (prj === undefined) throw new Error(`Project ${id} not found among opened projects`);
     this.openedProjects.delete(id);
+
+    // Snapshot before destroy, and here rather than inside destroy(): destroy() is also what
+    // application shutdown runs, and quitting should perform no snapshot work. Terminating the
+    // tree invalidates it, so the state has to be taken first either way.
+    //
+    // Started, not awaited. The capture happens synchronously inside, which is the part that
+    // needs the tree alive; the encode and write are up to ten megabytes of work that closing a
+    // project should not sit behind. Kept so shutdown can drain it.
+    this.trackSnapshotWrite(prj.snapshotOnClose());
+
     await prj.destroy();
     this.openedProjectsList.setValue([...this.openedProjects.keys()]);
   }
@@ -1161,6 +1577,13 @@ export class MiddleLayer {
     return this.openedProjects.has(id);
   }
 
+  /** Counters for the persisted project tree mirrors, or undefined when they are switched off.
+   *  Reads and hits are what show whether a reopen was actually warm, and the miss breakdown
+   *  says why it was not. */
+  public get treeSnapshotStats(): Readonly<TreeSnapshotStat> | undefined {
+    return this.env.treeSnapshots?.getStats();
+  }
+
   /**
    * Deallocates all runtime resources consumed by this object and awaits
    * actual termination of event loops and other processes associated with
@@ -1172,10 +1595,12 @@ export class MiddleLayer {
     // this.env.quickJs;
     await Promise.all([
       this.projectListTree.terminate(),
+      this.templateListTree.terminate(),
       this.sharingOutboxTree.terminate(),
       this.sharingStateTree.terminate(),
       this.pendingSharesTree.terminate(),
     ]);
+    await this.drainSnapshotWrites(SNAPSHOT_DRAIN_TIMEOUT_MS);
     await this.env.dispose();
     await this.pl.close();
   }
@@ -1218,7 +1643,7 @@ export class MiddleLayer {
     )
       ops.defaultTreeOptions.traversalMode = getDebugFlags().treeTraversalMode;
 
-    const { projects, sharingOutbox, sharingState } = await pl.withWriteTx(
+    const { projects, templates, sharingOutbox, sharingState } = await pl.withWriteTx(
       "MLInitialization",
       async (tx) => {
         // Lazily create each clientRoot-attached singleton resource. Returns the existing
@@ -1240,6 +1665,7 @@ export class MiddleLayer {
         };
 
         const projectsR = await lazyInit(ProjectsField, ProjectsResourceType);
+        const templatesR = await lazyInit(TemplatesField, TemplatesResourceType);
         const outboxR = await lazyInit(SharingOutboxField, SharingOutboxResourceType);
         const stateR = await lazyInit(SharingStateField, SharingStateResourceType);
 
@@ -1247,6 +1673,7 @@ export class MiddleLayer {
 
         return {
           projects: projectsR.existing ?? (await projectsR.ref!.globalId),
+          templates: templatesR.existing ?? (await templatesR.ref!.globalId),
           sharingState: stateR.existing ?? (await stateR.ref!.globalId),
           sharingOutbox: outboxR.existing ?? (await outboxR.ref!.globalId),
         };
@@ -1283,6 +1710,24 @@ export class MiddleLayer {
 
     const serviceRegistry = createModelServiceRegistry({ logger });
 
+    const treeSnapshots = TreeSnapshotStore.create(pl, {
+      dir: ops.treeSnapshotPath,
+      maxSizeBytes: ops.treeSnapshotOps.maxSizeBytes,
+      enabled: ops.treeSnapshotOps.enabled,
+      logger,
+    });
+    if (ops.treeSnapshotOps.enabled) {
+      // Housekeeping before any project opens: drop snapshots from other builds, backends and
+      // users, then trim to the ceiling.
+      await treeSnapshots?.evict();
+    } else {
+      // Switched off, so reclaim what earlier sessions left on disk. The reason to reach for
+      // this switch is usually the disk itself, and leaving the files behind would answer the
+      // wrong half of that complaint. Keyed on the setting, not on the store being absent: it
+      // is also absent for an impersonated client, whose session must not delete anything.
+      await TreeSnapshotStore.purge(ops.treeSnapshotPath, logger);
+    }
+
     const env: MiddleLayerEnvironment = {
       pl,
       blockEventDispatcher: new BlockEventDispatcher(),
@@ -1303,6 +1748,7 @@ export class MiddleLayer {
       serviceRegistry,
       quickJs,
       projectHelper: new ProjectHelper(quickJs, logger),
+      treeSnapshots,
       dispose: async () => {
         await serviceRegistry.dispose();
         await retryHttpDispatcher.destroy();
@@ -1312,6 +1758,7 @@ export class MiddleLayer {
 
     const openedProjects = new WatchableValue<ProjectId[]>([]);
     const projectListTC = await createProjectList(pl, projects, openedProjects, env);
+    const templateListTC = await createTemplateList(pl, templates, env);
 
     // Project sharing trees and reactive views.
     const outgoingTC = await createOutgoingShares(pl, sharingOutbox, env);
@@ -1329,18 +1776,25 @@ export class MiddleLayer {
       driverKit,
       driverKit.signer,
       projects,
+      templates,
       sharingOutbox,
       sharingState,
       openedProjects,
       projectListTC.tree,
+      templateListTC.tree,
       outgoingTC.tree,
       sharingStateTree,
       pendingSharesTree,
       v2RegistryProvider,
       projectListTC.computable,
+      templateListTC.computable,
       outgoingTC.computable,
       pendingShares,
       liveEnvelopes,
     );
   }
 }
+
+//
+// Internals
+//
