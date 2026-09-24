@@ -1,0 +1,61 @@
+// proc_batch_body_batch_tag_blob — passContent=false counterpart of
+// proc_batch_body_batch_tag, on the all-parquet path.
+//
+// Receives __value__ as a Blob parquet batch file (batch.format="parquet", which
+// requires passContent=false), so the batch fingerprint cannot be computed in
+// Tengo — it is derived with pt instead: min("key") over a constant window,
+// which broadcasts the batch's smallest key onto every row of that batch.
+// Batches are sliced contiguously from a batch-key sort, so the smallest key is
+// the batch's first key and therefore a stable per-batch identifier.
+//
+// This covers the pt re-slicing route in :pframes.process-pcolumn-batch-split,
+// which recomputes batchCount from the *actual* record count rather than the
+// orchestrator's upper bound — a different maxBatches code path than the
+// passContent=true body.
+//
+// Emits the identical tagged table twice: "out.parquet" feeds the
+// xsvType="parquet" output under test, and "out.tsv" feeds a twin tsv output.
+// The twin exists because xsvType="parquet" forces storageFormat="Parquet"
+// (asserted in pframes.xsv-import-file), and the tests have no parquet reader —
+// so the parquet column can only be checked structurally. Both outputs come out
+// of the same body invocations, so the tsv twin reports exactly the batch
+// decomposition the parquet output received.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+self.defineOutputs(
+	"pq",
+	"tsv"
+)
+
+self.body(func(inputs) {
+	batchFile := inputs[pConstants.VALUE_FIELD_NAME]
+
+	if !smart.isReference(batchFile) {
+		ll.panic("expected __value__ to be a file reference (passContent=false), got: %v", batchFile)
+	}
+
+	// Batch file columns: "key" (batch-key axis) + "heavyChain" (value).
+	wf := pt.workflow()
+	df := wf.frame(batchFile, { xsvType: "parquet" })
+
+	// A constant partition makes the window span the whole batch — pt's min()
+	// requires .over() to define a window, and there is no whole-frame form.
+	df = df.withColumns(pt.lit(1).alias("__all"))
+	df = df.withColumns(pt.col("key").min().over("__all").alias("batchTag"))
+
+	tagged := df.select(pt.col("key"), pt.col("batchTag"))
+	tagged.save("out.parquet", { format: "parquet" })
+	tagged.save("out.tsv", { format: "tsv" })
+
+	res := wf.run()
+
+	return {
+		pq: res.getFile("out.parquet"),
+		tsv: res.getFile("out.tsv")
+	}
+})

@@ -37,6 +37,11 @@ self.body(func(inputs) {
 
 	batchCount := params.batchCount
 	batchSize := params.batchSize
+	// This scope's share of batch.maxBatches. 0 / absent means uncapped.
+	scopeMaxBatches := params.scopeMaxBatches
+	if is_undefined(scopeMaxBatches) {
+		scopeMaxBatches = 0
+	}
 	eph := params.eph
 	outputs := params.outputs
 	formatExt := params.formatExt
@@ -127,14 +132,19 @@ self.body(func(inputs) {
 		}
 	}
 
-	// passContent=false: orchestrator emitted one joined file + a tiny count
-	// content. Read the count to compute the true batchCount (orchestrator's
-	// `params.batchCount` is a partition-count upper-bound and may underestimate
-	// row count for parquet/json-partitioned data), then re-slice via an
-	// internal pt run. The joined file is materialized but never read into
-	// Tengo memory — it flows through pt as an input frame.
-	batchFileRefs := undefined
-	if !passContent {
+	// True row count for this scope.
+	//
+	// `params.batchCount` cannot be trusted: the orchestrator derives it from
+	// `recordsInGroup`, which returns the number of PARTITIONS (not rows) for
+	// JsonPartitioned / ParquetPartitioned inputs and partitions/2 for
+	// BinaryPartitioned — only inline PColumnData/Json yields an exact count.
+	// For a single-partition column of 500k rows the upper bound is 1, so both
+	// the orchestrator's batch count and its maxBatches decision are wrong by
+	// orders of magnitude. Recompute from the real count in both modes.
+	actualRecords := 0
+	if passContent {
+		actualRecords = len(dataLines)
+	} else {
 		ll.assert(!is_undefined(inputs.joinedFile),
 			"passContent=false but joinedFile input is missing")
 		ll.assert(!is_undefined(inputs.countContent),
@@ -145,7 +155,6 @@ self.body(func(inputs) {
 			countText = string(countText)
 		}
 		countLines := text.split(text.trim_space(countText), "\n")
-		actualRecords := 0
 		if len(countLines) >= 2 {
 			lastFields := text.split(countLines[len(countLines) - 1], "\t")
 			parsed := json.decode(text.trim_space(lastFields[len(lastFields) - 1]))
@@ -153,11 +162,28 @@ self.body(func(inputs) {
 				actualRecords = parsed
 			}
 		}
-		batchCount = (actualRecords + batchSize - 1) / batchSize
-		if batchCount == 0 {
-			batchCount = 1
-		}
+	}
 
+	// Enforce this scope's share of batch.maxBatches. The orchestrator's
+	// pre-estimate runs before any row count exists and silently does nothing
+	// whenever its upper bound undercounts, so this is where the cap actually
+	// binds. Inflation is deterministic — same rows produce the same count, the
+	// same size and the same boundaries — so per-batch dedup across reruns is
+	// preserved.
+	batchCount = (actualRecords + batchSize - 1) / batchSize
+	if scopeMaxBatches > 0 && batchCount > scopeMaxBatches && actualRecords > 0 {
+		batchSize = (actualRecords + scopeMaxBatches - 1) / scopeMaxBatches
+		batchCount = (actualRecords + batchSize - 1) / batchSize
+	}
+	if batchCount == 0 {
+		batchCount = 1
+	}
+
+	// passContent=false: re-slice the joined file via an internal pt run. The
+	// file is materialized but never read into Tengo memory — it flows through
+	// pt as an input frame.
+	batchFileRefs := undefined
+	if !passContent {
 		sliceWf := pt.workflow()
 		sliceDf := sliceWf.frame(inputs.joinedFile, { xsvType: formatExt })
 		batchFileNames := []

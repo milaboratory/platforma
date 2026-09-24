@@ -1,0 +1,102 @@
+test := import(":test")
+f := import(":exec.formula")
+units := import(":units")
+sizing := import(":pt.sizing")
+
+// Evaluate a sizing formula the way exec.tpl does: resolve the metric against a file
+// list, then evaluate with a resolver that reports a chosen total size.
+_evalAt := func(formula, inputBytes) {
+	resolved := f.resolveAst(formula, {}, ["in.tsv"])
+	return f._internal.evaluate(resolved, {
+		size:      func(files) { return inputBytes },
+		lineCount: func(files) { return 0 }
+	})
+}
+
+// inputBytes stays an integer throughout: the evaluator asserts integer operands, and
+// a float would silently change the arithmetic it is being checked against.
+_ram := func(inputBytes, memFloor) {
+	return _evalAt(sizing.ramFormula(memFloor), inputBytes)
+}
+
+_cpu := func(inputBytes) {
+	return _evalAt(sizing.cpuFormula(), inputBytes)
+}
+
+GiB := units.GiB
+
+// ---- ram: the documented curve --------------------------------------------
+// ram = between(2 GiB + 6 * size, 2 GiB, 256 GiB)
+
+TestRamFloorBinds := func() {
+	// At zero input the intercept alone is the floor.
+	test.isEqual(2 * GiB, _ram(0, undefined))
+}
+
+TestRamSlopeGoverns := func() {
+	test.isEqual(8 * GiB, _ram(1 * GiB, undefined))    //  2 + 6*1
+	test.isEqual(26 * GiB, _ram(4 * GiB, undefined))   //  2 + 6*4
+	test.isEqual(50 * GiB, _ram(8 * GiB, undefined))   //  2 + 6*8
+}
+
+TestRamBelowOldCeilingStillGrows := func() {
+	// 15.5 GiB is where the previous 64 GiB ceiling used to bind. The request must
+	// now keep growing past it rather than flatten.
+	test.isEqual(95 * GiB, _ram(31 * GiB / 2, undefined))
+	test.isTrue(_ram(31 * GiB / 2, undefined) > 64 * GiB)
+}
+
+TestRamCapBinds := func() {
+	// The cap binds from (256 - 2) / 6 = 42.33 GiB of input upward.
+	test.isEqual(sizing.RAM_CAP_GIB * GiB, _ram(50 * GiB, undefined))
+	test.isEqual(sizing.RAM_CAP_GIB * GiB, _ram(500 * GiB, undefined))
+}
+
+// ---- ram: memFloor --------------------------------------------------------
+
+TestMemFloorRaisesTheLowerBound := func() {
+	// Below the crossover the floor wins, so the grant matches the old flat pin.
+	test.isEqual(12 * GiB, _ram(0, 12 * GiB))
+	test.isEqual(12 * GiB, _ram(1 * GiB, 12 * GiB))
+}
+
+TestMemFloorDoesNotCapGrowth := func() {
+	// Above (12 - 2) / 6 = 1.67 GiB the formula governs again.
+	test.isEqual(26 * GiB, _ram(4 * GiB, 12 * GiB))
+	test.isEqual(122 * GiB, _ram(20 * GiB, 12 * GiB))
+}
+
+TestMemFloorAtTheCapIsAccepted := func() {
+	// A floor exactly at the ceiling is legal, and pins the grant there because the
+	// formula can no longer exceed it. That is the ceiling doing its job.
+	test.isEqual(sizing.RAM_CAP_GIB * GiB, _ram(0, sizing.RAM_CAP_GIB * GiB))
+	test.isEqual(sizing.RAM_CAP_GIB * GiB, _ram(500 * GiB, sizing.RAM_CAP_GIB * GiB))
+}
+
+// A floor above the ceiling is rejected by an ll.assert in pt.sizing and in the
+// .memFloor() setter. ll.assert aborts the template rather than returning an error, so
+// there is no way to assert the rejection here -- is_error cannot catch it. Left
+// untested on purpose; the guard exists because between() asserts lo <= hi, and because
+// raising the ceiling to match would return the floor for every input, which is the flat
+// pin memFloor exists to avoid.
+
+// ---- cpu ------------------------------------------------------------------
+// cpu = between(2 + size / 16 GiB, 2, 8)
+
+TestCpuCurve := func() {
+	test.isEqual(sizing.CPU_MIN, _cpu(0))
+	test.isEqual(2, _cpu(15 * GiB))                 // 2 + floor(15/16)
+	test.isEqual(3, _cpu(16 * GiB))                 // 2 + 1
+	test.isEqual(sizing.CPU_MAX, _cpu(1000 * GiB))  // clamped
+}
+
+// ---- an explicit mem() is not this module's business ----------------------
+
+TestConstantsMatchTheDocumentedFormula := func() {
+	test.isEqual(2, sizing.RAM_INTERCEPT_GIB)
+	test.isEqual(6, sizing.RAM_SLOPE)
+	test.isEqual(2, sizing.RAM_FLOOR_GIB)
+	test.isEqual(256, sizing.RAM_CAP_GIB)
+	test.isEqual(2, sizing.CPU_MIN)
+	test.isEqual(8, sizing.CPU_MAX)
+}

@@ -198,6 +198,27 @@ describe("problems", () => {
     expect(result.problems[0].error).toContain("declares no kind");
   });
 
+  test("a problem raised here carries the block's label from the walk", () => {
+    // Labels distinct from ids, or the assertion could not tell a label carried through from
+    // an id copied into the field.
+    const structure: ProjectStructure = {
+      groups: [
+        {
+          id: "g1",
+          label: "G1",
+          blocks: [{ id: "legacy", label: "Old Aligner", renderingMode: "Heavy" }],
+        },
+      ],
+    };
+    const result = exportOf(structure, { legacy: ok({}) }, () => undefined);
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.problems).toEqual([
+      { blockId: "legacy", blockLabel: "Old Aligner", error: expect.stringContaining("no kind") },
+    ]);
+  });
+
   test("a malformed stored kind reference is a problem, not a throw", () => {
     const result = exportOf(
       simpleStructure("a"),
@@ -385,14 +406,16 @@ describe("assembleProjectTemplateV1", () => {
   test("carries the walk's problems through unchanged", () => {
     const { document, problems } = assembleProjectTemplateV1(
       {
-        entries: [{ blockId: "a", params: {} }],
-        problems: [{ blockId: "ghost", error: "state unavailable" }],
+        entries: [{ blockId: "a", blockLabel: "a", params: {} }],
+        problems: [{ blockId: "ghost", blockLabel: "ghost", error: "state unavailable" }],
       },
       kindPerBlock,
       () => registrySpec,
     );
 
-    expect(problems).toEqual([{ blockId: "ghost", error: "state unavailable" }]);
+    expect(problems).toEqual([
+      { blockId: "ghost", blockLabel: "ghost", error: "state unavailable" },
+    ]);
     expect(document.blocks.map((b) => b.id)).toEqual(["a"]);
   });
 });

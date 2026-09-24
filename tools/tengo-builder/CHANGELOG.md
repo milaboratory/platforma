@@ -1,5 +1,94 @@
 # @platforma-sdk/tengo-builder
 
+## 4.1.2
+
+### Patch Changes
+
+- b60883e: `pl-tengo imports` no longer reports an import whose alias is called or passed as a value
+
+  `findUnusedImports` counted an import as used only when its alias was followed by a dot.
+  A lib exporting a bare function and called directly — `calculateExportSpecs(x)` rather than
+  `lib.calculateExportSpecs(x)` — never matched, so `pl-tengo imports` deleted the import line
+  and the `pl-tengo check` that follows it failed to compile the file it had just edited.
+
+  An alias now counts as used wherever it appears as a name of its own: dereferenced, called,
+  or passed as a value. Only a longer name ending with the alias (`xtext`) and a declaration
+  that shadows it (`text := ...`) are excluded. The predicate is wider than the previous one at
+  every point, so this release can only report fewer unused imports, never more — verified as a
+  differential over 560 `.tengo` files across the block repositories: 0 newly reported, 14 files
+  no longer reported.
+
+## 4.1.1
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.27
+- @milaboratories/resolve-helper@1.1.3
+- @milaboratories/ts-helpers@1.8.6
+
+## 4.1.0
+
+### Minor Changes
+
+- 17536f5: `pl-tengo imports` replaces the clean-imports shell script.
+
+  Unused tengo imports used to be found by a bash script that only `workflow-tengo` could run.
+  It needed bash, `mapfile` and a GNU-ish `grep` and `awk`, so no block had access to it, and it
+  read the source with a plain text search. That search had no idea what a comment is, so an
+  alias left behind in a comment counted as a usage and the import survived. It also had no word
+  boundary, so `ll` looked used whenever an unrelated `xll.` appeared, and it only looked at
+  Platforma artifact imports — the whole tengo standard library was invisible to it.
+
+  The check now runs inside the builder, on the parser the compiler itself uses. Comments come
+  back empty from that parser, so an alias mentioned only in a comment is correctly reported as
+  unused. Every import is checked, the standard library included.
+
+  An import counts as used when its alias appears with a dot somewhere else in the code:
+  `text.split(...)`. A module passed around as a plain value is not recognised as a usage, so
+  such an import is reported. This is deliberate. Keeping an import the source no longer needs
+  costs nothing at runtime, while dropping one it does need breaks the build.
+
+  The command has three modes. `--check` reports and fails without touching a file, `--fix`
+  removes the unused imports, and with neither option it fixes the sources for a person and
+  checks them for CI. CI must report the problem, not make a change nobody reviewed.
+
+  A source the parser cannot read is reported and left as it is, while the other sources are
+  still cleaned and the command exits with an error. One broken source no longer blocks the
+  cleanup of everything else, and `pl-tengo check` reports the parse problem in full right after.
+
+  `workflow-tengo` now calls the command instead of the script, so both `scripts/clean-imports.sh`
+  and the `scripts/build.sh` wrapper around it are gone.
+
+## 4.0.28
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.26
+
+## 4.0.27
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.25
+
+## 4.0.26
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.24
+
+## 4.0.25
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.23
+
+## 4.0.24
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.22
+
 ## 4.0.23
 
 ### Patch Changes

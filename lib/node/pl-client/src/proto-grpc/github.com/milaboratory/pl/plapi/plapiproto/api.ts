@@ -1025,6 +1025,32 @@ export interface TxAPI_Open_Response {
      * @generated from protobuf field: MiLaboratories.PL.API.Tx tx = 1
      */
     tx?: Tx;
+    /**
+     * The token to store and send back as changed_since_token on any later Tree
+     * request. Everything the token denotes has finished committing, and it is
+     * sampled as this transaction opens, so a write that had not committed by
+     * then sits above it while one that had is visible to this transaction's
+     * reads. One token per transaction, however many tree reads it issues.
+     *
+     * Absent on a WRITABLE open, which is issued no token: the walk would see
+     * that transaction's own uncommitted writes (see changed_since_token).
+     *
+     * Also accepted by ResourceAPI.Get and ResourceKVAPI.List, which apply the
+     * same per-resource emission rule.
+     *
+     * Store it only after a whole tree response has been applied successfully. A
+     * client that keeps it after a partial apply will never be sent the
+     * resources it dropped. Clear it on tree rebuild, on a root-set change, and
+     * on any change to the traversal shape it was earned under - the token
+     * carries no request shape, so that is the client's to enforce.
+     *
+     * Opaque, with one promise: two tokens from one server instance may be
+     * compared for order, so a client can tell which of the two it holds is the
+     * later. Never parse or construct one, and never compare across instances.
+     *
+     * @generated from protobuf field: bytes next_since_token = 2
+     */
+    nextSinceToken: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.TxAPI.Commit
@@ -1507,12 +1533,36 @@ export interface ResourceAPI_Get_Request {
      * @generated from protobuf field: bool show_soft_deletes = 4
      */
     showSoftDeletes: boolean;
+    /**
+     * Same token and same emission rule as ResourceAPI.Tree's
+     * changed_since_token: the response carries a resource only when its own
+     * change token is newer than the point this one denotes, and otherwise
+     * comes back with resource unset. Empty or absent (the default) always
+     * returns the body.
+     *
+     * A client on a per-resource read path takes this so it answers the same
+     * way the tree does; one that wants a body regardless simply omits it.
+     * There is no unconditional_depth here - nothing traverses, so there is no
+     * depth to bound.
+     *
+     * Ignored on a WRITABLE transaction, for the reason given on
+     * ResourceAPI.Tree.Request.changed_since_token. Gated by the same
+     * "treeChangedSince:v1" capability, whose name is narrower than what it
+     * covers.
+     *
+     * @generated from protobuf field: bytes changed_since_token = 5
+     */
+    changedSinceToken: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.Get.Response
  */
 export interface ResourceAPI_Get_Response {
     /**
+     * Unset when the request carried a changed_since_token and this resource
+     * has not changed since the point it denotes - see changed_since_token.
+     * Populated on every other response.
+     *
      * @generated from protobuf field: MiLaboratories.PL.API.Resource resource = 1
      */
     resource?: Resource;
@@ -1805,7 +1855,15 @@ export interface ResourceAPI_Tree_Request {
      * outputs_locked (bool). Old servers ignore this field and never
      * set traverse_was_stopped.
      *
-     * @generated from protobuf field: optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter traverse_stop_rules = 7
+     * Ignored on a request carrying a usable changed_since_token: a delta walk
+     * is pruned by the change token alone, and traverse_was_stopped is never
+     * set on it.
+     *
+     * Deprecated: prune with changed_since_token instead. Still honoured on a
+     * request without a token; scheduled for removal once no client sends it.
+     *
+     * @deprecated
+     * @generated from protobuf field: optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter traverse_stop_rules = 7 [deprecated = true]
      */
     traverseStopRules?: ResourceAPI_Tree_Filter;
     /**
@@ -1826,6 +1884,89 @@ export interface ResourceAPI_Tree_Request {
      * @generated from protobuf field: bool show_soft_deletes = 9
      */
     showSoftDeletes: boolean;
+    /**
+     * An opaque continuation token, taken verbatim from the next_since_token an
+     * earlier transaction's Open response carried. The server returns bodies
+     * only for resources that changed after the point this token denotes; every
+     * other visited resource is passed over in silence, producing no frame at
+     * all. Empty or absent (the default) requests the full tree.
+     *
+     * A response therefore contains exactly the resources whose own change
+     * token is newer than the point this one denotes, and nothing else. Two
+     * obligations follow, both of them the client's:
+     *
+     *   - Absence is not removal. A resource missing from a delta response is
+     *     either unchanged or gone, and the two are indistinguishable. Detect
+     *     removals another way, or poll without a token to reconcile.
+     *
+     *   - A body may reference resources the response does not carry. A field
+     *     repointed at an older resource, or a subtree the traversal newly
+     *     reaches, keeps its old change token and is not sent - this poll or
+     *     any later one, since its token never moves again. The reference field
+     *     carries the target's resource ID and a valid signature for it, and
+     *     every resource the walk visited stays readable by ID inside the
+     *     walking transaction, frame or no frame. Read them with one Tree
+     *     request naming those IDs in seeds under an unconditional_depth, or
+     *     one at a time with ResourceAPI.Get.
+     *
+     * The traversal does not descend below an unchanged resource: the walk ends
+     * on that branch, so a change beneath an unchanged resource arrives only
+     * once something on the path down to it changes as well. Absence is not
+     * removal for that reason too. A response in which nothing changed carries
+     * no frames at all and arrives as an empty multi-message.
+     *
+     * traverse_stop_rules are ignored on a request carrying a usable token: the
+     * token is the only pruning, and traverse_was_stopped is never set.
+     *
+     * Clients must not parse or construct this value: its encoding is
+     * server-private and may change without a wire version bump. Two tokens
+     * issued by one server instance may be compared for order, so a client can
+     * tell which of the two it holds is the later; comparison across instances
+     * is undefined. Store the token only after applying a whole response
+     * successfully.
+     *
+     * A token the server cannot use is answered with the full tree, never with
+     * an error, so it is always safe to send back whatever was last received.
+     *
+     * The token carries no request shape and cannot: it is minted as a
+     * transaction OPENS, before any tree request exists, and one transaction
+     * may issue many reads with different depths, filters and seeds. So
+     * discarding it when the traversal shape changes - max_depth, include_kv,
+     * show_soft_deletes, field_filter, traverse_stop_rules, or the seed set -
+     * is the client's obligation. Keeping it across such a change silently
+     * skips resources the new shape reaches. Other seeds and an
+     * unconditional_depth under the same token are NOT a shape change: what
+     * they return is dated the same as the poll they came with.
+     *
+     * Ignored on a WRITABLE transaction, which also receives no
+     * next_since_token: the walk sees that transaction's uncommitted writes, so
+     * delta skipping there could pin a body describing state that never
+     * committed. Poll from a read-only transaction.
+     *
+     * Servers advertise support via "treeChangedSince:v1" in
+     * MaintenanceAPI.Ping.Response.capabilities; old servers ignore this field
+     * and always send the full tree.
+     *
+     * @generated from protobuf field: bytes changed_since_token = 10
+     */
+    changedSinceToken: Uint8Array;
+    /**
+     * Depths at or below this one are emitted whatever changed_since_token
+     * says, the seed being depth 0. Explicitly optional: absent means no
+     * unconditional depth, which differs from 0. Ignored without
+     * changed_since_token, which already sends everything.
+     *
+     * This is how a client reads what a delta response referenced but did not
+     * carry. One Tree request naming the unknown IDs in seeds, under the same
+     * token, returns them here while everything the client already holds below
+     * the frontier stays skipped. The depth is the lever: 0 takes the seeds
+     * alone, 1 takes a level per round trip, a depth past the subtree takes it
+     * whole. Without it such a request comes back empty, and empty is
+     * indistinguishable from not-found.
+     *
+     * @generated from protobuf field: optional uint32 unconditional_depth = 11
+     */
+    unconditionalDepth?: number;
 }
 /**
  * A single entry point for multi-root tree traversal.
@@ -2022,7 +2163,8 @@ export interface ResourceAPI_Tree_Response {
     /**
      * Full resource payload. Absent on stop-marker frames (when the server
      * advertises `treeStopMarker:v1` and traverse_was_stopped is true).
-     * Always populated on normal frames.
+     * Populated on every other frame. A resource the client already holds
+     * unchanged produces no frame at all - see changed_since_token.
      *
      * @generated from protobuf field: optional MiLaboratories.PL.API.Resource resource = 1
      */
@@ -2048,8 +2190,9 @@ export interface ResourceAPI_Tree_Response {
      */
     traverseWasStopped: boolean;
     /**
-     * Populated only on stop-marker frames (resource is unset).
-     * Zero / empty on normal frames; use resource.resource_id instead.
+     * Populated on frames where resource is unset - stop-marker and unchanged
+     * frames. Zero / empty on frames carrying a resource; use
+     * resource.resource_id instead.
      *
      * @generated from protobuf field: uint64 resource_id = 4
      */
@@ -2915,6 +3058,25 @@ export interface ResourceKVAPI_List_Request {
      * @generated from protobuf field: uint32 limit = 3
      */
     limit: number;
+    /**
+     * Same token and same emission rule as ResourceAPI.Tree's
+     * changed_since_token: the listing runs only when the resource's own change
+     * token is newer than the point this one denotes, and otherwise comes back
+     * with no records at all. Empty or absent (the default) always lists.
+     *
+     * No records therefore means the metadata is unchanged, empty, or gone,
+     * indistinguishably - which costs nothing, because a client only sends the
+     * token for a resource whose metadata it already holds. One that wants the
+     * listing regardless omits it.
+     *
+     * Ignored on a WRITABLE transaction, for the reason given on
+     * ResourceAPI.Tree.Request.changed_since_token. Gated by the same
+     * "treeChangedSince:v1" capability, whose name is narrower than what it
+     * covers.
+     *
+     * @generated from protobuf field: bytes changed_since_token = 5
+     */
+    changedSinceToken: Uint8Array;
 }
 /**
  * Multi-message
@@ -3631,11 +3793,19 @@ export interface AuthAPI_ListMethods_MethodInfo {
      */
     id: string;
     /**
-     * description is the human-readable label in case we'd like to render it in UI.
+     * description is the long-form human-readable text a client may render
+     * alongside the title, for example in a tooltip or under the button.
      *
      * @generated from protobuf field: string description = 7
      */
     description: string;
+    /**
+     * title is the short human-readable label a client renders for this
+     * method, for example on the sign-in button. Always set.
+     *
+     * @generated from protobuf field: string title = 9
+     */
+    title: string;
     /**
      * @generated from protobuf oneof: method
      */
@@ -3675,6 +3845,10 @@ export interface AuthAPI_BeginSSOLogin {
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.BeginSSOLogin.Request
  */
 export interface AuthAPI_BeginSSOLogin_Request {
+    /**
+     * @generated from protobuf field: optional string idp = 1
+     */
+    idp?: string;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.BeginSSOLogin.PublicPKCE
@@ -3773,6 +3947,10 @@ export interface AuthAPI_Login_BasicCredentials {
      * @generated from protobuf field: string password = 2
      */
     password: string;
+    /**
+     * @generated from protobuf field: optional string idp = 3
+     */
+    idp?: string;
 }
 /**
  * TokenCredentials accepts any opaque bearer-style string: a controller
@@ -3797,6 +3975,10 @@ export interface AuthAPI_Login_SSOCredentials {
      * @generated from protobuf field: bytes token_response = 1
      */
     tokenResponse: Uint8Array;
+    /**
+     * @generated from protobuf field: optional string idp = 2
+     */
+    idp?: string;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.Login.Request
@@ -4229,13 +4411,88 @@ export interface AuthAPI_ListUserResources_SharedResource {
  */
 export interface AuthAPI_User {
     /**
-     * login is the stable identifier of the user — the grant target and the
-     * GetUserRoot key. Further fields (e.g. first name, last name, email) may
-     * be added later without breaking compatibility.
+     * login is the user's provider-facing login identifier and the value clients
+     * pass as a grant target / impersonation subject. It is the only identity a
+     * client needs: the backend resolves it to an internal id that is never
+     * exposed over the API.
      *
      * @generated from protobuf field: string login = 1
      */
     login: string;
+    /**
+     * display_name is the user's human-readable name, mapped from the provider on
+     * login. May be empty for migrated users who have not logged in since upgrade.
+     *
+     * @generated from protobuf field: string display_name = 2
+     */
+    displayName: string;
+    /**
+     * email is the user's email, mapped from the provider on login. May be empty
+     * when the provider does not supply it or the mapping is disabled.
+     *
+     * @generated from protobuf field: string email = 3
+     */
+    email: string;
+    /**
+     * attributes carries the remaining provider-mapped attributes the client
+     * configured (e.g. full_name, external_id, custom fields), keyed by attribute
+     * name. The default attributes (login, display_name, email) are promoted to
+     * their own fields above and are not repeated here.
+     *
+     * @generated from protobuf field: map<string, string> attributes = 4
+     */
+    attributes: {
+        [key: string]: string;
+    };
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.DeleteUser
+ */
+export interface AuthAPI_DeleteUser {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.DeleteUser.Request
+ */
+export interface AuthAPI_DeleteUser_Request {
+    /**
+     * login of the user to delete. Resolved the way an admin-supplied grant target is:
+     * a point lookup on the identity index, which carries no provider id - so an account
+     * left behind by a provider that has since been removed from the configuration is
+     * reachable too.
+     *
+     * @generated from protobuf field: string login = 1
+     */
+    login: string;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.DeleteUser.Response
+ */
+export interface AuthAPI_DeleteUser_Response {
+    /**
+     * root resource the user owned; 0 when the user had none.
+     *
+     * @generated from protobuf field: uint64 user_root_id = 1
+     */
+    userRootId: bigint;
+    /**
+     * whether that root resource was deleted.
+     *
+     * @generated from protobuf field: bool user_root_deleted = 2
+     */
+    userRootDeleted: boolean;
+    /**
+     * grants revoked, the user-root self-grant included.
+     *
+     * @generated from protobuf field: uint32 revoked_grants = 3
+     */
+    revokedGrants: number;
+    /**
+     * identity-index entries removed: the login, the email and any alternative of either
+     * that resolved to this account.
+     *
+     * @generated from protobuf field: uint32 removed_identity_index_entries = 4
+     */
+    removedIdentityIndexEntries: number;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUsers
@@ -5998,11 +6255,13 @@ export const TxAPI_Open_Request = new TxAPI_Open_Request$Type();
 class TxAPI_Open_Response$Type extends MessageType<TxAPI_Open_Response> {
     constructor() {
         super("MiLaboratories.PL.API.TxAPI.Open.Response", [
-            { no: 1, name: "tx", kind: "message", T: () => Tx }
+            { no: 1, name: "tx", kind: "message", T: () => Tx },
+            { no: 2, name: "next_since_token", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<TxAPI_Open_Response>): TxAPI_Open_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
+        message.nextSinceToken = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<TxAPI_Open_Response>(this, message, value);
         return message;
@@ -6014,6 +6273,9 @@ class TxAPI_Open_Response$Type extends MessageType<TxAPI_Open_Response> {
             switch (fieldNo) {
                 case /* MiLaboratories.PL.API.Tx tx */ 1:
                     message.tx = Tx.internalBinaryRead(reader, reader.uint32(), options, message.tx);
+                    break;
+                case /* bytes next_since_token */ 2:
+                    message.nextSinceToken = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -6030,6 +6292,9 @@ class TxAPI_Open_Response$Type extends MessageType<TxAPI_Open_Response> {
         /* MiLaboratories.PL.API.Tx tx = 1; */
         if (message.tx)
             Tx.internalBinaryWrite(message.tx, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        /* bytes next_since_token = 2; */
+        if (message.nextSinceToken.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.nextSinceToken);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -8374,7 +8639,8 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "load_fields", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
-            { no: 4, name: "show_soft_deletes", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+            { no: 4, name: "show_soft_deletes", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 5, name: "changed_since_token", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_Get_Request>): ResourceAPI_Get_Request {
@@ -8383,6 +8649,7 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
         message.resourceSignature = new Uint8Array(0);
         message.loadFields = false;
         message.showSoftDeletes = false;
+        message.changedSinceToken = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_Get_Request>(this, message, value);
         return message;
@@ -8403,6 +8670,9 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
                     break;
                 case /* bool show_soft_deletes */ 4:
                     message.showSoftDeletes = reader.bool();
+                    break;
+                case /* bytes changed_since_token */ 5:
+                    message.changedSinceToken = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -8428,6 +8698,9 @@ class ResourceAPI_Get_Request$Type extends MessageType<ResourceAPI_Get_Request> 
         /* bool show_soft_deletes = 4; */
         if (message.showSoftDeletes !== false)
             writer.tag(4, WireType.Varint).bool(message.showSoftDeletes);
+        /* bytes changed_since_token = 5; */
+        if (message.changedSinceToken.length)
+            writer.tag(5, WireType.LengthDelimited).bytes(message.changedSinceToken);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -9591,7 +9864,9 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
             { no: 6, name: "include_kv", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
             { no: 7, name: "traverse_stop_rules", kind: "message", T: () => ResourceAPI_Tree_Filter },
             { no: 8, name: "seeds", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ResourceAPI_Tree_SeedResource },
-            { no: 9, name: "show_soft_deletes", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
+            { no: 9, name: "show_soft_deletes", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 10, name: "changed_since_token", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 11, name: "unconditional_depth", kind: "scalar", opt: true, T: 13 /*ScalarType.UINT32*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_Tree_Request>): ResourceAPI_Tree_Request {
@@ -9601,6 +9876,7 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
         message.includeKv = false;
         message.seeds = [];
         message.showSoftDeletes = false;
+        message.changedSinceToken = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_Tree_Request>(this, message, value);
         return message;
@@ -9625,7 +9901,7 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
                 case /* bool include_kv */ 6:
                     message.includeKv = reader.bool();
                     break;
-                case /* optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter traverse_stop_rules */ 7:
+                case /* optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter traverse_stop_rules = 7 [deprecated = true] */ 7:
                     message.traverseStopRules = ResourceAPI_Tree_Filter.internalBinaryRead(reader, reader.uint32(), options, message.traverseStopRules);
                     break;
                 case /* repeated MiLaboratories.PL.API.ResourceAPI.Tree.SeedResource seeds */ 8:
@@ -9633,6 +9909,12 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
                     break;
                 case /* bool show_soft_deletes */ 9:
                     message.showSoftDeletes = reader.bool();
+                    break;
+                case /* bytes changed_since_token */ 10:
+                    message.changedSinceToken = reader.bytes();
+                    break;
+                case /* optional uint32 unconditional_depth */ 11:
+                    message.unconditionalDepth = reader.uint32();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -9661,7 +9943,7 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
         /* bool include_kv = 6; */
         if (message.includeKv !== false)
             writer.tag(6, WireType.Varint).bool(message.includeKv);
-        /* optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter traverse_stop_rules = 7; */
+        /* optional MiLaboratories.PL.API.ResourceAPI.Tree.Filter traverse_stop_rules = 7 [deprecated = true]; */
         if (message.traverseStopRules)
             ResourceAPI_Tree_Filter.internalBinaryWrite(message.traverseStopRules, writer.tag(7, WireType.LengthDelimited).fork(), options).join();
         /* repeated MiLaboratories.PL.API.ResourceAPI.Tree.SeedResource seeds = 8; */
@@ -9670,6 +9952,12 @@ class ResourceAPI_Tree_Request$Type extends MessageType<ResourceAPI_Tree_Request
         /* bool show_soft_deletes = 9; */
         if (message.showSoftDeletes !== false)
             writer.tag(9, WireType.Varint).bool(message.showSoftDeletes);
+        /* bytes changed_since_token = 10; */
+        if (message.changedSinceToken.length)
+            writer.tag(10, WireType.LengthDelimited).bytes(message.changedSinceToken);
+        /* optional uint32 unconditional_depth = 11; */
+        if (message.unconditionalDepth !== undefined)
+            writer.tag(11, WireType.Varint).uint32(message.unconditionalDepth);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -14396,7 +14684,8 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 4, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "start_from", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "limit", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+            { no: 3, name: "limit", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
+            { no: 5, name: "changed_since_token", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceKVAPI_List_Request>): ResourceKVAPI_List_Request {
@@ -14405,6 +14694,7 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
         message.resourceSignature = new Uint8Array(0);
         message.startFrom = "";
         message.limit = 0;
+        message.changedSinceToken = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceKVAPI_List_Request>(this, message, value);
         return message;
@@ -14425,6 +14715,9 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
                     break;
                 case /* uint32 limit */ 3:
                     message.limit = reader.uint32();
+                    break;
+                case /* bytes changed_since_token */ 5:
+                    message.changedSinceToken = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -14450,6 +14743,9 @@ class ResourceKVAPI_List_Request$Type extends MessageType<ResourceKVAPI_List_Req
         /* bytes resource_signature = 4; */
         if (message.resourceSignature.length)
             writer.tag(4, WireType.LengthDelimited).bytes(message.resourceSignature);
+        /* bytes changed_since_token = 5; */
+        if (message.changedSinceToken.length)
+            writer.tag(5, WireType.LengthDelimited).bytes(message.changedSinceToken);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -17694,6 +17990,7 @@ class AuthAPI_ListMethods_MethodInfo$Type extends MessageType<AuthAPI_ListMethod
         super("MiLaboratories.PL.API.AuthAPI.ListMethods.MethodInfo", [
             { no: 6, name: "id", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 7, name: "description", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 9, name: "title", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 4, name: "basic", kind: "message", oneof: "method", T: () => AuthAPI_ListMethods_BasicAuthMethod },
             { no: 5, name: "token", kind: "message", oneof: "method", T: () => AuthAPI_ListMethods_TokenAuthMethod },
             { no: 8, name: "sso", kind: "message", oneof: "method", T: () => AuthAPI_ListMethods_SSOAuthMethod }
@@ -17703,6 +18000,7 @@ class AuthAPI_ListMethods_MethodInfo$Type extends MessageType<AuthAPI_ListMethod
         const message = globalThis.Object.create((this.messagePrototype!));
         message.id = "";
         message.description = "";
+        message.title = "";
         message.method = { oneofKind: undefined };
         if (value !== undefined)
             reflectionMergePartial<AuthAPI_ListMethods_MethodInfo>(this, message, value);
@@ -17718,6 +18016,9 @@ class AuthAPI_ListMethods_MethodInfo$Type extends MessageType<AuthAPI_ListMethod
                     break;
                 case /* string description */ 7:
                     message.description = reader.string();
+                    break;
+                case /* string title */ 9:
+                    message.title = reader.string();
                     break;
                 case /* MiLaboratories.PL.API.AuthAPI.ListMethods.BasicAuthMethod basic */ 4:
                     message.method = {
@@ -17764,6 +18065,9 @@ class AuthAPI_ListMethods_MethodInfo$Type extends MessageType<AuthAPI_ListMethod
         /* MiLaboratories.PL.API.AuthAPI.ListMethods.SSOAuthMethod sso = 8; */
         if (message.method.oneofKind === "sso")
             AuthAPI_ListMethods_SSOAuthMethod.internalBinaryWrite(message.method.sso, writer.tag(8, WireType.LengthDelimited).fork(), options).join();
+        /* string title = 9; */
+        if (message.title !== "")
+            writer.tag(9, WireType.LengthDelimited).string(message.title);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -17815,7 +18119,9 @@ export const AuthAPI_BeginSSOLogin = new AuthAPI_BeginSSOLogin$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class AuthAPI_BeginSSOLogin_Request$Type extends MessageType<AuthAPI_BeginSSOLogin_Request> {
     constructor() {
-        super("MiLaboratories.PL.API.AuthAPI.BeginSSOLogin.Request", []);
+        super("MiLaboratories.PL.API.AuthAPI.BeginSSOLogin.Request", [
+            { no: 1, name: "idp", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
+        ]);
     }
     create(value?: PartialMessage<AuthAPI_BeginSSOLogin_Request>): AuthAPI_BeginSSOLogin_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
@@ -17828,6 +18134,9 @@ class AuthAPI_BeginSSOLogin_Request$Type extends MessageType<AuthAPI_BeginSSOLog
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
+                case /* optional string idp */ 1:
+                    message.idp = reader.string();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -17840,6 +18149,9 @@ class AuthAPI_BeginSSOLogin_Request$Type extends MessageType<AuthAPI_BeginSSOLog
         return message;
     }
     internalBinaryWrite(message: AuthAPI_BeginSSOLogin_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* optional string idp = 1; */
+        if (message.idp !== undefined)
+            writer.tag(1, WireType.LengthDelimited).string(message.idp);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -18158,7 +18470,8 @@ class AuthAPI_Login_BasicCredentials$Type extends MessageType<AuthAPI_Login_Basi
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.Login.BasicCredentials", [
             { no: 1, name: "login", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "password", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+            { no: 2, name: "password", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "idp", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<AuthAPI_Login_BasicCredentials>): AuthAPI_Login_BasicCredentials {
@@ -18180,6 +18493,9 @@ class AuthAPI_Login_BasicCredentials$Type extends MessageType<AuthAPI_Login_Basi
                 case /* string password */ 2:
                     message.password = reader.string();
                     break;
+                case /* optional string idp */ 3:
+                    message.idp = reader.string();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -18198,6 +18514,9 @@ class AuthAPI_Login_BasicCredentials$Type extends MessageType<AuthAPI_Login_Basi
         /* string password = 2; */
         if (message.password !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.password);
+        /* optional string idp = 3; */
+        if (message.idp !== undefined)
+            writer.tag(3, WireType.LengthDelimited).string(message.idp);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -18259,7 +18578,8 @@ export const AuthAPI_Login_TokenCredentials = new AuthAPI_Login_TokenCredentials
 class AuthAPI_Login_SSOCredentials$Type extends MessageType<AuthAPI_Login_SSOCredentials> {
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.Login.SSOCredentials", [
-            { no: 1, name: "token_response", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 1, name: "token_response", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 2, name: "idp", kind: "scalar", opt: true, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<AuthAPI_Login_SSOCredentials>): AuthAPI_Login_SSOCredentials {
@@ -18277,6 +18597,9 @@ class AuthAPI_Login_SSOCredentials$Type extends MessageType<AuthAPI_Login_SSOCre
                 case /* bytes token_response */ 1:
                     message.tokenResponse = reader.bytes();
                     break;
+                case /* optional string idp */ 2:
+                    message.idp = reader.string();
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -18292,6 +18615,9 @@ class AuthAPI_Login_SSOCredentials$Type extends MessageType<AuthAPI_Login_SSOCre
         /* bytes token_response = 1; */
         if (message.tokenResponse.length)
             writer.tag(1, WireType.LengthDelimited).bytes(message.tokenResponse);
+        /* optional string idp = 2; */
+        if (message.idp !== undefined)
+            writer.tag(2, WireType.LengthDelimited).string(message.idp);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -19930,17 +20256,142 @@ export const AuthAPI_ListUserResources_SharedResource = new AuthAPI_ListUserReso
 class AuthAPI_User$Type extends MessageType<AuthAPI_User> {
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.User", [
-            { no: 1, name: "login", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+            { no: 1, name: "login", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 2, name: "display_name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "email", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 4, name: "attributes", kind: "map", K: 9 /*ScalarType.STRING*/, V: { kind: "scalar", T: 9 /*ScalarType.STRING*/ } }
         ]);
     }
     create(value?: PartialMessage<AuthAPI_User>): AuthAPI_User {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.login = "";
+        message.displayName = "";
+        message.email = "";
+        message.attributes = {};
         if (value !== undefined)
             reflectionMergePartial<AuthAPI_User>(this, message, value);
         return message;
     }
     internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_User): AuthAPI_User {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* string login */ 1:
+                    message.login = reader.string();
+                    break;
+                case /* string display_name */ 2:
+                    message.displayName = reader.string();
+                    break;
+                case /* string email */ 3:
+                    message.email = reader.string();
+                    break;
+                case /* map<string, string> attributes */ 4:
+                    this.binaryReadMap4(message.attributes, reader, options);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    private binaryReadMap4(map: AuthAPI_User["attributes"], reader: IBinaryReader, options: BinaryReadOptions): void {
+        let len = reader.uint32(), end = reader.pos + len, key: keyof AuthAPI_User["attributes"] | undefined, val: AuthAPI_User["attributes"][any] | undefined;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case 1:
+                    key = reader.string();
+                    break;
+                case 2:
+                    val = reader.string();
+                    break;
+                default: throw new globalThis.Error("unknown map entry field for MiLaboratories.PL.API.AuthAPI.User.attributes");
+            }
+        }
+        map[key ?? ""] = val ?? "";
+    }
+    internalBinaryWrite(message: AuthAPI_User, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* string login = 1; */
+        if (message.login !== "")
+            writer.tag(1, WireType.LengthDelimited).string(message.login);
+        /* string display_name = 2; */
+        if (message.displayName !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.displayName);
+        /* string email = 3; */
+        if (message.email !== "")
+            writer.tag(3, WireType.LengthDelimited).string(message.email);
+        /* map<string, string> attributes = 4; */
+        for (let k of globalThis.Object.keys(message.attributes))
+            writer.tag(4, WireType.LengthDelimited).fork().tag(1, WireType.LengthDelimited).string(k).tag(2, WireType.LengthDelimited).string(message.attributes[k]).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.User
+ */
+export const AuthAPI_User = new AuthAPI_User$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_DeleteUser$Type extends MessageType<AuthAPI_DeleteUser> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.DeleteUser", []);
+    }
+    create(value?: PartialMessage<AuthAPI_DeleteUser>): AuthAPI_DeleteUser {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_DeleteUser>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_DeleteUser): AuthAPI_DeleteUser {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_DeleteUser, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.DeleteUser
+ */
+export const AuthAPI_DeleteUser = new AuthAPI_DeleteUser$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_DeleteUser_Request$Type extends MessageType<AuthAPI_DeleteUser_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.DeleteUser.Request", [
+            { no: 1, name: "login", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_DeleteUser_Request>): AuthAPI_DeleteUser_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.login = "";
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_DeleteUser_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_DeleteUser_Request): AuthAPI_DeleteUser_Request {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -19959,7 +20410,7 @@ class AuthAPI_User$Type extends MessageType<AuthAPI_User> {
         }
         return message;
     }
-    internalBinaryWrite(message: AuthAPI_User, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: AuthAPI_DeleteUser_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* string login = 1; */
         if (message.login !== "")
             writer.tag(1, WireType.LengthDelimited).string(message.login);
@@ -19970,9 +20421,80 @@ class AuthAPI_User$Type extends MessageType<AuthAPI_User> {
     }
 }
 /**
- * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.User
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.DeleteUser.Request
  */
-export const AuthAPI_User = new AuthAPI_User$Type();
+export const AuthAPI_DeleteUser_Request = new AuthAPI_DeleteUser_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_DeleteUser_Response$Type extends MessageType<AuthAPI_DeleteUser_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.DeleteUser.Response", [
+            { no: 1, name: "user_root_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "user_root_deleted", kind: "scalar", T: 8 /*ScalarType.BOOL*/ },
+            { no: 3, name: "revoked_grants", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
+            { no: 4, name: "removed_identity_index_entries", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_DeleteUser_Response>): AuthAPI_DeleteUser_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.userRootId = 0n;
+        message.userRootDeleted = false;
+        message.revokedGrants = 0;
+        message.removedIdentityIndexEntries = 0;
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_DeleteUser_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_DeleteUser_Response): AuthAPI_DeleteUser_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 user_root_id */ 1:
+                    message.userRootId = reader.uint64().toBigInt();
+                    break;
+                case /* bool user_root_deleted */ 2:
+                    message.userRootDeleted = reader.bool();
+                    break;
+                case /* uint32 revoked_grants */ 3:
+                    message.revokedGrants = reader.uint32();
+                    break;
+                case /* uint32 removed_identity_index_entries */ 4:
+                    message.removedIdentityIndexEntries = reader.uint32();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_DeleteUser_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 user_root_id = 1; */
+        if (message.userRootId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.userRootId);
+        /* bool user_root_deleted = 2; */
+        if (message.userRootDeleted !== false)
+            writer.tag(2, WireType.Varint).bool(message.userRootDeleted);
+        /* uint32 revoked_grants = 3; */
+        if (message.revokedGrants !== 0)
+            writer.tag(3, WireType.Varint).uint32(message.revokedGrants);
+        /* uint32 removed_identity_index_entries = 4; */
+        if (message.removedIdentityIndexEntries !== 0)
+            writer.tag(4, WireType.Varint).uint32(message.removedIdentityIndexEntries);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.DeleteUser.Response
+ */
+export const AuthAPI_DeleteUser_Response = new AuthAPI_DeleteUser_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class AuthAPI_ListUsers$Type extends MessageType<AuthAPI_ListUsers> {
     constructor() {
@@ -20728,6 +21250,7 @@ export const Platform = new ServiceType("MiLaboratories.PL.API.Platform", [
     { name: "GetUserRoot", options: { "google.api.http": { post: "/v1/auth/user-root", body: "*" } }, I: AuthAPI_GetUserRoot_Request, O: AuthAPI_GetUserRoot_Response },
     { name: "ListUserResources", serverStreaming: true, options: {}, I: AuthAPI_ListUserResources_Request, O: AuthAPI_ListUserResources_Response },
     { name: "ListUsers", options: {}, I: AuthAPI_ListUsers_Request, O: AuthAPI_ListUsers_Response },
+    { name: "DeleteUser", options: { "google.api.http": { post: "/v1/auth/delete-user", body: "*" } }, I: AuthAPI_DeleteUser_Request, O: AuthAPI_DeleteUser_Response },
     { name: "ListResourceTypes", options: { "google.api.http": { get: "/v1/resource-types" } }, I: MiscAPI_ListResourceTypes_Request, O: MiscAPI_ListResourceTypes_Response },
     { name: "Ping", options: { "google.api.http": { get: "/v1/ping" } }, I: MaintenanceAPI_Ping_Request, O: MaintenanceAPI_Ping_Response },
     { name: "License", options: { "google.api.http": { get: "/v1/license" } }, I: MaintenanceAPI_License_Request, O: MaintenanceAPI_License_Response }

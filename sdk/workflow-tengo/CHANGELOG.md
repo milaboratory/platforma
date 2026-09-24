@@ -1,5 +1,228 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.11.1
+
+### Patch Changes
+
+- 946a752: fix: xsv converter can be launched in k8s installations.
+- Updated dependencies [7b5f8f1]
+  - @platforma-open/milaboratories.software-ptabler@2.1.13
+  - @platforma-open/milaboratories.software-ptexter@1.2.6
+
+## 6.11.0
+
+### Minor Changes
+
+- ff119f5: pt: size the default ptabler RAM request from the measured plan shapes, and add `memFloor()`
+
+  The default request becomes `between(2 GiB + 6 * size, 2 GiB, 256 GiB)`, from
+  `between(2 GiB + 4 * size, 2 GiB, 64 GiB)`. The CPU formula, the 2 GiB floor and the
+  `4GiB` static fallback do not change. An explicit `mem()` still wins.
+
+  The old `4 x` slope sat below the steepest plan shape. Measured need per GiB of input,
+  at 8 Polars threads:
+
+  | plan shape                       | need per input GiB        |
+  | -------------------------------- | ------------------------- |
+  | concat + aggregate with `max_by` | **4.94**                  |
+  | bulk export                      | 2.92                      |
+  | single-cell export               | 1.40                      |
+  | `write_frame`                    | `4.13 x^0.68`, sub-linear |
+
+  Each law is fitted on real inputs, R2 0.97 or better. One formula serves every shape,
+  so it carries the steepest.
+
+  8 threads is the ceiling this formula runs at. The CPU formula clamps to 8, and no call
+  site in the SDK or in any block sets `cpu` without also setting `mem`. The same
+  aggregate shape needs `6.85 x` at 32 threads, which only a site that pins `cpu` above 8
+  and leaves `mem` auto would reach.
+
+  The slope is 6 rather than 5. The margin covers a known unit mismatch: the fits are
+  against uncompressed TSV bytes, and `f.size()` reports stored blob bytes, so a parquet
+  input understates the volume the plan decodes. Splitting the two input classes is
+  separate work.
+
+  The shallower shapes are now over-granted. This is deliberate. The backend clamps an
+  oversized request without a log and sets pod requests == limits, so an over-grant costs
+  concurrency and an under-grant costs an OOM kill with no traceback.
+
+  `pt.workflow().memFloor(bytes)` raises the lower bound of the auto-sized request and
+  leaves auto-sizing on. `annotations/compute` used a flat `.mem("12GiB")`, which ignored
+  input volume even though the run reads a column bundle. It now takes 12 GiB as a floor
+  and the measured slope above it. Use `memFloor()` rather than `mem()` when the intent
+  is "at least this much".
+
+  `memFloor()` rejects a floor above the 256 GiB ceiling. Raising the ceiling to match
+  would make `between(floor, floor)` return the floor for every input, which is the flat
+  pin the setter exists to avoid. Use `mem()` for a fixed request above the ceiling.
+
+  The two formulas move out of the template body into `:pt.sizing`, so they can be unit
+  tested against a fake metric resolver rather than only read. `pt/sizing.test.tengo`
+  covers the floor, the slope, both ceilings and the CPU curve.
+
+### Patch Changes
+
+- Updated dependencies [e4f6443]
+  - @platforma-open/milaboratories.software-ptabler@2.1.12
+  - @platforma-open/milaboratories.software-ptexter@1.2.5
+
+## 6.10.5
+
+### Patch Changes
+
+- 17536f5: `pl-tengo imports` replaces the clean-imports shell script.
+
+  Unused tengo imports used to be found by a bash script that only `workflow-tengo` could run.
+  It needed bash, `mapfile` and a GNU-ish `grep` and `awk`, so no block had access to it, and it
+  read the source with a plain text search. That search had no idea what a comment is, so an
+  alias left behind in a comment counted as a usage and the import survived. It also had no word
+  boundary, so `ll` looked used whenever an unrelated `xll.` appeared, and it only looked at
+  Platforma artifact imports — the whole tengo standard library was invisible to it.
+
+  The check now runs inside the builder, on the parser the compiler itself uses. Comments come
+  back empty from that parser, so an alias mentioned only in a comment is correctly reported as
+  unused. Every import is checked, the standard library included.
+
+  An import counts as used when its alias appears with a dot somewhere else in the code:
+  `text.split(...)`. A module passed around as a plain value is not recognised as a usage, so
+  such an import is reported. This is deliberate. Keeping an import the source no longer needs
+  costs nothing at runtime, while dropping one it does need breaks the build.
+
+  The command has three modes. `--check` reports and fails without touching a file, `--fix`
+  removes the unused imports, and with neither option it fixes the sources for a person and
+  checks them for CI. CI must report the problem, not make a change nobody reviewed.
+
+  A source the parser cannot read is reported and left as it is, while the other sources are
+  still cleaned and the command exits with an error. One broken source no longer blocks the
+  cleanup of everything else, and `pl-tengo check` reports the parse problem in full right after.
+
+  `workflow-tengo` now calls the command instead of the script, so both `scripts/clean-imports.sh`
+  and the `scripts/build.sh` wrapper around it are gone.
+
+  - @platforma-open/milaboratories.software-ptabler@2.1.11
+  - @platforma-open/milaboratories.software-ptexter@1.2.4
+
+## 6.10.4
+
+### Patch Changes
+
+- 31a3f60: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.61. The Linux pframes-rs-node addon no longer ships debug info. Its download shrinks from 208 MB to about 28 MB. Bump runenv-python-3 to 1.13.2, which bundles polars-pf 1.1.61 for ptabler.
+- d326918: The TMPDIR compatibility layer now also works on Windows.
+
+  A backend from before the temporary-directory contract has the SDK provide `TMPDIR` itself, through
+  a wrapper script staged into the working directory. That wrapper is a POSIX shell script, so a
+  Windows host used to be a hard error telling the user to update the backend — which stopped blocks
+  that were running fine before the contract existed.
+
+  Windows now gets a wrapper of its own: a `.cmd` batch file that creates `<workdir>\.pl\tmp` and sets
+  `TMPDIR`, `TMP` and `TEMP` to it. `TEMP` is the one the POSIX wrapper has no reason to set and this
+  one must — Win32 `GetTempPath`, which most native software reaches its temporary directory through,
+  reads `TMP` then `TEMP` and never `TMPDIR`.
+
+  Which wrapper is staged follows the shape that will actually run, not the host: a command in a
+  container gets the shell script even on a Windows machine, because the container is Linux. Only the
+  one that runs is written, so no command's identity — and no command's cache — changes on a host that
+  was already working.
+
+  One consequence worth knowing on Windows: the runner already starts every local command through
+  `cmd.exe /c`, and the batch file forwards its arguments with `%*`, so an argument is parsed by
+  cmd.exe twice instead of once. A literal `%name%` inside an argument is therefore expanded one more
+  time than before. Quoted arguments, spaces and `&`, `|`, `>` are unaffected.
+
+- Updated dependencies [31a3f60]
+  - @platforma-open/milaboratories.software-ptabler@2.1.11
+
+## 6.10.3
+
+### Patch Changes
+
+- Updated dependencies [cdbc497]
+  - @platforma-open/milaboratories.software-ptabler@2.1.10
+
+## 6.10.2
+
+### Patch Changes
+
+- 7104497: Save python dependency specs into the run environment so its identity reflects them
+
+  A python run environment was saved holding only the bare venv, and its dependencies were installed
+  afterwards. Its content hash was therefore a function of the interpreter alone, so two environments
+  built from one interpreter were indistinguishable and deduplication handed every software whichever
+  was registered first — a script could run under another package's venv and fail to import a
+  dependency it declares.
+
+  The dependency files are now written into the environment before it is saved, as conda already does
+  with `env-spec.yaml` and R with `renv.lock`.
+
+## 6.10.1
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+- Updated dependencies [f2ed96c]
+  - @platforma-open/milaboratories.software-ptabler@2.1.9
+  - @platforma-open/milaboratories.software-ptexter@1.2.4
+
+## 6.10.0
+
+### Minor Changes
+
+- f107d76: A command that asks for scratch space always gets TMPDIR and TMP, on every backend.
+
+  `exec.builder().resources({ onCPU: { scratchFreeSpace: … } })` now guarantees both variables,
+  pointed at `<workdir>/.pl/tmp` — the same location `{system.scratch.path}` names. A size is still
+  what decides whether a fast device sits behind that path; `0` asks for the directory alone.
+
+  Backends that provide this themselves are used directly. On one that does not, the SDK stages a
+  small POSIX shell script into the working directory and routes the command through it: the script
+  creates the directory, exports both variables, and `exec`s the command with its arguments
+  untouched. `{system.scratch.path}` is rewritten to a workdir-relative path on those backends too,
+  where the expression would otherwise fail to evaluate at all rather than render empty.
+
+  Two consequences worth knowing:
+
+  - A block no longer needs to branch on `hasScratchSpace` to arrange its own temporary storage.
+  - On Windows the workaround cannot run, so an old backend there is refused with an error naming
+    the fix. Windows ships only as a built-in backend, whose version is ours to update.
+  - Which backends get the workaround is decided per request, not per backend. 4.4.0 through 4.4.3
+    report scratch storage but still decide `TMPDIR` from the _size_ asked for, so a sized request
+    there is left alone — it already names the real scratch device — while a request of `0`, which
+    those backends answer with no `TMPDIR` and a scratch path naming the working directory root, gets
+    the wrapper like any older backend.
+
+## 6.9.0
+
+### Minor Changes
+
+- a578da8: Add `scratchFreeSpace` to `exec.builder().resources({ ... })`.
+
+  A command can now ask for disposable disk space for its temporary files, in either the `onCPU`
+  or the `onGPU` block, and the backend points `TMPDIR` at storage sized for the request instead
+  of the small temporary directory every job shares. Ask for it when a command writes large
+  intermediate data — sorting, indexing, alignment. The size can be a fixed value or an
+  `exec.formula` computed from the input data, and the command reads back the location it really
+  got with `{system.scratch.path}` and the size with `{system.scratch.gib}`.
+
+  Scratch space is an optimisation, never a precondition: a deployment that cannot serve the size
+  caps it, one that has no scratch storage ignores the request, and a scratch formula that cannot
+  be evaluated drops the request rather than failing the exec — where a `ram` or `cpu` formula
+  would error. A `.staticFallback(...)` on a scratch formula is inert, since the backends that
+  would consult it are the same ones that ignore the request altogether.
+
+## 6.8.3
+
+### Patch Changes
+
+- 7179e9d: pframes.processColumn batch mode: make `batch.maxBatches` actually bind, and stop dropping rows on the `passContent: true` path.
+
+  The cap was decided in the orchestrator from `recordsInGroup`, which returns an exact row count only for inline `PColumnData/Json`. For `JsonPartitioned` / `ParquetPartitioned` it returns the _partition_ count (and partitions/2 for `BinaryPartitioned`), so a single-partition column of 500k rows reported 1 record. The inflation gate `totalBatches > maxBatches` then never fired and the cap silently did nothing — precisely for the large, partitioned inputs that need it. Observed in the sequence-embeddings block: 553789 sequences with `maxBatches: 50` produced ~185 batches of 3000.
+
+  The cap is now enforced per isolation scope inside `:pframes.process-pcolumn-batch-split`, which has the true row count. Each scope receives its share of the global budget (`maxBatches / isolationScopeCount`) and inflates batch size deterministically, so batch boundaries stay reproducible and per-batch dedup is preserved. The orchestrator's estimate remains only as a floor on batch size.
+
+  This also fixes silent data loss with `batch.passContent: true` on partitioned input: that path took the undercounted `batchCount` verbatim and the slice loop clamps `endLine` without ever extending `batchCount`, so every row past the first batch was dropped. It now recomputes the count from the real data like the `passContent: false` path.
+
+  Blocks relying on `maxBatches` will see different (larger, fewer) batches than before — that is the fix. Batch boundaries change, so previously cached per-batch results are invalidated once.
+
 ## 6.8.2
 
 ### Patch Changes

@@ -1,4 +1,6 @@
-import { isColumnUniversalKey, remapColumnIdBlockIds } from "../drivers";
+import { isPlainObject } from "es-toolkit";
+
+import { BlockScopedDomain, isColumnUniversalKey, remapColumnIdBlockIds } from "../drivers";
 
 /**
  * Point every column identifier in a block's params at the blocks of the project being built.
@@ -15,8 +17,13 @@ import { isColumnUniversalKey, remapColumnIdBlockIds } from "../drivers";
  *
  * Rewriting is structural, never textual: an identifier is taken apart, its `blockId` fields
  * are replaced, and it is rebuilt canonically. That is what keeps a value that merely *looks*
- * like an id — a `domain` entry, an axis filter — from being rewritten along with it, and
- * what re-sorts a qualifications map whose keys are identifiers.
+ * like an id — an axis filter, a domain this package can see belongs to an identifier it
+ * knows — from being rewritten along with it, and what re-sorts a qualifications map whose
+ * keys are identifiers.
+ *
+ * A domain reached on its own is the exception, and `relocateDomain` below says why: an axis is
+ * qualified by the block that produced it. Only the domain keys known to name a block are
+ * repointed — matching an entry id is not on its own evidence of a reference.
  *
  * An id the map does not mention is left as it is. That is the ordering rule doing its work:
  * a caller building the map as it creates blocks passes only the entries already created, so
@@ -49,13 +56,34 @@ export function relocateBlockIds<T>(params: T, blockIds: ReadonlyMap<string, str
       return Object.fromEntries(
         Object.entries(node).map(([key, value]) => [
           remapColumnIdBlockIds(key, remapBlockId),
-          walk(value),
+          key === "domain" && isPlainObject(value) ? relocateDomain(value) : walk(value),
         ]),
       );
     }
 
     return node;
   };
+
+  /**
+   * The block-naming entries of a domain, repointed at the project being built: an axis a block
+   * produced names that block in its domain, so those are references like any other.
+   *
+   * Only the keys {@link BlockScopedDomain} lists, because a template's entry ids are arbitrary
+   * non-empty strings — a hand-written template may name an entry `closest`, and a qualifier
+   * reading `closest` is not a reference to it. Matching the map is not on its own enough to
+   * tell one from the other; the key is.
+   *
+   * Reached only from the generic object case — inside an identifier this package recognizes a
+   * domain is spec data and stays as it is, which is what keeps an overridden column's
+   * `specOverrides.domain` untouched.
+   */
+  const relocateDomain = (domain: Record<string, unknown>): Record<string, unknown> =>
+    Object.fromEntries(
+      Object.entries(domain).map(([key, value]) => [
+        key,
+        typeof value === "string" && BlockScopedDomain.has(key) ? remapBlockId(value) : walk(value),
+      ]),
+    );
 
   return walk(params) as T;
 }

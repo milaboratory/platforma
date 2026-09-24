@@ -728,34 +728,6 @@ export class BlockRenderCtx<Args = unknown, Data = unknown> extends RenderCtxBas
   }
 }
 
-/** Render context for legacy v1/v2 blocks - provides backward compatibility */
-export class RenderCtxLegacy<Args = unknown, UiState = unknown> extends RenderCtxBase<
-  Args,
-  UiState
-> {
-  private argsCache?: { v: Args };
-
-  public get args(): Args {
-    if (this.argsCache === undefined) {
-      const raw = this.ctx.args;
-      const value = typeof raw === "function" ? raw() : raw;
-      this.argsCache = { v: JSON.parse(value) };
-    }
-    return this.argsCache.v;
-  }
-
-  private uiStateCache?: { v: UiState };
-
-  public get uiState(): UiState {
-    if (this.uiStateCache === undefined) {
-      const raw = this.ctx.uiState!;
-      const value = typeof raw === "function" ? raw() : raw;
-      this.uiStateCache = { v: value ? JSON.parse(value) : ({} as UiState) };
-    }
-    return this.uiStateCache.v;
-  }
-}
-
 /**
  * Render context for plugin output functions.
  * Reads plugin data from blockStorage and derives params from pre-wrapped input callbacks.
@@ -809,10 +781,6 @@ export type RenderCtx<Args = unknown, Data = unknown> = BlockRenderCtx<Args, Dat
 
 export type RenderFunction<Args = unknown, State = unknown, Ret = unknown> = (
   rCtx: BlockRenderCtx<Args, State>,
-) => Ret;
-
-export type RenderFunctionLegacy<Args = unknown, State = unknown, Ret = unknown> = (
-  rCtx: RenderCtxLegacy<Args, State>,
 ) => Ret;
 
 export type UnwrapFutureRef<K> =
