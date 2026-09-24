@@ -1,5 +1,13 @@
 # @milaboratories/pf-spec
 
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+  - @milaboratories/pl-model-middle-layer@1.33.0
+
 ## 1.0.4
 
 ### Patch Changes

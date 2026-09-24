@@ -1,5 +1,17 @@
 # @platforma-sdk/test
 
+## 1.84.1
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+- Updated dependencies [cadf144]
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-middle-layer@1.72.0
+  - @milaboratories/pl-client@3.17.3
+  - @platforma-sdk/model@1.84.1
+  - @milaboratories/pl-tree@1.15.4
+
 ## 1.84.0
 
 ### Patch Changes

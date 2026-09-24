@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-crash-recorder",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Crash-survivable diagnostics for the block model layer: records join shapes and memory, and explains an out-of-memory death after the fact",
   "keywords": [],
   "license": "UNLICENSED",
