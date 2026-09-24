@@ -228,12 +228,6 @@ export type Annotation = Metadata &
     [Annotation.Graph.Axis.UpperLimit]: StringifiedJson<number>;
     [Annotation.Graph.IsDenseAxis]: StringifiedJson<boolean>;
     [Annotation.Graph.IsVirtual]: StringifiedJson<boolean>;
-    /**
-     * Default colour scheme for a column used as a graph aesthetic. Two variants share the key.
-     * The categorical one gives `mapping`, assigning each column value an index into the palette
-     * named by `name`. The continuous one omits `mapping` and bounds the gradient instead. Both are
-     * defaults the user may override in the interface.
-     */
     [Annotation.Graph.Palette]: StringifiedJson<{
       name: string;
       mapping?: Record<string, number>;
@@ -242,10 +236,6 @@ export type Annotation = Metadata &
       max?: number;
       log?: boolean;
     }>;
-    /**
-     * Default dot shape per column value, as R shape codes — "21" filled circle, "24" filled
-     * triangle up, "25" filled triangle down. A default the user may override in the interface.
-     */
     [Annotation.Graph.Shape]: StringifiedJson<{ mapping: Record<string, string> }>;
     [Annotation.Graph.Thresholds]: StringifiedJson<
       { columnId: { valueType: ValueType; name: string }; value: number }[]
@@ -314,7 +304,6 @@ export const AnnotationJson: AnnotationJson = {
   [Annotation.Graph.IsDenseAxis]: z.boolean(),
   [Annotation.Graph.Palette]: z.object({
     name: z.string(),
-    // Writers encode the palette index as a string ("19") as often as a number; coerce so both parse.
     mapping: z.record(z.coerce.number()).optional(),
     midPoint: z.number().optional(),
     min: z.number().optional(),
