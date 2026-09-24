@@ -849,6 +849,9 @@ export class PlTransaction {
           ...this.toSignedResourceId(rId),
           loadFields: false,
           showSoftDeletes: false,
+          // Always empty: this accessor caches nothing and every call asks the server, so a
+          // token here could only suppress the one body it came for.
+          changedSinceToken: new Uint8Array(0),
         },
       },
       (r) => notEmpty(r.resourceGet.resource).canonicalId,
