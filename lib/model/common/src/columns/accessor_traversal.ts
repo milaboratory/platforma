@@ -14,17 +14,26 @@ export const DESCEND_TYPES: ReadonlyArray<string> = [
 /**
  * Enumerate column names backing a PFrame accessor — derived from
  * `<name>.spec` field names, without resolving the spec resources.
+ *
+ * A column whose `.spec` or `.data` field carries an error is left out. The
+ * backend puts an error on the PFrame itself once any of its inputs has one
+ * and all of them are final. A healthy PFrame therefore costs one error read,
+ * and the per-column check runs only on an errored PFrame, whose fields no
+ * longer change.
  */
 export function listColumnNames<A extends AccessorLike<A>>(
   accessor: A,
   prefix: string = "",
 ): string[] {
   if (accessor.resourceType.name !== ResourceTypeName.PFrame) return [];
+  const fields = accessor.listInputFields();
+  const errored = accessor.getError() === undefined ? undefined : new Set(fields);
   const out: string[] = [];
-  for (const field of accessor.listInputFields()) {
+  for (const field of fields) {
     if (!field.endsWith(".spec")) continue;
     const raw = field.slice(0, -".spec".length);
     if (!raw.startsWith(prefix)) continue;
+    if (errored !== undefined && isColumnErrored(accessor, raw, errored)) continue;
     out.push(raw.slice(prefix.length));
   }
   return out;
@@ -76,6 +85,7 @@ export function findDescendantsByType<A extends AccessorLike<A>>(opts: {
         field: fields[i],
         assertFieldType: "Input",
         ignoreError: true,
+        pureFieldErrorToUndefined: true,
       });
       if (child !== undefined) stack.push({ node: child, path: [...path, fields[i]] });
     }
@@ -136,4 +146,33 @@ export function indexPoolBlock<A extends AccessorLike<A>>(
     }
   }
   return result;
+}
+
+//
+// Internals
+//
+
+/** Whether the `.spec` or `.data` field of column `name` carries an error. */
+function isColumnErrored<A extends AccessorLike<A>>(
+  accessor: A,
+  name: string,
+  fields: ReadonlySet<string>,
+): boolean {
+  return [`${name}.spec`, `${name}.data`].some(
+    (field) => fields.has(field) && isFieldErrored(accessor, field),
+  );
+}
+
+/**
+ * Whether `field` carries an error. Called only on an errored PFrame, whose
+ * inputs are all final: a field there either has a value or holds an error.
+ */
+function isFieldErrored<A extends AccessorLike<A>>(accessor: A, field: string): boolean {
+  const child = accessor.traverse({
+    field,
+    assertFieldType: "Input",
+    ignoreError: true,
+    pureFieldErrorToUndefined: true,
+  });
+  return child === undefined || child.getError() !== undefined;
 }

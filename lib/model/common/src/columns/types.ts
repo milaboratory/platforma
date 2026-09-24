@@ -26,6 +26,8 @@ export interface FieldTraversalStepLike {
   readonly assertFieldType?: "Input" | "Output" | "Service" | "OTW" | "Dynamic" | "MTW";
   /** Don't terminate chain if current resource or field has an error associated. */
   readonly ignoreError?: true;
+  /** Return `undefined` for a field that has an error and no value, instead of throwing. */
+  readonly pureFieldErrorToUndefined?: true;
 }
 
 /**
@@ -78,6 +80,9 @@ export interface AccessorLike<Self extends AccessorLike<Self>> {
 
   /** Whether the input-field collection on this node is finalized. */
   getInputsLocked(): boolean;
+
+  /** Error resource attached to this node, or `undefined` when the node is healthy. */
+  getError(): Self | undefined;
 
   /** Whether this node has a data payload attached. */
   hasData(): boolean;
