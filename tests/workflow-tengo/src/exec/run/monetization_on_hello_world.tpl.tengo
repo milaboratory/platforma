@@ -8,13 +8,14 @@ ll := import("@platforma-sdk/workflow-tengo:ll")
 
 self.defineOutputs(["token"])
 
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
 self.body(func(inputs) {
 	run := exec.builder().
 		cpu(1).ram("50Mi").
-		cmd("/usr/bin/env").
-		arg("bash").
+		software(shellSw).
 		arg("-c").
-		arg("echo -n $PLATFORMA_MNZ_JWT"). // -n means no newline. It's needed for test assertions.
+		arg("printf %s $PLATFORMA_MNZ_JWT"). // printf writes no trailing newline. The shell entrypoint is POSIX sh, whose echo prints "-n" as text instead of reading it as a flag.
 		enableMnz("MIFAKEMIFAKEMIFAKE"). // a fake product key so our mnz client response with a fake response without changing prod db.
 		writeFile("abc.txt", "1\n2\n3\n",
 			{mnz: {

@@ -1,5 +1,5 @@
 import type { PUniversalColumnSpec } from "@milaboratories/pl-middle-layer";
-import { eTplTest } from "./extended_tpl_test";
+import { assertResource, eTplTest } from "./extended_tpl_test";
 import { getLongTestTimeout } from "@milaboratories/test-helpers";
 import { vi } from "vitest";
 import {
@@ -125,5 +125,147 @@ eTplTest.concurrent(
     for (const expected of expectedKeys) {
       expect(hcContent).toHaveProperty(`["${expected}"]`);
     }
+  },
+);
+
+// Xsv output for the batchTag body: the batch-key axis "key" plus a "batchTag"
+// value column carrying the first key of the batch each row came from.
+const xsvSettingsBatchTag = {
+  batchKeyColumns: ["key"],
+  columns: [
+    { column: "batchTag", id: "batchTag", spec: { valueType: "String", name: "batchTag" } },
+  ],
+  storageFormat: "Json",
+} as const;
+
+// Same column, Parquet storage — xsvType="parquet" rejects Json storage
+// (pframes.xsv-import-file). Used for the parquet output of the blob-path test.
+const xsvSettingsBatchTagParquet = {
+  ...xsvSettingsBatchTag,
+  storageFormat: "Parquet",
+} as const;
+
+eTplTest.concurrent(
+  "batch mode: maxBatches step 4 — inflated batch count and boundaries are observable",
+  async ({ helper, expect, stHelper }) => {
+    // Companion to the test above, which can only see that no records were lost:
+    // it passes even if maxBatches is ignored entirely, because merging erases
+    // the batch decomposition. Here the body tags every row with its batch's
+    // first key, so the decomposition is readable from the merged output.
+    //
+    // 12 records at size=1 would be 12 batches. maxBatches=3 forces
+    // effectiveBatchSize = ceil(12/3) = 4, and slicing is contiguous over the
+    // batch-key sort, so exactly 3 batches must run: k00-k03 / k04-k07 / k08-k11.
+    const records: Record<string, string> = {};
+    for (let i = 0; i < 12; i++) {
+      records[`["k${i.toString().padStart(2, "0")}"]`] = `SEQ${i}`;
+    }
+
+    const theResult = await runBatch(helper, stHelper, (tx) => ({
+      params: jsonParams(tx, {
+        bodyMode: "batchTag",
+        primaryEntries: [{ spec: singleAxisSpec, dataInputName: "data1", header: "heavyChain" }],
+        primaryJoin: "full",
+        outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettingsBatchTag }],
+        batch: {
+          size: 1,
+          keyColumns: ["key"],
+          format: "tsv",
+          passContent: true,
+          maxBatches: 3,
+        },
+      }),
+      data1: createJsonData(tx, 1, records),
+    }));
+
+    const tags = readJsonPartition(theResult.inputs["tsv.batchTag.data"]);
+    expect(Object.keys(tags)).toHaveLength(12);
+
+    // Group keys by their batch tag → the batch decomposition that actually ran.
+    const batches = new Map<string, string[]>();
+    for (const [rawKey, tag] of Object.entries(tags)) {
+      const key = (JSON.parse(rawKey) as string[])[0];
+      const members = batches.get(tag as string);
+      if (members) members.push(key);
+      else batches.set(tag as string, [key]);
+    }
+    for (const members of batches.values()) members.sort();
+
+    // The assertion the losslessness test cannot make: the cap was applied.
+    // Ignoring maxBatches yields 12 batches here, not 3.
+    expect(batches.size).toEqual(3);
+
+    // Boundaries are the deterministic contiguous runs of the inflated size —
+    // this is the property that keeps dedup safe across reruns.
+    expect([...batches.keys()].sort()).toEqual(["k00", "k04", "k08"]);
+    expect(batches.get("k00")).toEqual(["k00", "k01", "k02", "k03"]);
+    expect(batches.get("k04")).toEqual(["k04", "k05", "k06", "k07"]);
+    expect(batches.get("k08")).toEqual(["k08", "k09", "k10", "k11"]);
+  },
+);
+
+eTplTest.concurrent(
+  "batch mode: maxBatches inflation on the parquet blob path (passContent=false)",
+  async ({ helper, expect, stHelper }) => {
+    // Same measurement as the test above, on the other splitting path. With
+    // passContent=false the orchestrator hands the body one joined file plus a
+    // row count, and the split template recomputes batchCount from that *actual*
+    // count (process-pcolumn-batch-split.tpl.tengo:156) instead of reusing the
+    // orchestrator's partition-count upper bound — so the inflated batch size
+    // reaches a genuinely different code path than the passContent=true test.
+    //
+    // format="parquet" requires passContent=false, and the body emits parquet for
+    // an xsvType="parquet" Xsv output: parquet in, parquet out. That output can
+    // only be checked structurally — xsvType="parquet" forces
+    // storageFormat="Parquet" and these tests have no parquet reader — so the
+    // body emits the same table as tsv too, and the twin tsv output carries the
+    // batch decomposition in readable form. Same body invocations, same batches.
+    const records: Record<string, string> = {};
+    for (let i = 0; i < 12; i++) {
+      records[`["k${i.toString().padStart(2, "0")}"]`] = `SEQ${i}`;
+    }
+
+    const theResult = await runBatch(helper, stHelper, (tx) => ({
+      params: jsonParams(tx, {
+        bodyMode: "batchTagBlob",
+        primaryEntries: [{ spec: singleAxisSpec, dataInputName: "data1", header: "heavyChain" }],
+        primaryJoin: "full",
+        outputs: [
+          { type: "Xsv", name: "pq", xsvType: "parquet", settings: xsvSettingsBatchTagParquet },
+          { type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettingsBatchTag },
+        ],
+        batch: {
+          size: 1,
+          keyColumns: ["key"],
+          format: "parquet",
+          passContent: false,
+          maxBatches: 3,
+        },
+      }),
+      data1: createJsonData(tx, 1, records),
+    }));
+
+    // The parquet output imported end-to-end (slice → parquet → merge → import).
+    const pqData = theResult.inputs["pq.batchTag.data"];
+    assertResource(pqData);
+    expect(pqData.resourceType.name).toContain("Parquet");
+
+    const tags = readJsonPartition(theResult.inputs["tsv.batchTag.data"]);
+    expect(Object.keys(tags)).toHaveLength(12);
+
+    const batches = new Map<string, string[]>();
+    for (const [rawKey, tag] of Object.entries(tags)) {
+      const key = (JSON.parse(rawKey) as string[])[0];
+      const members = batches.get(tag as string);
+      if (members) members.push(key);
+      else batches.set(tag as string, [key]);
+    }
+    for (const members of batches.values()) members.sort();
+
+    expect(batches.size).toEqual(3);
+    expect([...batches.keys()].sort()).toEqual(["k00", "k04", "k08"]);
+    expect(batches.get("k00")).toEqual(["k00", "k01", "k02", "k03"]);
+    expect(batches.get("k04")).toEqual(["k04", "k05", "k06", "k07"]);
+    expect(batches.get("k08")).toEqual(["k08", "k09", "k10", "k11"]);
   },
 );

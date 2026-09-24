@@ -1,5 +1,67 @@
 # @milaboratories/pl-client
 
+## 3.17.1
+
+### Patch Changes
+
+- a8e1308: Keep the request timeout the test address states.
+
+  `plAddressToTestConfig` overwrote `defaultRequestTimeout` with the 500ms local budget, so `?request-timeout=3000` on `PL_ADDRESS` had no effect. Against the Kubernetes deploy a call that needs more than 500ms hit the deadline and retried until the case ran out of time. The test budget now applies only to an address that states no timeout of its own.
+
+  - @milaboratories/pl-model-common@1.49.0
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.6
+
+## 3.17.0
+
+### Minor Changes
+
+- 13aff26: Sync the plapi protocol with the delta tree contract and add the `treeChangedSince:v1`
+  capability token. `Tree.Request` gains `unconditional_depth`, `traverse_stop_rules` is
+  deprecated in favour of `changed_since_token`, and the retired `resource_unchanged` frame
+  flag is gone.
+- ddc7746: Carry the delta tree change token through `PlTransaction`. `getNextSinceToken()` returns the
+  token the transaction was opened at, and `resourceTree()` accepts `changedSinceToken` plus
+  `unconditionalDepth` to poll with it and to read back what a delta referenced but did not
+  send. `traverseStopRules` is deprecated, and does not apply under a token.
+
+## 3.16.2
+
+### Patch Changes
+
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pl-model-common@1.49.0
+
+## 3.16.1
+
+### Patch Changes
+
+- 0aa8615: Recognise the `scratchSpace:v1` backend capability, advertised only where the deployment
+  actually has scratch storage.
+
+## 3.16.0
+
+### Minor Changes
+
+- 5c588be: Added `loginMethods()`, which returns every login method the backend advertises — of every kind, SSO and basic alike — each keeping its own id, description and kind. `beginSSOLogin`, `loginSSO` and `login` now accept an optional method id to route the login to a specific advertised method; omitting it keeps today's first-match behavior. `ssoConfig()` and `supportedAuthSchemes` are deprecated in favor of `loginMethods()` but remain available with their existing shape.
+
+## 3.15.0
+
+### Minor Changes
+
+- fd0ae2c: pl-cli: add `admin delete-user`, so a duplicate user account can be removed.
+
+  Multi-provider auth can leave one person with two accounts — an identity that could not be matched by email across a cutover, or a duplicate minted before the backend started refusing two records for one identity. The spare account was not inert: it appeared in the sharing user picker, and the projects in its root kept taking part in deduplication. Nothing removed one.
+
+  `admin delete-user <user>` now does, backed by the new `AuthAPI.DeleteUser` RPC. When the account still owns projects it requires an explicit decision rather than picking a default, since both defaults are wrong to assume:
+
+  - `--move-projects-to <user>` re-attaches every project to another user's root and then deletes the account. It is a move, not a copy: the same project resources are re-homed, so nothing is duplicated and nothing needs re-verifying. A name the target already uses is suffixed rather than overwritten, and the target's project list is created if they never had one.
+  - `--delete-projects` deletes the projects along with the account.
+
+  Both prompt with the affected project list first; `--force` skips that for scripted runs. Deleting an account removes its record, its identity-index entries (login, email and any alternative of either), its grants and its root resource, and frees those values — the person's next sign-in lands on a clean account instead of reviving the deleted one. Requires admin/controller credentials, and refuses to target the account those credentials authenticate as.
+
+  `pl-client` gains `PlClient.deleteUser(login)` (gRPC-only, like `listUsers`). `pl-middle-layer` now exports `ProjectsResourceType`, which a caller writing into another user's root needs.
+
 ## 3.14.7
 
 ### Patch Changes

@@ -79,6 +79,18 @@ export ll.toStrict({
 	// true when backend supports "ContextDomain" query predicate in block resolver
 	contextDomainQuery:       _isEnabled("contextDomainQuery"),
 
+	// true when the BUILD understands a scratch space request: it parses 'scratchFreeSpace' in a
+	// compute quota, renders '{system.scratch.*}', and guarantees TMPDIR and TMP to every command
+	// that asks - pointed at the same location either way. A property of the backend's code, so a
+	// backend that has it always reports it; one that does not simply never mentions it, which is
+	// how a block tells "understood" from "not understood at all".
+	supportsScratchSpaceRequests: _isEnabled("supportsScratchSpaceRequests"),
+
+	// true when THIS DEPLOYMENT backs that guarantee with real scratch storage. Says nothing about
+	// whether the request is understood - see supportsScratchSpaceRequests for that - only whether
+	// the temporary directory sits on a fast device or on the working directory's own filesystem.
+	hasScratchSpace:          _isEnabled("scratchSpace"),
+
 	// true when backend populates the multi-step 'progress' map output field
 	// on Blob* import/upload resources. When false, the SDK synthesizes the
 	// same map shape locally (single entry "01" → handle).

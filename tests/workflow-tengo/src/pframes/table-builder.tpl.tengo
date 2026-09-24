@@ -33,8 +33,11 @@ pframes := import("@platforma-sdk/workflow-tengo:pframes")
 util := import("@platforma-sdk/workflow-tengo:pframes.util")
 maps := import("@platforma-sdk/workflow-tengo:maps")
 times := import("times")
+assets := import("@platforma-sdk/workflow-tengo:assets")
 
 self.defineOutputs("result")
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
 self.body(func(inputs) {
 	// Phase 1: import each declared CSV → name → columns map.
@@ -42,7 +45,9 @@ self.body(func(inputs) {
 	for importName, def in inputs.imports {
 		e := exec.builder().
 			cpu(1).ram("50Mi").
-			cmd("env").
+			software(shellSw).
+			arg("-c").
+			arg("true").
 			writeFile("data.csv", def.csv).
 			saveFile("data.csv").
 			run()

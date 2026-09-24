@@ -12,7 +12,7 @@ const tsv = dedent`
  * exec.builder().writeFile / addFile honour { writable: true } by landing the
  * file as 0o600 in the workdir so the backend copies (instead of hardlinking
  * RO from the archive cache). The check below runs ptabler with a workflow
- * that read_csv's the file then write_csv's back to the same path:
+ * that read_csv's a second file then write_csv's over the landed one:
  *   - default (RO 0o400): pt must fail to open the file for writing
  *   - { writable: true } (RW 0o600): pt must succeed and the file content round-trips
  *
@@ -50,17 +50,28 @@ tplTest.concurrent.for([
 
     if (writable) {
       // RW: backend lands data.tsv as 0o600, pt opens for write, no error.
-      // Content roundtrip is intentionally not asserted — pt truncates the
-      // target before reading all source rows (same path read+write race),
-      // so the output is a partial TSV. We only care that the write succeeded.
-      expect(settled).not.toBeInstanceOf(Error);
+      // Report the message rather than the type: toBeInstanceOf prints only that the
+      // value was an Error, so the reason pt could not write never reached the failure
+      // output and the k8s run could not be told apart from a slow one.
+      if (settled instanceof Error) {
+        expect.fail(`pt failed with { writable: true }: ${settled.message}`);
+      }
       expect(settled).toBeTypeOf("string");
-      expect(settled).toMatch(/^a\tb/);
+      expect((settled as string).trimEnd()).toBe(tsv);
     } else {
       // RO: backend lands data.tsv as 0o400 (hardlinked from archive cache).
       // pt's write_csv must hit EACCES, exec must surface the non-zero exit.
+      // A bus error also exits non-zero, so it is ruled out by name — it meant
+      // the workflow truncated a file it was still reading, not a denied write.
       expect(settled).toBeInstanceOf(Error);
-      expect((settled as Error).message).toMatch(/Exited with code/);
+      expect((settled as Error).message).toMatch(/Exited with code 1\./);
+      expect((settled as Error).message).not.toMatch(/Bus error/);
     }
   },
+  // A Kubernetes deploy runs each command as its own Job, and the measured cost of one
+  // of these cases there is around 143s — a pod scheduled, an image pulled and ptabler
+  // run to completion, twice over in 'add' mode. The budget is set above that so a slow
+  // run reports whatever the command actually did; at 15s, and then at 60s, every such
+  // case came back as a bare timeout and hid its own error.
+  300_000,
 );
