@@ -13,7 +13,7 @@ import type { ColumnsSource } from "./column_providers";
 import { isColumnProvider, lookupCtxAccessor } from "./column_providers";
 import { TreeNodeAccessor } from "../render/accessor";
 import { getService } from "../services/get_services";
-import { getCfgRenderCtx } from "../internal";
+import { getCfgRenderCtx, tryGetCfgRenderCtx } from "../internal";
 import { ColumnRecipe } from "./column_recipes";
 import { isNil } from "es-toolkit";
 
@@ -31,7 +31,8 @@ export interface ColumnsCollectionDeps {
  * - `"result_pool"`  – fan-out into the host's upstream-block result pool.
  * - `"current_block"` – main outputs + prerun (staging) accessors of the
  *   current block, when present. An output that carries an error adds no
- *   columns; the collection's `getErrors()` reports it.
+ *   columns; the collection's `getErrors()` reports it on a host with
+ *   `columnErrorsSupport`.
  */
 export type ColumnsSourceShorthand = "result_pool" | "current_block";
 
@@ -102,7 +103,7 @@ export class ColumnsCollectionImpl {
    * Errors met in the collection's sources: errored block outputs and
    * subtrees, and columns whose spec or data field carries an error. A column
    * with an errored spec is not in {@link getColumns}; this is where it shows.
-   * Empty on a host older than this method.
+   * Empty on a host without `columnErrorsSupport`.
    */
   getErrors(): ColumnsSourceError[] {
     return this.driver.getErrors?.(this.handle) ?? [];
@@ -152,8 +153,7 @@ function toSerializedSources(
       ids: source.getColumns().map((c) => c.id),
       isFinal: source.isFinal(),
     };
-    const errors = source.getErrors();
-    return errors.length === 0 ? [ids] : [ids, { kind: "errors", errors: [...errors] }];
+    return [ids, ...errorsSource(source.getErrors(), ctx)];
   }
   throw new Error("ColumnsCollection: unrecognised ColumnsSource shape");
 }
@@ -173,12 +173,26 @@ function currentBlockSources(ctx?: GlobalCfgRenderCtx): SerializedColumnsSource[
 
   for (const name of [MainAccessorName, StagingAccessorName]) {
     const lookup = lookupCtxAccessor(renderCtx, name);
-    if (lookup.kind === "error") sources.push({ kind: "errors", errors: [lookup.error] });
+    if (lookup.kind === "error") sources.push(...errorsSource([lookup.error], renderCtx));
     else if (lookup.handle !== undefined) {
       sources.push({ kind: "accessor", accessor: lookup.handle, path: [name] });
     }
   }
   return sources;
+}
+
+/**
+ * An `errors` source carrying `errors`, or none when there are none or the
+ * host cannot read one: an older host's driver fails on that source kind.
+ */
+function errorsSource(
+  errors: ReadonlyArray<ColumnsSourceError>,
+  ctx?: GlobalCfgRenderCtx,
+): SerializedColumnsSource[] {
+  if (errors.length === 0) return [];
+  const renderCtx = ctx ?? tryGetCfgRenderCtx();
+  if (renderCtx?.featureFlags?.columnErrorsSupport !== true) return [];
+  return [{ kind: "errors", errors: [...errors] }];
 }
 
 function defaultCtxSources(ctx?: GlobalCfgRenderCtx): SerializedColumnsSource[] {

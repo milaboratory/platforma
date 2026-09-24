@@ -6,6 +6,8 @@ export type FakeNode = {
   readonly fields?: Readonly<Record<string, FakeField>>;
   readonly locked?: boolean;
   readonly data?: unknown;
+  /** Content of the error resource attached to this node. */
+  readonly error?: string;
 };
 
 /** One input field: a value, an error message, both, or neither (unset). */
@@ -35,7 +37,10 @@ export function fakeTree(node: FakeNode): FakeAccessor {
       const error = fields[field]?.error;
       return error === undefined ? undefined : new Error(error);
     },
+    getError: () =>
+      node.error === undefined ? undefined : fakeTree({ type: "error", data: node.error }),
     hasData: () => node.data !== undefined,
+    getDataAsString: () => (typeof node.data === "string" ? node.data : JSON.stringify(node.data)),
     getDataAsJson: <T>() => node.data as T | undefined,
   };
   accessors.set(node, accessor);

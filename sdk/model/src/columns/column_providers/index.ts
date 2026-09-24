@@ -1,4 +1,5 @@
 import {
+  decodeErrorMessage,
   isGlobalPObjectKey,
   isLocalPObjectKey,
   parseJsonSafely,
@@ -16,7 +17,7 @@ import type {
 } from "../../render/internal";
 import { getCfgRenderCtx } from "../../internal";
 import { MainAccessorName, StagingAccessorName } from "../../render/internal";
-import { decodeErrorMessage, TreeNodeAccessor } from "../../render/accessor";
+import { TreeNodeAccessor } from "../../render/accessor";
 import { DataColumnRecipe } from "../data_column";
 import type { ColumnsSource } from "./types";
 import { ArrayColumnsProvider, ColumnsProvider } from "./providers";
@@ -70,26 +71,24 @@ export type CtxAccessorLookup =
 
 /**
  * Look up accessor `name` (`main` or `staging`). A block output that carries
- * an error comes back as that error, and its value is not read. A host
- * without `getAccessorErrorByName` throws the output's error from the lookup
- * itself; the throw of this one call is reported the same way.
+ * an error comes back as that error, and its value is not read: the host's
+ * `getAccessorErrorByName` reports it. A host without that method throws the
+ * output's error from the lookup itself, and any host throws when the ctx has
+ * no such output; the throw of this one lookup is reported the same way.
  */
 export function lookupCtxAccessor(ctx: GlobalCfgRenderCtx, name: string): CtxAccessorLookup {
-  if (ctx.getAccessorErrorByName === undefined) {
-    try {
-      return { kind: "handle", handle: ctx.getAccessorHandleByName(name) };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      return { kind: "error", error: { kind: "source", path: [name], message } };
-    }
+  const errorHandle = ctx.getAccessorErrorByName?.(name);
+  if (errorHandle !== undefined) {
+    const raw = ctx.getDataAsString(errorHandle);
+    const message = raw === undefined ? "Block output failed." : decodeErrorMessage(raw);
+    return { kind: "error", error: { kind: "source", path: [name], message } };
   }
-  const errorHandle = ctx.getAccessorErrorByName(name);
-  if (errorHandle === undefined) {
+  try {
     return { kind: "handle", handle: ctx.getAccessorHandleByName(name) };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { kind: "error", error: { kind: "source", path: [name], message } };
   }
-  const raw = ctx.getDataAsString(errorHandle);
-  const message = raw === undefined ? "Block output failed." : decodeErrorMessage(raw);
-  return { kind: "error", error: { kind: "source", path: [name], message } };
 }
 
 /**

@@ -85,8 +85,14 @@ export interface AccessorLike<Self extends AccessorLike<Self>> {
    */
   getFieldError(field: string): Error | undefined;
 
+  /** Error resource attached to this node itself, or `undefined` when it has none. */
+  getError(): Self | undefined;
+
   /** Whether this node has a data payload attached. */
   hasData(): boolean;
+
+  /** The data payload as a string. Returns `undefined` if no data. */
+  getDataAsString(): string | undefined;
 
   /** Decode the data payload as JSON. Returns `undefined` if no data. */
   getDataAsJson<T = unknown>(): T | undefined;

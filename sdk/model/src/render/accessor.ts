@@ -7,6 +7,7 @@ import {
   type ArchiveFormat,
   type ProgressLogWithInfo,
   type RangeBytes,
+  decodeErrorMessage,
   isPColumn,
   mapPObjectData,
   PColumn,
@@ -19,22 +20,6 @@ import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from ".
 
 export function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | undefined {
   return value === undefined ? undefined : cb(value);
-}
-
-/**
- * Decode an error node's content into a display message. The backend serializes
- * a resource error as `{"message": "..."}` (`ResourceError`); unwrap that to the
- * human-readable message. Falls back to the raw string when the content is not
- * that envelope (e.g. plain text, or an unexpected shape).
- */
-export function decodeErrorMessage(raw: string): string {
-  try {
-    const parsed = JSON.parse(raw) as { message?: unknown };
-    if (typeof parsed?.message === "string") return parsed.message;
-  } catch {
-    // Not JSON — surface the raw content.
-  }
-  return raw;
 }
 
 /**

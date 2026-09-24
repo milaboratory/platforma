@@ -228,6 +228,13 @@ export const GlobalCfgRenderCtxFeatureFlags = {
   pTablePartitionFiltersSupport: true as const,
   pFrameInSetFilterSupport: true as const,
   lazyColumnStatusSupport: true as const,
+  /**
+   * The host reads column errors: `getFieldError`, `getAccessorErrorByName`,
+   * the `errors` columns source and the `getErrors` method of the
+   * `ColumnsCollection` driver. An older host's driver fails on an `errors`
+   * source, so the sandbox sends one only under this flag.
+   */
+  columnErrorsSupport: true as const,
 };
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods, ServiceDispatch {
