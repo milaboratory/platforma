@@ -50,30 +50,25 @@ test("pure resources expose a canonical id to clients after commit", async () =>
       { sync: true },
     );
 
-    const { valueData, structData, valueCid, structCid } = await pl.withReadTx(
-      "readCanonicalIds",
-      async (tx) => {
-        // Confirm the resources are what this test claims they are, then read
-        // the canonical id the server exposes for each one.
-        return {
-          valueData: await tx.getResourceData(valueId, false),
-          structData: await tx.getResourceData(structId, false),
-          valueCid: await tx.getResourceCanonicalId(valueId),
-          structCid: await tx.getResourceCanonicalId(structId),
-        };
-      },
-    );
+    const { valueData, structData } = await pl.withReadTx("readCanonicalIds", async (tx) => {
+      // Confirm the resources are what this test claims they are, and read the
+      // canonical id the server exposes for each one off the same record.
+      return {
+        valueData: await tx.getResourceData(valueId, false),
+        structData: await tx.getResourceData(structId, false),
+      };
+    });
 
     expect(valueData.kind).toEqual("Value");
     expect(structData.kind).toEqual("Structural");
     expect(structData.final).toBe(true);
 
     expect(
-      valueCid.length,
+      valueData.canonicalId.length,
       `value resource ${valueId} exposes an empty canonical id`,
     ).toBeGreaterThan(0);
     expect(
-      structCid.length,
+      structData.canonicalId.length,
       `structural resource ${structId} exposes an empty canonical id`,
     ).toBeGreaterThan(0);
   });
