@@ -2,8 +2,10 @@ smart := import(":smart")
 json := import("json")
 pConstants := import(":pframes.constants")
 bquery := import(":workflow.bquery")
+buildQueryLib := import(":pframes.build-query")
 canonical := import(":canonical")
 pSpec := import(":pframes.spec")
+columnId := import(":pframes.column-id")
 maps := import(":maps")
 ll := import(":ll")
 assets := import(":assets")
@@ -79,7 +81,8 @@ createBuilder := func(ctx) {
 		ignoreMissingDomains: false
 	}
 
-	addSingleInner := func(id, ...ops) {
+	addSingleInner := undefined
+	addSingleInner = func(id, ...ops) {
 		ll.assert(len(ops) <= 2, "addSingle accepts at most two optional arguments")
 
 		decodedId := undefined
@@ -114,11 +117,12 @@ createBuilder := func(ctx) {
 			queryOpts = ops[1]
 		}
 
+		kind := columnId.kindOf(decodedId)
+
 		// Global-form PObjectId: canonicalize({__isRef: true, blockId, name}).
 		// Opaque id from cross-block result pool — must be resolved by ref, not as a query.
-		isGlobalRef := is_map(decodedId) && decodedId.__isRef == true
-		if isGlobalRef {
-			refKey := is_string(id) ? id : canonical.encode(decodedId)
+		if kind == columnId.KIND_LEAF_GLOBAL {
+			refKey := columnId.poolKey(is_string(id) ? id : decodedId)
 			if !is_undefined(queryKey) {
 				refKey = queryKey
 			}
@@ -131,25 +135,51 @@ createBuilder := func(ctx) {
 
 		// Local-form PObjectId: canonicalize({resolvePath, name}).
 		// Not yet supported here — addSingle has no resolver for local refs.
-		if is_map(decodedId) && !is_undefined(decodedId.resolvePath) {
+		if kind == columnId.KIND_LEAF_LOCAL {
 			ll.panic("addSingle does not support local-form PObjectId (resolvePath): ", decodedId)
 		}
 
-		isFiltered := is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters)
+		// Rich ids (Overridden / Filtered / Discovered) register under the id
+		// itself and resolve their terminal leaf by ref. Keying on the full id
+		// rather than the leaf is what keeps two projections — or two linker
+		// routes — to the same physical column apart, and makes the key used
+		// here identical to the one `processColumnId` computes on read.
+		if kind == columnId.KIND_OVERRIDDEN || kind == columnId.KIND_FILTERED ||
+			kind == columnId.KIND_DISCOVERED {
+
+			// Linker hops are columns in their own right: register each so the
+			// join can reference it, then fall through to the hit itself.
+			for _, referenced in columnId.referencedIds(decodedId) {
+				if columnId.poolKey(referenced) != columnId.poolKey(decodedId) {
+					addSingleInner(referenced)
+				}
+			}
+
+			leafKey := columnId.decode(columnId.extractLeafId(decodedId))
+			ll.assert(leafKey.__isRef == true,
+				"addSingle: %v resolves to a local-form leaf, which has no resolver here: %v",
+				kind, leafKey)
+
+			refKey := columnId.poolKey(is_string(id) ? id : decodedId)
+			if !is_undefined(queryKey) {
+				refKey = queryKey
+			}
+			ref := { blockId: leafKey.blockId, name: leafKey.name }
+			if !is_string(refs[refKey]) {
+				refs[refKey] = ref
+			}
+			return
+		}
+
+		// Legacy FilteredPColumnId: `source` is an anchored selector, resolved
+		// unfiltered and sliced per read, so it keys on the source.
+		isFiltered := kind == columnId.KIND_LEGACY_FILTERED
 		if isFiltered && !is_undefined(queryKey) {
 			ll.panic("FilteredPColumnId cannot be used with a queryKey.")
 		}
 
-		defaultKey := undefined
-		valueToStore := undefined
-		if isFiltered {
-			defaultKey = canonical.encode(decodedId.source)
-			valueToStore = decodedId.source
-		} else {
-			// Use the original string ID if provided for the key, otherwise encode the map
-			defaultKey = is_string(id) ? id : canonical.encode(decodedId)
-			valueToStore = decodedId // Store the decoded map itself
-		}
+		defaultKey := columnId.poolKey(is_string(id) ? id : decodedId)
+		valueToStore := isFiltered ? decodedId.source : decodedId
 
 		keyToUse := defaultKey
 		if !is_undefined(queryKey) {
@@ -338,39 +368,38 @@ createBuilder := func(ctx) {
  * @returns Object that implements the unmarshaller interface {canParse, parse}
  */
 pColumnBundleUnmarshaller := func() {
-	// Process UniversalPColumnId inputs and return their components and canonical representation
+	// Decomposes a column id into everything the read path needs: the pool key
+	// it was registered under, the axis filters to slice its data by, and — for
+	// rich ids — the decoded key so spec math can be applied.
+	//
+	// Shares `columnId.poolKey` with the registration side, so the two seams
+	// cannot drift: a key computed here is the key `addSingleInner` stored.
 	processColumnId := func(id) {
-		columnKey := undefined
+		decodedId := columnId.decode(id)
+		kind := columnId.kindOf(decodedId)
+		serializedId := is_string(id) ? id : canonical.encode(decodedId)
+
 		columnAxisFilters := undefined
-		serializedId := undefined
+		universalId := undefined
+		discovery := undefined
 
-		if is_string(id) {
-			serializedId = id
-			decodedId := json.decode(id)
-
-			if is_map(decodedId) && !is_undefined(decodedId.source) && !is_undefined(decodedId.axisFilters) {
-				columnKey = canonical.encode(decodedId.source)
-				columnAxisFilters = decodedId.axisFilters
-			} else {
-				columnKey = id
-			}
-		} else if is_map(id) {
-			if !is_undefined(id.source) && !is_undefined(id.axisFilters) {
-				columnKey = canonical.encode(id.source)
-				columnAxisFilters = id.axisFilters
-				serializedId = canonical.encode(id)
-			} else {
-				columnKey = canonical.encode(id)
-				serializedId = columnKey
-			}
-		} else {
-			ll.panic("Invalid column ID type. Expected string or object.")
+		if kind == columnId.KIND_LEGACY_FILTERED {
+			columnAxisFilters = decodedId.axisFilters
+		} else if kind == columnId.KIND_OVERRIDDEN || kind == columnId.KIND_FILTERED ||
+			kind == columnId.KIND_DISCOVERED {
+			unwrapped := columnId.unwrap(decodedId)
+			columnAxisFilters = unwrapped.axisFilters
+			discovery = unwrapped.discovery
+			universalId = decodedId
 		}
 
 		return {
-			columnKey: columnKey,
+			columnKey: columnId.poolKey(is_string(id) ? id : decodedId),
 			axisFilters: columnAxisFilters,
-			canonicalId: serializedId
+			canonicalId: serializedId,
+			kind: kind,
+			universalId: universalId,
+			discovery: discovery
 		}
 	}
 
@@ -429,6 +458,35 @@ pColumnBundleUnmarshaller := func() {
 			}
 
 			bundle := undefined
+
+			// Axes a column contributes to a frame.
+			//
+			// For everything but a Discovered id this is just the column's own
+			// effective axes. A Discovered id is different: the engine
+			// inner-joins each linker hop and projects out that linker's
+			// one-side axes, so the axes the column actually lands on are the
+			// many side of the outermost hop — never the hit's own. Folding the
+			// hops from the hit outwards reproduces that, and keeps any hit axis
+			// the route never touches (which a blanket empty axesSpec loses).
+			effectiveAxesSpecOf := func(id) {
+				processedId := processColumnId(id)
+				axesSpec := bundle.getSpec(id).axesSpec
+
+				if is_undefined(processedId.discovery) {
+					return axesSpec
+				}
+
+				path := processedId.discovery.path
+				if is_undefined(path) {
+					return axesSpec
+				}
+
+				for i := len(path) - 1; i >= 0; i-- {
+					axesSpec = pSpec.linkerJoinAxesSpec(bundle.getSpec(path[i].column), axesSpec)
+				}
+				return axesSpec
+			}
+
 			bundle = ll.toStrict({
 
 				/**
@@ -518,6 +576,19 @@ pColumnBundleUnmarshaller := func() {
 
 					baseSpec := result.spec
 
+					// Rich id: apply the layers the id itself carries. A Discovered
+					// layer passes through — the linker chain enables co-indexing
+					// without remapping the hit's own axes, and the engine needs the
+					// hit's real axes to resolve the join. Post-join axes are a
+					// property of the frame, and live in `getAxesSpec`.
+					if !is_undefined(processedId.universalId) {
+						if keepColumns {
+							return columnId.applySpecOverrides(baseSpec,
+								columnId.unwrap(processedId.universalId).specOverrides)
+						}
+						return columnId.effectiveSpec(baseSpec, processedId.universalId)
+					}
+
 					// If filters are present, prepare them and get the resulting spec
 					if !keepColumns && !is_undefined(columnAxisFilters) && len(columnAxisFilters) > 0 {
 						prepared := pSpec.prepareAxisFiltersAndAxesSpec(columnAxisFilters, baseSpec.axesSpec)
@@ -536,6 +607,99 @@ pColumnBundleUnmarshaller := func() {
 				 */
 				getColumnKeys: func() {
 					return maps.getKeys(pool)
+				},
+
+				/**
+				 * Axes a column contributes to a frame, with axis filters removed
+				 * and — for a Discovered id — the linker hops folded, so the result
+				 * is what the engine will actually produce for it.
+				 *
+				 * @param id - The ID of the column
+				 * @returns AxisSpec[]
+				 */
+				getAxesSpecOf: func(id) {
+					return effectiveAxesSpecOf(id)
+				},
+
+				/**
+				 * Compiles a column id into an executable query entry.
+				 *
+				 * This is where a Discovered id's route stops being metadata and
+				 * becomes a real join: every hop in `path` folds into a nested
+				 * `linkerJoin` around the hit, and the engine resolves it. Feed the
+				 * result to `pt.p._rawQueryEntry(columns, joinEntry)`.
+				 *
+				 * Any other id shape compiles to a plain column entry, so a caller
+				 * holding a mixed list does not have to branch.
+				 *
+				 * @param id - The ID of the column
+				 * @param options - object (optional) - forwarded to `getColumn` for
+				 *   the hit; `keepColumns` is forced on for hits whose data is
+				 *   sliced, because the engine needs the unsliced key axes to join.
+				 * @returns {
+				 *   columns: { [poolKey]: { spec, data } } - every column the query
+				 *     references, keyed as the query refers to them,
+				 *   joinEntry: SpecQueryJoinEntry - for `pt.p._rawQueryEntry`,
+				 *   axesSpec: AxisSpec[] - axes the entry produces
+				 * }
+				 */
+				getQueryEntry: func(id, ...options) {
+					options = is_array(options) && is_map(options[0]) ? options[0] : {}
+					processedId := processColumnId(id)
+					hitKey := processedId.columnKey
+
+					// Pinning axes on a discovered hit would have to become a
+					// `sliceAxes` node inside the join, and the query builder emits
+					// only column / linkerJoin / innerJoin. Slicing the data first
+					// instead would drop the very key axes the join needs.
+					ll.assert(is_undefined(processedId.discovery) ||
+						is_undefined(processedId.axisFilters) || len(processedId.axisFilters) == 0,
+						"getQueryEntry: axis filters on a discovered column are not expressible " +
+						"in a linker join; filter the result after the join instead. Id: %v", id)
+
+					hit := bundle.getColumn(id, options)
+					columns := {}
+					columns[hitKey] = { spec: hit.spec, data: hit.data }
+
+					path := []
+					if !is_undefined(processedId.discovery) && !is_undefined(processedId.discovery.path) {
+						path = processedId.discovery.path
+					}
+
+					queryPath := []
+					for _, step in path {
+						ll.assert(step.type == "linker",
+							"getQueryEntry: unsupported discovery step type %q (only \"linker\" is allowed)",
+							step.type)
+
+						linkerKey := columnId.poolKey(step.column)
+						linker := bundle.getColumn(step.column)
+
+						// Without this annotation ptabler silently degrades the
+						// linker join to an inner join, which quietly produces a
+						// wrong table rather than failing.
+						annotations := linker.spec.annotations
+						ll.assert(ll.isMap(annotations) &&
+							annotations[pSpec.A_IS_LINKER_COLUMN] == "true",
+							"getQueryEntry: column %v is used as a linker but does not carry %q == \"true\"; spec: %v",
+							linkerKey, pSpec.A_IS_LINKER_COLUMN, linker.spec)
+
+						columns[linkerKey] = { spec: linker.spec, data: linker.data }
+						queryPath = append(queryPath, {
+							type: "linker",
+							linker: { columnId: linkerKey }
+						})
+					}
+
+					return {
+						columns: columns,
+						joinEntry: buildQueryLib.buildQuery({
+							version: "v1",
+							column: hitKey,
+							path: queryPath
+						}),
+						axesSpec: effectiveAxesSpecOf(id)
+					}
 				},
 
 				/**
@@ -590,8 +754,16 @@ pColumnBundleUnmarshaller := func() {
 							if is_undefined(result) {
 								ll.panic("Column not found: %v. Pool: %v", columnKey, maps.getKeys(pool))
 							}
-							
-							processResult(result)
+
+							// A single named column reports the axes it actually
+							// contributes — filters removed, linker hops folded.
+							// Reading the raw pool spec here would disagree with
+							// `getSpec` on the very same id.
+							if !is_array(result) {
+								processAxesSpec({ axesSpec: effectiveAxesSpecOf(id) })
+							} else {
+								processResult(result)
+							}
 						}
 					} else {
 						// Process all columns in the pool

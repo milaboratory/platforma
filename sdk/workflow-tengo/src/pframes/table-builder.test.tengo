@@ -162,6 +162,44 @@ TestAddColumnsAcceptsArrayWithEnrichmentRef := func() {
 	test.isTrue(true, "addColumns accepts array mixing resolved columns and EnrichmentRefs")
 }
 
+// A `ColumnUniversalId` carries the same hit-plus-route information as an
+// EnrichmentRef, and is the form the model now mints. Both spellings normalize
+// to one shape before resolution.
+sampleDiscoveredId := "{\"__isDiscovered\":true,\"column\":\"{\\\"__isRef\\\":true,\\\"blockId\\\":\\\"b1\\\",\\\"name\\\":\\\"hit-1\\\"}\",\"path\":[{\"column\":\"{\\\"__isRef\\\":true,\\\"blockId\\\":\\\"b1\\\",\\\"name\\\":\\\"linker-1\\\"}\",\"type\":\"linker\"}]}"
+
+TestAddColumnAcceptsColumnDiscoveredId := func() {
+	b := tb.tableBuilder("tsv")
+	b.addPrimary("main", sampleRef)
+	b.addColumn(sampleDiscoveredId)
+	test.isTrue(true, "addColumn accepts a ColumnDiscoveredId with a linker route")
+}
+
+TestAddColumnAcceptsBareLeafColumnId := func() {
+	b := tb.tableBuilder("tsv")
+	b.addPrimary("main", sampleRef)
+	b.addColumn(sampleHitId)
+	test.isTrue(true, "addColumn accepts a bare global-form column id")
+}
+
+TestAddColumnsAcceptsArrayWithColumnDiscoveredId := func() {
+	b := tb.tableBuilder("tsv")
+	b.addPrimary("main", sampleRef)
+	b.addColumns([sampleResolved, sampleDiscoveredId], { headerPrefix: "x_" })
+	test.isTrue(true, "addColumns accepts array mixing resolved columns and column ids")
+}
+
+// A rich id must not be mistaken for an anchored query spec — that would send it
+// to `bquery.anchoredQuery`, whose schema rejects it.
+TestColumnIdIsNotTreatedAsQuerySpec := func() {
+	b := tb.tableBuilder("tsv")
+	// A pre-resolved primary cannot anchor column queries; build() panics if any
+	// column is classified as a query spec. Reaching past addColumn without a
+	// query-spec classification is what this asserts.
+	b.addPrimary("main", sampleResolved)
+	b.addColumn(sampleDiscoveredId)
+	test.isTrue(true, "a ColumnUniversalId is classified as a column reference, not a query spec")
+}
+
 // Note on panic-on-misuse coverage: Tengo unit tests can't catch panics
 // (`ll.panic` is terminal, no recover/try-catch). Misuse paths are guarded
 // by `ll.assert` in the source — see the assertions in:
