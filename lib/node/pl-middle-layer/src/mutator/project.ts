@@ -63,7 +63,7 @@ import type {
   BlockSettings,
   ProjectMeta,
 } from "@milaboratories/pl-model-middle-layer";
-import { InitialBlockSettings } from "@milaboratories/pl-model-middle-layer";
+import { InitialBlockSettings, normalizeProjectMeta } from "@milaboratories/pl-model-middle-layer";
 import Denque from "denque";
 import { exportContext, getPreparedExportTemplateEnvelope } from "./context_export";
 import { loadTemplate } from "./template/template_loading";
@@ -1796,9 +1796,20 @@ export class ProjectMutator {
 
   /** Updates project metadata */
   public setMeta(meta: ProjectMeta): void {
-    this.meta = meta;
+    this.meta = normalizeProjectMeta(meta);
     this.metaChanged = true;
     this.updateLastModified();
+  }
+
+  /**
+   * Updates the metadata fields the caller names, leaving the rest as they are.
+   *
+   * The merge happens against the metadata this mutator loaded inside the very transaction it
+   * writes in, so a rename and a description edit racing each other cannot make one of them
+   * revert the other's field.
+   */
+  public updateMeta(patch: Partial<ProjectMeta>): void {
+    this.setMeta({ ...this.meta, ...patch });
   }
 
   //
