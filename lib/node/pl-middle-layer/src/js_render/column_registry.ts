@@ -5,6 +5,7 @@ import {
   ColumnRegistry,
   extractPObjectId,
   PColumnValues,
+  readColumnField,
   ResultPoolEntriesProvider,
   SpecOverrides,
   type ColumnEntriesProvider,
@@ -56,7 +57,8 @@ export function buildColumnRegistry(
  * (`sliceAxes` / `specOverride`) that wrap this leaf in the def, so reconstructing
  * would double-apply them. Only the explicit `overrides` argument is folded in.
  *
- * Throws when the id is not in the registry or the column has no resolved spec.
+ * Throws when the id is not in the registry, the column has no resolved spec,
+ * or its spec or data field carries an error — that error, naming the column.
  * A `.data` field that has not yet materialised yields an empty value list — the
  * column refills on a later recomputation, mirroring the sandbox-side
  * `finalizePColumnData` behaviour rather than blocking the whole PFrame.
@@ -71,25 +73,28 @@ export function resolvePColumnById(
   if (leaf === undefined) {
     throw new Error(`column id ${String(pid)} not found in host column registry`);
   }
-  const specNode = leaf.accessor.traverse({
-    field: `${leaf.name}.spec`,
-    assertFieldType: "Input",
-    ignoreError: true,
-  });
-  const spec = specNode?.getDataAsJson<PColumnSpec>();
+  const specRead = readColumnField(leaf.accessor, `${leaf.name}.spec`);
+  if (specRead.status === "errored") throw columnFieldError(pid, "spec", specRead.error);
+  const spec =
+    specRead.status === "present" ? specRead.node.getDataAsJson<PColumnSpec>() : undefined;
   if (spec === undefined) {
     throw new Error(`column ${String(pid)} has no resolved spec`);
   }
-  const data =
-    leaf.accessor.traverse({
-      field: `${leaf.name}.data`,
-      assertFieldType: "Input",
-      ignoreError: true,
-    }) ?? [];
+  const dataRead = readColumnField(leaf.accessor, `${leaf.name}.data`);
+  if (dataRead.status === "errored") throw columnFieldError(pid, "data", dataRead.error);
+  const data = dataRead.status === "present" ? dataRead.node : [];
 
   return {
     id: id as PObjectId,
     spec: applySpecOverrides(spec, overrides),
     data,
   };
+}
+
+//
+// Internals
+//
+
+function columnFieldError(id: PObjectId, field: "spec" | "data", cause: Error): Error {
+  return new Error(`column ${String(id)} ${field} failed: ${cause.message}`, { cause });
 }

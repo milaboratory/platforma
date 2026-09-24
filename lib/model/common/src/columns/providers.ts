@@ -1,6 +1,12 @@
 import type { PObjectId } from "../pool";
 import { indexAccessorRoot, indexPoolBlock } from "./accessor_traversal";
-import type { AccessorLike, ColumnEntriesProvider, LeafEntry, UpstreamBlockCtx } from "./types";
+import type {
+  AccessorLike,
+  ColumnEntriesProvider,
+  LeafEntry,
+  SourceSubtreeError,
+  UpstreamBlockCtx,
+} from "./types";
 
 /**
  * Generic entries provider over a single accessor root. Walks `<root>` once
@@ -15,16 +21,19 @@ export class AccessorEntriesProvider<
   A extends AccessorLike<A>,
 > implements ColumnEntriesProvider<A> {
   protected readonly entries: ReadonlyMap<PObjectId, LeafEntry<A>>;
+  private readonly sourceErrors: ReadonlyArray<SourceSubtreeError>;
 
   constructor(
     protected readonly root: A,
     rootPath: ReadonlyArray<string>,
   ) {
+    const { entries, errors } = indexAccessorRoot(root, rootPath);
     const map = new Map<PObjectId, LeafEntry<A>>();
-    for (const entry of indexAccessorRoot(root, rootPath)) {
+    for (const entry of entries) {
       if (!map.has(entry.id)) map.set(entry.id, entry);
     }
     this.entries = map;
+    this.sourceErrors = errors;
   }
 
   getPObjectEntries(): ReadonlyMap<PObjectId, LeafEntry<A>> {
@@ -33,6 +42,11 @@ export class AccessorEntriesProvider<
 
   isFinal(): boolean {
     return this.root.getInputsLocked();
+  }
+
+  /** Errored subtrees met while indexing. */
+  getSourceErrors(): ReadonlyArray<SourceSubtreeError> {
+    return this.sourceErrors;
   }
 }
 
@@ -70,5 +84,10 @@ export class ResultPoolEntriesProvider<
       if (block.stagingCtx && !block.stagingCtx.getInputsLocked()) return false;
     }
     return true;
+  }
+
+  /** Pool columns are listed straight from ctx accessors, so no subtree can fail. */
+  getSourceErrors(): ReadonlyArray<SourceSubtreeError> {
+    return [];
   }
 }

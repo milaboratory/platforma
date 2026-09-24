@@ -1,6 +1,7 @@
 import { createGlobalPObjectId, createLocalPObjectId } from "../pool";
 import { ResourceTypeName } from "../resource_types";
-import type { AccessorLike, LeafEntry, UpstreamBlockCtx } from "./types";
+import { readColumnField } from "./column_field";
+import type { AccessorLike, LeafEntry, SourceSubtreeError, UpstreamBlockCtx } from "./types";
 
 /** Resource types that hold column collections — DFS stops here and collects. */
 export const COLLECT_TYPES: ReadonlyArray<string> = [ResourceTypeName.PFrame];
@@ -48,6 +49,9 @@ type DescendantHit<A extends AccessorLike<A>> = {
  * build canonical {@link createLocalPObjectId}s without relying on the
  * accessor itself to remember its path.
  *
+ * A field that carries an error is not descended into; it is reported in
+ * `errors` with its path, and its siblings are walked as usual.
+ *
  * Includes `root` itself in the walk.
  */
 export function findDescendantsByType<A extends AccessorLike<A>>(opts: {
@@ -55,59 +59,62 @@ export function findDescendantsByType<A extends AccessorLike<A>>(opts: {
   rootPath: ReadonlyArray<string>;
   collectTypes: ReadonlyArray<string>;
   descendTypes?: ReadonlyArray<string>;
-}): DescendantHit<A>[] {
+}): { hits: DescendantHit<A>[]; errors: SourceSubtreeError[] } {
   const { root, rootPath, collectTypes, descendTypes = DESCEND_TYPES } = opts;
   const collectSet = new Set(collectTypes);
   const descendSet = new Set(descendTypes);
-  const result: DescendantHit<A>[] = [];
+  const hits: DescendantHit<A>[] = [];
+  const errors: SourceSubtreeError[] = [];
 
   const stack: DescendantHit<A>[] = [{ node: root, path: rootPath }];
-  while (stack.length > 0) {
-    const { node, path } = stack.pop()!;
+  for (let top = stack.pop(); top !== undefined; top = stack.pop()) {
+    const { node, path } = top;
     const typeName = node.resourceType.name;
     if (collectSet.has(typeName)) {
-      result.push({ node, path });
+      hits.push({ node, path });
       continue;
     }
     if (!descendSet.has(typeName)) continue;
     const fields = node.listInputFields();
     for (let i = fields.length - 1; i >= 0; i--) {
-      const child = node.traverse({
-        field: fields[i],
-        assertFieldType: "Input",
-        ignoreError: true,
-      });
-      if (child !== undefined) stack.push({ node: child, path: [...path, fields[i]] });
+      const childPath = [...path, fields[i]];
+      const child = readColumnField(node, fields[i]);
+      if (child.status === "present") stack.push({ node: child.node, path: childPath });
+      if (child.status === "errored") {
+        errors.push({ kind: "source", path: childPath, message: child.error.message });
+      }
     }
   }
-  return result;
+  return { hits, errors };
 }
 
 /**
  * Walk an accessor root and return one {@link LeafEntry} per discovered column.
  * Ids are {@link createLocalPObjectId}-shaped: `{resolvePath, name}`. The
  * `resolvePath` is derived from `rootPath` extended by the DFS traversal.
+ * Subtrees whose field carries an error are left out and reported in `errors`.
  */
 export function indexAccessorRoot<A extends AccessorLike<A>>(
   root: A,
   rootPath: ReadonlyArray<string>,
-): LeafEntry<A>[] {
-  const result: LeafEntry<A>[] = [];
-  for (const { node, path } of findDescendantsByType({
+): { entries: LeafEntry<A>[]; errors: SourceSubtreeError[] } {
+  const { hits, errors } = findDescendantsByType({
     root,
     rootPath,
     collectTypes: COLLECT_TYPES,
     descendTypes: DESCEND_TYPES,
-  })) {
+  });
+  const entries: LeafEntry<A>[] = [];
+  for (const { node, path } of hits) {
     for (const name of listColumnNames(node)) {
-      result.push({
+      entries.push({
         accessor: node,
         name,
         id: createLocalPObjectId([...path], name),
       });
     }
   }
-  return result;
+  return { entries, errors };
 }
 
 /**

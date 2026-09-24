@@ -49,6 +49,14 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   getAccessorHandleByName(name: string): AHandle | undefined;
 
+  /**
+   * Error resource on the block output behind accessor `name`, whether or not
+   * the output also has a value. Lets a caller learn the error without the
+   * throw {@link getAccessorHandleByName} raises for an errored output that
+   * has no value. Absent on a host older than this method.
+   */
+  getAccessorErrorByName?(name: string): AHandle | undefined;
+
   //
   // Basic resource accessor actions
   //
