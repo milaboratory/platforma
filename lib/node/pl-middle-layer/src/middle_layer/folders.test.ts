@@ -1,9 +1,10 @@
 import { expect, test } from "vitest";
 import * as tp from "node:timers/promises";
+import { randomUUID } from "node:crypto";
 import type { SignedResourceId } from "@milaboratories/pl-client";
-import { TestHelpers, field, isNullSignedResourceId } from "@milaboratories/pl-client";
+import { field, isNullSignedResourceId } from "@milaboratories/pl-client";
 import type { FolderId, FoldersMovePlan } from "@milaboratories/pl-model-middle-layer";
-import { withMl, withMlOn } from "../test/with_ml";
+import { withMl, withMlOnUserRoot } from "../test/with_ml";
 import type { ProjectId } from "../model/project_model";
 import type { MiddleLayer } from "./middle_layer";
 import type { FoldersListing } from "./folders";
@@ -562,18 +563,20 @@ test("a project deleted behind the tree's back does not break the read or the ne
 });
 
 test("the tree survives a restart of the middle layer", async () => {
-  await TestHelpers.withTempRoot(async (pl) => {
-    let folder: FolderId | undefined = undefined;
-    let project: ProjectId | undefined = undefined;
+  // Names of their own: the user's root keeps whatever other tests and earlier runs left there.
+  const name = `Samples ${randomUUID()}`;
+  let folder: FolderId | undefined = undefined;
+  let project: ProjectId | undefined = undefined;
 
-    await withMlOn(pl, async (ml) => {
-      const created = await ml.createFolder("Samples");
-      const prj = await ml.createProject({ label: "Alpha" });
-      await untilListing(ml, (l) => l.projects.length === 1);
-      await move(ml, prj, created);
-      await untilListing(ml, (l) => l.projects[0]?.folder === created);
+  try {
+    await withMlOnUserRoot(async (ml) => {
+      const created = await ml.createFolder(name);
       folder = created;
+      const prj = await ml.createProject({ label: `Alpha ${randomUUID()}` });
       project = prj;
+      await untilListing(ml, (l) => l.projects.some((p) => p.id === prj));
+      await move(ml, prj, created);
+      await untilListing(ml, (l) => l.projects.some((p) => p.id === prj && p.folder === created));
     });
 
     if (folder === undefined || project === undefined)
@@ -583,25 +586,29 @@ test("the tree survives a restart of the middle layer", async () => {
 
     // A second middle layer over a work folder of its own: nothing local carries over, so what
     // comes back can only have come from the backend.
-    await withMlOn(pl, async (ml) => {
-      const listing = await untilListing(
-        ml,
-        (l) => l.folders.length === 1 && l.projects.length === 1,
+    await withMlOnUserRoot(async (ml) => {
+      const listing = await untilListing(ml, (l) =>
+        l.projects.some((p) => p.id === storedProject && p.folder === storedFolder),
       );
-      expect(listing.folders[0].id).toBe(storedFolder);
-      expect(listing.folders[0].name).toBe("Samples");
-      expect(listing.projects[0].id).toBe(storedProject);
-      expect(listing.projects[0].folder).toBe(storedFolder);
-      expect(listing.projects[0].path).toStrictEqual(["Samples"]);
-      expect(listing.healed).toBe(false);
+      expect(listing.folders.find((f) => f.id === storedFolder)?.name).toBe(name);
+      expect(listing.projects.find((p) => p.id === storedProject)?.path).toStrictEqual([name]);
       expect(listing.writable).toBe(true);
 
       // And it is still the same document being written to, not a fresh one.
       const nested = await ml.createFolder("2024", storedFolder);
-      const after = await untilListing(ml, (l) => l.folders.length === 2);
+      const after = await untilListing(ml, (l) => l.folders.some((f) => f.id === nested));
       expect(after.folders.find((f) => f.id === nested)?.parent).toBe(storedFolder);
     });
-  });
+  } finally {
+    // Deleting the folder takes the project and the nested folder with it.
+    await withMlOnUserRoot(async (ml) => {
+      if (folder !== undefined) {
+        const planned = await ml.previewFolderDeletion(folder);
+        if (planned.ok) await ml.deleteFolder(folder, planned.removal);
+      }
+      if (project !== undefined) await ml.deleteProject(project).catch(() => undefined);
+    });
+  }
 });
 
 test("renaming a project onto a sibling's name is refused, in whatever case", async () => {

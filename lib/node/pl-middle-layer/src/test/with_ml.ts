@@ -20,27 +20,18 @@ export async function withMl(
 }
 
 /**
- * A live {@link MiddleLayer} over the temporary root `pl` is attached to, closed again when the
- * body returns — what a test restarting the middle layer over one root opens once per run.
+ * A live {@link MiddleLayer} over the test user's own root, on a client of its own, closed again
+ * when the body returns — what a test restarting the middle layer opens once per run.
  *
- * Each call opens a client of its own on that root, because closing a middle layer closes the
- * client it runs on. The work folder is fresh too, so nothing local carries over from one run to
- * the next.
+ * The user's own root rather than a temporary one: a client asking for a temporary root by name
+ * gets a fresh, empty one every time, so a second run would start from nothing. What a test
+ * leaves in this root outlives it, so the test cleans up after itself. The work folder is fresh on
+ * every call, so nothing local carries over from one run to the next.
  */
-export async function withMlOn(
-  pl: PlClient,
+export async function withMlOnUserRoot(
   cb: (ml: MiddleLayer, workFolder: string) => Promise<void>,
 ): Promise<void> {
-  const root = pl.conf.alternativeRoot;
-  if (root === undefined)
-    throw new Error("withMlOn needs a client on a temporary root, as withTempRoot opens one.");
-
-  const client = await TestHelpers.getTestClient(root);
-  try {
-    await runMl(client, cb);
-  } finally {
-    await client.close();
-  }
+  await runMl(await TestHelpers.getTestClient(), cb);
 }
 
 //

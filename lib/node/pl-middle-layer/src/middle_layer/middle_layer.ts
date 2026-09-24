@@ -1554,6 +1554,9 @@ export class MiddleLayer {
               items.push({ kind: "template", id, folder: carried.folder });
             }
 
+            // Folders this build cannot rewrite leave the subtree unbuilt, and the copies land at
+            // the top level. That is deliberate: folders are an arrangement, not the content, and
+            // a copy the user asked for is not held back for their sake.
             tree.graft({ root, folders: payload.folders, items }, destination);
 
             await tx.commit();
