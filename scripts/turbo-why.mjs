@@ -37,6 +37,13 @@ function short(taskId) {
   return `${pkg}#${task}`;
 }
 
+const MAX_LISTED = 10;
+
+function formatList(items) {
+  const extra = items.length > MAX_LISTED ? `, +${items.length - MAX_LISTED} more` : "";
+  return items.slice(0, MAX_LISTED).join(", ") + extra;
+}
+
 function collectDownstream(tid, children) {
   const visited = new Set();
   const queue = [...(children.get(tid) ?? [])];
@@ -231,12 +238,9 @@ function analyse(data) {
     // upstream HIT deps (direct, or behind no-script tasks)
     const deps = effectiveDeps(rc);
     if (deps.length) {
-      const MAX_DEPS = 10;
-      const depInfo =
-        deps
-          .slice(0, MAX_DEPS)
-          .map((d) => `${short(d)}=${taskMap.get(d).hash?.slice(0, 12) ?? "?"}`)
-          .join(", ") + (deps.length > MAX_DEPS ? `, +${deps.length - MAX_DEPS} more` : "");
+      const depInfo = formatList(
+        deps.map((d) => `${short(d)}=${taskMap.get(d).hash?.slice(0, 12) ?? "?"}`),
+      );
       console.log(dim(`    deps: ${depInfo}`));
     }
 
@@ -289,15 +293,17 @@ function analyse(data) {
     console.log();
   }
 
-  // ── cascade-only misses ──────────────────────────────────────────────
+  // ── cascade misses ───────────────────────────────────────────────────
   const cascadeOnly = misses.filter((t) => hasMissUpstream.has(t.taskId) && !rootIds.has(t.taskId));
   if (cascadeOnly.length) {
-    console.log(bold(`Cascade-only rebuilds (${cascadeOnly.length} tasks):`));
-    console.log(dim("These rebuild only because an upstream dependency changed.\n"));
+    console.log(bold(`Cascade rebuilds (${cascadeOnly.length} tasks):`));
+    console.log(
+      dim("These rebuild because an upstream dependency changed. Own input changes are not checked.\n"),
+    );
 
     for (const t of cascadeOnly.sort((a, b) => a.taskId.localeCompare(b.taskId))) {
       const depsMiss = effectiveDeps(t).filter((d) => missIds.has(d));
-      const depStr = depsMiss.map(short).join(", ");
+      const depStr = formatList(depsMiss.map(short));
       console.log(`  ${yellow(short(t.taskId))}  ${dim(`hash: ${t.hash}`)}  <- ${depStr}`);
     }
     console.log();
