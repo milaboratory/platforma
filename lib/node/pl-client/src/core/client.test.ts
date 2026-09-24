@@ -2,8 +2,32 @@ import { getTestAdminClient, getTestAdminClientConf } from "../test/test_config"
 import { PlClient } from "./client";
 import { PlDriver, PlDriverDefinition } from "./driver";
 import { Dispatcher, request } from "undici";
-import { GrpcClientProviderFactory } from "./grpc";
-import { test, expect } from "vitest";
+import type { WireClientProviderFactory } from "./wire";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
+import { afterAll, beforeAll, test, expect } from "vitest";
+
+const pingServer = createServer((req, res) => {
+  if (req.url === "/ping") {
+    res.end("pong");
+    return;
+  }
+  res.statusCode = 404;
+  res.end("not found");
+});
+let pingUrl: string;
+
+beforeAll(async () => {
+  await new Promise<void>((resolve) => pingServer.listen(0, "127.0.0.1", resolve));
+  const { port } = pingServer.address() as AddressInfo;
+  pingUrl = `http://127.0.0.1:${port}/ping`;
+});
+
+afterAll(async () => {
+  await new Promise<void>((resolve, reject) =>
+    pingServer.close((err) => (err ? reject(err) : resolve())),
+  );
+});
 
 test("test client init", async () => {
   await getTestAdminClient(undefined);
@@ -30,12 +54,12 @@ const SimpleDriverDefinition: PlDriverDefinition<SimpleDriver> = {
   name: "SimpleDriver",
   init(
     pl: PlClient,
-    grpcClientProviderFactory: GrpcClientProviderFactory,
+    wireClientFactory: WireClientProviderFactory,
     httpDispatcher: Dispatcher,
   ): SimpleDriver {
     return {
       async ping(): Promise<string> {
-        const response = await request("https://cdn.milaboratory.com/ping", {
+        const response = await request(pingUrl, {
           dispatcher: httpDispatcher,
         });
         return await response.body.text();
@@ -45,8 +69,13 @@ const SimpleDriverDefinition: PlDriverDefinition<SimpleDriver> = {
   },
 };
 
-test("test driver", async () => {
+test("test driver", async ({ skip }) => {
   const client = await getTestAdminClient();
   const drv = client.getDriver(SimpleDriverDefinition);
-  expect(await drv.ping()).toEqual("pong");
+  try {
+    skip(client.conf.httpProxy !== undefined, "a proxy cannot reach the local ping server");
+    expect(await drv.ping()).toEqual("pong");
+  } finally {
+    await client.close();
+  }
 });

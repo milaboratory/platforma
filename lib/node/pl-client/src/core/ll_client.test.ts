@@ -1,3 +1,4 @@
+import { TestTags } from "@milaboratories/build-configs";
 import { LLPlClient } from "./ll_client";
 import {
   getTestConfig,
@@ -12,6 +13,8 @@ import {
   TxAPI_Open_Request_WritableTx,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import { request } from "undici";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 import * as tp from "node:timers/promises";
 import { test, expect } from "vitest";
 
@@ -138,13 +141,47 @@ test("automatic token update", async () => {
   }
 }, 5000);
 
-test("test simple https call", async () => {
-  const client = await getTestLLClient();
-  const response = await request("https://cdn.milaboratory.com/ping", {
-    dispatcher: client.httpDispatcher,
+test("test simple http call", async ({ skip }) => {
+  const server = createServer((req, res) => {
+    if (req.url === "/ping") {
+      res.end("pong");
+      return;
+    }
+    res.statusCode = 404;
+    res.end("not found");
   });
-  const text = await response.body.text();
-  expect(text).toEqual("pong");
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address() as AddressInfo;
+  try {
+    const client = await getTestLLClient();
+    try {
+      skip(client.conf.httpProxy !== undefined, "a proxy cannot reach the local ping server");
+      const response = await request(`http://127.0.0.1:${port}/ping`, {
+        dispatcher: client.httpDispatcher,
+      });
+      const text = await response.body.text();
+      expect(text).toEqual("pong");
+    } finally {
+      await client.close();
+    }
+  } finally {
+    await new Promise<void>((resolve, reject) =>
+      server.close((err) => (err ? reject(err) : resolve())),
+    );
+  }
+});
+
+test("test simple https call", { tags: [TestTags.Flaky] }, async () => {
+  const client = await getTestLLClient();
+  try {
+    const response = await request("https://cdn.milaboratory.com/ping", {
+      dispatcher: client.httpDispatcher,
+    });
+    const text = await response.body.text();
+    expect(text).toEqual("pong");
+  } finally {
+    await client.close();
+  }
 });
 
 test("test https call via proxy", async () => {
