@@ -27,6 +27,7 @@ export {
   readCrashMarkers,
   superviseWorker,
   type SupervisedWorker,
+  type StoredCrashMarker,
   type SuperviseOptions,
 } from "./supervisor";
 

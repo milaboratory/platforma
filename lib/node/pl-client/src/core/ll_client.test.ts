@@ -3,6 +3,8 @@ import {
   getTestConfig,
   plAddressToTestConfig,
   getTestLLClient,
+  getTestAdminLLClient,
+  getTestAdminClient,
   getTestClientConf,
 } from "../test/test_config";
 import {
@@ -160,7 +162,12 @@ test("test https call via proxy", async () => {
 });
 
 test("list user resources returns user root", async () => {
-  const client = await getTestLLClient();
+  // PlClient.init() creates the user root via the legacy path, which requires the admin
+  // role. After that, listUserResources returns it.
+  const plClient = await getTestAdminClient();
+  await plClient.close();
+
+  const client = await getTestAdminLLClient();
 
   let responses: AuthAPI_ListUserResources_Response[] = [];
   try {
