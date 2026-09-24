@@ -10,6 +10,7 @@ on:
 
 env:
   BODY_LIMIT: "1048576000"
+  TEST_CACHE_CRUTCH: ${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
   shard:
