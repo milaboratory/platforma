@@ -37,6 +37,13 @@ function short(taskId) {
   return `${pkg}#${task}`;
 }
 
+const MAX_LISTED = 10;
+
+function formatList(items) {
+  const extra = items.length > MAX_LISTED ? `, +${items.length - MAX_LISTED} more` : "";
+  return items.slice(0, MAX_LISTED).join(", ") + extra;
+}
+
 function collectDownstream(tid, children) {
   const visited = new Set();
   const queue = [...(children.get(tid) ?? [])];
@@ -179,12 +186,30 @@ function analyse(data) {
   const taskMap = new Map(realTasks.map((t) => [t.taskId, t]));
   const missIds = new Set(misses.map((t) => t.taskId));
 
+  // A task without a script still has dependsOn edges (`build` -> `^build`); follow them.
+  const allTasks = new Map(tasks.map((t) => [t.taskId, t]));
+  const effectiveDepsCache = new Map();
+  const effectiveDeps = (t) => {
+    if (effectiveDepsCache.has(t.taskId)) return effectiveDepsCache.get(t.taskId);
+    effectiveDepsCache.set(t.taskId, []);
+    const result = new Set();
+    for (const d of t.dependencies ?? []) {
+      const dt = allTasks.get(d);
+      if (!dt) continue;
+      if (taskMap.has(d)) result.add(d);
+      else for (const e of effectiveDeps(dt)) result.add(e);
+    }
+    const list = [...result];
+    effectiveDepsCache.set(t.taskId, list);
+    return list;
+  };
+
   const rootCauses = [];
   const hasMissUpstream = new Set();
   const children = new Map();
 
   for (const t of misses) {
-    const deps = t.dependencies ?? [];
+    const deps = effectiveDeps(t);
     const upstreamMisses = deps.filter((d) => missIds.has(d));
     if (upstreamMisses.length) {
       hasMissUpstream.add(t.taskId);
@@ -210,18 +235,13 @@ function analyse(data) {
     const tid = rc.taskId;
     console.log(`  ${boldRed(short(tid))}  ${dim(`hash: ${rc.hash}`)}`);
 
-    // dependency hashes (HIT deps that contribute to this task's hash)
-    const deps = rc.dependencies ?? [];
+    // upstream HIT deps (direct, or behind no-script tasks)
+    const deps = effectiveDeps(rc);
     if (deps.length) {
-      const depInfo = deps
-        .map((d) => {
-          const dt = taskMap.get(d);
-          if (!dt) return null;
-          return `${short(d)}=${dt.hash?.slice(0, 12) ?? "?"}`;
-        })
-        .filter(Boolean)
-        .join(", ");
-      if (depInfo) console.log(dim(`    deps: ${depInfo}`));
+      const depInfo = formatList(
+        deps.map((d) => `${short(d)}=${taskMap.get(d).hash?.slice(0, 12) ?? "?"}`),
+      );
+      console.log(dim(`    deps: ${depInfo}`));
     }
 
     // task-level external dependencies hash
@@ -273,15 +293,17 @@ function analyse(data) {
     console.log();
   }
 
-  // ── cascade-only misses ──────────────────────────────────────────────
+  // ── cascade misses ───────────────────────────────────────────────────
   const cascadeOnly = misses.filter((t) => hasMissUpstream.has(t.taskId) && !rootIds.has(t.taskId));
   if (cascadeOnly.length) {
-    console.log(bold(`Cascade-only rebuilds (${cascadeOnly.length} tasks):`));
-    console.log(dim("These rebuild only because an upstream dependency changed.\n"));
+    console.log(bold(`Cascade rebuilds (${cascadeOnly.length} tasks):`));
+    console.log(
+      dim("These rebuild because an upstream dependency changed. Own input changes are not checked.\n"),
+    );
 
     for (const t of cascadeOnly.sort((a, b) => a.taskId.localeCompare(b.taskId))) {
-      const depsMiss = (t.dependencies ?? []).filter((d) => missIds.has(d));
-      const depStr = depsMiss.map(short).join(", ");
+      const depsMiss = effectiveDeps(t).filter((d) => missIds.has(d));
+      const depStr = formatList(depsMiss.map(short));
       console.log(`  ${yellow(short(t.taskId))}  ${dim(`hash: ${t.hash}`)}  <- ${depStr}`);
     }
     console.log();
