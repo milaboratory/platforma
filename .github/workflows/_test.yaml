@@ -12,7 +12,40 @@ env:
   BODY_LIMIT: "1048576000"
 
 jobs:
-  test:
+  shard:
+    name: shard (${{ matrix.shard }})
+    strategy:
+      fail-fast: false
+      # One backend per shard: the tests are limited by backend throughput, not by runner CPU.
+      matrix:
+        include:
+          - shard: tengo-1
+            filter: --filter=@platforma-sdk/workflow-tengo-tests
+            args: -- --shard=1/3
+          - shard: tengo-2
+            filter: --filter=@platforma-sdk/workflow-tengo-tests
+            args: -- --shard=2/3
+          - shard: tengo-3
+            filter: --filter=@platforma-sdk/workflow-tengo-tests
+            args: -- --shard=3/3
+          - shard: other-a
+            filter: >-
+              --filter=@milaboratories/drivers-ml-blocks-integration
+              --filter=@milaboratories/mcp-server-tests
+          - shard: other-b
+            filter: >-
+              --filter=@milaboratories/pl-deployments
+              --filter=@milaboratories/milaboratories.test-filter-column.test
+              --filter=@milaboratories/milaboratories.test-block-model.test
+          - shard: other-c
+            gates: true
+            filter: >-
+              --filter=!@platforma-sdk/workflow-tengo-tests
+              --filter=!@milaboratories/drivers-ml-blocks-integration
+              --filter=!@milaboratories/mcp-server-tests
+              --filter=!@milaboratories/pl-deployments
+              --filter=!@milaboratories/milaboratories.test-filter-column.test
+              --filter=!@milaboratories/milaboratories.test-block-model.test
     # hz self-hosted DinD runner — this job runs pl-compose (docker compose up a
     # Platforma backend), so it needs a real Docker daemon.
     runs-on: hz-ubuntu-dind
@@ -47,16 +80,26 @@ jobs:
           quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
 
       - name: Check test cache (dry-run)
-        if: ${{ !inputs.no-cache }}
         id: dry-run
+        env:
+          PL_BUILD_CHANNEL: dev
+          PL_BUILD_VARIANT: binary
+          PL_BUILD_LOCATION: local
         run: |
-          pnpm run test:local+dry-run > ./test-dry-run.json || true
+          pnpm exec turbo run test ${{ matrix.filter }} --dry-run=json ${{ matrix.args }} > ./test-dry-run.json || true
+          TEST_TASKS=$(sed -n '/^{/,$p' ./test-dry-run.json | jq '[.tasks[] | select(.task == "test" and .command != "<NONEXISTENT>")] | length' 2>/dev/null || echo "unknown")
+          if [ "$TEST_TASKS" = "0" ]; then
+            echo "::error::Shard ${{ matrix.shard }} selects no test tasks. Update its filter."
+            exit 1
+          fi
           SKIP_TESTS=$(sed -n '/^{/,$p' ./test-dry-run.json | jq -r '.tasks | map(select(.task == "test")) | all((.cache.status == "HIT") or (.cache.status == "MISS" and .command == "<NONEXISTENT>"))' 2>/dev/null || echo "false")
+          if [ "${{ inputs.no-cache }}" = "true" ]; then SKIP_TESTS=false; fi
           echo "skip=$SKIP_TESTS" >> "$GITHUB_OUTPUT"
           echo "Test cache skip: $SKIP_TESTS"
 
+      # Repo-wide gates run once, in every run; other shards build only what their tests need.
       - name: Build
-        if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
+        if: matrix.gates
         env:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -64,7 +107,7 @@ jobs:
         run: pnpm run ci:build:local
 
       - name: Structure check (internal blocks)
-        if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
+        if: matrix.gates
         env:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -82,6 +125,7 @@ jobs:
 
       - name: Start Platforma Docker
         if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
+        id: pl
         uses: milaboratory/github-ci/actions/docker/pl-compose@v4
         env:
           PL_LICENSE: ${{ secrets.MI_LICENSE }}
@@ -96,6 +140,30 @@ jobs:
           pl-test-assets-dir: assets
           pl-log-level: info
 
+      # pl-compose only sleeps 1 s after `up`, and the Docker port proxy accepts TCP before pl does,
+      # so look for pl's LISTEN socket on 6345 (hex 18BD, state 0A) inside the container.
+      - name: Wait for Platforma
+        if: steps.pl.outcome == 'success'
+        run: |
+          for i in $(seq 1 90); do
+            if docker exec platform-platforma-1 sh -c 'grep -qE ":18BD [0-9A-F]+:0000 0A" /proc/net/tcp /proc/net/tcp6' 2>/dev/null; then
+              echo "Platforma listens on 6345 after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          docker ps -a
+          docker inspect -f '{{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} restarts={{.RestartCount}}' platform-platforma-1 || true
+          docker logs --tail 200 platform-platforma-1 || true
+          tail -n 200 "${{ steps.pl.outputs.log-dir }}/platforma.log" || true
+          echo "::error::Platforma did not listen on 6345 within 90 s"
+          exit 1
+
+      - name: Explain test cache misses
+        if: ${{ !inputs.no-cache && steps.dry-run.outputs.skip != 'true' }}
+        continue-on-error: true
+        run: node scripts/turbo-why.mjs test:local ${{ matrix.filter }} ${{ matrix.args }}
+
       - name: Run tests
         if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
         env:
@@ -106,11 +174,27 @@ jobs:
           MI_LICENSE: ${{ secrets.MI_LICENSE }}
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: pnpm run ${{ inputs.no-cache && 'ci:test:local+no-cache' || 'ci:test:local' }}
+          PL_BUILD_CHANNEL: dev
+          PL_BUILD_VARIANT: binary
+          PL_BUILD_LOCATION: local
+        run: |
+          pnpm exec turbo run test --concurrency 1 --summarize \
+            ${{ inputs.no-cache && '--force' || '' }} \
+            ${{ matrix.filter }} --output-logs=errors-only ${{ matrix.args }}
 
       - name: Upload coverage
         if: always()
+        continue-on-error: true
         uses: milaboratory/github-ci/actions/node/upload-coverage@v4
         with:
           test-coverage-reports: "**/coverage/lcov.info"
           test-results-reports: "**/test-report.junit.xml"
+
+  test:
+    # The required status check `test / test` reports this job.
+    needs: [shard]
+    if: always()
+    runs-on: hz-ubuntu-dind
+    steps:
+      - name: Check shards
+        run: test "${{ needs.shard.result }}" = "success"
