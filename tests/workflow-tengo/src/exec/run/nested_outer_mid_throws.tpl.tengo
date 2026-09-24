@@ -1,0 +1,29 @@
+/**
+ * exec succeeds, then an intermediate template throws.
+ *
+ * The thrower consumes the exec's output, so the command runs before the failure. A
+ * retry must not re-run it.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+execTpl := assets.importTemplate(":exec.run.single_exec_ok")
+throwerTpl := assets.importTemplate(":exec.run.mid_thrower")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	execRun := render.create(execTpl, {
+		payload: inputs.payload
+	})
+
+	thrower := render.create(throwerTpl, {
+		value: execRun.output("main")
+	})
+
+	return {
+		main: thrower.output("main")
+	}
+})
