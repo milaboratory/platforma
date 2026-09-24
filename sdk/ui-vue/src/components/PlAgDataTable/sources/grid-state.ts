@@ -7,8 +7,8 @@ import type { PlDataTableGridStateCore, PlTableColumnIdJson } from "@platforma-s
  *
  * The answer decides whether to destroy and rebuild the grid around the stored
  * state, so it must only ever ask for things a rebuild can deliver. Two kinds of
- * request cannot be, and asking anyway is how this comparison became an engine
- * for endless rebuilds:
+ * request cannot be delivered, and asking anyway is how this comparison became an
+ * engine for endless rebuilds:
  *
  * - a field the stored state does not express. AG Grid always reports its whole
  *   state, and a state saved while the grid had no columns carries no
@@ -25,20 +25,27 @@ export function isStoredStateApplied(
   actual: PlDataTableGridStateCore,
   gridColIds: ReadonlySet<PlTableColumnIdJson>,
 ): boolean {
-  const want = reachableRequest(desired, gridColIds);
-  const have = normalizeReportedState(actual);
+  const {
+    orderedColIds: desiredOrder,
+    hiddenColIds: desiredHidden,
+    sortModel: desiredSort,
+  } = dropColumnsTheGridDoesNotHave(desired, gridColIds);
+  const {
+    orderedColIds: actualOrder,
+    hiddenColIds: actualHidden,
+    sortModel: actualSort,
+  } = normalizeReportedState(actual);
 
-  if (want.hiddenColIds !== undefined && !isJsonEqual(want.hiddenColIds, have.hiddenColIds))
-    return false;
+  if (desiredHidden !== undefined && !isJsonEqual(desiredHidden, actualHidden)) return false;
 
-  if (want.sortModel !== undefined && !isJsonEqual(want.sortModel, have.sortModel)) return false;
+  if (desiredSort !== undefined && !isJsonEqual(desiredSort, actualSort)) return false;
 
-  if (want.orderedColIds !== undefined) {
+  if (desiredOrder !== undefined) {
     // Only the relative order of the columns it names: the grid may hold others,
     // and where it puts them is not being asked about.
-    const asked = new Set(want.orderedColIds);
-    const inAskedOrder = have.orderedColIds.filter((id) => asked.has(id));
-    if (!isJsonEqual(want.orderedColIds, inAskedOrder)) return false;
+    const desiredColumns = new Set(desiredOrder);
+    const actualOrderOfThose = actualOrder.filter((id) => desiredColumns.has(id));
+    if (!isJsonEqual(desiredOrder, actualOrderOfThose)) return false;
   }
 
   return true;
@@ -59,39 +66,45 @@ export function isStoredStateApplied(
 function normalizeReportedState(state: PlDataTableGridStateCore) {
   return {
     orderedColIds: state.columnOrder?.orderedColIds ?? [],
-    hiddenColIds: asSet(state.columnVisibility?.hiddenColIds ?? []),
+    hiddenColIds: sortIds(state.columnVisibility?.hiddenColIds ?? []),
     sortModel: state.sort?.sortModel ?? [],
   };
 }
 
-/** What the stored state asks for, with everything a rebuild could not deliver dropped. */
-function reachableRequest(
+/**
+ * Strike out every column the stored state names that the grid does not have, so
+ * what is left is what the grid can still be asked about.
+ */
+function dropColumnsTheGridDoesNotHave(
   state: PlDataTableGridStateCore,
   gridColIds: ReadonlySet<PlTableColumnIdJson>,
 ) {
-  const known = (id: PlTableColumnIdJson) => gridColIds.has(id);
-  const hidden = askedFor(state.columnVisibility?.hiddenColIds, known);
+  const inGrid = (id: PlTableColumnIdJson) => gridColIds.has(id);
+  const hidden = keepColumnsInGrid(state.columnVisibility?.hiddenColIds, inGrid);
   return {
-    orderedColIds: askedFor(state.columnOrder?.orderedColIds, known),
-    hiddenColIds: hidden && asSet(hidden),
-    sortModel: askedFor(state.sort?.sortModel, (item) => known(item.colId)),
+    orderedColIds: keepColumnsInGrid(state.columnOrder?.orderedColIds, inGrid),
+    hiddenColIds: hidden && sortIds(hidden),
+    sortModel: keepColumnsInGrid(state.sort?.sortModel, (item) => inGrid(item.colId)),
   };
 }
 
 /**
- * The entries the grid can still act on, or `undefined` when there is nothing to
- * ask for: either the field was never expressed, or every column it named is gone
- * and no rebuild brings those back. An explicitly empty list is an opinion —
- * "sorted by nothing", "every column visible" — and survives as one.
+ * The entries naming a column the grid has, or `undefined` when there is nothing
+ * left to ask about: either the field was never expressed, or every column it
+ * named is gone and no rebuild brings those back. An explicitly empty list is an
+ * opinion — "sorted by nothing", "every column visible" — and survives as one.
  */
-function askedFor<T>(entries: T[] | undefined, keep: (entry: T) => boolean): T[] | undefined {
+function keepColumnsInGrid<T>(
+  entries: T[] | undefined,
+  inGrid: (entry: T) => boolean,
+): T[] | undefined {
   if (entries === undefined) return undefined;
-  const reachable = entries.filter(keep);
-  if (entries.length > 0 && reachable.length === 0) return undefined;
-  return reachable;
+  const kept = entries.filter(inGrid);
+  if (entries.length > 0 && kept.length === 0) return undefined;
+  return kept;
 }
 
 /** Hidden columns are a set; put them in one order so either side compares alike. */
-function asSet(ids: PlTableColumnIdJson[]): PlTableColumnIdJson[] {
+function sortIds(ids: PlTableColumnIdJson[]): PlTableColumnIdJson[] {
   return [...ids].sort();
 }
