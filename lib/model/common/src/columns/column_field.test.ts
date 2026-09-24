@@ -72,7 +72,9 @@ function fakeAccessor({
     listInputFields: () => Object.keys(fields),
     getInputsLocked: () => inputsLocked,
     getFieldError: (field) => fields[field]?.error,
+    getError: () => undefined,
     hasData: () => false,
+    getDataAsString: () => undefined,
     getDataAsJson: () => undefined,
   };
 }

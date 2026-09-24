@@ -32,6 +32,30 @@ export function readColumnField<A extends AccessorLike<A>>(
   return node === undefined ? { status: "resolving" } : { status: "present", node };
 }
 
+/**
+ * Decode an error node's content into a display message. The backend serializes
+ * a resource error as `{"message": "..."}` (`ResourceError`); unwrap that to the
+ * human-readable message. Falls back to the raw string when the content is not
+ * that envelope (e.g. plain text, or an unexpected shape).
+ */
+export function decodeErrorMessage(raw: string): string {
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (isMessageEnvelope(parsed)) return parsed.message;
+  } catch {
+    // Not JSON — surface the raw content.
+  }
+  return raw;
+}
+
+/** Message of the error resource attached to `accessor` itself, if it has one. */
+export function resourceErrorMessage<A extends AccessorLike<A>>(accessor: A): string | undefined {
+  const error = accessor.getError();
+  if (error === undefined) return undefined;
+  const raw = error.getDataAsString();
+  return raw === undefined ? "Resource computation failed." : decodeErrorMessage(raw);
+}
+
 /** Errors carried by the `.spec` and `.data` fields of the column `entry` points at. */
 export function columnFieldErrors<A extends AccessorLike<A>>(
   entry: LeafEntry<A>,
@@ -53,3 +77,12 @@ export function hasErroredSpec<A extends AccessorLike<A>>(entry: LeafEntry<A>): 
 //
 
 const COLUMN_FIELDS = ["spec", "data"] as const;
+
+function isMessageEnvelope(value: unknown): value is { message: string } {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "message" in value &&
+    typeof value.message === "string"
+  );
+}

@@ -7,6 +7,7 @@ import {
 import { getCtxProviders } from "./index";
 import { ColumnErroredError, DataColumn } from "../data_column";
 import { ColumnsCollection } from "../columns_collection";
+import { GlobalCfgRenderCtxFeatureFlags } from "../../render/internal";
 import { stubRenderCtx } from "../__test_helpers__/stub_render_ctx";
 import { createTestCollectionDriver } from "../__test_helpers__/collection_driver";
 
@@ -106,6 +107,7 @@ const ERROR_HANDLE = "staging-error" as AccessorHandle;
 function ctxWithErroredStaging() {
   const lookups: string[] = [];
   const ctx = stubRenderCtx({
+    featureFlags: GlobalCfgRenderCtxFeatureFlags,
     getAccessorHandleByName: (name) => {
       lookups.push(name);
       if (name === "staging") throw new Error("staging output failed");
@@ -140,6 +142,7 @@ function ctxWithAccessors(
 ) {
   const lookups: string[] = [];
   const ctx = stubRenderCtx({
+    featureFlags: olderHost ? undefined : GlobalCfgRenderCtxFeatureFlags,
     getAccessorHandleByName: (name) => {
       lookups.push(name);
       return accessors[name]?.();

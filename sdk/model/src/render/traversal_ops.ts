@@ -18,6 +18,12 @@ export type CommonFieldTraverseOps = {
 
   /** Will not mark current context as unstable, if field is not found. */
   stableIfNotFound?: true;
+
+  /**
+   * Return `undefined` for a field that has an error and no value, instead of
+   * throwing. The error is lost; to read it, use `TreeNodeAccessor.getFieldError`.
+   */
+  pureFieldErrorToUndefined?: true;
 };
 
 export type FieldType = "Input" | "Output" | "Service" | "OTW" | "Dynamic" | "MTW";

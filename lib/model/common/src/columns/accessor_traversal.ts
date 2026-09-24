@@ -1,6 +1,6 @@
 import { createGlobalPObjectId, createLocalPObjectId } from "../pool";
 import { ResourceTypeName } from "../resource_types";
-import { readColumnField } from "./column_field";
+import { readColumnField, resourceErrorMessage } from "./column_field";
 import type { AccessorLike, LeafEntry, SourceSubtreeError, UpstreamBlockCtx } from "./types";
 
 /** Resource types that hold column collections — DFS stops here and collects. */
@@ -93,17 +93,25 @@ export function findDescendantsByType<A extends AccessorLike<A>>(opts: {
  * Ids are {@link createLocalPObjectId}-shaped: `{resolvePath, name}`. The
  * `resolvePath` is derived from `rootPath` extended by the DFS traversal.
  * Subtrees whose field carries an error are left out and reported in `errors`.
+ * An error on the root resource itself is reported at `rootPath`; the columns
+ * under the root are still listed, since the backend puts a nested error on
+ * the root too.
  */
 export function indexAccessorRoot<A extends AccessorLike<A>>(
   root: A,
   rootPath: ReadonlyArray<string>,
 ): { entries: LeafEntry<A>[]; errors: SourceSubtreeError[] } {
-  const { hits, errors } = findDescendantsByType({
+  const { hits, errors: subtreeErrors } = findDescendantsByType({
     root,
     rootPath,
     collectTypes: COLLECT_TYPES,
     descendTypes: DESCEND_TYPES,
   });
+  const rootError = resourceErrorMessage(root);
+  const errors: SourceSubtreeError[] =
+    rootError === undefined
+      ? subtreeErrors
+      : [{ kind: "source", path: [...rootPath], message: rootError }, ...subtreeErrors];
   const entries: LeafEntry<A>[] = [];
   for (const { node, path } of hits) {
     for (const name of listColumnNames(node)) {
