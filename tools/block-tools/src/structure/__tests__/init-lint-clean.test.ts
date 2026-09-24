@@ -3,11 +3,12 @@
 
 import { describe, test, expect } from "vitest";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { simulateInit } from "../engine/testing";
+import { resolveToolBin } from "./tool-bin";
 import type { BlockVars } from "../engine/api";
 
 const VARS: BlockVars = {
@@ -22,12 +23,12 @@ function resolveTsBuilderConfig(configFile: string): string {
   return fileURLToPath(import.meta.resolve(`@milaboratories/ts-builder/configs/${configFile}`));
 }
 
-/** ts-builder pins its own oxlint, so block-tools' PATH copy is a different
- *  version. */
+/** ts-builder pins its own oxlint, so block-tools' copy is a different version —
+ *  resolve from inside ts-builder to get the one its configs were written for.
+ *  See tool-bin.ts for why this goes through the `bin` field rather than
+ *  node_modules/.bin. */
 function resolveOxlintBinary(): string | undefined {
-  const configsDir = path.dirname(resolveTsBuilderConfig("oxlint-base.json"));
-  const binary = path.resolve(configsDir, "..", "..", "node_modules", ".bin", "oxlint");
-  return existsSync(binary) ? binary : undefined;
+  return resolveToolBin(resolveTsBuilderConfig("oxlint-base.json"), "oxlint");
 }
 
 /** The scopes whose `fmt` script lints. */
@@ -66,8 +67,8 @@ describe("init output is lint-clean (oxlint --deny-warnings)", () => {
       }
 
       const result = spawnSync(
-        oxlint!,
-        ["--config", path.join(root, scope, ".oxlintrc.json"), "--deny-warnings", "src"],
+        process.execPath,
+        [oxlint!, "--config", path.join(root, scope, ".oxlintrc.json"), "--deny-warnings", "src"],
         { cwd: path.join(root, scope), encoding: "utf-8" },
       );
       expect(

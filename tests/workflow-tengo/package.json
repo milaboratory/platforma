@@ -14,7 +14,7 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist && pl-tengo build",
+    "build": "shx rm -rf dist && pl-tengo build",
     "test": "vitest run --coverage",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
@@ -48,6 +48,7 @@
     "@vitest/coverage-istanbul": "catalog:",
     "dedent": "catalog:",
     "es-toolkit": "catalog:",
+    "shx": "catalog:",
     "vitest": "catalog:"
   }
 }

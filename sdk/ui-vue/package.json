@@ -20,7 +20,7 @@
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target browser-lib",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz"
   },
   "dependencies": {
     "@milaboratories/columns-collection-driver": "workspace:*",
@@ -59,6 +59,7 @@
     "rollup-plugin-sourcemaps2": "catalog:",
     "sass": "catalog:",
     "semver": "catalog:",
+    "shx": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"

@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { executeNativeCommand, resolveOxfmt } from "./utils/index";
+import { executeCommand, resolveOxfmt } from "./utils/index";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -51,7 +51,7 @@ export async function runFormat(paths: string[], options: FormatOptions = {}): P
 
   console.log(options.check ? "Checking formatting..." : "Formatting project...");
 
-  await executeNativeCommand(oxfmtCommand, oxfmtArgs);
+  await executeCommand(oxfmtCommand, oxfmtArgs);
 
   console.log(
     options.check ? "Format check completed successfully" : "Formatting completed successfully",

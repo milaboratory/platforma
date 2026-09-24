@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import { executeNativeCommand, resolveOxlint } from "./utils/index";
+import { executeCommand, resolveOxlint } from "./utils/index";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -54,7 +54,7 @@ export async function runLint(paths: string[], options: LintOptions = {}): Promi
 
   console.log("Linting project...");
 
-  await executeNativeCommand(oxlintCommand, oxlintArgs);
+  await executeCommand(oxlintCommand, oxlintArgs);
 
   console.log("Linting completed successfully");
 }

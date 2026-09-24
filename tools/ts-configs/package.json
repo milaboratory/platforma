@@ -13,6 +13,9 @@
     "./*": "./src/*"
   },
   "scripts": {
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz"
+  },
+  "devDependencies": {
+    "shx": "catalog:"
   }
 }

@@ -28,7 +28,7 @@
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target browser-lib",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
   "dependencies": {
@@ -57,6 +57,7 @@
     "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
     "jsdom": "catalog:",
+    "shx": "catalog:",
     "svgo": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
