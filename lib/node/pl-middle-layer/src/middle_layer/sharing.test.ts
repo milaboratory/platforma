@@ -4,11 +4,15 @@ import { resourceIdToString } from "@milaboratories/pl-client";
 import type { FolderId, FoldersItem } from "@milaboratories/pl-model-middle-layer";
 import type { TemplateId } from "@milaboratories/pl-model-common";
 import { PROJECT_TEMPLATE_SCHEMA_V1 } from "@milaboratories/pl-model-common";
-import { withMl } from "../test/with_ml";
+import { withMlKeepingRoots } from "../test/with_ml";
 import { createTemplate } from "../mutator/template";
 import type { FoldersListing } from "./folders";
 import type { MiddleLayer } from "./middle_layer";
 import { ensureTemplateListRid } from "./template_list";
+
+// The file's roots outlive their tests and are deleted together after the last one, so the
+// backend's cleanup of their projects never runs under this file's own writes.
+const withMl = withMlKeepingRoots();
 
 /**
  * Sharing folders and projects against a live backend: what a copy out of a share builds, and
