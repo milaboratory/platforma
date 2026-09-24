@@ -207,6 +207,21 @@ evaluateResource := func(node, resolver, label) {
 	return v
 }
 
+// evaluateScratch is evaluateResource for a scratch request, where 0 is a valid answer:
+// the command gets its temporary directory and no sized device, the same meaning a
+// static `scratchFreeSpace: 0` has. A negative result is still an error.
+evaluateScratch := func(node, resolver) {
+	node = _unwrap(node)
+	ll.assert(!sets.hasElement(_BOOL_OPS, node.op),
+		"exec resource formula (scratchFreeSpace) must compute a number, but its top-level op is %q (a comparison/logic op). Use comparisons and logic only inside f.when(...).",
+		node.op)
+	v := evaluate(node, resolver)
+	ll.assert(is_int(v) && v >= 0,
+		"exec resource formula (scratchFreeSpace) must evaluate to a non-negative integer, got %v. Floor a subtraction that can underflow with .atLeast(0).",
+		v)
+	return v
+}
+
 // ---- workflow-render-time resolution helpers -------------------------------
 
 // Line-oriented text extensions f.lineCount() supports, and the compression
@@ -450,6 +465,7 @@ export {
 	isFormula:  func(x) { return is_map(x) && (!is_undefined(x.__isFormula__) || !is_undefined(x.op)) },
 
 	evaluateResource:      evaluateResource,
+	evaluateScratch:       evaluateScratch,
 	resolveAst:            resolveAst,
 	referencedMetricFiles: referencedMetricFiles,
 	applyFormulaFallback:  applyFormulaFallback,
