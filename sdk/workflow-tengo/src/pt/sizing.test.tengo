@@ -90,6 +90,13 @@ TestCpuCurve := func() {
 	test.isEqual(sizing.CPU_MAX, _cpu(1000 * GiB))  // clamped
 }
 
+// ---- polars threads -------------------------------------------------------
+// POLARS_MAX_THREADS = between(system.cpu, 2, 8), evaluated by the backend.
+
+TestPolarsThreadsClampedToCpuBounds := func() {
+	test.isEqual("{min(8,max(2,system.cpu))}", sizing.POLARS_MAX_THREADS_EXPR)
+}
+
 // ---- an explicit mem() is not this module's business ----------------------
 
 TestConstantsMatchTheDocumentedFormula := func() {

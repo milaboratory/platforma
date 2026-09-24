@@ -2,18 +2,19 @@
 // author leaves cpu or mem unset. Kept out of the template body so the formulas can be
 // unit tested against a fake metric resolver (see sizing.test.tengo).
 //
-//     ram = between(2 GiB + 6 * size, memFloor or 2 GiB, 256 GiB)
-//     cpu = between(2 + size / 16 GiB, 2, 8)
+//     ram                = between(2 GiB + 6 * size, memFloor or 2 GiB, 256 GiB)
+//     cpu                = between(2 + size / 16 GiB, 2, 8)
+//     POLARS_MAX_THREADS = between(system.cpu, 2, 8)
 //
 // Measured need per GiB of input, per plan shape, at 8 Polars threads:
 //     concat + aggregate with max_by   4.94   <- the steepest one reachable here
 //     bulk export                      2.92
 //     single-cell export               1.40
 //     write_frame                      4.13 x^0.68, sub-linear
-// One formula serves every shape, so it carries the steepest. CPU_MAX is 8, and no call
-// site sets cpu without also setting mem, so 8 threads is the ceiling these formulas run
-// at. The same aggregate shape needs 6.85 at 32 threads, which only a site that pins cpu
-// above 8 and leaves mem auto would reach.
+// One formula serves every shape, so it carries the steepest. The slopes hold at 8
+// Polars threads or fewer; the same aggregate shape needs 6.22 at 16 threads. Polars
+// threads are therefore clamped to CPU_MAX whatever cpu the run is granted, including
+// an explicit cpu() above 8, which reserves cores Polars does not use.
 //
 // RAM_SLOPE is 6, above the 4.94 it must cover. The margin is deliberate. The fits are
 // against uncompressed TSV bytes, and f.size() reports stored blob bytes, so a parquet
@@ -65,6 +66,9 @@ SCRATCH_DEVICE_MIN_GIB := 16
 CPU_MIN := 2
 CPU_MAX := 8
 CPU_GIB_PER_CORE := 16
+
+// Backend expression for POLARS_MAX_THREADS; system.cpu is the granted core count.
+POLARS_MAX_THREADS_EXPR := format("{min(%d,max(%d,system.cpu))}", CPU_MAX, CPU_MIN)
 
 /**
  * The default RAM formula.
@@ -127,6 +131,8 @@ export {
 	ramFormula: ramFormula,
 	cpuFormula: cpuFormula,
 	scratchFormula: scratchFormula,
+
+	POLARS_MAX_THREADS_EXPR: POLARS_MAX_THREADS_EXPR,
 
 	// exported for the unit tests and for callers that need the documented numbers
 	RAM_INTERCEPT_GIB: RAM_INTERCEPT_GIB,
