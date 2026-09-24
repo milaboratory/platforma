@@ -10,6 +10,7 @@ on:
 
 env:
   BODY_LIMIT: "1048576000"
+  TEST_CACHE_CRUTCH: ${{ github.run_id }}-${{ github.run_attempt }}
 
 jobs:
   test:
@@ -82,7 +83,7 @@ jobs:
 
       - name: Start Platforma Docker
         if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
-        uses: milaboratory/github-ci/actions/docker/pl-compose@v4
+        uses: milaboratory/github-ci/actions/docker/pl-compose@fix/pl-compose-fs-storage
         env:
           PL_LICENSE: ${{ secrets.MI_LICENSE }}
           MI_LICENSE: ${{ secrets.MI_LICENSE }}
