@@ -16,8 +16,8 @@ export * from "./providers";
 
 /**
  * Build the default set of ColumnsProviders for the ambient render ctx:
- *  - `AccessorColumnsProvider` over `outputs` (if present)
- *  - `AccessorColumnsProvider` over `prerun`  (if present)
+ *  - `AccessorColumnsProvider` over `outputs` (if present and not errored)
+ *  - `AccessorColumnsProvider` over `prerun`  (if present and not errored)
  *  - `ResultPoolColumnsProvider` over `rawResultPool`
  *
  * Pulls handles directly from the ambient `cfgRenderCtx`. Returns `[]` when
@@ -43,12 +43,16 @@ export function getCtxProviders(deps?: {
 
   const providers: (ColumnEntriesProvider<TreeNodeAccessor> & ColumnsProvider)[] = [];
 
-  const outputs = ctx.getAccessorHandleByName(MainAccessorName);
+  const outputs = ctx.getAccessorHandleByName(MainAccessorName, {
+    pureFieldErrorToUndefined: true,
+  });
   if (outputs !== undefined) {
     providers.push(ColumnsProvider(new TreeNodeAccessor(outputs, [MainAccessorName])));
   }
 
-  const prerun = ctx.getAccessorHandleByName(StagingAccessorName);
+  const prerun = ctx.getAccessorHandleByName(StagingAccessorName, {
+    pureFieldErrorToUndefined: true,
+  });
   if (prerun !== undefined) {
     providers.push(ColumnsProvider(new TreeNodeAccessor(prerun, [StagingAccessorName])));
   }

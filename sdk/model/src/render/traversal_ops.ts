@@ -23,6 +23,15 @@ export type CommonFieldTraverseOps = {
   pureFieldErrorToUndefined?: true;
 };
 
+/** Options for looking up a well-known ctx accessor by name. */
+export type AccessorLookupOps = {
+  /**
+   * Return `undefined` when the block output field behind the accessor has an
+   * error and no value, instead of throwing.
+   */
+  pureFieldErrorToUndefined?: true;
+};
+
 export type FieldType = "Input" | "Output" | "Service" | "OTW" | "Dynamic" | "MTW";
 
 export interface ResourceType {

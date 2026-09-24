@@ -7,7 +7,12 @@ import type {
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
 export type { AccessorHandle };
-import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
+import type {
+  AccessorLookupOps,
+  CommonFieldTraverseOps,
+  FieldTraversalStep,
+  ResourceType,
+} from "./traversal_ops";
 import type {
   ArchiveFormat,
   AnyFunction,
@@ -47,7 +52,7 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   // Root accessor creation
   //
 
-  getAccessorHandleByName(name: string): AHandle | undefined;
+  getAccessorHandleByName(name: string, ops?: AccessorLookupOps): AHandle | undefined;
 
   //
   // Basic resource accessor actions

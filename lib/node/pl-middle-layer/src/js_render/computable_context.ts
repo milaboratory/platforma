@@ -3,6 +3,7 @@ import { Computable } from "@milaboratories/computable";
 import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import { checkBlockFlag } from "@platforma-sdk/model";
 import type {
+  AccessorLookupOps as AccessorLookupOpsFromSDK,
   ArchiveFormat,
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
   DataInfo,
@@ -111,13 +112,16 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   // Methods for injected ctx object
   //
 
-  getAccessorHandleByName(name: string): string | undefined {
+  getAccessorHandleByName(name: string, ops?: AccessorLookupOpsFromSDK): string | undefined {
     const cCtx = this.requireComputableCtx;
     const wellKnownAccessor = (name: string, ctxKey: "staging" | "prod"): string | undefined => {
       if (!this.accessors.has(name)) {
         const lambda = this.blockCtx[ctxKey];
         if (lambda === undefined) throw new Error("Staging context not available");
-        const entry = lambda(cCtx);
+        const entry = lambda(cCtx, ops);
+        // An errored output reads as absent here. It stays uncached, so a lookup
+        // without the option still throws the output's error.
+        if (!entry && ops?.pureFieldErrorToUndefined) return undefined;
         if (!entry) this.accessors.set(name, undefined);
         else this.accessors.set(name, cCtx.accessor(entry).node({ ignoreError: true }));
       }
@@ -683,9 +687,14 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       // Methods for injected ctx object
       //
 
-      exportCtxFunction("getAccessorHandleByName", (name) => {
+      exportCtxFunction("getAccessorHandleByName", (name, ops) => {
         return parent.exportSingleValue(
-          this.getAccessorHandleByName(vm.getString(name)),
+          this.getAccessorHandleByName(
+            vm.getString(name),
+            ops === undefined
+              ? undefined
+              : (parent.importObjectViaJson(ops) as AccessorLookupOpsFromSDK | undefined),
+          ),
           undefined,
         );
       });

@@ -29,7 +29,7 @@ export interface ColumnsCollectionDeps {
  *
  * - `"result_pool"`  – fan-out into the host's upstream-block result pool.
  * - `"current_block"` – main outputs + prerun (staging) accessors of the
- *   current block, when present.
+ *   current block, when present and not errored.
  */
 export type ColumnsSourceShorthand = "result_pool" | "current_block";
 
@@ -153,11 +153,15 @@ function currentBlockSources(ctx?: GlobalCfgRenderCtx): SerializedColumnsSource[
   const renderCtx = ctx ?? getCfgRenderCtx();
   const sources: SerializedColumnsSource[] = [];
 
-  const outputs = renderCtx.getAccessorHandleByName(MainAccessorName);
+  const outputs = renderCtx.getAccessorHandleByName(MainAccessorName, {
+    pureFieldErrorToUndefined: true,
+  });
   if (outputs !== undefined) {
     sources.push({ kind: "accessor", accessor: outputs, path: [MainAccessorName] });
   }
-  const prerun = renderCtx.getAccessorHandleByName(StagingAccessorName);
+  const prerun = renderCtx.getAccessorHandleByName(StagingAccessorName, {
+    pureFieldErrorToUndefined: true,
+  });
   if (prerun !== undefined) {
     sources.push({ kind: "accessor", accessor: prerun, path: [StagingAccessorName] });
   }

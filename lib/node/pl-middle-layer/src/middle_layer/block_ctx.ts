@@ -18,9 +18,15 @@ export type BlockContextArgsOnly = {
   readonly prerunArgs: (cCtx: ComputableCtx) => string | undefined;
 };
 
+/** Options for reading a block output entry. */
+export type BlockOutputOps = {
+  /** Return `undefined` when the output field has an error and no value, instead of throwing. */
+  readonly pureFieldErrorToUndefined?: boolean;
+};
+
 export type BlockContextFull = BlockContextArgsOnly & {
-  readonly prod: (cCtx: ComputableCtx) => PlTreeEntry | undefined;
-  readonly staging: (cCtx: ComputableCtx) => PlTreeEntry | undefined;
+  readonly prod: (cCtx: ComputableCtx, ops?: BlockOutputOps) => PlTreeEntry | undefined;
+  readonly staging: (cCtx: ComputableCtx, ops?: BlockOutputOps) => PlTreeEntry | undefined;
   readonly getResultsPool: (cCtx: ComputableCtx) => ResultPool;
   readonly projectEntry: PlTreeEntry;
 };
@@ -126,7 +132,7 @@ export function constructBlockContext(
 ): BlockContextFull {
   return {
     ...constructBlockContextArgsOnly(projectEntry, blockId),
-    prod: (cCtx: ComputableCtx) => {
+    prod: (cCtx: ComputableCtx, ops?: BlockOutputOps) => {
       return cCtx
         .accessor(projectEntry)
         .node({ ignoreError: true })
@@ -134,10 +140,11 @@ export function constructBlockContext(
           field: projectFieldName(blockId, "prodOutput"),
           stableIfNotFound: true,
           ignoreError: true,
+          pureFieldErrorToUndefined: ops?.pureFieldErrorToUndefined,
         })
         ?.persist();
     },
-    staging: (cCtx: ComputableCtx) => {
+    staging: (cCtx: ComputableCtx, ops?: BlockOutputOps) => {
       // Check if staging is expected (currentPrerunArgs is set)
       // For blocks with failed args derivation, staging will never be rendered
       const hasPrerunArgs =
@@ -158,6 +165,7 @@ export function constructBlockContext(
           // Only mark stable if staging is NOT expected (no prerunArgs)
           stableIfNotFound: !hasPrerunArgs,
           ignoreError: true,
+          pureFieldErrorToUndefined: ops?.pureFieldErrorToUndefined,
         })
         ?.persist();
       return result;
