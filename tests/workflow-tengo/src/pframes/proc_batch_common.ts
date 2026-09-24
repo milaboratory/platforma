@@ -1,4 +1,5 @@
 import type { PlTransaction, PUniversalColumnSpec } from "@milaboratories/pl-middle-layer";
+import { getLongTestTimeout } from "@milaboratories/test-helpers";
 import { Annotation, Pl, resourceType } from "@milaboratories/pl-middle-layer";
 import type { TplTestHelpers } from "@platforma-sdk/test";
 import { awaitStableState } from "@platforma-sdk/test";
@@ -60,7 +61,7 @@ export const xsvSettingsIsolation = {
   storageFormat: "Json",
 } as const;
 
-export const TIMEOUT = 60_000;
+export const TIMEOUT = getLongTestTimeout(60_000) - 5_000;
 
 /** Creates a locked PColumnData/Json resource from a record map. */
 export function createJsonData(
