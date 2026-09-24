@@ -1,4 +1,4 @@
-import { getTestClient, getTestLLClient } from "../test/test_config";
+import { getTestClient, getTestLLClient, getTestAdminLLClient } from "../test/test_config";
 import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import { createLocalResourceId, parseSignedResourceId } from "./types";
 import { test, expect } from "vitest";
@@ -95,7 +95,7 @@ test("check timeout error type (passive)", async () => {
 });
 
 test("check timeout error type (active)", async () => {
-  const client = await getTestLLClient();
+  const client = await getTestAdminLLClient();
   const rootSig = await getRootSignature();
   const tx = client.createTx(true, { timeout: 500 });
 
@@ -158,6 +158,9 @@ test("check timeout error type (active)", async () => {
             resourceId: id,
             loadFields: false,
             resourceSignature,
+            showSoftDeletes: false,
+            // Required bytes field: undefined fails serialization and kills the tx stream.
+            changedSinceToken: new Uint8Array(0),
           },
         },
         false,
@@ -169,7 +172,7 @@ test("check timeout error type (active)", async () => {
 });
 
 test("check is abort error (active)", async () => {
-  const client = await getTestLLClient();
+  const client = await getTestAdminLLClient();
   const rootSig = await getRootSignature();
   const tx = client.createTx(true, { abortSignal: AbortSignal.timeout(100) });
 
@@ -232,6 +235,9 @@ test("check is abort error (active)", async () => {
             resourceId: id,
             loadFields: false,
             resourceSignature,
+            showSoftDeletes: false,
+            // Required bytes field: undefined fails serialization and kills the tx stream.
+            changedSinceToken: new Uint8Array(0),
           },
         },
         false,

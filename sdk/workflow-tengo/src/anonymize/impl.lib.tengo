@@ -1,6 +1,5 @@
 smart := import(":smart")
 ll := import(":ll")
-fmt := import("fmt")
 maps := import(":maps")
 
 /**

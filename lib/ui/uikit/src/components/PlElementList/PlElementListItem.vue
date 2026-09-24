@@ -69,18 +69,20 @@ const emit = defineEmits<{
         ]"
         @click="isExpandable && emit('expand', props.item, props.index)"
       >
-        <div
-          v-if="props.showDragHandle"
-          :class="[$style.action, $style.draggable, { [$style.disable]: !props.isDraggable }]"
-          :data-draggable="props.isDraggable"
-        >
-          <PlIcon16 name="drag-dots" />
+        <div v-if="props.showDragHandle || isExpandable" :class="$style.headIcons">
+          <div
+            v-if="props.showDragHandle"
+            :class="[$style.action, $style.draggable, { [$style.disable]: !props.isDraggable }]"
+            :data-draggable="props.isDraggable"
+          >
+            <PlIcon16 name="drag-dots" />
+          </div>
+          <PlIcon16
+            v-if="isExpandable"
+            :class="[$style.contentChevron, { [$style.opened]: props.isExpanded }]"
+            name="chevron-down"
+          />
         </div>
-        <PlIcon16
-          v-if="isExpandable"
-          :class="[$style.contentChevron, { [$style.opened]: props.isExpanded }]"
-          name="chevron-down"
-        />
 
         <div :class="$style.title">
           <slot name="title" :item="props.item" :index="props.index" />
@@ -192,6 +194,14 @@ const emit = defineEmits<{
   min-height: 40px;
   border-radius: var(--border-radius) var(--border-radius) 0 0;
   background: var(--head-background);
+}
+
+.headIcons {
+  display: flex;
+  align-items: center;
+  align-self: flex-start;
+  height: 24px;
+  flex: 0 0 auto;
 }
 
 .contentChevron {

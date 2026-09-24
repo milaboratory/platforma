@@ -54,8 +54,6 @@ const props = withDefaults(
     isRemovable: () => true,
     isDraggable: () => true,
 
-    getSuggestModel: undefined,
-
     enableDnd: false,
     enableAddGroupButton: false,
     enableToggling: false,

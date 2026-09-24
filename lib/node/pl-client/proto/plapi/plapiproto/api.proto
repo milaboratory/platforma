@@ -261,6 +261,21 @@ service Platform {
 
   rpc ListUsers(AuthAPI.ListUsers.Request) returns (AuthAPI.ListUsers.Response) {}
 
+  // DeleteUser removes a user account from the instance: the user record, every login-index
+  // entry that resolves to it, every grant it holds, and its root resource with everything
+  // still attached under it. Admin-only and irreversible - re-attach anything worth keeping
+  // to another user's root before calling (`pl-cli admin delete-user` does both steps).
+  //
+  // Exists because multi-provider auth can mint a duplicate account for one person: the waste
+  // record shows up in the sharing UI and its projects keep taking part in deduplication, and
+  // until now nothing could remove it.
+  rpc DeleteUser(AuthAPI.DeleteUser.Request) returns (AuthAPI.DeleteUser.Response) {
+    option (google.api.http) = {
+      post: "/v1/auth/delete-user"
+      body: "*"
+    };
+  }
+
   //
   // Other stuff
   //
@@ -608,6 +623,29 @@ message TxAPI {
 
     message Response {
       Tx tx = 1;
+
+      // The token to store and send back as changed_since_token on any later Tree
+      // request. Everything the token denotes has finished committing, and it is
+      // sampled as this transaction opens, so a write that had not committed by
+      // then sits above it while one that had is visible to this transaction's
+      // reads. One token per transaction, however many tree reads it issues.
+      //
+      // Absent on a WRITABLE open, which is issued no token: the walk would see
+      // that transaction's own uncommitted writes (see changed_since_token).
+      //
+      // Also accepted by ResourceAPI.Get and ResourceKVAPI.List, which apply the
+      // same per-resource emission rule.
+      //
+      // Store it only after a whole tree response has been applied successfully. A
+      // client that keeps it after a partial apply will never be sent the
+      // resources it dropped. Clear it on tree rebuild, on a root-set change, and
+      // on any change to the traversal shape it was earned under - the token
+      // carries no request shape, so that is the client's to enforce.
+      //
+      // Opaque, with one promise: two tokens from one server instance may be
+      // compared for order, so a client can tell which of the two it holds is the
+      // later. Never parse or construct one, and never compare across instances.
+      bytes next_since_token = 2;
     }
   }
   message Commit {
@@ -798,10 +836,30 @@ message ResourceAPI {
       // When true, soft-deleted resources are returned with deleted_time populated.
       bool show_soft_deletes = 4;
 
-      // next free: 5;
+      // Same token and same emission rule as ResourceAPI.Tree's
+      // changed_since_token: the response carries a resource only when its own
+      // change token is newer than the point this one denotes, and otherwise
+      // comes back with resource unset. Empty or absent (the default) always
+      // returns the body.
+      //
+      // A client on a per-resource read path takes this so it answers the same
+      // way the tree does; one that wants a body regardless simply omits it.
+      // There is no unconditional_depth here - nothing traverses, so there is no
+      // depth to bound.
+      //
+      // Ignored on a WRITABLE transaction, for the reason given on
+      // ResourceAPI.Tree.Request.changed_since_token. Gated by the same
+      // "treeChangedSince:v1" capability, whose name is narrower than what it
+      // covers.
+      bytes changed_since_token = 5;
+
+      // next free: 6;
     }
 
     message Response {
+      // Unset when the request carried a changed_since_token and this resource
+      // has not changed since the point it denotes - see changed_since_token.
+      // Populated on every other response.
       Resource resource = 1;
     }
   }
@@ -947,7 +1005,14 @@ message ResourceAPI {
       // resource_ready (bool), has_errors (bool), inputs_locked (bool),
       // outputs_locked (bool). Old servers ignore this field and never
       // set traverse_was_stopped.
-      optional Filter traverse_stop_rules = 7;
+      //
+      // Ignored on a request carrying a usable changed_since_token: a delta walk
+      // is pruned by the change token alone, and traverse_was_stopped is never
+      // set on it.
+      //
+      // Deprecated: prune with changed_since_token instead. Still honoured on a
+      // request without a token; scheduled for removal once no client sends it.
+      optional Filter traverse_stop_rules = 7 [deprecated = true];
 
       // Optional alternative entry points for multi-root traversal.
       // When non-empty, the traversal starts from each listed seed instead
@@ -961,7 +1026,84 @@ message ResourceAPI {
       // are included with deleted_time populated.
       bool show_soft_deletes = 9;
 
-      // next free: 10;
+      // An opaque continuation token, taken verbatim from the next_since_token an
+      // earlier transaction's Open response carried. The server returns bodies
+      // only for resources that changed after the point this token denotes; every
+      // other visited resource is passed over in silence, producing no frame at
+      // all. Empty or absent (the default) requests the full tree.
+      //
+      // A response therefore contains exactly the resources whose own change
+      // token is newer than the point this one denotes, and nothing else. Two
+      // obligations follow, both of them the client's:
+      //
+      //   - Absence is not removal. A resource missing from a delta response is
+      //     either unchanged or gone, and the two are indistinguishable. Detect
+      //     removals another way, or poll without a token to reconcile.
+      //
+      //   - A body may reference resources the response does not carry. A field
+      //     repointed at an older resource, or a subtree the traversal newly
+      //     reaches, keeps its old change token and is not sent - this poll or
+      //     any later one, since its token never moves again. The reference field
+      //     carries the target's resource ID and a valid signature for it, and
+      //     every resource the walk visited stays readable by ID inside the
+      //     walking transaction, frame or no frame. Read them with one Tree
+      //     request naming those IDs in seeds under an unconditional_depth, or
+      //     one at a time with ResourceAPI.Get.
+      //
+      // The traversal does not descend below an unchanged resource: the walk ends
+      // on that branch, so a change beneath an unchanged resource arrives only
+      // once something on the path down to it changes as well. Absence is not
+      // removal for that reason too. A response in which nothing changed carries
+      // no frames at all and arrives as an empty multi-message.
+      //
+      // traverse_stop_rules are ignored on a request carrying a usable token: the
+      // token is the only pruning, and traverse_was_stopped is never set.
+      //
+      // Clients must not parse or construct this value: its encoding is
+      // server-private and may change without a wire version bump. Two tokens
+      // issued by one server instance may be compared for order, so a client can
+      // tell which of the two it holds is the later; comparison across instances
+      // is undefined. Store the token only after applying a whole response
+      // successfully.
+      //
+      // A token the server cannot use is answered with the full tree, never with
+      // an error, so it is always safe to send back whatever was last received.
+      //
+      // The token carries no request shape and cannot: it is minted as a
+      // transaction OPENS, before any tree request exists, and one transaction
+      // may issue many reads with different depths, filters and seeds. So
+      // discarding it when the traversal shape changes - max_depth, include_kv,
+      // show_soft_deletes, field_filter, traverse_stop_rules, or the seed set -
+      // is the client's obligation. Keeping it across such a change silently
+      // skips resources the new shape reaches. Other seeds and an
+      // unconditional_depth under the same token are NOT a shape change: what
+      // they return is dated the same as the poll they came with.
+      //
+      // Ignored on a WRITABLE transaction, which also receives no
+      // next_since_token: the walk sees that transaction's uncommitted writes, so
+      // delta skipping there could pin a body describing state that never
+      // committed. Poll from a read-only transaction.
+      //
+      // Servers advertise support via "treeChangedSince:v1" in
+      // MaintenanceAPI.Ping.Response.capabilities; old servers ignore this field
+      // and always send the full tree.
+      bytes changed_since_token = 10;
+
+      // Depths at or below this one are emitted whatever changed_since_token
+      // says, the seed being depth 0. Explicitly optional: absent means no
+      // unconditional depth, which differs from 0. Ignored without
+      // changed_since_token, which already sends everything.
+      //
+      // This is how a client reads what a delta response referenced but did not
+      // carry. One Tree request naming the unknown IDs in seeds, under the same
+      // token, returns them here while everything the client already holds below
+      // the frontier stays skipped. The depth is the lever: 0 takes the seeds
+      // alone, 1 takes a level per round trip, a depth past the subtree takes it
+      // whole. Without it such a request comes back empty, and empty is
+      // indistinguishable from not-found.
+      optional uint32 unconditional_depth = 11;
+
+      // next free: 12;
     }
 
     // A single entry point for multi-root tree traversal.
@@ -1050,7 +1192,8 @@ message ResourceAPI {
     message Response {
       // Full resource payload. Absent on stop-marker frames (when the server
       // advertises `treeStopMarker:v1` and traverse_was_stopped is true).
-      // Always populated on normal frames.
+      // Populated on every other frame. A resource the client already holds
+      // unchanged produces no frame at all - see changed_since_token.
       optional Resource resource = 1;
 
       // Populated only when include_kv=true in the request.
@@ -1067,10 +1210,13 @@ message ResourceAPI {
       // are zero/empty.
       bool traverse_was_stopped = 3;
 
-      // Populated only on stop-marker frames (resource is unset).
-      // Zero / empty on normal frames; use resource.resource_id instead.
+      // Populated on frames where resource is unset - stop-marker and unchanged
+      // frames. Zero / empty on frames carrying a resource; use
+      // resource.resource_id instead.
       uint64 resource_id = 4;
       bytes resource_signature = 5;
+
+      // next free: 6;
     }
   }
 
@@ -1428,6 +1574,24 @@ message ResourceKVAPI {
       // <limit> number of items.
       // Zero value makes the API return all available items.
       uint32 limit = 3;
+
+      // Same token and same emission rule as ResourceAPI.Tree's
+      // changed_since_token: the listing runs only when the resource's own change
+      // token is newer than the point this one denotes, and otherwise comes back
+      // with no records at all. Empty or absent (the default) always lists.
+      //
+      // No records therefore means the metadata is unchanged, empty, or gone,
+      // indistinguishably - which costs nothing, because a client only sends the
+      // token for a resource whose metadata it already holds. One that wants the
+      // listing regardless omits it.
+      //
+      // Ignored on a WRITABLE transaction, for the reason given on
+      // ResourceAPI.Tree.Request.changed_since_token. Gated by the same
+      // "treeChangedSince:v1" capability, whose name is narrower than what it
+      // covers.
+      bytes changed_since_token = 5;
+
+      // next free: 6;
     }
 
     // Multi-message
@@ -1713,8 +1877,13 @@ message AuthAPI {
       // instance. Unique across the entire server.
       string id = 6;
 
-      // description is the human-readable label in case we'd like to render it in UI.
+      // description is the long-form human-readable text a client may render
+      // alongside the title, for example in a tooltip or under the button.
       string description = 7;
+
+      // title is the short human-readable label a client renders for this
+      // method, for example on the sign-in button. Always set.
+      string title = 9;
 
       oneof method {
         BasicAuthMethod basic = 4;
@@ -1726,7 +1895,7 @@ message AuthAPI {
       reserved 2; // string name - replaced by id + description
       reserved 3; // map<string, string> info
 
-      // next free: 8;
+      // next free: 10;
     }
   }
 
@@ -1735,7 +1904,9 @@ message AuthAPI {
   // before redirecting to the IdP. The current stub implementation forgets the
   // nonce immediately and does not validate it on Login.
   message BeginSSOLogin {
-    message Request {}
+    message Request {
+      optional string idp = 1;
+    }
 
     message PublicPKCE {
       string nonce = 1; // server-issued one-time value
@@ -1790,6 +1961,7 @@ message AuthAPI {
     message BasicCredentials {
       string login = 1;
       string password = 2;
+      optional string idp = 3;
     }
 
     // TokenCredentials accepts any opaque bearer-style string: a controller
@@ -1802,6 +1974,7 @@ message AuthAPI {
     // endpoint after the desktop completes a PKCE exchange.
     message SSOCredentials {
       bytes token_response = 1;
+      optional string idp = 2;
     }
 
     message Request {
@@ -1968,10 +2141,44 @@ message AuthAPI {
   }
 
   message User {
-    // login is the stable identifier of the user — the grant target and the
-    // GetUserRoot key. Further fields (e.g. first name, last name, email) may
-    // be added later without breaking compatibility.
+    // login is the user's provider-facing login identifier and the value clients
+    // pass as a grant target / impersonation subject. It is the only identity a
+    // client needs: the backend resolves it to an internal id that is never
+    // exposed over the API.
     string login = 1;
+    // display_name is the user's human-readable name, mapped from the provider on
+    // login. May be empty for migrated users who have not logged in since upgrade.
+    string display_name = 2;
+    // email is the user's email, mapped from the provider on login. May be empty
+    // when the provider does not supply it or the mapping is disabled.
+    string email = 3;
+    // attributes carries the remaining provider-mapped attributes the client
+    // configured (e.g. full_name, external_id, custom fields), keyed by attribute
+    // name. The default attributes (login, display_name, email) are promoted to
+    // their own fields above and are not repeated here.
+    map<string, string> attributes = 4;
+  }
+
+  message DeleteUser {
+    message Request {
+      // login of the user to delete. Resolved the way an admin-supplied grant target is:
+      // a point lookup on the identity index, which carries no provider id - so an account
+      // left behind by a provider that has since been removed from the configuration is
+      // reachable too.
+      string login = 1;
+    }
+
+    message Response {
+      // root resource the user owned; 0 when the user had none.
+      uint64 user_root_id = 1;
+      // whether that root resource was deleted.
+      bool user_root_deleted = 2;
+      // grants revoked, the user-root self-grant included.
+      uint32 revoked_grants = 3;
+      // identity-index entries removed: the login, the email and any alternative of either
+      // that resolved to this account.
+      uint32 removed_identity_index_entries = 4;
+    }
   }
 
   message ListUsers {

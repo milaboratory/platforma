@@ -1,0 +1,36 @@
+/** A command that tries to redirect its own temporary storage.
+ *
+ * Temporary storage belongs to the deployment: the runner creates the directory, sizes it, points
+ * TMPDIR and TMP at it, and removes it when the command ends. A command that set those variables
+ * itself would write its temporary data somewhere nothing clears - or among its own results.
+ *
+ * A backend that carries the temporary-directory contract therefore refuses the command outright,
+ * before it runs. The refusal is the behaviour under test, so the command below is deliberately
+ * harmless: if it ever executes, the backend let something through that it must not.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	run := exec.builder().
+		name("tmpdir-env-forbidden").
+		cpu(1).ram("50Mi").
+		cmd("/usr/bin/env").
+		arg("sh").
+		arg("-c").
+		arg("printf '%s %s' \"$TMPDIR\" \"$TMP\"").
+		// Both halves of the pair, because the backend owns both. The path is a plausible one a
+		// block developer might pick, not a marker: nothing here should reach a filesystem.
+		env("TMPDIR", inputs.customPath).
+		env("TMP", inputs.customPath).
+		inLightQueue().
+		saveStdoutContent().
+		run()
+
+	return {
+		main: run.getStdoutContent()
+	}
+})

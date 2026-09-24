@@ -5,7 +5,11 @@ self := import("@platforma-sdk/workflow-tengo:tpl")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 pframes := import("@platforma-sdk/workflow-tengo:pframes")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
 times := import("times")
+
+hwSoftware := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
 
 bodyTplContent := assets.importTemplate(":pframes.proc_batch_body")
 bodyTplBlob := assets.importTemplate(":pframes.proc_batch_body_blob")
@@ -13,6 +17,9 @@ bodyTplResourceMap := assets.importTemplate(":pframes.proc_batch_body_resource_m
 bodyTplNdjson := assets.importTemplate(":pframes.proc_batch_body_ndjson")
 bodyTplExtraAxis := assets.importTemplate(":pframes.proc_batch_body_extra_axis")
 bodyTplExtraAxisBlob := assets.importTemplate(":pframes.proc_batch_body_extra_axis_blob")
+bodyTplBatchTag := assets.importTemplate(":pframes.proc_batch_body_batch_tag")
+bodyTplBatchTagBlob := assets.importTemplate(":pframes.proc_batch_body_batch_tag_blob")
+bodyTplBatchTagBlobTsv := assets.importTemplate(":pframes.proc_batch_body_batch_tag_blob_tsv")
 
 self.awaitState("InputsLocked")
 self.awaitState("params", "ResourceReady")
@@ -25,6 +32,9 @@ self.body(func(inputs) {
 	// - params.bodyMode == "ndjson"      → body parses NDJSON content via pt, writes parquet
 	// - params.bodyMode == "extraAxis"     → body emits a new "half" axis column (passContent=true)
 	// - params.bodyMode == "extraAxisBlob" → body appends a "tag" axis via pt (passContent=false)
+	// - params.bodyMode == "batchTag"      → body tags each row with its batch's first key
+	// - params.bodyMode == "batchTagBlob"  → same tag via pt on a parquet Blob (passContent=false)
+	// - params.bodyMode == "batchTagBlobTsv" → same tag via pt on a tsv Blob (passContent=false)
 	// - params.batch.passContent=false     → body treats __value__ as a Blob file ref
 	// - default                            → body reads __value__ as a content string
 	bodyTpl := bodyTplContent
@@ -36,8 +46,43 @@ self.body(func(inputs) {
 		bodyTpl = bodyTplExtraAxis
 	} else if params.bodyMode == "extraAxisBlob" {
 		bodyTpl = bodyTplExtraAxisBlob
+	} else if params.bodyMode == "batchTag" {
+		bodyTpl = bodyTplBatchTag
+	} else if params.bodyMode == "batchTagBlob" {
+		bodyTpl = bodyTplBatchTagBlob
+	} else if params.bodyMode == "batchTagBlobTsv" {
+		bodyTpl = bodyTplBatchTagBlobTsv
 	} else if !is_undefined(params.batch.passContent) && !params.batch.passContent {
 		bodyTpl = bodyTplBlob
+	}
+
+	// Tests can pass `partitionedTsv` to get a genuinely single-partition
+	// PColumnData/JsonPartitioned primary — the shape real block inputs have —
+	// instead of an inline PColumnData/Json. This matters because
+	// recordsInGroup() is exact only for inline Json; for partitioned columns it
+	// returns the partition count, which is what made batch.maxBatches a no-op.
+	// Written as a file and imported with partitionKeyLength=0 so the whole
+	// column lands in a single "[]" partition.
+	partitionedData := undefined
+	if !is_undefined(params.partitionedTsv) {
+		importRun := exec.builder().
+			cpu(1).ram("50Mi").
+			software(hwSoftware).
+			arg("a").
+			writeFile("in.tsv", params.partitionedTsv).
+			saveFile("in.tsv").
+			run()
+
+		imported := xsv.importFile(importRun.getFile("in.tsv"), "tsv", {
+			axes: [{ column: "key", spec: { name: "key", type: "String" } }],
+			columns: [{ column: "heavyChain", spec: { valueType: "String", name: "heavyChain" } }],
+			storageFormat: "Json",
+			partitionKeyLength: 0
+		}, { dataOnly: true })
+
+		// dataOnly=true makes importFile return the pframe resource itself rather
+		// than a map of columns, so reach the column through its input field.
+		partitionedData = imported.getFutureInputField("heavyChain")
 	}
 
 	primaryEntries := []
@@ -57,6 +102,11 @@ self.body(func(inputs) {
 					spec: entry.filterSpec,
 					data: inputs[entry.filterDataInputName]
 				}
+			}
+		} else if !is_undefined(partitionedData) {
+			src = {
+				spec: entry.spec,
+				data: partitionedData
 			}
 		} else {
 			src = {
