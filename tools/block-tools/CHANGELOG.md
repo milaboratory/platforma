@@ -1,5 +1,14 @@
 # @platforma-sdk/block-tools
 
+## 2.16.3
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+  - @milaboratories/pl-model-middle-layer@1.33.0
+  - @milaboratories/pl-model-backend@1.4.29
+
 ## 2.16.2
 
 ### Patch Changes

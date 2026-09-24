@@ -1,5 +1,15 @@
 # @platforma-sdk/pl-cli
 
+## 0.9.24
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+- Updated dependencies [cadf144]
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-middle-layer@1.72.0
+  - @milaboratories/pl-client@3.17.3
+
 ## 0.9.23
 
 ### Patch Changes
