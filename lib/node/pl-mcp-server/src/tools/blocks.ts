@@ -215,7 +215,13 @@ export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
           "This feature requires server connected and open project. Use get_connection_status and list_projects to check. If there are no connection, use list_connections and ask user which should be used.",
         );
       }
-      await ctx.callbacks.selectBlock(projectId, blockId);
+      const selection = await ctx.callbacks.selectBlock(projectId, blockId);
+      if (!selection.ready) {
+        return errorResult(
+          "Block selection timed out: the block never became ready.",
+          "The block frontend is still loading or failing to load. Read the desktop log with get_app_log, then retry select_block.",
+        );
+      }
       return textResult({ ok: true });
     },
   );

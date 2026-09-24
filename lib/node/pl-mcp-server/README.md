@@ -17,7 +17,7 @@ MCP (Model Context Protocol) server that enables AI assistants to interact with 
 
 ## How It Works
 
-The MCP server runs as a worker process inside the Platforma Desktop App (Electron). It communicates with the main process via IPC and exposes tools over the MCP protocol (stdio transport by default, HTTP also supported).
+The MCP server runs as a worker process inside the Platforma Desktop App (Electron). It communicates with the main process via IPC and exposes tools over the MCP protocol on one transport: streamable HTTP, bound to loopback.
 
 ```
 Claude Code  ──MCP──▶  pl-mcp-server (worker)  ──IPC──▶  Desktop App (main process)
@@ -25,6 +25,25 @@ Claude Code  ──MCP──▶  pl-mcp-server (worker)  ──IPC──▶  Des
                                                            ├── Block view
                                                            └── Modals
 ```
+
+## Connecting With The Claude Plugin
+
+The plugin finds the running server itself — there is no address to copy.
+
+```
+/plugin marketplace add milaboratory/platforma
+/plugin install platforma
+```
+
+Then start the Platforma Desktop App and enable the MCP server in Settings. Run `/mcp` to see the
+`pl` server; its tools arrive as `mcp__plugin_platforma_pl__*`.
+
+The app publishes its live address to `~/.platforma/mcp-server.json` as the server starts, and the
+plugin reads that file each time Claude starts it. A server that rebound to another port, or that
+regenerated its secret, is still found with nothing reconfigured.
+
+The two sections below remain valid for a client this plugin does not serve, and for anyone who
+would rather wire the address by hand.
 
 ## Connecting From Claude Code
 
@@ -36,7 +55,7 @@ Claude Code  ──MCP──▶  pl-mcp-server (worker)  ──IPC──▶  Des
    {
      "mcpServers": {
        "pl": {
-         "type": "sse",
+         "type": "http",
          "url": "http://127.0.0.1:4200/<!!CHANGE ME!!>/mcp"
        }
      }
