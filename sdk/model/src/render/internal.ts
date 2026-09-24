@@ -71,6 +71,12 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   getError(handle: AHandle): AHandle | undefined;
 
+  /**
+   * Error resource attached to field `field` of `handle`, whether or not the
+   * field also has a value. Absent on a host older than this method.
+   */
+  getFieldError?(handle: AHandle, field: string): AHandle | undefined;
+
   listInputFields(handle: AHandle): string[];
 
   listOutputFields(handle: AHandle): string[];
