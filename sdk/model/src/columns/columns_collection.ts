@@ -2,6 +2,7 @@ import type {
   CollectionHandle,
   ColumnUniversalId,
   ColumnsCollectionDriverModel,
+  ColumnsSourceError,
   ColumnsDiscoverOptions,
   ColumnsFilterOptions,
   SerializedColumnsSource,
@@ -9,7 +10,7 @@ import type {
 import type { GlobalCfgRenderCtx } from "../render/internal";
 import { MainAccessorName, StagingAccessorName } from "../render/internal";
 import type { ColumnsSource } from "./column_providers";
-import { isColumnProvider } from "./column_providers";
+import { isColumnProvider, lookupCtxAccessor } from "./column_providers";
 import { TreeNodeAccessor } from "../render/accessor";
 import { getService } from "../services/get_services";
 import { getCfgRenderCtx } from "../internal";
@@ -29,7 +30,8 @@ export interface ColumnsCollectionDeps {
  *
  * - `"result_pool"`  – fan-out into the host's upstream-block result pool.
  * - `"current_block"` – main outputs + prerun (staging) accessors of the
- *   current block, when present.
+ *   current block, when present. An output that carries an error adds no
+ *   columns; the collection's `getErrors()` reports it.
  */
 export type ColumnsSourceShorthand = "result_pool" | "current_block";
 
@@ -96,6 +98,16 @@ export class ColumnsCollectionImpl {
       .filter((c): c is ColumnRecipe => !isNil(c));
   }
 
+  /**
+   * Errors met in the collection's sources: errored block outputs and
+   * subtrees, and columns whose spec or data field carries an error. A column
+   * with an errored spec is not in {@link getColumns}; this is where it shows.
+   * Empty on a host older than this method.
+   */
+  getErrors(): ColumnsSourceError[] {
+    return this.driver.getErrors?.(this.handle) ?? [];
+  }
+
   addSource(source: ColumnsSource | ColumnsCollection): ColumnsCollection {
     return new ColumnsCollectionImpl(
       this.driver.addSource(this.handle, toSerializedSources(source)),
@@ -135,7 +147,13 @@ function toSerializedSources(
     return [{ kind: "ids", ids: source.columns.map((c) => c.id), isFinal: source.isFinal }];
   }
   if (isColumnProvider(source)) {
-    return [{ kind: "ids", ids: source.getColumns().map((c) => c.id), isFinal: source.isFinal() }];
+    const ids: SerializedColumnsSource = {
+      kind: "ids",
+      ids: source.getColumns().map((c) => c.id),
+      isFinal: source.isFinal(),
+    };
+    const errors = source.getErrors();
+    return errors.length === 0 ? [ids] : [ids, { kind: "errors", errors: [...errors] }];
   }
   throw new Error("ColumnsCollection: unrecognised ColumnsSource shape");
 }
@@ -153,15 +171,13 @@ function currentBlockSources(ctx?: GlobalCfgRenderCtx): SerializedColumnsSource[
   const renderCtx = ctx ?? getCfgRenderCtx();
   const sources: SerializedColumnsSource[] = [];
 
-  const outputs = renderCtx.getAccessorHandleByName(MainAccessorName);
-  if (outputs !== undefined) {
-    sources.push({ kind: "accessor", accessor: outputs, path: [MainAccessorName] });
+  for (const name of [MainAccessorName, StagingAccessorName]) {
+    const lookup = lookupCtxAccessor(renderCtx, name);
+    if (lookup.kind === "error") sources.push({ kind: "errors", errors: [lookup.error] });
+    else if (lookup.handle !== undefined) {
+      sources.push({ kind: "accessor", accessor: lookup.handle, path: [name] });
+    }
   }
-  const prerun = renderCtx.getAccessorHandleByName(StagingAccessorName);
-  if (prerun !== undefined) {
-    sources.push({ kind: "accessor", accessor: prerun, path: [StagingAccessorName] });
-  }
-
   return sources;
 }
 

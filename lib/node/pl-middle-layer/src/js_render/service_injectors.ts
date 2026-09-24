@@ -8,7 +8,11 @@ import type {
   SerializedColumnsSource,
   ServiceBrand,
 } from "@milaboratories/pl-model-common";
-import { Services, ServiceNotRegisteredError } from "@milaboratories/pl-model-common";
+import {
+  readColumnField,
+  Services,
+  ServiceNotRegisteredError,
+} from "@milaboratories/pl-model-common";
 import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import type {
   AxesId,
@@ -203,12 +207,8 @@ export function getServiceInjectors(): ServiceInjectorMap {
         resolveSpec: (id: PObjectId) => {
           const leaf = host.getColumnRegistry().resolve(id);
           if (leaf === undefined) return undefined;
-          const specNode = leaf.accessor.traverse({
-            field: `${leaf.name}.spec`,
-            assertFieldType: "Input",
-            ignoreError: true,
-          });
-          return specNode?.getDataAsJson<PColumnSpec>();
+          const spec = readColumnField(leaf.accessor, `${leaf.name}.spec`);
+          return spec.status === "present" ? spec.node.getDataAsJson<PColumnSpec>() : undefined;
         },
       };
 
@@ -236,6 +236,9 @@ export function getServiceInjectors(): ServiceInjectorMap {
           vm.exportObjectViaJson(
             driver.getColumns(vm.vm.getString(handle) as CollectionHandle, bindings),
           ),
+
+        getErrors: (handle: QuickJSHandle) =>
+          vm.exportObjectViaJson(driver.getErrors(vm.vm.getString(handle) as CollectionHandle)),
 
         addSource: (handle: QuickJSHandle, sources: QuickJSHandle) =>
           vm.exportSingleValue(

@@ -4,12 +4,19 @@ import {
   parseJsonSafely,
   PColumn,
   type ColumnEntriesProvider,
+  type ColumnsSourceError,
+  type LeafEntry,
   type PObjectId,
+  type SourceSubtreeError,
 } from "@milaboratories/pl-model-common";
-import type { GlobalCfgRenderCtx, PColumnDataUniversal } from "../../render/internal";
+import type {
+  AccessorHandle,
+  GlobalCfgRenderCtx,
+  PColumnDataUniversal,
+} from "../../render/internal";
 import { getCfgRenderCtx } from "../../internal";
 import { MainAccessorName, StagingAccessorName } from "../../render/internal";
-import { TreeNodeAccessor } from "../../render/accessor";
+import { decodeErrorMessage, TreeNodeAccessor } from "../../render/accessor";
 import { DataColumnRecipe } from "../data_column";
 import type { ColumnsSource } from "./types";
 import { ArrayColumnsProvider, ColumnsProvider } from "./providers";
@@ -56,6 +63,50 @@ export function getCtxProviders(deps?: {
   return providers;
 }
 
+/** Outcome of looking up a block-output accessor of the render ctx without throwing. */
+export type CtxAccessorLookup =
+  | { readonly kind: "handle"; readonly handle: AccessorHandle | undefined }
+  | { readonly kind: "error"; readonly error: SourceSubtreeError };
+
+/**
+ * Look up accessor `name` (`main` or `staging`). A block output that carries
+ * an error comes back as that error, and its value is not read. A host
+ * without `getAccessorErrorByName` throws the output's error from the lookup
+ * itself; the throw of this one call is reported the same way.
+ */
+export function lookupCtxAccessor(ctx: GlobalCfgRenderCtx, name: string): CtxAccessorLookup {
+  if (ctx.getAccessorErrorByName === undefined) {
+    try {
+      return { kind: "handle", handle: ctx.getAccessorHandleByName(name) };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return { kind: "error", error: { kind: "source", path: [name], message } };
+    }
+  }
+  const errorHandle = ctx.getAccessorErrorByName(name);
+  if (errorHandle === undefined) {
+    return { kind: "handle", handle: ctx.getAccessorHandleByName(name) };
+  }
+  const raw = ctx.getDataAsString(errorHandle);
+  const message = raw === undefined ? "Block output failed." : decodeErrorMessage(raw);
+  return { kind: "error", error: { kind: "source", path: [name], message } };
+}
+
+/**
+ * The error of the subtree a local `id` lives under, when one of `providers`
+ * reports it. A global id belongs to no subtree of these providers.
+ */
+export function sourceErrorOf(
+  id: PObjectId,
+  providers: ReadonlyArray<ColumnEntriesProvider<TreeNodeAccessor>>,
+): SourceSubtreeError | undefined {
+  const key: unknown = parseJsonSafely(id);
+  if (!isLocalPObjectKey(key)) return undefined;
+  return providers
+    .flatMap((p) => p.getSourceErrors())
+    .find((e) => e.path.every((field, i) => key.resolvePath[i] === field));
+}
+
 export function isColumnProvider(source: unknown): source is ColumnsProvider {
   if (typeof source !== "object" || source === null) return false;
   const p = source as ColumnsProvider;
@@ -100,9 +151,35 @@ function ctxSourceProviders(ctx: GlobalCfgRenderCtx, source: CtxSource): CtxProv
 
 function buildCtxSourceProviders(ctx: GlobalCfgRenderCtx, source: CtxSource): CtxProvider[] {
   if (source === "result_pool") return [ColumnsProvider(ctx.getUpstreamBlockCtx())];
-  const handle = ctx.getAccessorHandleByName(source);
-  if (handle === undefined) return [];
-  return [ColumnsProvider(new TreeNodeAccessor(handle, [source]))];
+  const lookup = lookupCtxAccessor(ctx, source);
+  if (lookup.kind === "error") return [new ErroredSourceProvider(lookup.error)];
+  if (lookup.handle === undefined) return [];
+  return [ColumnsProvider(new TreeNodeAccessor(lookup.handle, [source]))];
+}
+
+/** Stands in for a ctx source that failed as a whole: no columns, one error. */
+class ErroredSourceProvider implements CtxProvider {
+  constructor(private readonly error: SourceSubtreeError) {}
+
+  getPObjectEntries(): ReadonlyMap<PObjectId, LeafEntry<TreeNodeAccessor>> {
+    return new Map();
+  }
+
+  isFinal(): boolean {
+    return true;
+  }
+
+  getSourceErrors(): ReadonlyArray<SourceSubtreeError> {
+    return [this.error];
+  }
+
+  getColumns(): DataColumnRecipe<PObjectId>[] {
+    return [];
+  }
+
+  getErrors(): ReadonlyArray<ColumnsSourceError> {
+    return [this.error];
+  }
 }
 
 /** The ctx source an id can only be found in, or `undefined` when its shape names none. */

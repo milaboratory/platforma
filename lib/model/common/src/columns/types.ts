@@ -109,6 +109,26 @@ export type LeafEntry<A extends AccessorLike<A>> = {
 };
 
 /**
+ * An error met while enumerating or reading the columns of a source. Plain
+ * data, so it crosses the host/sandbox bridge as JSON.
+ *
+ * - `"column"`: field `<name>.spec` or `<name>.data` of one column carries an error.
+ * - `"source"`: a whole source, or a subtree under `path`, failed before any
+ *   column could be listed (an errored block output, an errored map field).
+ */
+export type ColumnsSourceError =
+  | {
+      readonly kind: "column";
+      readonly id: PObjectId;
+      readonly field: "spec" | "data";
+      readonly message: string;
+    }
+  | { readonly kind: "source"; readonly path: ReadonlyArray<string>; readonly message: string };
+
+/** A {@link ColumnsSourceError} on a whole source or subtree. */
+export type SourceSubtreeError = Extract<ColumnsSourceError, { readonly kind: "source" }>;
+
+/**
  * Base interface for id-indexed column providers — the surface
  * {@link ColumnRegistry} consumes. Generic over the concrete accessor flavour
  * so it can back both sandbox (`TreeNodeAccessor`) and host
@@ -119,4 +139,10 @@ export interface ColumnEntriesProvider<A extends AccessorLike<A>> {
   getPObjectEntries(): ReadonlyMap<PObjectId, LeafEntry<A>>;
   /** Whether enumeration of columns from this source has finalised. */
   isFinal(): boolean;
+  /**
+   * Subtrees of this source that failed before their columns could be listed.
+   * Errors on the fields of listed columns are not included; derive them from
+   * the entries with `columnFieldErrors`.
+   */
+  getSourceErrors(): ReadonlyArray<SourceSubtreeError>;
 }

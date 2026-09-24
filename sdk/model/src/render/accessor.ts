@@ -27,7 +27,7 @@ export function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | unde
  * human-readable message. Falls back to the raw string when the content is not
  * that envelope (e.g. plain text, or an unexpected shape).
  */
-function decodeErrorMessage(raw: string): string {
+export function decodeErrorMessage(raw: string): string {
   try {
     const parsed = JSON.parse(raw) as { message?: unknown };
     if (typeof parsed?.message === "string") return parsed.message;
