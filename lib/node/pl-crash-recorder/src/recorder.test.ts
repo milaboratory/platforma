@@ -253,6 +253,17 @@ describe("crash markers", () => {
     expect(marker.guessedSessionId).toBeDefined();
   });
 
+  test("a marker carries the file it was read from", () => {
+    const written = writeCrashMarker(dir, { reason: "worker-exit", code: 1 });
+
+    // A consumer collecting evidence attaches this path. Spelling the name a
+    // second time on its own is how a rename silently drops the one record the
+    // parent contributes.
+    const [marker] = readCrashMarkers(dir);
+    expect(marker.file).toBe(written);
+    expect(fs.existsSync(marker.file)).toBe(true);
+  });
+
   test("an unparseable marker is skipped rather than failing the rest", () => {
     writeCrashMarker(dir, { reason: "worker-exit" });
     // Named like a marker, so it reaches the parse rather than being filtered

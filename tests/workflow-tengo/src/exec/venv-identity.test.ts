@@ -1,5 +1,17 @@
 import { tplTest } from "@platforma-sdk/test";
 
+// The fixture is a local binary package: it declares requireDocker false and builds with
+// PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local, so its only artifact is the source tree on
+// the machine that ran the build. A pure-Kubernetes deploy runs each command as a pod in the
+// cluster, which cannot read that machine's disk, and the backend fails to stage the sources:
+//
+//   failed to copy data from ".../tests/software/venv-identity/src" to "/data/workspace/...":
+//   lstat .../requirements-b.txt: no such file or directory
+//
+// Giving the fixture a docker artifact would let it run there; until it has one the case can
+// only report the missing image.
+const ON_K8S = process.env.PL_TEST_K8S === "1";
+
 // Two python entrypoints share one interpreter and one source root, and differ only in which
 // requirements file they declare. Each must therefore get its own virtual environment.
 //
@@ -13,7 +25,12 @@ import { tplTest } from "@platforma-sdk/test";
 tplTest.concurrent(
   "two python softwares sharing an interpreter get their own virtual environments",
   { timeout: 300000 },
-  async ({ helper, expect }) => {
+  async ({ helper, expect, skip }) => {
+    if (ON_K8S) {
+      skip("the venv-identity fixture is a local binary package with no docker artifact");
+      return;
+    }
+
     const result = await helper.renderTemplate(
       false,
       "exec.run.venv_identity",

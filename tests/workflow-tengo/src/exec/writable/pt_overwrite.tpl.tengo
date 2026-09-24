@@ -1,8 +1,8 @@
 /**
  * Verifies exec.builder().writeFile / addFile { writable } option by running
- * ptabler against an in-workdir input file with read_csv + write_csv pointing
- * at the same path. When the file lands as 0o400 (default) the write_csv step
- * must fail; when { writable: true } is passed it must succeed and produce
+ * ptabler with a workflow whose write_csv targets an in-workdir file the
+ * builder already placed. When that file lands as 0o400 (default) the write_csv
+ * step must fail; when { writable: true } is passed it must succeed and produce
  * round-tripped TSV content.
  *
  * Inputs:
@@ -19,12 +19,14 @@ ptSoftware := assets.importSoftware("@platforma-open/milaboratories.software-pta
 
 self.defineOutputs(["result"])
 
-// Workflow that reads data.tsv and writes back to the same path —
-// the overwrite is what exercises the permission bit.
+// Workflow that reads source.tsv and writes over the already-present data.tsv —
+// that write is what exercises the permission bit. Reading and writing one path
+// in a single workflow makes write_csv truncate the file polars still streams,
+// which ends the run with a bus error or an empty-CSV error at no fixed rate.
 overwriteSpec := {
 	workflow: [
-		{ type: "read_csv",  file: "data.tsv", name: "df",   delimiter: "\t" },
-		{ type: "write_csv", table: "df",      file: "data.tsv", delimiter: "\t" }
+		{ type: "read_csv",  file: "source.tsv", name: "df",      delimiter: "\t" },
+		{ type: "write_csv", table: "df",        file: "data.tsv", delimiter: "\t" }
 	]
 }
 
@@ -53,7 +55,9 @@ self.body(func(inputs) {
 	writable := inputs.writable
 	tsv := inputs.tsv
 
-	builder := runPt(exec.builder(), overwriteSpec).saveFileContent("data.tsv")
+	builder := runPt(exec.builder(), overwriteSpec).
+		writeFile("source.tsv", tsv).
+		saveFileContent("data.tsv")
 
 	if mode == "write" {
 		// Inline content path — writeFile.

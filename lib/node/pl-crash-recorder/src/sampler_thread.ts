@@ -21,7 +21,7 @@ import fs from "node:fs";
 import os from "node:os";
 import { workerData } from "node:worker_threads";
 import type { SamplerRecord } from "./events";
-import { readMachineMemory } from "./machine_memory";
+import { createMachineMemoryReader } from "./machine_memory";
 
 type SamplerWorkerData = { file: string; intervalMs: number; machineIntervalMs?: number };
 
@@ -29,16 +29,15 @@ const { file, intervalMs, machineIntervalMs = 1000 } = workerData as SamplerWork
 const fd = fs.openSync(file, "a");
 let seq = 0;
 let peakRss = 0;
-let machineDueAt = 0;
+const readMachine = createMachineMemoryReader({ intervalMs: machineIntervalMs });
 
 setInterval(() => {
   const rss = process.memoryUsage.rss();
   if (rss > peakRss) peakRss = rss;
   const now = Date.now();
-  // Taken on the first tick and then on its own schedule, so the curve keeps its
-  // sampling rate while the costlier reading stays occasional.
-  const machine = now >= machineDueAt ? readMachineMemory() : undefined;
-  if (machine) machineDueAt = now + machineIntervalMs;
+  // Taken on its own schedule, and only when it has something to say, so the
+  // curve keeps its sampling rate while the costlier reading stays occasional.
+  const machine = readMachine(now);
   const record: SamplerRecord = {
     seq: ++seq,
     t: Math.round(performance.now() * 1000) / 1000,

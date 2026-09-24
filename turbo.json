@@ -45,7 +45,7 @@
     },
     "test": {
       "inputs": ["$TURBO_DEFAULT$"],
-      "env": ["TEST_CACHE_CRUTCH"],
+      "env": ["TEST_CACHE_CRUTCH", "PL_TEST_TIMEOUT"],
       "outputs": ["./coverage/**", "test-report.junit.xml"],
       "dependsOn": ["build"],
       "passThroughEnv": [
@@ -53,7 +53,14 @@
         "PL_TEST_PASSWORD",
         "PL_TEST_USER",
         "PL_TEST_PROXY",
+        "PL_TEST_ADMIN_USER",
+        "PL_TEST_ADMIN_PASSWORD",
         "PL_TEST_STORAGE_ID",
+        "PL_TEST_USE_DOCKER",
+        "PL_TEST_K8S",
+        "PL_TEST_REQUEST_TIMEOUT",
+        "PL_TEST_RUN_SLOW",
+        "LONG_TEST_TIMEOUT",
         "DEBUG",
         "MI_LICENSE",
         "PL_DOCKER_REGISTRY_PUSH_TO",
