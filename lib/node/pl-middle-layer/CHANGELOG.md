@@ -1,5 +1,26 @@
 # @milaboratories/pl-middle-layer
 
+## 1.71.16
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+  - @platforma-sdk/model@1.84.0
+  - @milaboratories/columns-collection-driver@0.2.6
+  - @milaboratories/pl-model-middle-layer@1.32.2
+  - @milaboratories/pf-spec-driver@1.5.4
+  - @milaboratories/pf-driver@1.9.4
+  - @milaboratories/pl-client@3.17.2
+  - @milaboratories/pl-crash-recorder@0.3.2
+  - @milaboratories/pl-deployments@3.0.18
+  - @milaboratories/pl-drivers@1.16.25
+  - @platforma-sdk/block-tools@2.16.2
+  - @milaboratories/pl-model-backend@1.4.28
+  - @milaboratories/pl-errors@1.4.43
+  - @milaboratories/pl-tree@1.15.3
+  - @platforma-sdk/workflow-tengo@6.12.1
+
 ## 1.71.15
 
 ### Patch Changes

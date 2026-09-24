@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-common
 
+## 1.50.0
+
+### Minor Changes
+
+- 3716dcb: Graph aesthetic annotations: new `pl7.app/graph/shape` carries a default dot shape per column value (R shape codes). `pl7.app/graph/palette` gains `midPoint`, `min`, `max` and `log` for continuous columns, and its `mapping` is now optional so a continuous default needs no per-value entries. Both annotations are defaults a user can override in the interface.
+
 ## 1.49.0
 
 ### Minor Changes
