@@ -1,5 +1,268 @@
 # @milaboratories/pl-middle-layer
 
+## 1.73.0
+
+### Minor Changes
+
+- 61aefa1: Names are unique per kind inside a folder: a folder, a project and a template beside each other may share a name, while two folders, two projects or two templates still may not. `foldersSiblingNames` takes an optional `{ kind }` to list the names of one kind only (without it, it lists every kind, as before), the `duplicate-name` violation names the kind, and a refused name says which kind already carries it (`A folder named "X" is already here.`).
+
+### Patch Changes
+
+- Updated dependencies [61aefa1]
+  - @milaboratories/pl-model-middle-layer@1.34.0
+  - @milaboratories/pf-driver@1.9.6
+  - @platforma-sdk/model@1.84.3
+  - @platforma-sdk/block-tools@2.16.4
+  - @milaboratories/pf-spec-driver@1.5.6
+
+## 1.72.0
+
+### Minor Changes
+
+- cadf144: Folders: projects and templates can be arranged in a tree
+
+  **The document.** One user's folder tree is one JSON document at schema version 1: the folders,
+  each with a name, an optional parent and an optional description, plus two maps — `assignments`
+  from a project to the folder holding it, and `templateAssignments` from a template to its folder.
+  An item neither map mentions is at the top level. The document lives in a `Folders` singleton of
+  its own on the user's client root (`FoldersField`, `FoldersResourceType`), created by the middle
+  layer's init; nothing is added to the projects resource. Every write mints a new immutable value
+  and re-points the singleton's one field.
+
+  **The healing read.** `decodeStoredFoldersDocument` turns what is stored into a `FoldersDecoded`.
+  No document means no folders, and writable. A document written by a newer build, or one that
+  cannot be read as schema version 1, reads as no folders with `writable: false` and a `problem`, so
+  a build that does not understand a tree never overwrites it with its own truncated view.
+
+  `healFolders` resolves the decoded document against the project and template lists into a
+  `FoldersView`. The read heals and never fails: an item the document does not mention is at the
+  top level, an assignment naming an item that is gone is ignored, and a folder whose parent is
+  missing, or which sits in a cycle, is lifted to the top level and flagged `lifted`. No input can
+  make a project or a template disappear. `validateFoldersDocument` is the write path's
+  counterpart: a write that would persist a broken document — a cycle, a missing parent, a blank
+  folder name, two items of one name in one parent — is refused.
+
+  `MiddleLayer.folders` publishes a `FoldersListing`: the folders, every project
+  (`FoldersProjectEntry`) and every template (`FoldersTemplateEntry`), each with its `folder`,
+  `ancestors` and `path`. The folder tree, the project list and the template list are read in one
+  computable, and nothing is published while any of them is still syncing, so an item is never
+  shown at the top level first and then moved into its folder.
+
+  **One namespace per parent.** Folders, projects and templates inside one parent share one
+  namespace, and names are compared ignoring case and surrounding whitespace (`foldersNameTaken`).
+  A name a person typed is refused when it is taken, with `"X" is already used here.`; a name the
+  middle layer chose is suffixed instead — `X (Copy)`, `X (Copy 2)` (`foldersUniqueName`). Names
+  already stored are never rewritten: a collision an account already holds is tolerated, and either
+  side of it can still be renamed. While the folder document cannot be read, project and template
+  renames are not checked, since treating every item as top-level would turn the per-parent rule
+  into a global one.
+
+  **Folder operations.** `MiddleLayer` gains `createFolder`, `renameFolder`,
+  `setFolderDescription`, `previewFoldersMove`, `moveFolderItems`, `previewFolderDeletion`,
+  `deleteFolder` and `duplicateFolder`. `createProject` and `createProjectFromTemplate` take the
+  folder the new project lands in. A folder name is stored trimmed, and a blank one is refused.
+
+  **Reset.** `MiddleLayer.resetFolders` replaces a folder document this build cannot read, newer or
+  unreadable, with an empty one, leaving every project and template at the top level; it is refused
+  while the document reads fine.
+
+  **Move: preview, then confirm.** A move takes any mix of folders, projects and templates into one
+  destination. `planFoldersMove` produces the plan the preview shows — every item and the name it
+  ends up with, templates included — and `moveFolderItems` recomputes it inside the write
+  transaction. `commitFoldersMove` commits only when the recomputed plan equals the confirmed one
+  (`foldersMovePlansEqual`); otherwise nothing is written and the `FoldersMoveOutcome` is
+  `plan-changed`, carrying the fresh plan to confirm again. A move that renames something needs a
+  confirmed plan (`needs-confirmation`), and a move that cannot be planned reports `cannot-plan`
+  with its `FoldersMoveIssue`s. A folder moves with everything inside it, and an item selected
+  together with a folder that holds it travels with that folder.
+
+  **Recursive delete, always confirmed.** Deleting a folder destroys it, every folder beneath it,
+  and every project and template held anywhere in that subtree, in one transaction.
+  `planFoldersRemoval` returns the `FoldersRemoval` naming exactly what goes. A deletion cannot be
+  undone, so `deleteFolder` requires that removal back as `confirmedRemoval` however little it
+  destroys, and `commitFoldersRemoval` refuses it as `plan-changed` when the subtree has changed
+  since: a project dropped into the folder after the dialog opened aborts the deletion rather than
+  being destroyed unseen.
+
+  **No depth limit.** Folders nest to any depth. A cycle is refused by the write path and cut by
+  the read.
+
+  **Placement follows the source.** A duplicate of a project, and a template saved from one, land in
+  the folder holding their source, placed in the transaction that creates them (`inheritedFolder`).
+  `duplicateFolder` copies a whole subtree beside its source, under `X (Copy)`.
+
+  **Descriptions.** Projects, templates and folders carry free text beside their name:
+  `ProjectMeta.description`, `TemplateListEntry.description` (written by
+  `MiddleLayer.setTemplateDescription`) and `FolderEntry.description` (written by
+  `MiddleLayer.setFolderDescription`). A description is stored trimmed (`normalizeDescription`);
+  blank clears it, and nothing is stored for a thing nobody described. A duplicate, a snapshot taken
+  for a share and a copy taken out of one all carry the source's description.
+  `saveProjectAsTemplate` takes the new template's description after its label; without one the
+  template is stored undescribed.
+
+  `TemplateId` moves to `@milaboratories/pl-model-common`, beside `ProjectId`, so the model package
+  can name what it places. `@milaboratories/pl-middle-layer` still exports it. `asProjectId`,
+  `asTemplateId` and `asFolderId` brand a string already known to be such an id, such as one a caller
+  hands back.
+
+  The template list skips, rather than throws on, an entry that is not a fully synced template, the
+  way the project list does, so one such entry no longer takes the whole list down.
+
+  **Visible changes to released API:**
+
+  - `setProjectMeta` takes a patch (`Partial<ProjectMeta>`) and leaves the fields it is not given as
+    they are, so a rename can no longer revert a description written in between.
+  - `setProjectMeta` and `renameTemplate` throw when the new name is already used by something else
+    in the same parent, compared ignoring case and surrounding whitespace: renaming a project to
+    `SAMPLES` beside a `Samples` is refused, while the same name in two different folders is fine.
+    The check runs in the rename's own transaction, so two renames racing for one name cannot both
+    win.
+  - `setProjectMeta`, `renameTemplate` and `saveProjectAsTemplate` store the name trimmed.
+  - `saveProjectAsTemplate` without a label names the template to be free beside its source project
+    (`X (Copy)` for a project `X`), and throws when a label it is given is already used there.
+  - `duplicateProject` without `rename` names the copy beside its source, `X (Copy)`, where it used
+    to reuse the source's label. A label returned by `rename` is kept as it is; when it is taken
+    beside the source, the copy lands at the top level.
+  - The "not found" errors read `Project X not found in the project list.` and
+    `Template X not found in the template list.`
+
+- cadf144: Sharing drops accept/reject: a share is a shelf, not an invitation
+
+  A recipient could read a share's contents from the moment it appeared, so "Accept"
+  never granted anything — it copied, and recorded a one-shot, irreversible decision
+  over a resource that stays readable. "Reject" told the donor nothing at all for
+  read-only and template shares, where no reply can be written onto the envelope.
+
+  A share is now simply open until it expires or is revoked, and the recipient may
+  copy from it any number of times. A folder can be shared as well as projects and a
+  template.
+
+  **Breaking:**
+
+  - `acceptShare(shareIds, rename?)` is replaced by `copyShare(shareIds, destination?)`,
+    which copies into a folder of the recipient's choosing and records nothing. It
+    returns `{ projects, templates, failed }`.
+  - `rejectShare(shareId)` is replaced by `hideShare(shareId)` and
+    `unhideShare(shareId)`. Hiding is private to the recipient and reversible.
+  - `changeShare` is removed. A share is replaced instead: the new share names the
+    prior shares it supersedes in `replace`, they are deleted in the transaction that
+    creates it, and it gets a `ShareId` of its own.
+  - `replace` is now an optional `ShareReplaceOption` (`ShareId[]`) on every variant of
+    `ShareProjectsOptions`, `ShareTemplateOptions` and `ShareFolderOptions`. It was a
+    required `boolean` on the everyone variant of `ShareProjectsOptions` only, and a
+    boolean no longer compiles.
+  - `shareProjects` returns a `ShareOutcome`, `{ shareId }`, where it returned nothing.
+    `shareTemplate` returns a `ShareOutcome` too, and `ShareTemplateOutcome` is removed.
+  - `pendingShares` is now `availableShares`, and `PendingShare` is `AvailableShare`
+    with a `hidden` flag: hidden shares are listed, not dropped, so a view can offer
+    to show them.
+  - `OutgoingShare` loses `responses` and `responsesAvailable`, and the envelope's
+    `acceptance/{login}` records are gone with them.
+  - Removed exports: `decisionField`, `SharingDecision`, `ProjectChangeAction`,
+    `EnvelopeAcceptance`, `AcceptanceFieldPrefix`, `acceptanceField`,
+    `isAcceptanceField` and `acceptanceFieldLogin`.
+
+  **Added:**
+
+  - `shareFolder(folder, options)` shares a folder and everything under it: its
+    folders, a snapshot of every project in them, and every template whole. The
+    recipient's copy rebuilds the subtree under the destination with ids of its own;
+    only the root is renamed to be free there.
+  - `ShareAudience` (named recipients XOR everyone) and `ShareOptions` (the audience, the
+    title and `replace`). `ShareProjectsOptions` is `ShareOptions & { mode }`, and
+    `ShareTemplateOptions` and `ShareFolderOptions` are `ShareOptions`. `ShareOutcome`
+    is what every share method returns.
+  - The hidden-share API: `HiddenFieldPrefix`, `hiddenField`, `isHiddenField`,
+    `hiddenFieldShareId`, which returns a `ShareId`, and `ShareHidden`.
+  - The folder payload: the `folder` kind of `EnvelopePayload`, `EnvelopeFolderId`,
+    `newEnvelopeFolderId`, `EnvelopeFolder`, `EnvelopeFolderProject`, `EnvelopeFolderTemplate`,
+    `envelopeFolderRoot` and `EnvelopeFolderSummary`.
+  - `newProjectFieldUuid`, which mints the key of one project snapshot in an envelope.
+  - `OutgoingShare.folder`, `OutgoingShare.description` and `OutgoingShare.template.source`,
+    the donor's own template id that a template's prior shares are matched on;
+    `AvailableShare.folder` and `AvailableShare.description`.
+  - Envelope entries carry descriptions: a project snapshot its project's
+    `description`, and a template payload its `description` and `source`. All three are
+    optional, and envelopes written before them carry none.
+
+  What a copy does:
+
+  - Names are chosen against the destination folder, the scope the uniqueness rule
+    actually has, replacing the global dedupe accept used.
+  - A destination folder deleted meanwhile puts that share in `failed`, whatever it
+    carries, rather than spilling the copy at the top level.
+  - When the recipient's folder document cannot be rewritten by this build, the copies
+    are still made and land at the top level, and a shared folder's subtree is not
+    rebuilt.
+
+  Compatibility:
+
+  - `SharingState` keeps its `decision/{shareId}` field name, now written to mean
+    "hidden" and removed to unhide. Records written by an older build read as hidden,
+    whether they said accepted or rejected: either way that user has already dealt
+    with the share and does not want it back in their list.
+  - A build that predates the folder payload kind does not list a folder share at all.
+
+### Patch Changes
+
+- cadf144: Make the project list tolerant of anything that is not a project, and sort it correctly.
+
+  The reader walked every dynamic field on the projects resource and read project metadata off each one, so a single sibling of another type — or a project whose metadata had not synced yet — threw inside the computable and took the user's whole project list down. Such an entry is now skipped; the reads stay watched, so it appears as soon as it syncs.
+
+  **Visible change:** the sort comparator was called with one argument, so the intended most-recent-first ordering never happened and the list came back in field order. It now orders by last-modified, newest first. Consumers that re-sorted client-side to compensate will see the same order; consumers that relied on what the middle layer returned will see it change.
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+  - @milaboratories/pl-model-middle-layer@1.33.0
+  - @milaboratories/columns-collection-driver@0.2.7
+  - @milaboratories/pf-spec-driver@1.5.5
+  - @milaboratories/pf-driver@1.9.5
+  - @milaboratories/pl-client@3.17.3
+  - @milaboratories/pl-crash-recorder@0.3.3
+  - @milaboratories/pl-deployments@3.0.19
+  - @milaboratories/pl-drivers@1.16.26
+  - @platforma-sdk/model@1.84.1
+  - @platforma-sdk/block-tools@2.16.3
+  - @milaboratories/pl-model-backend@1.4.29
+  - @milaboratories/pl-errors@1.4.44
+  - @milaboratories/pl-tree@1.15.4
+  - @platforma-sdk/workflow-tengo@6.12.1
+
+## 1.71.16
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+  - @platforma-sdk/model@1.84.0
+  - @milaboratories/columns-collection-driver@0.2.6
+  - @milaboratories/pl-model-middle-layer@1.32.2
+  - @milaboratories/pf-spec-driver@1.5.4
+  - @milaboratories/pf-driver@1.9.4
+  - @milaboratories/pl-client@3.17.2
+  - @milaboratories/pl-crash-recorder@0.3.2
+  - @milaboratories/pl-deployments@3.0.18
+  - @milaboratories/pl-drivers@1.16.25
+  - @platforma-sdk/block-tools@2.16.2
+  - @milaboratories/pl-model-backend@1.4.28
+  - @milaboratories/pl-errors@1.4.43
+  - @milaboratories/pl-tree@1.15.3
+  - @platforma-sdk/workflow-tengo@6.12.1
+
+## 1.71.15
+
+### Patch Changes
+
+- Updated dependencies [893ee62]
+  - @platforma-sdk/workflow-tengo@6.12.1
+
+## 1.71.14
+
+### Patch Changes
+
+- Updated dependencies [1c11af2]
+  - @platforma-sdk/workflow-tengo@6.12.0
+
 ## 1.71.13
 
 ### Patch Changes

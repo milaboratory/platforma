@@ -1,5 +1,147 @@
 # @platforma-sdk/ui-vue
 
+## 1.84.3
+
+### Patch Changes
+
+- @platforma-sdk/model@1.84.3
+- @milaboratories/pf-spec-driver@1.5.6
+- @milaboratories/uikit@2.15.34
+
+## 1.84.2
+
+### Patch Changes
+
+- 2ce7743: Make `PlAgDataTableV2`'s reload comparison converge by construction, and drop
+  the burst limit that was standing in for it.
+
+  The comparison decides whether to destroy and rebuild the grid around the stored
+  state, so it must only ask for things a rebuild can deliver. It was asking for
+  two kinds of thing that no rebuild can: a field the stored state does not
+  express (AG Grid always reports its whole state), and an id the grid does not
+  have — state outlives column sets, so a sort on a column a later run dropped, or
+  hidden ids saved against different columns, could never be satisfied. Either one
+  turned the watch into an engine for endless rebuilds.
+
+  Both are now filtered out before comparing: the stored state is reduced to the
+  columns the grid actually has, and only the fields it still expresses are
+  compared. A stored column order is judged on the relative order of the columns
+  it names, so where the grid puts the rest is not a disagreement, and the hidden
+  set is compared as a set.
+
+  With the comparison unable to ask for the impossible, the "give up after three
+  reloads a second" limit is gone: it capped the damage of a non-converging
+  comparison rather than making one converge, and it would have hidden the next
+  such bug instead of surfacing it.
+
+- c8c66c5: Stop `PlAgDataTableV2` recreating its grid forever when the stored grid state
+  records hidden columns but no column order — around twenty rebuilds a second,
+  which strobes the headers and fills the console with AG Grid licence banners.
+
+  Three things were needed to produce it, and each is addressed:
+
+  - AG Grid reports an entirely empty state until its columns have been taken into
+    its own state, and `normalizeGridState` reads the live columns — so
+    normalizing an empty report invented a state (hidden columns, no column order)
+    that the grid would never report back. An empty report is now ignored.
+  - The reload watch compared the whole state, but the stored state is a partial
+    opinion while AG Grid always reports all of it. A stored state with no
+    `columnOrder` could therefore never match a grid that has columns, and no
+    remount could ever make it. Only the fields the stored state actually
+    expresses are compared now (`storedStateApplied`, unit tested).
+  - `onStateUpdated` is what would repair the stored state, but AG Grid defers its
+    init state event by a timeout and drops it if the grid has since been
+    destroyed — so the remounts starved their own cure. The watch now gives up
+    after a few reloads in a second: a stale column layout is a far smaller cost
+    than an unusable table.
+
+  Also stops a grid-state change that leaves `pTableParams` untouched — reordering
+  columns, say — from being silently dropped: the state cache was spliced in
+  place, so the change check compared the new state against itself and skipped the
+  write back to the project.
+
+- 43e07a3: Fix an infinite grid-remount loop in `PlAgDataTableV2` that recreated the whole
+  AG Grid around twenty times a second — strobing the column headers and filling
+  the console with AG Grid licence banners — on opening a page whose table had a
+  saved grid state, most often right after a block rebuild.
+
+  `computedCached`'s `writeThrough` made a set visible to readers immediately, but
+  the cache was still overwritten whenever the source re-emitted. A set is
+  debounced, so between the write and its arrival in the project state the source
+  still holds the value the write moved away from; a running block has that state
+  pushed back repeatedly, and each push reverted the cache. The stored grid state
+  therefore flipped between what the grid had and what the project still held, and
+  every flip made the reload watch destroy and recreate the grid — which, because
+  the flips never stopped on their own, never converged.
+
+  A write-through value now stays authoritative until the source reports it back.
+  Since `get` maps set values to themselves, that is exactly when the round trip
+  has completed; a change from elsewhere arriving mid-flight is dropped in favour
+  of the local write that is about to land.
+
+- 4058fdb: Follow-ups from review of the `PlAgDataTableV2` reload fixes.
+
+  An explicitly cleared stored state is an opinion, not silence. Absent and empty
+  mean the same thing coming _from_ AG Grid, which omits what carries no
+  information, but in the stored state an empty list is the user having cleared the
+  sorting or shown every column — and the grid has to be made to match it.
+  Normalizing both sides alike meant such a state was read as "nothing to ask for"
+  and left the grid stale.
+
+  A change of data source now moves the generation even when the new model has no
+  handles yet. That path starts no calculation, which is why it stopped moving the
+  generation — but the calculation in flight belongs to the source being left, and
+  must not be allowed to install its columns and datasource under the new one.
+
+  Taking the loading overlay down belongs to the current generation again, rather
+  than to whichever calculation settles last. A superseded calculation could
+  otherwise hide an overlay the newer settings had just put up — the "no data
+  source" branch raises one and starts no calculation of its own — leaving an empty
+  table saying nothing about why. The case that motivated the counter is covered by
+  the generation no longer moving on a same-source recomputation.
+
+- 0cbb614: Stop `PlAgDataTableV2` leaving its loading overlay up forever when the block it
+  shows re-runs. The table would sit on "Loading data…" with no columns, long
+  after the block had finished and its table handles were ready.
+
+  The settings watch bumped a generation counter on every settings change, and a
+  calculation that finds the generation moved on writes nothing — including, in
+  its `finally`, the one call that takes the loading overlay down. A model between
+  handles (what a re-running block produces on its way from one table to the next)
+  changes the settings but starts no calculation of its own, so it would supersede
+  the calculation in flight and leave nothing behind to clear the overlay.
+
+  Which options a settled calculation may write is still decided by the
+  generation. Taking the overlay down is now decided by whether any calculation is
+  still in flight, since the last one to settle is the one that knows nothing
+  further is coming. The between-handles path also no longer moves the generation
+  at all: it starts no work, so cancelling work is not its business.
+
+- Updated dependencies [43e07a3]
+  - @milaboratories/uikit@2.15.33
+
+## 1.84.1
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+  - @milaboratories/columns-collection-driver@0.2.7
+  - @milaboratories/pf-spec-driver@1.5.5
+  - @platforma-sdk/model@1.84.1
+  - @milaboratories/uikit@2.15.32
+
+## 1.84.0
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+  - @platforma-sdk/model@1.84.0
+  - @milaboratories/columns-collection-driver@0.2.6
+  - @milaboratories/pf-spec-driver@1.5.4
+  - @milaboratories/uikit@2.15.31
+
 ## 1.83.21
 
 ### Patch Changes

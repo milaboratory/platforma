@@ -99,16 +99,90 @@ doSomething := func() {
     expect(unusedAliases(src)).toEqual([]);
   });
 
-  test("a module the code only passes around counts as unused", () => {
-    // We ask for the dot on purpose: keeping an import too long costs
-    // nothing, dropping one the source needs breaks the build.
+  test("a lib called directly counts as used", () => {
+    const src = `calculateExportSpecs := import(":export-specs")
+
+doSomething := func(x) {
+	return calculateExportSpecs(x)
+}
+`;
+    expect(unusedAliases(src)).toEqual([]);
+  });
+
+  test("a module passed as a value counts as used", () => {
     const src = `text := import("text")
 
 doSomething := func() {
 	return apply(text)
 }
 `;
+    expect(unusedAliases(src)).toEqual([]);
+  });
+
+  test("an alias used only as an array element or a map value counts as used", () => {
+    const src = `ll := import(":ll")
+sets := import(":sets")
+
+doSomething := func() {
+	return { handlers: [ll], fallback: sets }
+}
+`;
+    expect(unusedAliases(src)).toEqual([]);
+  });
+
+  test("an alias returned bare counts as used", () => {
+    const src = `maps := import(":maps")
+
+doSomething := func() {
+	return maps
+}
+`;
+    expect(unusedAliases(src)).toEqual([]);
+  });
+
+  test("the import line itself is not a usage", () => {
+    const src = `calculateExportSpecs := import(":export-specs")
+
+doSomething := func(x) {
+	return x
+}
+`;
+    expect(unusedAliases(src)).toEqual(["calculateExportSpecs"]);
+  });
+
+  test("a declaration that shadows the alias is not a usage", () => {
+    // Only the declaration is excluded. A read of the shadowing local is a bare
+    // reference, and that does count. Real code therefore keeps the import.
+    const src = `text := import("text")
+
+doSomething := func() {
+	text := "local"
+	return 1
+}
+`;
     expect(unusedAliases(src)).toEqual(["text"]);
+  });
+
+  test("the alias as a member of another value still counts as used", () => {
+    // The check is wide on purpose. It never reports an import that the
+    // previous predicate kept.
+    const src = `text := import("text")
+
+doSomething := func(opts) {
+	return opts.text
+}
+`;
+    expect(unusedAliases(src)).toEqual([]);
+  });
+
+  test("a longer name that starts with the alias is not a usage", () => {
+    const src = `ll := import(":ll")
+
+doSomething := func() {
+	return llExtra(1)
+}
+`;
+    expect(unusedAliases(src)).toEqual(["ll"]);
   });
 
   test("reports the line of each import", () => {

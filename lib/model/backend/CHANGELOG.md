@@ -1,5 +1,17 @@
 # @milaboratories/pl-model-backend
 
+## 1.4.29
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.17.3
+
+## 1.4.28
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.17.2
+
 ## 1.4.27
 
 ### Patch Changes
