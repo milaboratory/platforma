@@ -1,5 +1,13 @@
 # @platforma-sdk/ui-vue
 
+## 1.84.3
+
+### Patch Changes
+
+- @platforma-sdk/model@1.84.3
+- @milaboratories/pf-spec-driver@1.5.6
+- @milaboratories/uikit@2.15.34
+
 ## 1.84.2
 
 ### Patch Changes

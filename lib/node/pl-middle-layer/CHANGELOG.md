@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 1.73.0
+
+### Minor Changes
+
+- 61aefa1: Names are unique per kind inside a folder: a folder, a project and a template beside each other may share a name, while two folders, two projects or two templates still may not. `foldersSiblingNames` takes an optional `{ kind }` to list the names of one kind only (without it, it lists every kind, as before), the `duplicate-name` violation names the kind, and a refused name says which kind already carries it (`A folder named "X" is already here.`).
+
+### Patch Changes
+
+- Updated dependencies [61aefa1]
+  - @milaboratories/pl-model-middle-layer@1.34.0
+  - @milaboratories/pf-driver@1.9.6
+  - @platforma-sdk/model@1.84.3
+  - @platforma-sdk/block-tools@2.16.4
+  - @milaboratories/pf-spec-driver@1.5.6
+
 ## 1.72.0
 
 ### Minor Changes

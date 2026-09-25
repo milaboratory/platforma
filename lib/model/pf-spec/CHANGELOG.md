@@ -1,5 +1,12 @@
 # @milaboratories/pf-spec
 
+## 1.0.6
+
+### Patch Changes
+
+- Updated dependencies [61aefa1]
+  - @milaboratories/pl-model-middle-layer@1.34.0
+
 ## 1.0.5
 
 ### Patch Changes
