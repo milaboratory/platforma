@@ -315,20 +315,23 @@ describe("view helpers", () => {
     expect(foldersChildren(view, fid("a")).projects.map((project) => project.id)).toEqual(["p1"]);
   });
 
-  test("sibling names span folders and projects alike", () => {
-    expect(foldersSiblingNames(view).sort()).toEqual(["A", "p2"]);
-    expect(foldersSiblingNames(view, fid("a")).sort()).toEqual(["B", "p1"]);
+  test("sibling names are those of one kind", () => {
+    expect(foldersSiblingNames(view, "folder")).toEqual(["A"]);
+    expect(foldersSiblingNames(view, "project")).toEqual(["p2"]);
+    expect(foldersSiblingNames(view, "folder", fid("a"))).toEqual(["B"]);
+    expect(foldersSiblingNames(view, "project", fid("a"))).toEqual(["p1"]);
   });
 
-  test("sibling names span templates too, and leave out the ids they are told to", () => {
+  test("template sibling names are the templates', less the ids they are told to leave out", () => {
     const withTemplates = foldersViewFromDocument(
       document([{ id: "a", name: "A" }], { p1: "a" }, { t1: "a" }),
       projects("p1"),
       [{ id: tid("t1"), name: "Snapshot" }],
     );
 
-    expect(foldersSiblingNames(withTemplates, fid("a")).sort()).toEqual(["Snapshot", "p1"]);
-    expect(foldersSiblingNames(withTemplates, fid("a"), ["t1"])).toEqual(["p1"]);
+    expect(foldersSiblingNames(withTemplates, "template", fid("a"))).toEqual(["Snapshot"]);
+    expect(foldersSiblingNames(withTemplates, "template", fid("a"), ["t1"])).toEqual([]);
+    expect(foldersSiblingNames(withTemplates, "project", fid("a"))).toEqual(["p1"]);
   });
 
   test("the view turns back into the document it stands for", () => {

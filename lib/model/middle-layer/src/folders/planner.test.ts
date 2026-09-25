@@ -53,7 +53,7 @@ describe("planFoldersMove", () => {
     expect(plan.entries[0]).toMatchObject({ name: "Run (Copy)", renamed: true });
   });
 
-  test("folders and projects share one namespace inside a parent", () => {
+  test("a folder and a project may share a name inside a parent: each kind has its own namespace", () => {
     const tree = view(
       [
         { id: "a", name: "A" },
@@ -63,6 +63,20 @@ describe("planFoldersMove", () => {
     );
 
     const plan = planned(planFoldersMove(tree, [project("p1")], fid("a")));
+    expect(plan.entries[0]).toMatchObject({ name: "Run", renamed: false });
+  });
+
+  test("a moved folder is renamed against folders only", () => {
+    const tree = view(
+      [
+        { id: "a", name: "A" },
+        { id: "b", name: "Run", parent: "a" },
+        { id: "c", name: "Run" },
+      ],
+      [{ id: "p1", name: "Run", folder: "a" }],
+    );
+
+    const plan = planned(planFoldersMove(tree, [folder("c")], fid("a")));
     expect(plan.entries[0]).toMatchObject({ name: "Run (Copy)", renamed: true });
   });
 
@@ -258,7 +272,7 @@ describe("a selection holding a folder and something inside it", () => {
 });
 
 describe("moving a template", () => {
-  test("a template arriving where a project carries its name is renamed", () => {
+  test("a template arriving where a project carries its name keeps it", () => {
     const tree = view(
       [
         { id: "a", name: "A" },
@@ -270,8 +284,8 @@ describe("moving a template", () => {
 
     const plan = planned(planFoldersMove(tree, [template("t1")], fid("b")));
     expect(plan.entries[0]).toMatchObject({
-      name: "Run (Copy)",
-      renamed: true,
+      name: "Run",
+      renamed: false,
       sourceFolder: "a",
     });
   });
@@ -296,7 +310,7 @@ describe("moving a template", () => {
     ]);
   });
 
-  test("a project arriving where a template carries its name is renamed", () => {
+  test("a project arriving where a template carries its name keeps it", () => {
     const tree = view(
       [
         { id: "a", name: "A" },
@@ -307,7 +321,7 @@ describe("moving a template", () => {
     );
 
     const plan = planned(planFoldersMove(tree, [project("p1")], fid("b")));
-    expect(plan.entries[0]).toMatchObject({ name: "Run (Copy)", renamed: true });
+    expect(plan.entries[0]).toMatchObject({ name: "Run", renamed: false });
   });
 
   test("applying the plan re-parents the template and touches nothing else", () => {

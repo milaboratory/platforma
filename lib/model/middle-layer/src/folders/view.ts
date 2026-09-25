@@ -3,6 +3,7 @@ import { normalizeDescription } from "../project";
 import type { FoldersDecoded, FoldersDocumentProblem } from "./decode";
 import type { FoldersDocument, FolderId } from "./document";
 import { emptyFoldersDocument } from "./document";
+import type { FoldersItem } from "./planner";
 
 /** An item as the folder machinery needs to see it: an identity and the label shown to a user. */
 export interface FoldersItemInput<Id extends string> {
@@ -121,24 +122,31 @@ export function foldersChildren(
 }
 
 /**
- * Names already taken directly inside a folder, or at the top level when no folder is given.
+ * Names already taken by items of one kind directly inside a folder, or at the top level when no
+ * folder is given.
  *
- * Folders, projects and templates share one namespace: whatever kind two things beside each other
- * are, they never answer to one name. This is the one list every naming decision is made against.
+ * Each kind has its own namespace: two folders, two projects or two templates beside each other
+ * never answer to one name, but a folder, a project and a template may. This is the one list
+ * every naming decision is made against.
  *
  * `exclude` names the ids that must not count against themselves — the items being renamed or
  * moved.
  */
 export function foldersSiblingNames(
   view: FoldersView,
+  kind: FoldersItem["kind"],
   parent?: FolderId,
   exclude: Iterable<string> = [],
 ): string[] {
   const skipped = new Set<string>(exclude);
   const children = foldersChildren(view, parent);
-  return [...children.folders, ...children.projects, ...children.templates]
-    .filter((item) => !skipped.has(item.id))
-    .map((item) => item.name);
+  const ofKind: readonly { readonly id: string; readonly name: string }[] =
+    kind === "folder"
+      ? children.folders
+      : kind === "project"
+        ? children.projects
+        : children.templates;
+  return ofKind.filter((item) => !skipped.has(item.id)).map((item) => item.name);
 }
 
 /** A folder and every folder beneath it, the folder itself first. */

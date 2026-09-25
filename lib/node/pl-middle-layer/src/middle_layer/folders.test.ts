@@ -79,18 +79,20 @@ test("a typed name is stored trimmed, and a blank folder name is refused", async
   });
 });
 
-test("a name a human typed is rejected when it is taken, whatever its case", async () => {
+test("a name a human typed is rejected when another folder carries it, whatever its case", async () => {
   await withMl(async (ml) => {
     await ml.createFolder("Samples");
-    await expect(ml.createFolder("samples")).rejects.toThrow(/already used/);
+    await expect(ml.createFolder("samples")).rejects.toThrow(
+      'A folder named "samples" is already here.',
+    );
 
-    // A project shares the namespace with folders inside the same parent.
+    // A project is another kind of item: its name is no obstacle to a folder's.
     await ml.createProject({ label: "Alpha" });
     await untilListing(ml, (l) => l.projects.length === 1);
-    await expect(ml.createFolder("alpha")).rejects.toThrow(/already used/);
+    await ml.createFolder("alpha");
 
     const other = await ml.createFolder("Other");
-    await expect(ml.renameFolder(other, "SAMPLES")).rejects.toThrow(/already used/);
+    await expect(ml.renameFolder(other, "SAMPLES")).rejects.toThrow(/folder named .* already here/);
 
     // Renaming a folder to what it is already called is not a collision with itself.
     await ml.renameFolder(other, "Other");
@@ -625,16 +627,22 @@ test("renaming a project onto a sibling's name is refused, in whatever case", as
     await move(ml, other, folder);
     await untilListing(ml, (l) => l.projects.filter((p) => p.folder === folder).length === 2);
 
-    await expect(ml.setProjectMeta(other, { label: "Alpha" })).rejects.toThrow(/already used/);
-    await expect(ml.setProjectMeta(other, { label: "ALPHA" })).rejects.toThrow(/already used/);
-    // Folders and projects share one namespace inside a parent.
-    await ml.createFolder("Archive", folder);
-    await expect(ml.setProjectMeta(other, { label: "archive" })).rejects.toThrow(/already used/);
+    await expect(ml.setProjectMeta(other, { label: "Alpha" })).rejects.toThrow(
+      'A project named "Alpha" is already here.',
+    );
+    await expect(ml.setProjectMeta(other, { label: "ALPHA" })).rejects.toThrow(
+      /project named .* already here/,
+    );
 
-    // Nothing was written by any of the refusals.
+    // Nothing was written by either refusal.
     const listing = await untilListing(ml, (l) => l.projects.length === 2);
     expect(labelOf(listing, other)).toBe("Beta");
     expect(labelOf(listing, resident)).toBe("Alpha");
+
+    // A folder is another kind of item: a project may take the name of one beside it.
+    await ml.createFolder("Archive", folder);
+    await ml.setProjectMeta(other, { label: "archive" });
+    await untilListing(ml, (l) => labelOf(l, other) === "archive");
   });
 });
 
@@ -858,8 +866,8 @@ test("a template saved from a project lands beside it", async () => {
     const listing = await untilListing(ml, (l) => l.templates.length === 1);
     expect(listing.templates[0].id).toBe(saved.templateId);
     expect(listing.templates[0].folder).toBe(folder);
-    // The project beside it already answers to its own label.
-    expect(listing.templates[0].label).toBe("Alpha (Copy)");
+    // The project beside it answers to that label too, but a project is another kind of item.
+    expect(listing.templates[0].label).toBe("Alpha");
   });
 });
 
@@ -913,7 +921,7 @@ test("duplicating a folder rebuilds its subtree beside it, descriptions and all"
 
     const copiedTemplate = listing.templates.find((t) => t.id !== saved.templateId);
     expect(copiedTemplate?.folder).toBe(copiedInner.id);
-    expect(copiedTemplate?.label).toBe("Alpha (Copy)");
+    expect(copiedTemplate?.label).toBe("Alpha");
     expect(copiedTemplate?.description).toBe("Reusable");
   });
 });
