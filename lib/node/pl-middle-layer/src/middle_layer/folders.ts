@@ -471,7 +471,7 @@ export async function openFoldersTx(tx: PlTransaction, rids: FoldersRids): Promi
   };
 
   const namesTakenIn = (folder: FolderId | undefined, kind: FoldersItem["kind"]): string[] =>
-    read.decoded.writable ? foldersSiblingNames(view, kind, folder) : [];
+    read.decoded.writable ? foldersSiblingNames(view, folder, [], { kind }) : [];
 
   const folderOf = (project: ProjectId): FolderId | undefined =>
     view.projects.find((candidate) => candidate.id === project)?.folder;
@@ -499,7 +499,7 @@ export async function openFoldersTx(tx: PlTransaction, rids: FoldersRids): Promi
       // name goes through even where a pre-existing duplicate sits beside it.
       if (foldersNameTaken(name, [placed.name])) return;
 
-      const siblings = foldersSiblingNames(view, item.kind, placed.folder, [item.id]);
+      const siblings = foldersSiblingNames(view, placed.folder, [item.id], { kind: item.kind });
       if (foldersNameTaken(name, siblings)) throw new Error(nameTakenMessage(item.kind, name));
     },
 
@@ -524,7 +524,7 @@ export async function openFoldersTx(tx: PlTransaction, rids: FoldersRids): Promi
       if (root === undefined) throw new Error(`The subtree holds no folder ${subtree.root}.`);
       const rootName = foldersUniqueName(
         root.name,
-        foldersSiblingNames(view, "folder", destination),
+        foldersSiblingNames(view, destination, [], { kind: "folder" }),
       );
 
       const incoming = Object.keys(subtree.folders);
@@ -585,7 +585,7 @@ export async function createFolder(
   await withFolders(pl, "MLCreateFolder", rids, (view) => {
     if (parent !== undefined && !view.folders.some((folder) => folder.id === parent))
       throw new Error(`Folder ${parent} does not exist.`);
-    if (foldersNameTaken(wanted, foldersSiblingNames(view, "folder", parent)))
+    if (foldersNameTaken(wanted, foldersSiblingNames(view, parent, [], { kind: "folder" })))
       throw new Error(nameTakenMessage("folder", wanted));
 
     const base = foldersDocumentFromView(view);
@@ -618,7 +618,7 @@ export async function renameFolder(
     const target = view.folders.find((candidate) => candidate.id === folder);
     if (target === undefined) throw new Error(`Folder ${folder} does not exist.`);
 
-    const siblings = foldersSiblingNames(view, "folder", target.parent, [folder]);
+    const siblings = foldersSiblingNames(view, target.parent, [folder], { kind: "folder" });
     if (foldersNameTaken(wanted, siblings)) throw new Error(nameTakenMessage("folder", wanted));
 
     const base = foldersDocumentFromView(view);

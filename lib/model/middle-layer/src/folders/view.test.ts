@@ -316,10 +316,16 @@ describe("view helpers", () => {
   });
 
   test("sibling names are those of one kind", () => {
-    expect(foldersSiblingNames(view, "folder")).toEqual(["A"]);
-    expect(foldersSiblingNames(view, "project")).toEqual(["p2"]);
-    expect(foldersSiblingNames(view, "folder", fid("a"))).toEqual(["B"]);
-    expect(foldersSiblingNames(view, "project", fid("a"))).toEqual(["p1"]);
+    expect(foldersSiblingNames(view, undefined, [], { kind: "folder" })).toEqual(["A"]);
+    expect(foldersSiblingNames(view, undefined, [], { kind: "project" })).toEqual(["p2"]);
+    expect(foldersSiblingNames(view, fid("a"), [], { kind: "folder" })).toEqual(["B"]);
+    expect(foldersSiblingNames(view, fid("a"), [], { kind: "project" })).toEqual(["p1"]);
+  });
+
+  test("sibling names without a kind are those of every kind", () => {
+    expect(foldersSiblingNames(view)).toEqual(["A", "p2"]);
+    expect(foldersSiblingNames(view, fid("a"))).toEqual(["B", "p1"]);
+    expect(foldersSiblingNames(view, fid("a"), ["b"])).toEqual(["p1"]);
   });
 
   test("template sibling names are the templates', less the ids they are told to leave out", () => {
@@ -329,9 +335,11 @@ describe("view helpers", () => {
       [{ id: tid("t1"), name: "Snapshot" }],
     );
 
-    expect(foldersSiblingNames(withTemplates, "template", fid("a"))).toEqual(["Snapshot"]);
-    expect(foldersSiblingNames(withTemplates, "template", fid("a"), ["t1"])).toEqual([]);
-    expect(foldersSiblingNames(withTemplates, "project", fid("a"))).toEqual(["p1"]);
+    expect(foldersSiblingNames(withTemplates, fid("a"), [], { kind: "template" })).toEqual([
+      "Snapshot",
+    ]);
+    expect(foldersSiblingNames(withTemplates, fid("a"), ["t1"], { kind: "template" })).toEqual([]);
+    expect(foldersSiblingNames(withTemplates, fid("a"), [], { kind: "project" })).toEqual(["p1"]);
   });
 
   test("the view turns back into the document it stands for", () => {
