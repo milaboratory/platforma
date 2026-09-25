@@ -110,9 +110,9 @@ export function planFoldersMove(
   // project called X in the destination.
   const movedIds = moved.map(({ item }) => item.id);
   const taken: Record<FoldersItem["kind"], string[]> = {
-    folder: foldersSiblingNames(view, "folder", destination, movedIds),
-    project: foldersSiblingNames(view, "project", destination, movedIds),
-    template: foldersSiblingNames(view, "template", destination, movedIds),
+    folder: foldersSiblingNames(view, destination, movedIds, { kind: "folder" }),
+    project: foldersSiblingNames(view, destination, movedIds, { kind: "project" }),
+    template: foldersSiblingNames(view, destination, movedIds, { kind: "template" }),
   };
 
   const entries: FoldersMoveEntry[] = [];

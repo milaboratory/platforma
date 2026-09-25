@@ -122,31 +122,33 @@ export function foldersChildren(
 }
 
 /**
- * Names already taken by items of one kind directly inside a folder, or at the top level when no
- * folder is given.
+ * Names already taken directly inside a folder, or at the top level when no folder is given.
  *
  * Each kind has its own namespace: two folders, two projects or two templates beside each other
- * never answer to one name, but a folder, a project and a template may. This is the one list
- * every naming decision is made against.
+ * never answer to one name, but a folder, a project and a template may. With `kind` given, only the
+ * names of that kind are listed — the list a name for an item of that kind is checked against.
+ * Without it, the names of every kind are listed.
  *
  * `exclude` names the ids that must not count against themselves — the items being renamed or
  * moved.
  */
 export function foldersSiblingNames(
   view: FoldersView,
-  kind: FoldersItem["kind"],
   parent?: FolderId,
   exclude: Iterable<string> = [],
+  options: { readonly kind?: FoldersItem["kind"] } = {},
 ): string[] {
   const skipped = new Set<string>(exclude);
   const children = foldersChildren(view, parent);
-  const ofKind: readonly { readonly id: string; readonly name: string }[] =
-    kind === "folder"
+  const listed: readonly { readonly id: string; readonly name: string }[] =
+    options.kind === "folder"
       ? children.folders
-      : kind === "project"
+      : options.kind === "project"
         ? children.projects
-        : children.templates;
-  return ofKind.filter((item) => !skipped.has(item.id)).map((item) => item.name);
+        : options.kind === "template"
+          ? children.templates
+          : [...children.folders, ...children.projects, ...children.templates];
+  return listed.filter((item) => !skipped.has(item.id)).map((item) => item.name);
 }
 
 /** A folder and every folder beneath it, the folder itself first. */

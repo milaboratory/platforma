@@ -28,6 +28,6 @@ export function inheritedFolder(
   // Scoped to the destination and to the created item's kind, because the rule is: names are
   // unique among one kind within a parent, never globally. The item being created is left out in
   // case the view already lists it.
-  const siblings = foldersSiblingNames(view, created.kind, folder, [created.id]);
+  const siblings = foldersSiblingNames(view, folder, [created.id], { kind: created.kind });
   return foldersNameTaken(name, siblings) ? undefined : folder;
 }
