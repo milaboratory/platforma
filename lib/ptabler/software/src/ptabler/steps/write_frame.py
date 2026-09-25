@@ -24,6 +24,7 @@ the canonical JSON envelope directly to `<column>.datainfo`.
 """
 from typing import Dict, List, Optional
 import os
+import shutil
 
 import duckdb
 import polars as pl
@@ -32,6 +33,7 @@ from polars_pf import AxisMapping, ColumnMapping, ConversionParams, convert
 from polars_pf.json.spec import AxisType, ColumnType
 
 from .base import PStep, StepContext
+from .memory import set_duckdb_memory_limit
 from ..common import toPolarsType
 
 __all__ = [
@@ -130,15 +132,22 @@ class WriteFrame(PStep, tag="write_frame"):
                 pl.all_horizontal([pl.col(a.column).is_not_null() for a in self.axes])
             )
 
-        unsorted_parquet = os.path.join(frame_dir, "unsorted.parquet")
+        if ctx.settings.spill_folder is None:
+            spill_dir = frame_dir
+            temp_dir = frame_dir
+        else:
+            spill_dir = str(ctx.settings.spill_folder)
+            temp_dir = os.path.join(spill_dir, f"write_frame-{self.frame_name}")
+            os.makedirs(temp_dir, exist_ok=True)
+
+        unsorted_parquet = os.path.join(temp_dir, "unsorted.parquet")
         lf = lf.sink_parquet(path=unsorted_parquet, lazy=True)
         ctx.add_sink(lf)
-        
-        intermediate_parquet = os.path.join(frame_dir, "intermediate.parquet")
-        spill_dir = str(ctx.settings.spill_folder or frame_dir)
+
+        intermediate_parquet = os.path.join(temp_dir, "intermediate.parquet")
         ctx.chain_task(
             lambda: self._sort_and_convert(
-                unsorted_parquet, intermediate_parquet, frame_dir, spill_dir
+                unsorted_parquet, intermediate_parquet, frame_dir, spill_dir, temp_dir
             )
         )
 
@@ -174,11 +183,23 @@ class WriteFrame(PStep, tag="write_frame"):
         intermediate_parquet: str,
         frame_dir: str,
         spill_dir: str,
+        temp_dir: str,
     ) -> None:
+        try:
+            self._sort(unsorted_parquet, intermediate_parquet, spill_dir)
+            self._convert(intermediate_parquet, frame_dir)
+        finally:
+            if temp_dir != frame_dir:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def _sort(self, unsorted_parquet: str, intermediate_parquet: str, spill_dir: str) -> None:
         order_by = ", ".join(f"{_escape(a.column)} ASC NULLS FIRST" for a in self.axes)
         conn = duckdb.connect(database=":memory:")
         try:
             conn.execute("SET temp_directory TO ?;", [spill_dir])
+            memory_log = set_duckdb_memory_limit(conn)
+            if memory_log is not None:
+                print(f"write_frame: {memory_log}", flush=True)
             conn.execute(
                 f"""
                 COPY (SELECT * FROM read_parquet(?) ORDER BY {order_by})
@@ -196,8 +217,6 @@ class WriteFrame(PStep, tag="write_frame"):
             conn.close()
             if os.path.exists(unsorted_parquet):
                 os.remove(unsorted_parquet)
-
-        self._convert(intermediate_parquet, frame_dir)
 
     def _convert(self, intermediate_parquet: str, frame_dir: str) -> None:
         params = ConversionParams(

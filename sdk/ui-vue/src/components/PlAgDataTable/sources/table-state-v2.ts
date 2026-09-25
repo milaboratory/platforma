@@ -68,6 +68,13 @@ export function useTableState(
     set: (state) => {
       const newState: PlDataTableStateV2Normalized = {
         ...tableStateNormalized.value,
+        // Copy the cache before editing it below: spreading keeps the same array,
+        // and splicing it in place would edit the current state as well — the
+        // change check at the end would then compare the new state against
+        // itself, find them equal, and skip the assignment, so a change that
+        // leaves `pTableParams` untouched (reordering columns, say) would never
+        // be written back to the project.
+        stateCache: [...tableStateNormalized.value.stateCache],
         pTableParams: createDefaultPTableParams(),
       };
 

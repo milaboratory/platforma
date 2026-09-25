@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-model-middle-layer",
-  "version": "1.32.1",
+  "version": "1.34.0",
   "description": "Common model between middle layer and non-block UI code",
   "files": [
     "./dist/**/*",
@@ -20,6 +20,7 @@
     "build": "ts-builder build --target node",
     "watch": "ts-builder build --target node --watch",
     "check": "ts-builder check --target node",
+    "test": "vitest run --coverage",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target node",
@@ -38,6 +39,8 @@
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
-    "typescript": "catalog:"
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
   }
 }
