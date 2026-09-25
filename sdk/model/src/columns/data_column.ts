@@ -1,6 +1,7 @@
 import {
   ColumnRegistry,
   createGlobalPObjectId,
+  readColumnField,
   isPColumn,
   isPlRef,
   PlRef,
@@ -13,7 +14,7 @@ import {
   type SpecQuery,
 } from "@milaboratories/pl-model-common";
 import type { GlobalCfgRenderCtx, PColumnDataUniversal } from "../render/internal";
-import { getCtxProviders } from "./column_providers";
+import { getCtxProviders, sourceErrorOf } from "./column_providers";
 import { isNil } from "es-toolkit";
 import { LRUCache } from "lru-cache";
 import { TreeNodeAccessor } from "../render";
@@ -66,6 +67,22 @@ export class ColumnAbsentError extends Error {
   constructor(public readonly id: ColumnUniversalId) {
     super(`Column is absent in the active render ctx and will not appear: ${id}`);
     this.name = "ColumnAbsentError";
+  }
+}
+
+/**
+ * Thrown by leaf-recipe factories when the requested column carries an error:
+ * its spec field, or the source subtree it lives under, failed. The column
+ * will not become readable in this ctx. Catch it at the same boundaries as
+ * {@link ColumnAbsentError}; `reason` is the error's own message.
+ */
+export class ColumnErroredError extends Error {
+  constructor(
+    public readonly id: ColumnUniversalId,
+    public readonly reason: string,
+  ) {
+    super(`Column failed in the active render ctx: ${id}: ${reason}`);
+    this.name = "ColumnErroredError";
   }
 }
 
@@ -135,29 +152,23 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
    * returns `undefined` if the leaf isn't reachable yet (resolving). Throws
    * {@link ColumnAbsentError} when every relevant accessor is `inputsLocked`
    * and the column did not appear — the column will not exist in this ctx.
-   * Data and dataStatus stay lazy.
+   * Throws {@link ColumnErroredError} when the spec field, or the subtree the
+   * column lives under, carries an error. Data and dataStatus stay lazy.
    */
   static fromId(
     id: PObjectId,
     { ctx }: { ctx?: GlobalCfgRenderCtx } = {},
   ): undefined | DataColumnRecipe<PObjectId> {
-    const registry = new ColumnRegistry(getCtxProviders({ ctx }));
+    const providers = getCtxProviders({ ctx, id });
+    const registry = new ColumnRegistry(providers);
     const leaf = registry.resolve(id);
     if (isNil(leaf)) {
+      const sourceError = sourceErrorOf(id, providers);
+      if (sourceError !== undefined) throw new ColumnErroredError(id, sourceError.message);
       if (registry.isFinal()) throw new ColumnAbsentError(id);
       return undefined;
     }
-    const spec = readSpecAccessor(leaf);
-    if (isNil(spec)) {
-      if (leaf.accessor.getInputsLocked()) throw new ColumnAbsentError(id);
-      return undefined;
-    }
-    if (!spec.hasData()) return undefined;
-    return new DataColumnImpl(id, {
-      getSpec: () => spec.getDataAsJson<PColumnSpec>(),
-      getData: () => readDataAccessor(leaf),
-      getDataStatus: () => readDataStatus(leaf),
-    });
+    return DataColumnImpl.fromAccessor(leaf);
   }
 
   /** {@link PlRef} wrapper over {@link fromId}. */
@@ -168,18 +179,17 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
   /**
    * Bind directly to an accessor-backed {@link LeafEntry} — no registry.
    * Throws {@link ColumnAbsentError} if the leaf has no spec field and its
-   * accessor is `inputsLocked`. Returns `undefined` while still resolving.
+   * accessor is `inputsLocked`, {@link ColumnErroredError} if the spec field
+   * carries an error. Returns `undefined` while still resolving.
    */
   static fromAccessor(entry: LeafEntry<TreeNodeAccessor>): undefined | DataColumnRecipe<PObjectId> {
-    const spec = readSpecAccessor(entry);
-    if (isNil(spec)) {
-      if (entry.accessor.getInputsLocked()) throw new ColumnAbsentError(entry.id);
-      return undefined;
-    }
-    if (!spec.hasData()) return undefined;
+    const spec = readSpec(entry);
+    if (spec.status === "absent") throw new ColumnAbsentError(entry.id);
+    if (spec.status === "errored") throw new ColumnErroredError(entry.id, spec.error.message);
+    if (spec.status === "resolving" || !spec.node.hasData()) return undefined;
     return new DataColumnImpl(entry.id, {
-      getSpec: () => spec.getDataAsJson<PColumnSpec>(),
-      getData: () => readDataAccessor(entry),
+      getSpec: () => spec.node.getDataAsJson<PColumnSpec>(),
+      getData: () => readDataNode(entry),
       getDataStatus: () => readDataStatus(entry),
     });
   }
@@ -205,18 +215,23 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
   }
 
   /**
-   * Distinguishes `present` / `resolving` / `absent` for a {@link PObjectId}
-   * in the active render ctx. Falls back to the registry's `isFinal()`
-   * when the id has no entry — only then we can say `absent` instead of
+   * Distinguishes `present` / `resolving` / `absent` / `errored` for a
+   * {@link PObjectId} in the active render ctx. When the id has no entry, it
+   * is `errored` if it lives under a subtree that failed, else falls back to
+   * the registry's `isFinal()` — only then we can say `absent` instead of
    * `resolving`.
    */
   static getStatusById(
     id: PObjectId,
     { ctx }: { ctx?: GlobalCfgRenderCtx } = {},
   ): ColumnResolutionStatus {
-    const registry = new ColumnRegistry(getCtxProviders({ ctx }));
+    const providers = getCtxProviders({ ctx, id });
+    const registry = new ColumnRegistry(providers);
     const leaf = registry.resolve(id);
-    if (isNil(leaf)) return registry.isFinal() ? "absent" : "resolving";
+    if (isNil(leaf)) {
+      if (sourceErrorOf(id, providers) !== undefined) return "errored";
+      return registry.isFinal() ? "absent" : "resolving";
+    }
     return getLeafEntryStatus(leaf);
   }
 
@@ -301,38 +316,44 @@ export function isDataColumn(value: unknown): value is DataColumnRecipe<PObjectI
   return value instanceof DataColumnImpl;
 }
 
-const readSpecAccessor = memoizeByEntry(
-  ({ accessor, name }: LeafEntry<TreeNodeAccessor>): undefined | TreeNodeAccessor =>
-    accessor.traverse({ field: `${name}.spec`, assertFieldType: "Input", ignoreError: true }),
+const readSpec = memoizeByEntry(({ accessor, name }: LeafEntry<TreeNodeAccessor>) =>
+  readColumnField(accessor, `${name}.spec`),
 );
 
 /**
  * Per-entry counterpart to {@link readDataStatus}: tells whether the leaf's
  * **spec** can be read in this ctx, and — for the negative cases —
- * distinguishes `resolving` from `absent` via `getInputsLocked()`.
+ * distinguishes `resolving`, `absent` and `errored`.
  *
- *  - spec field not yet on the entry's accessor + inputs locked → `absent`
- *  - spec field not yet on the entry's accessor + still resolving → `resolving`
+ *  - spec field not on the entry's accessor + inputs locked → `absent`
+ *  - spec field not on the entry's accessor + still resolving → `resolving`
+ *  - spec field there but without a value yet → `resolving`
+ *  - spec field carries an error → `errored`
  *  - spec resource present but bytes not yet written → `resolving`
  *    (transient — the spec resource is connected, just unfilled)
  *  - spec resource present and `hasData()` → `present`
  */
 function getLeafEntryStatus(entry: LeafEntry<TreeNodeAccessor>): ColumnResolutionStatus {
-  const spec = readSpecAccessor(entry);
-  if (isNil(spec)) return entry.accessor.getInputsLocked() ? "absent" : "resolving";
-  if (!spec.hasData()) return "resolving";
-  return "present";
+  const spec = readSpec(entry);
+  if (spec.status !== "present") return spec.status;
+  return spec.node.hasData() ? "present" : "resolving";
 }
 
-const readDataAccessor = memoizeByEntry(
-  ({ accessor, name }: LeafEntry<TreeNodeAccessor>): undefined | TreeNodeAccessor =>
-    accessor.traverse({ field: `${name}.data`, assertFieldType: "Input", ignoreError: true }),
+/** The data resource of a leaf; `undefined` while it resolves, or when the field carries an error. */
+const readDataNode = memoizeByEntry(
+  ({ accessor, name }: LeafEntry<TreeNodeAccessor>): undefined | TreeNodeAccessor => {
+    const data = readColumnField(accessor, `${name}.data`);
+    return data.status === "present" ? data.node : undefined;
+  },
 );
 
 const readDataStatus = memoizeByEntry(
   ({ accessor, name }: LeafEntry<TreeNodeAccessor>): ColumnFieldStatus => {
-    if (accessor.listInputFields().includes(`${name}.data`)) return "present";
-    return accessor.getInputsLocked() ? "absent" : "resolving";
+    const field = `${name}.data`;
+    if (!accessor.listInputFields().includes(field)) {
+      return accessor.getInputsLocked() ? "absent" : "resolving";
+    }
+    return accessor.getFieldError(field) === undefined ? "present" : "errored";
   },
 );
 

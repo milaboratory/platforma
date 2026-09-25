@@ -362,6 +362,17 @@ export class PlTreeNodeAccessor {
     return this.getResourceFromTree(rid, {});
   }
 
+  /**
+   * Error attached to field `field`, or `undefined` when the field is absent
+   * or carries no error. Reads the field's own error, whether or not the
+   * field also has a value.
+   */
+  public getFieldError(field: string): Error | undefined {
+    const error = this.getField(field)?.error;
+    if (error === undefined) return undefined;
+    return parsePlError(notEmpty(error.getDataAsString()), this.id, this.resourceType, field);
+  }
+
   public hasData(): boolean {
     this.instanceData.guard();
     return this.resource.data !== undefined;

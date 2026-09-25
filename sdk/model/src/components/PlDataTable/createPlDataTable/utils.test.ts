@@ -5,9 +5,9 @@ import {
   type PObjectId,
 } from "@milaboratories/pl-model-common";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { deriveAllLabels, evaluateRules, type LabelableColumn } from "./utils";
+import { buildDataStatusMap, deriveAllLabels, evaluateRules, type LabelableColumn } from "./utils";
 import type { ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
-import { DataColumn, type DataColumnRecipe } from "../../../columns";
+import { DataColumn, type ColumnRecipe, type DataColumnRecipe } from "../../../columns";
 import {
   createTestCollectionDriver,
   type TestCollectionDriverHandle,
@@ -245,5 +245,23 @@ describe("evaluateRules", () => {
     const result = evaluateRules(rules, [dup, dup, dup]);
 
     expect(result.get(gid("d"))?.visibility).toBe("hidden");
+  });
+});
+
+describe("buildDataStatusMap", () => {
+  test("a column whose data field carries an error renders as an error", () => {
+    const id = createGlobalPObjectId("block", "col");
+    const errored: ColumnRecipe = {
+      id,
+      getReferencedIds: () => [id],
+      getSpec: () => makeSpec(),
+      getQuery: () => ({ type: "column", column: id }),
+      getDataStatus: () => "errored",
+      withSpecs: () => {
+        throw new Error("not used");
+      },
+    };
+
+    expect(buildDataStatusMap([errored])).toEqual({ [id]: "error" });
   });
 });
