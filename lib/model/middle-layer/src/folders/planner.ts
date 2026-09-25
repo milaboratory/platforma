@@ -106,16 +106,19 @@ export function planFoldersMove(
 
   if (issues.length > 0) return { ok: false, issues };
 
-  const taken = foldersSiblingNames(
-    view,
-    destination,
-    moved.map(({ item }) => item.id),
-  );
+  // Each kind is named against its own kind only: a moved folder never becomes "X (Copy)" for a
+  // project called X in the destination.
+  const movedIds = moved.map(({ item }) => item.id);
+  const taken: Record<FoldersItem["kind"], string[]> = {
+    folder: foldersSiblingNames(view, "folder", destination, movedIds),
+    project: foldersSiblingNames(view, "project", destination, movedIds),
+    template: foldersSiblingNames(view, "template", destination, movedIds),
+  };
 
   const entries: FoldersMoveEntry[] = [];
   for (const { item, name, sourceFolder } of moved.sort(byCanonicalOrder)) {
-    const resulting = foldersUniqueName(name, taken);
-    taken.push(resulting);
+    const resulting = foldersUniqueName(name, taken[item.kind]);
+    taken[item.kind].push(resulting);
     entries.push({
       item,
       currentName: name,

@@ -24,6 +24,7 @@ import {
   createFolderList,
   deleteFolder,
   moveFolderItems,
+  nameTakenMessage,
   openFoldersTx,
   previewFolderDeletion,
   previewFoldersMove,
@@ -413,9 +414,9 @@ export class MiddleLayer {
    * different places: a rename that carried a stale description alongside the new name would
    * undo a description edit that happened in between, and the reverse.
    *
-   * The label is stored trimmed, and it goes into the namespace folders share, so a label
-   * already carried by something else inside the same folder is refused rather than written — a
-   * human typed it, and a name that silently becomes a different name is worse than one that is
+   * The label is stored trimmed, and the folder rule governs it, so a label another project
+   * inside the same folder already carries is refused rather than written — a folder or a
+   * template of that name beside it is no obstacle. A human typed it, and a name that silently becomes a different name is worse than one that is
    * turned down. The check and the write share one transaction, so two renames racing for the
    * same name cannot both win. Duplicates an account already holds are tolerated and never
    * rewritten; see the name check of {@link openFoldersTx}.
@@ -459,7 +460,7 @@ export class MiddleLayer {
     return id;
   }
 
-  /** Renames a folder. A name already used beside it is rejected. */
+  /** Renames a folder. A name another folder beside it already carries is rejected. */
   public async renameFolder(folder: FolderId, name: string): Promise<void> {
     await renameFolder(this.pl, this.foldersRids, folder, name);
     await this.foldersTree.refreshState();
@@ -552,7 +553,7 @@ export class MiddleLayer {
    * in them, and a copy of every template.
    *
    * The copy lands beside the source, so only its root needs a name of its own — `X (Copy)`.
-   * Nothing inside is renamed: names are compared among siblings, and a copied folder's children
+   * Nothing inside is renamed: names are compared among siblings of one kind, and a copied folder's children
    * are only ever compared with each other, where they came in distinct already.
    *
    * The subtree is read first and rebuilt in one write transaction, so the folders and everything
@@ -887,10 +888,10 @@ export class MiddleLayer {
    * A block that cannot be expressed as a template entry stores nothing at all, and every
    * such block is reported — fixing an unexportable project takes one pass, not one per block.
    *
-   * The template lands beside its project, and is named by the rule everything there is named
-   * by: a label the caller chose is stored trimmed and refused if it is already used there, and
-   * without one the project's own label is taken — suffixed, since the project itself already
-   * answers to it.
+   * The template lands beside its project, and is named by the rule templates there are named
+   * by: a label the caller chose is stored trimmed and refused if another template there already
+   * carries it, and without one the project's own label is taken — suffixed only when a template
+   * there already answers to it. The project is not a template, so its own name is no obstacle.
    *
    * The template's description is the one the caller gives, stored trimmed; blank means none.
    * Without one the template is stored undescribed, whatever the project's own description says.
@@ -912,11 +913,10 @@ export class MiddleLayer {
     const signedRid = await this.pl.withWriteTx("MLSaveProjectAsTemplate", async (tx) => {
       const meta = await tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey);
       const tree = await openFoldersTx(tx, this.foldersRids);
-      const taken = tree.namesTakenBeside(projectId);
+      const taken = tree.namesTakenBeside(projectId, "template");
       if (wanted !== undefined && foldersNameTaken(wanted, taken))
-        throw new Error(`"${wanted}" is already used here.`);
-      // The project's own label is taken beside it even when the tree cannot say what else is.
-      const name = wanted ?? foldersUniqueName(meta.label, [meta.label, ...taken]);
+        throw new Error(nameTakenMessage("template", wanted));
+      const name = wanted ?? foldersUniqueName(meta.label, taken);
 
       const tpl = createTemplate(
         tx,
@@ -947,8 +947,8 @@ export class MiddleLayer {
    * Changes a template's label. The stored document is immutable and stays untouched —
    * improving a template means saving a new one.
    *
-   * The label is stored trimmed. It is in the namespace folders, projects and templates share,
-   * so one already used beside the template is refused, in the transaction that writes it.
+   * The label is stored trimmed. One another template beside it already carries is refused, in
+   * the transaction that writes it; a folder or a project of that name beside it is no obstacle.
    */
   public async renameTemplate(id: TemplateId, label: string): Promise<void> {
     const rid = await this.resolveTemplateId(id);
@@ -1115,7 +1115,7 @@ export class MiddleLayer {
         rename === undefined
           ? foldersUniqueName(sourceMeta.label, [
               sourceMeta.label,
-              ...tree.namesTakenBeside(srcProjectId),
+              ...tree.namesTakenBeside(srcProjectId, "project"),
             ])
           : rename(sourceMeta.label, await existingProjectLabels(tx, this.projectListResourceId));
 
@@ -1492,7 +1492,7 @@ export class MiddleLayer {
               tx,
               this.templateListResourceId,
               {
-                label: foldersUniqueName(payload.label, tree.namesTakenIn(destination)),
+                label: foldersUniqueName(payload.label, tree.namesTakenIn(destination, "template")),
                 description: payload.description,
               },
               { schemaVersion: 1, document: payload.document, sender: payload.from },
@@ -1577,7 +1577,7 @@ export class MiddleLayer {
           // Scoped to where the copies are going, because that is the only place their names have
           // to be free. `taken` grows as the pack is copied, so two projects of one name inside a
           // single share do not land on top of each other either.
-          const taken = [...tree.namesTakenIn(destination)];
+          const taken = [...tree.namesTakenIn(destination, "project")];
           const created = await copyEnvelopeProjectsIntoList(
             tx,
             envelope.rid,

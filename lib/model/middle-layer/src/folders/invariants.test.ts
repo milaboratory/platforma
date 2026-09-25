@@ -102,30 +102,39 @@ describe("validateFoldersDocument", () => {
     ).toEqual([]);
   });
 
-  test("a folder and a project inside the same parent share one namespace", () => {
+  test("a folder and a project inside the same parent may share a name", () => {
     expect(kinds(document([{ id: "a", name: "Runs" }], { p1: "gone-nowhere" }), [])).toEqual([]);
 
     expect(kinds(document([{ id: "a", name: "Runs" }]), [{ id: pid("p1"), name: "runs" }])).toEqual(
-      ["duplicate-name"],
+      [],
     );
   });
 
-  test("a template shares that namespace with folders, projects and other templates", () => {
+  test("two projects inside the same parent may not", () => {
+    expect(
+      kinds(document([]), [
+        { id: pid("p1"), name: "Runs" },
+        { id: pid("p2"), name: "runs" },
+      ]),
+    ).toEqual(["duplicate-name"]);
+  });
+
+  test("a template shares its name with nothing but other templates", () => {
     const withTemplates = (templates: { id: string; name: string }[]) =>
       validateFoldersDocument(
         document([{ id: "a", name: "Runs" }], { p1: "a" }, { t1: "a", t2: "a" }),
         [{ id: pid("p1"), name: "Pilot" }],
         templates.map((template) => ({ id: tid(template.id), name: template.name })),
-      ).map((violation) => violation.kind);
+      );
 
     expect(withTemplates([{ id: "t1", name: "Snapshot" }])).toEqual([]);
-    expect(withTemplates([{ id: "t1", name: "pilot" }])).toEqual(["duplicate-name"]);
+    expect(withTemplates([{ id: "t1", name: "pilot" }])).toEqual([]);
     expect(
       withTemplates([
         { id: "t1", name: "Snapshot" },
         { id: "t2", name: "Snapshot" },
       ]),
-    ).toEqual(["duplicate-name"]);
+    ).toEqual([{ kind: "duplicate-name", item: "template", parent: "a", name: "Snapshot" }]);
   });
 
   test("an assignment naming a folder that is not there is reported", () => {
