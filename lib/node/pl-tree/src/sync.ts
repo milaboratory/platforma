@@ -404,6 +404,7 @@ async function processResourceTreeStream(
       resourceReady: frame.resourceReady,
       error: frame.error,
       originalResourceId: frame.originalResourceId,
+      canonicalId: frame.canonicalId,
       // traverseWasStopped: backend matched traverse stop rules — children were not streamed.
       // Mark as terminal; fields are resolved below.
       final: frame.final || frame.traverseWasStopped,
