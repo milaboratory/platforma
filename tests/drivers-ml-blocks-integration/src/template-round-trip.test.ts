@@ -259,13 +259,13 @@ test("v3: a project saved as a template applies back as an equivalent project", 
     // Provenance: the project it was taken from.
     expect(stored.sourceProjectLabel).toBe("Source");
 
-    // By default the template is named after its project, and lands beside it, where the project
-    // already answers to that name, so the name is made free there.
+    // By default the template is named after its project, and lands beside it. The project is
+    // another kind of item, so the name is free there as it stands.
     const listed = (await ml.templateList.awaitStableValue()).find(
       (t) => t.id === saved.templateId,
     );
     expect(listed).toMatchObject({
-      label: "Source (Copy)",
+      label: "Source",
       blockCount: 2,
       sourceProjectLabel: "Source",
     });

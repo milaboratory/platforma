@@ -12,9 +12,9 @@ import { foldersSiblingNames } from "./view";
  * top level reads as the app having lost them. `undefined` means leave it at the top level:
  *
  * - the source is itself at the top level, or is no longer in the tree at all;
- * - the name is already taken where the source sits. The creating caller chose that name, so
- *   suffixing it here would disagree with what it reported, and refusing the whole creation over
- *   a placement would be the worse trade.
+ * - an item of the created one's kind already carries the name where the source sits. The
+ *   creating caller chose that name, so suffixing it here would disagree with what it reported,
+ *   and refusing the whole creation over a placement would be the worse trade.
  */
 export function inheritedFolder(
   view: FoldersView,
@@ -25,8 +25,9 @@ export function inheritedFolder(
   const folder = view.projects.find((candidate) => candidate.id === source)?.folder;
   if (folder === undefined) return undefined;
 
-  // Scoped to the destination, because the rule is: names are unique within a parent, never
-  // globally. The item being created is left out in case the view already lists it.
-  const siblings = foldersSiblingNames(view, folder, [created.id]);
+  // Scoped to the destination and to the created item's kind, because the rule is: names are
+  // unique among one kind within a parent, never globally. The item being created is left out in
+  // case the view already lists it.
+  const siblings = foldersSiblingNames(view, folder, [created.id], { kind: created.kind });
   return foldersNameTaken(name, siblings) ? undefined : folder;
 }

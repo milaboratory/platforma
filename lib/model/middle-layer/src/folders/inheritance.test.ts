@@ -15,11 +15,16 @@ describe("what a new item inherits from the project it was made from", () => {
     expect(inheritedFolder(tree, pid("p1"), template("t1"), "Run (Copy)")).toBe(fid("a"));
   });
 
-  test("a template is held to the same names as everything else in that folder", () => {
-    const tree = view([{ id: "a", name: "Samples" }], [{ id: "p1", name: "Run", folder: "a" }]);
+  test("a template is held to the names of the templates in that folder only", () => {
+    const tree = view(
+      [{ id: "a", name: "Samples" }],
+      [{ id: "p1", name: "Run", folder: "a" }],
+      [{ id: "t2", name: "Pilot", folder: "a" }],
+    );
 
-    // "Run" is taken in that folder by the source project itself.
-    expect(inheritedFolder(tree, pid("p1"), template("t1"), "Run")).toBeUndefined();
+    // "Run" is the source project's own name, which a template may carry beside it.
+    expect(inheritedFolder(tree, pid("p1"), template("t1"), "Run")).toBe(fid("a"));
+    expect(inheritedFolder(tree, pid("p1"), template("t1"), "pilot")).toBeUndefined();
   });
 
   test("a source at the top level leaves the new item at the top level", () => {
@@ -46,7 +51,7 @@ describe("what a new item inherits from the project it was made from", () => {
     expect(inheritedFolder(tree, pid("p1"), project("p3"), "Run (Copy)")).toBeUndefined();
   });
 
-  test("a child folder's name is taken too: folders, projects and templates share the namespace", () => {
+  test("a child folder's name does not block a project: each kind has its own namespace", () => {
     const tree = view(
       [
         { id: "a", name: "Samples" },
@@ -55,7 +60,7 @@ describe("what a new item inherits from the project it was made from", () => {
       [{ id: "p1", name: "Run", folder: "a" }],
     );
 
-    expect(inheritedFolder(tree, pid("p1"), project("p2"), "Run (Copy)")).toBeUndefined();
+    expect(inheritedFolder(tree, pid("p1"), project("p2"), "Run (Copy)")).toBe(fid("a"));
   });
 
   test("a name taken elsewhere in the tree does not block the placement", () => {
