@@ -153,7 +153,7 @@ test("copying a template share lands it among the recipient's templates and buil
     const list = await awaitTemplateList(ml, (l) => l.length === 2);
     const copied = list.find((t) => t.id === outcome.templates[0]);
     if (copied === undefined) throw new Error("the copied template is not in the list");
-    // The original is at the top level too, and one folder never holds two things of one name.
+    // The original is at the top level too, and one folder never holds two templates of one name.
     expect(copied.label).toBe("A pipeline (Copy)");
     // Who sent it, kept as the copy's provenance; the donor's own source project is not part of
     // the payload and does not travel.

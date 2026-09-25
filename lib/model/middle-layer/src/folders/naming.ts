@@ -2,10 +2,11 @@
  * The one naming rule for folders, projects and templates.
  *
  * Scope is always the children of one parent — a folder, or the top level, which is simply the
- * folder with no parent. Folders, projects and templates share that one namespace, so no two of
- * them inside the same parent can carry the same name. Comparison ignores case and surrounding
- * whitespace: `Samples`, `samples` and ` Samples ` are the same thing to the person looking at
- * them.
+ * folder with no parent — and one kind of item. No two folders, no two projects and no two
+ * templates inside the same parent can carry the same name, while a folder, a project and a
+ * template beside each other may: the list shows each kind under its own heading, so they are
+ * never mistaken for one another. Comparison ignores case and surrounding whitespace: `Samples`,
+ * `samples` and ` Samples ` are the same thing to the person looking at them.
  *
  * The rule auto-renames only where a machine chose the name — a move and a duplicate. Where a
  * human typed the name, a caller uses {@link foldersNameTaken} and rejects the name with

@@ -376,26 +376,28 @@ export interface FoldersTx {
   /** Resource id of every template the list holds under a label. */
   readonly templateRids: ReadonlyMap<TemplateId, SignedResourceId>;
   /**
-   * Names already taken in a folder, or at the top level, for choosing one that is free before
-   * anything is created.
+   * Names already taken by items of one kind in a folder, or at the top level, for choosing one
+   * that is free before anything of that kind is created. Each kind has a namespace of its own.
    *
    * Empty when the folder document is not ours to read: nothing is then known about who sits
    * where, and inventing collisions out of that would rename copies for no reason.
    */
-  namesTakenIn(folder: FolderId | undefined): string[];
-  /** Names already taken where `project` sits — where something made from it lands. Empty for
-   *  the same reason {@link namesTakenIn} can be. */
-  namesTakenBeside(project: ProjectId): string[];
+  namesTakenIn(folder: FolderId | undefined, kind: FoldersItem["kind"]): string[];
+  /** Names already taken by items of one kind where `project` sits — where something made from it
+   *  lands. Empty for the same reason {@link namesTakenIn} can be. */
+  namesTakenBeside(project: ProjectId, kind: FoldersItem["kind"]): string[];
   /** The folder holding a project, or undefined at the top level. */
   folderOf(project: ProjectId): FolderId | undefined;
   /**
-   * Refuses a name for a project or template rename when one of its siblings already carries it.
+   * Refuses a name for a project or template rename when a sibling of the same kind already
+   * carries it. A folder, a project and a template beside each other may share a name; two
+   * projects, or two templates, may not.
    *
    * Renaming a project or a template is not a folder operation and does not go through
-   * {@link withFolders} — it writes the item's own metadata. But it shares the namespace the
-   * folder rule governs, so without this check a user could rename two things sitting in the
-   * same folder to the same name, and the uniqueness the rest of the feature relies on would be
-   * false from the day it shipped.
+   * {@link withFolders} — it writes the item's own metadata. But the folder rule governs its
+   * name, so without this check a user could rename two projects sitting in the same folder to
+   * the same name, and the uniqueness the rest of the feature relies on would be false from the
+   * day it shipped.
    *
    * The name is checked against the state the rename actually commits against, since the read
    * happened in the rename's own transaction. Four things it deliberately does not do:
@@ -424,8 +426,8 @@ export interface FoldersTx {
    *
    * What travels is the shape of a subtree, not its identity: the incoming folder keys are the
    * caller's and mean nothing here, so a fresh id is minted for each. Only the root is renamed to
-   * be free among the destination's siblings — the folders inside it are only ever compared with
-   * each other, and they came in already distinct.
+   * be free among the folders in the destination — the folders inside it are only ever compared
+   * with each other, and they came in already distinct.
    *
    * @returns `unwritable` when the document is not ours to rewrite and nothing was grafted.
    */
@@ -468,8 +470,8 @@ export async function openFoldersTx(tx: PlTransaction, rids: FoldersRids): Promi
       throw new Error(`Folder ${folder} does not exist.`);
   };
 
-  const namesTakenIn = (folder: FolderId | undefined): string[] =>
-    read.decoded.writable ? foldersSiblingNames(view, folder) : [];
+  const namesTakenIn = (folder: FolderId | undefined, kind: FoldersItem["kind"]): string[] =>
+    read.decoded.writable ? foldersSiblingNames(view, folder, [], { kind }) : [];
 
   const folderOf = (project: ProjectId): FolderId | undefined =>
     view.projects.find((candidate) => candidate.id === project)?.folder;
@@ -481,7 +483,7 @@ export async function openFoldersTx(tx: PlTransaction, rids: FoldersRids): Promi
     projectRids: read.projectRids,
     templateRids: read.templateRids,
     namesTakenIn,
-    namesTakenBeside: (project) => namesTakenIn(folderOf(project)),
+    namesTakenBeside: (project, kind) => namesTakenIn(folderOf(project), kind),
     folderOf,
 
     assertNameFree(item, name) {
@@ -497,8 +499,8 @@ export async function openFoldersTx(tx: PlTransaction, rids: FoldersRids): Promi
       // name goes through even where a pre-existing duplicate sits beside it.
       if (foldersNameTaken(name, [placed.name])) return;
 
-      const siblings = foldersSiblingNames(view, placed.folder, [item.id]);
-      if (foldersNameTaken(name, siblings)) throw new Error(`"${name}" is already used here.`);
+      const siblings = foldersSiblingNames(view, placed.folder, [item.id], { kind: item.kind });
+      if (foldersNameTaken(name, siblings)) throw new Error(nameTakenMessage(item.kind, name));
     },
 
     place(items, folder) {
@@ -520,7 +522,10 @@ export async function openFoldersTx(tx: PlTransaction, rids: FoldersRids): Promi
 
       const root: FoldersGraft["folders"][string] | undefined = subtree.folders[subtree.root];
       if (root === undefined) throw new Error(`The subtree holds no folder ${subtree.root}.`);
-      const rootName = foldersUniqueName(root.name, foldersSiblingNames(view, destination));
+      const rootName = foldersUniqueName(
+        root.name,
+        foldersSiblingNames(view, destination, [], { kind: "folder" }),
+      );
 
       const incoming = Object.keys(subtree.folders);
       const minted = new Map<string, FolderId>();
@@ -560,9 +565,9 @@ export async function openFoldersTx(tx: PlTransaction, rids: FoldersRids): Promi
 /**
  * Creates a folder and returns its id.
  *
- * The name is typed by a human, so a name already used in the destination is rejected rather than
- * quietly suffixed — a text field that disagrees with what was typed is worse than one that says
- * no.
+ * The name is typed by a human, so a name another folder in the destination already carries is
+ * rejected rather than quietly suffixed — a text field that disagrees with what was typed is worse
+ * than one that says no. A project or a template of that name beside it is no obstacle.
  */
 export async function createFolder(
   pl: PlClient,
@@ -580,8 +585,8 @@ export async function createFolder(
   await withFolders(pl, "MLCreateFolder", rids, (view) => {
     if (parent !== undefined && !view.folders.some((folder) => folder.id === parent))
       throw new Error(`Folder ${parent} does not exist.`);
-    if (foldersNameTaken(wanted, foldersSiblingNames(view, parent)))
-      throw new Error(`"${wanted}" is already used here.`);
+    if (foldersNameTaken(wanted, foldersSiblingNames(view, parent, [], { kind: "folder" })))
+      throw new Error(nameTakenMessage("folder", wanted));
 
     const base = foldersDocumentFromView(view);
     return {
@@ -613,8 +618,8 @@ export async function renameFolder(
     const target = view.folders.find((candidate) => candidate.id === folder);
     if (target === undefined) throw new Error(`Folder ${folder} does not exist.`);
 
-    const siblings = foldersSiblingNames(view, target.parent, [folder]);
-    if (foldersNameTaken(wanted, siblings)) throw new Error(`"${wanted}" is already used here.`);
+    const siblings = foldersSiblingNames(view, target.parent, [folder], { kind: "folder" });
+    if (foldersNameTaken(wanted, siblings)) throw new Error(nameTakenMessage("folder", wanted));
 
     const base = foldersDocumentFromView(view);
     return {
@@ -797,6 +802,11 @@ export async function resetFolders(pl: PlClient, rids: FoldersRids): Promise<voi
   );
 }
 
+/** Why a typed name is refused: another item of the same kind beside it already carries it. */
+export function nameTakenMessage(kind: FoldersItem["kind"], name: string): string {
+  return `A ${kind} named "${name}" is already here.`;
+}
+
 //
 // Internals
 //
@@ -898,7 +908,7 @@ async function readFolders(tx: PlTransaction, rids: FoldersRids): Promise<Folder
     projects.push({ id, name: meta.label });
   });
 
-  // Labels as well as ids: a template is named in the same namespace as folders and projects.
+  // Labels as well as ids: a template's name is held to the folder rule, among templates.
   const templateRids = new Map<TemplateId, SignedResourceId>();
   const templates: FoldersTemplateInput[] = [];
   [...listedTemplates.values()].forEach(({ rid }, index) => {

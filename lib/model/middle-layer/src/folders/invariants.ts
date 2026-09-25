@@ -2,6 +2,7 @@ import type { ProjectId, TemplateId } from "@milaboratories/pl-model-common";
 import { asProjectId, asTemplateId } from "@milaboratories/pl-model-common";
 import type { FoldersDocument, FolderId } from "./document";
 import { foldersNameBlank, foldersNameTaken } from "./naming";
+import type { FoldersItem } from "./planner";
 import type { FoldersProjectInput, FoldersTemplateInput } from "./view";
 
 /** One way a document breaks the rules the write path enforces. */
@@ -16,6 +17,8 @@ export type FoldersViolation =
   | { readonly kind: "cycle"; readonly folder: FolderId }
   | {
       readonly kind: "duplicate-name";
+      /** Which kind of item the name is used twice among. */
+      readonly item: FoldersItem["kind"];
       readonly parent?: FolderId;
       readonly name: string;
     }
@@ -37,9 +40,8 @@ export type FoldersViolation =
  * write that would persist any of them is refused, because a document no reader can render as
  * stored is a document someone has to repair by hand.
  *
- * Project and template names are optional. Without them the namespace folders, projects and
- * templates share can only be checked between folders, so a write path that can supply them
- * should. The template list also tells an assignment for a template that is gone — which a read
+ * Project and template names are optional. Without them only folder names can be checked for
+ * duplicates, so a write path that can supply them should. The template list also tells an assignment for a template that is gone — which a read
  * prunes — from one naming a folder that does not exist, which is a broken document.
  */
 export function validateFoldersDocument(
@@ -71,21 +73,23 @@ export function validateFoldersDocument(
 
   // The comparison is the naming rule's, not a second one written here: a document is invalid in
   // exactly the cases the rule would have refused, or the write path and the checker would drift.
+  // Each kind of item has a namespace of its own inside a parent.
   const namesByParent = new Map<string, string[]>();
-  const claim = (parent: FolderId | undefined, name: string) => {
-    const key = parent ?? "";
+  const claim = (item: FoldersItem["kind"], parent: FolderId | undefined, name: string) => {
+    const key = `${item}:${parent ?? ""}`;
     const names = namesByParent.get(key) ?? [];
     namesByParent.set(key, names);
-    if (foldersNameTaken(name, names)) violations.push({ kind: "duplicate-name", parent, name });
+    if (foldersNameTaken(name, names))
+      violations.push({ kind: "duplicate-name", item, parent, name });
     names.push(name);
   };
 
-  for (const folder of byId.values()) claim(folder.parent, folder.name);
+  for (const folder of byId.values()) claim("folder", folder.parent, folder.name);
 
   const knownProjects = new Set<string>((projects ?? []).map((project) => project.id));
   for (const project of projects ?? []) {
     const parent = document.assignments[project.id];
-    if (parent === undefined || byId.has(parent)) claim(parent, project.name);
+    if (parent === undefined || byId.has(parent)) claim("project", parent, project.name);
   }
 
   for (const [project, folder] of Object.entries(document.assignments))
@@ -98,7 +102,7 @@ export function validateFoldersDocument(
 
   for (const template of templates ?? []) {
     const parent = document.templateAssignments[template.id];
-    if (parent === undefined || byId.has(parent)) claim(parent, template.name);
+    if (parent === undefined || byId.has(parent)) claim("template", parent, template.name);
   }
 
   const knownTemplates = new Set<string>((templates ?? []).map((template) => template.id));
@@ -126,8 +130,8 @@ export function formatFoldersViolation(violation: FoldersViolation): string {
       return `folder ${violation.folder} sits in a cycle of parents`;
     case "duplicate-name":
       return violation.parent === undefined
-        ? `the name "${violation.name}" is used more than once at the top level`
-        : `the name "${violation.name}" is used more than once inside folder ${violation.parent}`;
+        ? `the ${violation.item} name "${violation.name}" is used more than once at the top level`
+        : `the ${violation.item} name "${violation.name}" is used more than once inside folder ${violation.parent}`;
     case "unknown-assignment-folder":
       return `project ${violation.project} is assigned to a folder that does not exist (${violation.folder})`;
     case "unknown-template-assignment-folder":
