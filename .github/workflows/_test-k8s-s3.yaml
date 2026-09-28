@@ -101,19 +101,6 @@ jobs:
           kubectl get svc,endpoints,pods -n "${NAMESPACE}" -l app.kubernetes.io/instance="${HELM_RELEASE_NAME}" -o wide
           exit 1
 
-      # The build pushes ptabler and ptexter images here; the backend pulls them anonymously.
-      - name: Configure AWS credentials (public ECR push)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::934685779402:role/github-actions-pl-ecr-public-push
-          role-duration-seconds: 3600
-          aws-region: us-east-1
-
-      - name: Login to public ECR
-        run: |
-          aws ecr-public get-login-password --region us-east-1 \
-            | docker login --username AWS --password-stdin public.ecr.aws
-
       - name: Run tests
         env:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
@@ -130,12 +117,14 @@ jobs:
           # and pulling images.
           LONG_TEST_TIMEOUT: "300000"
           DOCKER_BUILD_SUMMARY: "false"
-          # The backend reads in-repo software as images, so the build pushes them and
-          # writes that tag into the .sw.json.
+          # The backend reads in-repo software as images. The build pushes them to Quay, as
+          # `_test.yaml` does, and writes the containers.pl-open.science name into the .sw.json;
+          # dev-local would write the dev ECR otherwise.
           PL_PKG_DEV: local
           PL_DOCKER_BUILD: "1"
           PL_DOCKER_AUTOPUSH: "1"
-          PL_DOCKER_REGISTRY: public.ecr.aws/u5p1x5q2/pl-containers
+          PL_DOCKER_REGISTRY: containers.pl-open.science/milaboratories/pl-containers
+          PL_DOCKER_REGISTRY_PUSH_TO: quay.io/milaboratories/pl-containers
         run: |
           pnpm run pl_team:test \
             --filter=@platforma-sdk/workflow-tengo-tests \
