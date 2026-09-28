@@ -19,11 +19,11 @@ jobs:
       contents: read
     env:
       NAMESPACE: platforma-e2e-ci
-      HELM_RELEASE_NAME: pl-e2e-sdk-k8s-${{ github.run_id }}
-      HTPASSWD_SECRET: pl-e2e-sdk-k8s-${{ github.run_id }}-htpasswd
+      HELM_RELEASE_NAME: pl-sdk-k8s-${{ github.run_id }}
+      HTPASSWD_SECRET: pl-sdk-k8s-${{ github.run_id }}-htpasswd
       PL_IMAGE_REPOSITORY: 511903394050.dkr.ecr.eu-central-1.amazonaws.com/pl
       PL_IMAGE_TAG: main
-      PL_ADDRESS: http://pl-e2e-sdk-k8s-${{ github.run_id }}-platforma.platforma-e2e-ci.svc.cluster.local:6345?request-timeout=3000
+      PL_ADDRESS: http://pl-sdk-k8s-${{ github.run_id }}-platforma.platforma-e2e-ci.svc.cluster.local:6345?request-timeout=3000
     steps:
       - name: Generate GitHub App token
         id: app-token
