@@ -39,6 +39,52 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     secrets: inherit
 
+  # The suites of this PR against a backend deployed by helm on the hz cluster, where every
+  # command runs as a Kubernetes Job and data lives in S3. `test` above runs them against a
+  # docker-compose backend with a local runner, which cannot show a command that works only
+  # when its software ships a docker image.
+  test-k8s-s3:
+    uses: milaboratory/github-ci-internal/.github/workflows/e2e-tests.yaml@v4-beta
+    with:
+      pl-image: 511903394050.dkr.ecr.eu-central-1.amazonaws.com/pl:main
+      helm-chart-repo: milaboratory/pl@main
+      helm-chart-path: helm/charts/platforma
+      helm-values: _pl/helm/internal/values_ci_k8s-s3.yaml
+      # The reusable workflow clones with `--branch`, so it needs a branch name, not a SHA.
+      test-repo-ref: milaboratory/platforma@${{ github.head_ref }}
+      test-command: |
+        # testuser1 is the only htpasswd user and is an admin through PL_ADMIN_USERS in
+        # values_ci_k8s-s3.yaml, so the regular and admin test users are the same login.
+        export PL_TEST_USER="testuser1"
+        export PL_TEST_PASSWORD="testpassword1"
+        export PL_TEST_ADMIN_USER="testuser1"
+        export PL_TEST_ADMIN_PASSWORD="testpassword1"
+        export PL_TEST_STORAGE_ID="test-assets"
+        export DOCKER_BUILD_SUMMARY="false"
+        export TEST_CACHE_CRUTCH="${GITHUB_SHA}"
+        export PL_TEST_K8S="1"
+        # Each command is a Job, so a case spends most of the default 60s scheduling pods
+        # and pulling images.
+        export LONG_TEST_TIMEOUT="300000"
+        # The backend pulls in-repo software (ptabler, ptexter) as images, so the build
+        # pushes them to the public ECR and writes that tag into the .sw.json it reads.
+        export PL_PKG_DEV="local"
+        export PL_DOCKER_BUILD="1"
+        export PL_DOCKER_AUTOPUSH="1"
+        export PL_DOCKER_REGISTRY="public.ecr.aws/u5p1x5q2/pl-containers"
+        pnpm run pl_team:test \
+          --filter=@platforma-sdk/workflow-tengo-tests \
+          --filter=@milaboratories/pl-client \
+          --filter=@milaboratories/pl-tree \
+          --filter=@milaboratories/drivers-ml-blocks-integration \
+          --filter=@platforma-sdk/test
+      ecr-public-push-role: "arn:aws:iam::934685779402:role/github-actions-pl-ecr-public-push"
+      namespace: platforma-e2e-ci
+      runner: hz-ubuntu-dind
+      release-name-suffix: k8s
+      pl-version: main
+    secrets: inherit
+
   debug:
     needs: [check-pnpm-consistency, test]
     if: ${{ failure() && contains(github.event.pull_request.labels.*.name, 'debug') }}
