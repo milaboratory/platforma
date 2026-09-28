@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { listSessions, openRecorder, type Recorder } from "./recorder";
+import { endSession, listSessions, openRecorder, type Recorder } from "./recorder";
 import { DEATH_FILE_PREFIX } from "./events";
 import { readCrashMarkers, writeCrashMarker } from "./supervisor";
 import { createHandleRegistry, recordModelRenderSync, wrapModelDriver } from "./instrument";
@@ -45,12 +45,104 @@ describe("what a crash leaves behind", () => {
     expect(listSessions(dir)[0].crashed).toBe(false);
   });
 
+  test("a recorder that reopens a closed session and dies is reported as crashed", () => {
+    const sessionId = "1-1-shared";
+    openRecorder({ dir, sessionId }).close("driver-kit-disposed");
+    const reopened = openRecorder({ dir, sessionId });
+    reopened.event("getShape-begin", { handle: "t1" });
+
+    expect(listSessions(dir)).toHaveLength(1);
+    expect(listSessions(dir)[0].crashed).toBe(true);
+
+    reopened.close();
+    expect(listSessions(dir)[0].crashed).toBe(false);
+  });
+
+  test("a reopened session stays open however much it writes", () => {
+    const sessionId = "1-1-long";
+    openRecorder({ dir, sessionId }).close();
+    const reopened = openRecorder({ dir, sessionId });
+    const padding = "x".repeat(1000);
+    for (let i = 0; i < 300; i++) reopened.event("mem-self", { padding });
+
+    expect(listSessions(dir)[0].crashed).toBe(true);
+
+    reopened.close();
+    expect(listSessions(dir)[0].crashed).toBe(false);
+  });
+
+  test("an end record written while another recorder runs does not end the session", () => {
+    const sessionId = "1-1-overlap";
+    const first = openRecorder({ dir, sessionId });
+    const second = openRecorder({ dir, sessionId });
+    first.close("driver-kit-disposed");
+    second.event("mem-self", {});
+
+    expect(listSessions(dir)[0].crashed).toBe(true);
+  });
+
+  test("a record longer than the tail window does not end the session", () => {
+    const recorder = openRecorder({ dir });
+    recorder.close();
+    fs.appendFileSync(recorder.file, `${JSON.stringify({ type: "x", pad: "é".repeat(70_000) })}\n`);
+
+    expect(listSessions(dir)[0].crashed).toBe(true);
+  });
+
+  test("an empty log is reported as crashed", () => {
+    fs.writeFileSync(path.join(dir, "session-1-1-empty.ndjson"), "");
+
+    expect(listSessions(dir)[0].crashed).toBe(true);
+  });
+
+  test("an end record quoted inside a payload does not end the session", () => {
+    const recorder = openRecorder({ dir });
+    recorder.event("note", { nested: { type: "session-end" }, text: '"type":"session-end"' });
+
+    expect(listSessions(dir)[0].crashed).toBe(true);
+  });
+
+  test("a line cut short after the header does not hide the crash", () => {
+    const recorder = openRecorder({ dir });
+    fs.appendFileSync(recorder.file, '{"seq":2,"type":"session-end","rea');
+
+    expect(listSessions(dir)[0].crashed).toBe(true);
+  });
+
   test("records are readable even though the process never flushed", () => {
     // Written with writeSync on an append descriptor, so a kill -9 between two
     // records costs the records after it and nothing before.
     const recorder = openRecorder({ dir });
     for (let i = 0; i < 50; i++) recorder.event("mem-self", { mem: recorder.memorySnapshot() });
     expect(recordsOf(recorder)).toHaveLength(51);
+  });
+});
+
+describe("ending a session from outside", () => {
+  test("an open session gets an end record with the reason", () => {
+    const recorder = openRecorder({ dir });
+    recorder.event("getShape-begin", { handle: "t1" });
+
+    expect(endSession(dir, recorder.sessionId, "app-quit", { role: "main" })).toBe(true);
+
+    expect(listSessions(dir)[0].crashed).toBe(false);
+    const end = recordsOf(recorder).at(-1);
+    expect(end?.type).toBe("session-end");
+    expect(end?.reason).toBe("app-quit");
+  });
+
+  test("an ended session is left as it is", () => {
+    const recorder = openRecorder({ dir });
+    recorder.close();
+    const before = fs.readFileSync(recorder.file, "utf8");
+
+    expect(endSession(dir, recorder.sessionId, "app-quit")).toBe(false);
+    expect(fs.readFileSync(recorder.file, "utf8")).toBe(before);
+  });
+
+  test("a session with no log gets none", () => {
+    expect(endSession(dir, "1-1-absent", "app-quit")).toBe(false);
+    expect(fs.readdirSync(dir)).toEqual([]);
   });
 });
 
@@ -73,6 +165,18 @@ describe("rotation", () => {
     const carried = records.find((r) => r.type === "createPTable-begin" && r.carriedForward);
     expect(carried?.seq).toBe(begin);
     expect(carried?.blockId).toBe("block-7");
+  });
+
+  test("a reopened session that rotates is open until it closes", () => {
+    const sessionId = "1-1-rotated";
+    openRecorder({ dir, sessionId }).close();
+    const reopened = openRecorder({ dir, sessionId, maxFileBytes: 1800 });
+    rotateUntilEarliestSegmentLost(reopened);
+
+    expect(listSessions(dir)[0].crashed).toBe(true);
+
+    reopened.close();
+    expect(listSessions(dir)[0].crashed).toBe(false);
   });
 
   test("a begin that has ended is not carried", () => {

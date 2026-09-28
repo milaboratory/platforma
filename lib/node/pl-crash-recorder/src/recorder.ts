@@ -207,6 +207,32 @@ export function listSessions(dir: string): SessionFileInfo[] {
     .sort((lhs, rhs) => rhs.mtimeMs - lhs.mtimeMs);
 }
 
+export type EndSessionOptions = {
+  /** Which part of the app ends the session, e.g. `main`. */
+  role?: string;
+  /** Free-form context stored in the header written before the end record. */
+  meta?: Record<string, unknown>;
+};
+
+/**
+ * Ends a session on behalf of a recorder that can no longer close it, such as a
+ * worker the parent terminated on a planned quit.
+ *
+ * Returns true when it wrote the end record, and false when the session has no
+ * log or its log already ends.
+ */
+export function endSession(
+  dir: string,
+  sessionId: string,
+  reason: string,
+  options: EndSessionOptions = {},
+): boolean {
+  const file = path.join(dir, `${SESSION_FILE_PREFIX}-${sessionId}.ndjson`);
+  if (!fs.existsSync(file) || hasSessionEnd(file)) return false;
+  openRecorder({ dir, sessionId, role: options.role, meta: options.meta }).close(reason);
+  return true;
+}
+
 /**
  * Parses a crash log, tolerating a final line cut short by a hard kill.
  *
@@ -395,18 +421,27 @@ function trackOpenOperation(state: WriterState, record: LogRecord): void {
   }
 }
 
+/** Tail bytes read to find the last line; an end record is far smaller. */
+const TAIL_BYTES = 64 * 1024;
+
+// A closed recorder writes nothing after its end record, so any later line means a live one.
 function hasSessionEnd(file: string): boolean {
-  const size = fs.statSync(file).size;
-  if (size === 0) return false;
-  const window = Math.min(size, 8192);
-  const buffer = Buffer.alloc(window);
   const fd = fs.openSync(file, "r");
   try {
-    fs.readSync(fd, buffer, 0, window, size - window);
+    const size = fs.fstatSync(fd).size;
+    const length = Math.min(size, TAIL_BYTES);
+    const tail = Buffer.alloc(length);
+    fs.readSync(fd, tail, 0, length, size - length);
+    if (tail.at(-1) !== 0x0a) return false;
+    const lineStart = tail.lastIndexOf(0x0a, length - 2) + 1;
+    if (lineStart === 0 && length < size) return false;
+    const { type } = JSON.parse(tail.subarray(lineStart, length - 1).toString("utf8")) as LogRecord;
+    return type === SESSION_END_RECORD;
+  } catch {
+    return false;
   } finally {
     fs.closeSync(fd);
   }
-  return buffer.toString("utf8").includes(`"type":"${SESSION_END_RECORD}"`);
 }
 
 function describeEnvironment(): SessionEnvironment {
