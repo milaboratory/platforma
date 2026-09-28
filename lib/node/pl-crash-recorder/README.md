@@ -15,7 +15,8 @@ Three consequences shape the design:
 
 - **Records are appended synchronously.** A buffered stream loses exactly the
   tail that explains the death. The absence of a terminating `session-end`
-  record is how a crash is detected.
+  record is how a crash is detected. Recorders that share a session id append
+  to one file, so the session is clean only when the last line is `session-end`.
 - **Memory is sampled from another thread.** While the middle layer sits inside
   a synchronous pframes call its own timers do not fire, so its memory series
   goes dark precisely when memory is growing fastest.
