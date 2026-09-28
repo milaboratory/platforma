@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.15.35
+
+### Patch Changes
+
+- a37d7c6: PlTextArea: the textarea uses the base font instead of the browser's monospace default
+
 ## 2.15.34
 
 ### Patch Changes
