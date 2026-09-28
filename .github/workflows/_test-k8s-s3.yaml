@@ -31,22 +31,18 @@ jobs:
         with:
           app-id: ${{ secrets.GH_ZEN_APP_ID }}
           private-key: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
-          owner: milaboratory
-          repositories: platforma,pl
 
       - uses: actions/checkout@v4
         with:
           token: ${{ steps.app-token.outputs.token }}
 
-      # The helm chart and its CI values live in the backend repo.
-      - name: Checkout pl helm chart
+      # The public mirror of helm/charts in milaboratory/pl, synced on every push to pl main.
+      - name: Checkout helm chart
         uses: actions/checkout@v4
         with:
-          repository: milaboratory/pl
-          ref: main
-          path: _pl
-          token: ${{ steps.app-token.outputs.token }}
-          sparse-checkout: helm
+          repository: milaboratory/platforma-helm
+          path: _helm
+          sparse-checkout: charts/platforma
 
       - uses: ./.github/actions/setup
         with:
@@ -83,8 +79,8 @@ jobs:
         env:
           HELM_DRIVER: configmap
         run: |
-          helm upgrade --install "${HELM_RELEASE_NAME}" _pl/helm/charts/platforma \
-            --values _pl/helm/internal/values_ci_k8s-s3.yaml \
+          helm upgrade --install "${HELM_RELEASE_NAME}" _helm/charts/platforma \
+            --values .github/k8s-e2e/values_ci_k8s-s3.yaml \
             --set image.repository="${PL_IMAGE_REPOSITORY}" \
             --set image.tag="${PL_IMAGE_TAG}" \
             --set auth.htpasswd.secretName="${HTPASSWD_SECRET}" \
