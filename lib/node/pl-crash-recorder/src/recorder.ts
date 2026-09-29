@@ -87,6 +87,8 @@ export function openRecorder(options: RecorderOptions): Recorder {
   fs.mkdirSync(dir, { recursive: true });
 
   const file = path.join(dir, `${SESSION_FILE_PREFIX}-${sessionId}.ndjson`);
+  const liveKey = path.resolve(file);
+  liveRecorders.get(liveKey)?.close(SUPERSEDED_REASON);
   const state: WriterState = {
     fd: fs.openSync(file, "a"),
     bytes: 0,
@@ -151,6 +153,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
       if (state.closed) return;
       event(SESSION_END_RECORD, { reason, mem: memorySnapshot() });
       state.closed = true;
+      liveRecorders.delete(liveKey);
       try {
         fs.closeSync(state.fd);
       } catch {
@@ -163,6 +166,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
   // must describe its own session even if the parked segment is lost.
   state.header = { role, pid: process.pid, meta, env: describeEnvironment() };
   event(SESSION_RECORD, { ...state.header, mem: memorySnapshot() });
+  liveRecorders.set(liveKey, recorder);
 
   return recorder;
 }
@@ -300,7 +304,13 @@ export function sessionIdFromFile(file: string): string {
   return match ? match[1] : path.basename(file);
 }
 
+/** End reason of a recorder that a newer recorder on the same file replaced. */
+export const SUPERSEDED_REASON = "superseded";
+
 // Internals
+
+/** Open recorders of this thread, keyed by file: two writers break rotation. */
+const liveRecorders = new Map<string, Recorder>();
 
 /** How many sticky records a session may keep, bounding the rewritten preamble. */
 const MAX_STICKY_RECORDS = 64;
