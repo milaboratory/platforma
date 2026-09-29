@@ -106,10 +106,18 @@ describe("what a crash leaves behind", () => {
     expect(listSessions(dir)[0].crashed).toBe(true);
   });
 
-  test("a NUL block longer than the tail window is reported as crashed", () => {
+  test("a NUL block longer than the tail window does not hide a clean end", () => {
     const recorder = openRecorder({ dir });
     recorder.close();
-    fs.appendFileSync(recorder.file, Buffer.alloc(100_000));
+    fs.appendFileSync(recorder.file, Buffer.alloc(200_000));
+
+    expect(listSessions(dir)[0].crashed).toBe(false);
+  });
+
+  test("a NUL block longer than the tail window does not end an open session", () => {
+    const recorder = openRecorder({ dir });
+    recorder.event("getShape-begin", { handle: "t1" });
+    fs.appendFileSync(recorder.file, Buffer.alloc(200_000));
 
     expect(listSessions(dir)[0].crashed).toBe(true);
   });
@@ -129,6 +137,14 @@ describe("what a crash leaves behind", () => {
 
   test("a log of only NUL bytes is reported as crashed", () => {
     fs.writeFileSync(path.join(dir, "session-1-1-zeros.ndjson"), Buffer.alloc(100_000));
+
+    expect(listSessions(dir)[0].crashed).toBe(true);
+  });
+
+  test("a last line that is not a record is reported as crashed", () => {
+    const recorder = openRecorder({ dir });
+    recorder.close();
+    fs.appendFileSync(recorder.file, "not json\n");
 
     expect(listSessions(dir)[0].crashed).toBe(true);
   });
@@ -252,6 +268,17 @@ describe("rotation", () => {
 
     reopened.close();
     expect(listSessions(dir)[0].crashed).toBe(false);
+  });
+
+  test("a reader gets both segments of a rotated session", () => {
+    const recorder = openRecorder({ dir, maxFileBytes: 1800 });
+    rotateUntilEarliestSegmentLost(recorder);
+    recorder.close();
+
+    const { records } = readSession(recorder.file);
+    expect(records.filter((r) => r.type === "session")).not.toHaveLength(0);
+    expect(records.length).toBeGreaterThan(recordsOf(recorder).length);
+    expect(records.at(-1)?.type).toBe("session-end");
   });
 
   test("a begin that has ended is not carried", () => {
