@@ -1,4 +1,11 @@
-import { openRecorder, startSelfSampler, type Recorder } from "./recorder";
+import path from "node:path";
+import {
+  newSessionId,
+  openRecorder,
+  startSelfSampler,
+  SUPERSEDED_REASON,
+  type Recorder,
+} from "./recorder";
 import { startMemorySampler, type MemorySampler } from "./sampler";
 import { createHandleRegistry, type HandleRegistry } from "./instrument";
 
@@ -45,12 +52,11 @@ export function openRecordingSession(
   const dir = options.dir ?? process.env[CRASH_DIR_ENV];
   if (!dir) return undefined;
 
-  const recorder = openRecorder({
-    dir,
-    role: options.role,
-    meta: options.meta,
-    sessionId: options.sessionId ?? process.env[CRASH_SESSION_ENV] ?? undefined,
-  });
+  const sessionId = options.sessionId ?? process.env[CRASH_SESSION_ENV] ?? newSessionId();
+  const key = path.resolve(dir, sessionId);
+  liveSessions.get(key)?.close(SUPERSEDED_REASON);
+
+  const recorder = openRecorder({ dir, role: options.role, meta: options.meta, sessionId });
   const sampler = startMemorySampler({
     dir,
     sessionId: recorder.sessionId,
@@ -58,7 +64,7 @@ export function openRecordingSession(
   });
   const stopSelfSampler = startSelfSampler(recorder, options.selfSamplerIntervalMs);
 
-  return {
+  const session: RecordingSession = {
     recorder,
     sampler,
     registry: createHandleRegistry(),
@@ -66,6 +72,12 @@ export function openRecordingSession(
       stopSelfSampler();
       sampler.stop();
       recorder.close(reason);
+      if (liveSessions.get(key) === session) liveSessions.delete(key);
     },
   };
+  liveSessions.set(key, session);
+  return session;
 }
+
+/** Open sessions of this thread; a new one with the same id stops the old samplers. */
+const liveSessions = new Map<string, RecordingSession>();
