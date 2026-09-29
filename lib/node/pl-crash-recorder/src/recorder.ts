@@ -246,7 +246,8 @@ export function readSession(file: string): ParsedSession {
   let truncatedTail = false;
   const parked = `${file}.1`;
   if (fs.existsSync(parked)) {
-    for (const line of fs.readFileSync(parked, "utf8").split("\n")) {
+    for (const rawLine of fs.readFileSync(parked, "utf8").split("\n")) {
+      const line = withoutLeadingNul(rawLine);
       if (line === "") continue;
       try {
         records.push(JSON.parse(line) as LogRecord);
@@ -256,7 +257,8 @@ export function readSession(file: string): ParsedSession {
     }
   }
   const lines = fs.readFileSync(file, "utf8").split("\n");
-  for (const [index, line] of lines.entries()) {
+  for (const [index, rawLine] of lines.entries()) {
+    const line = withoutLeadingNul(rawLine);
     if (line === "") continue;
     try {
       records.push(JSON.parse(line) as LogRecord);
@@ -265,6 +267,13 @@ export function readSession(file: string): ParsedSession {
     }
   }
   return { file, records, truncatedTail };
+}
+
+// A power loss can leave NUL bytes before the next record on ext4 or NTFS.
+function withoutLeadingNul(line: string): string {
+  let start = 0;
+  while (line.charCodeAt(start) === 0) start++;
+  return line.slice(start);
 }
 
 /**
@@ -432,10 +441,13 @@ function hasSessionEnd(file: string): boolean {
     const length = Math.min(size, TAIL_BYTES);
     const tail = Buffer.alloc(length);
     fs.readSync(fd, tail, 0, length, size - length);
-    if (tail.at(-1) !== 0x0a) return false;
-    const lineStart = tail.lastIndexOf(0x0a, length - 2) + 1;
+    // A power loss can leave NUL bytes after the last record on ext4 or NTFS.
+    let end = length;
+    while (end > 0 && tail[end - 1] === 0x00) end--;
+    if (end < 2 || tail[end - 1] !== 0x0a) return false;
+    const lineStart = tail.lastIndexOf(0x0a, end - 2) + 1;
     if (lineStart === 0 && length < size) return false;
-    const { type } = JSON.parse(tail.subarray(lineStart, length - 1).toString("utf8")) as LogRecord;
+    const { type } = JSON.parse(tail.subarray(lineStart, end - 1).toString("utf8")) as LogRecord;
     return type === SESSION_END_RECORD;
   } catch {
     return false;

@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { endSession, listSessions, openRecorder, type Recorder } from "./recorder";
+import { endSession, listSessions, openRecorder, readSession, type Recorder } from "./recorder";
 import { DEATH_FILE_PREFIX } from "./events";
 import { readCrashMarkers, writeCrashMarker } from "./supervisor";
 import { createHandleRegistry, recordModelRenderSync, wrapModelDriver } from "./instrument";
@@ -85,6 +85,50 @@ describe("what a crash leaves behind", () => {
     const recorder = openRecorder({ dir });
     recorder.close();
     fs.appendFileSync(recorder.file, `${JSON.stringify({ type: "x", pad: "é".repeat(70_000) })}\n`);
+
+    expect(listSessions(dir)[0].crashed).toBe(true);
+  });
+
+  test("NUL bytes left by a power loss after the end record do not hide a clean end", () => {
+    const recorder = openRecorder({ dir });
+    recorder.close();
+    fs.appendFileSync(recorder.file, Buffer.alloc(4096));
+
+    expect(listSessions(dir)[0].crashed).toBe(false);
+    expect(endSession(dir, recorder.sessionId, "app-quit")).toBe(false);
+  });
+
+  test("NUL bytes left by a power loss after an open session do not end it", () => {
+    const recorder = openRecorder({ dir });
+    recorder.event("getShape-begin", { handle: "t1" });
+    fs.appendFileSync(recorder.file, Buffer.alloc(4096));
+
+    expect(listSessions(dir)[0].crashed).toBe(true);
+  });
+
+  test("a NUL block longer than the tail window is reported as crashed", () => {
+    const recorder = openRecorder({ dir });
+    recorder.close();
+    fs.appendFileSync(recorder.file, Buffer.alloc(100_000));
+
+    expect(listSessions(dir)[0].crashed).toBe(true);
+  });
+
+  test("records written after a NUL block stay readable", () => {
+    const recorder = openRecorder({ dir });
+    fs.appendFileSync(recorder.file, Buffer.alloc(4096));
+
+    expect(endSession(dir, recorder.sessionId, "app-quit")).toBe(true);
+
+    const { records, truncatedTail } = readSession(recorder.file);
+    expect(records.filter((r) => r.type === "session")).toHaveLength(2);
+    expect(records.at(-1)?.type).toBe("session-end");
+    expect(truncatedTail).toBe(false);
+    expect(listSessions(dir)[0].crashed).toBe(false);
+  });
+
+  test("a log of only NUL bytes is reported as crashed", () => {
+    fs.writeFileSync(path.join(dir, "session-1-1-zeros.ndjson"), Buffer.alloc(100_000));
 
     expect(listSessions(dir)[0].crashed).toBe(true);
   });
