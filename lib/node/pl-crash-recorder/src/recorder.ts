@@ -88,7 +88,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
 
   const file = path.join(dir, `${SESSION_FILE_PREFIX}-${sessionId}.ndjson`);
   const liveKey = path.resolve(file);
-  liveRecorders.get(liveKey)?.close(SUPERSEDED_REASON);
+  liveWriters.get(liveKey)?.close(SUPERSEDED_REASON);
   const state: WriterState = {
     fd: fs.openSync(file, "a"),
     bytes: 0,
@@ -153,7 +153,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
       if (state.closed) return;
       event(SESSION_END_RECORD, { reason, mem: memorySnapshot() });
       state.closed = true;
-      liveRecorders.delete(liveKey);
+      liveWriters.delete(liveKey);
       try {
         fs.closeSync(state.fd);
       } catch {
@@ -166,7 +166,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
   // must describe its own session even if the parked segment is lost.
   state.header = { role, pid: process.pid, meta, env: describeEnvironment() };
   event(SESSION_RECORD, { ...state.header, mem: memorySnapshot() });
-  liveRecorders.set(liveKey, recorder);
+  liveWriters.set(liveKey, { recorder, close: (reason) => recorder.close(reason) });
 
   return recorder;
 }
@@ -309,8 +309,14 @@ export const SUPERSEDED_REASON = "superseded";
 
 // Internals
 
-/** Open recorders of this thread, keyed by file: two writers break rotation. */
-const liveRecorders = new Map<string, Recorder>();
+/** Open recorders of this thread by file, each with the close of its owner. Two writers break rotation. */
+const liveWriters = new Map<string, { recorder: Recorder; close: (reason: string) => void }>();
+
+/** Makes a supersede of `recorder` call `close`. A session uses it to stop its samplers too. */
+export function setRecorderOwner(recorder: Recorder, close: (reason: string) => void): void {
+  const key = path.resolve(recorder.file);
+  if (liveWriters.get(key)?.recorder === recorder) liveWriters.set(key, { recorder, close });
+}
 
 /** How many sticky records a session may keep, bounding the rewritten preamble. */
 const MAX_STICKY_RECORDS = 64;
@@ -447,23 +453,35 @@ const TAIL_BYTES = 64 * 1024;
 function hasSessionEnd(file: string): boolean {
   const fd = fs.openSync(file, "r");
   try {
-    const size = fs.fstatSync(fd).size;
-    const length = Math.min(size, TAIL_BYTES);
-    const tail = Buffer.alloc(length);
-    fs.readSync(fd, tail, 0, length, size - length);
     // A power loss can leave NUL bytes after the last record on ext4 or NTFS.
-    let end = length;
-    while (end > 0 && tail[end - 1] === 0x00) end--;
-    if (end < 2 || tail[end - 1] !== 0x0a) return false;
-    const lineStart = tail.lastIndexOf(0x0a, end - 2) + 1;
-    if (lineStart === 0 && length < size) return false;
-    const { type } = JSON.parse(tail.subarray(lineStart, end - 1).toString("utf8")) as LogRecord;
+    const contentEnd = endWithoutTrailingNul(fd, fs.fstatSync(fd).size);
+    const length = Math.min(contentEnd, TAIL_BYTES);
+    const tail = Buffer.alloc(length);
+    fs.readSync(fd, tail, 0, length, contentEnd - length);
+    if (length < 2 || tail[length - 1] !== 0x0a) return false;
+    const lineStart = tail.lastIndexOf(0x0a, length - 2) + 1;
+    if (lineStart === 0 && length < contentEnd) return false;
+    const { type } = JSON.parse(tail.subarray(lineStart, length - 1).toString("utf8")) as LogRecord;
     return type === SESSION_END_RECORD;
   } catch {
     return false;
   } finally {
     fs.closeSync(fd);
   }
+}
+
+function endWithoutTrailingNul(fd: number, size: number): number {
+  const chunk = Buffer.alloc(TAIL_BYTES);
+  let end = size;
+  while (end > 0) {
+    const length = Math.min(end, TAIL_BYTES);
+    fs.readSync(fd, chunk, 0, length, end - length);
+    let index = length;
+    while (index > 0 && chunk[index - 1] === 0x00) index--;
+    if (index > 0) return end - length + index;
+    end -= length;
+  }
+  return 0;
 }
 
 function describeEnvironment(): SessionEnvironment {
