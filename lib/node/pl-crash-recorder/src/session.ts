@@ -1,9 +1,8 @@
-import path from "node:path";
 import {
   newSessionId,
   openRecorder,
+  setRecorderOwner,
   startSelfSampler,
-  SUPERSEDED_REASON,
   type Recorder,
 } from "./recorder";
 import { startMemorySampler, type MemorySampler } from "./sampler";
@@ -53,9 +52,6 @@ export function openRecordingSession(
   if (!dir) return undefined;
 
   const sessionId = options.sessionId ?? process.env[CRASH_SESSION_ENV] ?? newSessionId();
-  const key = path.resolve(dir, sessionId);
-  liveSessions.get(key)?.close(SUPERSEDED_REASON);
-
   const recorder = openRecorder({ dir, role: options.role, meta: options.meta, sessionId });
   const sampler = startMemorySampler({
     dir,
@@ -72,12 +68,8 @@ export function openRecordingSession(
       stopSelfSampler();
       sampler.stop();
       recorder.close(reason);
-      if (liveSessions.get(key) === session) liveSessions.delete(key);
     },
   };
-  liveSessions.set(key, session);
+  setRecorderOwner(recorder, (reason) => session.close(reason));
   return session;
 }
-
-/** Open sessions of this thread; a new one with the same id stops the old samplers. */
-const liveSessions = new Map<string, RecordingSession>();
