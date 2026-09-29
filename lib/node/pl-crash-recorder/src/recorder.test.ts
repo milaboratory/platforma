@@ -71,7 +71,7 @@ describe("what a crash leaves behind", () => {
     expect(listSessions(dir)[0].crashed).toBe(false);
   });
 
-  test("an end record written while another recorder runs does not end the session", () => {
+  test("a recorder opened while another runs keeps the log open", () => {
     const sessionId = "1-1-overlap";
     const first = openRecorder({ dir, sessionId });
     const second = openRecorder({ dir, sessionId });
@@ -159,6 +159,37 @@ describe("what a crash leaves behind", () => {
     const recorder = openRecorder({ dir });
     for (let i = 0; i < 50; i++) recorder.event("mem-self", { mem: recorder.memorySnapshot() });
     expect(recordsOf(recorder)).toHaveLength(51);
+  });
+});
+
+describe("one writer per log", () => {
+  test("a recorder opened on a live log closes the old one first", () => {
+    const sessionId = "1-1-superseded";
+    const first = openRecorder({ dir, sessionId });
+    const second = openRecorder({ dir, sessionId });
+
+    expect(first.event("mem-self", {})).toBe(-1);
+    const types = recordsOf(second).map((r) => [r.type, r.reason]);
+    expect(types.slice(-2)).toEqual([
+      ["session-end", "superseded"],
+      ["session", undefined],
+    ]);
+    expect(listSessions(dir)[0].crashed).toBe(true);
+
+    second.close();
+    expect(listSessions(dir)[0].crashed).toBe(false);
+  });
+
+  test("a late close of a replaced recorder leaves the new one open", () => {
+    const sessionId = "1-1-replaced";
+    const first = openRecorder({ dir, sessionId });
+    const second = openRecorder({ dir, sessionId });
+    first.close("late");
+
+    expect(second.event("mem-self", {})).toBeGreaterThan(0);
+    const third = openRecorder({ dir, sessionId });
+    expect(second.event("mem-self", {})).toBe(-1);
+    third.close();
   });
 });
 

@@ -4,6 +4,7 @@ export {
   newSessionId,
   listSessions,
   sessionIdFromFile,
+  SUPERSEDED_REASON,
   type EndSessionOptions,
   type Recorder,
   type RecorderOptions,
