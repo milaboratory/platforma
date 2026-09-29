@@ -61,6 +61,7 @@ export const InitialStructuralResourceState: Omit<ExtendedResourceData, "id" | "
   {
     kind: "Structural",
     originalResourceId: NullSignedResourceId,
+    canonicalId: new Uint8Array(0),
     error: NullSignedResourceId,
     inputsLocked: false,
     outputsLocked: false,
@@ -72,6 +73,7 @@ export const InitialStructuralResourceState: Omit<ExtendedResourceData, "id" | "
 export const InitialValueResourceState: Omit<ExtendedResourceData, "id" | "type" | "data"> = {
   kind: "Value",
   originalResourceId: NullSignedResourceId,
+  canonicalId: new Uint8Array(0),
   error: NullSignedResourceId,
   ...ResourceReady,
   fields: [],

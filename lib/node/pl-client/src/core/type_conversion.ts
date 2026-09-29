@@ -44,6 +44,7 @@ export function protoToResource(proto: Resource): ResourceData {
       proto.originalResourceId,
       proto.originalResourceSignature,
     ),
+    canonicalId: proto.canonicalId,
     type: notEmpty(proto.type),
     data: proto.data,
     inputsLocked: proto.inputsLocked,
