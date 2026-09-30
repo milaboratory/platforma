@@ -479,11 +479,6 @@ test("removal of a typed field still throws after a reorder", () => {
   );
 });
 
-//
-// Regression tests for the v1 tree defects (B1, B2, B4, B7-B12) and the follow-ups found while
-// fixing them. Each one failed on the code before its fix.
-//
-
 const R1 = rid(10n);
 const V1 = rid(20n);
 
@@ -513,7 +508,7 @@ function treeWith(r1: ExtendedResourceData, ...others: ExtendedResourceData[]): 
   return t;
 }
 
-describe("B1: becoming final notifies the readers of every source it retires", () => {
+describe("becoming final notifies the readers of every source it retires", () => {
   test("a missing-field reader is re-run when the resource becomes final", () => {
     const t = treeWith(res(R1, "StdMap", { inputsLocked: true }));
     const reader = w();
@@ -541,8 +536,8 @@ describe("B1: becoming final notifies the readers of every source it retires", (
   });
 });
 
-describe("B2: any error inside the apply invalidates the tree as a TreeStateUpdateError", () => {
-  test("a throwing final predicate", () => {
+describe("any error inside an update invalidates the tree and surfaces as a TreeStateUpdateError", () => {
+  test("a throwing final predicate invalidates the tree and notifies readers of the mutated state", () => {
     const A = rid(30n);
     const B = rid(31n);
     const C = rid(32n);
@@ -584,7 +579,7 @@ describe("B2: any error inside the apply invalidates the tree as a TreeStateUpda
   });
 });
 
-describe("B4: lock transitions notify lock readers", () => {
+describe("a lock transition notifies lock readers", () => {
   test("inputs", () => {
     const t = treeWith(res(R1, "UserProject"));
     const reader = w();
@@ -612,7 +607,7 @@ describe("B4: lock transitions notify lock readers", () => {
   });
 });
 
-describe("B8: a required-field read recovers when the field appears", () => {
+describe("a required-field read is re-run when the field appears", () => {
   for (const opt of ["errorIfFieldNotFound", "errorIfFieldNotSet"] as const) {
     test(opt, () => {
       const t = treeWith(res(R1, "UserProject"));
@@ -626,7 +621,7 @@ describe("B8: a required-field read recovers when the field appears", () => {
   }
 });
 
-describe("B9: a dynamic field removal re-evaluates finality", () => {
+describe("removing a dynamic field re-evaluates finality", () => {
   test("the resource becomes final and leaves the seed set", () => {
     const upload = (fields: FieldData[]) =>
       res(
@@ -657,7 +652,7 @@ describe("B9: a dynamic field removal re-evaluates finality", () => {
   });
 });
 
-describe("B10: listDynamicFields lists no Service field", () => {
+describe("listDynamicFields lists no Service field", () => {
   test("a Service field is an input field, not a dynamic one", () => {
     const t = treeWith(res(R1, "UserProject"));
     const dynamicReader = w();
@@ -673,7 +668,7 @@ describe("B10: listDynamicFields lists no Service field", () => {
   });
 });
 
-describe("B11: a Dynamic or MTW field recreated under another type", () => {
+describe("a Dynamic or MTW field recreated under another type", () => {
   for (const from of ["Dynamic", "MTW"] as const) {
     test(`${from} -> Input notifies both lists`, () => {
       const t = treeWith(res(R1, "UserProject", {}, [field(from, "f")]));
@@ -750,7 +745,7 @@ describe("B11: a Dynamic or MTW field recreated under another type", () => {
   });
 });
 
-describe("B12: the backend final flag follows updates", () => {
+describe("the backend final flag follows updates", () => {
   test("copied on update, and counted as a change", () => {
     const t = treeWith(res(R1, "UserProject"));
     const stat = initialTreeLoadingStat();
@@ -821,7 +816,7 @@ describe("a lock alone settles an asserted absence", () => {
     });
 });
 
-describe("B11 checks a type change against the locks the tree held", () => {
+describe("a field retyped in the same body that locks its list is accepted", () => {
   // the backend may recreate a field and lock its list in one transaction between two polls
   test("Dynamic -> Input with inputs locking in the same body", () => {
     const t = treeWith(res(R1, "UserProject", {}, [dField("f")]));

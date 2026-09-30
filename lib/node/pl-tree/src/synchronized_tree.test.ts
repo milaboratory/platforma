@@ -290,9 +290,9 @@ async function deleteAndAwaitGone(pl: PlClient, fieldName: string, rid: SignedRe
   throw new Error("root was not deleted by the backend");
 }
 
-test("B7: a deleted root leaves the tree and its readers see it gone", async () => {
+test("a deleted root leaves the tree and its readers see it gone", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
-    const root = await createRootUnderClientRoot(pl, "b7Root");
+    const root = await createRootUnderClientRoot(pl, "deletedRoot");
     const tree = await SynchronizedTreeState.init(pl, root, {
       stopPollingDelay: 50,
       pollingInterval: 10,
@@ -302,7 +302,7 @@ test("B7: a deleted root leaves the tree and its readers see it gone", async () 
       expect(await reader.getValue()).toBe(TestStructuralResourceType1.name);
 
       const generation = tree.changeGeneration;
-      await deleteAndAwaitGone(pl, "b7Root", root);
+      await deleteAndAwaitGone(pl, "deletedRoot", root);
       await tree.refreshState();
 
       expect(tree.dumpState().some((r) => r.id === root)).toBe(false);
@@ -319,10 +319,10 @@ test("B7: a deleted root leaves the tree and its readers see it gone", async () 
   });
 }, 60_000);
 
-test("B7: rootsNeverFinal checks a root the predicate calls final", async () => {
+test("with rootsNeverFinal, a deleted root the predicate calls final leaves the tree", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
     // json/object is always final in the default predicate
-    const root = await createRootUnderClientRoot(pl, "b7FinalRoot", "jsonValue");
+    const root = await createRootUnderClientRoot(pl, "deletedFinalRoot", "jsonValue");
     const tree = await SynchronizedTreeState.init(pl, root, {
       stopPollingDelay: 50,
       pollingInterval: 10,
@@ -332,7 +332,7 @@ test("B7: rootsNeverFinal checks a root the predicate calls final", async () => 
       const isFinal = Computable.make((c) => c.accessor(tree.entry()).node().getIsFinal());
       expect(await isFinal.getValue()).toBe(false);
 
-      await deleteAndAwaitGone(pl, "b7FinalRoot", root);
+      await deleteAndAwaitGone(pl, "deletedFinalRoot", root);
       await tree.refreshState();
       expect(tree.dumpState().some((r) => r.id === root)).toBe(false);
     } finally {
@@ -341,9 +341,9 @@ test("B7: rootsNeverFinal checks a root the predicate calls final", async () => 
   });
 }, 60_000);
 
-test("B3: a persistent update error rebuilds with backoff, and the backoff resets", async () => {
+test("a persistent update error rebuilds with backoff, and a successful read resets the backoff", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
-    const root = await createRootUnderClientRoot(pl, "b3Root");
+    const root = await createRootUnderClientRoot(pl, "rebuildBackoffRoot");
 
     // Throws on every resource while `failing`, so every rebuild's full read fails the same way.
     let failing = false;
@@ -401,13 +401,13 @@ test("B3: a persistent update error rebuilds with backoff, and the backoff reset
   });
 }, 60_000);
 
-test("B11: an MTW field deleted and recreated as Input between polls is applied", async () => {
+test("an MTW field deleted and recreated as Input between polls is applied", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
     const root = await pl.withWriteTx(
-      "B11Seed",
+      "SeedingMtwField",
       async (tx) => {
         const r = tx.createStruct(TestStructuralResourceType1);
-        const rf = field(tx.clientRoot, "b11Root");
+        const rf = field(tx.clientRoot, "recreatedFieldRoot");
         tx.createField(rf, "Dynamic");
         tx.setField(rf, r);
         tx.createField(field(r, "g"), "MTW");
@@ -425,7 +425,7 @@ test("B11: an MTW field deleted and recreated as Input between polls is applied"
       expect(await inputs.getValue()).toEqual([]);
 
       await pl.withWriteTx(
-        "B11Recreate",
+        "RecreatingField",
         async (tx) => {
           tx.removeField(field(root, "g"));
           tx.createField(field(root, "g"), "Input");
@@ -484,11 +484,11 @@ async function awaitGone(pl: PlClient, rid: SignedResourceId) {
 
 const traversalModes: TraversalMode[] = ["backend-delta", "backend-streaming", "client-bfs"];
 for (const mode of traversalModes)
-  test(`B7: a deleted root is dropped under ${mode}`, async () => {
+  test(`a deleted root is dropped under ${mode}`, async () => {
     // under every loading algorithm a walk seeded at a deleted resource yields nothing and no
     // error, so only the existence check can notice the root is gone
     await TestHelpers.withTempRoot(async (pl) => {
-      const name = `b7Mode_${mode}`;
+      const name = `deletedRoot_${mode}`;
       const root = await createRootUnderClientRoot(pl, name);
       const tree = await SynchronizedTreeState.init(pl, root, {
         stopPollingDelay: 50,
@@ -508,14 +508,14 @@ for (const mode of traversalModes)
   }, 60_000);
 
 for (const holderFirst of [false, true])
-  test(`B7: a deleted root held by another deleted root leaves in the same poll (${holderFirst ? "holder" : "held"} first)`, async () => {
+  test(`a deleted root held by another deleted root leaves in the same poll (${holderFirst ? "holder" : "held"} first)`, async () => {
     await TestHelpers.withTempRoot(async (pl) => {
       const { a, b } = await pl.withWriteTx(
         "Chain",
         async (tx) => {
           const ra = tx.createStruct(TestStructuralResourceType1);
           const rb = tx.createStruct(TestStructuralResourceType1);
-          const f = field(tx.clientRoot, "b7Chain");
+          const f = field(tx.clientRoot, "deletedChain");
           tx.createField(f, "Dynamic");
           tx.setField(f, ra);
           tx.createField(field(ra, "child"), "Dynamic");
@@ -531,7 +531,7 @@ for (const holderFirst of [false, true])
         pollingInterval: 10,
       });
       try {
-        await removeClientRootField(pl, "b7Chain");
+        await removeClientRootField(pl, "deletedChain");
         await awaitGone(pl, a);
         await awaitGone(pl, b);
         await tree.refreshState();
@@ -545,9 +545,9 @@ for (const holderFirst of [false, true])
   }, 60_000);
 
 for (const rebuiltFirst of [true, false])
-  test(`B3: a plain error ${rebuiltFirst ? "after a rebuild" : "with no rebuild before it"} is retried at the polling interval`, async () => {
+  test(`a plain error ${rebuiltFirst ? "after a rebuild" : "with no rebuild before it"} is retried at the polling interval`, async () => {
     await TestHelpers.withTempRoot(async (pl) => {
-      const root = await createRootUnderClientRoot(pl, "b3Plain");
+      const root = await createRootUnderClientRoot(pl, "plainErrorRoot");
       // with rebuiltFirst, one predicate throw forces a rebuild first; in both variants the
       // pruning function then throws a plain Error (outside the update, so not a
       // TreeStateUpdateError) on every poll
@@ -654,7 +654,8 @@ test("terminate rejects a refresh still waiting for its poll", async () => {
     failing = true;
     await touch(pl, root);
     await tree.refreshState().catch(() => {});
-    // the loop is now inside a rebuild wait, which a refresh does not interrupt
+    // the loop now waits out the floor after the failed read, which a refresh does not cut
+    // short, so this refresh is still queued when terminate runs
     let outcome = "pending";
     void tree.refreshState().then(
       () => (outcome = "resolved"),
@@ -666,9 +667,9 @@ test("terminate rejects a refresh still waiting for its poll", async () => {
   });
 }, 60_000);
 
-test("B3: a refresh request cuts a rebuild backoff short", async () => {
+test("a refresh request cuts a rebuild backoff short", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
-    const root = await createRootUnderClientRoot(pl, "b3Nudge");
+    const root = await createRootUnderClientRoot(pl, "rebuildNudgeRoot");
     let failing = false;
     const failures: number[] = [];
     const predicate: FinalResourceDataPredicate = (r) => {

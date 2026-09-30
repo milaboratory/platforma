@@ -2,7 +2,9 @@
 // with the readers defined below attached before each update. Any reader whose answer (value
 // or throw, plus stability for plain field reads) differs after the update must have been
 // notified.
-// MODEL_RUNS raises the number of sequences (default 200; hunted at 3000).
+// Sequence n is seeded with n + 1; a failure reports the seed and step of the first
+// violation per reader. MODEL_RUNS sets the number of sequences (default 200; raise it when
+// hunting).
 import { expect, test } from "vitest";
 import type { Watcher } from "@milaboratories/computable";
 import type { FieldData, FieldType } from "@milaboratories/pl-client";
@@ -192,7 +194,8 @@ test("every modeled reader whose answer changes is notified", () => {
   const example = new Map<string, string>();
   let invalidations = 0;
   for (let run = 0; run < RUNS; run++) {
-    const r = rng(run + 1);
+    const seed = run + 1;
+    const r = rng(seed);
     const t = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
     const st: St = {
       typeName: r() < 0.5 ? "StdMap" : "UserProject",
@@ -229,7 +232,8 @@ test("every modeled reader whose answer changes is notified", () => {
         t.updateFromResourceData([body(st)]);
       } catch (e) {
         invalidations++;
-        example.set("INVALIDATED", String(e).slice(0, 200));
+        if (!example.has("INVALIDATED"))
+          example.set("INVALIDATED", `seed ${seed} step ${step}: ${String(e).slice(0, 200)}`);
         break;
       }
       for (const b of before) {
@@ -244,12 +248,15 @@ test("every modeled reader whose answer changes is notified", () => {
         if (String(after) !== String(b.v) && !b.w.isChanged && !stableAbsence) {
           const key = b.rd.name.replace(/:[a-d]$/, ":*");
           violations.set(key, (violations.get(key) ?? 0) + 1);
-          if (!example.has(key)) example.set(key, `run ${run} step ${step}: ${b.v} -> ${after}`);
+          if (!example.has(key)) example.set(key, `seed ${seed} step ${step}: ${b.v} -> ${after}`);
         }
       }
     }
   }
-  expect({ invalidations, violations: [...violations], example: [...example] }).toEqual({
+  expect(
+    { invalidations, violations: [...violations], example: [...example] },
+    `first failure per reader (seed, step): ${[...example.values()].join("; ")}`,
+  ).toEqual({
     invalidations: 0,
     violations: [],
     example: [],

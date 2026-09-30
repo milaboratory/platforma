@@ -748,7 +748,6 @@ export class PlTreeState {
               const reason = `field ${fd.name} changed type ${field.type} -> ${fd.type} in ${resourceIdToString(resource.id)}`;
               // the old list: both recreatable types are listed as dynamic
               notEmpty(resource.dynamicFieldListChanged).markChanged(reason);
-              // the new list, and its lock
               if (isInputLike(fd.type)) {
                 if (resource.inputsLocked)
                   unexpectedTransitionError(
@@ -1086,7 +1085,6 @@ export class PlTreeState {
       // is enough — ordinary refcounting keeps it alive and will collect it later.
       if (res.refCount > 0) continue;
 
-      // collect the (now-unprotected) root itself and cascade into the refs it holds
       this.removeUnreferenced(res, `root ${resourceIdToString(res.id)} left the root set`);
     }
   }

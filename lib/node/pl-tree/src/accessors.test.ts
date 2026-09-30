@@ -30,7 +30,7 @@ function openRoot(): PlTreeState {
   return t;
 }
 
-test("B13: common traversal options reach getField", async () => {
+test("common traversal options apply to every step", async () => {
   const entry = openRoot().entry();
   const perStep = Computable.make((c) =>
     c.accessor(entry).node().traverse({ field: "g", stableIfNotFound: true }),
@@ -46,7 +46,7 @@ test("B13: common traversal options reach getField", async () => {
   expect(b.stable).toBe(true);
 });
 
-test("B13: a common assertFieldType is checked", async () => {
+test("a common assertFieldType is checked on every step", async () => {
   const t = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   t.updateFromResourceData([
     { ...TestDynamicRootState1, fields: [dField("v", V)] },
@@ -59,7 +59,7 @@ test("B13: a common assertFieldType is checked", async () => {
   await expect(c.getValue()).rejects.toThrow(/Unexpected field type/);
 });
 
-test("B14: data and KV getters refuse to run outside their computable run", async () => {
+test("data and KV getters throw outside their computable run", async () => {
   const t = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   t.updateFromResourceData([
     { ...TestDynamicRootState1, fields: [dField("v", V)] },
