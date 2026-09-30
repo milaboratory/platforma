@@ -166,7 +166,7 @@ self.body(func(inputs) {
 			quota.gpuMemory = string(execFormula.evaluateResource(gpuFormula, resolver, "gpuMemory")) + "b"
 		}
 		if !is_undefined(scratchFormula) {
-			quota.scratchFreeSpace = string(execFormula.evaluateResource(scratchFormula, resolver, "scratchFreeSpace")) + "b"
+			quota.scratchFreeSpace = string(execFormula.evaluateScratch(scratchFormula, resolver)) + "b"
 		}
 	}
 

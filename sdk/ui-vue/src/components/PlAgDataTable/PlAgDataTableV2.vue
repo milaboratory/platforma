@@ -31,6 +31,7 @@ import { DeferredCircular, ensureNodeVisible } from "./sources/focus-row";
 import { PlAgDataTableRowNumberColId } from "./sources/row-number";
 import type { PlAgCellButtonAxisParams } from "./sources/table-source-v2";
 import { calculateGridOptions, effectiveVisibility } from "./sources/table-source-v2";
+import { isStoredStateApplied } from "./sources/grid-state";
 import { useTableState } from "./sources/table-state-v2";
 import type {
   PlAgDataTableV2Controller,
@@ -142,8 +143,17 @@ gridOptions.value.onRowDoubleClicked = (event) => {
   if (event.data && event.data.axesKey) emit("rowDoubleClicked", event.data.axesKey);
 };
 gridOptions.value.onStateUpdated = (event) => {
+  const reportedState = makePartialState(event.state);
+  // AG Grid reports an entirely empty state until its columns have been taken
+  // into its own state, and `normalizeGridState` reads the live columns — so
+  // normalizing an empty report invents a state (hidden columns, no column
+  // order) that the grid will never report back, and the reload watch below
+  // would then try to apply it on every remount, forever. Wait for the grid to
+  // say something about itself; it always does once its columns are in.
+  if (isJsonEqual(reportedState, {})) return;
+
   const partialState = normalizeGridState(
-    makePartialState(event.state),
+    reportedState,
     gridState.value,
     event.api,
     getColumnsMeta(),
@@ -300,16 +310,6 @@ function getDefaultHiddenColIds(
     .map((col) => col.getColId() as PlTableColumnIdJson);
 }
 
-// Normalize for comparison: an absent and an empty columnVisibility / sort mean
-// the same thing to AG Grid, and must not count as a state change to reload on.
-function stateForReloadCompare(state: PlDataTableGridStateCore): PlDataTableGridStateCore {
-  const cv = state.columnVisibility;
-  const normalizedCv = !cv || cv.hiddenColIds.length === 0 ? undefined : state.columnVisibility;
-  const sort = state.sort;
-  const normalizedSort = !sort || sort.sortModel.length === 0 ? undefined : sort;
-  return { ...state, columnVisibility: normalizedCv, sort: normalizedSort };
-}
-
 // Reload AgGrid when new state arrives from server
 const reloadKey = ref(0);
 watch(
@@ -317,10 +317,10 @@ watch(
   ([gridApi, gridState]) => {
     if (!gridApi || gridApi.isDestroyed()) return;
     const selfState = makePartialState(gridApi.getState());
-    if (
-      !isJsonEqual(gridState, {}) &&
-      !isJsonEqual(stateForReloadCompare(gridState), stateForReloadCompare(selfState))
-    ) {
+    const gridColIds = new Set(
+      (gridApi.getAllGridColumns() ?? []).map((column) => column.getColId() as PlTableColumnIdJson),
+    );
+    if (!isJsonEqual(gridState, {}) && !isStoredStateApplied(gridState, selfState, gridColIds)) {
       isReloading = true;
       gridOptions.value.initialState = gridState;
       ++reloadKey.value;
@@ -402,7 +402,6 @@ watch(
     if (!gridApi || gridApi.isDestroyed()) return;
     // Verify that this is not a false watch trigger
     if (isJsonEqual(settings, oldSettings)) return;
-    ++generation.value;
     try {
       // Hide no rows overlay if it is shown, or else loading overlay will not be shown
       gridApi.hideOverlay();
@@ -410,6 +409,7 @@ watch(
 
       // No data source selected -> reset state to default
       if (settings.sourceId === null) {
+        ++generation.value;
         gridApi.updateGridOptions({
           loading: true,
           loadingOverlayComponentParams: {
@@ -431,12 +431,22 @@ watch(
         return;
       }
 
+      // The model is between handles — it is recomputing. Nothing is started here,
+      // so moving the generation would only cancel the calculation in flight and
+      // leave whatever it was going to do (not least taking the loading overlay
+      // down) undone — which is how the table came to sit on "Loading data…"
+      // forever. The exception is a change of source: then the calculation in
+      // flight belongs to the old one and must not be allowed to land under the
+      // new settings.
       if (
         settings.model?.fullTableHandle === undefined ||
         settings.model?.visibleTableHandle === undefined
       ) {
+        if (settings.sourceId !== oldSettings?.sourceId) ++generation.value;
         return;
       }
+
+      ++generation.value;
 
       // Data source changed -> show full page loader, clear selection
       if (settings.sourceId !== oldSettings?.sourceId) {
@@ -546,6 +556,8 @@ watch(
           console.trace(error);
         })
         .finally(() => {
+          // Only the current calculation may take the overlay down: a superseded
+          // one would hide the overlay the newer settings just put up.
           if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
           gridApi.updateGridOptions({
             loading: false,

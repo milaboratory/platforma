@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pf-spec",
-  "version": "1.0.3",
+  "version": "1.0.6",
   "description": "Spec-plane PFrame operations: bindings to the pframes WASM component",
   "keywords": [],
   "license": "UNLICENSED",

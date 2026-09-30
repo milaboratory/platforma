@@ -5,9 +5,11 @@ import {
   canImpersonate,
   decodeEnvelopeData,
   EnvelopeSchemaVersionCurrent,
+  envelopeFolderRoot,
   envelopeProjectMap,
   normalizeEnvelopeData,
 } from "./sharing_model";
+import type { EnvelopeFolder, EnvelopeFolderId } from "./sharing_model";
 
 // canImpersonate is the admin gate for "open another user's root". It must be strictly
 // stricter than canGrantToEveryone: a regular USER may share their own projects but must
@@ -32,9 +34,9 @@ test("canGrantToEveryone and canImpersonate does not include USER", () => {
 // Envelope decode — the recognise-or-hide gate every reader of a share passes through.
 //
 // Pure by construction: the gate is a function of the blob, and the three sites that
-// discover envelopes (the pending view, the live-envelope view the accept flow reads,
+// discover envelopes (the available-shares view, the live-envelope view a copy reads,
 // and the donor's own outbox) all skip an envelope this returns `undefined` for. So an
-// envelope that does not decode cannot be offered, accepted, or listed.
+// envelope that does not decode cannot be offered, copied from, or listed.
 
 /** A v1 envelope, exactly as one written before the payload discriminant existed: the
  *  project map sits at the top level and there is no `payload` field. */
@@ -102,6 +104,28 @@ test("a current envelope carrying a template decodes as one", () => {
   expect(envelopeProjectMap(data!)).toStrictEqual({});
 });
 
+test("a project carries what it said about itself through the decode", () => {
+  const projects = {
+    "9c7e4d10-2b83-4f6a-91d5-7e0c3a8b5f42": {
+      label: "Project 1",
+      source: "42",
+      updatedAt: 1_700_000_000_000,
+      description: "Donor 14, both replicates",
+    },
+  };
+  const data = decodeEnvelopeData(
+    blob({
+      ...v1Envelope,
+      schemaVersion: EnvelopeSchemaVersionCurrent,
+      projects: undefined,
+      payload: { kind: "projects", projects },
+    }),
+  );
+  if (data === undefined) throw new Error("a current envelope of projects must decode");
+
+  expect(envelopeProjectMap(data)).toStrictEqual(projects);
+});
+
 test("an envelope whose payload kind this build does not know does not decode at all", () => {
   // The whole point of the discriminant: a share this build cannot act on is hidden rather
   // than offered, and the decode is where that is decided — once, for every reader.
@@ -133,4 +157,47 @@ test("anything that is not an envelope object does not decode", () => {
   expect(normalizeEnvelopeData(null)).toBeUndefined();
   expect(normalizeEnvelopeData("an envelope")).toBeUndefined();
   expect(normalizeEnvelopeData(42)).toBeUndefined();
+});
+
+test("a folder envelope decodes, and its root is the folder with no parent", () => {
+  const folders: Record<string, EnvelopeFolder> = {
+    a: { name: "Repertoires" },
+    b: { name: "2024", parent: "a" as EnvelopeFolderId },
+  };
+
+  const decoded = decodeEnvelopeData(
+    blob({
+      ...v1Envelope,
+      schemaVersion: EnvelopeSchemaVersionCurrent,
+      projects: undefined,
+      payload: {
+        kind: "folder",
+        source: "f1",
+        folders,
+        projects: {},
+        templates: [],
+        from: "someone",
+      },
+    }),
+  );
+  if (decoded?.payload.kind !== "folder") throw new Error("a folder envelope must decode as one");
+
+  // The root is found on what came out of the decode, so the subtree survived it intact.
+  expect(decoded.payload.folders).toStrictEqual(folders);
+  expect(envelopeFolderRoot(decoded.payload.folders)).toBe("a");
+});
+
+test("a folder envelope with no single root describes no subtree", () => {
+  const twoRoots: Record<string, EnvelopeFolder> = {
+    a: { name: "One" },
+    b: { name: "Two" },
+  };
+  const noRoot: Record<string, EnvelopeFolder> = {
+    a: { name: "One", parent: "b" as EnvelopeFolderId },
+    b: { name: "Two", parent: "a" as EnvelopeFolderId },
+  };
+  // Rebuilding would have to guess which folder was shared; the copy refuses instead.
+  expect(envelopeFolderRoot(twoRoots)).toBeUndefined();
+  expect(envelopeFolderRoot(noRoot)).toBeUndefined();
+  expect(envelopeFolderRoot({})).toBeUndefined();
 });

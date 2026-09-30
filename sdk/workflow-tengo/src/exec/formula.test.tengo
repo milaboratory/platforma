@@ -171,6 +171,20 @@ TestEvaluateResourceAcceptsPositiveInt := func() {
 	test.isEqual(350, f.evaluateResource({ op: "metricSum", metric: "size", files: ["a", "b"] }, _fakeResolver, "ram"))
 }
 
+TestEvaluateScratchAcceptsZero := func() {
+	// 0 asks for the temporary directory without a sized device, as a static request does.
+	test.isEqual(0, f.evaluateScratch(f.const(0), _fakeResolver))
+	test.isEqual(1073741824, f.evaluateScratch(f.gib(1), _fakeResolver))
+
+	threshold := func(bytes) {
+		node := f.when(f.size("x").lt(f.gib(1)), 0).otherwise(f.size("x").times(4))
+		resolver := { size: func(files) { return bytes }, lineCount: func(files) { return 0 } }
+		return f.evaluateScratch(f.resolveAst(node, { "x": ["file"] }, ["file"]), resolver)
+	}
+	test.isEqual(0, threshold(100))
+	test.isEqual(8 * 1073741824, threshold(2 * 1073741824))
+}
+
 // ---- resolveAst / referencedMetricFiles ------------------------------------
 
 TestResolveTagsToFiles := func() {

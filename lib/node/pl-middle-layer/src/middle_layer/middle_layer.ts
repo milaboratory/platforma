@@ -6,10 +6,8 @@ import type {
   Role,
 } from "@milaboratories/pl-client";
 import {
-  isEveryoneUserLogin,
   field,
   GrantType,
-  isNotNullSignedResourceId,
   isNullSignedResourceId,
   resourceIdToString,
 } from "@milaboratories/pl-client";
@@ -20,10 +18,37 @@ import {
   ProjectsField,
   ProjectsResourceType,
 } from "./project_list";
+import type { FoldersListing, FoldersRids } from "./folders";
+import {
+  createFolder,
+  createFolderList,
+  deleteFolder,
+  moveFolderItems,
+  nameTakenMessage,
+  openFoldersTx,
+  previewFolderDeletion,
+  previewFoldersMove,
+  foldersLocalSubtree,
+  FoldersField,
+  FoldersResourceType,
+  renameFolder,
+  resetFolders,
+  setFolderDescription,
+} from "./folders";
+import type {
+  FolderId,
+  FoldersItem,
+  FoldersLeafItem,
+  FoldersMoveOutcome,
+  FoldersMovePlan,
+  FoldersMovePlanResult,
+  FoldersRemoval,
+  FoldersRemovalOutcome,
+  FoldersRemovalPlanResult,
+} from "@milaboratories/pl-model-middle-layer";
 import type {
   CreateProjectFromTemplateOutcome,
   SaveProjectAsTemplateOutcome,
-  ShareTemplateOutcome,
   StoredTemplateData,
   TemplateId,
   TemplateListEntry,
@@ -31,11 +56,18 @@ import type {
 import {
   createTemplateList,
   decodeStoredTemplateData,
+  TemplateDescriptionKey,
   TemplateLabelKey,
   TemplatesField,
   TemplatesResourceType,
 } from "./template_list";
-import { createTemplate, deleteTemplate, renameTemplate } from "../mutator/template";
+import {
+  createTemplate,
+  deleteTemplate,
+  renameTemplate,
+  setTemplateDescription,
+} from "../mutator/template";
+import { listedById, notListedError } from "../mutator/list";
 import {
   createProject,
   duplicateProject,
@@ -44,6 +76,7 @@ import {
 } from "../mutator/project";
 import type { ProjectTemplateExportOutcome } from "../model/template_serializer";
 import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
+import { asProjectId, asTemplateId } from "@milaboratories/pl-model-common";
 import { extractConfig, ensureError } from "@platforma-sdk/model";
 import type { TemplateApplyProblem, TemplateApplyReport } from "../model/template_apply";
 import { TemplateEntryRejected, kindMismatch } from "../model/template_apply";
@@ -57,46 +90,44 @@ import { ProjectMetaKey } from "../model/project_model";
 import type { ProjectId } from "../model/project_model";
 import type { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import {
-  acceptanceFieldLogin,
   canGrantToEveryone,
   canImpersonate,
   decodeEnvelopeData,
-  envelopeProjectMap,
-  isAcceptanceField,
   SharingOutboxField,
   SharingOutboxResourceType,
   SharingStateField,
   SharingStateResourceType,
-  type EnvelopeAcceptance,
+  envelopeFolderRoot,
+  newEnvelopeFolderId,
   type EnvelopeData,
-  type ProjectChangeAction,
-  type ProjectFieldUuid,
+  type ShareFolderOptions,
   type ShareId,
+  type ShareOptions,
+  type ShareOutcome,
   type ShareProjectsOptions,
   type ShareTemplateOptions,
 } from "../model/sharing_model";
 import {
+  buildFolderShareEnvelope,
   buildShareEnvelope,
   buildTemplateShareEnvelope,
   copyEnvelopeProjectsIntoList,
-  envelopeProjectFieldUuid,
-  isEnvelopeProjectField,
-  resourceIdsToStrings,
-  writeEnvelopeAcceptance,
-  writeSharingDecision,
+  writeShareHidden,
+  clearShareHidden,
+  type EnvelopeFolderSubtree,
   type EnvelopeProjectSource,
 } from "../mutator/sharing";
-import type { LiveEnvelope, OutgoingShare, PendingShare } from "./sharing_list";
+import type { LiveEnvelope, OutgoingShare, AvailableShare } from "./sharing_list";
 import {
   createLiveEnvelopesComputable,
   createOutgoingShares,
-  createPendingSharesComputable,
-  createPendingSharesTree,
+  createAvailableSharesComputable,
+  createAvailableSharesTree,
   createSharingStateTree,
 } from "./sharing_list";
 import { BlockPackPreparer } from "../mutator/block-pack/block_pack";
 import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
-import { BlockEventDispatcher, cachedDeserialize } from "@milaboratories/ts-helpers";
+import { BlockEventDispatcher } from "@milaboratories/ts-helpers";
 import { HmacSha256Signer } from "@milaboratories/ts-helpers";
 import type { Computable, ComputableStableDefined } from "@milaboratories/computable";
 import { WatchableValue } from "@milaboratories/computable";
@@ -109,6 +140,12 @@ import type {
   AuthorMarker,
   ProjectMeta,
   BlockPlatform,
+} from "@milaboratories/pl-model-middle-layer";
+import {
+  foldersNameTaken,
+  foldersUniqueName,
+  inheritedFolder,
+  normalizeDescription,
 } from "@milaboratories/pl-model-middle-layer";
 import type { AppliedEntry } from "../model/template_apply";
 import { BlockUpdateWatcher } from "../block_registry/watcher";
@@ -183,25 +220,29 @@ export class MiddleLayer {
     private readonly templateListResourceId: SignedResourceId,
     private readonly sharingOutboxResourceId: SignedResourceId,
     private readonly sharingStateResourceId: SignedResourceId,
+    private readonly foldersResourceId: SignedResourceId,
     private readonly openedProjectsList: WatchableValue<ProjectId[]>,
     private readonly projectListTree: SynchronizedTreeState,
     private readonly templateListTree: SynchronizedTreeState,
+    private readonly foldersTree: SynchronizedTreeState,
     private readonly sharingOutboxTree: SynchronizedTreeState,
     private readonly sharingStateTree: SynchronizedTreeState,
-    private readonly pendingSharesTree: SynchronizedTreeState,
+    private readonly availableSharesTree: SynchronizedTreeState,
     public readonly blockRegistryProvider: V2RegistryProvider,
     /** Contains a reactive list of projects along with their meta information. */
     public readonly projectList: ComputableStableDefined<ProjectListEntry[]>,
     /** Contains a reactive list of stored templates along with their labels and provenance. */
     public readonly templateList: ComputableStableDefined<TemplateListEntry[]>,
-    /** Reactive view of the donor's outbox — the shares this user has created.
-     *  v1: API only, no UI. */
+    /** The folder tree and the project list, already joined. The desktop reads this and never
+     *  the two halves, so it cannot render a list and a tree that are one refresh apart. */
+    public readonly folders: ComputableStableDefined<FoldersListing>,
+    /** Reactive view of the donor's outbox — the shares this user has created. */
     public outgoingShares: Computable<OutgoingShare[] | undefined>,
-    /** Envelopes granted to this user, not yet accepted or rejected. Fed by the
+    /** Shares granted to this user, hidden ones included and flagged as such. Fed by the
      *  shared-resource discovery tree. */
-    public pendingShares: Computable<PendingShare[] | undefined>,
-    /** Internal: the acceptor's currently-live envelopes, read from the same shared-resource
-     *  discovery tree as {@link pendingShares}. The single source the accept/reject flow resolves
+    public availableShares: Computable<AvailableShare[] | undefined>,
+    /** Internal: the recipient's currently-live envelopes, read from the same shared-resource
+     *  discovery tree as {@link availableShares}. The single source {@link copyShare} resolves
      *  live envelopes from — no second discovery path. */
     private readonly liveEnvelopes: Computable<LiveEnvelope[] | undefined>,
   ) {
@@ -238,7 +279,7 @@ export class MiddleLayer {
   /**
    * Whether the connected backend supports project sharing. Synthetic — computed
    * in the middle layer from the backend capabilities the share flow needs (the
-   * cross-color field-reference relaxation the accept flow rests on). It can absorb
+   * cross-color field-reference relaxation a copy out of a share rests on). It can absorb
    * additional required capabilities later without a UI change.
    */
   public get sharingSupported(): boolean {
@@ -323,12 +364,9 @@ export class MiddleLayer {
 
     // Cache miss — scan project list fields to find the matching resource
     const rid = await this.pl.withReadTx("ResolveProjectId", async (tx) => {
-      const data = await tx.getResourceData(this.projectListResourceId, true);
-      for (const f of data.fields) {
-        if (isNullSignedResourceId(f.value)) continue;
-        if (resourceIdToString(f.value) === (projectId as string)) return f.value;
-      }
-      throw new Error(`Project ${projectId} not found in project list.`);
+      const entry = (await listedById(tx, this.projectListResourceId)).get(projectId);
+      if (entry === undefined) throw notListedError("Project", projectId);
+      return entry.rid;
     });
 
     this.projectIdCache.set(projectId, rid);
@@ -339,40 +377,291 @@ export class MiddleLayer {
   // Project List Manipulation
   //
 
-  /** Creates a project with initial state and adds it to project list. */
-  public async createProject(meta: ProjectMeta): Promise<ProjectId> {
-    let prj: ResourceRef;
-    await this.pl.withWriteTx("MLCreateProject", async (tx) => {
-      prj = await createProject(tx, meta);
+  /**
+   * Creates a project with initial state and adds it to project list.
+   *
+   * `folder` is where it lands, placed in the transaction that creates it so the project never
+   * shows up at the top level first. Left out, or naming a folder that is gone, it lands at the
+   * top level.
+   */
+  public async createProject(meta: ProjectMeta, folder?: FolderId): Promise<ProjectId> {
+    const signedRid = await this.pl.withWriteTx("MLCreateProject", async (tx) => {
+      const tree = folder === undefined ? undefined : await openFoldersTx(tx, this.foldersRids);
+      const prj = await createProject(tx, meta);
       tx.createField(field(this.projectListResourceId, randomUUID()), "Dynamic", prj);
+      const rid = await prj.globalId;
+      // A folder deleted while the project was being made costs the project its placement, not
+      // its existence.
+      if (tree !== undefined && tree.view.folders.some((candidate) => candidate.id === folder))
+        tree.place([{ kind: "project", id: asProjectId(resourceIdToString(rid)) }], folder);
       await tx.commit();
+      return rid;
     });
-    await this.projectListTree.refreshState();
+    await Promise.all([
+      this.projectListTree.refreshState(),
+      ...(folder === undefined ? [] : [this.foldersTree.refreshState()]),
+    ]);
 
-    const signedRid = await prj!.globalId;
-    const projectId = resourceIdToString(signedRid) as ProjectId;
+    const projectId = asProjectId(resourceIdToString(signedRid));
     this.projectIdCache.set(projectId, signedRid);
     return projectId;
   }
 
-  /** Updates project metadata */
+  /**
+   * Updates the project metadata fields the caller names, leaving the others as they are.
+   *
+   * A patch rather than a replacement because the label and the description are edited from two
+   * different places: a rename that carried a stale description alongside the new name would
+   * undo a description edit that happened in between, and the reverse.
+   *
+   * The label is stored trimmed, and the folder rule governs it, so a label another project
+   * inside the same folder already carries is refused rather than written — a folder or a
+   * template of that name beside it is no obstacle. A human typed it, and a name that silently becomes a different name is worse than one that is
+   * turned down. The check and the write share one transaction, so two renames racing for the
+   * same name cannot both win. Duplicates an account already holds are tolerated and never
+   * rewritten; see the name check of {@link openFoldersTx}.
+   */
   public async setProjectMeta(
     id: ProjectId,
-    meta: ProjectMeta,
+    meta: Partial<ProjectMeta>,
     author?: AuthorMarker,
   ): Promise<void> {
     const rid = await this.resolveProjectId(id);
-    await withProjectAuthored(
-      this.env.projectHelper,
-      this.pl,
-      rid,
-      author,
-      (prj) => {
-        prj.setMeta(meta);
-      },
-      { name: "setProjectMeta" },
-    );
+    const label = meta.label?.trim();
+    const patch = label === undefined ? meta : { ...meta, label };
+    await this.pl.withWriteTx("ProjectAction: setProjectMeta", async (tx) => {
+      if (label !== undefined)
+        (await openFoldersTx(tx, this.foldersRids)).assertNameFree({ kind: "project", id }, label);
+      await withProjectAuthored(this.env.projectHelper, tx, rid, author, (prj) => {
+        prj.updateMeta(patch);
+      });
+      await tx.commit();
+    });
     await this.projectListTree.refreshState();
+  }
+
+  //
+  // Folders
+  //
+
+  private get foldersRids(): FoldersRids {
+    return {
+      folders: this.foldersResourceId,
+      projects: this.projectListResourceId,
+      templates: this.templateListResourceId,
+    };
+  }
+
+  /** Creates a folder inside `parent`, or at the top level, and returns its id. A name already
+   *  used there is rejected. */
+  public async createFolder(name: string, parent?: FolderId): Promise<FolderId> {
+    const id = await createFolder(this.pl, this.foldersRids, name, parent);
+    await this.foldersTree.refreshState();
+    return id;
+  }
+
+  /** Renames a folder. A name another folder beside it already carries is rejected. */
+  public async renameFolder(folder: FolderId, name: string): Promise<void> {
+    await renameFolder(this.pl, this.foldersRids, folder, name);
+    await this.foldersTree.refreshState();
+  }
+
+  /** Sets what a folder says about itself; blank clears it. Descriptions are in no namespace, so
+   *  nothing is refused here. */
+  public async setFolderDescription(folder: FolderId, description: string): Promise<void> {
+    await setFolderDescription(this.pl, this.foldersRids, folder, description);
+    await this.foldersTree.refreshState();
+  }
+
+  /** The plan a move would produce — every item and the name it ends up with. Shown for
+   *  confirmation, then handed back to {@link moveFolderItems} unchanged. */
+  public async previewFoldersMove(
+    items: readonly FoldersItem[],
+    destination?: FolderId,
+  ): Promise<FoldersMovePlanResult> {
+    return await previewFoldersMove(this.pl, this.foldersRids, items, destination);
+  }
+
+  /**
+   * Moves folders, projects and templates into one destination.
+   *
+   * The plan is recomputed inside the write transaction and the move commits only when it is
+   * identical to `confirmedPlan`; otherwise nothing is written and the fresh plan comes back to
+   * be confirmed again.
+   */
+  public async moveFolderItems(
+    items: readonly FoldersItem[],
+    destination: FolderId | undefined,
+    confirmedPlan: FoldersMovePlan,
+  ): Promise<FoldersMoveOutcome> {
+    const outcome = await moveFolderItems(
+      this.pl,
+      this.foldersRids,
+      items,
+      destination,
+      confirmedPlan,
+    );
+    if (outcome.ok)
+      await Promise.all([
+        this.foldersTree.refreshState(),
+        this.projectListTree.refreshState(),
+        this.templateListTree.refreshState(),
+      ]);
+    return outcome;
+  }
+
+  /** What deleting a folder would destroy: the subtree of folders, and everything in it. */
+  public async previewFolderDeletion(folder: FolderId): Promise<FoldersRemovalPlanResult> {
+    return await previewFolderDeletion(this.pl, this.foldersRids, folder);
+  }
+
+  /** Deletes a folder, every folder inside it, and every project and template held anywhere in
+   *  that subtree.
+   *  Refused as `needs-confirmation` until the removal it returns is passed back as
+   *  `confirmedRemoval`, and as `plan-changed` if the subtree has changed since. */
+  public async deleteFolder(
+    folder: FolderId,
+    confirmedRemoval?: FoldersRemoval,
+  ): Promise<FoldersRemovalOutcome> {
+    const outcome = await deleteFolder(this.pl, this.foldersRids, folder, confirmedRemoval);
+    if (outcome.ok) {
+      // What the folder held is gone from the lists, so an id cached for it would resolve to a
+      // resource nothing holds any more.
+      for (const id of outcome.removal.projects) this.projectIdCache.delete(id);
+      for (const id of outcome.removal.templates) this.templateIdCache.delete(id);
+      await Promise.all([
+        this.foldersTree.refreshState(),
+        this.projectListTree.refreshState(),
+        this.templateListTree.refreshState(),
+      ]);
+    }
+    return outcome;
+  }
+
+  /**
+   * Replaces a folder document this build cannot read — one written by a newer version, or one
+   * nothing here can parse — with an empty one. Every folder is gone afterwards; every project and
+   * template stays and shows at the top level. Refused while the document can be read.
+   */
+  public async resetFolders(): Promise<void> {
+    await resetFolders(this.pl, this.foldersRids);
+    await this.foldersTree.refreshState();
+  }
+
+  /**
+   * Duplicates a folder and everything under it: the folders inside, a duplicate of every project
+   * in them, and a copy of every template.
+   *
+   * The copy lands beside the source, so only its root needs a name of its own — `X (Copy)`.
+   * Nothing inside is renamed: names are compared among siblings of one kind, and a copied folder's children
+   * are only ever compared with each other, where they came in distinct already.
+   *
+   * The subtree is read first and rebuilt in one write transaction, so the folders and everything
+   * they hold appear together or not at all.
+   */
+  public async duplicateFolder(folder: FolderId): Promise<void> {
+    const subtree = await this.loadFolderSubtree(folder, () => randomUUID());
+
+    const created = await this.pl.withWriteTx("MLDuplicateFolder", async (tx) => {
+      const tree = await openFoldersTx(tx, this.foldersRids);
+      const items: (FoldersLeafItem & { folder: string })[] = [];
+      const projects: SignedResourceId[] = [];
+      const templates: { id: TemplateId; rid: SignedResourceId }[] = [];
+
+      for (const project of subtree.projects) {
+        // The whole metadata carries over, label included: the duplicate lands in a folder of its
+        // own that holds nothing else, so there is nothing there for its name to collide with.
+        const meta = await tx.getKValueJson<ProjectMeta>(project.rid, ProjectMetaKey);
+        const copy = await duplicateProject(tx, project.rid, meta, this.env.projectHelper);
+        tx.createField(field(this.projectListResourceId, randomUUID()), "Dynamic", copy);
+        const rid = await copy.globalId;
+        projects.push(rid);
+        items.push({
+          kind: "project",
+          id: asProjectId(resourceIdToString(rid)),
+          folder: project.folder,
+        });
+      }
+
+      for (const template of subtree.templates) {
+        // A stored template is immutable, so its copy is the same blob under a new resource —
+        // provenance and all.
+        const copy = createTemplate(
+          tx,
+          this.templateListResourceId,
+          { label: template.label, description: template.description },
+          template.data,
+        );
+        const rid = await copy.globalId;
+        const id = asTemplateId(resourceIdToString(rid));
+        templates.push({ id, rid });
+        items.push({ kind: "template", id, folder: template.folder });
+      }
+
+      tree.graft({ root: subtree.root, folders: subtree.folders, items }, subtree.parent);
+
+      await tx.commit();
+      return { projects, templates };
+    });
+
+    for (const rid of created.projects)
+      this.projectIdCache.set(asProjectId(resourceIdToString(rid)), rid);
+    for (const { id, rid } of created.templates) this.templateIdCache.set(id, rid);
+
+    await Promise.all([
+      this.foldersTree.refreshState(),
+      this.projectListTree.refreshState(),
+      this.templateListTree.refreshState(),
+    ]);
+  }
+
+  /**
+   * A folder subtree as a copy needs it: the folders under ids local to this read, the key the
+   * subtree's root goes by, the resource of every project in them, every template read whole, and
+   * the folder the source sits in — which is where a duplicate lands.
+   *
+   * Read in a transaction of its own, before the write that copies it: every template is a read,
+   * and none of it has to be atomic with the copying, because a project or a template that
+   * disappears meanwhile fails that write on its own.
+   */
+  private async loadFolderSubtree<Id extends string>(
+    folder: FolderId,
+    mint: () => Id,
+  ): Promise<FolderSubtree<Id>> {
+    return await this.pl.withReadTx("MLReadFolderSubtree", async (tx) => {
+      const tree = await openFoldersTx(tx, this.foldersRids);
+      const source = tree.view.folders.find((candidate) => candidate.id === folder);
+      if (source === undefined) throw new Error(`Folder ${folder} does not exist.`);
+
+      const { inSubtree, localId, folders } = foldersLocalSubtree(tree.view, folder, mint);
+
+      const projects: FolderSubtree<Id>["projects"] = [];
+      for (const project of tree.view.projects) {
+        if (project.folder === undefined || !inSubtree.has(project.folder)) continue;
+        const rid = tree.projectRids.get(project.id);
+        if (rid === undefined) throw notListedError("Project", project.id);
+        projects.push({ projectId: project.id, rid, folder: localId(project.folder) });
+      }
+
+      const templates: Promise<FolderSubtree<Id>["templates"][number]>[] = [];
+      for (const template of tree.view.templates) {
+        if (template.folder === undefined || !inSubtree.has(template.folder)) continue;
+        const rid = tree.templateRids.get(template.id);
+        if (rid === undefined) throw notListedError("Template", template.id);
+        const local = localId(template.folder);
+        templates.push(
+          readStoredTemplate(tx, template.id, rid).then((stored) => ({ ...stored, folder: local })),
+        );
+      }
+
+      return {
+        ...(source.parent === undefined ? {} : { parent: source.parent }),
+        root: localId(folder),
+        folders,
+        projects,
+        templates: await Promise.all(templates),
+      };
+    });
   }
 
   /**
@@ -599,41 +888,85 @@ export class MiddleLayer {
    * A block that cannot be expressed as a template entry stores nothing at all, and every
    * such block is reported — fixing an unexportable project takes one pass, not one per block.
    *
+   * The template lands beside its project, and is named by the rule templates there are named
+   * by: a label the caller chose is stored trimmed and refused if another template there already
+   * carries it, and without one the project's own label is taken — suffixed only when a template
+   * there already answers to it. The project is not a template, so its own name is no obstacle.
+   *
+   * The template's description is the one the caller gives, stored trimmed; blank means none.
+   * Without one the template is stored undescribed, whatever the project's own description says.
+   *
    * @param projectId project to snapshot
-   * @param label label for the template; defaults to the project's own label
+   * @param label label for the template; defaults to the project's own label, made free
+   * @param description what the template is for; blank or absent stores none
    */
   public async saveProjectAsTemplate(
     projectId: ProjectId,
     label?: string,
+    description?: string,
   ): Promise<SaveProjectAsTemplateOutcome> {
     const outcome = await this.exportProjectAsTemplate(projectId);
     if (!outcome.ok) return { ok: false, problems: outcome.problems };
 
     const rid = await this.resolveProjectId(projectId);
-    let tpl: ResourceRef;
-    await this.pl.withWriteTx("MLSaveProjectAsTemplate", async (tx) => {
+    const wanted = label?.trim();
+    const signedRid = await this.pl.withWriteTx("MLSaveProjectAsTemplate", async (tx) => {
       const meta = await tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey);
-      tpl = createTemplate(tx, this.templateListResourceId, label ?? meta.label, {
-        schemaVersion: 1,
-        document: outcome.document,
-        sourceProjectLabel: meta.label,
-      });
-      await tx.commit();
-    });
-    await this.templateListTree.refreshState();
+      const tree = await openFoldersTx(tx, this.foldersRids);
+      const taken = tree.namesTakenBeside(projectId, "template");
+      if (wanted !== undefined && foldersNameTaken(wanted, taken))
+        throw new Error(nameTakenMessage("template", wanted));
+      const name = wanted ?? foldersUniqueName(meta.label, taken);
 
-    const signedRid = await tpl!.globalId;
-    const templateId = resourceIdToString(signedRid) as TemplateId;
+      const tpl = createTemplate(
+        tx,
+        this.templateListResourceId,
+        { label: name, description },
+        { schemaVersion: 1, document: outcome.document, sourceProjectLabel: meta.label },
+      );
+
+      // A template taken from a project belongs beside that project, and the placement rides the
+      // same transaction so the two can never disagree about where it is. Its name was chosen
+      // free there, so nothing can send it anywhere else.
+      const created = await tpl.globalId;
+      tree.place(
+        [{ kind: "template", id: asTemplateId(resourceIdToString(created)) }],
+        tree.folderOf(projectId),
+      );
+      await tx.commit();
+      return created;
+    });
+    await Promise.all([this.templateListTree.refreshState(), this.foldersTree.refreshState()]);
+
+    const templateId = asTemplateId(resourceIdToString(signedRid));
     this.templateIdCache.set(templateId, signedRid);
     return { ok: true, templateId };
   }
 
-  /** Changes a template's label. The stored document is immutable and stays untouched —
-   *  improving a template means saving a new one. */
+  /**
+   * Changes a template's label. The stored document is immutable and stays untouched —
+   * improving a template means saving a new one.
+   *
+   * The label is stored trimmed. One another template beside it already carries is refused, in
+   * the transaction that writes it; a folder or a project of that name beside it is no obstacle.
+   */
   public async renameTemplate(id: TemplateId, label: string): Promise<void> {
     const rid = await this.resolveTemplateId(id);
+    const wanted = label.trim();
     await this.pl.withWriteTx("MLRenameTemplate", async (tx) => {
-      renameTemplate(tx, rid, label);
+      (await openFoldersTx(tx, this.foldersRids)).assertNameFree({ kind: "template", id }, wanted);
+      renameTemplate(tx, rid, wanted);
+      await tx.commit();
+    });
+    await this.templateListTree.refreshState();
+  }
+
+  /** Sets what a stored template says about itself; blank clears it. The stored document is not
+   *  touched, so it stays byte-identical. */
+  public async setTemplateDescription(id: TemplateId, description: string): Promise<void> {
+    const rid = await this.resolveTemplateId(id);
+    await this.pl.withWriteTx("MLSetTemplateDescription", async (tx) => {
+      setTemplateDescription(tx, rid, description);
       await tx.commit();
     });
     await this.templateListTree.refreshState();
@@ -685,13 +1018,19 @@ export class MiddleLayer {
    * @param id template to apply
    * @param label label for the new project
    * @param provider where each entry's block comes from
-   * @param options `allowUnstable` widens resolution to pre-release implementations
+   * @param options `allowUnstable` widens resolution to pre-release implementations; `folder` is
+   *   where the new project lands
    */
   public async createProjectFromTemplate(
     id: TemplateId,
     label: string,
     provider: BlockPackProvider,
-    options: { allowUnstable?: boolean; author?: AuthorMarker } = {},
+    options: {
+      allowUnstable?: boolean;
+      author?: AuthorMarker;
+      /** Where the project lands; the top level when left out. */
+      folder?: FolderId;
+    } = {},
   ): Promise<CreateProjectFromTemplateOutcome> {
     const stored = await this.getTemplateData(id);
 
@@ -700,7 +1039,7 @@ export class MiddleLayer {
     });
     if (preparation.problems.length > 0) return { ok: false, problems: preparation.problems };
 
-    const projectId = await this.createProject({ label });
+    const projectId = await this.createProject({ label }, options.folder);
     const report = await this.applyPreparedEntries(
       projectId,
       stored.document,
@@ -725,12 +1064,9 @@ export class MiddleLayer {
 
     // Cache miss — scan template list fields to find the matching resource
     const rid = await this.pl.withReadTx("ResolveTemplateId", async (tx) => {
-      const data = await tx.getResourceData(this.templateListResourceId, true);
-      for (const f of data.fields) {
-        if (isNullSignedResourceId(f.value)) continue;
-        if (resourceIdToString(f.value) === (templateId as string)) return f.value;
-      }
-      throw new Error(`Template ${templateId} not found in template list.`);
+      const entry = (await listedById(tx, this.templateListResourceId)).get(templateId);
+      if (entry === undefined) throw notListedError("Template", templateId);
+      return entry.rid;
     });
 
     this.templateIdCache.set(templateId, rid);
@@ -741,17 +1077,9 @@ export class MiddleLayer {
    * destruction of all attached objects, like files, analysis results etc. */
   public async deleteProject(id: ProjectId): Promise<void> {
     await this.pl.withWriteTx("MLRemoveProject", async (tx) => {
-      const data = await tx.getResourceData(this.projectListResourceId, true);
-      let fieldName: string | undefined;
-      for (const f of data.fields) {
-        if (isNullSignedResourceId(f.value)) continue;
-        if (resourceIdToString(f.value) === (id as string)) {
-          fieldName = f.name;
-          break;
-        }
-      }
-      if (fieldName === undefined) throw new Error(`Project ${id} not found in project list.`);
-      tx.removeField(field(this.projectListResourceId, fieldName));
+      const entry = (await listedById(tx, this.projectListResourceId)).get(id);
+      if (entry === undefined) throw notListedError("Project", id);
+      tx.removeField(field(this.projectListResourceId, entry.fieldName));
       await tx.commit();
     });
     this.projectIdCache.delete(id);
@@ -759,11 +1087,18 @@ export class MiddleLayer {
   }
 
   /**
-   * Duplicates an existing project and adds the copy to this user's project list.
+   * Duplicates an existing project and adds the copy to this user's project list, beside the
+   * project it was copied from.
+   *
+   * Without `rename` the copy is named by the rule everything beside the source is named by: the
+   * source's own label, suffixed to be free there — `X (Copy)`. The name is chosen inside the
+   * transaction that creates the copy, against the tree that transaction reads.
    *
    * @param srcProjectId - project id of the project to duplicate
    * @param rename - optional function that receives the source label and all existing
-   *   project labels (read within the same transaction), and returns the label for the copy
+   *   project labels (read within the same transaction), and returns the label for the copy.
+   *   A label chosen this way is the caller's and is never suffixed: when it is already taken
+   *   beside the source, the copy lands at the top level instead.
    */
   public async duplicateProject(
     srcProjectId: ProjectId,
@@ -772,42 +1107,51 @@ export class MiddleLayer {
     const sourceRid = await this.resolveProjectId(srcProjectId);
 
     const newPrj: ResourceRef = await this.pl.withWriteTx("MLDuplicateProject", async (tx) => {
-      // Read source project meta
       const sourceMeta = await tx.getKValueJson<ProjectMeta>(sourceRid, ProjectMetaKey);
+      const tree = await openFoldersTx(tx, this.foldersRids);
 
-      // Read all existing project labels from the project list (parallel reads)
-      const projectListData = await tx.getResourceData(this.projectListResourceId, true);
-      const projectRids = projectListData.fields
-        .map((f) => f.value)
-        .filter(isNotNullSignedResourceId);
-      const existingLabels = (
-        await Promise.all(
-          projectRids.map((rid) => tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey)),
-        )
-      ).map((m) => m.label);
+      // The source's own label is taken beside it even when the tree cannot say what else is.
+      const label =
+        rename === undefined
+          ? foldersUniqueName(sourceMeta.label, [
+              sourceMeta.label,
+              ...tree.namesTakenBeside(srcProjectId, "project"),
+            ])
+          : rename(sourceMeta.label, await existingProjectLabels(tx, this.projectListResourceId));
 
-      // Compute new label
-      const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
-
-      // Create the duplicate
+      // The whole source metadata carries over, so a copy keeps what the original said about
+      // itself; only the label is the copy's own.
       const newPrj = await duplicateProject(
         tx,
         sourceRid,
-        { label: newLabel },
+        { ...sourceMeta, label },
         this.env.projectHelper,
       );
 
       // Attach to project list with a random UUID field name
       tx.createField(field(this.projectListResourceId, randomUUID()), "Dynamic", newPrj);
+
+      // A copy belongs beside the project it was copied from, placed in the same transaction so
+      // it is never shown at the top level first.
+      const created: FoldersLeafItem = {
+        kind: "project",
+        id: asProjectId(resourceIdToString(await newPrj.globalId)),
+      };
+      tree.place(
+        [created],
+        rename === undefined
+          ? tree.folderOf(srcProjectId)
+          : inheritedFolder(tree.view, srcProjectId, created, label),
+      );
       await tx.commit();
 
       return newPrj;
     });
 
-    await this.projectListTree.refreshState();
+    await Promise.all([this.projectListTree.refreshState(), this.foldersTree.refreshState()]);
 
     const signedRid = await newPrj.globalId;
-    const newProjectId = resourceIdToString(signedRid) as ProjectId;
+    const newProjectId = asProjectId(resourceIdToString(signedRid));
     this.projectIdCache.set(newProjectId, signedRid);
     return newProjectId;
   }
@@ -816,7 +1160,7 @@ export class MiddleLayer {
    * Duplicates a project into another user's root, minted in the TARGET user's color so the target
    * owns it. Sibling of {@link duplicateProject}, but writes into a different root. The source
    * project (on the current client root) is referenced cross-color for its block data, kept alive
-   * by refcounting, exactly like accepting a shared project. Works both ways: pull (while
+   * by refcounting, exactly like a project copied out of a share. Works both ways: pull (while
    * impersonating a user, copy their project to yourself) and push (from your own root, copy a
    * project to a user). Admin cross-root op; requires the crossTreeRefs:v1 backend capability.
    */
@@ -839,21 +1183,15 @@ export class MiddleLayer {
 
       // Source label + the target's existing labels, for collision-aware renaming.
       const sourceMeta = await tx.getKValueJson<ProjectMeta>(sourceRid, ProjectMetaKey);
-      const targetListData = await tx.getResourceData(targetProjectListRid, true);
-      const existingLabels = (
-        await Promise.all(
-          targetListData.fields
-            .map((f) => f.value)
-            .filter(isNotNullSignedResourceId)
-            .map((rid) => tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey)),
-        )
-      ).map((m) => m.label);
+      const existingLabels = await existingProjectLabels(tx, targetProjectListRid);
       const newLabel = rename ? rename(sourceMeta.label, existingLabels) : sourceMeta.label;
 
+      // The whole source metadata carries over, so a copy keeps what the original said about
+      // itself; only the label is the copy's own.
       const newPrj = await duplicateProject(
         tx,
         sourceRid,
-        { label: newLabel },
+        { ...sourceMeta, label: newLabel },
         this.env.projectHelper,
       );
       tx.createField(field(targetProjectListRid, randomUUID()), "Dynamic", newPrj);
@@ -866,108 +1204,162 @@ export class MiddleLayer {
   //
 
   /**
-   * Shares the given projects (Copy & Share). Snapshots the projects, creates one envelope, and
-   * grants it — all in one atomic write transaction, so a failed grant rolls the whole thing back
-   * and the outbox is left as it was.
-   *
-   * Two variants (see {@link ShareProjectsOptions}):
-   * - `{ recipients }` — one writable grant per named recipient; the envelope expires after the
-   *   default TTL (`sharedAt + envelopeTtlMs`).
-   * - `{ everyone: true }` — one make-public grant (backend rewrites the target to the
-   *   everyone-user); the envelope's `expiresAt` is `null`, so it never expires.
+   * Shares the given projects (Copy & Share): snapshots them into one envelope, in the transaction
+   * {@link shareEnvelope} describes.
    *
    * v1 always passes `mode: "copy"`.
    */
   public async shareProjects(
     projectIds: ProjectId[],
     options: ShareProjectsOptions,
-  ): Promise<void> {
+  ): Promise<ShareOutcome> {
     if (projectIds.length === 0) throw new Error("shareProjects: no projects given");
 
-    // Everyone + replace: refresh the existing everyone-share of this project under its stable
-    // shareId (so recipients who already decided aren't re-prompted), if one exists. Found
-    // automatically by project overlap; falls through to a fresh share when none exists.
-    if ("everyone" in options && options.replace) {
-      const priorEveryone = (await this.findSupersedableEnvelopes(projectIds)).find(
-        (p) => p.everyone,
-      );
-      if (priorEveryone !== undefined) {
-        await this.changeShare(priorEveryone.shareId, { title: options.title });
-        return;
-      }
-    }
-
-    await this.createNewShare(projectIds, options);
-  }
-
-  /**
-   * Mints a fresh share: snapshots the projects into one new envelope (a fresh shareId),
-   * supersedes prior shares of the same project, and grants it — all in one atomic write
-   * transaction, so a failed grant rolls the whole thing back and the outbox is left as it was.
-   * The everyone-refresh path is the {@link changeShare} branch of {@link shareProjects}; this is
-   * the mint-a-new-envelope branch.
-   */
-  private async createNewShare(
-    projectIds: ProjectId[],
-    options: ShareProjectsOptions,
-  ): Promise<void> {
-    const everyone = "everyone" in options;
     const sources: EnvelopeProjectSource[] = await Promise.all(
       projectIds.map(
         async (id): Promise<EnvelopeProjectSource> => ({
-          kind: "fresh",
           projectId: id,
           sourceRid: await this.resolveProjectId(id),
         }),
       ),
     );
-    const sender = this.currentUserLogin ?? "";
-    // Targeted share: sharedAt + ttl. Share-with-everybody: never expires (null).
-    const expiresAt = everyone ? null : Date.now() + this.env.ops.envelopeTtlMs;
 
-    // Supersede prior shares of the same project(s) so they never pile up. Resolved before
-    // the write tx (ListGrants is a separate RPC). Everyone-share supersedes a prior
-    // everyone-share of the same project; a targeted share pulls each named recipient out of
-    // any prior share of that project, deleting that share if it ends up with no recipients.
-    const priors = await this.findSupersedableEnvelopes(projectIds);
-
-    await this.pl.withWriteTx("MLShareProjects", async (tx) => {
-      if (everyone) {
-        for (const prior of priors) {
-          if (prior.everyone) tx.removeField(field(this.sharingOutboxResourceId, prior.fieldName));
-        }
-      } else {
-        const newRecipients = new Set(options.recipients);
-        for (const prior of priors) {
-          if (prior.everyone) continue; // a single user can't be pulled from an everyone-grant
-          const toRemove = prior.recipients.filter((u) => newRecipients.has(u));
-          if (toRemove.length === 0) continue;
-          const remaining = prior.recipients.filter((u) => !newRecipients.has(u));
-          if (remaining.length === 0) {
-            // Nobody left on the old share — drop the whole envelope.
-            tx.removeField(field(this.sharingOutboxResourceId, prior.fieldName));
-          } else {
-            for (const u of toRemove) tx.revokeAccess(prior.rid, u);
-          }
-        }
-      }
-
-      const { envelope } = await buildShareEnvelope(tx, this.sharingOutboxResourceId, sources, {
+    return await this.shareEnvelope("MLShareProjects", options, { writable: true }, (tx, meta) =>
+      buildShareEnvelope(tx, this.sharingOutboxResourceId, sources, {
         mode: options.mode,
-        sender,
-        title: options.title,
-        expiresAt,
-      });
+        ...meta,
+      }),
+    );
+  }
 
-      // Grant in the same transaction, atomic with the create.
-      await this.grantShareEnvelope(tx, envelope, everyone, everyone ? [] : options.recipients, {
-        writable: true,
-      });
+  /**
+   * Shares one stored template. The envelope carries the document itself, so there is no project
+   * snapshot and no resource for the recipient to copy out — which is why the grant is read-only.
+   *
+   * Nothing about the document is checked: a stored template is shareable by virtue of existing.
+   * An entry the recipient cannot resolve — a block installed from a folder on the sender's
+   * machine, say — is theirs to see when they preview or apply it, where every unresolvable entry
+   * is named anyway.
+   *
+   * @param id template to share
+   * @param options recipients XOR everyone, plus the title recipients see
+   */
+  public async shareTemplate(id: TemplateId, options: ShareTemplateOptions): Promise<ShareOutcome> {
+    const rid = await this.resolveTemplateId(id);
+    const stored = await this.pl.withReadTx("MLReadStoredTemplate", (tx) =>
+      readStoredTemplate(tx, id, rid),
+    );
 
+    return await this.shareEnvelope("MLShareTemplate", options, { writable: false }, (tx, meta) =>
+      buildTemplateShareEnvelope(
+        tx,
+        this.sharingOutboxResourceId,
+        {
+          document: stored.data.document,
+          label: stored.label,
+          ...(stored.description === undefined ? {} : { description: stored.description }),
+          source: id,
+        },
+        meta,
+      ),
+    );
+  }
+
+  /**
+   * Shares one folder and everything under it: the subtree's folders, every project in them
+   * snapshotted, and every template carried whole.
+   *
+   * The grant is writable, because a folder holding projects is copied out of the envelope the
+   * way a project pack is. An everyone-share of a folder therefore hands every user on the server
+   * write access to the envelope — the same trade a project share already makes.
+   *
+   * Folder ids do not travel. What the recipient gets is the shape of the subtree, rebuilt under
+   * a folder of their own choosing with ids their own document mints.
+   *
+   * @param folder folder to share; everything beneath it goes with it
+   * @param options recipients XOR everyone, plus the title recipients see
+   */
+  public async shareFolder(folder: FolderId, options: ShareFolderOptions): Promise<ShareOutcome> {
+    const loaded = await this.loadFolderSubtree(folder, newEnvelopeFolderId);
+    const subtree: EnvelopeFolderSubtree = {
+      source: folder,
+      folders: loaded.folders,
+      projects: loaded.projects.map((project) => ({
+        projectId: project.projectId,
+        sourceRid: project.rid,
+        folder: project.folder,
+      })),
+      templates: loaded.templates.map((template) => ({
+        document: template.data.document,
+        label: template.label,
+        ...(template.description === undefined ? {} : { description: template.description }),
+        folder: template.folder,
+      })),
+    };
+
+    return await this.shareEnvelope("MLShareFolder", options, { writable: true }, (tx, meta) =>
+      buildFolderShareEnvelope(tx, this.sharingOutboxResourceId, subtree, meta),
+    );
+  }
+
+  /**
+   * The one transaction every share is made in: the shares named by `options.replace` are
+   * dropped, the envelope `build` makes is created, and it is granted — all at once, so a failed
+   * grant rolls the whole thing back and the outbox is left as it was.
+   *
+   * A share with named recipients grants each of them and expires after the default TTL
+   * (`sharedAt + envelopeTtlMs`). A share with everyone is one make-public grant, and its
+   * `expiresAt` is `null`, so it never expires.
+   */
+  private async shareEnvelope(
+    txName: string,
+    options: ShareOptions,
+    permissions: { writable: boolean },
+    build: (
+      tx: PlTransaction,
+      meta: { sender: string; title: string; expiresAt: number | null },
+    ) =>
+      | { envelope: ResourceRef; data: EnvelopeData }
+      | Promise<{ envelope: ResourceRef; data: EnvelopeData }>,
+  ): Promise<ShareOutcome> {
+    const everyone = "everyone" in options;
+    const meta = {
+      sender: this.currentUserLogin ?? "",
+      title: options.title,
+      expiresAt: everyone ? null : Date.now() + this.env.ops.envelopeTtlMs,
+    };
+
+    const outcome = await this.pl.withWriteTx(txName, async (tx) => {
+      await this.dropShares(tx, options.replace);
+      const { envelope, data } = await build(tx, meta);
+      await this.grantShareEnvelope(
+        tx,
+        envelope,
+        everyone,
+        everyone ? [] : options.recipients,
+        permissions,
+      );
       await tx.commit();
+      return { shareId: data.shareId };
     });
 
     await this.sharingOutboxTree.refreshState();
+    return outcome;
+  }
+
+  /**
+   * Detaches the named shares from the donor's outbox inside the caller's transaction, so a
+   * replacement and the shares it supersedes land together or not at all.
+   *
+   * A share that no longer resolves is skipped rather than reported: the caller names shares the
+   * author saw a moment ago, and one revoked meanwhile is already in the wanted state.
+   */
+  private async dropShares(tx: PlTransaction, shareIds: ShareId[] | undefined): Promise<void> {
+    for (const shareId of shareIds ?? []) {
+      const target = await this.resolveOutboxEnvelope(tx, shareId);
+      if (target === undefined) continue;
+      tx.removeField(field(this.sharingOutboxResourceId, target.fieldName));
+    }
   }
 
   /**
@@ -976,11 +1368,11 @@ export class MiddleLayer {
    * target to the everyone-user, gated by role + permission ceiling), or one grant per named
    * recipient.
    *
-   * `writable` is not a preference. A project pack needs a writable grant because accepting copies
-   * the snapshots out of the envelope, and the cross-color attach rule permits that only to a
-   * writable grant holder. A template share copies nothing — the document sits in the envelope's
-   * own immutable data — so it is granted read-only, and must be: a writable everyone-grant would
-   * hand every user on the server write access to the envelope.
+   * `writable` is not a preference. A project pack needs a writable grant because a copy out of
+   * it takes the snapshots out of the envelope, and the cross-color attach rule permits that only
+   * to a writable grant holder. A template share copies nothing — the document sits in the
+   * envelope's own immutable data — so it is granted read-only, and must be: a writable
+   * everyone-grant would hand every user on the server write access to the envelope.
    */
   private async grantShareEnvelope(
     tx: PlTransaction,
@@ -995,275 +1387,10 @@ export class MiddleLayer {
   }
 
   /**
-   * Shares one stored template. The envelope carries the document itself, so there is no project
-   * snapshot and no resource for the recipient to copy out — which is why the grant is read-only.
-   * The cost of that is the donor's receipt: nobody can write an acceptance onto a read-only
-   * envelope, so a template share never reports who accepted it.
-   *
-   * Nothing about the document is checked: a stored template is shareable by virtue of existing.
-   * An entry the recipient cannot resolve — a block installed from a folder on the sender's
-   * machine, say — is theirs to see when they preview or apply it, where every unresolvable entry
-   * is named anyway.
-   *
-   * @param id template to share
-   * @param options recipients XOR everyone, plus the title recipients see
-   */
-  public async shareTemplate(
-    id: TemplateId,
-    options: ShareTemplateOptions,
-  ): Promise<ShareTemplateOutcome> {
-    const template = await this.loadTemplateForShare(id);
-
-    const everyone = "everyone" in options;
-    const sender = this.currentUserLogin ?? "";
-    // Targeted share: sharedAt + ttl. Share-with-everybody: never expires (null).
-    const expiresAt = everyone ? null : Date.now() + this.env.ops.envelopeTtlMs;
-
-    let shareId: ShareId | undefined;
-    await this.pl.withWriteTx("MLShareTemplate", async (tx) => {
-      const { envelope, data } = buildTemplateShareEnvelope(
-        tx,
-        this.sharingOutboxResourceId,
-        template,
-        { sender, title: options.title, expiresAt },
-      );
-      shareId = data.shareId;
-      await this.grantShareEnvelope(tx, envelope, everyone, everyone ? [] : options.recipients, {
-        writable: false,
-      });
-      await tx.commit();
-    });
-
-    await this.sharingOutboxTree.refreshState();
-    return { shareId: shareId! };
-  }
-
-  /** The document and the label of a template about to be shared. The label is what the
-   *  recipient's own list will show, so it travels with the document. */
-  private async loadTemplateForShare(
-    id: TemplateId,
-  ): Promise<{ document: ProjectTemplateV1; label: string }> {
-    const rid = await this.resolveTemplateId(id);
-    return await this.pl.withReadTx("MLReadTemplateForShare", async (tx) => {
-      const rd = await tx.getResourceData(rid, false);
-      if (rd.data === undefined) throw new Error(`Template ${id} carries no document.`);
-      return {
-        document: decodeStoredTemplateData(rd.data).document,
-        label: await tx.getKValueJson<string>(rid, TemplateLabelKey),
-      };
-    });
-  }
-
-  /**
-   * Changes a share in place (same {@link ShareId}), in one write transaction: re-snapshots live
-   * source projects and carries deleted ones' snapshots forward; applies edited recipients/title;
-   * transfers already-decided recipients' accept/reject records (they keep their copy and aren't
-   * re-prompted); re-grants; drops the old envelope.
-   *
-   * `opts.recipients` is the full targeted set (decided users are always kept). `opts.title`
-   * replaces the title — omit keeps the current one. `opts.everyone` upgrades targeted ->
-   * everyone; the reverse is impossible and ignored.
-   *
-   * `opts.projectActions` is a per-source-project decision, keyed by projectId: `update`
-   * re-snapshots the live source (falls back to carry if the source is gone), `keep` carries the
-   * existing snapshot (and its timestamp), `remove` drops the project from the pack. A project not
-   * in the map defaults to `keep`. Omit the whole map for the legacy auto behavior (live sources
-   * updated, gone ones kept) — the everyone-refresh path relies on that.
-   *
-   * `opts.templateId` is required for, and only used by, a share that carries a template: a stored
-   * template is immutable, so an improved one is a different template and the share cannot re-read
-   * the one it started from — the caller names the new target. Every other option means the same
-   * thing for both kinds of share.
-   */
-  public async changeShare(
-    shareId: ShareId,
-    opts: {
-      recipients?: string[];
-      everyone?: boolean;
-      title?: string;
-      projectActions?: Record<ProjectId, ProjectChangeAction>;
-      templateId?: TemplateId;
-    } = {},
-  ): Promise<void> {
-    // Read outside the write tx: it is two round-trips of its own.
-    const target =
-      opts.templateId === undefined ? undefined : await this.loadTemplateForShare(opts.templateId);
-
-    await this.pl.withWriteTx("MLChangeShare", async (tx) => {
-      const old = await this.resolveOutboxEnvelope(tx, shareId);
-      if (old === undefined)
-        throw new Error(`changeShare: no live share with id ${shareId} in the outbox.`);
-
-      const self = this.currentUserLogin ?? "";
-      const grants = await tx.listGrants(old.rid);
-      // A targeted share may be upgraded to everyone; an everyone-share can't be narrowed back.
-      const everyone = grants.some((g) => isEveryoneUserLogin(g.user)) || opts.everyone === true;
-      const priorRecipients = grants
-        .filter((g) => !isEveryoneUserLogin(g.user) && g.user !== self)
-        .map((g) => g.user);
-
-      if (old.data.payload.kind === "template") {
-        if (target === undefined)
-          throw new Error(
-            `changeShare: share ${shareId} carries a template, so it needs an explicit target ` +
-              "template — a stored template never changes, so an improved one is a different template.",
-          );
-        const recipients = everyone ? [] : (opts.recipients ?? priorRecipients);
-
-        // Same shareId, same outbox field name — detach the old field before rebuilding, or they collide.
-        tx.removeField(field(this.sharingOutboxResourceId, old.fieldName));
-        const { envelope } = buildTemplateShareEnvelope(tx, this.sharingOutboxResourceId, target, {
-          sender: self,
-          title: opts.title === undefined ? old.data.title : opts.title.trim(),
-          expiresAt: everyone ? null : Date.now() + this.env.ops.envelopeTtlMs,
-          shareId, // SAME shareId — the essence of change
-        });
-
-        // Nothing to transfer: a read-only grant cannot write an acceptance, so a template share
-        // never accumulated one.
-        await this.grantShareEnvelope(tx, envelope, everyone, recipients, { writable: false });
-        await tx.commit();
-        return;
-      }
-
-      // Read the old envelope's project snapshots (uuid -> rid) and accept/reject records.
-      const oldRd = await tx.getResourceData(old.rid, true);
-      const snapshotByUuid = new Map<string, SignedResourceId>();
-      const acceptances: { login: string; acc: EnvelopeAcceptance }[] = [];
-      for (const f of oldRd.fields) {
-        if (isNullSignedResourceId(f.value)) continue;
-        if (isEnvelopeProjectField(f.name)) {
-          snapshotByUuid.set(envelopeProjectFieldUuid(f.name), f.value);
-        } else if (isAcceptanceField(f.name)) {
-          const raw = (await tx.getResourceData(f.value, false)).data;
-          if (raw === undefined) continue;
-          acceptances.push({
-            login: acceptanceFieldLogin(f.name),
-            acc: cachedDeserialize(raw) as EnvelopeAcceptance,
-          });
-        }
-      }
-      const decidedLogins = acceptances.map((a) => a.login);
-
-      // Everyone-shares ignore recipients; targeted shares keep decided users plus the edited set.
-      const recipients = everyone
-        ? []
-        : Array.from(new Set([...(opts.recipients ?? priorRecipients), ...decidedLogins]));
-
-      // Live source projects by persistable id — these get a fresh snapshot.
-      const liveProjects = new Map<string, SignedResourceId>();
-      const projList = await tx.getResourceData(this.projectListResourceId, true);
-      for (const f of projList.fields) {
-        if (isNullSignedResourceId(f.value)) continue;
-        liveProjects.set(resourceIdToString(f.value), f.value);
-      }
-
-      // Per project (keyed by field uuid), apply the caller's decision (default `keep`); with no
-      // projectActions map, fall back to the legacy auto behavior: update a live source, keep a gone one.
-      const actions = opts.projectActions;
-      const sources: EnvelopeProjectSource[] = [];
-      const oldProjects = envelopeProjectMap(old.data);
-      for (const uuid of Object.keys(oldProjects) as ProjectFieldUuid[]) {
-        const { label, source, updatedAt } = oldProjects[uuid];
-        const liveRid = liveProjects.get(source);
-
-        const action = actions
-          ? (actions[source] ?? "keep")
-          : liveRid !== undefined
-            ? "update"
-            : "keep";
-        if (action === "remove") continue;
-
-        if (action === "update" && liveRid !== undefined) {
-          sources.push({ kind: "fresh", projectId: source, sourceRid: liveRid });
-        } else {
-          // keep, or an "update" whose source vanished before commit (deleted meanwhile, e.g. from
-          // another client): carry the prior snapshot. Liveness is read inside this write tx — race-safe.
-          const snapshotRid = snapshotByUuid.get(uuid);
-          if (snapshotRid !== undefined)
-            sources.push({ kind: "carry", projectId: source, label, snapshotRid, updatedAt });
-        }
-      }
-
-      // Omit (undefined) keeps the current title; a provided value replaces it.
-      const title = opts.title === undefined ? old.data.title : opts.title.trim();
-      const expiresAt = everyone ? null : Date.now() + this.env.ops.envelopeTtlMs;
-
-      // Same shareId, same outbox field name — detach the old field before rebuilding, or they collide.
-      tx.removeField(field(this.sharingOutboxResourceId, old.fieldName));
-
-      const { envelope } = await buildShareEnvelope(tx, this.sharingOutboxResourceId, sources, {
-        mode: old.data.mode,
-        sender: self,
-        title,
-        expiresAt,
-        shareId, // SAME shareId — the essence of change
-      });
-
-      // Transfer the decided users' records onto the new envelope (donor-written copies).
-      for (const { login, acc } of acceptances) {
-        if (!everyone && !recipients.includes(login)) continue;
-        writeEnvelopeAcceptance(tx, envelope, login, acc.action, acc.timestamp);
-      }
-
-      await this.grantShareEnvelope(tx, envelope, everyone, recipients, { writable: true });
-
-      await tx.commit();
-    });
-
-    await this.sharingOutboxTree.refreshState();
-  }
-
-  /**
-   * Finds the donor's own outgoing envelopes built from any of the given source projects —
-   * the supersede candidates for a fresh share of the same project(s). Reads each envelope's
-   * recipient set via `ListGrants` so the caller can pull individual recipients or detect an
-   * everyone-share.
-   */
-  private async findSupersedableEnvelopes(projectIds: ProjectId[]): Promise<
-    {
-      fieldName: string;
-      rid: SignedResourceId;
-      shareId: ShareId;
-      everyone: boolean;
-      recipients: string[];
-    }[]
-  > {
-    const wanted = new Set(projectIds);
-
-    const matched = await this.pl.withReadTx("MLFindSupersede", async (tx) => {
-      const outbox = await tx.getResourceData(this.sharingOutboxResourceId, true);
-      const out: { fieldName: string; rid: SignedResourceId; shareId: ShareId }[] = [];
-      for (const f of outbox.fields) {
-        if (isNullSignedResourceId(f.value)) continue;
-        const rd = await tx.getResourceData(f.value, false);
-        if (rd.data === undefined) continue;
-        const data = decodeEnvelopeData(rd.data);
-        if (data === undefined) continue;
-        if (Object.values(envelopeProjectMap(data)).some((p) => wanted.has(p.source)))
-          out.push({ fieldName: f.name, rid: f.value, shareId: data.shareId });
-      }
-      return out;
-    });
-
-    return await Promise.all(
-      matched.map(async ({ fieldName, rid, shareId }) => {
-        const grants = await this.pl.userResources.listGrants(rid);
-        return {
-          fieldName,
-          rid,
-          shareId,
-          everyone: grants.some((g) => isEveryoneUserLogin(g.user)),
-          recipients: grants.filter((g) => !isEveryoneUserLogin(g.user)).map((g) => g.user),
-        };
-      }),
-    );
-  }
-
-  /**
    * Revokes and deletes an outgoing share for all recipients: detaches and deletes the envelope, and
-   * its grants are revoked along with it. Already-accepted copies are unaffected (ref-counting keeps
-   * the adopted resources alive). Idempotent — revoking a share that is already gone is a no-op.
+   * its grants are revoked along with it. Copies recipients already took out of it are unaffected
+   * (ref-counting keeps the resources they point at alive). Idempotent — revoking a share that is
+   * already gone is a no-op.
    */
   public async revokeShare(shareId: ShareId): Promise<void> {
     await this.pl.withWriteTx("MLRevokeShare", async (tx) => {
@@ -1303,13 +1430,13 @@ export class MiddleLayer {
    * the envelope's logical `shareId`.
    *
    * Reads the {@link liveEnvelopes} Computable — the same shared-resource discovery tree that
-   * feeds {@link pendingShares}. This is the single discovery mechanism: there is no separate
-   * `ListUserResources` re-stream on every accept/reject. `refreshState()` is awaited first so a
+   * feeds {@link availableShares}. This is the single discovery mechanism: there is no separate
+   * `ListUserResources` re-stream on every copy. `refreshState()` is awaited first so a
    * just-granted envelope is observed (the tree's discovery poll may otherwise lag a freshly
    * landed grant). The tree is gRPC-only, so this is empty on a REST-connected client.
    */
   private async resolveLiveEnvelopes(): Promise<Map<ShareId, LiveEnvelope>> {
-    await this.pendingSharesTree.refreshState();
+    await this.availableSharesTree.refreshState();
     const live = (await this.liveEnvelopes.getValue()) ?? [];
     // Dedup by logical shareId (last writer wins — at most one live envelope per shareId).
     const map = new Map<ShareId, LiveEnvelope>();
@@ -1318,31 +1445,32 @@ export class MiddleLayer {
   }
 
   /**
-   * Accepts one or more pending shares. What accepting does depends on what the share carries: a
-   * pack of projects is duplicated into this user's project list, while a template is added to this
-   * user's own template list and builds nothing — the recipient decides later whether to apply it.
-   * Either way the decision is recorded per share, and a read-write share also gets the
-   * donor-visible acceptance written onto its envelope. Per-share failures (e.g. an expiry race)
-   * are collected, not short-circuited — the rest still get accepted. Accept-all = pass every
-   * current pending shareId.
+   * Copies what one or more shares carry into this user's own tree, optionally into a folder.
    *
-   * `rename` resolves label collisions (same callback contract as {@link duplicateProject}), but
-   * the source lives in the envelope tree, so accept calls the low-level mutator directly. It does
-   * not apply to a template share, whose label is not required to be unique.
+   * A share is a shelf, not an invitation: copying takes nothing off it and records no decision,
+   * so the same share can be copied from again, by this user or anyone else it was granted to.
+   * What a copy produces depends on the payload — a pack of projects lands in the project list,
+   * a template among their templates, building nothing until the recipient applies it, and a
+   * folder is rebuilt whole with everything it held.
+   *
+   * Names are chosen against the destination folder, since that is where the uniqueness rule
+   * applies, and a project and a template follow the same rule. A destination deleted meanwhile
+   * fails the copy rather than spilling it at the top level.
+   * Per-share failures (a revoked envelope, say) are collected rather than short-circuited, so
+   * one dead share does not cost the others.
    */
-  public async acceptShare(
+  public async copyShare(
     shareIds: ShareId[],
-    rename?: (previousLabel: string, existingLabels: string[]) => string,
+    destination?: FolderId,
   ): Promise<{
-    accepted: ProjectId[];
-    acceptedTemplates: TemplateId[];
+    projects: ProjectId[];
+    templates: TemplateId[];
     failed: { shareId: ShareId; error: string }[];
   }> {
     const live = await this.resolveLiveEnvelopes();
-    const login = this.currentUserLogin;
 
-    const accepted: ProjectId[] = [];
-    const acceptedTemplates: TemplateId[] = [];
+    const projects: ProjectId[] = [];
+    const templates: TemplateId[] = [];
     const failed: { shareId: ShareId; error: string }[] = [];
 
     for (const shareId of shareIds) {
@@ -1352,64 +1480,130 @@ export class MiddleLayer {
         continue;
       }
       try {
-        const now = Date.now();
         const payload = envelope.data.payload;
 
         if (payload.kind === "template") {
-          const rid = await this.pl.withWriteTx("MLAcceptTemplateShare", async (tx) => {
-            // The template lands on this user's own shelf, keeping who sent it as its provenance.
-            const tpl = createTemplate(tx, this.templateListResourceId, payload.label, {
-              schemaVersion: 1,
-              document: payload.document,
-              sender: payload.from,
-            });
+          const rid = await this.pl.withWriteTx("MLCopyTemplateShare", async (tx) => {
+            const tree = await openFoldersTx(tx, this.foldersRids);
+            // The template lands in their templates, keeping who sent it as its provenance, under
+            // a name that is free where it lands — the same rule a copied project follows. What
+            // the donor said about the template is part of the template, not of the share.
+            const tpl = createTemplate(
+              tx,
+              this.templateListResourceId,
+              {
+                label: foldersUniqueName(payload.label, tree.namesTakenIn(destination, "template")),
+                description: payload.description,
+              },
+              { schemaVersion: 1, document: payload.document, sender: payload.from },
+            );
 
-            writeSharingDecision(tx, this.sharingStateResourceId, shareId, {
-              decision: "accepted",
-              timestamp: now,
-              envelopeSharedAt: envelope.data.sharedAt,
-              acceptedProjects: [], // a template share creates no project
-            });
+            const created = await tpl.globalId;
+            tree.place(
+              [{ kind: "template", id: asTemplateId(resourceIdToString(created)) }],
+              destination,
+            );
 
-            // No acceptance/{login} on the envelope: the grant is read-only, so the write would be
-            // refused by the backend, and the donor deliberately gave up that receipt.
             await tx.commit();
-            return await tpl.globalId;
+            return created;
           });
 
-          const templateId = resourceIdToString(rid) as TemplateId;
+          const templateId = asTemplateId(resourceIdToString(rid));
           this.templateIdCache.set(templateId, rid);
-          acceptedTemplates.push(templateId);
+          templates.push(templateId);
           continue;
         }
 
-        const createdRids = await this.pl.withWriteTx("MLAcceptShare", async (tx) => {
+        if (payload.kind === "folder") {
+          const root = envelopeFolderRoot(payload.folders);
+          if (root === undefined)
+            throw new Error("This share does not describe one folder, so nothing can be rebuilt.");
+
+          const copied = await this.pl.withWriteTx("MLCopyFolderShare", async (tx) => {
+            const tree = await openFoldersTx(tx, this.foldersRids);
+            // The subtree is rebuilt whole, so names are only ever compared inside it — except
+            // the root, which lands beside whatever the destination already holds.
+            const created = await copyEnvelopeProjectsIntoList(
+              tx,
+              envelope.rid,
+              this.projectListResourceId,
+            );
+
+            const createdTemplates: TemplateId[] = [];
+            const items: (FoldersLeafItem & { folder: string })[] = [];
+            for (const { uuid, rid } of created) {
+              const inFolder = payload.projects[uuid];
+              items.push({
+                kind: "project",
+                id: asProjectId(resourceIdToString(rid)),
+                // A project whose payload entry is missing still exists; it lands at the root.
+                folder: inFolder?.folder ?? root,
+              });
+            }
+
+            for (const carried of payload.templates) {
+              // The template lands in their templates, keeping who sent it as its provenance.
+              const tpl = createTemplate(
+                tx,
+                this.templateListResourceId,
+                { label: carried.label, description: carried.description },
+                { schemaVersion: 1, document: carried.document, sender: payload.from },
+              );
+              const id = asTemplateId(resourceIdToString(await tpl.globalId));
+              createdTemplates.push(id);
+              items.push({ kind: "template", id, folder: carried.folder });
+            }
+
+            // Folders this build cannot rewrite leave the subtree unbuilt, and the copies land at
+            // the top level. That is deliberate: folders are an arrangement, not the content, and
+            // a copy the user asked for is not held back for their sake.
+            tree.graft({ root, folders: payload.folders, items }, destination);
+
+            await tx.commit();
+            return { projects: created, templates: createdTemplates };
+          });
+
+          for (const { rid } of copied.projects) {
+            const projectId = asProjectId(resourceIdToString(rid));
+            this.projectIdCache.set(projectId, rid);
+            projects.push(projectId);
+          }
+          templates.push(...copied.templates);
+          continue;
+        }
+
+        const createdRids = await this.pl.withWriteTx("MLCopyShare", async (tx) => {
+          const tree = await openFoldersTx(tx, this.foldersRids);
+          // Scoped to where the copies are going, because that is the only place their names have
+          // to be free. `taken` grows as the pack is copied, so two projects of one name inside a
+          // single share do not land on top of each other either.
+          const taken = [...tree.namesTakenIn(destination, "project")];
           const created = await copyEnvelopeProjectsIntoList(
             tx,
             envelope.rid,
             this.projectListResourceId,
-            rename,
+            (sourceLabel) => {
+              const name = foldersUniqueName(sourceLabel, taken);
+              taken.push(name);
+              return name;
+            },
           );
 
-          // Record the decision on the acceptor's own SharingState, keyed on shareId.
-          writeSharingDecision(tx, this.sharingStateResourceId, shareId, {
-            decision: "accepted",
-            timestamp: now,
-            envelopeSharedAt: envelope.data.sharedAt,
-            acceptedProjects: resourceIdsToStrings(created),
-          });
-
-          // Read-write share: write the donor-visible acceptance onto the envelope.
-          if (login !== null && envelope.data.mode !== "read-only")
-            writeEnvelopeAcceptance(tx, envelope.rid, login, "accepted", now);
+          tree.place(
+            created.map(({ rid }) => ({
+              kind: "project" as const,
+              id: asProjectId(resourceIdToString(rid)),
+            })),
+            destination,
+          );
 
           await tx.commit();
           return created;
         });
-        for (const rid of createdRids) {
-          const projectId = resourceIdToString(rid) as ProjectId;
+        for (const { rid } of createdRids) {
+          const projectId = asProjectId(resourceIdToString(rid));
           this.projectIdCache.set(projectId, rid);
-          accepted.push(projectId);
+          projects.push(projectId);
         }
       } catch (e) {
         failed.push({ shareId, error: e instanceof Error ? e.message : String(e) });
@@ -1419,30 +1613,30 @@ export class MiddleLayer {
     await Promise.all([
       this.projectListTree.refreshState(),
       this.templateListTree.refreshState(),
-      this.sharingStateTree.refreshState(),
+      this.foldersTree.refreshState(),
     ]);
-    return { accepted, acceptedTemplates, failed };
+    return { projects, templates, failed };
   }
 
-  /** Records rejection of a pending share; it never surfaces again. */
-  public async rejectShare(shareId: ShareId): Promise<void> {
-    const live = await this.resolveLiveEnvelopes();
-    const envelope = live.get(shareId);
-    const login = this.currentUserLogin;
+  /**
+   * Puts a share out of this user's sight. Private to them and reversible with
+   * {@link unhideShare}: nothing is deleted, the donor is not told, and what was already copied
+   * out of it is unaffected.
+   */
+  public async hideShare(shareId: ShareId): Promise<void> {
     const now = Date.now();
+    await this.pl.withWriteTx("MLHideShare", async (tx) => {
+      writeShareHidden(tx, this.sharingStateResourceId, shareId, now);
+      await tx.commit();
+    });
 
-    await this.pl.withWriteTx("MLRejectShare", async (tx) => {
-      writeSharingDecision(tx, this.sharingStateResourceId, shareId, {
-        decision: "rejected",
-        timestamp: now,
-        envelopeSharedAt: envelope?.data.sharedAt ?? now,
-        acceptedProjects: [],
-      });
+    await this.sharingStateTree.refreshState();
+  }
 
-      // Read-write share: write the donor-visible rejection onto the envelope (if still live).
-      if (envelope !== undefined && login !== null && envelope.data.mode !== "read-only")
-        writeEnvelopeAcceptance(tx, envelope.rid, login, "rejected", now);
-
+  /** Brings a hidden share back into this user's list. */
+  public async unhideShare(shareId: ShareId): Promise<void> {
+    await this.pl.withWriteTx("MLUnhideShare", async (tx) => {
+      clearShareHidden(tx, this.sharingStateResourceId, shareId);
       await tx.commit();
     });
 
@@ -1596,9 +1790,10 @@ export class MiddleLayer {
     await Promise.all([
       this.projectListTree.terminate(),
       this.templateListTree.terminate(),
+      this.foldersTree.terminate(),
       this.sharingOutboxTree.terminate(),
       this.sharingStateTree.terminate(),
-      this.pendingSharesTree.terminate(),
+      this.availableSharesTree.terminate(),
     ]);
     await this.drainSnapshotWrites(SNAPSHOT_DRAIN_TIMEOUT_MS);
     await this.env.dispose();
@@ -1643,15 +1838,17 @@ export class MiddleLayer {
     )
       ops.defaultTreeOptions.traversalMode = getDebugFlags().treeTraversalMode;
 
-    const { projects, templates, sharingOutbox, sharingState } = await pl.withWriteTx(
+    const { projects, templates, sharingOutbox, sharingState, folders } = await pl.withWriteTx(
       "MLInitialization",
       async (tx) => {
         // Lazily create each clientRoot-attached singleton resource. Returns the existing
         // resource id if the field is already populated, otherwise creates + locks + sets it.
+        // A created resource's id is known only once the transaction commits.
+        type Singleton = { existing: SignedResourceId } | { ref: ResourceRef };
         const lazyInit = async (
           fieldName: string,
           type: { name: string; version: string },
-        ): Promise<{ ref?: ResourceRef; existing?: SignedResourceId }> => {
+        ): Promise<Singleton> => {
           const f = field(tx.clientRoot, fieldName);
           tx.createField(f, "Dynamic");
           const fData = await tx.getField(f);
@@ -1668,14 +1865,20 @@ export class MiddleLayer {
         const templatesR = await lazyInit(TemplatesField, TemplatesResourceType);
         const outboxR = await lazyInit(SharingOutboxField, SharingOutboxResourceType);
         const stateR = await lazyInit(SharingStateField, SharingStateResourceType);
+        // The folder tree gets its own root-attached singleton rather than a field on the
+        // projects resource: an extra field there is walked by the released project-list reader
+        // and dereferenced as a project, which takes the whole list down, not just the folders.
+        const foldersR = await lazyInit(FoldersField, FoldersResourceType);
 
         await tx.commit();
 
+        const idOf = async (r: Singleton) => ("existing" in r ? r.existing : await r.ref.globalId);
         return {
-          projects: projectsR.existing ?? (await projectsR.ref!.globalId),
-          templates: templatesR.existing ?? (await templatesR.ref!.globalId),
-          sharingState: stateR.existing ?? (await stateR.ref!.globalId),
-          sharingOutbox: outboxR.existing ?? (await outboxR.ref!.globalId),
+          projects: await idOf(projectsR),
+          templates: await idOf(templatesR),
+          sharingState: await idOf(stateR),
+          sharingOutbox: await idOf(outboxR),
+          folders: await idOf(foldersR),
         };
       },
     );
@@ -1759,17 +1962,25 @@ export class MiddleLayer {
     const openedProjects = new WatchableValue<ProjectId[]>([]);
     const projectListTC = await createProjectList(pl, projects, openedProjects, env);
     const templateListTC = await createTemplateList(pl, templates, env);
+    const foldersTC = await createFolderList(
+      pl,
+      folders,
+      projectListTC.tree,
+      templateListTC.tree,
+      openedProjects,
+      env,
+    );
 
     // Project sharing trees and reactive views.
     const outgoingTC = await createOutgoingShares(pl, sharingOutbox, env);
     const sharingStateTree = await createSharingStateTree(pl, sharingState, env);
-    const pendingSharesTree = await createPendingSharesTree(pl, env);
-    const pendingShares = createPendingSharesComputable(
-      pendingSharesTree,
+    const availableSharesTree = await createAvailableSharesTree(pl, env);
+    const availableShares = createAvailableSharesComputable(
+      availableSharesTree,
       sharingStateTree,
       pl.userResources.authUser,
     );
-    const liveEnvelopes = createLiveEnvelopesComputable(pendingSharesTree);
+    const liveEnvelopes = createLiveEnvelopesComputable(availableSharesTree);
 
     return new MiddleLayer(
       env,
@@ -1779,17 +1990,20 @@ export class MiddleLayer {
       templates,
       sharingOutbox,
       sharingState,
+      folders,
       openedProjects,
       projectListTC.tree,
       templateListTC.tree,
+      foldersTC.tree,
       outgoingTC.tree,
       sharingStateTree,
-      pendingSharesTree,
+      availableSharesTree,
       v2RegistryProvider,
       projectListTC.computable,
       templateListTC.computable,
+      foldersTC.computable,
       outgoingTC.computable,
-      pendingShares,
+      availableShares,
       liveEnvelopes,
     );
   }
@@ -1798,3 +2012,55 @@ export class MiddleLayer {
 //
 // Internals
 //
+
+/** A folder subtree read for copying; see {@link MiddleLayer.loadFolderSubtree}. */
+interface FolderSubtree<Id extends string> {
+  /** Folder holding the subtree's root; absent when the root is at the top level. */
+  readonly parent?: FolderId;
+  /** Local key of the subtree's root. */
+  readonly root: Id;
+  readonly folders: Record<Id, { name: string; parent?: Id; description?: string }>;
+  readonly projects: { projectId: ProjectId; rid: SignedResourceId; folder: Id }[];
+  readonly templates: (StoredTemplate & { folder: Id })[];
+}
+
+/** Everything a stored template is: its immutable blob, plus the label and the description the
+ *  list shows, both of which live beside the blob rather than in it. */
+interface StoredTemplate {
+  readonly data: StoredTemplateData;
+  readonly label: string;
+  /** Absent when nobody described the template. */
+  readonly description?: string;
+}
+
+/** Reads one stored template within the caller's transaction. A share carries its document on;
+ *  a duplicate carries the blob whole, so the copy says of itself what the original did. */
+async function readStoredTemplate(
+  tx: PlTransaction,
+  id: TemplateId,
+  rid: SignedResourceId,
+): Promise<StoredTemplate> {
+  const rd = await tx.getResourceData(rid, false);
+  if (rd.data === undefined) throw new Error(`Template ${id} carries no document.`);
+  const [label, description] = await Promise.all([
+    tx.getKValueJson<string>(rid, TemplateLabelKey),
+    tx.getKValueJsonIfExists<string>(rid, TemplateDescriptionKey).then(normalizeDescription),
+  ]);
+  return {
+    data: decodeStoredTemplateData(rd.data),
+    label,
+    ...(description === undefined ? {} : { description }),
+  };
+}
+
+/** The label of every project in a project list, read within the caller's transaction. */
+async function existingProjectLabels(
+  tx: PlTransaction,
+  listRid: SignedResourceId,
+): Promise<string[]> {
+  const listed = await listedById(tx, listRid);
+  const metas = await Promise.all(
+    [...listed.values()].map(({ rid }) => tx.getKValueJson<ProjectMeta>(rid, ProjectMetaKey)),
+  );
+  return metas.map((meta) => meta.label);
+}
