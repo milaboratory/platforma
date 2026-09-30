@@ -26,7 +26,7 @@ import type { Dispatcher } from "undici";
 import { LRUCache } from "lru-cache";
 import type { ResourceDataCacheRecord } from "./cache";
 import type { FinalResourceDataPredicate } from "./final";
-import { DefaultFinalResourceDataPredicate, resourceCachePredicate } from "./final";
+import { CacheFinality, TreeFinality } from "./final";
 import type { AllTxStat, TxStat } from "./stat";
 import { addStat, initialTxStat } from "./stat";
 import type { WireConnection } from "./wire";
@@ -96,14 +96,10 @@ export class PlClient {
   // Caching
   //
 
-  /** The default finality predicate of trees built on this client (see
-   * {@link DefaultFinalResourceDataPredicate}); a tree may override it, or keep its explicit
-   * roots non-final with `rootsNeverFinal`. */
+  /** The default finality predicate of trees built on this client ({@link TreeFinality} unless
+   * given); a tree may override it, or keep its explicit roots non-final with
+   * `rootsNeverFinal`. The transaction resource cache always uses {@link CacheFinality}. */
   public readonly finalPredicate: FinalResourceDataPredicate;
-
-  /** Decides what the transaction resource cache keeps: {@link finalPredicate}, minus the types
-   * whose state or fields change after final (see {@link resourceCachePredicate}). */
-  public readonly resourceCachePredicate: FinalResourceDataPredicate;
 
   /** Resource data cache, to minimize redundant data rereading from remote db */
   private readonly resourceDataCache: LRUCache<SignedResourceId, ResourceDataCacheRecord>;
@@ -139,8 +135,7 @@ export class PlClient {
 
     this.txDelay = conf.txDelay;
     this.forceSync = conf.forceSync;
-    this.finalPredicate = ops.finalPredicate ?? DefaultFinalResourceDataPredicate;
-    this.resourceCachePredicate = resourceCachePredicate(this.finalPredicate);
+    this.finalPredicate = ops.finalPredicate ?? TreeFinality.predicate();
     this.resourceDataCache = new LRUCache({
       maxSize: conf.maxCacheBytes,
       sizeCalculation: (v) => (v.basicData.data?.length ?? 0) + 64,
@@ -415,7 +410,7 @@ export class PlClient {
           name,
           writable,
           clientRoot,
-          this.resourceCachePredicate,
+          CacheFinality.predicate(),
           this.resourceDataCache,
         );
 

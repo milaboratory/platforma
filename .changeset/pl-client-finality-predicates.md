@@ -4,11 +4,12 @@
 "@milaboratories/pl-middle-layer": patch
 ---
 
-Finality predicate split into two from one table: `DefaultFinalResourceDataPredicate` stays the
-tree's predicate; the transaction resource cache now uses `resourceCachePredicate(finalPredicate)`
-(`PlClient.resourceCachePredicate`), which also excludes `Blob` and `StreamManager`, whose fields
-change after the tree holds them final. Table changes: `BResolveSingle`, `BResolveChoice` and
-`LSProvider` are never final; `Frontend/FromLocalTgz`, `json/bool`, `json/null` and
-`json/errorTrace` are always final. The rule and every intended exception are documented at the
-predicate. The project tree's stop rules follow the table. New exports: `resourceCachePredicate`,
-`DefaultResourceCachePredicate`.
+Finality is one table built in layers (`FinalityTable`): `StrictFinality` (nothing observable
+changes after final), `CacheFinality` (adds the types whose only later writes are KV; used by
+the transaction resource cache) and `TreeFinality` (adds `Blob` and `StreamManager`, whose later
+writes tree readers never observe; the default `PlClient.finalPredicate`). A layer only adds to
+its parent. `DefaultFinalResourceDataPredicate` is a deprecated alias of `TreeFinality`.
+Table changes: `BResolveSingle`, `BResolveChoice` and `BlobCopy/*` are final once ready with
+every output filled; `LSProvider` is never final; `Frontend/FromLocalTgz`, `json/bool`,
+`json/null` and `json/errorTrace` are always final. The project tree's stop rules are generated
+from `TreeFinality`, each entry declaring how it translates. New `ResourceTypePrefix.BlobCopy`.
