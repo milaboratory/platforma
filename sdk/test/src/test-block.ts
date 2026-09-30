@@ -40,7 +40,12 @@ function normalizeABDOpts(timeoutOrOps?: number | AwaitBlockDoneOps): AwaitBlock
   };
 }
 
-export const DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT = 5000;
+/**
+ * Budget for a whole awaitBlockDone call, not for one change notification: the
+ * signal built from it spans the wait loop. It has to fit a block that is
+ * fetched before it runs.
+ */
+export const DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT = 10_000;
 
 async function awaitBlockDone(
   prj: Project,
