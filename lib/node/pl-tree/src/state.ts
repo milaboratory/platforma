@@ -241,6 +241,15 @@ export class PlTreeResource implements ResourceDataWithFinalState {
         );
       }
 
+      // An asserted type's absence becomes permanent when its list locks, with no field added.
+      if (
+        step.assertFieldType !== undefined &&
+        (isInputLike(step.assertFieldType)
+          ? !this.inputsLocked
+          : step.assertFieldType === "Output" && !this.outputsLocked)
+      )
+        this.lockedChange?.attachWatcher(watcher);
+
       if (!this.inputsLocked) this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
       else if (step.assertFieldType === "Service" || step.assertFieldType === "Input") {
         if (step.allowPermanentAbsence)
@@ -273,10 +282,10 @@ export class PlTreeResource implements ResourceDataWithFinalState {
       const ret = {} as ValueAndError<SignedResourceId>;
       if (isNotNullSignedResourceId(field.value)) ret.value = field.value;
       if (isNotNullSignedResourceId(field.error)) ret.error = field.error;
-      if (ret.value === undefined && ret.error === undefined)
+      if (ret.value === undefined && ret.error === undefined && !this._finalState)
         // this method returns value and error of the field, thus those values are considered to be accessed;
         // any existing but not resolved field here is considered to be unstable, in the sense it is
-        // considered to acquire some resolved value eventually
+        // considered to acquire some resolved value eventually; on a final resource it never will
         onUnstable("field_not_resolved:" + step.field);
       return ret;
     }
@@ -426,6 +435,9 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
     this._finalState = true;
     notEmpty(this.finalChanged).markChanged("marked final");
+    // Field sources are kept (a final resource's fields are still read), but a reader of an
+    // unresolved one read it as unstable, and must be re-run to read it as permanent.
+    this.fieldsMap.forEach((field) => field.change.markChanged("marked final"));
     this.resourceStateChange?.markChanged("marked final");
     this.lockedChange?.markChanged("marked final");
     this.inputAndServiceFieldListChanged?.markChanged("marked final");
@@ -1135,6 +1147,8 @@ export class PlTreeState {
     this._isValid = false;
     this.invalidationMessage = msg;
     this.rootsChanged.markChanged("tree invalidated");
+    // readers whose last run found no resource wait on this, and must learn the tree is gone
+    this.resourcesAdded.markChanged("tree invalidated");
     this.resources.forEach((res) => {
       res.markAllChanged();
     });

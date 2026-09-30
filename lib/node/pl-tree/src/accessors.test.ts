@@ -85,3 +85,24 @@ test("B14: data getters refuse to run outside their computable run, like every o
   expect(() => escaped.getKeyValueAsJson("k")).toThrow();
   expect(() => escaped.getKeyValueAsString("k")).toThrow();
 });
+
+test("traversing to an unpopulated field of a final resource is stable", async () => {
+  const M = createSignedResourceId(30n);
+  const t = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
+  t.updateFromResourceData([
+    { ...TestDynamicRootState1, fields: [dField("m", M)] },
+    // a ready StdMap is final; its field x never gets a value
+    {
+      ...TestDynamicRootState1,
+      id: M,
+      type: { name: "StdMap", version: "1" },
+      outputsLocked: false,
+      fields: [dField("x")],
+    },
+  ]);
+  const entry = t.entry();
+  const c = Computable.make((ctx) => ctx.accessor(entry).node().traverse("m", "x"));
+  const r = await c.getFullValue();
+  expect(r.value).toBeUndefined();
+  expect(r.stable).toBe(true);
+});

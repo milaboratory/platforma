@@ -50,7 +50,13 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
       // tree's update invalidates and rebuilds the whole tree.
       const downloadable = r.fields.find((f) => f.name === "downloadable");
       const stream = r.fields.find((f) => f.name === "stream");
-      if (downloadable === undefined || stream === undefined) return false;
+      // Both still empty is not a switch either.
+      if (
+        downloadable === undefined ||
+        stream === undefined ||
+        isNullSignedResourceId(stream.value)
+      )
+        return false;
       return stream.value === downloadable.value; // it's equal to the resource is marked as final on backend side
     }
     case ResourceTypeName.StdMap:
