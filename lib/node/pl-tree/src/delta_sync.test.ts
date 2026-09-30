@@ -56,6 +56,18 @@ function txReturning(responses: Frame[][]) {
   return { tx, calls };
 }
 
+/** Canned responses for a poll of `NG:0x1` that repoints it at a chain of `rounds` resources
+ * the mirror has never held: the poll answer, then one resolution round per link. */
+function referenceChain(prefix: string, rounds: number): Frame[][] {
+  const id = (i: number) => `NG:0x${prefix}${i}`;
+  return [
+    [frame("NG:0x1", { fields: [field("out", id(0))] })],
+    ...Array.from({ length: rounds }, (_, i) => [
+      frame(id(i), i < rounds - 1 ? { fields: [field("next", id(i + 1))] } : {}),
+    ]),
+  ];
+}
+
 function request(over: Partial<Record<keyof TreeLoadingRequest, unknown>> = {}) {
   return {
     seedResources: [],
@@ -368,6 +380,56 @@ describe("reference resolution", () => {
       32,
       32,
     ]);
+  });
+
+  test("the depth counter starts over at every poll, though the stats keep accumulating", async () => {
+    const stats: TreeLoadingStat = initialTreeLoadingStat();
+    const req = request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) });
+    const { tx, calls } = txReturning([
+      ...referenceChain("A", 8),
+      // an unchanged poll in between
+      [],
+      ...referenceChain("B", 2),
+    ]);
+
+    await loadDeltaTreeState(tx, req, stats);
+    await loadDeltaTreeState(tx, req, stats);
+    await loadDeltaTreeState(tx, req, stats);
+
+    expect(calls.map((c) => c.opts.unconditionalDepth)).toEqual([
+      // first poll: the seed call, then eight resolution rounds
+      undefined,
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      32,
+      32,
+      // unchanged poll
+      undefined,
+      // third poll starts again at 1
+      undefined,
+      1,
+      2,
+    ]);
+    expect(stats.deltaResolutionRounds).toBe(10);
+  });
+
+  test("the depth cap holds after far more rounds than the doubling could represent", async () => {
+    // 2 ** (rounds - 1) overflows to Infinity past round 1024.
+    const ROUNDS = 1100;
+    const { tx, calls } = txReturning(referenceChain("C", ROUNDS));
+
+    const result = await loadDeltaTreeState(
+      tx,
+      request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
+    );
+
+    expect(result).toHaveLength(ROUNDS + 1);
+    expect(calls.slice(1, 6).map((c) => c.opts.unconditionalDepth)).toEqual([1, 2, 4, 8, 16]);
+    expect(calls.slice(6).every((c) => c.opts.unconditionalDepth === 32)).toBe(true);
   });
 
   test("needs no round when every reference is already in the mirror", async () => {
