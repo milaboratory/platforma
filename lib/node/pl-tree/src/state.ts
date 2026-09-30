@@ -31,8 +31,8 @@ export type ExtendedResourceData = ResourceData & {
 };
 
 export class TreeStateUpdateError extends Error {
-  constructor(message: string) {
-    super(message);
+  constructor(message: string, options?: ErrorOptions) {
+    super(message, options);
   }
 }
 
@@ -63,6 +63,17 @@ class PlTreeField implements FieldData {
 }
 
 const InitialResourceVersion = 0;
+
+/** Input and Service fields share one list and one lock: both are refused once inputs lock. */
+function isInputLike(type: FieldType): boolean {
+  return type === "Input" || type === "Service";
+}
+
+/** The only field types the backend lets a client delete, so the only ones whose name can come
+ * back under another type between two polls. */
+function isRecreatable(type: FieldType): boolean {
+  return type === "Dynamic" || type === "MTW";
+}
 
 export type ResourceDataWithFinalState = ResourceData & {
   finalState: boolean;
@@ -220,10 +231,15 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
     const field = this.fieldsMap.get(step.field);
     if (field === undefined) {
-      if (step.errorIfFieldNotFound || step.errorIfFieldNotSet)
+      if (step.errorIfFieldNotFound || step.errorIfFieldNotSet) {
+        // Subscribed before throwing, so the error recomputes when the field appears.
+        if (!this.inputsLocked) this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
+        if (!this.outputsLocked) this.outputFieldListChanged?.attachWatcher(watcher);
+        this.dynamicFieldListChanged?.attachWatcher(watcher);
         throw new Error(
           `Field "${step.field}" not found in resource ${resourceIdToString(this.id)}`,
         );
+      }
 
       if (!this.inputsLocked) this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
       else if (step.assertFieldType === "Service" || step.assertFieldType === "Input") {
@@ -246,6 +262,9 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
       return undefined;
     } else {
+      // Subscribed before the type check: a Dynamic or MTW field can come back under another
+      // type, and the refused reader must then be re-run.
+      field.change.attachWatcher(watcher);
       if (step.assertFieldType !== undefined && field.type !== step.assertFieldType)
         throw new Error(
           `Unexpected field type: expected ${step.assertFieldType} but got ${field.type} for the field name ${step.field}`,
@@ -259,7 +278,6 @@ export class PlTreeResource implements ResourceDataWithFinalState {
         // any existing but not resolved field here is considered to be unstable, in the sense it is
         // considered to acquire some resolved value eventually
         onUnstable("field_not_resolved:" + step.field);
-      field.change.attachWatcher(watcher);
       return ret;
     }
   }
@@ -267,14 +285,14 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   public getInputsLocked(watcher: Watcher): boolean {
     if (!this.inputsLocked)
       // reverse transition can't happen, so there is no reason to wait for value to change
-      this.resourceStateChange?.attachWatcher(watcher);
+      this.lockedChange?.attachWatcher(watcher);
     return this.inputsLocked;
   }
 
   public getOutputsLocked(watcher: Watcher): boolean {
     if (!this.outputsLocked)
       // reverse transition can't happen, so there is no reason to wait for value to change
-      this.resourceStateChange?.attachWatcher(watcher);
+      this.lockedChange?.attachWatcher(watcher);
     return this.outputsLocked;
   }
 
@@ -328,10 +346,12 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     return ret;
   }
 
+  /** Fields that are neither Input, Output nor Service. Service fields are input-like (the
+   * backend refuses them once inputs are locked) and are listed by {@link listInputFields}. */
   public listDynamicFields(watcher: Watcher): string[] {
     const ret: string[] = [];
     this.fieldsMap.forEach((field, name) => {
-      if (field.type !== "Input" && field.type !== "Output") ret.push(name);
+      if (!isInputLike(field.type) && field.type !== "Output") ret.push(name);
     });
     this.dynamicFieldListChanged?.attachWatcher(watcher);
 
@@ -397,12 +417,21 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     };
   }
 
-  /** Called when {@link FinalResourceDataPredicate} returns true for the state. */
+  /** Called when {@link FinalResourceDataPredicate} returns true for the state.
+   *
+   * Every change source it retires is fired first: a reader attached to one of them read a
+   * state that could still change, and is re-run to read it as final. */
   markFinal() {
     if (this._finalState) return;
 
     this._finalState = true;
     notEmpty(this.finalChanged).markChanged("marked final");
+    this.resourceStateChange?.markChanged("marked final");
+    this.lockedChange?.markChanged("marked final");
+    this.inputAndServiceFieldListChanged?.markChanged("marked final");
+    this.outputFieldListChanged?.markChanged("marked final");
+    this.dynamicFieldListChanged?.markChanged("marked final");
+    this.kvChangedPerKey?.markAllChanged("marked final");
     this.finalChanged = undefined;
     this.resourceStateChange = undefined;
     this.dynamicFieldListChanged = undefined;
@@ -502,9 +531,28 @@ export class PlTreeState {
     return res;
   }
 
+  /** Applies a batch of resource bodies to the mirror.
+   *
+   * Any error leaves the tree invalidated and surfaces as a {@link TreeStateUpdateError}: the
+   * batch is applied resource by resource, so a throw part way through has already mutated the
+   * mirror and fired watchers, and only a rebuild restores a state some poll confirmed. */
   updateFromResourceData(
     resourceData: ExtendedResourceData[],
     opts: { allowOrphanInputs?: boolean; stat?: ResourceUpdateStat } = {},
+  ) {
+    try {
+      this.applyResourceData(resourceData, opts);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      if (this._isValid) this.invalidateTree(message);
+      if (e instanceof TreeStateUpdateError) throw e;
+      throw new TreeStateUpdateError(`tree update failed: ${message}`, { cause: e });
+    }
+  }
+
+  private applyResourceData(
+    resourceData: ExtendedResourceData[],
+    opts: { allowOrphanInputs?: boolean; stat?: ResourceUpdateStat },
   ) {
     const { allowOrphanInputs = false, stat } = opts;
     this.checkValid();
@@ -650,7 +698,7 @@ export class PlTreeState {
             if (isNotNullSignedResourceId(fd.value)) incrementRefs.push(fd.value);
             if (isNotNullSignedResourceId(fd.error)) incrementRefs.push(fd.error);
 
-            if (fd.type === "Input" || fd.type === "Service") {
+            if (isInputLike(fd.type)) {
               if (resource.inputsLocked)
                 unexpectedTransitionError(
                   `adding ${fd.type} (${fd.name}) field while inputs locked`,
@@ -680,36 +728,32 @@ export class PlTreeState {
           } else {
             // change of old field
 
-            // in principle this transition is possible, see assertions below
+            // A Dynamic or MTW field deleted and recreated under the same name between two
+            // polls looks like a type change. Any other type is append-only on the backend.
             if (field.type !== fd.type) {
-              if (field.type !== "Dynamic")
+              if (!isRecreatable(field.type))
                 unexpectedTransitionError(`field changed type ${field.type} -> ${fd.type}`);
-              notEmpty(resource.dynamicFieldListChanged).markChanged(
-                `field ${fd.name} changed type from Dynamic to ${fd.type} in ${resourceIdToString(resource.id)}`,
-              );
-              if (field.type === "Input" || field.type === "Service") {
+              const reason = `field ${fd.name} changed type ${field.type} -> ${fd.type} in ${resourceIdToString(resource.id)}`;
+              // the old list: both recreatable types are listed as dynamic
+              notEmpty(resource.dynamicFieldListChanged).markChanged(reason);
+              // the new list, and its lock
+              if (isInputLike(fd.type)) {
                 if (resource.inputsLocked)
                   unexpectedTransitionError(
-                    `adding input field "${fd.name}", while corresponding list is locked`,
+                    `adding ${fd.type} field "${fd.name}", while inputs are locked`,
                   );
-                notEmpty(resource.inputAndServiceFieldListChanged).markChanged(
-                  `field ${fd.name} changed to type ${fd.type} in ${resourceIdToString(resource.id)}`,
-                );
-              }
-              if (field.type === "Output") {
+                notEmpty(resource.inputAndServiceFieldListChanged).markChanged(reason);
+              } else if (fd.type === "Output") {
                 if (resource.outputsLocked)
                   unexpectedTransitionError(
-                    `adding output field "${fd.name}", while corresponding list is locked`,
+                    `adding output field "${fd.name}", while outputs are locked`,
                   );
-                notEmpty(resource.outputFieldListChanged).markChanged(
-                  `field ${fd.name} changed to type ${fd.type} in ${resourceIdToString(resource.id)}`,
-                );
+                notEmpty(resource.outputFieldListChanged).markChanged(reason);
               }
               field.type = fd.type;
-              field.change.markChanged(
-                `field ${fd.name} type changed to ${fd.type} in ${resourceIdToString(resource.id)}`,
-              );
+              field.change.markChanged(reason);
               changed = true;
+              metadataChanged = true;
             }
 
             // field value
@@ -766,6 +810,7 @@ export class PlTreeState {
               `dynamic field ${fieldName} removed from ${resourceIdToString(resource!.id)}`,
             );
             fields.delete(fieldName);
+            changed = true;
             metadataChanged = true;
             if (stat) stat.fieldsRemoved++;
 
@@ -815,6 +860,12 @@ export class PlTreeState {
           );
           changed = true;
           if (stat) stat.readyFlips++;
+        }
+
+        // backend final flag: informational, no reader watches it
+        if (resource.finalFlag !== rd.final) {
+          resource.finalFlag = rd.final;
+          changed = true;
         }
 
         // syncing kv. Same lockstep walk as the fields above, for the same reason: kv keys
@@ -1023,23 +1074,50 @@ export class PlTreeState {
       // is enough — ordinary refcounting keeps it alive and will collect it later.
       if (res.refCount > 0) continue;
 
-      // collect the (now-unprotected) root itself and seed the cascade with the refs it holds
-      const seed: SignedResourceId[] = [];
-      res.fieldsMap.forEach((field) => {
-        if (isNotNullSignedResourceId(field.value)) seed.push(field.value);
-        if (isNotNullSignedResourceId(field.error)) seed.push(field.error);
-        field.change.markChanged(
-          `field ${field.name} removed after root ${resourceIdToString(res.id)} left the root set`,
-        );
-      });
-      if (isNotNullSignedResourceId(res.error)) seed.push(res.error);
-      res.resourceRemoved.markChanged(
-        `resource removed after leaving the root set: ${resourceIdToString(res.id)}`,
-      );
-      this.resources.delete(rid);
-
-      this.collectGarbage(seed);
+      // collect the (now-unprotected) root itself and cascade into the refs it holds
+      this.removeUnreferenced(res, `root ${resourceIdToString(res.id)} left the root set`);
     }
+  }
+
+  /** Roots held in the heap and not final: the ones whose existence a poll must check, since
+   * a walk seeded at a deleted resource returns nothing rather than an error. A final root is
+   * never re-read, so it is not checked either. */
+  public nonFinalRoots(): SignedResourceId[] {
+    const ret: SignedResourceId[] = [];
+    for (const rid of this.roots) {
+      const res = this.resources.get(rid);
+      if (res !== undefined && !res.finalState) ret.push(rid);
+    }
+    return ret;
+  }
+
+  /** Drops a root the backend no longer has from the heap, with the subtree only it held, and
+   * notifies its readers. The id stays in the root set: a resource id is never reused, so the
+   * root stays absent and readers see "not found". Returns false, changing nothing, if the
+   * root is not held or is still referenced from elsewhere in the heap — the resource
+   * referencing it will be rewritten by the backend, and the refcount GC then applies. */
+  public dropDeletedRoot(rid: SignedResourceId): boolean {
+    this.checkValid();
+    const res = this.resources.get(rid);
+    if (res === undefined || res.refCount > 0) return false;
+    this.removeUnreferenced(res, `root ${resourceIdToString(rid)} deleted on the backend`);
+    return true;
+  }
+
+  /** Removes a resource nothing in the heap references and cascades the refcount GC into
+   * what it referenced. */
+  private removeUnreferenced(res: PlTreeResource, reason: string) {
+    const seed: SignedResourceId[] = [];
+    res.fieldsMap.forEach((field) => {
+      if (isNotNullSignedResourceId(field.value)) seed.push(field.value);
+      if (isNotNullSignedResourceId(field.error)) seed.push(field.error);
+      field.change.markChanged(`field ${field.name} removed: ${reason}`);
+    });
+    if (isNotNullSignedResourceId(res.error)) seed.push(res.error);
+    res.resourceRemoved.markChanged(`resource removed: ${reason}`);
+    this.resources.delete(res.id);
+
+    this.collectGarbage(seed);
   }
 
   /** @deprecated use "entry" instead */

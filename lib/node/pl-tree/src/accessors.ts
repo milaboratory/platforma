@@ -268,7 +268,7 @@ export class PlTreeNodeAccessor {
             }
           : { ...commonOptions, ..._step };
 
-      const next = current.getField(_step);
+      const next = current.getField(step);
 
       if (next === undefined) return undefined;
 
@@ -368,14 +368,17 @@ export class PlTreeNodeAccessor {
   }
 
   public getData(): Uint8Array | undefined {
+    this.instanceData.guard();
     return this.resource.data;
   }
 
   public getDataAsString(): string | undefined {
+    this.instanceData.guard();
     return this.resource.getDataAsString();
   }
 
   public getDataAsJson<T = unknown>(): T | undefined {
+    this.instanceData.guard();
     return this.resource.getDataAsJson<T>();
   }
 
@@ -421,6 +424,7 @@ export class PlTreeNodeAccessor {
     key: string,
     unstableIfNotFound: boolean = false,
   ): T | undefined {
+    this.instanceData.guard();
     const result = this.resource.getKeyValueAsJson<T>(this.instanceData.ctx.watcher, key);
     if (result === undefined) {
       if (unstableIfNotFound) this.instanceData.ctx.markUnstable("key_not_found_j:" + key);

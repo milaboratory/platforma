@@ -167,6 +167,8 @@ export type TreeLoadingStat = ResourceUpdateStat & {
   /** Delta path: extra rounds spent resolving references a delta body pointed at but the
    * response did not carry. */
   deltaResolutionRounds: number;
+  /** Roots dropped from the mirror because the backend no longer has them. */
+  rootsDropped: number;
   /** Delta path: polls that sent a token and got back a response the size of the whole
    * mirror, which is what a refused token looks like from here - rejection is silent, so this
    * is the only tell. Heuristic: a genuinely large change set trips it too. */
@@ -197,6 +199,7 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
     deltaSeedsSent: 0,
     deltaResolutionRounds: 0,
     deltaSuspectedFullAnswers: 0,
+    rootsDropped: 0,
     resourcesNew: 0,
     resourcesChanged: 0,
     resourcesUnchanged: 0,
@@ -404,9 +407,9 @@ async function processResourceTreeStream(
       resourceReady: frame.resourceReady,
       error: frame.error,
       originalResourceId: frame.originalResourceId,
-      // traverseWasStopped: backend matched traverse stop rules — children were not streamed.
-      // Mark as terminal; fields are resolved below.
-      final: frame.final || frame.traverseWasStopped,
+      // The backend's flag as sent. A stopped traversal (children not streamed) is handled
+      // through the fields below, not by claiming the backend marked the resource final.
+      final: frame.final,
       inputsLocked: frame.inputsLocked,
       outputsLocked: frame.outputsLocked,
       fields: frame.fields,
