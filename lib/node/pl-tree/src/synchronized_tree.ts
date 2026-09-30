@@ -788,7 +788,7 @@ export class SynchronizedTreeState {
     this.abortController.abort();
 
     // Refreshes still queued would otherwise never settle: the loop takes them only at the top
-    // of an iteration it will no longer run.
+    // of an iteration, and a terminated loop runs no further iteration.
     const pending = this.scheduledOnNextState;
     this.scheduledOnNextState = [];
     for (const n of pending) n.reject(new Error("tree synchronization is terminated"));

@@ -1101,7 +1101,7 @@ export class PlTreeState {
     return ret;
   }
 
-  /** Drops a root the backend no longer has from the heap, with the subtree only it held, and
+  /** Drops from the heap a root the backend has deleted, with the subtree only it held, and
    * notifies its readers. The id stays in the root set: a resource id is never reused, so the
    * root stays absent and readers see "not found". Returns false, changing nothing, if the
    * root is not held or is still referenced from elsewhere in the heap; a root is protected

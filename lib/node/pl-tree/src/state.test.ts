@@ -521,7 +521,7 @@ describe("becoming final notifies the readers of every source it retires", () =>
     expect(t.get(w(), R1).finalState).toBe(true);
     expect(reader.isChanged).toBe(true);
 
-    // and the re-run now reads a stable absence
+    // and the re-run reads the absent field as stable
     const rerun: string[] = [];
     expect(t.get(w(), R1).getField(w(), "x", (m) => rerun.push(m))).toBeUndefined();
     expect(rerun).toEqual([]);
@@ -737,7 +737,7 @@ describe("a Dynamic or MTW field recreated under another type", () => {
     ).toThrow(TreeStateUpdateError);
   });
 
-  test("a typed field still cannot change type", () => {
+  test("a typed field cannot change type", () => {
     const t = treeWith(res(R1, "UserProject", {}, [field("Input", "f")]));
     expect(() =>
       t.updateFromResourceData([res(R1, "UserProject", {}, [field("Output", "f")])]),
@@ -864,7 +864,7 @@ test("dropping a root keeps a child that is another root, and a child shared wit
   expect(ids).not.toContain(A);
   expect(ids).toContain(B);
   expect(ids).toContain(S);
-  // S is now held by C only
+  // with A dropped, only C holds S
   expect(t.dropDeletedRoot(C)).toBe(true);
   expect(t.dumpState().map((r) => r.id)).not.toContain(S);
   expect(t.isValid).toBe(true);

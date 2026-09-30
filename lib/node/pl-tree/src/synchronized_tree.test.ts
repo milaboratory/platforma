@@ -278,7 +278,7 @@ async function deleteAndAwaitGone(pl: PlClient, fieldName: string, rid: SignedRe
     },
     { sync: true },
   );
-  // the backend collects the now-unreferenced resource asynchronously
+  // the backend collects the resource asynchronously once its last reference is gone
   for (let i = 0; i < 100; i++) {
     const gone = await pl.withReadTx(
       "CheckingRoot",
@@ -654,7 +654,7 @@ test("terminate rejects a refresh still waiting for its poll", async () => {
     failing = true;
     await touch(pl, root);
     await tree.refreshState().catch(() => {});
-    // the loop now waits out the floor after the failed read, which a refresh does not cut
+    // after the failed read the loop waits out the floor, which a refresh does not cut
     // short, so this refresh is still queued when terminate runs
     let outcome = "pending";
     void tree.refreshState().then(
