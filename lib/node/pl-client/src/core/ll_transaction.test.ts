@@ -1,4 +1,4 @@
-import { getTestClient, getTestLLClient, getTestAdminLLClient } from "../test/test_config";
+import { getTestClient, getTestLLClient } from "../test/test_config";
 import { TxAPI_Open_Request_WritableTx } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import { createLocalResourceId, parseSignedResourceId } from "./types";
 import { test, expect } from "vitest";
@@ -6,7 +6,9 @@ import { test, expect } from "vitest";
 import { isTimeoutOrCancelError } from "./errors";
 import { Aborted } from "@milaboratories/ts-helpers";
 
-/** Cached root signature — fetched once, shared across tests. */
+/** Cached root signature — fetched once, shared across tests. The signature is bound to the
+ * session that minted it, so a test that sends it must open its transaction on a client of
+ * this same session; another one is rejected with "signature authentication failed". */
 let cachedRootSig: Uint8Array | undefined;
 
 async function getRootSignature(): Promise<Uint8Array> {
@@ -95,7 +97,7 @@ test("check timeout error type (passive)", async () => {
 });
 
 test("check timeout error type (active)", async () => {
-  const client = await getTestAdminLLClient();
+  const client = await getTestLLClient();
   const rootSig = await getRootSignature();
   const tx = client.createTx(true, { timeout: 500 });
 
@@ -172,7 +174,7 @@ test("check timeout error type (active)", async () => {
 });
 
 test("check is abort error (active)", async () => {
-  const client = await getTestAdminLLClient();
+  const client = await getTestLLClient();
   const rootSig = await getRootSignature();
   const tx = client.createTx(true, { abortSignal: AbortSignal.timeout(100) });
 

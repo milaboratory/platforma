@@ -29,22 +29,23 @@ self.body(func(inputs) {
     mem := inputs.mem
     inputCache := inputs.inputCache
     memFloor := inputs.memFloor
+    scratchFreeSpace := inputs.scratchFreeSpace
 
     workdirProcessorName := "import_dir";
     inFramesFolder := "input_frame"
-    spillFolder := "pframes_spill"
+    spillFolderExpr := "{system.scratch.path + '/ptabler-spill'}"
 
     ptCmd := exec.builder().
         setQueue(queue).
         printErrStreamToStdout().
         software(ptSoftware).
-        envExpr("POLARS_MAX_THREADS", "{max(2,system.cpu)}").
+        envExpr("POLARS_MAX_THREADS", sizing.POLARS_MAX_THREADS_EXPR).
         arg("workflow_sc.json").
         arg("--frame-dir").arg(inFramesFolder).
-        arg("--spill-dir").arg(spillFolder).
+        arg("--spill-dir").argExpr(spillFolderExpr).
         writeFile("workflow_sc.json", workflowJsonStruct);
-    // Size the ptabler run from total input volume, unless the block author sets cpu or
-    // mem. An explicit request always wins. The formulas, the measured slopes behind
+    // Size the ptabler run from total input volume, unless the block author sets cpu, mem
+    // or scratchFreeSpace. An explicit request always wins. The formulas, the measured slopes behind
     // them and the thread ceiling they assume live in :pt.sizing.
     ramReq := mem
     if is_undefined(ramReq) {
@@ -54,10 +55,24 @@ self.body(func(inputs) {
     if is_undefined(cpuReq) {
         cpuReq = sizing.cpuFormula()
     }
+    scratchReq := scratchFreeSpace
+    if is_undefined(scratchReq) {
+        readFrames := 0
+        writeFrames := 0
+        for step in workflowJsonStruct.workflow {
+            if step.type == "read_frame" {
+                readFrames += 1
+            } else if step.type == "write_frame" {
+                writeFrames += 1
+            }
+        }
+        scratchReq = sizing.scratchFormula(readFrames, writeFrames)
+    }
     ptCmd.resources({
         onCPU: {
             cpu: cpuReq,
-            ram: ramReq
+            ram: ramReq,
+            scratchFreeSpace: scratchReq
         }
     })
     if !is_undefined(inputCache) {

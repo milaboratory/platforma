@@ -1,5 +1,27 @@
 # @milaboratories/pl-tree
 
+## 1.15.5
+
+### Patch Changes
+
+- Updated dependencies [7b19fcc]
+  - @milaboratories/pl-client@3.17.4
+  - @milaboratories/pl-errors@1.4.45
+
+## 1.15.4
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.17.3
+- @milaboratories/pl-errors@1.4.44
+
+## 1.15.3
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.17.2
+- @milaboratories/pl-errors@1.4.43
+
 ## 1.15.2
 
 ### Patch Changes

@@ -1,5 +1,27 @@
 # @milaboratories/pl-client
 
+## 3.17.4
+
+### Patch Changes
+
+- 7b19fcc: Open the signed transaction on the session that minted the root signature. The two active
+  timeout tests sent a signature from one session on a client of another, which the backend
+  rejects with "signature authentication failed: session ID mismatch".
+
+## 3.17.3
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+
+## 3.17.2
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+
 ## 3.17.1
 
 ### Patch Changes
