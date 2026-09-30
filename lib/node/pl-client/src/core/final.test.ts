@@ -34,14 +34,14 @@ function field(name: string, value: typeof A): FieldData {
   };
 }
 
-test("a StreamManager whose fields were pruned away is not final, and does not throw", () => {
+test("a ready, non-errored StreamManager with its fields pruned away is not final, and does not throw", () => {
   expect(DefaultFinalResourceDataPredicate(streamManager({ fields: [] }))).toBe(false);
   expect(DefaultFinalResourceDataPredicate(streamManager({ fields: [field("stream", A)] }))).toBe(
     false,
   );
 });
 
-test("a StreamManager is final once stream and downloadable agree", () => {
+test("a ready StreamManager is final once stream and downloadable share a non-null value", () => {
   expect(
     DefaultFinalResourceDataPredicate(
       streamManager({ fields: [field("stream", A), field("downloadable", B)] }),

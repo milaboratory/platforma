@@ -480,8 +480,8 @@ test("removal of a typed field still throws after a reorder", () => {
 });
 
 //
-// Regression tests for the v1 tree defects (B1, B2, B4, B8-B12). Each one failed on the code
-// before its fix.
+// Regression tests for the v1 tree defects (B1, B2, B4, B7-B12) and the follow-ups found while
+// fixing them. Each one failed on the code before its fix.
 //
 
 const R1 = rid(10n);
