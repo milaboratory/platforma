@@ -301,8 +301,11 @@ describe("§4.2 projectTreeTraverseStopRules", () => {
     "BObjectSpec",
     "BContextEnd",
     "Null",
-    "LSProvider",
     "Blob",
+    "Frontend/FromLocalTgz",
+    "json/bool",
+    "json/null",
+    "json/errorTrace",
   ];
   for (const t of alwaysTerminalTypes) {
     it(`always-terminal: ${t}`, () => {
@@ -463,8 +466,11 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
     { typeName: "BObjectSpec" },
     { typeName: "BContextEnd" },
     { typeName: "Null" },
-    { typeName: "LSProvider" },
     { typeName: "Blob" },
+    { typeName: "Frontend/FromLocalTgz" },
+    { typeName: "json/bool" },
+    { typeName: "json/null" },
+    { typeName: "json/errorTrace" },
     { typeName: "Blob/v2" },
     { typeName: "LS/remote" },
     { typeName: "WorkingDirectory/1" },
@@ -631,6 +637,16 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
       const r = makeResource(typeName, []);
       expect(DefaultFinalResourceDataPredicate(r as any)).toBe(false);
       expect(evaluateStopRule(rule, { resourceType: typeName, isFinal: false })).toBe(false);
+    });
+  }
+
+  // Never final even when ready: written after ready (finality table, 2026-09-30).
+  for (const typeName of ["BResolveSingle", "BResolveChoice", "LSProvider", "BlobCopy/aToB"]) {
+    it(`${typeName}: never final, stop does NOT fire even when ready`, () => {
+      expect(DefaultFinalResourceDataPredicate(makeReadyResource(typeName))).toBe(false);
+      expect(
+        evaluateStopRule(rule, { resourceType: typeName, isFinal: true, allOutputsFinal: true }),
+      ).toBe(false);
     });
   }
 });
