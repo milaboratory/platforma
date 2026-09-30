@@ -167,7 +167,7 @@ export type TreeLoadingStat = ResourceUpdateStat & {
   /** Delta path: extra rounds spent resolving references a delta body pointed at but the
    * response did not carry. */
   deltaResolutionRounds: number;
-  /** Roots dropped from the mirror because the backend no longer has them. */
+  /** Roots dropped from the mirror because they are absent from the backend. */
   rootsDropped: number;
   /** Delta path: polls that sent a token and got back a response the size of the whole
    * mirror, which is what a refused token looks like from here - rejection is silent, so this
