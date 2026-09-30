@@ -446,3 +446,220 @@ test("B11: an MTW field deleted and recreated as Input between polls is applied"
     }
   });
 }, 60_000);
+
+async function touch(pl: PlClient, rid: SignedResourceId) {
+  await pl.withWriteTx(
+    "Touch",
+    async (tx) => {
+      tx.setKValue(rid, "touched", Buffer.from(`${Date.now()}-${Math.random()}`));
+      await tx.commit();
+    },
+    { sync: true },
+  );
+}
+
+async function removeClientRootField(pl: PlClient, fieldName: string) {
+  await pl.withWriteTx(
+    "Removing",
+    async (tx) => {
+      tx.removeField(field(tx.clientRoot, fieldName));
+      await tx.commit();
+    },
+    { sync: true },
+  );
+}
+
+async function awaitGone(pl: PlClient, rid: SignedResourceId) {
+  for (let i = 0; i < 100; i++) {
+    const gone = await pl.withReadTx(
+      "Checking",
+      async (tx) => (await tx.getResourceDataIfExists(rid, false)) === undefined,
+    );
+    if (gone) return;
+    await tp.setTimeout(100);
+  }
+  throw new Error("resource was not deleted by the backend");
+}
+
+const traversalModes: TraversalMode[] = ["backend-delta", "backend-streaming", "client-bfs"];
+for (const mode of traversalModes)
+  test(`B7: a deleted root is dropped under ${mode}`, async () => {
+    // the existence check relies on a walk seeded at a deleted resource yielding nothing and
+    // no error, under every loading algorithm
+    await TestHelpers.withTempRoot(async (pl) => {
+      const name = `b7Mode_${mode}`;
+      const root = await createRootUnderClientRoot(pl, name);
+      const tree = await SynchronizedTreeState.init(pl, root, {
+        stopPollingDelay: 50,
+        pollingInterval: 10,
+        traversalMode: mode,
+      });
+      try {
+        await removeClientRootField(pl, name);
+        await awaitGone(pl, root);
+        await tree.refreshState();
+        expect(tree.dumpState().some((r) => r.id === root)).toBe(false);
+        await tree.refreshState();
+      } finally {
+        await tree.terminate();
+      }
+    });
+  }, 60_000);
+
+for (const holderFirst of [false, true])
+  test(`B7: a deleted root held by another deleted root leaves in the same poll (${holderFirst ? "holder" : "held"} first)`, async () => {
+    await TestHelpers.withTempRoot(async (pl) => {
+      const { a, b } = await pl.withWriteTx(
+        "Chain",
+        async (tx) => {
+          const ra = tx.createStruct(TestStructuralResourceType1);
+          const rb = tx.createStruct(TestStructuralResourceType1);
+          const f = field(tx.clientRoot, "b7Chain");
+          tx.createField(f, "Dynamic");
+          tx.setField(f, ra);
+          tx.createField(field(ra, "child"), "Dynamic");
+          tx.setField(field(ra, "child"), rb);
+          await tx.commit();
+          return { a: await ra.globalId, b: await rb.globalId };
+        },
+        { sync: true },
+      );
+      const roots = [a, b].map((root) => ({ kind: "resource" as const, root }));
+      const tree = await SynchronizedTreeState.init(pl, holderFirst ? roots : roots.reverse(), {
+        stopPollingDelay: 50,
+        pollingInterval: 10,
+      });
+      try {
+        await removeClientRootField(pl, "b7Chain");
+        await awaitGone(pl, a);
+        await awaitGone(pl, b);
+        await tree.refreshState();
+        const ids = tree.dumpState().map((r) => r.id);
+        expect(ids).not.toContain(a);
+        expect(ids).not.toContain(b);
+      } finally {
+        await tree.terminate();
+      }
+    });
+  }, 60_000);
+
+for (const rebuiltFirst of [true, false])
+  test(`B3: a plain error ${rebuiltFirst ? "after a rebuild" : "with no rebuild before it"} is retried at the polling interval`, async () => {
+    await TestHelpers.withTempRoot(async (pl) => {
+      const root = await createRootUnderClientRoot(pl, "b3Plain");
+      // one predicate throw forces a rebuild; from then on the pruning function throws a plain
+      // Error (outside the update, so not a TreeStateUpdateError) on every poll
+      let predicateThrowsOnce = false;
+      let pruneFailing = false;
+      const pruneFailures: number[] = [];
+      const predicate: FinalResourceDataPredicate = (r) => {
+        if (predicateThrowsOnce) {
+          predicateThrowsOnce = false;
+          pruneFailing = true;
+          throw new Error("one-off predicate failure");
+        }
+        return DefaultFinalResourceDataPredicate(r);
+      };
+      const pruning = (r: ExtendedResourceData): FieldData[] => {
+        if (pruneFailing) {
+          pruneFailures.push(Date.now());
+          throw new Error("walk failure");
+        }
+        return r.fields;
+      };
+      const tree = await SynchronizedTreeState.init(pl, root, {
+        stopPollingDelay: 60_000,
+        pollingInterval: 1000,
+        finalPredicateOverride: predicate,
+        pruning,
+      });
+      try {
+        await tree.refreshState();
+        if (rebuiltFirst) predicateThrowsOnce = true;
+        else pruneFailing = true;
+        await touch(pl, root);
+        await tree.refreshState().catch(() => {});
+        const start = pruneFailures.length;
+        await tp.setTimeout(2000);
+        // one attempt per polling interval, give or take one
+        expect(new Set(pruneFailures.slice(start)).size).toBeLessThanOrEqual(3);
+      } finally {
+        pruneFailing = false;
+        await tree.terminate();
+      }
+    });
+  }, 60_000);
+
+test("a rebuild re-runs a reader waiting for a resource the tree had not loaded", async () => {
+  await TestHelpers.withTempRoot(async (pl) => {
+    const root = await createRootUnderClientRoot(pl, "rebuildRoot");
+    const c = await createRootUnderClientRoot(pl, "rebuildC");
+    let throwOnce = false;
+    const predicate: FinalResourceDataPredicate = (r) => {
+      if (throwOnce) {
+        throwOnce = false;
+        throw new Error("one-off predicate failure");
+      }
+      return DefaultFinalResourceDataPredicate(r);
+    };
+    const tree = await SynchronizedTreeState.init(pl, root, {
+      stopPollingDelay: 60_000,
+      pollingInterval: 10,
+      finalPredicateOverride: predicate,
+    });
+    try {
+      const reader = Computable.make((ctx) => ctx.accessor(tree.entry(c)).node().resourceType.name);
+      await expect(reader.getValue()).rejects.toThrow(/not found/);
+
+      throwOnce = true;
+      await touch(pl, root);
+      await tree.refreshState().catch(() => {});
+      expect(throwOnce).toBe(false);
+
+      await pl.withWriteTx(
+        "Attaching",
+        async (tx) => {
+          tx.createField(field(root, "c"), "Dynamic");
+          tx.setField(field(root, "c"), c);
+          await tx.commit();
+        },
+        { sync: true },
+      );
+      await tree.refreshState();
+      await tree.refreshState();
+      expect(reader.isChanged()).toBe(true);
+      expect(await reader.getValue()).toBe(TestStructuralResourceType1.name);
+    } finally {
+      await tree.terminate();
+    }
+  });
+}, 60_000);
+
+test("terminate rejects a refresh still waiting for its poll", async () => {
+  await TestHelpers.withTempRoot(async (pl) => {
+    const root = await createRootUnderClientRoot(pl, "terminateRoot");
+    let failing = false;
+    const predicate: FinalResourceDataPredicate = (r) => {
+      if (failing) throw new Error("predicate failure");
+      return DefaultFinalResourceDataPredicate(r);
+    };
+    const tree = await SynchronizedTreeState.init(pl, root, {
+      stopPollingDelay: 60_000,
+      pollingInterval: 10,
+      finalPredicateOverride: predicate,
+    });
+    await tree.refreshState();
+    failing = true;
+    await touch(pl, root);
+    await tree.refreshState().catch(() => {});
+    // the loop is now inside a rebuild wait, which a refresh does not interrupt
+    let outcome = "pending";
+    void tree.refreshState().then(
+      () => (outcome = "resolved"),
+      () => (outcome = "rejected"),
+    );
+    await tree.terminate();
+    await tp.setTimeout(10);
+    expect(outcome).toBe("rejected");
+  });
+}, 60_000);
