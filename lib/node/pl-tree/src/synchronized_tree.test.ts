@@ -703,3 +703,84 @@ test("a refresh request cuts a rebuild backoff short", async () => {
     }
   });
 }, 60_000);
+
+/** A tree whose reads fail while `fail.on`, with the time of each failed read in `reads`.
+ * `capBackoff` fails enough consecutive rebuilds for the retry delay to reach its 5 s cap. */
+async function treeWithFailingReads(pl: PlClient, fieldName: string) {
+  const root = await createRootUnderClientRoot(pl, fieldName);
+  const fail = { on: false };
+  const reads: number[] = [];
+  const predicate: FinalResourceDataPredicate = (r) => {
+    if (fail.on) {
+      reads.push(performance.now());
+      throw new Error("predicate failure");
+    }
+    return DefaultFinalResourceDataPredicate(r);
+  };
+  const tree = await SynchronizedTreeState.init(pl, root, {
+    stopPollingDelay: 60_000,
+    pollingInterval: 10,
+    finalPredicateOverride: predicate,
+  });
+  const capBackoff = async () => {
+    await tree.refreshState();
+    fail.on = true;
+    await touch(pl, root);
+    // Each refresh cuts the wait short but the retry state keeps growing: at minimum jitter
+    // the eighth consecutive failure sits at the 5 s cap.
+    for (let i = 0; i < 8; i++) await tree.refreshState().catch(() => {});
+  };
+  return { tree, fail, reads, capBackoff };
+}
+
+test("terminate rejects every queued refresh and starts no read, after a refresh cut the backoff short", async () => {
+  await TestHelpers.withTempRoot(async (pl) => {
+    const { tree, fail, reads, capBackoff } = await treeWithFailingReads(pl, "terminateNudgedRoot");
+    try {
+      await capBackoff();
+      // past the floor, inside the 5 s backoff: the loop is waiting on the interruptible part
+      await tp.setTimeout(150);
+      const readsBefore = reads.length;
+      const queued = Array.from({ length: 16 }, () =>
+        expect(tree.refreshState()).rejects.toThrow(/terminated/),
+      );
+      const started = performance.now();
+      await tree.terminate();
+      await Promise.all(queued);
+      // termination does not wait out the backoff
+      expect(performance.now() - started).toBeLessThan(800);
+      await tp.setTimeout(150);
+      expect(reads.length).toBe(readsBefore);
+      await expect(tree.refreshState()).rejects.toThrow(/terminated/);
+    } finally {
+      fail.on = false;
+      await tree.terminate();
+    }
+  });
+}, 60_000);
+
+test("bursts of concurrent refreshes read once each, at least the floor apart, and leave no hot loop", async () => {
+  await TestHelpers.withTempRoot(async (pl) => {
+    const { tree, fail, reads, capBackoff } = await treeWithFailingReads(pl, "refreshBurstRoot");
+    try {
+      await capBackoff();
+      for (let burst = 0; burst < 6; burst++) {
+        const before = reads.length;
+        const previous = reads[before - 1]!;
+        await Promise.all(
+          Array.from({ length: 32 }, () => expect(tree.refreshState()).rejects.toThrow()),
+        );
+        expect(reads.length - before).toBe(1);
+        // the 100 ms floor, less timer rounding
+        expect(reads[before]! - previous).toBeGreaterThanOrEqual(90);
+      }
+      // once callers stop, the loop returns to its backoff rather than spinning
+      const settled = reads.length;
+      await tp.setTimeout(900);
+      expect(reads.length).toBe(settled);
+    } finally {
+      fail.on = false;
+      await tree.terminate();
+    }
+  });
+}, 60_000);
