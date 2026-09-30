@@ -1,6 +1,6 @@
 import type { Optional } from "utility-types";
 import type { BasicResourceData, ResourceData } from "./types";
-import { getField, isNotNullSignedResourceId, isNullSignedResourceId } from "./types";
+import { isNotNullSignedResourceId, isNullSignedResourceId } from "./types";
 import { ResourceTypeName, ResourceTypePrefix } from "@milaboratories/pl-model-common";
 export { ResourceTypeName, ResourceTypePrefix };
 
@@ -45,8 +45,12 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
       if (!readyOrDuplicateOrError(r)) return false;
       if (r.fields === undefined) return true; // if fields are not provided basic resource state is not expected to change in the future
       if (isNotNullSignedResourceId(r.error)) return true;
-      const downloadable = getField(r as ResourceData, "downloadable");
-      const stream = getField(r as ResourceData, "stream");
+      // Fields can be pruned away by the reader: without them nothing proves the switch, so
+      // the resource is not final. The predicate must not throw, since a throw inside the
+      // tree's update invalidates and rebuilds the whole tree.
+      const downloadable = r.fields.find((f) => f.name === "downloadable");
+      const stream = r.fields.find((f) => f.name === "stream");
+      if (downloadable === undefined || stream === undefined) return false;
       return stream.value === downloadable.value; // it's equal to the resource is marked as final on backend side
     }
     case ResourceTypeName.StdMap:
