@@ -18,6 +18,7 @@ import { projectsListFieldFilter, ProjectsListTreePruningFunction } from "./proj
 import type { Filter } from "@milaboratories/pl-client";
 import {
   DefaultFinalResourceDataPredicate,
+  TreeFinality,
   FilterOperatorType,
   FilterProperty,
   NullSignedResourceId,
@@ -284,6 +285,23 @@ describe("§4.1 projects-list pruning parity", () => {
 });
 
 // ── §4.2 — traverseStopRules coverage ────────────────────────────────────────
+
+describe("the pruning the finality table relies on", () => {
+  for (const e of TreeFinality.entries) {
+    if (e.requiresPruning === undefined) continue;
+    const { type, fields } = e.requiresPruning;
+    it(`${type}: projectTreePruning and projectTreeFieldFilter drop ${fields === "all" ? "every field" : fields.join(", ")}`, () => {
+      const names = fields === "all" ? ["incarnation", "any"] : [...fields];
+      const r = makeResource(type, names);
+      const kept = projectTreePruning(noopLogger)(r).map((f) => f.name);
+      const keptByFilter = evaluateFieldFilter(projectTreeFieldFilter(), r);
+      for (const name of names) {
+        expect(kept).not.toContain(name);
+        expect(keptByFilter).not.toContain(name);
+      }
+    });
+  }
+});
 
 describe("§4.2 projectTreeTraverseStopRules", () => {
   const rule = projectTreeTraverseStopRules();
@@ -640,13 +658,24 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
     });
   }
 
-  // Never final even when ready: written after ready (BResolve*, LSProvider), or an unknown
-  // type (BlobCopy/*) (finality table, 2026-09-30).
-  for (const typeName of ["BResolveSingle", "BResolveChoice", "LSProvider", "BlobCopy/aToB"]) {
-    it(`${typeName}: never final, stop does NOT fire even when ready`, () => {
+  it("LSProvider: never final, stop does NOT fire even when ready", () => {
+    expect(DefaultFinalResourceDataPredicate(makeReadyResource("LSProvider"))).toBe(false);
+    expect(
+      evaluateStopRule(rule, { resourceType: "LSProvider", isFinal: true, allOutputsFinal: true }),
+    ).toBe(false);
+  });
+
+  // Outputs locked at creation and filled after ready: final, and stopped, once every output is.
+  for (const typeName of ["BResolveSingle", "BResolveChoice", "BlobCopy/aToB"]) {
+    it(`${typeName}: final with every output filled, stop fires only then`, () => {
+      expect(DefaultFinalResourceDataPredicate(makeAllOutputsFinalResource(typeName))).toBe(true);
+      // ready with its outputs not yet locked and filled is not final
       expect(DefaultFinalResourceDataPredicate(makeReadyResource(typeName))).toBe(false);
       expect(
         evaluateStopRule(rule, { resourceType: typeName, isFinal: true, allOutputsFinal: true }),
+      ).toBe(true);
+      expect(
+        evaluateStopRule(rule, { resourceType: typeName, isFinal: true, allOutputsFinal: false }),
       ).toBe(false);
     });
   }
