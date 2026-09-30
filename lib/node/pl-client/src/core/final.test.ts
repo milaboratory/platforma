@@ -77,10 +77,6 @@ test("a StreamManager with both fields still empty is not final", () => {
   ).toBe(false);
 });
 
-//
-// The table, layer by layer.
-//
-
 function resource(typeName: string, patch: Partial<ResourceData> = {}): ResourceData {
   return streamManager({ type: { name: typeName, version: "1" }, ...patch });
 }
@@ -103,7 +99,7 @@ const unfilledOutput = {
   ],
 };
 
-test("a resolver is final once ready with every output filled", () => {
+test("a ready resolver with locked outputs is final only once every supplied field is settled", () => {
   for (const name of ["BResolveSingle", "BResolveChoice"]) {
     expect(DefaultFinalResourceDataPredicate(resource(name, filledOutput))).toBe(true);
     expect(DefaultFinalResourceDataPredicate(resource(name, unfilledOutput))).toBe(false);
@@ -113,7 +109,7 @@ test("a resolver is final once ready with every output filled", () => {
   }
 });
 
-test("a blob copy is final once ready with its incarnation filled", () => {
+test("a ready blob copy with locked outputs is final only once every supplied field is settled", () => {
   expect(DefaultFinalResourceDataPredicate(resource("BlobCopy/aToB", filledOutput))).toBe(true);
   expect(DefaultFinalResourceDataPredicate(resource("BlobCopy/aToB", unfilledOutput))).toBe(false);
 });
@@ -129,12 +125,12 @@ test("LSProvider is never final", () => {
   expect(DefaultFinalResourceDataPredicate(resource("LSProvider"))).toBe(false);
 });
 
-test("values written once at creation are always final", () => {
+test("frontend archives and JSON scalar and error-trace snapshots are always final", () => {
   for (const name of ["Frontend/FromLocalTgz", "json/bool", "json/null", "json/errorTrace"])
     expect(StrictFinality.isFinal(resource(name, notReady))).toBe(true);
 });
 
-test("the strict layer keeps every type with a later write non-final", () => {
+test("the strict layer keeps blobs, transfer handles, working directories and stream managers non-final", () => {
   for (const name of ["Blob", "Blob/fs", "BlobIndex/fs", "BlobUpload/fs", "BlobCopy/aToB"])
     expect(StrictFinality.isFinal(resource(name, filledOutput))).toBe(false);
   expect(StrictFinality.isFinal(resource("WorkingDirectory", notReady))).toBe(false);
