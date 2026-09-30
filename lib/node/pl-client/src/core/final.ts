@@ -1,5 +1,5 @@
 import { ResourceTypeName, ResourceTypePrefix } from "@milaboratories/pl-model-common";
-import type { FinalityEntry, FinalResourceDataPredicate } from "./finality";
+import type { FinalityEntry, FinalityStopRule, FinalResourceDataPredicate } from "./finality";
 import { FinalityTable, readyOrDuplicateOrError } from "./finality";
 import { isNotNullSignedResourceId, isNullSignedResourceId } from "./types";
 export { ResourceTypeName, ResourceTypePrefix };
@@ -14,6 +14,23 @@ export { readyOrDuplicateOrError } from "./finality";
 //   on the wire (R5).
 // A layer adds only the types whose later writes its consumer never observes.
 
+// Where the backend's filter stops earlier than the predicate. An early stop is safe: the
+// backend sends a body-less stop marker, and the streaming loader fetches every stopped resource
+// it does not hold as final again without stop rules, so the predicate decides on the full body.
+const earlyOnFieldErrors: FinalityStopRule = {
+  approx: "readyOrDuplicateOrError",
+  reason:
+    "HAS_ERRORS is set by an error on any field, the predicate reads the resource error only; " +
+    "an early stop is followed up with a plain fetch",
+};
+const earlyOnFieldErrorsAndServiceFields: FinalityStopRule = {
+  approx: "readyAndAllOutputsFilled",
+  reason:
+    "HAS_ERRORS is set by an error on any field, and ALL_OUTPUTS_FINAL ignores non-Output " +
+    "fields, while the predicate reads the resource error and every field; an early stop is " +
+    "followed up with a plain fetch",
+};
+
 const value = (name: string): FinalityEntry => ({
   match: { name },
   rule: "always",
@@ -24,6 +41,7 @@ const settledAtReady = (name: string, why: string): FinalityEntry => ({
   match: { name },
   rule: "readyOrDuplicateOrError",
   why,
+  stopRule: earlyOnFieldErrors,
 });
 
 const never = (match: FinalityEntry["match"], why: string): FinalityEntry => ({
@@ -94,6 +112,7 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
     match: { prefix: ResourceTypePrefix.PColumnData },
     rule: "readyOrDuplicateOrError",
     why: "built and locked in its creating transaction",
+    stopRule: earlyOnFieldErrors,
   },
   {
     match: { prefix: ResourceTypePrefix.StreamWorkdir },
@@ -102,8 +121,9 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
     stopRule: {
       approx: "readyOrDuplicateOrError",
       reason:
-        "the project tree prunes every field, the resource error included, so the predicate " +
-        "cannot see an error the backend's HAS_ERRORS stops on",
+        "HAS_ERRORS is set by an error on any field, and the project tree prunes every field, " +
+        "the resource error included, so the predicate cannot see an error the filter stops " +
+        "on; an early stop is followed up with a plain fetch",
     },
   },
   ...[ResourceTypeName.BResolveSingle, ResourceTypeName.BResolveChoice].map(
@@ -114,6 +134,7 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
         "outputs are locked at creation and filled after ready, never overwritten; accepted " +
         "gap: a later context with more than one match sets an error on a resolver that " +
         "already succeeded",
+      stopRule: earlyOnFieldErrorsAndServiceFields,
     }),
   ),
   never({ name: ResourceTypeName.UserProject }, "blocks and fields come and go over its life"),
@@ -163,11 +184,13 @@ export const CacheFinality: FinalityTable = StrictFinality.extend("cache", [
     match: { prefix: ResourceTypePrefix.BlobIndex },
     rule: "readyAndAllOutputsFilled",
     why: "`ctl/ctlsdk/bootstrapDone` is KV, and nothing reads it",
+    stopRule: earlyOnFieldErrorsAndServiceFields,
   },
   {
     match: { prefix: ResourceTypePrefix.BlobUpload },
     rule: "readyAndAllOutputsFilled",
     why: "`ctl/file/storage/uploadState` is KV, and nothing reads it",
+    stopRule: earlyOnFieldErrorsAndServiceFields,
   },
   {
     match: { prefix: ResourceTypePrefix.BlobCopy },
@@ -175,6 +198,7 @@ export const CacheFinality: FinalityTable = StrictFinality.extend("cache", [
     why:
       "outputs are locked at creation; the only later write, `ctl/ctlsdk/bootstrapDone` on an " +
       "errored copy, is KV, and nothing reads it",
+    stopRule: earlyOnFieldErrorsAndServiceFields,
   },
   {
     match: { name: ResourceTypeName.WorkingDirectory },
