@@ -1,204 +1,230 @@
-import type { Optional } from "utility-types";
-import type { BasicResourceData, ResourceData } from "./types";
-import { isNotNullSignedResourceId, isNullSignedResourceId } from "./types";
 import { ResourceTypeName, ResourceTypePrefix } from "@milaboratories/pl-model-common";
+import type { FinalityEntry, FinalResourceDataPredicate } from "./finality";
+import { FinalityTable, readyOrDuplicateOrError } from "./finality";
+import { isNotNullSignedResourceId, isNullSignedResourceId } from "./types";
 export { ResourceTypeName, ResourceTypePrefix };
+export type { FinalResourceDataPredicate } from "./finality";
+export { readyOrDuplicateOrError } from "./finality";
 
-/**
- * Tells whether a resource state is final: whether it will never change as long as the resource
- * exists. Two layers act on the answer, each through its own predicate built from one table:
- * the tree ({@link DefaultFinalResourceDataPredicate}) and the transaction resource cache
- * ({@link DefaultResourceCachePredicate}).
- *
- * **The rule.** Final means the resource is never stamped again (its change token never moves),
- * with two exceptions:
- * - a data-loss error cascade: a stored blob found lost or corrupt lifts an error to the resources
- *   built from it, after they were final (R4, ruled out of scope);
- * - the first duplicate's `hasOriginalListeners` flag on its original: backend-internal, never on
- *   the wire (R5, exempt).
- *
- * The table in {@link DefaultFinalResourceDataPredicate} also keeps a few types final although the backend writes to them after the
- * final condition holds. Each such case says, where it is listed, what is written and why the
- * tree does not care.
- *
- * If the data carries no fields (`fields` undefined), the answer is about the basic part of the
- * resource data only.
- */
-export type FinalResourceDataPredicate = (
-  resourceData: Optional<ResourceData, "fields">,
-) => boolean;
+// The finality tables. Each layer calls a resource final only where the backend never stamps
+// it again, with two exceptions every layer accepts:
+// - a data-loss error cascade: a stored blob found lost or corrupt lifts an error to the
+//   resources built from it (R4);
+// - the first duplicate's `hasOriginalListeners` flag on its original: backend-internal, never
+//   on the wire (R5).
+// A layer adds only the types whose later writes its consumer never observes.
 
-export function readyOrDuplicateOrError(r: ResourceData | BasicResourceData): boolean {
-  return (
-    r.resourceReady ||
-    isNotNullSignedResourceId(r.originalResourceId) ||
-    isNotNullSignedResourceId(r.error)
-  );
-}
+const value = (name: string): FinalityEntry => ({
+  match: { name },
+  rule: "always",
+  why: "a value, written once at creation",
+});
 
-function readyAndHasAllOutputsFilled(r: Optional<ResourceData, "fields">): boolean {
-  if (!readyOrDuplicateOrError(r)) return false;
-  if (!r.outputsLocked) return false;
-  if (r.fields === undefined) return true; // if fields are not provided basic resource state is not expected to change in the future
-  for (const f of r.fields)
-    if (isNullSignedResourceId(f.error) && (isNullSignedResourceId(f.value) || !f.valueIsFinal))
-      return false;
-  return true;
-}
+const settledAtReady = (name: string, why: string): FinalityEntry => ({
+  match: { name },
+  rule: "readyOrDuplicateOrError",
+  why,
+});
 
-// solely for logging
-const unknownResourceTypeNames = new Set<string>();
+const never = (match: FinalityEntry["match"], why: string): FinalityEntry => ({
+  match,
+  rule: "never",
+  why,
+});
 
-/**
- * The tree's finality predicate for built-in resource types. A resource it calls final leaves
- * `pl-tree`'s refresh seeds, later bodies for it are ignored, and its mutable-state change
- * sources are retired (field and removal sources stay): the tree trusts it never to change in
- * state, fields or KV (see {@link FinalResourceDataPredicate} for the rule
- * and its exceptions).
- */
-export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r): boolean => {
-  switch (r.type.name) {
-    case ResourceTypeName.StreamManager: {
-      // Intended exception: on an input error the controller resets `stream` in a later
-      // transaction, after the error made the manager final here. Default traversal raises the
-      // manager's error before exposing its fields; only an `ignoreError` read sees `stream`.
-      if (!readyOrDuplicateOrError(r)) return false;
-      if (r.fields === undefined) return true; // if fields are not provided basic resource state is not expected to change in the future
-      if (isNotNullSignedResourceId(r.error)) return true;
-      // Fields can be pruned away by the reader: without them nothing proves the switch, so
-      // the resource is not final. The predicate must not throw, since a throw inside the
-      // tree's update invalidates and rebuilds the whole tree.
-      const downloadable = r.fields.find((f) => f.name === "downloadable");
-      const stream = r.fields.find((f) => f.name === "stream");
-      // Both still empty is not a switch either.
-      if (
-        downloadable === undefined ||
-        stream === undefined ||
-        isNullSignedResourceId(stream.value)
-      )
-        return false;
-      // The backend has no "final" marker for a stream manager: equal fields only mean the
-      // controller's success branch has switched `stream` to the downloadable blob.
-      return stream.value === downloadable.value;
-    }
-    case ResourceTypeName.Dummy:
-    // Intended exception: its only later write is the data-loss error cascade (R4). It hangs
-    // off Blob's incarnation field, which every middle-layer tree prunes.
-    case ResourceTypeName.StdMap:
-    case ResourceTypeName.StdMapSlash:
-    case ResourceTypeName.EphStdMap:
-    case ResourceTypeName.PFrame:
-    case ResourceTypeName.ParquetChunk:
-    case ResourceTypeName.BContext:
-    case ResourceTypeName.BlockPackCustom:
-    case ResourceTypeName.BinaryMap:
-    case ResourceTypeName.BinaryValue:
-    case ResourceTypeName.BlobMap:
-    case ResourceTypeName.BResolveSingleNoResult:
-    case ResourceTypeName.BQueryResult:
-    case ResourceTypeName.TengoTemplate:
-    case ResourceTypeName.TengoLib:
-    case ResourceTypeName.SoftwareInfo:
-      return readyOrDuplicateOrError(r);
-    case ResourceTypeName.JsonResourceError:
-      return r.type.version === "1";
-    case ResourceTypeName.Blob:
-    // Intended exception: the incarnation field is attached or replaced later, and a
-    // `ctl/file/blob-meta` KV may be rewritten by the controller bootstrap. Every middle-layer
-    // tree prunes Blob's fields, and nothing reads blob-meta.
-    case ResourceTypeName.WorkingDirectory:
-    // Intended exception: each consuming run writes the lock KV `internal/locks/lockedBy`. No
-    // middle-layer tree holds a WorkingDirectory (reachable only through pruned StreamWorkdir
-    // fields).
-    case ResourceTypeName.JsonObject:
-    case ResourceTypeName.JsonGzObject:
-    case ResourceTypeName.JsonString:
-    case ResourceTypeName.JsonArray:
-    case ResourceTypeName.JsonNumber:
-    case ResourceTypeName.JsonBool:
-    case ResourceTypeName.JsonNull:
-    case ResourceTypeName.JsonErrorTrace:
-    case ResourceTypeName.BContextEnd:
-    case ResourceTypeName.FrontendFromUrl:
-    case ResourceTypeName.FrontendFromFolder:
-    case ResourceTypeName.FrontendFromLocalTgz:
-    case ResourceTypeName.BObjectSpec:
-    case ResourceTypeName.Null:
-    case ResourceTypeName.Binary:
-      return true;
-    case ResourceTypeName.UserProject:
-    case ResourceTypeName.Projects:
-    case ResourceTypeName.ClientRoot:
-    // Never final — these sharing resources gain and lose dynamic child fields over their lifetime.
-    case ResourceTypeName.SharingOutbox:
-    case ResourceTypeName.SharingState:
-    case ResourceTypeName.SharedEnvelope:
-    // The context resolver fills the outputs after ready, and never locks them on success.
-    case ResourceTypeName.BResolveSingle:
-    case ResourceTypeName.BResolveChoice:
-    // Its storage fields are rewritten on a controller restart with a changed storage config.
-    case ResourceTypeName.LSProvider:
-      return false;
-    default:
-      if (r.type.name.startsWith(ResourceTypePrefix.Blob)) {
-        // Intended exception: the `ctl/file/blobInfo` KV is re-pointed when identical content
-        // is uploaded again or an archive is healed. It describes the same content, and the
-        // client reads only its `sizeBytes`.
-        return true;
-      } else if (
-        r.type.name.startsWith(ResourceTypePrefix.LS) ||
-        r.type.name.startsWith(ResourceTypePrefix.WorkingDirectory) ||
-        r.type.name.startsWith(ResourceTypePrefix.StorageSpaceAllocation)
-      ) {
-        return true;
-      } else if (r.type.name.startsWith(ResourceTypePrefix.BlobUpload)) {
-        // Intended exception: the Reset RPC deletes the `ctl/file/storage/uploadState` KV
-        // without checking that the upload finished. Only server-side callers use it, before
-        // finalize, and nothing reads the key.
-        return readyAndHasAllOutputsFilled(r);
-      } else if (r.type.name.startsWith(ResourceTypePrefix.BlobIndex)) {
-        // Intended exception: every storage-controller restart writes the bootstrap mark KV
-        // `ctl/ctlsdk/bootstrapDone` on each ready index. Nothing reads it.
-        return readyAndHasAllOutputsFilled(r);
-      } else if (r.type.name.startsWith(ResourceTypePrefix.PColumnData)) {
-        return readyOrDuplicateOrError(r);
-      } else if (r.type.name.startsWith(ResourceTypePrefix.StreamWorkdir)) {
-        return readyOrDuplicateOrError(r);
-      } else {
-        // Unknown resource type detected, never final. BlobCopy/* lands here on purpose: nothing
-        // locks its outputs, so readyAndHasAllOutputsFilled would never hold for it either.
-        // Set used to log this message only once
-        if (!unknownResourceTypeNames.has(r.type.name)) {
-          console.log("UNKNOWN RESOURCE TYPE: " + r.type.name);
-          unknownResourceTypeNames.add(r.type.name);
-        }
-      }
-  }
-  return false;
-};
-
-/** Types the tree may hold as final whose state or fields still change later. The resource
- * cache keeps state and fields (never KV), so it must not keep these. */
-const FieldsChangeAfterFinal: ReadonlySet<string> = new Set([
-  // the incarnation field is attached or replaced after creation
-  ResourceTypeName.Blob,
-  // `stream` is reset after an error made it final
-  ResourceTypeName.StreamManager,
+/** Nothing observable (state, fields, KV) changes after the rule holds, R4 and R5 aside. Safe
+ * for any consumer, whatever it prunes. */
+export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
+  value(ResourceTypeName.JsonObject),
+  value(ResourceTypeName.JsonGzObject),
+  value(ResourceTypeName.JsonString),
+  value(ResourceTypeName.JsonArray),
+  value(ResourceTypeName.JsonNumber),
+  value(ResourceTypeName.JsonBool),
+  value(ResourceTypeName.JsonNull),
+  value(ResourceTypeName.JsonErrorTrace),
+  value(ResourceTypeName.BContextEnd),
+  value(ResourceTypeName.FrontendFromUrl),
+  value(ResourceTypeName.FrontendFromFolder),
+  value(ResourceTypeName.FrontendFromLocalTgz),
+  value(ResourceTypeName.BObjectSpec),
+  value(ResourceTypeName.Null),
+  value(ResourceTypeName.Binary),
+  {
+    match: { name: ResourceTypeName.JsonResourceError },
+    rule: { custom: (r) => r.type.version === "1" },
+    why: "version 1 is a value, written once at creation",
+    stopRule: { approx: "always", reason: "a stop rule cannot see the type version" },
+  },
+  { match: { prefix: ResourceTypePrefix.LS }, rule: "always", why: "no write after creation" },
+  {
+    match: { prefix: ResourceTypePrefix.WorkingDirectory },
+    rule: "always",
+    why: "no write after creation",
+  },
+  {
+    match: { prefix: ResourceTypePrefix.StorageSpaceAllocation },
+    rule: "always",
+    why: "no write after creation",
+  },
+  ...[
+    ResourceTypeName.StdMap,
+    ResourceTypeName.StdMapSlash,
+    ResourceTypeName.EphStdMap,
+    ResourceTypeName.PFrame,
+    ResourceTypeName.ParquetChunk,
+    ResourceTypeName.BContext,
+    ResourceTypeName.BinaryMap,
+    ResourceTypeName.BinaryValue,
+    ResourceTypeName.BlobMap,
+    ResourceTypeName.BResolveSingleNoResult,
+    ResourceTypeName.BQueryResult,
+    ResourceTypeName.TengoLib,
+  ].map((name) => settledAtReady(name, "built and locked in its creating transaction")),
+  ...[
+    ResourceTypeName.TengoTemplate,
+    ResourceTypeName.SoftwareInfo,
+    ResourceTypeName.BlockPackCustom,
+  ].map((name) => settledAtReady(name, "its only later write is the R5 flag")),
+  settledAtReady(
+    ResourceTypeName.Dummy,
+    "its only later write is R4; it hangs off Blob's incarnation field",
+  ),
+  {
+    match: { prefix: ResourceTypePrefix.PColumnData },
+    rule: "readyOrDuplicateOrError",
+    why: "built and locked in its creating transaction",
+  },
+  {
+    match: { prefix: ResourceTypePrefix.StreamWorkdir },
+    rule: "readyOrDuplicateOrError",
+    why: "no write after ready",
+    stopRule: {
+      approx: "readyOrDuplicateOrError",
+      reason:
+        "the project tree prunes every field, the resource error included, so the predicate " +
+        "cannot see an error the backend's HAS_ERRORS stops on",
+    },
+  },
+  ...[ResourceTypeName.BResolveSingle, ResourceTypeName.BResolveChoice].map(
+    (name): FinalityEntry => ({
+      match: { name },
+      rule: "readyAndAllOutputsFilled",
+      why:
+        "outputs are locked at creation and filled after ready, never overwritten; accepted " +
+        "gap: a later context with more than one match sets an error on a resolver that " +
+        "already succeeded",
+    }),
+  ),
+  never({ name: ResourceTypeName.UserProject }, "blocks and fields come and go over its life"),
+  never({ name: ResourceTypeName.Projects }, "projects are added and removed"),
+  never({ name: ResourceTypeName.ClientRoot }, "its fields are added and removed"),
+  ...[
+    ResourceTypeName.SharingOutbox,
+    ResourceTypeName.SharingState,
+    ResourceTypeName.SharedEnvelope,
+  ].map((name) => never({ name }, "gains and loses dynamic child fields over its life")),
+  never(
+    { name: ResourceTypeName.LSProvider },
+    "its storage fields are rewritten on a controller restart with a changed storage config",
+  ),
+  never({ name: ResourceTypeName.Blob }, "its incarnation field is attached or replaced later"),
+  never({ name: ResourceTypeName.StreamManager }, "`stream` is reset after an error"),
+  never({ prefix: ResourceTypePrefix.Blob }, "its `ctl/file/blobInfo` KV is re-pointed later"),
+  never(
+    { prefix: ResourceTypePrefix.BlobIndex },
+    "a controller restart writes its `ctl/ctlsdk/bootstrapDone` KV",
+  ),
+  never(
+    { prefix: ResourceTypePrefix.BlobUpload },
+    "the Reset RPC deletes its `ctl/file/storage/uploadState` KV",
+  ),
+  never(
+    { prefix: ResourceTypePrefix.BlobCopy },
+    "a controller bootstrap writes its `ctl/ctlsdk/bootstrapDone` KV after an error",
+  ),
+  never(
+    { name: ResourceTypeName.WorkingDirectory },
+    "each consuming run writes its lock KV `internal/locks/lockedBy`",
+  ),
 ]);
 
-/**
- * The transaction resource cache's predicate derived from a tree predicate: final for the tree,
- * and not a type whose state or fields change after that. A resource it accepts may be served
- * from the client's LRU cache, never re-read, while it stays there. The cache never holds KV, so a type whose only later
- * writes are KV stays cacheable.
- */
-export function resourceCachePredicate(
-  treePredicate: FinalResourceDataPredicate,
-): FinalResourceDataPredicate {
-  return (r) => !FieldsChangeAfterFinal.has(r.type.name) && treePredicate(r);
+/** What the transaction resource cache may keep while an entry stays in its LRU. The cache holds
+ * state and fields, never KV, so it adds the types whose only later writes are KV. */
+export const CacheFinality: FinalityTable = StrictFinality.extend("cache", [
+  {
+    match: { prefix: ResourceTypePrefix.Blob },
+    rule: "always",
+    why:
+      "`ctl/file/blobInfo` is re-pointed for the same content: the cache holds no KV, and a " +
+      "tree reads only its `sizeBytes`, invariant for the same content",
+  },
+  {
+    match: { prefix: ResourceTypePrefix.BlobIndex },
+    rule: "readyAndAllOutputsFilled",
+    why: "`ctl/ctlsdk/bootstrapDone` is KV, and nothing reads it",
+  },
+  {
+    match: { prefix: ResourceTypePrefix.BlobUpload },
+    rule: "readyAndAllOutputsFilled",
+    why: "`ctl/file/storage/uploadState` is KV, and nothing reads it",
+  },
+  {
+    match: { prefix: ResourceTypePrefix.BlobCopy },
+    rule: "readyAndAllOutputsFilled",
+    why:
+      "outputs are locked at creation; the only later write, `ctl/ctlsdk/bootstrapDone` on an " +
+      "errored copy, is KV, and nothing reads it",
+  },
+  {
+    match: { name: ResourceTypeName.WorkingDirectory },
+    rule: "always",
+    why: "the lock KV is backend bookkeeping, and nothing reads it",
+  },
+]);
+
+function streamSwitchedOrErrored(r: Parameters<FinalResourceDataPredicate>[0]): boolean {
+  if (!readyOrDuplicateOrError(r)) return false;
+  if (r.fields === undefined) return true;
+  if (isNotNullSignedResourceId(r.error)) return true;
+  // Fields can be pruned away by the reader: without them nothing proves the switch. The
+  // predicate must not throw, since a throw inside a tree update rebuilds the whole tree.
+  const downloadable = r.fields.find((f) => f.name === "downloadable");
+  const stream = r.fields.find((f) => f.name === "stream");
+  if (downloadable === undefined || stream === undefined || isNullSignedResourceId(stream.value))
+    return false;
+  // The backend has no "final" marker for a stream manager: equal fields mean the controller's
+  // success branch has switched `stream` to the downloadable blob.
+  return stream.value === downloadable.value;
 }
 
-/** {@link resourceCachePredicate} of {@link DefaultFinalResourceDataPredicate}. */
-export const DefaultResourceCachePredicate: FinalResourceDataPredicate = resourceCachePredicate(
-  DefaultFinalResourceDataPredicate,
-);
+/**
+ * The finality of trees, and the default of `PlClient.finalPredicate`: a resource it calls final
+ * leaves the refresh seeds, later bodies for it are ignored, and its mutable-state change sources
+ * are retired. It adds the types whose later writes tree readers never observe.
+ */
+export const TreeFinality: FinalityTable = CacheFinality.extend("tree", [
+  {
+    match: { name: ResourceTypeName.Blob },
+    rule: "always",
+    why:
+      "the incarnation field is replaced later, but tree readers never read Blob's fields (the " +
+      "download driver reads a blob by id); the project tree also prunes them",
+    requiresPruning: { type: ResourceTypeName.Blob, fields: "all" },
+  },
+  {
+    match: { name: ResourceTypeName.StreamManager },
+    rule: { custom: streamSwitchedOrErrored },
+    why:
+      "after an error `stream` is reset in a later transaction; default traversal raises the " +
+      "error before exposing the fields, so only an `ignoreError` read sees `stream`",
+    stopRule: {
+      approx: "readyOrDuplicateOrError",
+      reason: "a stop rule cannot compare two fields, so it stops before `stream` switches",
+    },
+  },
+]);
+
+/** @deprecated use {@link TreeFinality} */
+export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate =
+  TreeFinality.predicate();

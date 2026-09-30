@@ -1,8 +1,9 @@
 import { expect, test } from "vitest";
 import {
+  CacheFinality,
   DefaultFinalResourceDataPredicate,
-  DefaultResourceCachePredicate,
-  resourceCachePredicate,
+  StrictFinality,
+  TreeFinality,
 } from "./final";
 import type { FieldData, ResourceData } from "./types";
 import { createSignedResourceId, NullSignedResourceId } from "./types";
@@ -77,7 +78,7 @@ test("a StreamManager with both fields still empty is not final", () => {
 });
 
 //
-// The finality table (ruled 2026-09-30): each change against the table before it.
+// The table, layer by layer.
 //
 
 function resource(typeName: string, patch: Partial<ResourceData> = {}): ResourceData {
@@ -90,56 +91,89 @@ const notReady: Partial<ResourceData> = {
   outputsLocked: false,
 };
 
-test("less final: BResolveSingle and BResolveChoice are never final", () => {
-  // outputs are filled by the context resolver after ready, and are never locked on success
-  for (const name of ["BResolveSingle", "BResolveChoice"])
-    expect(DefaultFinalResourceDataPredicate(resource(name))).toBe(false);
+const filledOutput = { fields: [field("out", A)] };
+const unfilledOutput = {
+  fields: [
+    {
+      ...field("out", A),
+      value: NullSignedResourceId,
+      status: "Empty" as const,
+      valueIsFinal: false,
+    },
+  ],
+};
+
+test("a resolver is final once ready with every output filled", () => {
+  for (const name of ["BResolveSingle", "BResolveChoice"]) {
+    expect(DefaultFinalResourceDataPredicate(resource(name, filledOutput))).toBe(true);
+    expect(DefaultFinalResourceDataPredicate(resource(name, unfilledOutput))).toBe(false);
+    expect(
+      DefaultFinalResourceDataPredicate(resource(name, { ...notReady, ...filledOutput })),
+    ).toBe(false);
+  }
 });
 
-test("BResolveSingleNoResult keeps readyOrDuplicateOrError", () => {
+test("a blob copy is final once ready with its incarnation filled", () => {
+  expect(DefaultFinalResourceDataPredicate(resource("BlobCopy/aToB", filledOutput))).toBe(true);
+  expect(DefaultFinalResourceDataPredicate(resource("BlobCopy/aToB", unfilledOutput))).toBe(false);
+});
+
+test("BResolveSingleNoResult is final at ready", () => {
   expect(DefaultFinalResourceDataPredicate(resource("BResolveSingleNoResult"))).toBe(true);
   expect(DefaultFinalResourceDataPredicate(resource("BResolveSingleNoResult", notReady))).toBe(
     false,
   );
 });
 
-test("less final: LSProvider is never final", () => {
-  // its storage fields change on a controller restart with a new storage config
+test("LSProvider is never final", () => {
   expect(DefaultFinalResourceDataPredicate(resource("LSProvider"))).toBe(false);
 });
 
-test("more final: values written once at creation are always final", () => {
+test("values written once at creation are always final", () => {
   for (const name of ["Frontend/FromLocalTgz", "json/bool", "json/null", "json/errorTrace"])
-    expect(DefaultFinalResourceDataPredicate(resource(name, notReady))).toBe(true);
+    expect(StrictFinality.isFinal(resource(name, notReady))).toBe(true);
 });
 
-test("BlobCopy stays never final, even ready with outputs locked and filled (unknown type)", () => {
-  const done = resource("BlobCopy/mainToLibrary", {
-    fields: [field("incarnation", A)],
-  });
-  expect(DefaultFinalResourceDataPredicate(done)).toBe(false);
+test("the strict layer keeps every type with a later write non-final", () => {
+  for (const name of ["Blob", "Blob/fs", "BlobIndex/fs", "BlobUpload/fs", "BlobCopy/aToB"])
+    expect(StrictFinality.isFinal(resource(name, filledOutput))).toBe(false);
+  expect(StrictFinality.isFinal(resource("WorkingDirectory", notReady))).toBe(false);
+  expect(StrictFinality.isFinal(streamManager({ error: A, fields: [] }))).toBe(false);
 });
 
-test("the resource cache excludes types whose fields change after tree-final", () => {
-  const blob = resource("Blob", notReady);
-  const errored = streamManager({ error: A, fields: [] });
-  expect(DefaultFinalResourceDataPredicate(blob)).toBe(true);
-  expect(DefaultFinalResourceDataPredicate(errored)).toBe(true);
-  expect(DefaultResourceCachePredicate(blob)).toBe(false);
-  expect(DefaultResourceCachePredicate(errored)).toBe(false);
+test("the cache adds the types whose only later writes are KV", () => {
+  for (const name of ["Blob/fs", "BlobIndex/fs", "BlobUpload/fs", "BlobCopy/aToB"])
+    expect(CacheFinality.isFinal(resource(name, filledOutput))).toBe(true);
+  expect(CacheFinality.isFinal(resource("WorkingDirectory", notReady))).toBe(true);
 });
 
-test("the resource cache keeps tree-final types, including those whose later writes are KV only", () => {
-  // the cache holds state and fields, never KV
-  for (const name of ["Blob/fs", "WorkingDirectory", "json/object"])
-    expect(DefaultResourceCachePredicate(resource(name, notReady))).toBe(true);
-  expect(DefaultResourceCachePredicate(resource("StdMap"))).toBe(true);
-  expect(DefaultResourceCachePredicate(resource("StdMap", notReady))).toBe(false);
+test("the cache keeps a Blob and a StreamManager out: their fields change later", () => {
+  expect(CacheFinality.isFinal(resource("Blob", notReady))).toBe(false);
+  expect(CacheFinality.isFinal(streamManager({ error: A, fields: [] }))).toBe(false);
+  expect(TreeFinality.isFinal(resource("Blob", notReady))).toBe(true);
+  expect(TreeFinality.isFinal(streamManager({ error: A, fields: [] }))).toBe(true);
 });
 
-test("a cache predicate derived from an overridden tree predicate keeps the exclusions", () => {
-  const cache = resourceCachePredicate(() => true);
-  expect(cache(resource("SomeType"))).toBe(true);
-  expect(cache(resource("Blob"))).toBe(false);
-  expect(cache(resource("StreamManager"))).toBe(false);
+test("each layer calls final everything its parent does", () => {
+  const states: Partial<ResourceData>[] = [
+    {},
+    notReady,
+    filledOutput,
+    unfilledOutput,
+    { error: A },
+    { ...notReady, originalResourceId: B },
+    { fields: undefined },
+  ];
+  const typeNames = new Set<string>();
+  for (const e of TreeFinality.entries)
+    typeNames.add("name" in e.match ? e.match.name : e.match.prefix + "x");
+  for (const name of typeNames)
+    for (const state of states) {
+      const r = resource(name, state);
+      const strict = StrictFinality.isFinal(r);
+      const cache = CacheFinality.isFinal(r);
+      const tree = TreeFinality.isFinal(r);
+      expect(!strict || cache, `${name} ${JSON.stringify(state)}: strict ⊆ cache`).toBe(true);
+      expect(!cache || tree, `${name} ${JSON.stringify(state)}: cache ⊆ tree`).toBe(true);
+    }
 });
