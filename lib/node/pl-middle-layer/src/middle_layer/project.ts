@@ -1034,14 +1034,15 @@ export function projectTreeFieldFilter(): Filter {
  *   BFS predicate: readyAndHasAllOutputsFilled(r)
  *     → isFinal(true) + allOutputsFinal(true).
  *
- *   BFS predicate always false (UserProject, Projects, ClientRoot)
+ *   BFS predicate always false (UserProject, Projects, ClientRoot, the sharing types,
+ *   BResolveSingle, BResolveChoice, LSProvider, unknown types such as BlobCopy/*)
  *     → no entry here; traversal always continues into them.
  */
 export function projectTreeTraverseStopRules(): Filter {
   return treeFilter.or(
     // BFS: readyOrDuplicateOrError(r) AND (fields===undefined OR error OR stream.value===downloadable.value).
-    // datactl sets stream field to point at the same resource as downloadable once processing
-    // is complete, so stream.value===downloadable.value is the "done" signal.
+    // This rule stops at readyOrDuplicateOrError alone: a filter cannot compare two fields, so
+    // it is looser than the predicate for a ready manager whose `stream` has not switched yet.
     treeFilter.and(
       treeFilter.resourceTypeEq(ResourceTypeName.StreamManager),
       treeFilter.readyOrDuplicateOrError(),
@@ -1088,10 +1089,6 @@ export function projectTreeTraverseStopRules(): Filter {
       treeFilter.readyOrDuplicateOrError(),
     ),
     treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BResolveSingle),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
       treeFilter.resourceTypeEq(ResourceTypeName.BResolveSingleNoResult),
       treeFilter.readyOrDuplicateOrError(),
     ),
@@ -1123,14 +1120,17 @@ export function projectTreeTraverseStopRules(): Filter {
     treeFilter.resourceTypeEq(ResourceTypeName.JsonString),
     treeFilter.resourceTypeEq(ResourceTypeName.JsonArray),
     treeFilter.resourceTypeEq(ResourceTypeName.JsonNumber),
+    treeFilter.resourceTypeEq(ResourceTypeName.JsonBool),
+    treeFilter.resourceTypeEq(ResourceTypeName.JsonNull),
+    treeFilter.resourceTypeEq(ResourceTypeName.JsonErrorTrace),
     treeFilter.resourceTypeEq(ResourceTypeName.BContextEnd),
     treeFilter.resourceTypeEq(ResourceTypeName.FrontendFromUrl),
     treeFilter.resourceTypeEq(ResourceTypeName.FrontendFromFolder),
+    treeFilter.resourceTypeEq(ResourceTypeName.FrontendFromLocalTgz),
     treeFilter.resourceTypeEq(ResourceTypeName.BObjectSpec),
     treeFilter.resourceTypeEq(ResourceTypeName.Blob),
     treeFilter.resourceTypeEq(ResourceTypeName.Null),
     treeFilter.resourceTypeEq(ResourceTypeName.Binary),
-    treeFilter.resourceTypeEq(ResourceTypeName.LSProvider),
     treeFilter.resourceTypeEq(ResourceTypeName.WorkingDirectory),
     // BFS default branch: startsWith prefix → return true → no guard needed
     treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.Blob),
