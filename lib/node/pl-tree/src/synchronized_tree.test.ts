@@ -241,7 +241,8 @@ test("termination test", async () => {
   });
 });
 
-/** A fresh resource of `type` hung under the client root, so deleting that field deletes it. */
+/** A fresh resource (a test struct, or a unique json/object value per `make`) hung under the
+ * client root; removing that field makes the backend collect it. */
 async function createRootUnderClientRoot(
   pl: PlClient,
   fieldName: string,
@@ -375,8 +376,8 @@ test("B3: a persistent update error rebuilds with backoff, and the backoff reset
       await touch("1");
       await tree.refreshState().catch(() => {});
       await tp.setTimeout(1500);
-      // 100, 200, 400, 800 ms apart: at most 5 reads in 1.5 s. Without the wait the loop
-      // re-reads at the speed of the link.
+      // ~100, 200, 400, 800 ms apart (±20% jitter): about 5 reads in 1.5 s, 6 allowed for
+      // timing slack. Without the wait the loop re-reads at the speed of the link.
       const persistent = failures.length;
       expect(persistent).toBeGreaterThanOrEqual(2);
       expect(persistent).toBeLessThanOrEqual(6);
@@ -484,8 +485,8 @@ async function awaitGone(pl: PlClient, rid: SignedResourceId) {
 const traversalModes: TraversalMode[] = ["backend-delta", "backend-streaming", "client-bfs"];
 for (const mode of traversalModes)
   test(`B7: a deleted root is dropped under ${mode}`, async () => {
-    // the existence check relies on a walk seeded at a deleted resource yielding nothing and
-    // no error, under every loading algorithm
+    // under every loading algorithm a walk seeded at a deleted resource yields nothing and no
+    // error, so only the existence check can notice the root is gone
     await TestHelpers.withTempRoot(async (pl) => {
       const name = `b7Mode_${mode}`;
       const root = await createRootUnderClientRoot(pl, name);
@@ -547,8 +548,9 @@ for (const rebuiltFirst of [true, false])
   test(`B3: a plain error ${rebuiltFirst ? "after a rebuild" : "with no rebuild before it"} is retried at the polling interval`, async () => {
     await TestHelpers.withTempRoot(async (pl) => {
       const root = await createRootUnderClientRoot(pl, "b3Plain");
-      // one predicate throw forces a rebuild; from then on the pruning function throws a plain
-      // Error (outside the update, so not a TreeStateUpdateError) on every poll
+      // with rebuiltFirst, one predicate throw forces a rebuild first; in both variants the
+      // pruning function then throws a plain Error (outside the update, so not a
+      // TreeStateUpdateError) on every poll
       let predicateThrowsOnce = false;
       let pruneFailing = false;
       const pruneFailures: number[] = [];

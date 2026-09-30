@@ -109,8 +109,8 @@ export type SynchronizedTreeOps = {
   /** Controls which tree-loading path to use.  Default `"auto"`. */
   traversalMode?: TraversalMode;
 
-  /** Treat every explicit root as never final, whatever its type, so every poll seeds it and
-   * checks that it still exists. Without it a root the predicate calls final is never re-read,
+  /** Treat every explicit root as never final, whatever its type, so every poll seeds it and,
+   * once it is held, checks that it still exists. Without it a root the predicate calls final is never re-read,
    * and a deleted final root is never noticed. Roots discovered for shared-type seeds are not
    * covered: a discovered resource may already be held final, and discovery itself drops a root
    * that is gone. */
@@ -543,7 +543,8 @@ export class SynchronizedTreeState {
     }
 
     // Only with the whole batch applied: advancing past a partial apply loses the dropped
-    // resources for good. A throw above leaves the old token, so the next poll re-reads it.
+    // resources for good. A throw above leaves the old token; for an update error the loop then
+    // rebuilds the mirror and discards it.
     if (nextToken !== undefined) this.deltaToken = nextToken;
     else if (this.algorithm === "backend-delta") this.demoteFromDelta();
   }
