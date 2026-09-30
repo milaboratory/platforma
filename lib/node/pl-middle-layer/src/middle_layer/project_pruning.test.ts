@@ -640,7 +640,8 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
     });
   }
 
-  // Never final even when ready: written after ready (finality table, 2026-09-30).
+  // Never final even when ready: written after ready (BResolve*, LSProvider), or an unknown
+  // type (BlobCopy/*) (finality table, 2026-09-30).
   for (const typeName of ["BResolveSingle", "BResolveChoice", "LSProvider", "BlobCopy/aToB"]) {
     it(`${typeName}: never final, stop does NOT fire even when ready`, () => {
       expect(DefaultFinalResourceDataPredicate(makeReadyResource(typeName))).toBe(false);

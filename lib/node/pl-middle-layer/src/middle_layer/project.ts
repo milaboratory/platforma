@@ -1021,7 +1021,8 @@ export function projectTreeFieldFilter(): Filter {
 /**
  * Stop-rules for the ResourceTree backend path.
  *
- * Mirrors every case of DefaultFinalResourceDataPredicate in the same order.
+ * Mirrors every case of DefaultFinalResourceDataPredicate, grouped by predicate branch (the
+ * order inside a group differs).
  * The mapping from BFS predicate logic to backend filter conditions:
  *
  *   BFS predicate always true
@@ -1032,7 +1033,7 @@ export function projectTreeFieldFilter(): Filter {
  *       is_duplicate, or has_errors is true — exactly mirroring the BFS predicate.
  *
  *   BFS predicate: readyAndHasAllOutputsFilled(r)
- *     → isFinal(true) + allOutputsFinal(true).
+ *     → readyOrDuplicateOrError() + outputsLocked(true) + allOutputsFinal(true).
  *
  *   BFS predicate always false (UserProject, Projects, ClientRoot, the sharing types,
  *   BResolveSingle, BResolveChoice, LSProvider, unknown types such as BlobCopy/*)
@@ -1040,7 +1041,8 @@ export function projectTreeFieldFilter(): Filter {
  */
 export function projectTreeTraverseStopRules(): Filter {
   return treeFilter.or(
-    // BFS: readyOrDuplicateOrError(r) AND (fields===undefined OR error OR stream.value===downloadable.value).
+    // BFS: readyOrDuplicateOrError(r) AND (fields===undefined OR error OR both fields present
+    // with an equal, non-null value).
     // This rule stops at readyOrDuplicateOrError alone: a filter cannot compare two fields, so
     // it is looser than the predicate for a ready manager whose `stream` has not switched yet.
     treeFilter.and(

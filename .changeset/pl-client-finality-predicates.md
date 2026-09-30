@@ -10,4 +10,5 @@ tree's predicate; the transaction resource cache now uses `resourceCachePredicat
 change after the tree holds them final. Table changes: `BResolveSingle`, `BResolveChoice` and
 `LSProvider` are never final; `Frontend/FromLocalTgz`, `json/bool`, `json/null` and
 `json/errorTrace` are always final. The rule and every intended exception are documented at the
-predicate. The project tree's stop rules follow the table.
+predicate. The project tree's stop rules follow the table. New exports: `resourceCachePredicate`,
+`DefaultResourceCachePredicate`.
