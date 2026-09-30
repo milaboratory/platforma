@@ -665,3 +665,40 @@ test("terminate rejects a refresh still waiting for its poll", async () => {
     expect(outcome).toBe("rejected");
   });
 }, 60_000);
+
+test("B3: a refresh request cuts a rebuild backoff short", async () => {
+  await TestHelpers.withTempRoot(async (pl) => {
+    const root = await createRootUnderClientRoot(pl, "b3Nudge");
+    let failing = false;
+    const failures: number[] = [];
+    const predicate: FinalResourceDataPredicate = (r) => {
+      if (failing) {
+        failures.push(Date.now());
+        throw new Error("predicate failure");
+      }
+      return DefaultFinalResourceDataPredicate(r);
+    };
+    const tree = await SynchronizedTreeState.init(pl, root, {
+      stopPollingDelay: 60_000,
+      pollingInterval: 10,
+      finalPredicateOverride: predicate,
+    });
+    try {
+      await tree.refreshState();
+      failing = true;
+      await touch(pl, root);
+      await tree.refreshState().catch(() => {});
+      // ~4 s in, the backoff has grown past 1.6 s: the loop's own next read is far away
+      await tp.setTimeout(4000);
+      const nudgedAt = Date.now();
+      await tree.refreshState().catch(() => {});
+      const next = failures.find((t) => t >= nudgedAt);
+      expect(next).toBeDefined();
+      // the 100 ms floor still holds, the rest of the backoff does not
+      expect(next! - nudgedAt).toBeLessThan(800);
+    } finally {
+      failing = false;
+      await tree.terminate();
+    }
+  });
+}, 60_000);
