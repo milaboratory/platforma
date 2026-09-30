@@ -5,7 +5,8 @@ import { TreeStateUpdateError } from "./state";
 import type { TreeLoadingRequest, TreeLoadingStat } from "./sync";
 import { collectStatsForResource } from "./sync";
 
-/** Emit everything at or below this depth from a resolution seed, whatever its change token
+/** The `unconditionalDepth` of a resolution round: emit everything at or below this depth from
+ * a resolution seed, whatever its change token
  * says. It bounds descent as well as emission: under a token the walk otherwise ends at the
  * first unchanged resource (api.proto, changed_since_token), so at depth 0 a newly attached
  * subtree costs one sequential round trip per level.
