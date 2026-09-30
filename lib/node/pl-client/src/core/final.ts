@@ -17,7 +17,7 @@ export { ResourceTypeName, ResourceTypePrefix };
  * - the first duplicate's `hasOriginalListeners` flag on its original: backend-internal, never on
  *   the wire (R5, exempt).
  *
- * The table below also keeps a few types final although the backend writes to them after the
+ * The table in {@link DefaultFinalResourceDataPredicate} also keeps a few types final although the backend writes to them after the
  * final condition holds. Each such case says, where it is listed, what is written and why the
  * tree does not care.
  *
@@ -50,17 +50,18 @@ function readyAndHasAllOutputsFilled(r: Optional<ResourceData, "fields">): boole
 const unknownResourceTypeNames = new Set<string>();
 
 /**
- * The tree's finality predicate for built-in resource types. A resource it calls final is no
- * longer seeded or re-read by `pl-tree`, and its change sources are dropped: the tree trusts it
- * never to change in state, fields or KV (see {@link FinalResourceDataPredicate} for the rule
+ * The tree's finality predicate for built-in resource types. A resource it calls final leaves
+ * `pl-tree`'s refresh seeds, later bodies for it are ignored, and its mutable-state change
+ * sources are retired (field and removal sources stay): the tree trusts it never to change in
+ * state, fields or KV (see {@link FinalResourceDataPredicate} for the rule
  * and its exceptions).
  */
 export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r): boolean => {
   switch (r.type.name) {
     case ResourceTypeName.StreamManager: {
       // Intended exception: on an input error the controller resets `stream` in a later
-      // transaction, after the error made the manager final here. Readers of an errored manager
-      // take the error path and never read `stream`.
+      // transaction, after the error made the manager final here. Default traversal raises the
+      // manager's error before exposing its fields; only an `ignoreError` read sees `stream`.
       if (!readyOrDuplicateOrError(r)) return false;
       if (r.fields === undefined) return true; // if fields are not provided basic resource state is not expected to change in the future
       if (isNotNullSignedResourceId(r.error)) return true;
@@ -82,7 +83,7 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
     }
     case ResourceTypeName.Dummy:
     // Intended exception: its only later write is the data-loss error cascade (R4). It hangs
-    // off Blob's pruned incarnation field, so no tree holds it.
+    // off Blob's incarnation field, which every middle-layer tree prunes.
     case ResourceTypeName.StdMap:
     case ResourceTypeName.StdMapSlash:
     case ResourceTypeName.EphStdMap:
@@ -103,11 +104,12 @@ export const DefaultFinalResourceDataPredicate: FinalResourceDataPredicate = (r)
       return r.type.version === "1";
     case ResourceTypeName.Blob:
     // Intended exception: the incarnation field is attached or replaced later, and a
-    // `ctl/file/blob-meta` KV may be rewritten by the controller bootstrap. Every tree prunes
-    // Blob's fields, and nothing reads blob-meta.
+    // `ctl/file/blob-meta` KV may be rewritten by the controller bootstrap. Every middle-layer
+    // tree prunes Blob's fields, and nothing reads blob-meta.
     case ResourceTypeName.WorkingDirectory:
     // Intended exception: each consuming run writes the lock KV `internal/locks/lockedBy`. No
-    // tree holds a WorkingDirectory (reachable only through pruned StreamWorkdir fields).
+    // middle-layer tree holds a WorkingDirectory (reachable only through pruned StreamWorkdir
+    // fields).
     case ResourceTypeName.JsonObject:
     case ResourceTypeName.JsonGzObject:
     case ResourceTypeName.JsonString:
@@ -186,8 +188,8 @@ const FieldsChangeAfterFinal: ReadonlySet<string> = new Set([
 
 /**
  * The transaction resource cache's predicate derived from a tree predicate: final for the tree,
- * and not a type whose state or fields change after that. A resource it accepts is served from
- * the cache for the life of the client. The cache never holds KV, so a type whose only later
+ * and not a type whose state or fields change after that. A resource it accepts may be served
+ * from the client's LRU cache, never re-read, while it stays there. The cache never holds KV, so a type whose only later
  * writes are KV stays cacheable.
  */
 export function resourceCachePredicate(

@@ -113,7 +113,7 @@ test("more final: values written once at creation are always final", () => {
     expect(DefaultFinalResourceDataPredicate(resource(name, notReady))).toBe(true);
 });
 
-test("BlobCopy stays never final: nothing locks its outputs", () => {
+test("BlobCopy stays never final, even ready with outputs locked and filled (unknown type)", () => {
   const done = resource("BlobCopy/mainToLibrary", {
     fields: [field("incarnation", A)],
   });
@@ -129,7 +129,7 @@ test("the resource cache excludes types whose fields change after tree-final", (
   expect(DefaultResourceCachePredicate(errored)).toBe(false);
 });
 
-test("the resource cache keeps tree-final types whose later writes are KV only", () => {
+test("the resource cache keeps tree-final types, including those whose later writes are KV only", () => {
   // the cache holds state and fields, never KV
   for (const name of ["Blob/fs", "WorkingDirectory", "json/object"])
     expect(DefaultResourceCachePredicate(resource(name, notReady))).toBe(true);

@@ -96,8 +96,9 @@ export class PlClient {
   // Caching
   //
 
-  /** The tree's finality predicate: a resource it accepts is no longer re-read by trees built
-   * on this client (see {@link DefaultFinalResourceDataPredicate}). */
+  /** The default finality predicate of trees built on this client (see
+   * {@link DefaultFinalResourceDataPredicate}); a tree may override it, or keep its explicit
+   * roots non-final with `rootsNeverFinal`. */
   public readonly finalPredicate: FinalResourceDataPredicate;
 
   /** Decides what the transaction resource cache keeps: {@link finalPredicate}, minus the types
