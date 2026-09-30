@@ -722,11 +722,10 @@ export class SynchronizedTreeState {
 
       if (!this.keepRunning || this.terminated) break;
 
-      // Phase 1: mandatory floor — always wait at least MIN_POLLING_INTERVAL_MS, and the
-      // rebuild backoff while rebuilding, so a persistent update error cannot become a hot
-      // loop of full reads. Not interruptible by scheduleOnNextState; only termination aborts it.
+      // Phase 1: mandatory floor — always wait at least MIN_POLLING_INTERVAL_MS.
+      // Not interruptible by scheduleOnNextState; only termination aborts it.
       try {
-        await tp.setTimeout(rebuildRetry?.nextDelay ?? MIN_POLLING_INTERVAL_MS, undefined, {
+        await tp.setTimeout(MIN_POLLING_INTERVAL_MS, undefined, {
           signal: this.abortController.signal,
         });
       } catch (e: unknown) {
@@ -736,12 +735,16 @@ export class SynchronizedTreeState {
 
       if (!this.keepRunning || this.terminated) break;
 
-      // Phase 2: optional remainder up to pollingInterval — interruptible by
-      // scheduleOnNextState so that an external nudge wakes the loop promptly. Skipped while
-      // rebuilding: readers see the empty rebuilt tree until the next read, and the backoff
-      // alone spaces the reads.
-      if (rebuildRetry === undefined && this.scheduledOnNextState.length === 0) {
-        const remaining = Math.max(0, this.effectivePollingInterval - MIN_POLLING_INTERVAL_MS);
+      // Phase 2: the interruptible remainder — up to pollingInterval, or, while rebuilding, up
+      // to the rebuild backoff, so a persistent update error cannot become a hot loop of full
+      // reads. The polling interval does not apply while rebuilding: readers see the empty
+      // rebuilt tree until the next read. A nudge (scheduleOnNextState) cuts either short; the
+      // floor above still bounds nudged reads.
+      if (this.scheduledOnNextState.length === 0) {
+        const remaining = Math.max(
+          0,
+          (rebuildRetry?.nextDelay ?? this.effectivePollingInterval) - MIN_POLLING_INTERVAL_MS,
+        );
         if (remaining > 0) {
           try {
             this.currentLoopDelayInterrupt = new AbortController();
