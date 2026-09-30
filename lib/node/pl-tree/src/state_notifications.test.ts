@@ -1,6 +1,7 @@
 // Notification completeness, as a property: random legal update sequences on one resource,
-// with a reader of every kind attached before each update. Any reader whose answer (value,
-// throw, or stability) differs after the update must have been notified.
+// with the readers defined below attached before each update. Any reader whose answer (value
+// or throw, plus stability for plain field reads) differs after the update must have been
+// notified.
 // MODEL_RUNS raises the number of sequences (default 200; hunted at 3000).
 import { expect, test } from "vitest";
 import type { Watcher } from "@milaboratories/computable";
@@ -186,7 +187,7 @@ function safeRead(rd: Reader, t: PlTreeState, w: W): string {
   }
 }
 
-test("every reader whose answer changes is notified", () => {
+test("every modeled reader whose answer changes is notified", () => {
   const violations = new Map<string, number>();
   const example = new Map<string, string>();
   let invalidations = 0;
@@ -234,8 +235,8 @@ test("every reader whose answer changes is notified", () => {
       for (const b of before) {
         const after = safeRead(b.rd, t, new W());
         // Oracle exclusion, per the contract at getField's locked branch ("stable absence of
-        // field"): an asserted Input/Output read that answered a permanent absence stays right
-        // when a field of another type takes the name.
+        // field"): an asserted-type read (in practice Input/Output, whose lists lock) that
+        // answered an absence stays right when a field of another type takes the name.
         const stableAbsence =
           b.rd.name.startsWith("assert") &&
           String(b.v) === "undefined" &&

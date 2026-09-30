@@ -59,7 +59,7 @@ test("B13: a common assertFieldType is checked", async () => {
   await expect(c.getValue()).rejects.toThrow(/Unexpected field type/);
 });
 
-test("B14: data getters refuse to run outside their computable run, like every other member", async () => {
+test("B14: data and KV getters refuse to run outside their computable run", async () => {
   const t = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
   t.updateFromResourceData([
     { ...TestDynamicRootState1, fields: [dField("v", V)] },

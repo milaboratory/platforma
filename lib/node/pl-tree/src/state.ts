@@ -625,7 +625,7 @@ export class PlTreeState {
       let resource = this.resources.get(rd.id);
       const held = resource !== undefined;
       let changed = false;
-      // Structural/metadata change (new or removed field). type and kind are readonly, so
+      // Structural/metadata change (a field added, removed or retyped). type and kind are readonly, so
       // they never change; this flag isolates value/flag-only changes from real metadata churn.
       let metadataChanged = false;
 
@@ -1106,8 +1106,9 @@ export class PlTreeState {
   /** Drops a root the backend no longer has from the heap, with the subtree only it held, and
    * notifies its readers. The id stays in the root set: a resource id is never reused, so the
    * root stays absent and readers see "not found". Returns false, changing nothing, if the
-   * root is not held or is still referenced from elsewhere in the heap — the resource
-   * referencing it will be rewritten by the backend, and the refcount GC then applies. */
+   * root is not held or is still referenced from elsewhere in the heap; a root is protected
+   * from the refcount GC, so it is retried once its referrers are gone (the next call, or the
+   * caller's next pass). */
   public dropDeletedRoot(rid: SignedResourceId): boolean {
     this.checkValid();
     const res = this.resources.get(rid);
