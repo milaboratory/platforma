@@ -336,15 +336,32 @@ describe("reference resolution", () => {
 
     expect(calls).toHaveLength(2);
     expect(calls[1]?.seeds).toEqual(["NG:0xNEW"]);
-    // Pinned, not just "deep": at 0 a newly attached subtree costs one sequential round trip
-    // per level, and the value is the whole trade the constant's comment argues.
-    expect(calls[1]?.opts.unconditionalDepth).toBe(32);
+    // The first resolution round of a poll asks with the initial depth.
+    expect(calls[1]?.opts.unconditionalDepth).toBe(1);
     // The token still rides the resolution round: what it returns is dated the same as the
     // poll it came with.
     expect(calls[1]?.opts.changedSinceToken).toEqual(new Uint8Array([7]));
     expect(result.map((r) => r.id).sort()).toEqual(["NG:0x1", "NG:0xNEW"]);
     expect(stats.deltaResolutionRounds).toBe(1);
     expect(stats.deltaSeedsSent).toBe(2);
+  });
+
+  test("each further round of a poll asks one level deeper, up to the cap", async () => {
+    // A chain the mirror has never held, each answer pointing one link further.
+    const link = (i: number) => frame(`NG:0xL${i}`, { fields: [field("next", `NG:0xL${i + 1}`)] });
+    const { tx, calls } = txReturning([
+      [frame("NG:0x1", { fields: [field("out", "NG:0xL0")] })],
+      [link(0)],
+      [link(1)],
+      [link(2)],
+      [link(3)],
+      [frame("NG:0xL4")],
+    ]);
+    await loadDeltaTreeState(
+      tx,
+      request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
+    );
+    expect(calls.map((c) => c.opts.unconditionalDepth)).toEqual([undefined, 1, 2, 3, 3, 3]);
   });
 
   test("needs no round when every reference is already in the mirror", async () => {
