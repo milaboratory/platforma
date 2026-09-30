@@ -1018,8 +1018,8 @@ export function projectTreeFieldFilter(): Filter {
   );
 }
 
-/** Stop rules for the project tree's ResourceTree walks: the backend stops at a resource
- * {@link TreeFinality} calls final, as each of its entries declares. */
+/** Stop rules for the project tree's ResourceTree walks: {@link TreeFinality}'s declared clauses,
+ * which may stop before the predicate calls a resource final where an entry declares so. */
 export function projectTreeTraverseStopRules(): Filter {
   return finalityStopRules(TreeFinality);
 }

@@ -39,15 +39,14 @@ export function finalityStopRuleClause(entry: FinalityEntry): Filter | undefined
   const declared = entry.stopRule ?? "exact";
   if (typeof declared === "object" && "none" in declared) return undefined;
   if (declared !== "exact") return conditionFilter(typeFilter(entry.match), declared.approx);
-  // a custom rule always carries a non-exact declaration, by its entry type
   if (typeof entry.rule === "object") return undefined;
   return conditionFilter(typeFilter(entry.match), entry.rule);
 }
 
 /**
- * Traversal stop rules for a finality table: the backend stops a walk at a resource the table
- * calls final. Each entry translates as it declares — exactly, by an approximation with its
- * reason, or not at all.
+ * Traversal stop rules for a finality table: the OR of every entry's declared clause. An
+ * approximated clause may stop before the table calls a resource final; an entry with no clause
+ * contributes nothing. The backend applies stop rules on walks without a change token only.
  */
 export function finalityStopRules(table: FinalityTable): Filter {
   const clauses: Filter[] = [];

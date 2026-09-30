@@ -66,7 +66,7 @@ function makeReadyResource(typeName: string, version = "1"): ExtendedResourceDat
 }
 
 /**
- * Build a resource that satisfies readyAndHasAllOutputsFilled:
+ * Build a resource that satisfies readyAndAllOutputsFilled:
  *   resourceReady=true, outputsLocked=true, one field with valueIsFinal=true.
  */
 function makeAllOutputsFinalResource(typeName: string): ExtendedResourceData {
@@ -457,15 +457,14 @@ describe("§4.2 projectTreeTraverseStopRules", () => {
 //   1. DefaultFinalResourceDataPredicate(resource) === expectedPredicate
 //   2. evaluateStopRule(rule, flags) === expectedStop
 //
-// `flags` encodes what the backend would emit for the same resource state:
+// `flags` compress several independent backend properties into two:
 //   - isFinal   = resource is "ready/error/duplicate" (or always-final type)
 //   - allOutputsFinal = outputsLocked && every field value is final
 //
 // The parity contract: when the predicate says "final" AND the type is one the
-// stop rule covers, the stop rule must also fire.  Types that are final only due
-// to runtime state (StdMap, BlockPackCustom, …) are NOT in the stop rules —
-// those are left to the backend's own isFinal flag (`item.final`) and are
-// documented as intentional gaps below.
+// stop rule covers, the stop rule must also fire. Where the backend's filter
+// differs from the predicate, finality_stop_rules.test.ts checks it against the
+// backend's semantics.
 
 describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ projectTreeTraverseStopRules", () => {
   const rule = projectTreeTraverseStopRules();
@@ -575,7 +574,7 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
     );
   });
 
-  // ── Group C: isFinal+allOutputsFinal-conditional — readyAndHasAllOutputsFilled ──
+  // ── Group C: isFinal+allOutputsFinal-conditional — readyAndAllOutputsFilled ──
 
   it("BlobUpload/v1 — all outputs final: predicate=true, stop fires with isFinal+allOutputsFinal=true", () => {
     const r = makeAllOutputsFinalResource("BlobUpload/v1");
@@ -639,15 +638,13 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
 
   // ── Group E: never-final types — predicate=false, stop rule does not fire ──
   //
-  // Covers the explicit `return false` cases in DefaultFinalResourceDataPredicate
-  // (UserProject, Projects, ClientRoot) and the `default` else-branch for unknown
-  // types.  Both paths agree: not final, traversal continues.
+  // Types declared `never`, and types no entry matches: not final, and no stop clause.
 
   const neverFinalCases: Array<{ typeName: string; label: string }> = [
-    { typeName: "UserProject", label: "explicit false in predicate" },
-    { typeName: "Projects", label: "explicit false in predicate" },
-    { typeName: "ClientRoot", label: "explicit false in predicate" },
-    { typeName: "SomeUnknownType", label: "default branch else → false" },
+    { typeName: "UserProject", label: "declared never" },
+    { typeName: "Projects", label: "declared never" },
+    { typeName: "ClientRoot", label: "declared never" },
+    { typeName: "SomeUnknownType", label: "unmatched type" },
   ];
 
   for (const { typeName, label } of neverFinalCases) {
@@ -665,11 +662,11 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
     ).toBe(false);
   });
 
-  // Outputs locked at creation and filled after ready: final, and stopped, once every output is.
+  // For these ready fixtures, locked outputs and settled fields satisfy both checks.
   for (const typeName of ["BResolveSingle", "BResolveChoice", "BlobCopy/aToB"]) {
-    it(`${typeName}: final with every output filled, stop fires only then`, () => {
+    it(`${typeName}: final with outputs locked and settled, stop fires only then`, () => {
       expect(DefaultFinalResourceDataPredicate(makeAllOutputsFinalResource(typeName))).toBe(true);
-      // ready with its outputs not yet locked and filled is not final
+      // a synthetic unlocked snapshot: schema-created resolvers and copies have locked outputs
       expect(DefaultFinalResourceDataPredicate(makeReadyResource(typeName))).toBe(false);
       expect(
         evaluateStopRule(rule, { resourceType: typeName, isFinal: true, allOutputsFinal: true }),
