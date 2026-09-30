@@ -8,8 +8,8 @@ export { readyOrDuplicateOrError } from "./finality";
 
 // The finality tables, one layer per consumer. Every layer accepts two backend writes after
 // final: a data-loss error cascade, lifting the error of a stored blob found lost or corrupt to
-// the resources built from it (R4), and the first duplicate's `hasOriginalListeners` flag on its
-// original, backend-internal and never on the wire (R5). An entry's `why` names any other write
+// the resources built from it, and the first duplicate's `hasOriginalListeners` flag on its
+// original, backend-internal and never on the wire. An entry's `why` names any other write
 // it accepts. A layer adds only the types whose later writes its consumer does not observe.
 
 // Where the backend's filter stops earlier than the predicate. An early stop is safe: the
@@ -49,8 +49,9 @@ const never = (match: FinalityEntry["match"], why: string): FinalityEntry => ({
   why,
 });
 
-/** The base layer: nothing observable (state, fields, KV) changes after the rule holds, R4, R5
- * and the exceptions its entries name aside, whatever the consumer prunes. */
+/** The base layer: nothing observable (state, fields, KV) changes after the rule holds, whatever
+ * the consumer prunes. Exceptions: the data-loss error cascade, the `hasOriginalListeners` flag,
+ * and the writes its entries name. */
 export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
   value(ResourceTypeName.JsonObject),
   value(ResourceTypeName.JsonGzObject),
@@ -108,10 +109,15 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
     ResourceTypeName.TengoTemplate,
     ResourceTypeName.SoftwareInfo,
     ResourceTypeName.BlockPackCustom,
-  ].map((name) => settledAtReady(name, "its only later write is the R5 flag")),
+  ].map((name) =>
+    settledAtReady(
+      name,
+      "its only later write is the `hasOriginalListeners` flag its first duplicate sets",
+    ),
+  ),
   settledAtReady(
     ResourceTypeName.Dummy,
-    "its only later write is R4; it hangs off Blob's incarnation field",
+    "its only later write is a data-loss error from the Blob whose incarnation field holds it",
   ),
   {
     match: { prefix: ResourceTypePrefix.PColumnData },
@@ -136,9 +142,9 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
     match: { name: ResourceTypeName.BResolveSingle },
     rule: "readyAndAllOutputsFilled",
     why:
-      "outputs are locked at creation and assigned after ready, never overwritten; accepted " +
-      "gap: a later context with more than one match sets an error on a resolver that " +
-      "already succeeded",
+      "outputs are locked at creation and assigned after ready, never overwritten; one " +
+      "exception: a later context with more than one match sets an error on a resolver that " +
+      "already succeeded, and a reader holding it final misses that error",
     stopRule: earlyOnFieldErrorsWithOutputs,
   },
   {
