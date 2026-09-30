@@ -10,7 +10,8 @@ types whose only later writes are KV; used by the transaction resource cache) an
 (adds `Blob` and `StreamManager` under the reader assumptions stated at their entries; the
 default `PlClient.finalPredicate`). A layer only adds to its parent.
 `DefaultFinalResourceDataPredicate` is deprecated and delegates to `TreeFinality`.
-Table changes: `BResolveSingle`, `BResolveChoice` and `BlobCopy/*` are final once ready (or a
-duplicate, or errored) with outputs locked and every supplied field settled; `LSProvider` is never final; `Frontend/FromLocalTgz`, `json/bool`,
-`json/null` and `json/errorTrace` are always final. The project tree's stop rules are generated
-from `TreeFinality`, each entry declaring how it translates. New `ResourceTypePrefix.BlobCopy`.
+Finality rules: `BResolveSingle`, `BResolveChoice` and `BlobCopy/*` are final once ready (or a
+duplicate, or errored) with outputs locked and every supplied field settled; `LSProvider` is
+never final; `Frontend/FromLocalTgz`, `json/bool`, `json/null` and `json/errorTrace` are always
+final. The project tree's stop rules are generated from `TreeFinality`, each entry declaring how
+it translates. `ResourceTypePrefix.BlobCopy` identifies blob-copy resource types.
