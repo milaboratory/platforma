@@ -57,3 +57,17 @@ test("a StreamManager is final once stream and downloadable agree", () => {
 test("an errored StreamManager is final whatever its fields", () => {
   expect(DefaultFinalResourceDataPredicate(streamManager({ error: A, fields: [] }))).toBe(true);
 });
+
+test("a StreamManager with both fields still empty is not final", () => {
+  const empty = (name: string): FieldData => ({
+    ...field(name, A),
+    value: NullSignedResourceId,
+    status: "Empty",
+    valueIsFinal: false,
+  });
+  expect(
+    DefaultFinalResourceDataPredicate(
+      streamManager({ fields: [empty("stream"), empty("downloadable")] }),
+    ),
+  ).toBe(false);
+});

@@ -525,13 +525,22 @@ export class SynchronizedTreeState {
     );
     this.state.updateFromResourceData(data, { allowOrphanInputs: true, stat: stats });
 
-    checkedRoots.forEach((rid, i) => {
-      if (rootsExist[i] || !this.state.dropDeletedRoot(rid)) return;
-      if (stats) stats.rootsDropped++;
-      this.logger?.warn(
-        `tree root ${resourceIdToString(rid)} no longer exists; dropped from the tree`,
-      );
-    });
+    // Repeated until nothing more drops: a deleted root held by another deleted root is
+    // refused (still referenced) until its holder has been dropped.
+    let gone = checkedRoots.filter((_, i) => !rootsExist[i]);
+    let dropped = true;
+    while (dropped) {
+      dropped = false;
+      gone = gone.filter((rid) => {
+        if (!this.state.dropDeletedRoot(rid)) return true;
+        dropped = true;
+        if (stats) stats.rootsDropped++;
+        this.logger?.warn(
+          `tree root ${resourceIdToString(rid)} no longer exists; dropped from the tree`,
+        );
+        return false;
+      });
+    }
 
     // Only with the whole batch applied: advancing past a partial apply loses the dropped
     // resources for good. A throw above leaves the old token, so the next poll re-reads it.
@@ -703,7 +712,11 @@ export class SynchronizedTreeState {
           // empty state, though this is best we can do in this exceptional
           // situation, and hope on caching layers inside computables to present
           // some stale state until we reconstruct the tree again
-        } else this.logger?.warn(e);
+        } else {
+          // Not an inconsistency: the ordinary cadence applies, not the rebuild backoff.
+          rebuildRetry = undefined;
+          this.logger?.warn(e);
+        }
       }
 
       if (!this.keepRunning || this.terminated) break;
@@ -769,6 +782,12 @@ export class SynchronizedTreeState {
     this.keepRunning = false;
     this.terminated = true;
     this.abortController.abort();
+
+    // Refreshes still queued would otherwise never settle: the loop takes them only at the top
+    // of an iteration it will no longer run.
+    const pending = this.scheduledOnNextState;
+    this.scheduledOnNextState = [];
+    for (const n of pending) n.reject(new Error("tree synchronization is terminated"));
 
     if (this.currentLoop === undefined) return;
     await this.currentLoop;

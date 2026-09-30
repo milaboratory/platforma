@@ -296,8 +296,9 @@ export class PlTreeNodeAccessor {
               `field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`,
             ),
           };
-        // existing but unpopulated field is unstable because it must be resolved at some point
-        this.onUnstableLambda("unpopulated_field:" + step.field);
+        // existing but unpopulated field is unstable because it must be resolved at some point,
+        // unless its resource is final and so never will be
+        if (!current.resource.finalState) this.onUnstableLambda("unpopulated_field:" + step.field);
         return undefined;
       }
 
