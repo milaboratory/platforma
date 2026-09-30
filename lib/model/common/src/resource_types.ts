@@ -54,6 +54,7 @@ export const ResourceTypePrefix = {
   StorageSpaceAllocation: "StorageSpaceAllocation/",
   BlobUpload: "BlobUpload/",
   BlobIndex: "BlobIndex/",
+  BlobCopy: "BlobCopy/",
   PColumnData: "PColumnData/",
   StreamWorkdir: "StreamWorkdir/",
 } as const;
