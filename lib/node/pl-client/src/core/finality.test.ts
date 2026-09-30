@@ -177,7 +177,6 @@ describe("the built-in tables", () => {
   }
   function expectedTree(r: Snapshot): boolean {
     const name = r.type.name;
-    // final once every output is filled
     if (name === "BResolveSingle" || name === "BResolveChoice" || name.startsWith("BlobCopy/"))
       return filled(r);
     if (name === "StreamManager") {

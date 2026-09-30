@@ -3,15 +3,15 @@ import type { BasicResourceData, ResourceData } from "./types";
 import { isNotNullSignedResourceId, isNullSignedResourceId } from "./types";
 
 /**
- * Tells whether a resource state is final: whether it will never change as long as the resource
- * exists. If the data carries no fields (`fields` undefined), the answer is about the basic part
- * of the resource data only.
+ * Tells whether a resource state is final for a consumer: whether it will not change in any way
+ * that consumer observes, under the write exceptions the predicate documents. If the data carries
+ * no fields (`fields` undefined), the answer is about the basic part of the resource data only.
  */
 export type FinalResourceDataPredicate = (
   resourceData: Optional<ResourceData, "fields">,
 ) => boolean;
 
-/** Ready, a duplicate, or errored: the three terminal states of a resource. */
+/** Ready for calculation, a duplicate of an original, or carrying a resource error. */
 export function readyOrDuplicateOrError(r: ResourceData | BasicResourceData): boolean {
   return (
     r.resourceReady ||
@@ -20,8 +20,8 @@ export function readyOrDuplicateOrError(r: ResourceData | BasicResourceData): bo
   );
 }
 
-/** Terminal, outputs locked, and every field holding a final value or an error. Without fields
- * the answer is about the basic part only. */
+/** {@link readyOrDuplicateOrError}, outputs locked, and every supplied field holding a final
+ * non-null value or an error. Without fields the answer is about the basic part only. */
 export function readyAndAllOutputsFilled(r: Optional<ResourceData, "fields">): boolean {
   if (!readyOrDuplicateOrError(r)) return false;
   if (!r.outputsLocked) return false;
@@ -32,7 +32,7 @@ export function readyAndAllOutputsFilled(r: Optional<ResourceData, "fields">): b
   return true;
 }
 
-/** A condition a stop rule can express exactly. */
+/** A condition with a traversal stop-rule translation. */
 export type TranslatableFinalityRule =
   | "always"
   | "readyOrDuplicateOrError"
@@ -46,8 +46,8 @@ export type FinalityRule =
 
 /**
  * How an entry is expressed as a traversal stop rule: `"exact"` translates its rule;
- * `approx` stops on another condition, looser or stricter, for the stated reason; `none` sends
- * no stop rule for the type.
+ * `approx` stops on the given condition, which differs from the rule for the stated reason;
+ * `none` contributes no clause for this entry.
  */
 export type FinalityStopRule =
   | "exact"
@@ -65,6 +65,8 @@ type EntryBase = {
   readonly requiresPruning?: { readonly type: string; readonly fields: "all" | readonly string[] };
 };
 
+/** One row of a finality table: the types it matches, when they count as final, why, and how the
+ * rule becomes a stop rule. A custom rule must declare a non-exact stop rule. */
 export type FinalityEntry = EntryBase &
   (
     | {
@@ -100,7 +102,7 @@ function holds(rule: FinalityRule, r: Optional<ResourceData, "fields">): boolean
   }
 }
 
-// solely for logging
+// Unknown type names are logged once, across every table and predicate.
 const unknownResourceTypeNames = new Set<string>();
 
 /**
@@ -127,17 +129,18 @@ export class FinalityTable {
     this.entries = parent === undefined ? own : [...parent.entries, ...own];
   }
 
-  /** A base layer. */
+  /** A base layer. Throws if `entries` lists a match twice. */
   static of(name: string, entries: readonly FinalityEntry[]): FinalityTable {
     return new FinalityTable(name, entries, undefined);
   }
 
-  /** A child layer: this one plus `additions`. */
+  /** A child layer: this one plus `additions`. Throws if `additions` lists a match twice. */
   extend(name: string, additions: readonly FinalityEntry[]): FinalityTable {
     return new FinalityTable(name, additions, this);
   }
 
-  /** The layer's answer for `r`. */
+  /** True when any entry of the layer or its ancestors matching `r`'s type holds for `r`. A type
+   * no entry matches is false, and its name is logged once. */
   isFinal(r: Optional<ResourceData, "fields">): boolean {
     let covered = false;
     for (const e of this.entries) {

@@ -6,28 +6,27 @@ export { ResourceTypeName, ResourceTypePrefix };
 export type { FinalResourceDataPredicate } from "./finality";
 export { readyOrDuplicateOrError } from "./finality";
 
-// The finality tables. Each layer calls a resource final only where the backend never stamps
-// it again, with two exceptions every layer accepts:
-// - a data-loss error cascade: a stored blob found lost or corrupt lifts an error to the
-//   resources built from it (R4);
-// - the first duplicate's `hasOriginalListeners` flag on its original: backend-internal, never
-//   on the wire (R5).
-// A layer adds only the types whose later writes its consumer never observes.
+// The finality tables, one layer per consumer. Every layer accepts two backend writes after
+// final: a data-loss error cascade, lifting the error of a stored blob found lost or corrupt to
+// the resources built from it (R4), and the first duplicate's `hasOriginalListeners` flag on its
+// original, backend-internal and never on the wire (R5). An entry's `why` names any other write
+// it accepts. A layer adds only the types whose later writes its consumer does not observe.
 
 // Where the backend's filter stops earlier than the predicate. An early stop is safe: the
 // backend sends a body-less stop marker, and the streaming loader fetches every stopped resource
-// it does not hold as final again without stop rules, so the predicate decides on the full body.
+// it does not hold as final again without stop rules (field filtering and pruning still apply),
+// so the predicate decides on the fetched body.
 const earlyOnFieldErrors: FinalityStopRule = {
   approx: "readyOrDuplicateOrError",
   reason:
     "HAS_ERRORS is set by an error on any field, the predicate reads the resource error only; " +
     "an early stop is followed up with a plain fetch",
 };
-const earlyOnFieldErrorsAndServiceFields: FinalityStopRule = {
+const earlyOnFieldErrorsWithOutputs: FinalityStopRule = {
   approx: "readyAndAllOutputsFilled",
   reason:
-    "HAS_ERRORS is set by an error on any field, and ALL_OUTPUTS_FINAL ignores non-Output " +
-    "fields, while the predicate reads the resource error and every field; an early stop is " +
+    "HAS_ERRORS is set by an error on any field, the predicate reads the resource error only; " +
+    "ALL_OUTPUTS_FINAL, like the predicate, checks every retained field; an early stop is " +
     "followed up with a plain fetch",
 };
 
@@ -50,8 +49,8 @@ const never = (match: FinalityEntry["match"], why: string): FinalityEntry => ({
   why,
 });
 
-/** Nothing observable (state, fields, KV) changes after the rule holds, R4 and R5 aside. Safe
- * for any consumer, whatever it prunes. */
+/** The base layer: nothing observable (state, fields, KV) changes after the rule holds, R4, R5
+ * and the exceptions its entries name aside, whatever the consumer prunes. */
 export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
   value(ResourceTypeName.JsonObject),
   value(ResourceTypeName.JsonGzObject),
@@ -60,7 +59,11 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
   value(ResourceTypeName.JsonNumber),
   value(ResourceTypeName.JsonBool),
   value(ResourceTypeName.JsonNull),
-  value(ResourceTypeName.JsonErrorTrace),
+  {
+    match: { name: ResourceTypeName.JsonErrorTrace },
+    rule: "always",
+    why: "an error-trace snapshot, populated and locked in its creating transaction",
+  },
   value(ResourceTypeName.BContextEnd),
   value(ResourceTypeName.FrontendFromUrl),
   value(ResourceTypeName.FrontendFromFolder),
@@ -98,7 +101,9 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
     ResourceTypeName.BResolveSingleNoResult,
     ResourceTypeName.BQueryResult,
     ResourceTypeName.TengoLib,
-  ].map((name) => settledAtReady(name, "built and locked in its creating transaction")),
+  ].map((name) =>
+    settledAtReady(name, "its inputs are final at ready, and no controller fills it afterwards"),
+  ),
   ...[
     ResourceTypeName.TengoTemplate,
     ResourceTypeName.SoftwareInfo,
@@ -111,7 +116,7 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
   {
     match: { prefix: ResourceTypePrefix.PColumnData },
     rule: "readyOrDuplicateOrError",
-    why: "built and locked in its creating transaction",
+    why: "its inputs are final at ready, and no controller fills it afterwards",
     stopRule: earlyOnFieldErrors,
   },
   {
@@ -121,22 +126,29 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
     stopRule: {
       approx: "readyOrDuplicateOrError",
       reason:
-        "HAS_ERRORS is set by an error on any field, and the project tree prunes every field, " +
-        "the resource error included, so the predicate cannot see an error the filter stops " +
-        "on; an early stop is followed up with a plain fetch",
+        "HAS_ERRORS is set by an error on any field; on ResourceTree walks the project field " +
+        "filter also removes every field, `resourceError` included, before decoding, so the " +
+        "predicate cannot see an error the filter stops on; an early stop is followed up with " +
+        "a plain fetch",
     },
   },
-  ...[ResourceTypeName.BResolveSingle, ResourceTypeName.BResolveChoice].map(
-    (name): FinalityEntry => ({
-      match: { name },
-      rule: "readyAndAllOutputsFilled",
-      why:
-        "outputs are locked at creation and filled after ready, never overwritten; accepted " +
-        "gap: a later context with more than one match sets an error on a resolver that " +
-        "already succeeded",
-      stopRule: earlyOnFieldErrorsAndServiceFields,
-    }),
-  ),
+  {
+    match: { name: ResourceTypeName.BResolveSingle },
+    rule: "readyAndAllOutputsFilled",
+    why:
+      "outputs are locked at creation and assigned after ready, never overwritten; accepted " +
+      "gap: a later context with more than one match sets an error on a resolver that " +
+      "already succeeded",
+    stopRule: earlyOnFieldErrorsWithOutputs,
+  },
+  {
+    match: { name: ResourceTypeName.BResolveChoice },
+    rule: "readyAndAllOutputsFilled",
+    why:
+      "outputs are locked at creation and point at result maps that are completed and locked " +
+      "as resolution finishes",
+    stopRule: earlyOnFieldErrorsWithOutputs,
+  },
   never({ name: ResourceTypeName.UserProject }, "blocks and fields come and go over its life"),
   never({ name: ResourceTypeName.Projects }, "projects are added and removed"),
   never({ name: ResourceTypeName.ClientRoot }, "its fields are added and removed"),
@@ -162,11 +174,11 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
   ),
   never(
     { prefix: ResourceTypePrefix.BlobCopy },
-    "a controller bootstrap writes its `ctl/ctlsdk/bootstrapDone` KV after an error",
+    "a controller bootstrap records its `ctl/ctlsdk/bootstrapDone` KV in a separate transaction, which may run after the copy settled",
   ),
   never(
     { name: ResourceTypeName.WorkingDirectory },
-    "each consuming run writes its lock KV `internal/locks/lockedBy`",
+    "lock acquisition can write its `internal/locks/lockedBy` KV after creation",
   ),
 ]);
 
@@ -183,27 +195,27 @@ export const CacheFinality: FinalityTable = StrictFinality.extend("cache", [
   {
     match: { prefix: ResourceTypePrefix.BlobIndex },
     rule: "readyAndAllOutputsFilled",
-    why: "`ctl/ctlsdk/bootstrapDone` is KV, and nothing reads it",
-    stopRule: earlyOnFieldErrorsAndServiceFields,
+    why: "`ctl/ctlsdk/bootstrapDone` is backend bookkeeping KV; no client reads it",
+    stopRule: earlyOnFieldErrorsWithOutputs,
   },
   {
     match: { prefix: ResourceTypePrefix.BlobUpload },
     rule: "readyAndAllOutputsFilled",
-    why: "`ctl/file/storage/uploadState` is KV, and nothing reads it",
-    stopRule: earlyOnFieldErrorsAndServiceFields,
+    why: "`ctl/file/storage/uploadState` is backend bookkeeping KV; no client reads it",
+    stopRule: earlyOnFieldErrorsWithOutputs,
   },
   {
     match: { prefix: ResourceTypePrefix.BlobCopy },
     rule: "readyAndAllOutputsFilled",
     why:
-      "outputs are locked at creation; the only later write, `ctl/ctlsdk/bootstrapDone` on an " +
-      "errored copy, is KV, and nothing reads it",
-    stopRule: earlyOnFieldErrorsAndServiceFields,
+      "outputs are locked at creation; the only later write, the bootstrap's " +
+      "`ctl/ctlsdk/bootstrapDone`, is backend bookkeeping KV; no client reads it",
+    stopRule: earlyOnFieldErrorsWithOutputs,
   },
   {
     match: { name: ResourceTypeName.WorkingDirectory },
     rule: "always",
-    why: "the lock KV is backend bookkeeping, and nothing reads it",
+    why: "the lock KV is backend bookkeeping; no client reads it",
   },
 ]);
 
@@ -217,23 +229,24 @@ function streamSwitchedOrErrored(r: Parameters<FinalResourceDataPredicate>[0]): 
   const stream = r.fields.find((f) => f.name === "stream");
   if (downloadable === undefined || stream === undefined || isNullSignedResourceId(stream.value))
     return false;
-  // The backend has no "final" marker for a stream manager: equal fields mean the controller's
-  // success branch has switched `stream` to the downloadable blob.
+  // No backend flag marks the switch: equal non-null fields mean the controller's success branch
+  // has switched `stream` to the downloadable blob.
   return stream.value === downloadable.value;
 }
 
 /**
  * The finality of trees, and the default of `PlClient.finalPredicate`: a resource it calls final
  * leaves the refresh seeds, later bodies for it are ignored, and its mutable-state change sources
- * are retired. It adds the types whose later writes tree readers never observe.
+ * are retired. It adds Blob and StreamManager under reader assumptions stated at each entry; a
+ * consumer that reads what they exclude passes its own predicate.
  */
 export const TreeFinality: FinalityTable = CacheFinality.extend("tree", [
   {
     match: { name: ResourceTypeName.Blob },
     rule: "always",
     why:
-      "the incarnation field is replaced later, but tree readers never read Blob's fields (the " +
-      "download driver reads a blob by id); the project tree also prunes them",
+      "the incarnation field is replaced later; the project tree prunes Blob's fields, and the " +
+      "drivers read a blob by id, never through its fields",
     requiresPruning: { type: ResourceTypeName.Blob, fields: "all" },
   },
   {

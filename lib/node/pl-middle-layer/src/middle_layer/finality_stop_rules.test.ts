@@ -17,8 +17,8 @@ import { finalityStopRuleClause, finalityStopRules } from "./finality_stop_rules
 
 import { projectTreeTraverseStopRules } from "./project";
 
-/** The project tree's hand-written stop rules, which the generated rules must reproduce. */
-function handWrittenStopRules(): Filter {
+/** Expected clauses of the project tree's stop rules, listed independently of the table. */
+function expectedStopRules(): Filter {
   return treeFilter.or(
     treeFilter.and(
       treeFilter.resourceTypeEq(ResourceTypeName.StreamManager),
@@ -139,8 +139,8 @@ function clauses(f: Filter): string[] {
 }
 
 describe("the project tree's stop rules come from TreeFinality", () => {
-  test("they are the hand-written rules plus the types the table made final", () => {
-    const added = [
+  test("project stop rules contain the declared clause of every built-in type", () => {
+    const resolverAndCopyClauses = [
       treeFilter.and(
         treeFilter.resourceTypeEq(ResourceTypeName.BResolveSingle),
         treeFilter.readyOrDuplicateOrError(),
@@ -160,7 +160,10 @@ describe("the project tree's stop rules come from TreeFinality", () => {
         treeFilter.allOutputsFinal(true),
       ),
     ];
-    const expected = [...clauses(handWrittenStopRules()), ...added.map((c) => JSON.stringify(c))];
+    const expected = [
+      ...clauses(expectedStopRules()),
+      ...resolverAndCopyClauses.map((c) => JSON.stringify(c)),
+    ];
     expect(clauses(projectTreeTraverseStopRules())).toEqual(expected.sort());
   });
 
@@ -226,8 +229,9 @@ function nameOf(e: FinalityEntry): string {
   return "name" in e.match ? e.match.name : e.match.prefix + "probe";
 }
 
-/** A stop rule evaluated the way the backend does (api.proto): ALL_OUTPUTS_FINAL looks at Output
- * fields only, HAS_ERRORS at the resource error and every field's error. */
+/** A stop rule evaluated the way the backend does (core/pl tx_tree_iterator.go,
+ * evalTraverseStopRules): ALL_OUTPUTS_FINAL holds when every retained field has an error or a final
+ * value; HAS_ERRORS holds when the resource or any of its fields has an error. */
 function evaluate(f: Filter, r: ResourceData): boolean {
   if (f.value.oneofKind === "filtersValue") {
     const children = f.value.filtersValue.filters;
@@ -258,13 +262,7 @@ function evaluate(f: Filter, r: ResourceData): boolean {
         actual = r.outputsLocked;
         break;
       case FilterProperty.ALL_OUTPUTS_FINAL:
-        actual = r.fields
-          .filter((v) => v.type === "Output")
-          .every(
-            (v) =>
-              v.error !== NullSignedResourceId ||
-              (v.value !== NullSignedResourceId && v.valueIsFinal),
-          );
+        actual = r.fields.every((v) => v.error !== NullSignedResourceId || v.valueIsFinal);
         break;
       default:
         throw new Error(`unhandled boolean property ${f.key}`);
@@ -316,15 +314,9 @@ test("an entry declared exact stops exactly where its predicate is final", () =>
   }
 });
 
-test("a resolver or copy with an unresolved Service field: the filter stops early, as declared", () => {
+test("an unresolved Service field keeps a resolver or copy from both the filter's stop and finality", () => {
   const rules = finalityStopRules(TreeFinality);
   for (const name of ["BResolveSingle", "BResolveChoice", "BlobCopy/aToB"]) {
-    const entry = TreeFinality.entries.find(
-      (e) =>
-        e.rule === "readyAndAllOutputsFilled" &&
-        ("name" in e.match ? e.match.name === name : name.startsWith(e.match.prefix)),
-    );
-    expect(entry?.stopRule, name).toMatchObject({ approx: "readyAndAllOutputsFilled" });
     const r = resource(name, {
       fields: [
         field(),
@@ -338,7 +330,7 @@ test("a resolver or copy with an unresolved Service field: the filter stops earl
       ],
     });
     expect(TreeFinality.isFinal(r), name).toBe(false);
-    expect(evaluate(rules, r), name).toBe(true);
+    expect(evaluate(rules, r), name).toBe(false);
   }
 });
 
@@ -377,7 +369,6 @@ test("stop rules follow the layers: an inherited never neither hides nor revokes
     expect(table.isFinal(resource(name))).toBe(expected);
     expect(evaluate(rules, resource(name))).toBe(expected);
   }
-  // every layer's rules stop exactly its relaxed types
   for (const layer of [StrictFinality, CacheFinality, TreeFinality]) {
     for (const name of [
       "Blob",

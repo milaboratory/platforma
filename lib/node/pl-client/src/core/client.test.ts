@@ -53,7 +53,7 @@ test("test driver", async () => {
   expect(await drv.ping()).toEqual("pong");
 });
 
-test("the transaction resource cache keeps tree-final data, except a StreamManager", async () => {
+test("the transaction resource cache reuses a JSON value but refetches a tree-final StreamManager", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
     const { manager, value } = await pl.withWriteTx("CacheSeed", async (tx) => {
       // unique content: Values are deduplicated by content
