@@ -62,7 +62,8 @@ RAM_INTERCEPT_MIN_GIB := 4
 RAM_SLOPE := 10
 RAM_SLOPE_MIN := 4
 RAM_FLOOR_GIB := 2
-RAM_STATIC_FALLBACK := "4GiB"
+RAM_STATIC_FALLBACK_GIB := 4
+RAM_STATIC_FALLBACK := format("%dGiB", RAM_STATIC_FALLBACK_GIB)
 
 SCRATCH_PER_READ_FRAME := 16
 SCRATCH_SORT := 16
@@ -128,6 +129,11 @@ ramFormula := func(memFloor, ...rest) {
 	if !is_undefined(intercept) {
 		assertRamIntercept(intercept)
 		interceptNode = f.const(intercept)
+		// The static fallback must not be less than the intercept.
+		fallbackBytes := is_undefined(memFloor) ? RAM_STATIC_FALLBACK_GIB * units.GiB : memFloor
+		if intercept > fallbackBytes {
+			fallback = intercept
+		}
 	}
 
 	return f.size({ default: 0 }).times(slope).plus(interceptNode).
