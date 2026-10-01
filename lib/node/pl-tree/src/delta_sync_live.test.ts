@@ -18,7 +18,7 @@ import tp from "timers/promises";
  * Delta polling against a real backend, for correctness only. Cost (bytes and round trips per
  * poll) is the benchmark's job, since stats are loop-internal with no public accessor.
  *
- * Everything here needs `treeChangedSince:v1`, which
+ * Everything here needs `treeChangedSince:v2`, which
  * only a backend built from pl PR #2163 advertises, so each test skips rather than fails on
  * one without it. The unit coverage in `delta_sync.test.ts` pins the client's own logic; what
  * cannot be faked, and is what these are for, is the backend's own emission rule.
@@ -29,8 +29,8 @@ import tp from "timers/promises";
  * suite reported four green ticks over zero delta code. Skipped and passed are different
  * signals and a run summary has to be able to tell them apart. */
 function skipUnlessDelta(pl: PlClient, ctx: { skip: (note?: string) => void }): boolean {
-  if (hasCapability(pl.serverInfo.capabilities ?? [], "treeChangedSince:v1")) return true;
-  ctx.skip("backend does not advertise treeChangedSince:v1 (needs pl PR #2163)");
+  if (hasCapability(pl.serverInfo.capabilities ?? [], "treeChangedSince:v2")) return true;
+  ctx.skip("backend does not advertise treeChangedSince:v2 (no released backend does yet)");
   return false;
 }
 
