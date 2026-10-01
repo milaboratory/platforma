@@ -88,6 +88,25 @@ TestFloorStillAppliesWithCustomParams := func() {
 	test.isEqual(52 * GiB, _ramWith(8 * GiB, 12 * GiB, 6, 4 * GiB))          //  4 + 6*8
 }
 
+// ---- ram: static fallback -------------------------------------------------
+// A backend that cannot evaluate formulas uses the static fallback.
+
+_fallback := func(memFloor, slope, intercept) {
+	return f.fallbackOf(sizing.ramFormula(memFloor, slope, intercept))
+}
+
+TestFallbackDefault := func() {
+	test.isEqual("4GiB", _fallback(undefined, undefined, undefined))
+	test.isEqual("4GiB", _fallback(undefined, undefined, 4 * GiB))
+	test.isEqual(12 * GiB, _fallback(12 * GiB, undefined, undefined))
+}
+
+TestFallbackIsAtLeastTheIntercept := func() {
+	test.isEqual(8 * GiB, _fallback(undefined, undefined, 8 * GiB))
+	test.isEqual(8 * GiB, _fallback(2 * GiB, undefined, 8 * GiB))
+	test.isEqual(12 * GiB, _fallback(12 * GiB, undefined, 8 * GiB))
+}
+
 // ll.assert rejects a non-integer slope, a slope <= 4, and an intercept below 4 GiB.
 // ll.assert stops the template, and is_error cannot catch that. Thus no test checks it.
 

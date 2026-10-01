@@ -906,7 +906,7 @@ workflow := func() {
 		 *
 		 * The floor applies when `size` is small. `f.size()` counts only files that
 		 * `addFile()` attaches. Thus a run whose input is a non-partitioned JSON p-column
-		 * measures 0 and always gets the floor.
+		 * measures 0 and always gets the larger of the intercept and the floor.
 		 *
 		 * @param amount: number - lower bound in bytes, e.g. `12 * units.GiB`
 		 * @return builder
