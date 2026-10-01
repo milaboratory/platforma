@@ -922,10 +922,8 @@ workflow := func() {
 		/**
 		 * Sets the slope of the auto-sized RAM request (see `.mem()`), in GiB of RAM per
 		 * GiB of input. Default 10. The slope must be an integer of at least 0. Slope 0
-		 * gives a flat request of max(intercept, floor), for small inputs. The steepest
-		 * measured ptabler plan needs 4.94 GiB per input GiB at 8 Polars threads. A slope
-		 * below 5 can make a large input run out of memory.
-		 * If a caller also sets `.mem()`, `.mem()` wins.
+		 * gives a flat request of max(intercept, floor), for small inputs. If a caller
+		 * also sets `.mem()`, `.mem()` wins.
 		 *
 		 * @param slope: int - at least 0, e.g. `6`
 		 * @return builder
