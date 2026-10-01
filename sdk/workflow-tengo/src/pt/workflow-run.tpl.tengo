@@ -29,6 +29,8 @@ self.body(func(inputs) {
     mem := inputs.mem
     inputCache := inputs.inputCache
     memFloor := inputs.memFloor
+    memSlope := inputs.memSlope
+    memIntercept := inputs.memIntercept
     scratchFreeSpace := inputs.scratchFreeSpace
 
     workdirProcessorName := "import_dir";
@@ -49,7 +51,7 @@ self.body(func(inputs) {
     // them and the thread ceiling they assume live in :pt.sizing.
     ramReq := mem
     if is_undefined(ramReq) {
-        ramReq = sizing.ramFormula(memFloor)
+        ramReq = sizing.ramFormula(memFloor, memSlope, memIntercept)
     }
     cpuReq := cpu
     if is_undefined(cpuReq) {

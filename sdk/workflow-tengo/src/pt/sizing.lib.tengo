@@ -2,7 +2,8 @@
 // author leaves cpu or mem unset. Kept out of the template body so the formulas can be
 // unit tested against a fake metric resolver (see sizing.test.tengo).
 //
-//     ram                = max(2 GiB + 10 * size, memFloor or 2 GiB)
+//     ram                = max(intercept + slope * size, memFloor or 2 GiB)
+//                          intercept defaults to 2 GiB, slope to 10
 //     cpu                = between(2 + size / 16 GiB, 2, 8)
 //     POLARS_MAX_THREADS = between(system.cpu, 2, 8)
 //
@@ -19,6 +20,9 @@
 // RAM_SLOPE is 10, above the 4.94 it must cover. The margin is deliberate. The fits are
 // against uncompressed TSV bytes, and f.size() reports stored blob bytes, so a parquet
 // input understates the volume the plan decodes.
+//
+// A block can set its own slope with .memSlope() and intercept with .memIntercept(). The
+// slope must stay above RAM_SLOPE_MIN, which is the 4.94 measured above rounded down.
 //
 // The request has no upper bound. A cap cuts the grant below the need and the run OOMs;
 // the backend clamps a request above what a node can give.
@@ -56,6 +60,9 @@ ll := import(":ll")
 
 RAM_INTERCEPT_GIB := 2
 RAM_SLOPE := 10
+RAM_SLOPE_MIN := 4
+// A fractional slope is applied as size * round(slope * SCALE) / SCALE; the formula is integer.
+RAM_SLOPE_SCALE := 1000
 RAM_FLOOR_GIB := 2
 RAM_STATIC_FALLBACK := "4GiB"
 
@@ -72,13 +79,40 @@ CPU_GIB_PER_CORE := 16
 POLARS_MAX_THREADS_EXPR := format("{min(%d,max(%d,system.cpu))}", CPU_MAX, CPU_MIN)
 
 /**
+ * Asserts a slope accepted by ramFormula and .memSlope().
+ *
+ * @param slope: number - GiB of RAM per GiB of input
+ */
+assertRamSlope := func(slope) {
+	ll.assert((is_int(slope) || is_float(slope)) && slope > RAM_SLOPE_MIN,
+		"pt.sizing: memory slope must be a number greater than %d, got %v", RAM_SLOPE_MIN, slope)
+}
+
+/**
+ * Asserts an intercept accepted by ramFormula and .memIntercept().
+ *
+ * @param intercept: number - bytes
+ */
+assertRamIntercept := func(intercept) {
+	ll.assert(is_int(intercept) && intercept >= 0,
+		"pt.sizing: memory intercept must be a non-negative number of bytes, got %v", intercept)
+}
+
+/**
  * The default RAM formula.
  *
  * @param memFloor: number | undefined - lower bound in bytes from .memFloor(), or
  *                  undefined for the standard 2 GiB floor.
+ * @param slope: number | undefined - GiB of RAM per GiB of input from .memSlope(), or
+ *               undefined for RAM_SLOPE. Must be greater than RAM_SLOPE_MIN.
+ * @param intercept: number | undefined - bytes from .memIntercept(), or undefined for
+ *                   RAM_INTERCEPT_GIB. Must be >= 0.
  * @return formula
  */
-ramFormula := func(memFloor) {
+ramFormula := func(memFloor, ...rest) {
+	slope := len(rest) > 0 ? rest[0] : undefined
+	intercept := len(rest) > 1 ? rest[1] : undefined
+
 	floor := f.gib(RAM_FLOOR_GIB)
 	fallback := RAM_STATIC_FALLBACK
 
@@ -87,7 +121,25 @@ ramFormula := func(memFloor) {
 		fallback = memFloor
 	}
 
-	return f.size({ default: 0 }).times(RAM_SLOPE).plus(f.gib(RAM_INTERCEPT_GIB)).
+	if is_undefined(slope) {
+		slope = RAM_SLOPE
+	}
+	assertRamSlope(slope)
+
+	interceptNode := f.gib(RAM_INTERCEPT_GIB)
+	if !is_undefined(intercept) {
+		assertRamIntercept(intercept)
+		interceptNode = f.const(intercept)
+	}
+
+	scaled := undefined
+	if is_int(slope) {
+		scaled = f.size({ default: 0 }).times(slope)
+	} else {
+		scaled = f.size({ default: 0 }).times(int(slope * RAM_SLOPE_SCALE + 0.5)).dividedBy(RAM_SLOPE_SCALE)
+	}
+
+	return scaled.plus(interceptNode).
 		atLeast(floor).
 		staticFallback(fallback)
 }
@@ -124,6 +176,8 @@ scratchFormula := func(readFrames, writeFrames) {
 
 export {
 	ramFormula: ramFormula,
+	assertRamSlope: assertRamSlope,
+	assertRamIntercept: assertRamIntercept,
 	cpuFormula: cpuFormula,
 	scratchFormula: scratchFormula,
 
@@ -132,6 +186,7 @@ export {
 	// exported for the unit tests and for callers that need the documented numbers
 	RAM_INTERCEPT_GIB: RAM_INTERCEPT_GIB,
 	RAM_SLOPE:         RAM_SLOPE,
+	RAM_SLOPE_MIN:     RAM_SLOPE_MIN,
 	RAM_FLOOR_GIB:     RAM_FLOOR_GIB,
 	CPU_MIN:           CPU_MIN,
 	CPU_MAX:           CPU_MAX,

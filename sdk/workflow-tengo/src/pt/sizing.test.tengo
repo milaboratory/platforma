@@ -64,6 +64,41 @@ TestMemFloorAboveOldCeilingIsAccepted := func() {
 	test.isEqual(5002 * GiB, _ram(500 * GiB, 300 * GiB))
 }
 
+// ---- ram: memSlope / memIntercept -----------------------------------------
+
+_ramWith := func(inputBytes, memFloor, slope, intercept) {
+	return _evalAt(sizing.ramFormula(memFloor, slope, intercept), inputBytes)
+}
+
+TestUnsetSlopeAndInterceptMatchTheDefault := func() {
+	test.isEqual(_ram(8 * GiB, undefined), _ramWith(8 * GiB, undefined, undefined, undefined))
+	test.isEqual(82 * GiB, _ramWith(8 * GiB, undefined, undefined, undefined))
+}
+
+TestCustomSlopeGoverns := func() {
+	test.isEqual(42 * GiB, _ramWith(8 * GiB, undefined, 5, undefined))       //  2 + 5*8
+	test.isEqual(122 * GiB, _ramWith(8 * GiB, undefined, 15, undefined))     //  2 + 15*8
+}
+
+TestFractionalSlope := func() {
+	test.isEqual(62 * GiB, _ramWith(8 * GiB, undefined, 7.5, undefined))     //  2 + 7.5*8
+	test.isEqual(39 * GiB, _ramWith(8 * GiB, undefined, 4.625, undefined))   //  2 + 4.625*8
+}
+
+TestCustomIntercept := func() {
+	test.isEqual(88 * GiB, _ramWith(8 * GiB, undefined, undefined, 8 * GiB)) //  8 + 10*8
+	test.isEqual(80 * GiB, _ramWith(8 * GiB, undefined, undefined, 0))       //  0 + 10*8
+}
+
+TestZeroInterceptStillHonoursTheFloor := func() {
+	test.isEqual(2 * GiB, _ramWith(0, undefined, undefined, 0))
+	test.isEqual(12 * GiB, _ramWith(0, 12 * GiB, 6, 0))
+	test.isEqual(48 * GiB, _ramWith(8 * GiB, 12 * GiB, 6, 0))                //  0 + 6*8
+}
+
+// A slope <= 4 or a negative intercept is rejected by an ll.assert, which aborts the
+// template; is_error cannot catch it, so the rejection is not asserted here.
+
 // ---- cpu ------------------------------------------------------------------
 // cpu = between(2 + size / 16 GiB, 2, 8)
 
@@ -86,6 +121,7 @@ TestPolarsThreadsClampedToCpuBounds := func() {
 TestConstantsMatchTheDocumentedFormula := func() {
 	test.isEqual(2, sizing.RAM_INTERCEPT_GIB)
 	test.isEqual(10, sizing.RAM_SLOPE)
+	test.isEqual(4, sizing.RAM_SLOPE_MIN)
 	test.isEqual(2, sizing.RAM_FLOOR_GIB)
 	test.isEqual(2, sizing.CPU_MIN)
 	test.isEqual(8, sizing.CPU_MAX)
