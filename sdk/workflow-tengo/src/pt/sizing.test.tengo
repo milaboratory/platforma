@@ -26,43 +26,89 @@ _cpu := func(inputBytes) {
 GiB := units.GiB
 
 // ---- ram: the documented curve --------------------------------------------
-// ram = max(2 GiB + 10 * size, 2 GiB)
+// ram = max(4 GiB + 10 * size, 2 GiB)
 
-TestRamFloorBinds := func() {
-	// At zero input the intercept alone is the floor.
-	test.isEqual(2 * GiB, _ram(0, undefined))
+TestRamInterceptAtZeroInput := func() {
+	test.isEqual(4 * GiB, _ram(0, undefined))
 }
 
 TestRamSlopeGoverns := func() {
-	test.isEqual(12 * GiB, _ram(1 * GiB, undefined))   //  2 + 10*1
-	test.isEqual(42 * GiB, _ram(4 * GiB, undefined))   //  2 + 10*4
-	test.isEqual(82 * GiB, _ram(8 * GiB, undefined))   //  2 + 10*8
+	test.isEqual(14 * GiB, _ram(1 * GiB, undefined))   //  4 + 10*1
+	test.isEqual(44 * GiB, _ram(4 * GiB, undefined))   //  4 + 10*4
+	test.isEqual(84 * GiB, _ram(8 * GiB, undefined))   //  4 + 10*8
 }
 
 TestRamHasNoCeiling := func() {
-	// 25.4 GiB is where the previous 256 GiB ceiling bound at slope 10.
-	test.isEqual(502 * GiB, _ram(50 * GiB, undefined))
-	test.isEqual(5002 * GiB, _ram(500 * GiB, undefined))
+	test.isEqual(504 * GiB, _ram(50 * GiB, undefined))
+	test.isEqual(5004 * GiB, _ram(500 * GiB, undefined))
 }
 
 // ---- ram: memFloor --------------------------------------------------------
 
 TestMemFloorRaisesTheLowerBound := func() {
-	// Below the crossover the floor wins, so the grant matches the old flat pin.
+	// Below the crossover, the floor wins.
 	test.isEqual(12 * GiB, _ram(0, 12 * GiB))
-	test.isEqual(12 * GiB, _ram(1 * GiB, 12 * GiB))
+	test.isEqual(12 * GiB, _ram(512 * units.MiB, 12 * GiB))
 }
 
 TestMemFloorDoesNotCapGrowth := func() {
-	// Above (12 - 2) / 10 = 1 GiB the formula governs again.
-	test.isEqual(42 * GiB, _ram(4 * GiB, 12 * GiB))
-	test.isEqual(202 * GiB, _ram(20 * GiB, 12 * GiB))
+	// Above (12 - 4) / 10 = 0.8 GiB of input, the formula wins.
+	test.isEqual(14 * GiB, _ram(1 * GiB, 12 * GiB))
+	test.isEqual(204 * GiB, _ram(20 * GiB, 12 * GiB))
 }
 
 TestMemFloorAboveOldCeilingIsAccepted := func() {
 	test.isEqual(300 * GiB, _ram(0, 300 * GiB))
-	test.isEqual(5002 * GiB, _ram(500 * GiB, 300 * GiB))
+	test.isEqual(5004 * GiB, _ram(500 * GiB, 300 * GiB))
 }
+
+// ---- ram: memSlope / memIntercept -----------------------------------------
+
+_ramWith := func(inputBytes, memFloor, slope, intercept) {
+	return _evalAt(sizing.ramFormula(memFloor, slope, intercept), inputBytes)
+}
+
+TestUnsetSlopeAndInterceptMatchTheDefault := func() {
+	test.isEqual(_ram(8 * GiB, undefined), _ramWith(8 * GiB, undefined, undefined, undefined))
+	test.isEqual(84 * GiB, _ramWith(8 * GiB, undefined, undefined, undefined))
+}
+
+TestCustomSlopeGoverns := func() {
+	test.isEqual(44 * GiB, _ramWith(8 * GiB, undefined, 5, undefined))       //  4 + 5*8
+	test.isEqual(124 * GiB, _ramWith(8 * GiB, undefined, 15, undefined))     //  4 + 15*8
+}
+
+TestCustomIntercept := func() {
+	test.isEqual(88 * GiB, _ramWith(8 * GiB, undefined, undefined, 8 * GiB)) //  8 + 10*8
+	test.isEqual(84 * GiB, _ramWith(8 * GiB, undefined, undefined, 4 * GiB)) //  minimum
+}
+
+TestFloorStillAppliesWithCustomParams := func() {
+	test.isEqual(12 * GiB, _ramWith(0, 12 * GiB, 6, 4 * GiB))
+	test.isEqual(52 * GiB, _ramWith(8 * GiB, 12 * GiB, 6, 4 * GiB))          //  4 + 6*8
+}
+
+// ---- ram: static fallback -------------------------------------------------
+// A backend that cannot evaluate formulas uses the static fallback.
+
+_fallback := func(memFloor, slope, intercept) {
+	return f.fallbackOf(sizing.ramFormula(memFloor, slope, intercept))
+}
+
+TestFallbackDefault := func() {
+	test.isEqual("4GiB", _fallback(undefined, undefined, undefined))
+	test.isEqual("4GiB", _fallback(undefined, undefined, 4 * GiB))
+	test.isEqual(12 * GiB, _fallback(12 * GiB, undefined, undefined))
+}
+
+TestFallbackIsAtLeastTheIntercept := func() {
+	test.isEqual(8 * GiB, _fallback(undefined, undefined, 8 * GiB))
+	test.isEqual(8 * GiB, _fallback(2 * GiB, undefined, 8 * GiB))
+	test.isEqual(12 * GiB, _fallback(12 * GiB, undefined, 8 * GiB))
+}
+
+// ll.assert rejects a non-integer slope, a slope <= 4, and an intercept below 4 GiB.
+// ll.assert stops the template, and is_error cannot catch that. Thus no test checks it.
 
 // ---- cpu ------------------------------------------------------------------
 // cpu = between(2 + size / 16 GiB, 2, 8)
@@ -84,8 +130,10 @@ TestPolarsThreadsClampedToCpuBounds := func() {
 // ---- an explicit mem() is not this module's business ----------------------
 
 TestConstantsMatchTheDocumentedFormula := func() {
-	test.isEqual(2, sizing.RAM_INTERCEPT_GIB)
+	test.isEqual(4, sizing.RAM_INTERCEPT_GIB)
+	test.isEqual(4, sizing.RAM_INTERCEPT_MIN_GIB)
 	test.isEqual(10, sizing.RAM_SLOPE)
+	test.isEqual(4, sizing.RAM_SLOPE_MIN)
 	test.isEqual(2, sizing.RAM_FLOOR_GIB)
 	test.isEqual(2, sizing.CPU_MIN)
 	test.isEqual(8, sizing.CPU_MAX)
