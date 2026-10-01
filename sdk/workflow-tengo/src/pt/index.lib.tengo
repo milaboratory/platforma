@@ -886,7 +886,7 @@ workflow := func() {
 		 *                                    120 * units.GiB
 		 *
 		 * If not set, the RAM request is sized from the input data volume:
-		 * `max(intercept + slope × size, 2 GiB)`, with no upper bound. The intercept is 2 GiB
+		 * `max(intercept + slope × size, 2 GiB)`, with no upper bound. The intercept is 4 GiB
 		 * and the slope 10 unless `.memIntercept()` / `.memSlope()` change them. Setting an
 		 * explicit value overrides the formula, and those setters with it.
 		 *
@@ -942,10 +942,10 @@ workflow := func() {
 		/**
 		 * Sets the intercept of the auto-sized RAM request: the RAM granted on top of the
 		 * slope term. The request is `max(intercept + slope × size, floor)`; the default
-		 * intercept is 2 GiB. The floor still applies, so an intercept of 0 does not grant
-		 * less than 2 GiB (or `.memFloor()`). `.mem()` overrides this when a caller sets both.
+		 * intercept is 4 GiB, which is also the minimum. `.mem()` overrides this when a
+		 * caller sets both.
 		 *
-		 * @param amount: number - bytes, >= 0, e.g. `4 * units.GiB`
+		 * @param amount: number - bytes, >= 4 GiB, e.g. `8 * units.GiB`
 		 * @return builder
 		 */
 		memIntercept: func(amount) {

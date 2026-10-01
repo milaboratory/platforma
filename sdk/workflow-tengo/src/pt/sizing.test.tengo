@@ -26,23 +26,21 @@ _cpu := func(inputBytes) {
 GiB := units.GiB
 
 // ---- ram: the documented curve --------------------------------------------
-// ram = max(2 GiB + 10 * size, 2 GiB)
+// ram = max(4 GiB + 10 * size, 2 GiB)
 
-TestRamFloorBinds := func() {
-	// At zero input the intercept alone is the floor.
-	test.isEqual(2 * GiB, _ram(0, undefined))
+TestRamInterceptAtZeroInput := func() {
+	test.isEqual(4 * GiB, _ram(0, undefined))
 }
 
 TestRamSlopeGoverns := func() {
-	test.isEqual(12 * GiB, _ram(1 * GiB, undefined))   //  2 + 10*1
-	test.isEqual(42 * GiB, _ram(4 * GiB, undefined))   //  2 + 10*4
-	test.isEqual(82 * GiB, _ram(8 * GiB, undefined))   //  2 + 10*8
+	test.isEqual(14 * GiB, _ram(1 * GiB, undefined))   //  4 + 10*1
+	test.isEqual(44 * GiB, _ram(4 * GiB, undefined))   //  4 + 10*4
+	test.isEqual(84 * GiB, _ram(8 * GiB, undefined))   //  4 + 10*8
 }
 
 TestRamHasNoCeiling := func() {
-	// 25.4 GiB is where the previous 256 GiB ceiling bound at slope 10.
-	test.isEqual(502 * GiB, _ram(50 * GiB, undefined))
-	test.isEqual(5002 * GiB, _ram(500 * GiB, undefined))
+	test.isEqual(504 * GiB, _ram(50 * GiB, undefined))
+	test.isEqual(5004 * GiB, _ram(500 * GiB, undefined))
 }
 
 // ---- ram: memFloor --------------------------------------------------------
@@ -50,18 +48,18 @@ TestRamHasNoCeiling := func() {
 TestMemFloorRaisesTheLowerBound := func() {
 	// Below the crossover the floor wins, so the grant matches the old flat pin.
 	test.isEqual(12 * GiB, _ram(0, 12 * GiB))
-	test.isEqual(12 * GiB, _ram(1 * GiB, 12 * GiB))
+	test.isEqual(12 * GiB, _ram(512 * units.MiB, 12 * GiB))
 }
 
 TestMemFloorDoesNotCapGrowth := func() {
-	// Above (12 - 2) / 10 = 1 GiB the formula governs again.
-	test.isEqual(42 * GiB, _ram(4 * GiB, 12 * GiB))
-	test.isEqual(202 * GiB, _ram(20 * GiB, 12 * GiB))
+	// Above (12 - 4) / 10 = 0.8 GiB the formula governs again.
+	test.isEqual(14 * GiB, _ram(1 * GiB, 12 * GiB))
+	test.isEqual(204 * GiB, _ram(20 * GiB, 12 * GiB))
 }
 
 TestMemFloorAboveOldCeilingIsAccepted := func() {
 	test.isEqual(300 * GiB, _ram(0, 300 * GiB))
-	test.isEqual(5002 * GiB, _ram(500 * GiB, 300 * GiB))
+	test.isEqual(5004 * GiB, _ram(500 * GiB, 300 * GiB))
 }
 
 // ---- ram: memSlope / memIntercept -----------------------------------------
@@ -72,31 +70,30 @@ _ramWith := func(inputBytes, memFloor, slope, intercept) {
 
 TestUnsetSlopeAndInterceptMatchTheDefault := func() {
 	test.isEqual(_ram(8 * GiB, undefined), _ramWith(8 * GiB, undefined, undefined, undefined))
-	test.isEqual(82 * GiB, _ramWith(8 * GiB, undefined, undefined, undefined))
+	test.isEqual(84 * GiB, _ramWith(8 * GiB, undefined, undefined, undefined))
 }
 
 TestCustomSlopeGoverns := func() {
-	test.isEqual(42 * GiB, _ramWith(8 * GiB, undefined, 5, undefined))       //  2 + 5*8
-	test.isEqual(122 * GiB, _ramWith(8 * GiB, undefined, 15, undefined))     //  2 + 15*8
+	test.isEqual(44 * GiB, _ramWith(8 * GiB, undefined, 5, undefined))       //  4 + 5*8
+	test.isEqual(124 * GiB, _ramWith(8 * GiB, undefined, 15, undefined))     //  4 + 15*8
 }
 
 TestFractionalSlope := func() {
-	test.isEqual(62 * GiB, _ramWith(8 * GiB, undefined, 7.5, undefined))     //  2 + 7.5*8
-	test.isEqual(39 * GiB, _ramWith(8 * GiB, undefined, 4.625, undefined))   //  2 + 4.625*8
+	test.isEqual(64 * GiB, _ramWith(8 * GiB, undefined, 7.5, undefined))     //  4 + 7.5*8
+	test.isEqual(41 * GiB, _ramWith(8 * GiB, undefined, 4.625, undefined))   //  4 + 4.625*8
 }
 
 TestCustomIntercept := func() {
 	test.isEqual(88 * GiB, _ramWith(8 * GiB, undefined, undefined, 8 * GiB)) //  8 + 10*8
-	test.isEqual(80 * GiB, _ramWith(8 * GiB, undefined, undefined, 0))       //  0 + 10*8
+	test.isEqual(84 * GiB, _ramWith(8 * GiB, undefined, undefined, 4 * GiB)) //  minimum
 }
 
-TestZeroInterceptStillHonoursTheFloor := func() {
-	test.isEqual(2 * GiB, _ramWith(0, undefined, undefined, 0))
-	test.isEqual(12 * GiB, _ramWith(0, 12 * GiB, 6, 0))
-	test.isEqual(48 * GiB, _ramWith(8 * GiB, 12 * GiB, 6, 0))                //  0 + 6*8
+TestFloorStillAppliesWithCustomParams := func() {
+	test.isEqual(12 * GiB, _ramWith(0, 12 * GiB, 6, 4 * GiB))
+	test.isEqual(52 * GiB, _ramWith(8 * GiB, 12 * GiB, 6, 4 * GiB))          //  4 + 6*8
 }
 
-// A slope <= 4 or a negative intercept is rejected by an ll.assert, which aborts the
+// A slope <= 4 or an intercept below 4 GiB is rejected by an ll.assert, which aborts the
 // template; is_error cannot catch it, so the rejection is not asserted here.
 
 // ---- cpu ------------------------------------------------------------------
@@ -119,7 +116,8 @@ TestPolarsThreadsClampedToCpuBounds := func() {
 // ---- an explicit mem() is not this module's business ----------------------
 
 TestConstantsMatchTheDocumentedFormula := func() {
-	test.isEqual(2, sizing.RAM_INTERCEPT_GIB)
+	test.isEqual(4, sizing.RAM_INTERCEPT_GIB)
+	test.isEqual(4, sizing.RAM_INTERCEPT_MIN_GIB)
 	test.isEqual(10, sizing.RAM_SLOPE)
 	test.isEqual(4, sizing.RAM_SLOPE_MIN)
 	test.isEqual(2, sizing.RAM_FLOOR_GIB)
