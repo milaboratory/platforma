@@ -4,6 +4,7 @@
 //
 //     ram                = between(2 GiB + 6 * size, memFloor or 2 GiB, 256 GiB)
 //     cpu                = between(2 + size / 16 GiB, 2, 8)
+//                          .cpuFloor(), .cpuIntercept(), .cpuSlope() and .cpuCeiling() change it
 //     POLARS_MAX_THREADS = between(system.cpu, 2, 8)
 //
 // Measured need per GiB of input, per plan shape, at 8 Polars threads:
@@ -98,15 +99,95 @@ ramFormula := func(memFloor) {
 }
 
 /**
- * The default CPU formula. Raising CPU_MAX raises the RAM requirement too -- the same
- * plan needs 4.09 / 4.94 / 6.85 GiB per input GiB at 2 / 8 / 32 Polars threads.
+ * Checks a CPU floor, intercept or ceiling for cpuFormula and its setters.
  *
+ * @param cores: int - at least 1
+ * @param name: string - the setter, for the error message
+ */
+assertCpuCores := func(cores, name) {
+	ll.assert(is_int(cores) && cores >= 1,
+		"pt.sizing: %s must be an integer of at least 1, got %v", name, cores)
+}
+
+/**
+ * Checks a CPU slope for cpuFormula and .cpuSlope().
+ *
+ * @param slope: number - cores per GiB of input, at least 0
+ */
+assertCpuSlope := func(slope) {
+	ll.assert((is_int(slope) || is_float(slope)) && slope >= 0,
+		"pt.sizing: cpuSlope must be a number of at least 0, got %v", slope)
+}
+
+/**
+ * Converts a CPU slope to hundredths of a core per GiB. Digits after the second decimal
+ * are dropped: 0.257 gives 25. The small offset stops 0.29 * 100 = 28.999... from
+ * giving 28.
+ *
+ * @param slope: number - at least 0
+ * @return int
+ */
+cpuSlopeHundredths := func(slope) {
+	assertCpuSlope(slope)
+	return int(float(slope) * 100 + 0.000001)
+}
+
+/**
+ * The default CPU formula:
+ *
+ *     between(intercept + slope * size, floor, ceiling)
+ *
+ * The default curve is 2 + size / 16 GiB. Its ceiling is CPU_MAX, or the floor if the
+ * floor is larger. With .cpuSlope() or .cpuIntercept(), the curve has no ceiling.
+ * .cpuCeiling() sets the ceiling in both cases.
+ *
+ * @param opts: map | undefined - each key is optional:
+ *          floor: int - cores, from .cpuFloor(). Default CPU_MIN.
+ *          intercept: int - cores, from .cpuIntercept(). Default CPU_MIN.
+ *          slope: number - cores per GiB of input, from .cpuSlope(). Two decimals.
+ *                 Default 1 core per 16 GiB.
+ *          ceiling: int - cores, from .cpuCeiling(). Must not be less than the floor.
  * @return formula
  */
-cpuFormula := func() {
-	return f.size({ default: 0 }).dividedByFloor(f.gib(CPU_GIB_PER_CORE)).plus(f.const(CPU_MIN)).
-		between(f.const(CPU_MIN), f.const(CPU_MAX)).
-		staticFallback(CPU_MIN)
+cpuFormula := func(...args) {
+	ll.assert(len(args) <= 1, "pt.sizing.cpuFormula: expected at most one options map")
+	opts := len(args) == 1 && !is_undefined(args[0]) ? args[0] : {}
+	ll.assert(is_map(opts), "pt.sizing.cpuFormula: expected an options map, got %v", opts)
+
+	floor := is_undefined(opts.floor) ? CPU_MIN : opts.floor
+	intercept := is_undefined(opts.intercept) ? CPU_MIN : opts.intercept
+	assertCpuCores(floor, "cpuFloor")
+	assertCpuCores(intercept, "cpuIntercept")
+
+	// Without .cpuSlope(), the slope term stays size / 16 GiB. That is 0.0625 cores per
+	// GiB, which two decimals cannot hold.
+	slopeTerm := f.size({ default: 0 }).dividedByFloor(f.gib(CPU_GIB_PER_CORE))
+	if !is_undefined(opts.slope) {
+		slopeTerm = f.size({ default: 0 }).times(cpuSlopeHundredths(opts.slope)).dividedByFloor(f.gib(100))
+	}
+	curve := slopeTerm.plus(f.const(intercept))
+	defaultCurve := is_undefined(opts.slope) && is_undefined(opts.intercept)
+
+	ceiling := undefined
+	if !is_undefined(opts.ceiling) {
+		assertCpuCores(opts.ceiling, "cpuCeiling")
+		ll.assert(opts.ceiling >= floor,
+			"pt.sizing: cpuCeiling (%d) must not be less than cpuFloor (%d)", opts.ceiling, floor)
+		ceiling = opts.ceiling
+	} else if defaultCurve {
+		ceiling = floor > CPU_MAX ? floor : CPU_MAX
+	}
+
+	// The static fallback is the smallest value the formula can give.
+	fallback := intercept > floor ? intercept : floor
+	if !is_undefined(ceiling) && fallback > ceiling {
+		fallback = ceiling
+	}
+
+	if is_undefined(ceiling) {
+		return curve.atLeast(f.const(floor)).staticFallback(fallback)
+	}
+	return curve.between(f.const(floor), f.const(ceiling)).staticFallback(fallback)
 }
 
 /**
@@ -130,6 +211,8 @@ scratchFormula := func(readFrames, writeFrames) {
 export {
 	ramFormula: ramFormula,
 	cpuFormula: cpuFormula,
+	assertCpuCores: assertCpuCores,
+	assertCpuSlope: assertCpuSlope,
 	scratchFormula: scratchFormula,
 
 	POLARS_MAX_THREADS_EXPR: POLARS_MAX_THREADS_EXPR,
