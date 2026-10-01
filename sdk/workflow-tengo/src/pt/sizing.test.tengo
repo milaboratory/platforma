@@ -78,11 +78,6 @@ TestCustomSlopeGoverns := func() {
 	test.isEqual(124 * GiB, _ramWith(8 * GiB, undefined, 15, undefined))     //  4 + 15*8
 }
 
-TestFractionalSlope := func() {
-	test.isEqual(64 * GiB, _ramWith(8 * GiB, undefined, 7.5, undefined))     //  4 + 7.5*8
-	test.isEqual(41 * GiB, _ramWith(8 * GiB, undefined, 4.625, undefined))   //  4 + 4.625*8
-}
-
 TestCustomIntercept := func() {
 	test.isEqual(88 * GiB, _ramWith(8 * GiB, undefined, undefined, 8 * GiB)) //  8 + 10*8
 	test.isEqual(84 * GiB, _ramWith(8 * GiB, undefined, undefined, 4 * GiB)) //  minimum
@@ -93,7 +88,7 @@ TestFloorStillAppliesWithCustomParams := func() {
 	test.isEqual(52 * GiB, _ramWith(8 * GiB, 12 * GiB, 6, 4 * GiB))          //  4 + 6*8
 }
 
-// A slope <= 4 or an intercept below 4 GiB is rejected by an ll.assert, which aborts the
+// A non-integer slope, a slope <= 4, or an intercept below 4 GiB is rejected by an ll.assert, which aborts the
 // template; is_error cannot catch it, so the rejection is not asserted here.
 
 // ---- cpu ------------------------------------------------------------------
