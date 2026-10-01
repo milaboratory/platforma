@@ -1,5 +1,11 @@
 # @milaboratories/uikit
 
+## 2.15.36
+
+### Patch Changes
+
+- 33c1499: Remove the background from outlined control labels
+
 ## 2.15.35
 
 ### Patch Changes
