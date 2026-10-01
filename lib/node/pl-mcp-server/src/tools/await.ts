@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { ToolContext } from "./types";
 import { summarizeOutputs } from "./tokens";
 import { safeEval } from "./sandbox";
+import { toolError, transformFailed } from "./unreadable";
 import { errorResult, textResult } from "./types";
 
 export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
@@ -108,10 +109,7 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
               );
               return textResult({ status: "Done", block: blockInfo, result });
             } catch (e: unknown) {
-              return errorResult(
-                `Transform failed: ${e instanceof Error ? e.message : String(e)}`,
-                "Check your JS expression syntax. Available variables: data, outputs, block.",
-              );
+              return toolError(transformFailed(e, "data, outputs, block"));
             }
           }
 
