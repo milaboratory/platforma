@@ -1,4 +1,4 @@
-import { expect, test } from "vitest";
+import { describe, expect, test } from "vitest";
 import { Computable } from "@milaboratories/computable";
 import type { Watcher } from "@milaboratories/computable";
 import type { FieldData } from "@milaboratories/pl-client";
@@ -8,10 +8,14 @@ import {
   NullSignedResourceId,
 } from "@milaboratories/pl-client";
 import { isPlTreeEntry, isPlTreeEntryAccessor, isPlTreeNodeAccessor } from "./accessors";
-import { PlTreeState } from "./state";
+import type { ExtendedResourceData } from "./state";
+import { PlTreeState, TreeStateUpdateError } from "./state";
+import { constructTreeLoadingRequest, initialTreeLoadingStat } from "./sync";
 import {
   dField,
+  field,
   iField,
+  InitialStructuralResourceState,
   ResourceReady,
   TestDynamicRootId1,
   TestDynamicRootState1,
@@ -473,4 +477,395 @@ test("removal of a typed field still throws after a reorder", () => {
   expect(() => tree.updateFromResourceData(rootRes([dField("c"), iField("a")]))).toThrow(
     /removal of Input field b/,
   );
+});
+
+const R1 = rid(10n);
+const V1 = rid(20n);
+
+function res(
+  id: ReturnType<typeof rid>,
+  typeName: string,
+  patch: Partial<ExtendedResourceData> = {},
+  fields: FieldData[] = [],
+): ExtendedResourceData {
+  return {
+    ...InitialStructuralResourceState,
+    id,
+    type: { name: typeName, version: "1" },
+    fields,
+    ...patch,
+  };
+}
+
+/** A tree whose root holds R1 through a dynamic field, R1 built from `r1`. */
+function treeWith(r1: ExtendedResourceData, ...others: ExtendedResourceData[]): PlTreeState {
+  const t = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
+  t.updateFromResourceData([
+    { ...TestDynamicRootState1, fields: [dField("a", R1)] },
+    ...others,
+    r1,
+  ]);
+  return t;
+}
+
+describe("becoming final notifies the readers of every source it retires", () => {
+  test("a missing-field reader is re-run when the resource becomes final", () => {
+    const t = treeWith(res(R1, "StdMap", { inputsLocked: true }));
+    const reader = w();
+    const unstable: string[] = [];
+    expect(t.get(w(), R1).getField(reader, "x", (m) => unstable.push(m))).toBeUndefined();
+    expect(unstable).toEqual(["field_not_found:x"]);
+
+    // ready makes a StdMap final; the field list itself does not change
+    t.updateFromResourceData([res(R1, "StdMap", { inputsLocked: true, resourceReady: true })]);
+    expect(t.get(w(), R1).finalState).toBe(true);
+    expect(reader.isChanged).toBe(true);
+
+    // and the re-run reads the absent field as stable
+    const rerun: string[] = [];
+    expect(t.get(w(), R1).getField(w(), "x", (m) => rerun.push(m))).toBeUndefined();
+    expect(rerun).toEqual([]);
+  });
+
+  test("a KV reader of an absent key is re-run when the resource becomes final", () => {
+    const t = treeWith(res(R1, "StdMap", { inputsLocked: true }));
+    const reader = w();
+    expect(t.get(w(), R1).getKeyValue(reader, "k")).toBeUndefined();
+    t.updateFromResourceData([res(R1, "StdMap", { inputsLocked: true, resourceReady: true })]);
+    expect(reader.isChanged).toBe(true);
+  });
+});
+
+describe("any error inside an update invalidates the tree and surfaces as a TreeStateUpdateError", () => {
+  test("a throwing final predicate invalidates the tree and notifies readers of the mutated state", () => {
+    const A = rid(30n);
+    const B = rid(31n);
+    const C = rid(32n);
+    const S = rid(33n);
+    const t = new PlTreeState(TestDynamicRootId1, (r) => {
+      if (r.type.name === "Boom") throw new Error("predicate failure");
+      return DefaultFinalResourceDataPredicate(r);
+    });
+    t.updateFromResourceData([
+      { ...TestDynamicRootState1, fields: [dField("a", A)] },
+      res(A, "UserProject", {}, [dField("f", B)]),
+      res(B, "UserProject"),
+    ]);
+    const reader = w();
+    t.get(reader, B);
+    // A is repointed B -> C, then the predicate throws a plain Error on S.
+    expect(() =>
+      t.updateFromResourceData(
+        [res(A, "UserProject", {}, [dField("f", C)]), res(C, "UserProject"), res(S, "Boom")],
+        { allowOrphanInputs: true },
+      ),
+    ).toThrow(TreeStateUpdateError);
+    expect(t.isValid).toBe(false);
+    expect(reader.isChanged).toBe(true);
+  });
+
+  test("the original error is kept as the cause", () => {
+    const t = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
+    let thrown: unknown;
+    try {
+      // ready with inputs unlocked: verifyReadyState throws a plain Error
+      t.updateFromResourceData([{ ...TestDynamicRootState1, inputsLocked: false, fields: [] }]);
+    } catch (e: unknown) {
+      thrown = e;
+    }
+    expect(thrown).toBeInstanceOf(TreeStateUpdateError);
+    expect(thrown instanceof Error && thrown.cause instanceof Error).toBe(true);
+    expect(t.isValid).toBe(false);
+  });
+});
+
+describe("a lock transition notifies lock readers", () => {
+  test("inputs", () => {
+    const t = treeWith(res(R1, "UserProject"));
+    const reader = w();
+    expect(t.get(w(), R1).getInputsLocked(reader)).toBe(false);
+    t.updateFromResourceData([res(R1, "UserProject", { inputsLocked: true })]);
+    expect(reader.isChanged).toBe(true);
+  });
+
+  test("outputs", () => {
+    const t = treeWith(res(R1, "UserProject", { inputsLocked: true, resourceReady: true }));
+    const reader = w();
+    expect(t.get(w(), R1).getOutputsLocked(reader)).toBe(false);
+    t.updateFromResourceData([
+      res(R1, "UserProject", { inputsLocked: true, resourceReady: true, outputsLocked: true }),
+    ]);
+    expect(reader.isChanged).toBe(true);
+  });
+
+  test("a lock alone does not notify a ready reader", () => {
+    const t = treeWith(res(R1, "UserProject"));
+    const reader = w();
+    expect(t.get(w(), R1).getIsReadyOrError(reader)).toBe(false);
+    t.updateFromResourceData([res(R1, "UserProject", { inputsLocked: true })]);
+    expect(reader.isChanged).toBe(false);
+  });
+});
+
+describe("a required-field read is re-run when the field appears", () => {
+  for (const opt of ["errorIfFieldNotFound", "errorIfFieldNotSet"] as const) {
+    test(opt, () => {
+      const t = treeWith(res(R1, "UserProject"));
+      const reader = w();
+      expect(() => t.get(w(), R1).getField(reader, { field: "x", [opt]: true }, () => {})).toThrow(
+        /not found/,
+      );
+      t.updateFromResourceData([res(R1, "UserProject", {}, [dField("x")])]);
+      expect(reader.isChanged).toBe(true);
+    });
+  }
+});
+
+describe("removing a dynamic field re-evaluates finality", () => {
+  test("the resource becomes final and leaves the seed set", () => {
+    const upload = (fields: FieldData[]) =>
+      res(
+        R1,
+        "BlobUpload/x",
+        { inputsLocked: true, outputsLocked: true, resourceReady: true },
+        fields,
+      );
+    const output = field("Output", "o", V1, NullSignedResourceId, true);
+    const t = treeWith(upload([output, dField("d")]), {
+      ...TestValueResourceState1,
+      id: V1,
+      data: Buffer.from("x"),
+    });
+    expect(t.get(w(), R1).finalState).toBe(false);
+
+    t.updateFromResourceData([upload([output])]);
+    expect(t.get(w(), R1).finalState).toBe(true);
+    expect(constructTreeLoadingRequest(t).seedResources).not.toContain(R1);
+  });
+
+  test("a removal alone counts as a changed resource", () => {
+    const t = treeWith(res(R1, "UserProject", {}, [dField("d")]));
+    const stat = initialTreeLoadingStat();
+    t.updateFromResourceData([res(R1, "UserProject")], { stat });
+    expect(stat.resourcesChanged).toBe(1);
+    expect(stat.fieldsRemoved).toBe(1);
+  });
+});
+
+describe("listDynamicFields lists no Service field", () => {
+  test("a Service field is an input field, not a dynamic one", () => {
+    const t = treeWith(res(R1, "UserProject"));
+    const dynamicReader = w();
+    const inputReader = w();
+    expect(t.get(w(), R1).listDynamicFields(dynamicReader)).toEqual([]);
+    expect(t.get(w(), R1).listInputFields(inputReader)).toEqual([]);
+
+    t.updateFromResourceData([res(R1, "UserProject", {}, [field("Service", "s"), dField("d")])]);
+    expect(t.get(w(), R1).listDynamicFields(w())).toEqual(["d"]);
+    expect(t.get(w(), R1).listInputFields(w())).toEqual(["s"]);
+    expect(inputReader.isChanged).toBe(true);
+    expect(dynamicReader.isChanged).toBe(true);
+  });
+});
+
+describe("a Dynamic or MTW field recreated under another type", () => {
+  for (const from of ["Dynamic", "MTW"] as const) {
+    test(`${from} -> Input notifies both lists`, () => {
+      const t = treeWith(res(R1, "UserProject", {}, [field(from, "f")]));
+      const inputReader = w();
+      const dynamicReader = w();
+      expect(t.get(w(), R1).listInputFields(inputReader)).toEqual([]);
+      expect(t.get(w(), R1).listDynamicFields(dynamicReader)).toEqual(["f"]);
+
+      t.updateFromResourceData([res(R1, "UserProject", {}, [field("Input", "f")])]);
+      expect(t.isValid).toBe(true);
+      expect(t.get(w(), R1).listInputFields(w())).toEqual(["f"]);
+      expect(t.get(w(), R1).listDynamicFields(w())).toEqual([]);
+      expect(inputReader.isChanged).toBe(true);
+      expect(dynamicReader.isChanged).toBe(true);
+    });
+
+    test(`${from} -> Output notifies the output list`, () => {
+      const t = treeWith(res(R1, "UserProject", {}, [field(from, "f")]));
+      const outputReader = w();
+      expect(t.get(w(), R1).listOutputFields(outputReader)).toEqual([]);
+      t.updateFromResourceData([res(R1, "UserProject", {}, [field("Output", "f")])]);
+      expect(t.get(w(), R1).listOutputFields(w())).toEqual(["f"]);
+      expect(outputReader.isChanged).toBe(true);
+    });
+  }
+
+  test("a reader refused on the old type is re-run when the field changes type", () => {
+    const t = treeWith(res(R1, "UserProject", {}, [dField("f")]));
+    const reader = w();
+    expect(() =>
+      t.get(w(), R1).getField(reader, { field: "f", assertFieldType: "Output" }, () => {}),
+    ).toThrow(/Unexpected field type/);
+    t.updateFromResourceData([res(R1, "UserProject", {}, [field("Output", "f")])]);
+    expect(reader.isChanged).toBe(true);
+  });
+
+  test("MTW -> Dynamic is accepted", () => {
+    const t = treeWith(res(R1, "UserProject", {}, [field("MTW", "f")]));
+    t.updateFromResourceData([res(R1, "UserProject", {}, [dField("f")])]);
+    expect(t.get(w(), R1).fieldsMap.get("f")?.type).toBe("Dynamic");
+  });
+
+  test("-> Input while inputs are locked is rejected", () => {
+    const t = treeWith(res(R1, "UserProject", { inputsLocked: true }, [dField("f")]));
+    expect(() =>
+      t.updateFromResourceData([
+        res(R1, "UserProject", { inputsLocked: true }, [field("Input", "f")]),
+      ]),
+    ).toThrow(TreeStateUpdateError);
+  });
+
+  test("-> Service while inputs are locked is rejected", () => {
+    const t = treeWith(res(R1, "UserProject", { inputsLocked: true }, [dField("f")]));
+    expect(() =>
+      t.updateFromResourceData([
+        res(R1, "UserProject", { inputsLocked: true }, [field("Service", "f")]),
+      ]),
+    ).toThrow(TreeStateUpdateError);
+  });
+
+  test("-> Output while outputs are locked is rejected", () => {
+    const locked = { inputsLocked: true, outputsLocked: true, resourceReady: true };
+    const t = treeWith(res(R1, "UserProject", locked, [dField("f")]));
+    expect(() =>
+      t.updateFromResourceData([res(R1, "UserProject", locked, [field("Output", "f")])]),
+    ).toThrow(TreeStateUpdateError);
+  });
+
+  test("a typed field cannot change type", () => {
+    const t = treeWith(res(R1, "UserProject", {}, [field("Input", "f")]));
+    expect(() =>
+      t.updateFromResourceData([res(R1, "UserProject", {}, [field("Output", "f")])]),
+    ).toThrow(TreeStateUpdateError);
+  });
+});
+
+describe("the backend final flag follows updates", () => {
+  test("copied on update, and counted as a change", () => {
+    const t = treeWith(res(R1, "UserProject"));
+    const stat = initialTreeLoadingStat();
+    t.updateFromResourceData([res(R1, "UserProject", { final: true })], { stat });
+    expect(t.get(w(), R1).final).toBe(true);
+    expect(stat.resourcesChanged).toBe(1);
+  });
+});
+
+describe("invalidation reaches every reader of the invalidated state", () => {
+  test("a reader waiting for a resource the tree does not hold", () => {
+    const t = treeWith(res(R1, "UserProject"));
+    const reader = w();
+    expect(() => t.get(reader, rid(11n))).toThrow(/not found/);
+    t.invalidateTree("rebuild");
+    expect(reader.isChanged).toBe(true);
+  });
+
+  test("a reader of a dropped root", () => {
+    const t = new PlTreeState(new Set([TestDynamicRootId1]), DefaultFinalResourceDataPredicate);
+    t.updateFromResourceData([{ ...TestDynamicRootState1, fields: [] }]);
+    expect(t.dropDeletedRoot(TestDynamicRootId1)).toBe(true);
+    const reader = w();
+    expect(() => t.get(reader, TestDynamicRootId1)).toThrow(/not found/);
+    t.invalidateTree("synchronization terminated for the tree");
+    expect(reader.isChanged).toBe(true);
+  });
+});
+
+describe("a resource becoming final settles readers of an unresolved field", () => {
+  test("the reader is re-run, and reads the field as permanently unresolved", () => {
+    const map = (ready: boolean) =>
+      res(R1, "StdMap", { inputsLocked: true, resourceReady: ready }, [dField("x")]);
+    const t = treeWith(map(false));
+    const reader = w();
+    const before: string[] = [];
+    t.get(w(), R1).getField(reader, "x", (m) => before.push(m));
+    expect(before).toEqual(["field_not_resolved:x"]);
+
+    t.updateFromResourceData([map(true)]);
+    expect(t.get(w(), R1).finalState).toBe(true);
+    expect(reader.isChanged).toBe(true);
+    const after: string[] = [];
+    t.get(w(), R1).getField(w(), "x", (m) => after.push(m));
+    expect(after).toEqual([]);
+  });
+});
+
+describe("a lock alone settles an asserted absence", () => {
+  for (const [assertFieldType, lock] of [
+    ["Output", { inputsLocked: true, resourceReady: true, outputsLocked: true }],
+    ["Input", { inputsLocked: true }],
+  ] as const)
+    test(assertFieldType, () => {
+      const unlocked =
+        assertFieldType === "Output" ? { inputsLocked: true, resourceReady: true } : {};
+      const t = treeWith(res(R1, "UserProject", unlocked));
+      const step = { field: "f", assertFieldType, allowPermanentAbsence: true };
+      const reader = w();
+      const before: string[] = [];
+      expect(t.get(w(), R1).getField(reader, step, (m) => before.push(m))).toBeUndefined();
+      expect(before).toEqual(["field_not_found:f"]);
+      t.updateFromResourceData([res(R1, "UserProject", lock)]);
+      expect(reader.isChanged).toBe(true);
+      const after: string[] = [];
+      expect(t.get(w(), R1).getField(w(), step, (m) => after.push(m))).toBeUndefined();
+      expect(after).toEqual([]);
+    });
+});
+
+describe("a field retyped in the same body that locks its list is accepted", () => {
+  // the backend may recreate a field and lock its list in one transaction between two polls
+  test("Dynamic -> Input with inputs locking in the same body", () => {
+    const t = treeWith(res(R1, "UserProject", {}, [dField("f")]));
+    const inputReader = w();
+    const lockReader = w();
+    expect(t.get(w(), R1).listInputFields(inputReader)).toEqual([]);
+    expect(t.get(w(), R1).getInputsLocked(lockReader)).toBe(false);
+    t.updateFromResourceData([
+      res(R1, "UserProject", { inputsLocked: true }, [field("Input", "f")]),
+    ]);
+    expect(t.isValid).toBe(true);
+    expect(t.get(w(), R1).listInputFields(w())).toEqual(["f"]);
+    expect(inputReader.isChanged).toBe(true);
+    expect(lockReader.isChanged).toBe(true);
+  });
+
+  test("MTW -> Output with outputs locking in the same body", () => {
+    const t = treeWith(res(R1, "UserProject", { inputsLocked: true }, [field("MTW", "f")]));
+    const outputReader = w();
+    expect(t.get(w(), R1).listOutputFields(outputReader)).toEqual([]);
+    t.updateFromResourceData([
+      res(R1, "UserProject", { inputsLocked: true, outputsLocked: true, resourceReady: true }, [
+        field("Output", "f"),
+      ]),
+    ]);
+    expect(t.isValid).toBe(true);
+    expect(outputReader.isChanged).toBe(true);
+  });
+});
+
+test("dropping a root keeps a child that is another root, and a child shared with one", () => {
+  const A = TestDynamicRootId1;
+  const B = rid(40n);
+  const C = rid(41n);
+  const S = rid(42n);
+  const t = new PlTreeState(new Set([A, B, C]), DefaultFinalResourceDataPredicate);
+  t.updateFromResourceData([
+    { ...TestDynamicRootState1, fields: [dField("b", B), dField("s", S)] },
+    res(B, "UserProject"),
+    res(C, "UserProject", {}, [dField("s", S)]),
+    res(S, "UserProject"),
+  ]);
+  expect(t.dropDeletedRoot(A)).toBe(true);
+  const ids = t.dumpState().map((r) => r.id);
+  expect(ids).not.toContain(A);
+  expect(ids).toContain(B);
+  expect(ids).toContain(S);
+  // with A dropped, only C holds S
+  expect(t.dropDeletedRoot(C)).toBe(true);
+  expect(t.dumpState().map((r) => r.id)).not.toContain(S);
+  expect(t.isValid).toBe(true);
 });

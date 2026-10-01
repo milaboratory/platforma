@@ -5,15 +5,24 @@ import { TreeStateUpdateError } from "./state";
 import type { TreeLoadingRequest, TreeLoadingStat } from "./sync";
 import { collectStatsForResource } from "./sync";
 
-/** Emit everything at or below this depth from a resolution seed, whatever its change token
+/** The `unconditionalDepth` of a resolution round: emit everything at or below this depth from
+ * a resolution seed, whatever its change token
  * says. It bounds descent as well as emission: under a token the walk otherwise ends at the
- * first unchanged resource (api.proto, changed_since_token), so without this a round returns
- * the seeds alone and a newly attached subtree costs one sequential round trip per level.
+ * first unchanged resource (api.proto, changed_since_token), so at depth 0 a newly attached
+ * subtree costs one sequential round trip per level.
  *
- * Deep enough to clear a subtree in one round, which is the trade: real server-side walk and
- * downlink for those levels, against a round trip each at ~1.4s on a slow link. Not free -
- * lower it if resolution rounds ever dominate a poll. */
-const RESOLUTION_DEPTH = 32;
+ * Round n of a poll (from 1) asks with `min(RESOLUTION_INITIAL_DEPTH * 2^(n-1),
+ * RESOLUTION_MAX_DEPTH)`: 1, 2, 4, 8, 16, 32, 32, … Most references a delta body brings are
+ * shallow, so the first round asks for little and re-sends little of what the mirror already
+ * holds under deduplicated outputs; a subtree that keeps needing rounds gets a walk twice as
+ * deep each time: an unheld chain of L levels costs about log2(L) rounds while it is within the
+ * cap's reach (63 levels), then one round per 33 more. */
+const RESOLUTION_INITIAL_DEPTH = 1;
+const RESOLUTION_MAX_DEPTH = 32;
+
+function resolutionDepth(round: number): number {
+  return Math.min(RESOLUTION_INITIAL_DEPTH * 2 ** (round - 1), RESOLUTION_MAX_DEPTH);
+}
 
 /** Every id a body points at. Exactly what `updateFromResourceData` refcounts, and it throws
  * `orphan resource` for any that resolves to nothing. */
@@ -184,6 +193,7 @@ export async function loadDeltaTreeState(
   // allowed rather than of anything wrong here, and the streaming path's stop-marker follow-up
   // loop has always run on the same assumption.
   const fetched = new Set<SignedResourceId>();
+  let resolutionRound = 0;
   while (missing.size > 0) {
     const round = pending.splice(0).filter((id) => !fetched.has(id) && missing.has(id));
     if (round.length === 0) {
@@ -197,8 +207,9 @@ export async function loadDeltaTreeState(
     }
     for (const id of round) fetched.add(id);
 
+    resolutionRound++;
     if (stats) stats.deltaResolutionRounds++;
-    await consume(round, RESOLUTION_DEPTH);
+    await consume(round, resolutionDepth(resolutionRound));
   }
 
   // A refused token is answered with the full tree and no error, so this is the only tell.
