@@ -1,5 +1,11 @@
 # @milaboratories/pl-client
 
+## 3.17.6
+
+### Patch Changes
+
+- fd9f892: Comment and test skip-message wording for the `treeChangedSince:v2` gate. No behaviour change.
+
 ## 3.17.5
 
 ### Patch Changes
