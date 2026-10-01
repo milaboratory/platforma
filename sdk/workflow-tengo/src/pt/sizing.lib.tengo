@@ -2,7 +2,7 @@
 // author leaves cpu or mem unset. Kept out of the template body so the formulas can be
 // unit tested against a fake metric resolver (see sizing.test.tengo).
 //
-//     ram                = between(2 GiB + 6 * size, memFloor or 2 GiB, 256 GiB)
+//     ram                = max(2 GiB + 10 * size, memFloor or 2 GiB)
 //     cpu                = between(2 + size / 16 GiB, 2, 8)
 //     POLARS_MAX_THREADS = between(system.cpu, 2, 8)
 //
@@ -16,9 +16,12 @@
 // threads are therefore clamped to CPU_MAX whatever cpu the run is granted, including
 // an explicit cpu() above 8, which reserves cores Polars does not use.
 //
-// RAM_SLOPE is 6, above the 4.94 it must cover. The margin is deliberate. The fits are
+// RAM_SLOPE is 10, above the 4.94 it must cover. The margin is deliberate. The fits are
 // against uncompressed TSV bytes, and f.size() reports stored blob bytes, so a parquet
 // input understates the volume the plan decodes.
+//
+// The request has no upper bound. A cap cuts the grant below the need and the run OOMs;
+// the backend clamps a request above what a node can give.
 //
 // f.size() counts only files attached with addFile(). A non-partitioned JSON p-column is
 // attached with writeFile() and contributes nothing, so a frame built only from those
@@ -50,12 +53,10 @@
 
 f := import(":exec.formula")
 ll := import(":ll")
-units := import(":units")
 
 RAM_INTERCEPT_GIB := 2
-RAM_SLOPE := 6
+RAM_SLOPE := 10
 RAM_FLOOR_GIB := 2
-RAM_CAP_GIB := 256
 RAM_STATIC_FALLBACK := "4GiB"
 
 SCRATCH_PER_READ_FRAME := 16
@@ -79,21 +80,15 @@ POLARS_MAX_THREADS_EXPR := format("{min(%d,max(%d,system.cpu))}", CPU_MAX, CPU_M
  */
 ramFormula := func(memFloor) {
 	floor := f.gib(RAM_FLOOR_GIB)
-	cap := f.gib(RAM_CAP_GIB)
 	fallback := RAM_STATIC_FALLBACK
 
 	if !is_undefined(memFloor) {
-		// A floor above the cap is rejected at the .memFloor() setter, not here.
-		// Raising the cap to match would make between(floor, floor) return the floor
-		// for every input, which is the flat pin memFloor exists to avoid.
-		ll.assert(memFloor <= RAM_CAP_GIB * units.GiB,
-			"pt.sizing: memFloor (%v bytes) must not exceed the %d GiB ceiling", memFloor, RAM_CAP_GIB)
 		floor = f.const(memFloor)
 		fallback = memFloor
 	}
 
 	return f.size({ default: 0 }).times(RAM_SLOPE).plus(f.gib(RAM_INTERCEPT_GIB)).
-		between(floor, cap).
+		atLeast(floor).
 		staticFallback(fallback)
 }
 
@@ -138,7 +133,6 @@ export {
 	RAM_INTERCEPT_GIB: RAM_INTERCEPT_GIB,
 	RAM_SLOPE:         RAM_SLOPE,
 	RAM_FLOOR_GIB:     RAM_FLOOR_GIB,
-	RAM_CAP_GIB:       RAM_CAP_GIB,
 	CPU_MIN:           CPU_MIN,
 	CPU_MAX:           CPU_MAX,
 	SCRATCH_PER_READ_FRAME:  SCRATCH_PER_READ_FRAME,
