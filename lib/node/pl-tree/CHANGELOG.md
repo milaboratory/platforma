@@ -1,5 +1,14 @@
 # @milaboratories/pl-tree
 
+## 1.15.6
+
+### Patch Changes
+
+- 9c97fb0: Gate delta tree sync on `treeChangedSince:v2`. v1 backends emit body-less unchanged frames the client misreads as stop markers, flooding the log; until a backend advertises v2 the tree falls back to backend-streaming.
+- Updated dependencies [9c97fb0]
+  - @milaboratories/pl-client@3.17.5
+  - @milaboratories/pl-errors@1.4.46
+
 ## 1.15.5
 
 ### Patch Changes
