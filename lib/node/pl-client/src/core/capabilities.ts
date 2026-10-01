@@ -21,10 +21,9 @@ export type BackendCapability =
   // changed_since_token and answer with only what changed since it. Narrower in name
   // than in reach, since it gates all three.
   | "treeChangedSince:v1"
-  // Same token, different wire contract: an unchanged resource is omitted and ends the walk
-  // (pl PR #2163). v1 backends (release/4.4) instead emit a body-less frame for it, which this
-  // client reads as a stop marker. Delta tree sync is gated on v2 for that reason; no backend
-  // advertises it yet, so delta stays off until pl does.
+  // Same token, different wire contract: an unchanged resource is omitted and ends the walk.
+  // v1 backends instead emit a body-less frame for it, which this client reads as a stop
+  // marker, so delta tree sync is gated on v2.
   | "treeChangedSince:v2"
   | "wasm:v1"
   // Advertised only where the deployment actually has scratch storage, not merely where the
