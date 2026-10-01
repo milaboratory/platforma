@@ -30,12 +30,10 @@ _cpu := func(inputBytes) {
 GiB := units.GiB
 
 // ---- ram: the documented curve --------------------------------------------
-// ram = max(4 GiB + 10 * size, 5 GiB)
+// ram = max(4 GiB + 10 * size, 4 GiB)
 
-TestRamDefaultFloorAtSmallInput := func() {
-	// Below (5 - 4) / 10 = 0.1 GiB of input, the 5 GiB floor wins.
-	test.isEqual(5 * GiB, _ram(0, {}))
-	test.isEqual(5 * GiB, _ram(64 * units.MiB, {}))
+TestRamInterceptAtZeroInput := func() {
+	test.isEqual(4 * GiB, _ram(0, {}))
 }
 
 TestRamSlopeGoverns := func() {
@@ -78,8 +76,16 @@ TestFloorBelowInterceptLeavesTheIntercept := func() {
 // ---- ram: slope and intercept ---------------------------------------------
 
 TestCustomSlopeGoverns := func() {
-	test.isEqual(44 * GiB, _ram(8 * GiB, { slope: 5 }))     //  4 + 5*8, the minimum slope
+	test.isEqual(44 * GiB, _ram(8 * GiB, { slope: 5 }))     //  4 + 5*8
 	test.isEqual(124 * GiB, _ram(8 * GiB, { slope: 15 }))   //  4 + 15*8
+}
+
+TestZeroSlopeIsFlat := func() {
+	// Slope 0 ignores input volume: the request is max(intercept, floor).
+	test.isEqual(4 * GiB, _ram(0, { slope: 0 }))
+	test.isEqual(4 * GiB, _ram(500 * GiB, { slope: 0 }))
+	test.isEqual(8 * GiB, _ram(500 * GiB, { slope: 0, intercept: 8 * GiB }))
+	test.isEqual(12 * GiB, _ram(500 * GiB, { slope: 0, floor: 12 * GiB }))
 }
 
 TestCustomIntercept := func() {
@@ -97,7 +103,7 @@ TestFloorStillAppliesWithCustomParams := func() {
 // the smallest value the formula can give: max(intercept, floor).
 
 TestFallbackDefault := func() {
-	test.isEqual(5 * GiB, _fallback({}))
+	test.isEqual(4 * GiB, _fallback({}))
 }
 
 TestFallbackFollowsTheFloor := func() {
@@ -112,7 +118,7 @@ TestFallbackIsAtLeastTheIntercept := func() {
 }
 
 // ll.assert rejects a non-integer or non-positive floor, a non-integer slope, a slope
-// below 5, and an intercept below 4 GiB. ll.assert stops the template, and is_error cannot
+// below 0, and an intercept below 4 GiB. ll.assert stops the template, and is_error cannot
 // catch that. Thus no test checks it.
 
 // ---- cpu ------------------------------------------------------------------
@@ -138,8 +144,8 @@ TestConstantsMatchTheDocumentedFormula := func() {
 	test.isEqual(4, sizing.RAM_INTERCEPT_GIB)
 	test.isEqual(4, sizing.RAM_INTERCEPT_MIN_GIB)
 	test.isEqual(10, sizing.RAM_SLOPE)
-	test.isEqual(5, sizing.RAM_SLOPE_MIN)
-	test.isEqual(5, sizing.RAM_FLOOR_GIB)
+	test.isEqual(0, sizing.RAM_SLOPE_MIN)
+	test.isEqual(4, sizing.RAM_FLOOR_GIB)
 	test.isEqual(2, sizing.CPU_MIN)
 	test.isEqual(8, sizing.CPU_MAX)
 }

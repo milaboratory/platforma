@@ -5,9 +5,9 @@
 //     cpu                = between(2 + size / 16 GiB, 2, 8)
 //     POLARS_MAX_THREADS = between(system.cpu, 2, 8)
 //
-// Defaults: intercept 4 GiB, slope 10, floor 5 GiB. .memIntercept(), .memSlope() and
+// Defaults: intercept 4 GiB, slope 10, floor 4 GiB. .memIntercept(), .memSlope() and
 // .memFloor() replace them. The intercept is at least RAM_INTERCEPT_MIN_GIB. The slope is an
-// integer, at least RAM_SLOPE_MIN.
+// integer, at least RAM_SLOPE_MIN. Slope 0 gives a flat request of max(intercept, floor).
 //
 // Measured need per GiB of input, per plan shape, at 8 Polars threads:
 //     concat + aggregate with max_by   4.94   <- the steepest one reachable here
@@ -60,8 +60,8 @@ units := import(":units")
 RAM_INTERCEPT_GIB := 4
 RAM_INTERCEPT_MIN_GIB := 4
 RAM_SLOPE := 10
-RAM_SLOPE_MIN := 5
-RAM_FLOOR_GIB := 5
+RAM_SLOPE_MIN := 0
+RAM_FLOOR_GIB := 4
 
 SCRATCH_PER_READ_FRAME := 16
 SCRATCH_SORT := 16

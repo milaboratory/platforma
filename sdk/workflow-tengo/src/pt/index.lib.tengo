@@ -889,7 +889,7 @@ workflow := func() {
 		 *
 		 *     max(intercept + slope × size, floor)
 		 *
-		 * The defaults are intercept 4 GiB, slope 10 and floor 5 GiB. The request has no
+		 * The defaults are intercept 4 GiB, slope 10 and floor 4 GiB. The request has no
 		 * upper limit. `.memIntercept()`, `.memSlope()` and `.memFloor()` change the
 		 * defaults. An explicit value replaces the formula and ignores those setters.
 		 *
@@ -901,7 +901,7 @@ workflow := func() {
 		},
 
 		/**
-		 * Sets the floor of the auto-sized RAM request (see `.mem()`). Default 5 GiB.
+		 * Sets the floor of the auto-sized RAM request (see `.mem()`). Default 4 GiB.
 		 * Above the floor, the request still follows input volume.
 		 *
 		 * Use this, not `.mem()`, for "at least this much". `.mem()` ignores input volume.
@@ -921,11 +921,13 @@ workflow := func() {
 
 		/**
 		 * Sets the slope of the auto-sized RAM request (see `.mem()`), in GiB of RAM per
-		 * GiB of input. Default 10. The slope must be an integer of at least 5. The
-		 * steepest measured ptabler plan needs 4.94 GiB per input GiB at 8 Polars threads.
+		 * GiB of input. Default 10. The slope must be an integer of at least 0. Slope 0
+		 * gives a flat request of max(intercept, floor), for small inputs. The steepest
+		 * measured ptabler plan needs 4.94 GiB per input GiB at 8 Polars threads. A slope
+		 * below 5 can make a large input run out of memory.
 		 * If a caller also sets `.mem()`, `.mem()` wins.
 		 *
-		 * @param slope: int - at least 5, e.g. `6`
+		 * @param slope: int - at least 0, e.g. `6`
 		 * @return builder
 		 */
 		memSlope: func(slope) {
