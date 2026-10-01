@@ -1,5 +1,37 @@
 # @milaboratories/pl-middle-layer
 
+## 1.73.5
+
+### Patch Changes
+
+- f4567dd: Finality is one table built in layers (`FinalityTable`): `StrictFinality` (the base: nothing
+  observable changes after final, except the writes its entries name), `CacheFinality` (adds the
+  types whose only later writes are KV; used by the transaction resource cache) and `TreeFinality`
+  (adds `Blob` and `StreamManager` under the reader assumptions stated at their entries; the
+  default `PlClient.finalPredicate`). A layer only adds to its parent.
+  `DefaultFinalResourceDataPredicate` is deprecated and delegates to `TreeFinality`.
+  Finality rules: `BResolveSingle`, `BResolveChoice` and `BlobCopy/*` are final once ready (or a
+  duplicate, or errored) with outputs locked and every supplied field settled; `LSProvider` is
+  never final; `Frontend/FromLocalTgz`, `json/bool`, `json/null` and `json/errorTrace` are always
+  final. The project tree's stop rules are generated from `TreeFinality`, each entry declaring how
+  it translates. `ResourceTypePrefix.BlobCopy` identifies blob-copy resource types.
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-client@3.18.0
+  - @milaboratories/pl-model-common@1.52.0
+  - @milaboratories/pl-model-backend@1.4.34
+  - @milaboratories/pl-drivers@1.16.31
+  - @milaboratories/pl-errors@1.4.49
+  - @milaboratories/pl-tree@1.16.1
+  - @milaboratories/columns-collection-driver@0.2.8
+  - @milaboratories/pl-model-middle-layer@1.34.1
+  - @milaboratories/pf-spec-driver@1.5.7
+  - @milaboratories/pf-driver@1.9.7
+  - @milaboratories/pl-crash-recorder@0.3.4
+  - @milaboratories/pl-deployments@3.0.20
+  - @platforma-sdk/model@1.84.10
+  - @platforma-sdk/block-tools@2.16.9
+  - @platforma-sdk/workflow-tengo@6.12.1
+
 ## 1.73.4
 
 ### Patch Changes
