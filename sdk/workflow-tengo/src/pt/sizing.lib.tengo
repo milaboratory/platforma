@@ -9,7 +9,8 @@
 // .memFloor() replace them. The intercept is at least RAM_INTERCEPT_MIN_GIB. The slope is an
 // integer, at least RAM_SLOPE_MIN. Slope 0 gives a flat request of max(intercept, floor).
 //
-// Measured need per GiB of input, per plan shape, at 8 Polars threads:
+// Measured need per GiB of input, per plan shape, at 8 Polars threads. The plans come from
+// the MiXCR blocks. The plans of other blocks can need more or less.
 //     concat + aggregate with max_by   4.94   <- the steepest one reachable here
 //     bulk export                      2.92
 //     single-cell export               1.40
