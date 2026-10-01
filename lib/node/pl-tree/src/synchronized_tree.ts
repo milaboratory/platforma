@@ -498,7 +498,7 @@ export class SynchronizedTreeState {
   }
 
   /** Give up on delta for the life of this tree, once, when the backend advertises
-   * `treeChangedSince:v1` but hands out no token.
+   * `treeChangedSince:v2` but hands out no token.
    *
    * Without this the tree stays on delta with `deltaToken` permanently unset, and every poll
    * is then a token-less delta poll: a full tree read that also sends no stop rules, so it
@@ -511,7 +511,7 @@ export class SynchronizedTreeState {
       ? "backend-streaming"
       : "client-bfs";
     this.logger?.warn(
-      `tree: backend advertises treeChangedSince:v1 but issued no change token; ` +
+      `tree: backend advertises treeChangedSince:v2 but issued no change token; ` +
         `falling back to ${this.algorithm} for the life of this tree`,
     );
   }

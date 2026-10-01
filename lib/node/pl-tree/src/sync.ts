@@ -50,13 +50,13 @@ export interface TreeLoadingRequest {
 }
 
 /** Controls which tree-loading path is used.
- * - `"auto"` (default): use delta polling when the backend advertises `treeChangedSince:v1`,
+ * - `"auto"` (default): use delta polling when the backend advertises `treeChangedSince:v2`,
  *   else backend streaming when it advertises `treeFilter:v2`, else client-side BFS.
  * - `"client-bfs"`: always use client-side BFS, even on capable backends.
  * - `"backend-streaming"`: always prefer backend streaming; if the capability is absent,
  *   logs a warning and falls back to BFS (never throws).
  * - `"backend-delta"`: always prefer delta polling, which hands the backend the transaction's
- *   change token and takes only what changed since it; if `treeChangedSince:v1` is absent,
+ *   change token and takes only what changed since it; if `treeChangedSince:v2` is absent,
  *   logs a warning and falls back to the best available path (never throws).
  */
 export type TraversalMode = "auto" | "client-bfs" | "backend-streaming" | "backend-delta";
@@ -81,7 +81,7 @@ export function resolveTreeLoadingAlgorithm(
     case "backend-delta":
       if (delta) return "backend-delta";
       (logger ?? console).warn(
-        "traversalMode=backend-delta but backend lacks treeChangedSince:v1 capability; falling back to " +
+        "traversalMode=backend-delta but backend lacks treeChangedSince:v2 capability; falling back to " +
           (streaming ? "backend-streaming" : "client-bfs"),
       );
       return streaming ? "backend-streaming" : "client-bfs";
@@ -246,7 +246,7 @@ export function supportsResourceTreeTraversal(capabilities: readonly string[] = 
 }
 
 function supportsTreeDelta(capabilities: readonly string[] = []): boolean {
-  return hasCapability(capabilities, "treeChangedSince:v1");
+  return hasCapability(capabilities, "treeChangedSince:v2");
 }
 
 export function collectStatsForResource(resource: ExtendedResourceData, stats?: TreeLoadingStat) {
