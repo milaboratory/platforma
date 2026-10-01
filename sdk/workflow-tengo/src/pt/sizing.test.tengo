@@ -46,13 +46,13 @@ TestRamHasNoCeiling := func() {
 // ---- ram: memFloor --------------------------------------------------------
 
 TestMemFloorRaisesTheLowerBound := func() {
-	// Below the crossover the floor wins, so the grant matches the old flat pin.
+	// Below the crossover, the floor wins.
 	test.isEqual(12 * GiB, _ram(0, 12 * GiB))
 	test.isEqual(12 * GiB, _ram(512 * units.MiB, 12 * GiB))
 }
 
 TestMemFloorDoesNotCapGrowth := func() {
-	// Above (12 - 4) / 10 = 0.8 GiB the formula governs again.
+	// Above (12 - 4) / 10 = 0.8 GiB of input, the formula wins.
 	test.isEqual(14 * GiB, _ram(1 * GiB, 12 * GiB))
 	test.isEqual(204 * GiB, _ram(20 * GiB, 12 * GiB))
 }
@@ -88,8 +88,8 @@ TestFloorStillAppliesWithCustomParams := func() {
 	test.isEqual(52 * GiB, _ramWith(8 * GiB, 12 * GiB, 6, 4 * GiB))          //  4 + 6*8
 }
 
-// A non-integer slope, a slope <= 4, or an intercept below 4 GiB is rejected by an ll.assert, which aborts the
-// template; is_error cannot catch it, so the rejection is not asserted here.
+// ll.assert rejects a non-integer slope, a slope <= 4, and an intercept below 4 GiB.
+// ll.assert stops the template, and is_error cannot catch that. Thus no test checks it.
 
 // ---- cpu ------------------------------------------------------------------
 // cpu = between(2 + size / 16 GiB, 2, 8)

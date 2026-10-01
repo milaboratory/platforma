@@ -885,10 +885,10 @@ workflow := func() {
 		 *                                  when operating with bytes, you may use 'units' package for convenience:
 		 *                                    120 * units.GiB
 		 *
-		 * If not set, the RAM request is sized from the input data volume:
-		 * `max(intercept + slope × size, 2 GiB)`, with no upper bound. The intercept is 4 GiB
-		 * and the slope 10 unless `.memIntercept()` / `.memSlope()` change them. Setting an
-		 * explicit value overrides the formula, and those setters with it.
+		 * If not set, the input data volume sets the RAM request:
+		 * `max(intercept + slope × size, 2 GiB)`, with no upper limit. The intercept is 4 GiB
+		 * and the slope is 10. `.memIntercept()` and `.memSlope()` change them. An explicit
+		 * value replaces the formula and ignores those setters.
 		 *
 		 * @return builder
 		 */
@@ -898,17 +898,15 @@ workflow := func() {
 		},
 
 		/**
-		 * Raises the lower bound of the auto-sized RAM request. Auto-sizing stays on, so
-		 * the request still follows input volume above the floor:
-		 * `max(intercept + slope × size, floor)`.
+		 * Sets the lower limit of the auto-sized RAM request. Above the floor, the request
+		 * still follows input volume: `max(intercept + slope × size, floor)`.
 		 *
-		 * Use this, not `.mem()`, when the intent is "at least this much". A flat
-		 * `.mem()` replaces the formula and ignores input volume. `.mem()` overrides this
-		 * floor when a caller sets both.
+		 * Use this, not `.mem()`, for "at least this much". `.mem()` replaces the formula
+		 * and ignores input volume. If a caller sets both, `.mem()` wins.
 		 *
-		 * The floor governs whenever `size` is small, and `f.size()` counts only files
-		 * attached with `addFile()`. A run whose input is a non-partitioned JSON
-		 * p-column measures zero and always receives exactly the floor.
+		 * The floor applies when `size` is small. `f.size()` counts only files that
+		 * `addFile()` attaches. Thus a run whose input is a non-partitioned JSON p-column
+		 * measures 0 and always gets the floor.
 		 *
 		 * @param amount: number - lower bound in bytes, e.g. `12 * units.GiB`
 		 * @return builder
@@ -921,13 +919,12 @@ workflow := func() {
 		},
 
 		/**
-		 * Sets the slope of the auto-sized RAM request: GiB of RAM granted per GiB of
-		 * input. The request is `max(intercept + slope × size, floor)`; the default slope
-		 * is 10.
+		 * Sets the slope of the auto-sized RAM request, in GiB of RAM per GiB of input.
+		 * The request is `max(intercept + slope × size, floor)`. The default slope is 10.
 		 *
 		 * The slope must be an integer greater than 4. The steepest measured ptabler plan
-		 * needs 4.94 GiB per input GiB at 8 Polars threads. `.mem()` overrides this when a
-		 * caller sets both.
+		 * needs 4.94 GiB per input GiB at 8 Polars threads. If a caller also sets `.mem()`,
+		 * `.mem()` wins.
 		 *
 		 * @param slope: int - e.g. `6`
 		 * @return builder
@@ -939,10 +936,9 @@ workflow := func() {
 		},
 
 		/**
-		 * Sets the intercept of the auto-sized RAM request: the RAM granted on top of the
-		 * slope term. The request is `max(intercept + slope × size, floor)`; the default
-		 * intercept is 4 GiB, which is also the minimum. `.mem()` overrides this when a
-		 * caller sets both.
+		 * Sets the intercept of the auto-sized RAM request. The intercept is the RAM added
+		 * to the slope term: `max(intercept + slope × size, floor)`. The default and the
+		 * minimum are both 4 GiB. If a caller also sets `.mem()`, `.mem()` wins.
 		 *
 		 * @param amount: number - bytes, >= 4 GiB, e.g. `8 * units.GiB`
 		 * @return builder
