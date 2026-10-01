@@ -462,6 +462,9 @@ pFrameToColumnsMap := func(pf) {
  * @param exec: string - exec instance
  * @param ops: map - exec options
  *   - folder: string - folder to save the column in
+ * @return array - one entry per file attached with addFile():
+ *   { path: string, file: reference, blobId?: string, parquetPart?: map }. blobId and
+ *   parquetPart (the chunk's .datainfo part) are set for Parquet chunks only.
  *
  * Multiple columns can refer to the same column data resource,
  * so we ensure that the column data is written only once
@@ -509,6 +512,17 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		return path.join(ops.folder, fileName)
 	}
 
+	attached := []
+	attach := func(filePath, file, ...parquet) {
+		execBuilder.addFile(filePath, file)
+		entry := { path: filePath, file: file }
+		if len(parquet) > 0 {
+			entry.blobId = parquet[0]
+			entry.parquetPart = parquet[1]
+		}
+		attached = append(attached, entry)
+	}
+
 	if (data.checkResourceType(constants.RTYPE_P_COLUMN_DATA_JSON)) {
 
 		ll.assert(is_undefined(partitions), "Partitions filter enabled while non-partitioned column exported")
@@ -543,7 +557,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
             part := "res" + v.id + ".jdata"
 
             parts[k] = part
-            execBuilder.addFile(makePath(part), v)
+            attach(makePath(part), v)
         }
 
         // write data info
@@ -580,7 +594,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 
 				part := "res" + v.id + ".jdata"
 				parts[key] = part
-            	execBuilder.addFile(makePath(part), v)
+            	attach(makePath(part), v)
 			}
 		}
 
@@ -613,7 +627,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
                     parts[key] = {}
                 }
                 parts[key].index = indexFile
-                execBuilder.addFile(makePath(indexFile), v)
+                attach(makePath(indexFile), v)
             } else if text.has_suffix(k, ".values") {
                 key := k[0:(len(k) - 7)]
                 valuesFile := "res" + v.id + ".values"
@@ -622,7 +636,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
                     parts[key] = {}
                 }
                 parts[key].values = valuesFile
-                execBuilder.addFile(makePath(valuesFile), v)
+                attach(makePath(valuesFile), v)
             } else {
                 ll.panic("unknown suffix: expected .index or .values, got ", k)
             }
@@ -667,7 +681,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 						parts[key] = {}
 					}
 					parts[key].index = indexFile
-					execBuilder.addFile(makePath(indexFile), v)
+					attach(makePath(indexFile), v)
 
 				} else if text.has_suffix(k, ".values") {
 					innerKeyArray := json.decode(k[0:(len(k) - 7)])
@@ -680,7 +694,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 						parts[key] = {}
 					}
 					parts[key].values = valuesFile
-					execBuilder.addFile(makePath(valuesFile), v)
+					attach(makePath(valuesFile), v)
 				} else {
 					ll.panic("unknown suffix: expected .index or .values, got ", k)
 				}
@@ -716,7 +730,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
             parquetChunkDataPath := "res" + parquetChunkData.id + ".parquet"
             parts[k] = maps.merge({ data: parquetChunkDataPath }, parquetChunkMetadata, parquetChunkMapping)
 
-            execBuilder.addFile(makePath(parquetChunkDataPath), parquetChunkData)
+            attach(makePath(parquetChunkDataPath), parquetChunkData, parquetChunkData.id, parts[k])
         }
 
         // write data info
@@ -759,7 +773,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 				parquetChunkDataPath := "res" + parquetChunkData.id + ".parquet"
 				parts[key] = maps.merge({ data: parquetChunkDataPath }, parquetChunkMetadata, parquetChunkMapping)
 
-				execBuilder.addFile(makePath(parquetChunkDataPath), parquetChunkData)
+				attach(makePath(parquetChunkDataPath), parquetChunkData, parquetChunkData.id, parts[key])
 			}
 		}
 
@@ -777,6 +791,8 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 	} else {
 		ll.panic("unsupported p-column data type: %v", data.info().Type)
 	}
+
+	return attached
 }
 
 isFlatPfMap := func(pf) {

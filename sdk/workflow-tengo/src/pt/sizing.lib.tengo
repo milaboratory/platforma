@@ -2,9 +2,19 @@
 // author leaves cpu or mem unset. Kept out of the template body so the formulas can be
 // unit tested against a fake metric resolver (see sizing.test.tengo).
 //
-//     ram                = between(2 GiB + 6 * size, memFloor or 2 GiB, 256 GiB)
+//     ram                = between(2 GiB + 7 * volume, memFloor or 2 GiB, memCeiling or none)
+//     volume             = decoded + size(STORED_TAG) + 4 * size(COMPRESSED_TAG)
 //     cpu                = between(2 + size / 16 GiB, 2, 8)
 //     POLARS_MAX_THREADS = between(system.cpu, 2, 8)
+//
+// volume estimates the decoded bytes the plan reads:
+//     decoded             Parquet frame chunks, from .datainfo stats.numberOfBytes, summed
+//                         at render time. Axes bytes count once per Parquet blob, because
+//                         every p-column stored in a blob repeats the same axes stats.
+//     size(STORED_TAG)    blob bytes of every other input: plain inFiles, JSON and binary
+//                         chunks, and Parquet chunks that carry no numberOfBytes stats.
+//     size(COMPRESSED_TAG) blob bytes of inFiles named *.gz, *.bz2 or *.zst, times
+//                         COMPRESSED_RATIO.
 //
 // Measured need per GiB of input, per plan shape, at 8 Polars threads:
 //     concat + aggregate with max_by   4.94   <- the steepest one reachable here
@@ -16,9 +26,10 @@
 // threads are therefore clamped to CPU_MAX whatever cpu the run is granted, including
 // an explicit cpu() above 8, which reserves cores Polars does not use.
 //
-// RAM_SLOPE is 6, above the 4.94 it must cover. The margin is deliberate. The fits are
-// against uncompressed TSV bytes, and f.size() reports stored blob bytes, so a parquet
-// input understates the volume the plan decodes.
+// RAM_SLOPE is 7. On decoded bytes it covers every measured cell by 1.38x or more.
+//
+// There is no ceiling unless the block sets .memCeiling(). The backend reduces a request
+// above what the host can give.
 //
 // f.size() counts only files attached with addFile(). A non-partitioned JSON p-column is
 // attached with writeFile() and contributes nothing, so a frame built only from those
@@ -50,13 +61,21 @@
 
 f := import(":exec.formula")
 ll := import(":ll")
+text := import("text")
 units := import(":units")
 
 RAM_INTERCEPT_GIB := 2
-RAM_SLOPE := 6
+RAM_SLOPE := 7
 RAM_FLOOR_GIB := 2
-RAM_CAP_GIB := 256
 RAM_STATIC_FALLBACK := "4GiB"
+RAM_STATIC_FALLBACK_BYTES := 4 * units.GiB
+
+// Tags on the files the RAM formula reads by blob size. Untagged files still count for
+// cpu and scratch, which read f.size() over every file.
+STORED_TAG := "pt-sizing-stored"
+COMPRESSED_TAG := "pt-sizing-compressed"
+COMPRESSED_RATIO := 4
+_COMPRESSED_SUFFIXES := [".gz", ".bz2", ".zst"]
 
 SCRATCH_PER_READ_FRAME := 16
 SCRATCH_SORT := 16
@@ -71,30 +90,120 @@ CPU_GIB_PER_CORE := 16
 POLARS_MAX_THREADS_EXPR := format("{min(%d,max(%d,system.cpu))}", CPU_MAX, CPU_MIN)
 
 /**
+ * The tag for an input file attached by name: COMPRESSED_TAG for *.gz, *.bz2 and *.zst,
+ * STORED_TAG otherwise.
+ *
+ * @param fileName: string
+ * @return string
+ */
+fileTag := func(fileName) {
+	lower := text.to_lower(fileName)
+	for suffix in _COMPRESSED_SUFFIXES {
+		if text.has_suffix(lower, suffix) {
+			return COMPRESSED_TAG
+		}
+	}
+	return STORED_TAG
+}
+
+/**
+ * Reads the decoded-size stats of one Parquet chunk.
+ *
+ * @param blobId: string | number - id of the chunk's Parquet blob
+ * @param chunk: map - the chunk's .datainfo part: its metadata merged with its mapping
+ * @return { blob, column, axesBytes, columnBytes }, or undefined if the chunk has no
+ *         stats.numberOfBytes
+ */
+parquetChunkStats := func(blobId, chunk) {
+	if is_undefined(chunk.stats) || is_undefined(chunk.stats.numberOfBytes) {
+		return undefined
+	}
+	bytes := chunk.stats.numberOfBytes
+	axesBytes := 0
+	for b in bytes.axes {
+		axesBytes += b
+	}
+	return {
+		blob: string(blobId),
+		column: chunk.column.id,
+		axesBytes: axesBytes,
+		columnBytes: bytes.column
+	}
+}
+
+/**
+ * Sums decoded bytes over Parquet chunks. Axes bytes count once per blob; column bytes
+ * count once per (blob, column).
+ *
+ * @param chunks: array of parquetChunkStats() results
+ * @return number - bytes
+ */
+decodedFrameBytes := func(chunks) {
+	axesByBlob := {}
+	columnBytes := {}
+	for c in chunks {
+		if is_undefined(axesByBlob[c.blob]) || c.axesBytes > axesByBlob[c.blob] {
+			axesByBlob[c.blob] = c.axesBytes
+		}
+		columnBytes[c.blob + "/" + c.column] = c.columnBytes
+	}
+	total := 0
+	for _, b in axesByBlob {
+		total += b
+	}
+	for _, b in columnBytes {
+		total += b
+	}
+	return total
+}
+
+/**
  * The default RAM formula.
  *
- * @param memFloor: number | undefined - lower bound in bytes from .memFloor(), or
- *                  undefined for the standard 2 GiB floor.
+ * @param opts: map, every field optional:
+ *   - memFloor: number - lower bound in bytes from .memFloor(); default 2 GiB
+ *   - memCeiling: number - upper bound in bytes from .memCeiling(); default none
+ *   - decodedBytes: number - decodedFrameBytes() of the Parquet chunks the formula does
+ *                   not read by blob size; default 0
  * @return formula
  */
-ramFormula := func(memFloor) {
-	floor := f.gib(RAM_FLOOR_GIB)
-	cap := f.gib(RAM_CAP_GIB)
-	fallback := RAM_STATIC_FALLBACK
+ramFormula := func(opts) {
+	if is_undefined(opts) {
+		opts = {}
+	}
+	memFloor := opts.memFloor
+	memCeiling := opts.memCeiling
+	decodedBytes := is_undefined(opts.decodedBytes) ? 0 : opts.decodedBytes
+	ll.assert(is_int(decodedBytes) && decodedBytes >= 0,
+		"pt.sizing: decodedBytes must be a non-negative integer, got %v", decodedBytes)
 
+	floor := f.gib(RAM_FLOOR_GIB)
+	floorBytes := RAM_FLOOR_GIB * units.GiB
+	fallback := RAM_STATIC_FALLBACK
 	if !is_undefined(memFloor) {
-		// A floor above the cap is rejected at the .memFloor() setter, not here.
-		// Raising the cap to match would make between(floor, floor) return the floor
-		// for every input, which is the flat pin memFloor exists to avoid.
-		ll.assert(memFloor <= RAM_CAP_GIB * units.GiB,
-			"pt.sizing: memFloor (%v bytes) must not exceed the %d GiB ceiling", memFloor, RAM_CAP_GIB)
 		floor = f.const(memFloor)
+		floorBytes = memFloor
 		fallback = memFloor
 	}
 
-	return f.size({ default: 0 }).times(RAM_SLOPE).plus(f.gib(RAM_INTERCEPT_GIB)).
-		between(floor, cap).
-		staticFallback(fallback)
+	volume := f.size(STORED_TAG, { default: 0 }).
+		plus(f.size(COMPRESSED_TAG, { default: 0 }).times(COMPRESSED_RATIO)).
+		plus(f.const(decodedBytes))
+	ram := volume.times(RAM_SLOPE).plus(f.gib(RAM_INTERCEPT_GIB))
+
+	if is_undefined(memCeiling) {
+		return ram.atLeast(floor).staticFallback(fallback)
+	}
+
+	ll.assert(memCeiling >= floorBytes,
+		"pt.sizing: memCeiling (%v bytes) is below the floor (%v bytes). Set .memCeiling() at or above .memFloor(), and at or above 2 GiB.",
+		memCeiling, floorBytes)
+	if is_int(fallback) {
+		fallback = fallback < memCeiling ? fallback : memCeiling
+	} else if RAM_STATIC_FALLBACK_BYTES > memCeiling {
+		fallback = memCeiling
+	}
+	return ram.between(floor, f.const(memCeiling)).staticFallback(fallback)
 }
 
 /**
@@ -129,6 +238,9 @@ scratchFormula := func(readFrames, writeFrames) {
 
 export {
 	ramFormula: ramFormula,
+	fileTag: fileTag,
+	parquetChunkStats: parquetChunkStats,
+	decodedFrameBytes: decodedFrameBytes,
 	cpuFormula: cpuFormula,
 	scratchFormula: scratchFormula,
 
@@ -138,7 +250,9 @@ export {
 	RAM_INTERCEPT_GIB: RAM_INTERCEPT_GIB,
 	RAM_SLOPE:         RAM_SLOPE,
 	RAM_FLOOR_GIB:     RAM_FLOOR_GIB,
-	RAM_CAP_GIB:       RAM_CAP_GIB,
+	STORED_TAG:        STORED_TAG,
+	COMPRESSED_TAG:    COMPRESSED_TAG,
+	COMPRESSED_RATIO:  COMPRESSED_RATIO,
 	CPU_MIN:           CPU_MIN,
 	CPU_MAX:           CPU_MAX,
 	SCRATCH_PER_READ_FRAME:  SCRATCH_PER_READ_FRAME,

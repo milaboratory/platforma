@@ -29,6 +29,7 @@ self.body(func(inputs) {
     mem := inputs.mem
     inputCache := inputs.inputCache
     memFloor := inputs.memFloor
+    memCeiling := inputs.memCeiling
     scratchFreeSpace := inputs.scratchFreeSpace
 
     workdirProcessorName := "import_dir";
@@ -44,12 +45,56 @@ self.body(func(inputs) {
         arg("--frame-dir").arg(inFramesFolder).
         arg("--spill-dir").argExpr(spillFolderExpr).
         writeFile("workflow_sc.json", workflowJsonStruct);
+    if !is_undefined(inputCache) {
+        ptCmd.cacheInputs(inputCache)
+    }
+
+    ll.assert(is_map(inFiles), "inFiles must be a map, got: %v", inFiles)
+    for name, file in inFiles {
+        ptCmd.addFile(name, file, { tag: sizing.fileTag(name) })
+    }
+
+    ll.assert(is_map(inFilesContent), "inFilesContent must be a map, got: %v", inFilesContent)
+    for name, content in inFilesContent {
+        ptCmd.writeFile(name, content)
+    }
+
+    // A Parquet chunk with numberOfBytes stats is sized by its decoded bytes. Every other
+    // frame file is re-attached under STORED_TAG and sized by its blob bytes.
+    parquetChunks := []
+    ll.assert(is_map(inFrames), "inFrames must be a map, got: %v", inFrames)
+    for _, frame in inFrames {
+        ll.assert(is_map(frame.columns), "frame.columns must be a map, got: %v", frame.columns)
+        for columnId, columnInfo in frame.columns {
+            ll.assert(!is_undefined(columnInfo.spec), "spec must be defined in columnInfo for column '%s'", columnId)
+            ll.assert(!is_undefined(columnInfo.data), "data must be defined in columnInfo for column '%s'", columnId)
+            attached := pframesUtil.addColumnToWd(columnId, columnInfo.spec, columnInfo.data, ptCmd, {
+                folder: inFramesFolder
+            })
+            for entry in attached {
+                chunk := undefined
+                if !is_undefined(entry.parquetPart) {
+                    chunk = sizing.parquetChunkStats(entry.blobId, entry.parquetPart)
+                }
+                if is_undefined(chunk) {
+                    ptCmd.addFile(entry.path, entry.file, { tag: sizing.STORED_TAG })
+                } else {
+                    parquetChunks = append(parquetChunks, chunk)
+                }
+            }
+        }
+    }
+
     // Size the ptabler run from total input volume, unless the block author sets cpu, mem
     // or scratchFreeSpace. An explicit request always wins. The formulas, the measured slopes behind
     // them and the thread ceiling they assume live in :pt.sizing.
     ramReq := mem
     if is_undefined(ramReq) {
-        ramReq = sizing.ramFormula(memFloor)
+        ramReq = sizing.ramFormula({
+            memFloor: memFloor,
+            memCeiling: memCeiling,
+            decodedBytes: sizing.decodedFrameBytes(parquetChunks)
+        })
     }
     cpuReq := cpu
     if is_undefined(cpuReq) {
@@ -75,31 +120,6 @@ self.body(func(inputs) {
             scratchFreeSpace: scratchReq
         }
     })
-    if !is_undefined(inputCache) {
-        ptCmd.cacheInputs(inputCache)
-    }
-
-    ll.assert(is_map(inFiles), "inFiles must be a map, got: %v", inFiles)
-    for name, file in inFiles {
-        ptCmd.addFile(name, file)
-    }
-
-    ll.assert(is_map(inFilesContent), "inFilesContent must be a map, got: %v", inFilesContent)
-    for name, content in inFilesContent {
-        ptCmd.writeFile(name, content)
-    }
-
-    ll.assert(is_map(inFrames), "inFrames must be a map, got: %v", inFrames)
-    for _, frame in inFrames {
-        ll.assert(is_map(frame.columns), "frame.columns must be a map, got: %v", frame.columns)
-        for columnId, columnInfo in frame.columns {
-            ll.assert(!is_undefined(columnInfo.spec), "spec must be defined in columnInfo for column '%s'", columnId)
-            ll.assert(!is_undefined(columnInfo.data), "data must be defined in columnInfo for column '%s'", columnId)
-            pframesUtil.addColumnToWd(columnId, columnInfo.spec, columnInfo.data, ptCmd, {
-                folder: inFramesFolder
-            })
-        }
-    }
 
     ll.assert(is_array(outFiles), "outFiles must be an array, got: %v", outFiles)
     for outFile in outFiles {

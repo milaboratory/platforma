@@ -13,10 +13,36 @@ _evalAt := func(formula, inputBytes) {
 	})
 }
 
+// Evaluate the RAM formula against one stored file and one compressed file, each with
+// its own blob size.
+_STORED_FILE := "in.tsv"
+_COMPRESSED_FILE := "in.tsv.gz"
+_ramFull := func(storedBytes, compressedBytes, decodedBytes, memFloor, ...memCeiling) {
+	tagMap := {}
+	tagMap[sizing.STORED_TAG] = [_STORED_FILE]
+	tagMap[sizing.COMPRESSED_TAG] = [_COMPRESSED_FILE]
+	opts := { memFloor: memFloor, decodedBytes: decodedBytes }
+	if len(memCeiling) > 0 {
+		opts.memCeiling = memCeiling[0]
+	}
+	resolved := f.resolveAst(sizing.ramFormula(opts), tagMap,
+		[_STORED_FILE, _COMPRESSED_FILE])
+	return f._internal.evaluate(resolved, {
+		size: func(files) {
+			total := 0
+			for fn in files {
+				total += fn == _STORED_FILE ? storedBytes : compressedBytes
+			}
+			return total
+		},
+		lineCount: func(files) { return 0 }
+	})
+}
+
 // inputBytes stays an integer throughout: the evaluator asserts integer operands, and
 // a float would silently change the arithmetic it is being checked against.
 _ram := func(inputBytes, memFloor) {
-	return _evalAt(sizing.ramFormula(memFloor), inputBytes)
+	return _ramFull(inputBytes, 0, 0, memFloor)
 }
 
 _cpu := func(inputBytes) {
@@ -26,7 +52,8 @@ _cpu := func(inputBytes) {
 GiB := units.GiB
 
 // ---- ram: the documented curve --------------------------------------------
-// ram = between(2 GiB + 6 * size, 2 GiB, 256 GiB)
+// ram = max(2 GiB + 7 * volume, 2 GiB)
+// volume = decoded + size(STORED_TAG) + 4 * size(COMPRESSED_TAG)
 
 TestRamFloorBinds := func() {
 	// At zero input the intercept alone is the floor.
@@ -34,22 +61,94 @@ TestRamFloorBinds := func() {
 }
 
 TestRamSlopeGoverns := func() {
-	test.isEqual(8 * GiB, _ram(1 * GiB, undefined))    //  2 + 6*1
-	test.isEqual(26 * GiB, _ram(4 * GiB, undefined))   //  2 + 6*4
-	test.isEqual(50 * GiB, _ram(8 * GiB, undefined))   //  2 + 6*8
+	test.isEqual(9 * GiB, _ram(1 * GiB, undefined))    //  2 + 7*1
+	test.isEqual(30 * GiB, _ram(4 * GiB, undefined))   //  2 + 7*4
+	test.isEqual(58 * GiB, _ram(8 * GiB, undefined))   //  2 + 7*8
 }
 
-TestRamBelowOldCeilingStillGrows := func() {
-	// 15.5 GiB is where the previous 64 GiB ceiling used to bind. The request must
-	// now keep growing past it rather than flatten.
-	test.isEqual(95 * GiB, _ram(31 * GiB / 2, undefined))
-	test.isTrue(_ram(31 * GiB / 2, undefined) > 64 * GiB)
+TestRamHasNoCeiling := func() {
+	// 256 GiB was the previous ceiling. The request keeps growing past it.
+	test.isEqual(352 * GiB, _ram(50 * GiB, undefined))     //  2 + 7*50
+	test.isEqual(3502 * GiB, _ram(500 * GiB, undefined))   //  2 + 7*500
 }
 
-TestRamCapBinds := func() {
-	// The cap binds from (256 - 2) / 6 = 42.33 GiB of input upward.
-	test.isEqual(sizing.RAM_CAP_GIB * GiB, _ram(50 * GiB, undefined))
-	test.isEqual(sizing.RAM_CAP_GIB * GiB, _ram(500 * GiB, undefined))
+TestRamUntaggedFilesAreNotRead := func() {
+	// Parquet chunks sized by decoded bytes stay untagged. The RAM formula must not
+	// read their blob bytes a second time.
+	resolved := f.resolveAst(sizing.ramFormula({}), {}, ["frame.parquet"])
+	test.isEqual(2 * GiB, f._internal.evaluate(resolved, {
+		size:      func(files) { return 100 * GiB },
+		lineCount: func(files) { return 0 }
+	}))
+}
+
+// ---- ram: decoded and compressed volume -----------------------------------
+
+TestRamDecodedBytesCount := func() {
+	test.isEqual(23 * GiB, _ramFull(0, 0, 3 * GiB, undefined))         //  2 + 7*3
+	test.isEqual(30 * GiB, _ramFull(1 * GiB, 0, 3 * GiB, undefined))   //  2 + 7*(1+3)
+}
+
+TestRamCompressedFilesUseTheRatio := func() {
+	test.isEqual(4, sizing.COMPRESSED_RATIO)
+	test.isEqual(30 * GiB, _ramFull(0, 1 * GiB, 0, undefined))         //  2 + 7*4*1
+	test.isEqual(37 * GiB, _ramFull(1 * GiB, 1 * GiB, 0, undefined))   //  2 + 7*(1+4)
+}
+
+TestFileTag := func() {
+	test.isEqual(sizing.STORED_TAG, sizing.fileTag("clones.tsv"))
+	test.isEqual(sizing.STORED_TAG, sizing.fileTag("frame.parquet"))
+	test.isEqual(sizing.COMPRESSED_TAG, sizing.fileTag("clones.tsv.gz"))
+	test.isEqual(sizing.COMPRESSED_TAG, sizing.fileTag("clones.TSV.GZ"))
+	test.isEqual(sizing.COMPRESSED_TAG, sizing.fileTag("a.bz2"))
+	test.isEqual(sizing.COMPRESSED_TAG, sizing.fileTag("a.zst"))
+}
+
+// ---- decoded frame bytes --------------------------------------------------
+
+_part := func(columnId, axes, column) {
+	return {
+		column: { id: columnId, type: "Long" },
+		stats: { numberOfRows: 10, numberOfBytes: { axes: axes, column: column } }
+	}
+}
+
+TestParquetChunkStatsWithoutStatsIsUndefined := func() {
+	test.isTrue(is_undefined(sizing.parquetChunkStats("b1", { column: { id: "c" } })))
+	test.isTrue(is_undefined(sizing.parquetChunkStats("b1", { column: { id: "c" }, stats: { numberOfRows: 10 } })))
+}
+
+TestParquetChunkStatsSumsAxes := func() {
+	test.isEqual({ blob: "b1", column: "c", axesBytes: 30, columnBytes: 5 },
+		sizing.parquetChunkStats("b1", _part("c", [10, 20], 5)))
+}
+
+TestDecodedFrameBytesCountsAxesOncePerBlob := func() {
+	chunks := [
+		sizing.parquetChunkStats("b1", _part("c1", [100, 200], 10)),
+		sizing.parquetChunkStats("b1", _part("c2", [100, 200], 20)),
+		sizing.parquetChunkStats("b2", _part("c1", [50], 5))
+	]
+	// b1: axes 300 once + 10 + 20; b2: axes 50 + 5
+	test.isEqual(385, sizing.decodedFrameBytes(chunks))
+}
+
+TestDecodedFrameBytesCountsARepeatedColumnOnce := func() {
+	chunk := sizing.parquetChunkStats("b1", _part("c1", [100], 10))
+	test.isEqual(110, sizing.decodedFrameBytes([chunk, chunk]))
+}
+
+TestDecodedFrameBytesAcceptsResourceIds := func() {
+	// Resource ids are integers.
+	chunks := [
+		sizing.parquetChunkStats(17, _part("c1", [100], 10)),
+		sizing.parquetChunkStats(17, _part("c2", [100], 20))
+	]
+	test.isEqual(130, sizing.decodedFrameBytes(chunks))
+}
+
+TestDecodedFrameBytesEmpty := func() {
+	test.isEqual(0, sizing.decodedFrameBytes([]))
 }
 
 // ---- ram: memFloor --------------------------------------------------------
@@ -61,24 +160,40 @@ TestMemFloorRaisesTheLowerBound := func() {
 }
 
 TestMemFloorDoesNotCapGrowth := func() {
-	// Above (12 - 2) / 6 = 1.67 GiB the formula governs again.
-	test.isEqual(26 * GiB, _ram(4 * GiB, 12 * GiB))
-	test.isEqual(122 * GiB, _ram(20 * GiB, 12 * GiB))
+	// Above (12 - 2) / 7 = 1.43 GiB the formula governs again.
+	test.isEqual(30 * GiB, _ram(4 * GiB, 12 * GiB))
+	test.isEqual(142 * GiB, _ram(20 * GiB, 12 * GiB))
 }
 
-TestMemFloorAtTheCapIsAccepted := func() {
-	// A floor exactly at the ceiling is legal, and pins the grant there because the
-	// formula can no longer exceed it. That is the ceiling doing its job.
-	test.isEqual(sizing.RAM_CAP_GIB * GiB, _ram(0, sizing.RAM_CAP_GIB * GiB))
-	test.isEqual(sizing.RAM_CAP_GIB * GiB, _ram(500 * GiB, sizing.RAM_CAP_GIB * GiB))
+TestMemFloorAboveTheOldCeilingIsAccepted := func() {
+	test.isEqual(300 * GiB, _ram(0, 300 * GiB))
+	test.isEqual(3502 * GiB, _ram(500 * GiB, 300 * GiB))
 }
 
-// A floor above the ceiling is rejected by an ll.assert in pt.sizing and in the
-// .memFloor() setter. ll.assert aborts the template rather than returning an error, so
-// there is no way to assert the rejection here -- is_error cannot catch it. Left
-// untested on purpose; the guard exists because between() asserts lo <= hi, and because
-// raising the ceiling to match would return the floor for every input, which is the flat
-// pin memFloor exists to avoid.
+// ---- ram: memCeiling ------------------------------------------------------
+
+TestMemCeilingCapsGrowth := func() {
+	test.isEqual(30 * GiB, _ramFull(4 * GiB, 0, 0, undefined, 64 * GiB))    //  below the cap
+	test.isEqual(64 * GiB, _ramFull(50 * GiB, 0, 0, undefined, 64 * GiB))   //  capped
+}
+
+TestMemCeilingWithFloor := func() {
+	test.isEqual(12 * GiB, _ramFull(0, 0, 0, 12 * GiB, 64 * GiB))
+	test.isEqual(64 * GiB, _ramFull(50 * GiB, 0, 0, 12 * GiB, 64 * GiB))
+}
+
+TestMemCeilingEqualToFloorPins := func() {
+	test.isEqual(12 * GiB, _ramFull(50 * GiB, 0, 0, 12 * GiB, 12 * GiB))
+}
+
+TestMemCeilingLowersTheStaticFallback := func() {
+	test.isEqual(3 * GiB, f.fallbackOf(sizing.ramFormula({ memCeiling: 3 * GiB })))
+	test.isEqual("4GiB", f.fallbackOf(sizing.ramFormula({ memCeiling: 64 * GiB })))
+	test.isEqual(12 * GiB, f.fallbackOf(sizing.ramFormula({ memFloor: 12 * GiB, memCeiling: 64 * GiB })))
+}
+
+// A ceiling below the floor is rejected by an ll.assert, which aborts the template;
+// is_error cannot catch it, so it is not tested here.
 
 // ---- cpu ------------------------------------------------------------------
 // cpu = between(2 + size / 16 GiB, 2, 8)
@@ -101,9 +216,8 @@ TestPolarsThreadsClampedToCpuBounds := func() {
 
 TestConstantsMatchTheDocumentedFormula := func() {
 	test.isEqual(2, sizing.RAM_INTERCEPT_GIB)
-	test.isEqual(6, sizing.RAM_SLOPE)
+	test.isEqual(7, sizing.RAM_SLOPE)
 	test.isEqual(2, sizing.RAM_FLOOR_GIB)
-	test.isEqual(256, sizing.RAM_CAP_GIB)
 	test.isEqual(2, sizing.CPU_MIN)
 	test.isEqual(8, sizing.CPU_MAX)
 }
