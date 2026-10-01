@@ -3,7 +3,7 @@
 // unit tested against a fake metric resolver (see sizing.test.tengo).
 //
 //     ram                = max(intercept + slope * size, memFloor or 2 GiB)
-//                          intercept defaults to 2 GiB, slope to 10
+//                          intercept defaults to 4 GiB, slope to 10
 //     cpu                = between(2 + size / 16 GiB, 2, 8)
 //     POLARS_MAX_THREADS = between(system.cpu, 2, 8)
 //
@@ -22,7 +22,8 @@
 // input understates the volume the plan decodes.
 //
 // A block can set its own slope with .memSlope() and intercept with .memIntercept(). The
-// slope must stay above RAM_SLOPE_MIN, which is the 4.94 measured above rounded down.
+// slope must stay above RAM_SLOPE_MIN, which is the 4.94 measured above rounded down; the
+// intercept must be at least RAM_INTERCEPT_MIN_GIB.
 //
 // The request has no upper bound. A cap cuts the grant below the need and the run OOMs;
 // the backend clamps a request above what a node can give.
@@ -57,8 +58,10 @@
 
 f := import(":exec.formula")
 ll := import(":ll")
+units := import(":units")
 
-RAM_INTERCEPT_GIB := 2
+RAM_INTERCEPT_GIB := 4
+RAM_INTERCEPT_MIN_GIB := 4
 RAM_SLOPE := 10
 RAM_SLOPE_MIN := 4
 // A fractional slope is applied as size * round(slope * SCALE) / SCALE; the formula is integer.
@@ -94,8 +97,8 @@ assertRamSlope := func(slope) {
  * @param intercept: number - bytes
  */
 assertRamIntercept := func(intercept) {
-	ll.assert(is_int(intercept) && intercept >= 0,
-		"pt.sizing: memory intercept must be a non-negative number of bytes, got %v", intercept)
+	ll.assert(is_int(intercept) && intercept >= RAM_INTERCEPT_MIN_GIB * units.GiB,
+		"pt.sizing: memory intercept must be a number of bytes of at least %d GiB, got %v", RAM_INTERCEPT_MIN_GIB, intercept)
 }
 
 /**
@@ -106,7 +109,7 @@ assertRamIntercept := func(intercept) {
  * @param slope: number | undefined - GiB of RAM per GiB of input from .memSlope(), or
  *               undefined for RAM_SLOPE. Must be greater than RAM_SLOPE_MIN.
  * @param intercept: number | undefined - bytes from .memIntercept(), or undefined for
- *                   RAM_INTERCEPT_GIB. Must be >= 0.
+ *                   RAM_INTERCEPT_GIB. Must be >= RAM_INTERCEPT_MIN_GIB.
  * @return formula
  */
 ramFormula := func(memFloor, ...rest) {
@@ -185,6 +188,7 @@ export {
 
 	// exported for the unit tests and for callers that need the documented numbers
 	RAM_INTERCEPT_GIB: RAM_INTERCEPT_GIB,
+	RAM_INTERCEPT_MIN_GIB: RAM_INTERCEPT_MIN_GIB,
 	RAM_SLOPE:         RAM_SLOPE,
 	RAM_SLOPE_MIN:     RAM_SLOPE_MIN,
 	RAM_FLOOR_GIB:     RAM_FLOOR_GIB,
