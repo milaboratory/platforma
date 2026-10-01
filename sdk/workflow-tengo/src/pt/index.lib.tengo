@@ -925,12 +925,11 @@ workflow := func() {
 		 * input. The request is `max(intercept + slope × size, floor)`; the default slope
 		 * is 10.
 		 *
-		 * The slope must be greater than 4. The steepest measured ptabler plan needs
-		 * 4.94 GiB per input GiB at 8 Polars threads, so a slope near 4 risks an OOM on
-		 * aggregate-heavy plans. A fractional slope is applied to three decimals.
-		 * `.mem()` overrides this when a caller sets both.
+		 * The slope must be an integer greater than 4. The steepest measured ptabler plan
+		 * needs 4.94 GiB per input GiB at 8 Polars threads. `.mem()` overrides this when a
+		 * caller sets both.
 		 *
-		 * @param slope: number - e.g. `6` or `7.5`
+		 * @param slope: int - e.g. `6`
 		 * @return builder
 		 */
 		memSlope: func(slope) {

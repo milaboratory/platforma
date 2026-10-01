@@ -64,8 +64,6 @@ RAM_INTERCEPT_GIB := 4
 RAM_INTERCEPT_MIN_GIB := 4
 RAM_SLOPE := 10
 RAM_SLOPE_MIN := 4
-// A fractional slope is applied as size * round(slope * SCALE) / SCALE; the formula is integer.
-RAM_SLOPE_SCALE := 1000
 RAM_FLOOR_GIB := 2
 RAM_STATIC_FALLBACK := "4GiB"
 
@@ -84,11 +82,11 @@ POLARS_MAX_THREADS_EXPR := format("{min(%d,max(%d,system.cpu))}", CPU_MAX, CPU_M
 /**
  * Asserts a slope accepted by ramFormula and .memSlope().
  *
- * @param slope: number - GiB of RAM per GiB of input
+ * @param slope: int - GiB of RAM per GiB of input
  */
 assertRamSlope := func(slope) {
-	ll.assert((is_int(slope) || is_float(slope)) && slope > RAM_SLOPE_MIN,
-		"pt.sizing: memory slope must be a number greater than %d, got %v", RAM_SLOPE_MIN, slope)
+	ll.assert(is_int(slope) && slope > RAM_SLOPE_MIN,
+		"pt.sizing: memory slope must be an integer greater than %d, got %v", RAM_SLOPE_MIN, slope)
 }
 
 /**
@@ -106,7 +104,7 @@ assertRamIntercept := func(intercept) {
  *
  * @param memFloor: number | undefined - lower bound in bytes from .memFloor(), or
  *                  undefined for the standard 2 GiB floor.
- * @param slope: number | undefined - GiB of RAM per GiB of input from .memSlope(), or
+ * @param slope: int | undefined - GiB of RAM per GiB of input from .memSlope(), or
  *               undefined for RAM_SLOPE. Must be greater than RAM_SLOPE_MIN.
  * @param intercept: number | undefined - bytes from .memIntercept(), or undefined for
  *                   RAM_INTERCEPT_GIB. Must be >= RAM_INTERCEPT_MIN_GIB.
@@ -135,14 +133,7 @@ ramFormula := func(memFloor, ...rest) {
 		interceptNode = f.const(intercept)
 	}
 
-	scaled := undefined
-	if is_int(slope) {
-		scaled = f.size({ default: 0 }).times(slope)
-	} else {
-		scaled = f.size({ default: 0 }).times(int(slope * RAM_SLOPE_SCALE + 0.5)).dividedBy(RAM_SLOPE_SCALE)
-	}
-
-	return scaled.plus(interceptNode).
+	return f.size({ default: 0 }).times(slope).plus(interceptNode).
 		atLeast(floor).
 		staticFallback(fallback)
 }
