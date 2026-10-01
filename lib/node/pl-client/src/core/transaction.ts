@@ -278,7 +278,8 @@ export class PlTransaction {
     public readonly name: string,
     public readonly writable: boolean,
     private readonly _clientRoot: OptionalSignedResourceId,
-    private readonly finalPredicate: FinalResourceDataPredicate,
+    /** What {@link sharedResourceDataCache} may keep. */
+    private readonly cachePredicate: FinalResourceDataPredicate,
     private readonly sharedResourceDataCache: LRUCache<SignedResourceId, ResourceDataCacheRecord>,
     private readonly enableFormattedErrors: boolean = false,
   ) {
@@ -767,7 +768,7 @@ export class PlTransaction {
 
       // we will cache only final resource data states
       // caching result even if we were ignore the cache
-      if (isResourceId(rId) && this.finalPredicate(result)) {
+      if (isResourceId(rId) && this.cachePredicate(result)) {
         deepFreeze(result);
         const fromCache = this.sharedResourceDataCache.get(rId);
         if (fromCache) {
