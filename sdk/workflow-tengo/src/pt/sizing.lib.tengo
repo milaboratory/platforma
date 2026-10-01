@@ -1,33 +1,33 @@
 // Default resource sizing for a ptabler run. :pt.workflow-run uses it when the block does
 // not set cpu or mem. sizing.test.tengo tests the formulas with a fake metric resolver.
 //
-//     ram                = max(intercept + slope * size, memFloor or 2 GiB)
+//     ram                = max(intercept + slope * size, floor)
 //     cpu                = between(2 + size / 16 GiB, 2, 8)
 //     POLARS_MAX_THREADS = between(system.cpu, 2, 8)
 //
-// The intercept is 4 GiB and the slope is 10. A block can change them with .memIntercept()
-// and .memSlope(). The intercept must be at least RAM_INTERCEPT_MIN_GIB. The slope must be
-// an integer greater than RAM_SLOPE_MIN.
+// Defaults: intercept 4 GiB, slope 10, floor 5 GiB. .memIntercept(), .memSlope() and
+// .memFloor() replace them. The intercept is at least RAM_INTERCEPT_MIN_GIB. The slope is an
+// integer, at least RAM_SLOPE_MIN.
 //
 // Measured need per GiB of input, per plan shape, at 8 Polars threads:
 //     concat + aggregate with max_by   4.94   <- the steepest one reachable here
 //     bulk export                      2.92
 //     single-cell export               1.40
 //     write_frame                      4.13 x^0.68, sub-linear
-// One formula serves all shapes, so it must cover the steepest. At 16 Polars threads the
-// aggregate shape needs 6.22. Thus POLARS_MAX_THREADS is clamped to CPU_MAX for every cpu
-// grant. An explicit cpu() above 8 reserves cores that Polars does not use.
+// The slope covers the steepest shape. The aggregate shape needs 6.22 at 16 Polars
+// threads, so POLARS_MAX_THREADS is clamped to CPU_MAX for every cpu grant. An explicit
+// cpu() above 8 reserves cores that Polars does not use.
 //
-// RAM_SLOPE is 10, larger than 4.94 on purpose. The measurements use uncompressed TSV
-// bytes. f.size() gives stored blob bytes, so for a parquet input it gives less than the
-// volume that the plan decodes.
+// The measurements use uncompressed TSV bytes. f.size() gives stored blob bytes, which
+// for a parquet input are fewer than the bytes the plan decodes. RAM_SLOPE is 10, not 5,
+// to cover that difference.
 //
-// The RAM request has no upper limit. A limit makes the grant smaller than the need, and
-// the run OOMs. The backend clamps a request that is larger than a node can give.
+// The RAM request has no upper limit. The backend clamps a request that is larger than a
+// node can give.
 //
 // f.size() counts only the files that addFile() attaches. writeFile() attaches a
 // non-partitioned JSON p-column, so f.size() counts 0 for it. A frame made only from those
-// columns gets the intercept or the floor. See :exec.formula for the full rule.
+// columns gets max(intercept, floor). See :exec.formula for the full rule.
 
 // Scratch space holds everything ptabler spills: the table pframes-rs writes for each
 // read_frame, and for each write_frame the unsorted and intermediate parquet files and the
@@ -60,10 +60,8 @@ units := import(":units")
 RAM_INTERCEPT_GIB := 4
 RAM_INTERCEPT_MIN_GIB := 4
 RAM_SLOPE := 10
-RAM_SLOPE_MIN := 4
-RAM_FLOOR_GIB := 2
-RAM_STATIC_FALLBACK_GIB := 4
-RAM_STATIC_FALLBACK := format("%dGiB", RAM_STATIC_FALLBACK_GIB)
+RAM_SLOPE_MIN := 5
+RAM_FLOOR_GIB := 5
 
 SCRATCH_PER_READ_FRAME := 16
 SCRATCH_SORT := 16
@@ -83,61 +81,55 @@ POLARS_MAX_THREADS_EXPR := format("{min(%d,max(%d,system.cpu))}", CPU_MAX, CPU_M
  * @param slope: int - GiB of RAM per GiB of input
  */
 assertRamSlope := func(slope) {
-	ll.assert(is_int(slope) && slope > RAM_SLOPE_MIN,
-		"pt.sizing: memory slope must be an integer greater than %d, got %v", RAM_SLOPE_MIN, slope)
+	ll.assert(is_int(slope) && slope >= RAM_SLOPE_MIN,
+		"pt.sizing: memory slope must be an integer of at least %d, got %v", RAM_SLOPE_MIN, slope)
 }
 
 /**
  * Checks an intercept for ramFormula and .memIntercept().
  *
- * @param intercept: number - bytes
+ * @param intercept: int - bytes
  */
 assertRamIntercept := func(intercept) {
 	ll.assert(is_int(intercept) && intercept >= RAM_INTERCEPT_MIN_GIB * units.GiB,
-		"pt.sizing: memory intercept must be a number of bytes of at least %d GiB, got %v", RAM_INTERCEPT_MIN_GIB, intercept)
+		"pt.sizing: memory intercept must be an integer number of bytes of at least %d GiB, got %v", RAM_INTERCEPT_MIN_GIB, intercept)
 }
 
 /**
- * The default RAM formula.
+ * Checks a floor for ramFormula and .memFloor().
  *
- * @param memFloor: number | undefined - lower bound in bytes, from .memFloor().
- *                  Undefined gives the 2 GiB floor.
- * @param slope: int | undefined - GiB of RAM per GiB of input, from .memSlope().
- *               Undefined gives RAM_SLOPE.
- * @param intercept: number | undefined - bytes, from .memIntercept(). Undefined gives
- *                   RAM_INTERCEPT_GIB.
+ * @param floor: int - bytes
+ */
+assertRamFloor := func(floor) {
+	ll.assert(is_int(floor) && floor > 0,
+		"pt.sizing: memory floor must be a positive integer number of bytes, got %v", floor)
+}
+
+/**
+ * The default RAM formula: max(intercept + slope * size, floor).
+ *
+ * @param opts: map - each key is optional, and undefined gives the default:
+ *          floor: int - bytes, from .memFloor(). Default RAM_FLOOR_GIB.
+ *          slope: int - GiB of RAM per GiB of input, from .memSlope(). Default RAM_SLOPE.
+ *          intercept: int - bytes, from .memIntercept(). Default RAM_INTERCEPT_GIB.
  * @return formula
  */
-ramFormula := func(memFloor, ...rest) {
-	slope := len(rest) > 0 ? rest[0] : undefined
-	intercept := len(rest) > 1 ? rest[1] : undefined
+ramFormula := func(opts) {
+	ll.assert(is_map(opts), "pt.sizing.ramFormula: expected an options map, got %v", opts)
 
-	floor := f.gib(RAM_FLOOR_GIB)
-	fallback := RAM_STATIC_FALLBACK
-
-	if !is_undefined(memFloor) {
-		floor = f.const(memFloor)
-		fallback = memFloor
-	}
-
-	if is_undefined(slope) {
-		slope = RAM_SLOPE
-	}
+	floor := is_undefined(opts.floor) ? RAM_FLOOR_GIB * units.GiB : opts.floor
+	slope := is_undefined(opts.slope) ? RAM_SLOPE : opts.slope
+	intercept := is_undefined(opts.intercept) ? RAM_INTERCEPT_GIB * units.GiB : opts.intercept
+	assertRamFloor(floor)
 	assertRamSlope(slope)
+	assertRamIntercept(intercept)
 
-	interceptNode := f.gib(RAM_INTERCEPT_GIB)
-	if !is_undefined(intercept) {
-		assertRamIntercept(intercept)
-		interceptNode = f.const(intercept)
-		// The static fallback must not be less than the intercept.
-		fallbackBytes := is_undefined(memFloor) ? RAM_STATIC_FALLBACK_GIB * units.GiB : memFloor
-		if intercept > fallbackBytes {
-			fallback = intercept
-		}
-	}
+	// The formula never asks for less than max(intercept, floor). The static fallback must
+	// not ask for less either.
+	fallback := intercept > floor ? intercept : floor
 
-	return f.size({ default: 0 }).times(slope).plus(interceptNode).
-		atLeast(floor).
+	return f.size({ default: 0 }).times(slope).plus(f.const(intercept)).
+		atLeast(f.const(floor)).
 		staticFallback(fallback)
 }
 
@@ -175,6 +167,7 @@ export {
 	ramFormula: ramFormula,
 	assertRamSlope: assertRamSlope,
 	assertRamIntercept: assertRamIntercept,
+	assertRamFloor: assertRamFloor,
 	cpuFormula: cpuFormula,
 	scratchFormula: scratchFormula,
 

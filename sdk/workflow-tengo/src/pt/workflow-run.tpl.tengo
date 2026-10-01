@@ -51,7 +51,7 @@ self.body(func(inputs) {
     // slopes and the thread limit.
     ramReq := mem
     if is_undefined(ramReq) {
-        ramReq = sizing.ramFormula(memFloor, memSlope, memIntercept)
+        ramReq = sizing.ramFormula({ floor: memFloor, slope: memSlope, intercept: memIntercept })
     }
     cpuReq := cpu
     if is_undefined(cpuReq) {
