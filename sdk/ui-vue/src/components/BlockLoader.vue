@@ -23,9 +23,10 @@ const progressWidth = computed(() => {
 </script>
 
 <template>
-  <div v-if="isLoader" class="block__loader" />
+  <div v-if="isLoader" data-testid="pl-block-loader" class="block__loader" />
   <div
     v-else-if="progressWidth !== undefined"
+    data-testid="pl-block-loader-progress"
     class="block__progress"
     :style="{ '--progress-width': progressWidth }"
   />

@@ -23,16 +23,19 @@ withDefaults(
 
 <template>
   <div
+    data-testid="pl-splash"
     :class="[
       style.splash,
       { [style.table]: type === 'table', [style.transparent]: type === 'transparent' },
     ]"
   >
-    <div v-if="loading" :class="[style.overlay]">
+    <div v-if="loading" data-testid="pl-splash-overlay" :class="[style.overlay]">
       <div>
         <!-- @TODO refactor PlLoaderCircular size property -->
-        <PlLoaderCircular size="48" />
-        <div v-if="loadingText" :class="style.text">{{ loadingText }}</div>
+        <PlLoaderCircular data-testid="pl-splash-loader" size="48" />
+        <div v-if="loadingText" data-testid="pl-splash-text" :class="style.text">
+          {{ loadingText }}
+        </div>
       </div>
     </div>
     <slot />

@@ -228,9 +228,10 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
 }
 </script>
 <template>
-  <div>
+  <div data-testid="pl-advanced-filter">
     <PlElementList
       v-model:items="rootFilters"
+      data-testid="pl-advanced-filter-groups"
       :get-item-key="(filter) => filter.id"
       :item-class="$style.filterGroup"
       :item-class-content="$style.filterGroupContent"
@@ -252,6 +253,7 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
       </template>
       <template #item-content="{ item, index }">
         <div
+          data-testid="pl-advanced-filter-group"
           :class="[$style.groupContent, { [$style.suppressedLabel]: item.isSuppressed }]"
           dropzone="true"
           @drop="(event) => handleDropToExistingGroup(index, event)"
@@ -259,6 +261,7 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
         >
           <PlCheckbox
             :model-value="item.type === 'not'"
+            data-testid="pl-advanced-filter-filter-out"
             :class="$style.notCheckbox"
             @update:model-value="inverseRootNode(index)"
           >
@@ -278,11 +281,16 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
               @change-operand="(v) => changeGroupOperand(index, v)"
             />
           </template>
-          <div v-if="props.enableDnd" :class="$style.dropzone">
+          <div
+            v-if="props.enableDnd"
+            data-testid="pl-advanced-filter-dropzone"
+            :class="$style.dropzone"
+          >
             <div>Drop dimensions here</div>
           </div>
           <PlBtnSecondary
             v-else-if="!props.isCompletedGroup(item, index)"
+            data-testid="pl-advanced-filter-add-filter"
             icon="add"
             @click="addColumnToGroup(index, firstColumnId)"
           >
@@ -293,6 +301,7 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
       <template #item-after="{ index }">
         <OperandButton
           v-if="props.enableAddGroupButton || index < getRootGroups().length - 1"
+          data-testid="pl-advanced-filter-group-operands"
           :class="$style.buttonWrapper"
           :active="props.filters.type"
           :disabled="index === getRootGroups().length - 1"
@@ -304,6 +313,7 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
     <!-- Last group - always empty, just for adding new groups -->
     <PlElementList
       v-if="props.enableAddGroupButton"
+      data-testid="pl-advanced-filter-new-group"
       :items="emptyGroup"
       :get-item-key="(group) => group.id"
       :item-class="$style.filterGroup"
@@ -324,11 +334,17 @@ function validateFilter<T extends CommonFilter>(item: T): EditableFilter {
         >
       </template>
       <template #item-content>
-        <div v-if="enableDnd" :class="$style.dropzone">
+        <div v-if="enableDnd" data-testid="pl-advanced-filter-dropzone" :class="$style.dropzone">
           <div>Drop dimensions here</div>
         </div>
         <slot v-else name="add-group-buttons">
-          <PlBtnSecondary icon="add" @click="addGroup(firstColumnId)"> Add filter </PlBtnSecondary>
+          <PlBtnSecondary
+            data-testid="pl-advanced-filter-add-group"
+            icon="add"
+            @click="addGroup(firstColumnId)"
+          >
+            Add filter
+          </PlBtnSecondary>
         </slot>
       </template>
     </PlElementList>

@@ -34,10 +34,24 @@ const groups = computed(() => {
 </script>
 
 <template>
-  <div :class="$style.component">
-    <div v-for="(group, k) in groups" :key="k" :class="$style.legend">
-      <div v-for="(l, i) in group" :key="i" :class="$style.item">
-        <div :class="$style.chip" :style="{ backgroundColor: l.color.toString() }" />
+  <div data-testid="pl-chart-stacked-bar-legend" :class="$style.component">
+    <div
+      v-for="(group, k) in groups"
+      :key="k"
+      data-testid="pl-chart-stacked-bar-legend-group"
+      :class="$style.legend"
+    >
+      <div
+        v-for="(l, i) in group"
+        :key="i"
+        data-testid="pl-chart-stacked-bar-legend-item"
+        :class="$style.item"
+      >
+        <div
+          data-testid="pl-chart-stacked-bar-legend-chip"
+          :class="$style.chip"
+          :style="{ backgroundColor: l.color.toString() }"
+        />
         {{ l.text }}
       </div>
     </div>

@@ -9,7 +9,7 @@ withDefaults(
 );
 </script>
 <template>
-  <div class="pl-loader-circular">
+  <div data-testid="pl-loader-circular" class="pl-loader-circular">
     <div
       :style="{
         height: `${size}px`,

@@ -13,7 +13,7 @@ const data = computed(() => {
 </script>
 
 <template>
-  <div :class="$style.component">
+  <div data-testid="pl-chart-stacked-bar-compact" :class="$style.component">
     <StackedRowCompact :value="data" />
   </div>
 </template>

@@ -189,6 +189,7 @@ useClickOutside([progressesRef], () => {
 
 <template>
   <PlBtnGhost
+    data-testid="pl-btn-export-archive"
     :disabled="!isReadyToExport"
     :loading="data.loading"
     :class="{ [$style['has-exports']]: data.exports }"
@@ -200,10 +201,24 @@ useClickOutside([progressesRef], () => {
     </template>
   </PlBtnGhost>
   <Teleport to="body">
-    <div v-if="data.exports && data.showExports" ref="progressesRef" :class="$style.progresses">
-      <PlIcon16 :class="$style.close" name="close" @click.stop="data.showExports = false" />
+    <div
+      v-if="data.exports && data.showExports"
+      ref="progressesRef"
+      data-testid="pl-btn-export-archive-progress"
+      :class="$style.progresses"
+    >
+      <PlIcon16
+        data-testid="pl-btn-export-archive-progress-close"
+        :class="$style.close"
+        name="close"
+        @click.stop="data.showExports = false"
+      />
       <Summary :item="archive" />
-      <div :class="$style.itemsContainer" class="pl-scrollable-y">
+      <div
+        data-testid="pl-btn-export-archive-items"
+        :class="$style.itemsContainer"
+        class="pl-scrollable-y"
+      >
         <Item v-for="item in data.exports?.values()" :key="item.fileName" :item="item" />
       </div>
     </div>

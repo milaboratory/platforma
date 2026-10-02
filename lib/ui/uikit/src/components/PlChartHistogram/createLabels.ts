@@ -15,6 +15,7 @@ export function createLabels(
   svg
     .append("text")
     .attr("class", "x-axis-label")
+    .attr("data-testid", "pl-chart-histogram-x-axis-label")
     .attr("font-weight", 500)
     .attr("text-anchor", "middle") // Center the text
     .attr("x", width / 2) // Center horizontally
@@ -25,6 +26,7 @@ export function createLabels(
   svg
     .append("text")
     .attr("class", "y-axis-label")
+    .attr("data-testid", "pl-chart-histogram-y-axis-label")
     .attr("font-weight", 500)
     .attr("text-anchor", "middle") // Center the text
     .attr("x", -height / 2) // Center vertically (rotated axis)

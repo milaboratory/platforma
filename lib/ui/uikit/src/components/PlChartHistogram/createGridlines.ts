@@ -25,6 +25,7 @@ export function createGridlines(
   svg
     .append("g")
     .attr("class", "grid") // Add a class for styling
+    .attr("data-testid", "pl-chart-histogram-grid")
     .attr("font-family", "'Manrope', sans-serif") // Doesn't work
     .call(
       makeYGridlines()
@@ -36,6 +37,7 @@ export function createGridlines(
   svg
     .append("g")
     .attr("class", "grid") // Add a class for styling
+    .attr("data-testid", "pl-chart-histogram-grid")
     .attr("font-family", "'Manrope', sans-serif")
     .attr("transform", `translate(0,${height})`) // Position at the bottom of the chart
     .call(

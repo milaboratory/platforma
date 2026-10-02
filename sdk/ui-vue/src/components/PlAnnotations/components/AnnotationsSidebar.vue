@@ -66,9 +66,10 @@ function handleAddStep() {
 </script>
 
 <template>
-  <PlSidebarItem>
+  <PlSidebarItem data-testid="pl-annotations-schema">
     <template #header-content>
       <PlEditableTitle
+        data-testid="pl-annotations-schema-title"
         :model-value="props.annotation.title"
         :class="{ [$commonStyle.flashing]: props.annotation.title.length === 0 }"
         :max-length="40"
@@ -80,11 +81,15 @@ function handleAddStep() {
       />
     </template>
     <template v-if="props.annotation" #body-content>
-      <div :class="[$style.root, { [$commonStyle.disabled]: props.annotation.title.length === 0 }]">
-        <span :class="$style.tip">
+      <div
+        data-testid="pl-annotations-schema-body"
+        :class="[$style.root, { [$commonStyle.disabled]: props.annotation.title.length === 0 }]"
+      >
+        <span data-testid="pl-annotations-schema-tip" :class="$style.tip">
           Above annotations override the ones below. Rearrange them by dragging.
         </span>
         <PlElementList
+          data-testid="pl-annotations-steps"
           :items="props.annotation.steps"
           :get-item-key="(item) => item.id"
           :is-active="(item) => item.id === props.selectedStepId"
@@ -98,9 +103,12 @@ function handleAddStep() {
           </template>
         </PlElementList>
 
-        <PlBtnSecondary icon="add" @click="handleAddStep"> Add label </PlBtnSecondary>
+        <PlBtnSecondary data-testid="pl-annotations-add-label" icon="add" @click="handleAddStep">
+          Add label
+        </PlBtnSecondary>
 
         <PlTextField
+          data-testid="pl-annotations-default-value"
           :class="[
             $style.defaultValue,
             { [$style.emptyDefaultValue]: isEmpty(props.annotation.defaultValue) },
@@ -117,6 +125,7 @@ function handleAddStep() {
     </template>
     <template #footer-content>
       <PlBtnGhost
+        data-testid="pl-annotations-delete-schema"
         icon="delete-bin"
         reverse
         :disabled="props.annotation.steps.length === 0"
