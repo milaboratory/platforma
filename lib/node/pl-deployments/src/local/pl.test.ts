@@ -1,109 +1,155 @@
-import { test, expect } from "vitest";
+import { afterEach, beforeAll, describe, test, expect } from "vitest";
 import { localPlatformaInit } from "./pl";
+import type { LocalPl } from "./pl";
 import { ConsoleLoggerAdapter, sleep } from "@milaboratories/ts-helpers";
+import type { MiLogger } from "@milaboratories/ts-helpers";
 import * as fs from "fs/promises";
 import upath from "upath";
-import { ProcessOptions, processStop } from "./process";
+import { ProcessOptions, isProcessAlive, processStop, processWaitStopped } from "./process";
 import * as yaml from "yaml";
 import * as os from "os";
 import { mergeDefaultOps } from "./pl";
 import type { LocalPlOptions, LocalPlOptionsFull } from "./pl";
 import { plProcessOps } from "./pl";
 import { getPorts } from "@milaboratories/pl-config";
+import { defaultHttpDispatcher } from "@milaboratories/pl-http";
+import { newDefaultPlBinarySource, resolveLocalPlBinaryPath } from "../common/pl_binary";
 
-test(
-  "should start and stop platforma of the current version with hardcoded config",
-  { timeout: 25000 },
-  async ({ expect }) => {
-    const logger = new ConsoleLoggerAdapter();
-    const config = await readTestConfig();
+const testDir = upath.join(__dirname, "..", "..", ".test");
+const binariesDirName = "binaries";
 
-    logger.info("Config:\n" + yaml.stringify(config));
+const startedPls: LocalPl[] = [];
 
-    const dir = await prepareDirForTestConfig();
+async function initPl(logger: MiLogger, options: LocalPlOptions): Promise<LocalPl> {
+  const pl = await localPlatformaInit(logger, options);
+  startedPls.push(pl);
+  return pl;
+}
 
-    const pl = await localPlatformaInit(logger, {
-      workingDir: dir,
-      config,
-      closeOld: false,
+describe("local platforma process", () => {
+  beforeAll(async () => {
+    await resolveLocalPlBinaryPath({
+      logger: new ConsoleLoggerAdapter(),
+      downloadDir: upath.join(testDir, binariesDirName),
+      src: newDefaultPlBinarySource(),
+      dispatcher: defaultHttpDispatcher(),
     });
+  }, 120_000);
 
-    await sleep(5000);
+  afterEach(async () => {
+    const errors: unknown[] = [];
+    for (const pl of startedPls.splice(0)) {
+      const pid = pl.pid;
+      if (pid === undefined || !(await isProcessAlive(pid))) continue;
+      try {
+        pl.stop();
+        try {
+          await pl.waitStopped();
+        } catch {
+          processStop(pid, true);
+          await processWaitStopped(pid, 5_000);
+        }
+      } catch (e) {
+        if (await isProcessAlive(pid)) errors.push(e);
+      }
+    }
+    if (errors.length > 0) throw new AggregateError(errors, "Failed to stop pl processes");
+  });
 
-    console.log(`Platforma: %o`, pl.debugInfo());
+  test(
+    "should start and stop platforma of the current version with hardcoded config",
+    { timeout: 25000 },
+    async ({ expect }) => {
+      const logger = new ConsoleLoggerAdapter();
+      const config = await readTestConfig();
 
-    await pl.isAlive();
-    expect(pl.pid).not.toBeUndefined();
+      logger.info("Config:\n" + yaml.stringify(config));
 
-    pl.stop();
-    await pl.waitStopped();
-  },
-);
+      const dir = await prepareDirForTestConfig();
 
-test(
-  "should close old platforma when starting a new one if the option is set",
-  { timeout: 35000 },
-  async ({ expect }) => {
-    const logger = new ConsoleLoggerAdapter();
+      const pl = await initPl(logger, {
+        workingDir: dir,
+        config,
+        closeOld: false,
+      });
 
-    const config = await readTestConfig();
-    const dir = await prepareDirForTestConfig();
-    const options: LocalPlOptions = {
-      workingDir: dir,
-      config,
-    };
+      await sleep(5000);
 
-    const oldPl = await localPlatformaInit(logger, options);
-    await sleep(5000);
-    console.log(`OldPlatforma: %o`, oldPl.debugInfo());
+      console.log(`Platforma: %o`, pl.debugInfo());
 
-    await oldPl.isAlive();
-    const newPl = await localPlatformaInit(logger, options);
-    await expect(oldPl.isAlive({ timeoutMs: 1000 })).rejects.toThrow();
-    await sleep(5000);
+      await pl.isAlive();
+      expect(pl.pid).not.toBeUndefined();
 
-    console.log(`NewPlatforma: %o`, newPl.debugInfo());
+      pl.stop();
+      await pl.waitStopped();
+    },
+  );
 
-    await newPl.isAlive();
-    expect(newPl.pid).not.toBeUndefined();
-    newPl.stop();
-    await newPl.waitStopped();
-  },
-);
+  test(
+    "should close old platforma when starting a new one if the option is set",
+    { timeout: 35000 },
+    async ({ expect }) => {
+      const logger = new ConsoleLoggerAdapter();
 
-test(
-  "should restart platforma if restart option was provided",
-  { timeout: 25000 },
-  async ({ expect }) => {
-    const logger = new ConsoleLoggerAdapter();
-    const config = await readTestConfig();
-    const dir = await prepareDirForTestConfig();
+      const config = await readTestConfig();
+      const dir = await prepareDirForTestConfig();
+      const options: LocalPlOptions = {
+        workingDir: dir,
+        config,
+      };
 
-    const pl = await localPlatformaInit(logger, {
-      workingDir: dir,
-      config,
-      closeOld: false,
-      onCloseAndErrorNoStop: async (pl) => await pl.start(),
-    });
-    await sleep(1000);
+      const oldPl = await initPl(logger, options);
+      await sleep(5000);
+      console.log(`OldPlatforma: %o`, oldPl.debugInfo());
 
-    await pl.isAlive();
-    processStop(pl.pid!);
-    await sleep(3000);
-    console.log(`Platforma after first stop: %o`, pl.debugInfo());
+      await oldPl.isAlive();
+      const newPl = await initPl(logger, options);
+      await expect(oldPl.isAlive({ timeoutMs: 1000 })).rejects.toThrow();
+      await sleep(5000);
 
-    await pl.isAlive();
-    processStop(pl.pid!);
-    await sleep(3000);
-    console.log(`Platforma after second stop: %o`, pl.debugInfo());
+      console.log(`NewPlatforma: %o`, newPl.debugInfo());
 
-    await pl.isAlive();
-    expect(pl.debugInfo().nRuns).toEqual(3);
+      await newPl.isAlive();
+      expect(newPl.pid).not.toBeUndefined();
+      newPl.stop();
+      await newPl.waitStopped();
+    },
+  );
 
-    pl.stop();
-    await pl.waitStopped();
-  },
-);
+  test(
+    "should restart platforma if restart option was provided",
+    { timeout: 25000 },
+    async ({ expect }) => {
+      const logger = new ConsoleLoggerAdapter();
+      const config = await readTestConfig();
+      const dir = await prepareDirForTestConfig();
+
+      const pl = await initPl(logger, {
+        workingDir: dir,
+        config,
+        closeOld: false,
+        onCloseAndErrorNoStop: async (pl) => await pl.start(),
+      });
+      await sleep(1000);
+
+      await pl.isAlive();
+      processStop(pl.pid!);
+      await sleep(3000);
+      console.log(`Platforma after first stop: %o`, pl.debugInfo());
+
+      await pl.isAlive();
+      processStop(pl.pid!);
+      await sleep(3000);
+      console.log(`Platforma after second stop: %o`, pl.debugInfo());
+
+      await pl.isAlive();
+      expect(pl.debugInfo().nRuns).toEqual(3);
+
+      pl.stop();
+      await pl.waitStopped();
+    },
+  );
+});
 
 async function readTestConfig() {
   const testConfig = upath.join(__dirname, "config.test.yaml");
@@ -126,16 +172,18 @@ async function readTestConfig() {
 }
 
 async function prepareDirForTestConfig() {
-  const dir = upath.join(__dirname, "..", "..", ".test");
-  await fs.rm(dir, { recursive: true, force: true });
-  await fs.mkdir(dir);
+  await fs.mkdir(testDir, { recursive: true });
+  for (const entry of await fs.readdir(testDir)) {
+    if (entry === binariesDirName) continue;
+    await fs.rm(upath.join(testDir, entry), { recursive: true, force: true });
+  }
 
-  await fs.mkdir(upath.join(dir, "storages", "work"), { recursive: true });
-  await fs.mkdir(upath.join(dir, "storages", "main"), { recursive: true });
-  await fs.mkdir(upath.join(dir, "packages"), { recursive: true });
-  await fs.writeFile(upath.join(dir, "users.htpasswd"), "testuser:testpassword");
+  await fs.mkdir(upath.join(testDir, "storages", "work"), { recursive: true });
+  await fs.mkdir(upath.join(testDir, "storages", "main"), { recursive: true });
+  await fs.mkdir(upath.join(testDir, "packages"), { recursive: true });
+  await fs.writeFile(upath.join(testDir, "users.htpasswd"), "testuser:testpassword");
 
-  return dir;
+  return testDir;
 }
 
 const mergeDefaultOpsCases: {
