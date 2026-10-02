@@ -26,7 +26,7 @@ import type { Dispatcher } from "undici";
 import { LRUCache } from "lru-cache";
 import type { ResourceDataCacheRecord } from "./cache";
 import type { FinalResourceDataPredicate } from "./final";
-import { DefaultFinalResourceDataPredicate } from "./final";
+import { CacheFinality, TreeFinality } from "./final";
 import type { AllTxStat, TxStat } from "./stat";
 import { addStat, initialTxStat } from "./stat";
 import type { WireConnection } from "./wire";
@@ -96,7 +96,9 @@ export class PlClient {
   // Caching
   //
 
-  /** This function determines whether resource data can be cached */
+  /** The default finality predicate of trees built on this client ({@link TreeFinality} unless
+   * given); a tree may override it, or keep its explicit roots non-final with
+   * `rootsNeverFinal`. The transaction resource cache always uses {@link CacheFinality}. */
   public readonly finalPredicate: FinalResourceDataPredicate;
 
   /** Resource data cache, to minimize redundant data rereading from remote db */
@@ -133,7 +135,7 @@ export class PlClient {
 
     this.txDelay = conf.txDelay;
     this.forceSync = conf.forceSync;
-    this.finalPredicate = ops.finalPredicate ?? DefaultFinalResourceDataPredicate;
+    this.finalPredicate = ops.finalPredicate ?? TreeFinality.predicate();
     this.resourceDataCache = new LRUCache({
       maxSize: conf.maxCacheBytes,
       sizeCalculation: (v) => (v.basicData.data?.length ?? 0) + 64,
@@ -408,7 +410,7 @@ export class PlClient {
           name,
           writable,
           clientRoot,
-          this.finalPredicate,
+          CacheFinality.predicate(),
           this.resourceDataCache,
         );
 
