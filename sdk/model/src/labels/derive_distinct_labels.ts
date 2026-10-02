@@ -509,20 +509,36 @@ function repairBareLabels(
       [...traces[i]].filter(([t]) => t !== LABEL_TYPE_FULL && (minimized.has(t) || isForced(t))),
     );
     const partKeys = shown.map((parts) => parts.map(([t, l]) => partKey(t, l)));
-    const keySets = partKeys.map((keys) => new Set(keys));
+    // Members showing the same parts are compared once, as one part set; identical columns
+    // then cost nothing. sigOf maps each member to its set, setMembers lists a set's members.
+    const sigIndex = new Map<string, number>();
+    const setKeys: string[][] = [];
+    const setMembers: number[][] = [];
+    const sigOf = partKeys.map((keys, k) => {
+      const sig = [...keys].sort().join("\u0001");
+      let s = sigIndex.get(sig);
+      if (s === undefined) {
+        s = setKeys.length;
+        sigIndex.set(sig, s);
+        setKeys.push(keys);
+        setMembers.push([]);
+      }
+      setMembers[s].push(k);
+      return s;
+    });
+    const setSets = setKeys.map((keys) => new Set(keys));
     const postings = new Map<string, number[]>();
-    partKeys.forEach((keys, k) =>
+    setKeys.forEach((keys, s) =>
       keys.forEach((p) => {
         const list = postings.get(p);
-        if (list) list.push(k);
-        else postings.set(p, [k]);
+        if (list) list.push(s);
+        else postings.set(p, [s]);
       }),
     );
-    // Supersets: peers showing all of a member's parts and more (non-empty means bare). Peers
-    // come from the posting list of its rarest part, which keeps typical groups linear.
-    const withParts = group.map((_, m) => m).filter((m) => partKeys[m].length > 0);
-    const supersetsOf = (k: number) => {
-      const keys = partKeys[k];
+    // Superset sets: part sets holding all of a set's parts and more (non-empty means bare).
+    // Candidates come from the posting list of its rarest part.
+    const withParts = setKeys.map((_, s) => s).filter((s) => setKeys[s].length > 0);
+    const supersetSets = setKeys.map((keys, s) => {
       if (keys.length === 0) return withParts;
       const rarest = keys.reduce((a, b) =>
         postings.get(a)!.length <= postings.get(b)!.length ? a : b,
@@ -530,11 +546,10 @@ function repairBareLabels(
       return postings
         .get(rarest)!
         .filter(
-          (m) => m !== k && keySets[m].size > keys.length && keys.every((x) => keySets[m].has(x)),
+          (t) => t !== s && setSets[t].size > keys.length && keys.every((x) => setSets[t].has(x)),
         );
-    };
-    const supersets = group.map((_, k) => supersetsOf(k));
-    const bare = supersets.map((peers) => peers.length > 0);
+    });
+    const bare = group.map((_, k) => supersetSets[sigOf[k]].length > 0);
     if (!bare.some(Boolean)) continue;
 
     const typeCount = new Map<string, number>();
@@ -589,20 +604,54 @@ function repairBareLabels(
       const isFree = (l: string) => (counts.get(l) ?? 0) - (oldBare.get(l) ?? 0) === 0;
       const shownTypes = (k: number) => [...baseTypes, ...shown[k].map(([t]) => t), ...qualTypes];
 
+      // Per part set: each type's labels among its members, and how many members carry it, so
+      // "does some peer differ" is answered per set without scanning every member.
+      const setLabels = new Map<number, Map<string, { labels: Set<string>; n: number }>>();
+      const labelsIn = (s: number) => {
+        let byType = setLabels.get(s);
+        if (byType) return byType;
+        byType = new Map();
+        for (const m of setMembers[s])
+          for (const [t, l] of traces[group[m]]) {
+            const entry = byType.get(t) ?? { labels: new Set<string>(), n: 0 };
+            entry.labels.add(l);
+            entry.n++;
+            byType.set(t, entry);
+          }
+        setLabels.set(s, byType);
+        return byType;
+      };
+      const someDiffers = (s: number, u: string, mine: string | undefined) => {
+        const entry = labelsIn(s).get(u);
+        if (entry === undefined) return mine !== undefined;
+        if (entry.n < setMembers[s].length) return true;
+        return entry.labels.size > 1 || !entry.labels.has(mine ?? "");
+      };
+      const extraDepthsOf = new Map<number, Set<number | undefined>>();
+      const extraDepths = (s: number) => {
+        let depthsSet = extraDepthsOf.get(s);
+        if (depthsSet) return depthsSet;
+        depthsSet = new Set(
+          supersetSets[s].flatMap((t) => {
+            const rep = setMembers[t][0];
+            return shown[rep]
+              .filter(([u, l]) => !isQualification(u) && !setSets[s].has(partKey(u, l)))
+              .map(([u]) => depths[group[rep]].get(u));
+          }),
+        );
+        extraDepthsOf.set(s, depthsSet);
+        return depthsSet;
+      };
+
       const picks = new Map<number, { type: string; label: string }>();
       group.forEach((i, k) => {
         if (!bare[k]) return;
-        const extraDepths = new Set(
-          supersets[k].flatMap((m) =>
-            shown[m]
-              .filter(([t, l]) => !isQualification(t) && !keySets[k].has(partKey(t, l)))
-              .map(([t]) => depths[group[m]].get(t)),
-          ),
-        );
-        const sameKind = (u: string) => (extraDepths.has(depths[i].get(u)) ? 1 : 0);
+        const peers = supersetSets[sigOf[k]];
+        const kindDepths = extraDepths(sigOf[k]);
+        const sameKind = (u: string) => (kindDepths.has(depths[i].get(u)) ? 1 : 0);
         const candidates = [...traces[i].keys()]
           .filter((u) => u !== LABEL_TYPE_FULL && !minimized.has(u) && !isForced(u))
-          .filter((u) => supersets[k].some((m) => traces[group[m]].get(u) !== traces[i].get(u)))
+          .filter((u) => peers.some((t) => someDiffers(t, u, traces[i].get(u))))
           .sort((a, b) => sameKind(b) - sameKind(a) || byImportance(a, b));
         for (const u of candidates) {
           const label = render(i, new Set([...shownTypes(k), u]));
