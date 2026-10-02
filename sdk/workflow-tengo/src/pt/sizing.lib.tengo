@@ -12,9 +12,11 @@
 //     single-cell export               1.40
 //     write_frame                      4.13 x^0.68, sub-linear
 // One formula serves every shape, so it carries the steepest. The slopes hold at 8
-// Polars threads or fewer; the same aggregate shape needs 6.22 at 16 threads. Polars
-// threads are therefore clamped to CPU_MAX whatever cpu the run is granted, including
-// an explicit cpu() above 8, which reserves cores Polars does not use.
+// Polars threads or fewer; the same aggregate shape needs 6.22 at 16 threads. By default,
+// the thread count is therefore clamped to POLARS_THREADS_DEFAULT for every cpu grant. An
+// explicit cpu() above 8 reserves cores that Polars does not use. A block can set the
+// thread count with .polarsMaxThreads(). The RAM formula does not change with the thread
+// count.
 //
 // RAM_SLOPE is 6, above the 4.94 it must cover. The margin is deliberate. The fits are
 // against uncompressed TSV bytes, and f.size() reports stored blob bytes, so a parquet
@@ -67,8 +69,41 @@ CPU_MIN := 2
 CPU_MAX := 8
 CPU_GIB_PER_CORE := 16
 
+POLARS_THREADS_MIN := 2
+POLARS_THREADS_DEFAULT := 8
+POLARS_THREADS_GRANTED := "granted"
+
 // Backend expression for POLARS_MAX_THREADS; system.cpu is the granted core count.
-POLARS_MAX_THREADS_EXPR := format("{min(%d,max(%d,system.cpu))}", CPU_MAX, CPU_MIN)
+POLARS_MAX_THREADS_EXPR := format("{min(%d,max(%d,system.cpu))}", POLARS_THREADS_DEFAULT, POLARS_THREADS_MIN)
+
+/**
+ * Checks a value for .polarsMaxThreads().
+ *
+ * @param threads: int | "granted"
+ */
+assertPolarsMaxThreads := func(threads) {
+	ll.assert((is_int(threads) && threads >= POLARS_THREADS_MIN) || threads == POLARS_THREADS_GRANTED,
+		"pt.sizing: polarsMaxThreads must be an integer of at least %d or %q, got %v",
+		POLARS_THREADS_MIN, POLARS_THREADS_GRANTED, threads)
+}
+
+/**
+ * Backend expression for POLARS_MAX_THREADS. The result is never below
+ * POLARS_THREADS_MIN. The expression caps a number at the granted cores (system.cpu).
+ *
+ * @param threads: int | "granted" | undefined - undefined gives POLARS_MAX_THREADS_EXPR.
+ * @return string
+ */
+polarsMaxThreadsExpr := func(threads) {
+	if is_undefined(threads) {
+		return POLARS_MAX_THREADS_EXPR
+	}
+	assertPolarsMaxThreads(threads)
+	if threads == POLARS_THREADS_GRANTED {
+		return format("{max(%d,system.cpu)}", POLARS_THREADS_MIN)
+	}
+	return format("{min(%d,max(%d,system.cpu))}", threads, POLARS_THREADS_MIN)
+}
 
 /**
  * The default RAM formula.
@@ -131,8 +166,12 @@ export {
 	ramFormula: ramFormula,
 	cpuFormula: cpuFormula,
 	scratchFormula: scratchFormula,
+	polarsMaxThreadsExpr: polarsMaxThreadsExpr,
+	assertPolarsMaxThreads: assertPolarsMaxThreads,
 
 	POLARS_MAX_THREADS_EXPR: POLARS_MAX_THREADS_EXPR,
+	POLARS_THREADS_MIN:     POLARS_THREADS_MIN,
+	POLARS_THREADS_DEFAULT: POLARS_THREADS_DEFAULT,
 
 	// exported for the unit tests and for callers that need the documented numbers
 	RAM_INTERCEPT_GIB: RAM_INTERCEPT_GIB,

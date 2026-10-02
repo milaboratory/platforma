@@ -97,6 +97,24 @@ TestPolarsThreadsClampedToCpuBounds := func() {
 	test.isEqual("{min(8,max(2,system.cpu))}", sizing.POLARS_MAX_THREADS_EXPR)
 }
 
+TestPolarsThreadsDefaultIsUnchanged := func() {
+	// The default string must not change: it is part of every ptabler command.
+	test.isEqual(sizing.POLARS_MAX_THREADS_EXPR, sizing.polarsMaxThreadsExpr(undefined))
+}
+
+TestPolarsThreadsFixed := func() {
+	test.isEqual("{min(16,max(2,system.cpu))}", sizing.polarsMaxThreadsExpr(16))
+	test.isEqual("{min(2,max(2,system.cpu))}", sizing.polarsMaxThreadsExpr(2))
+	test.isEqual(sizing.POLARS_MAX_THREADS_EXPR, sizing.polarsMaxThreadsExpr(8))
+}
+
+TestPolarsThreadsGranted := func() {
+	test.isEqual("{max(2,system.cpu)}", sizing.polarsMaxThreadsExpr("granted"))
+}
+
+// ll.assert rejects a value that is not an integer of at least 2 or "granted". ll.assert
+// stops the template, and is_error cannot catch that. Thus no test checks it.
+
 // ---- an explicit mem() is not this module's business ----------------------
 
 TestConstantsMatchTheDocumentedFormula := func() {
