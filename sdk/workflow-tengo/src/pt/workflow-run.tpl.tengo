@@ -31,6 +31,7 @@ self.body(func(inputs) {
     memFloor := inputs.memFloor
     memSlope := inputs.memSlope
     memIntercept := inputs.memIntercept
+    polarsMaxThreads := inputs.polarsMaxThreads
     scratchFreeSpace := inputs.scratchFreeSpace
 
     workdirProcessorName := "import_dir";
@@ -41,7 +42,7 @@ self.body(func(inputs) {
         setQueue(queue).
         printErrStreamToStdout().
         software(ptSoftware).
-        envExpr("POLARS_MAX_THREADS", sizing.POLARS_MAX_THREADS_EXPR).
+        envExpr("POLARS_MAX_THREADS", sizing.polarsMaxThreadsExpr(polarsMaxThreads)).
         arg("workflow_sc.json").
         arg("--frame-dir").arg(inFramesFolder).
         arg("--spill-dir").argExpr(spillFolderExpr).
