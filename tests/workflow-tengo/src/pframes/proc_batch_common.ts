@@ -2,7 +2,9 @@ import type { PlTransaction, PUniversalColumnSpec } from "@milaboratories/pl-mid
 import { Annotation, Pl, resourceType } from "@milaboratories/pl-middle-layer";
 import type { TplTestHelpers } from "@platforma-sdk/test";
 import { awaitStableState } from "@platforma-sdk/test";
+import { getLongTestTimeout } from "@milaboratories/test-helpers";
 import type { ExpectStatic } from "vitest";
+import { vi } from "vitest";
 import type { SimpleNode, SimpleNodeResource, SimpleTreeHelper } from "./extended_tpl_test";
 import { assertBlob, assertResource } from "./extended_tpl_test";
 
@@ -60,7 +62,11 @@ export const xsvSettingsIsolation = {
   storageFormat: "Json",
 } as const;
 
-export const TIMEOUT = 60_000;
+export const TIMEOUT = getLongTestTimeout(60_000);
+
+vi.setConfig({
+  testTimeout: TIMEOUT,
+});
 
 /** Creates a locked PColumnData/Json resource from a record map. */
 export function createJsonData(
