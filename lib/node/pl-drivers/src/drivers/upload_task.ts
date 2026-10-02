@@ -16,6 +16,11 @@ import { ImportFileHandleUploadData } from "./types";
 import assert from "node:assert";
 import { ResourceInfo } from "@milaboratories/pl-tree";
 
+type UploadTaskBlobClient = Pick<ClientUpload, "initUpload" | "partUpload" | "finalize">;
+type UploadTaskProgressClient = Pick<ClientProgress, "getStatus">;
+
+const PROGRESS_REGISTRATION_TIMEOUT_MS = 5 * 60 * 1000;
+
 /** Holds all info needed to upload a file and a status of uploading
  * and indexing. Also, has a method to update a status of the progress.
  * And holds a change source. */
@@ -37,10 +42,13 @@ export class UploadTask {
    * At this case, the task will show progress == 1.0. */
   private alreadyExisted = false;
 
+  /** Time of the first NOT_FOUND before the backend reported any status. */
+  private notRegisteredSince?: number;
+
   constructor(
     private readonly logger: MiLogger,
-    private readonly clientBlob: ClientUpload,
-    private readonly clientProgress: ClientProgress,
+    private readonly clientBlob: UploadTaskBlobClient,
+    private readonly clientProgress: UploadTaskProgressClient,
     private readonly maxNConcurrentPartsUpload: number,
     signer: Signer,
     public readonly res: ImportResourceSnapshot,
@@ -127,6 +135,15 @@ export class UploadTask {
         this.change.markChanged(`upload status for ${resourceIdToString(this.res.id)} changed`);
       }
     } catch (e: any) {
+      const firstNotRegistered = this.notRegisteredSince === undefined;
+      if (this.isProgressNotRegisteredYet(e)) {
+        if (firstNotRegistered)
+          this.logger.info(
+            `progress of BlobImport is not registered yet: ${e}, ${stringifyWithResourceId(this.res)}`,
+          );
+        return;
+      }
+
       this.setRetriableError(e);
 
       if (isTimeoutError(e)) {
@@ -142,6 +159,7 @@ export class UploadTask {
           `upload status for ${resourceIdToString(this.res.id)} aborted: ${e.code}`,
         );
         this.setDone(true);
+        if (e.code === "NOT_FOUND" && this.progress.status === undefined) this.setRetriableError(e);
         return;
       }
 
@@ -152,6 +170,15 @@ export class UploadTask {
       // this.change.markChanged();
       // this.setTerminalError(e);
     }
+  }
+
+  private isProgressNotRegisteredYet(e: any): boolean {
+    if (e?.name !== "RpcError" || e.code !== "NOT_FOUND" || this.progress.status !== undefined)
+      return false;
+
+    const now = Date.now();
+    this.notRegisteredSince ??= now;
+    return now - this.notRegisteredSince < PROGRESS_REGISTRATION_TIMEOUT_MS;
   }
 
   /** Set non-terminal error, that task can be retried. */
@@ -195,7 +222,7 @@ export class UploadTask {
 /** Uploads a blob if it's not BlobIndex. */
 export async function uploadBlob(
   logger: MiLogger,
-  clientBlob: ClientUpload,
+  clientBlob: UploadTaskBlobClient,
   res: ResourceInfo,
   uploadData: ImportFileHandleUploadData,
   isDoneFn: () => boolean,
