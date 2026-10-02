@@ -1,0 +1,176 @@
+name: Launch a Platforma backend container
+author: 'MiLaboratories'
+description: |
+  Start one Platforma backend container with FS primary storage and wait until it listens.
+  Based on milaboratory/github-ci actions/docker/pl-compose (v4), without minio and Docker Compose.
+
+  Requirements:
+    - get authorization token for aws ecr (aws-actions/amazon-ecr-login)
+
+inputs:
+  pl-docker-registry:
+    description: |
+      Platforma docker registry.
+    required: false
+    default: '511903394050.dkr.ecr.eu-central-1.amazonaws.com/pl'
+  pl-docker-tag:
+    description: |
+      Platforma docker tag.
+    required: false
+    default: 'main'
+  pl-start-timeout:
+    description: |
+      Seconds to wait until Platforma listens on its gRPC and HTTP ports.
+    required: false
+    default: '90'
+  pl-test-assets-dir:
+    description: |
+      Platforma test assets directory, mounted as the `library` data library.
+      The path must be relative to github.workspace.
+    required: false
+    default: 'assets'
+  pl-log-level:
+    description: |
+      Platforma log level
+    required: false
+    default: 'info'
+
+outputs:
+  main-root:
+    description: 'Path to platforma main root directory'
+    value: ${{ steps.launch-pl.outputs.main-root }}
+  packages-root:
+    description: 'Path to platforma software packages directory'
+    value: ${{ steps.launch-pl.outputs.packages-root }}
+  log-dir:
+    description: 'Path to platforma log directory'
+    value: ${{ steps.launch-pl.outputs.main-root }}/log
+  db-dir:
+    description: 'Path to platforma db directory'
+    value: ${{ steps.launch-pl.outputs.main-root }}/rocksdb
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Launch Platforma
+      id: launch-pl
+      shell: bash
+      env:
+        PL_IMAGE: ${{ format('{0}:{1}', inputs.pl-docker-registry, inputs.pl-docker-tag) }}
+        PL_START_TIMEOUT: ${{ inputs.pl-start-timeout }}
+        PL_WORKSPACE: ${{ github.workspace }}
+        PL_TEST_ASSETS_DIR: ${{ format('{0}/{1}', github.workspace, inputs.pl-test-assets-dir) }}
+        PL_LOG_LEVEL: ${{ inputs.pl-log-level }}
+        HTPASSWD_PATH: ${{ github.action_path }}/htpasswd
+      run: |
+        set -o errexit
+        set -o nounset
+        set -o pipefail
+
+        mkdir -pv "${PL_TEST_ASSETS_DIR}"
+
+        # Bind-mount only directories inside the runner workspace; only it is shared with the docker host.
+        PL_MAIN_ROOT="$(TMPDIR=${RUNNER_WORKSPACE} mktemp --directory)"
+        # Software packages take gigabytes; keep them out of the main root and so out of the dump.
+        PL_PACKAGES_ROOT="$(TMPDIR=${RUNNER_WORKSPACE} mktemp --directory)"
+        echo "main-root=${PL_MAIN_ROOT}" >> "${GITHUB_OUTPUT}"
+        echo "packages-root=${PL_PACKAGES_ROOT}" >> "${GITHUB_OUTPUT}"
+
+        # Run as the runner user (exec.writable tests); the entrypoint needs a passwd entry for the UID.
+        PL_UID="$(id -u)"
+        PL_GID="$(id -g)"
+        mkdir -p "${PL_MAIN_ROOT}/.users"
+        printf 'root:x:0:0:root:/root:/bin/sh\npl:x:%s:%s:pl:/pl-home:/bin/sh\n' "${PL_UID}" "${PL_GID}" > "${PL_MAIN_ROOT}/.users/passwd"
+        printf 'root:x:0:\npl:x:%s:\n' "${PL_GID}" > "${PL_MAIN_ROOT}/.users/group"
+
+        export MI_LICENSE="${MI_LICENSE:-${PL_LICENSE:-}}"
+        export PL_LICENSE="${PL_LICENSE:-}"
+        export PL_HAS_SCRATCH_SPACE="${PL_HAS_SCRATCH_SPACE:-}"
+
+        docker pull --quiet "${PL_IMAGE}"
+        docker rm --force platforma-backend >/dev/null 2>&1 || true
+        docker run --detach --name platforma-backend --restart always \
+          --user "${PL_UID}:${PL_GID}" \
+          --tmpfs /tmp --tmpfs /pl-home \
+          --publish 6345:6345 --publish 6347:6347 \
+          --env HOME=/pl-home --env MI_LICENSE --env PL_LICENSE --env PL_HAS_SCRATCH_SPACE \
+          --volume "${PL_MAIN_ROOT}:/storage" \
+          --volume "${PL_PACKAGES_ROOT}:/packages" \
+          --volume "${PL_TEST_ASSETS_DIR}:/library" \
+          --volume "${PL_WORKSPACE}:${PL_WORKSPACE}" \
+          --volume "${HTPASSWD_PATH}:/etc/htpasswd" \
+          --volume "${PL_MAIN_ROOT}/.users/passwd:/etc/passwd:ro" \
+          --volume "${PL_MAIN_ROOT}/.users/group:/etc/group:ro" \
+          "${PL_IMAGE}" \
+          --auth-htpasswd="/etc/htpasswd" \
+          --master-secret="cGxhdGZvcm1hLWNpLW1hc3Rlci1zZWNyZXQtc3RhdGljLWRvLW5vdC11c2UtaW4tcHJvZA" \
+          --listen-address="0.0.0.0" \
+          --listen-port="6345" \
+          --listen-http-port="6347" \
+          --log-dst="file:///storage/log/platforma.log" \
+          --log-level="${PL_LOG_LEVEL}" \
+          --main-root="/storage" \
+          --packages-dir="/packages" \
+          --primary-storage-fs-url="http://localhost:6347" \
+          --data-library-fs="library=/library"
+
+        # The docker port proxy accepts TCP before pl does: wait for pl's LISTEN sockets (hex 18C9, 18CB).
+        listens() {
+          docker exec platforma-backend sh -c "grep -qE ':$1 [0-9A-F]+:0000 0A' /proc/net/tcp /proc/net/tcp6" 2>/dev/null
+        }
+        for i in $(seq 1 "${PL_START_TIMEOUT}"); do
+          if listens 18C9 && listens 18CB; then
+            echo "Platforma listens on 6345 and 6347 after ${i}s"
+            exit 0
+          fi
+          sleep 1
+        done
+        docker ps --all
+        docker inspect --format '{{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}} restarts={{.RestartCount}}' platforma-backend || true
+        docker logs --tail 200 platforma-backend || true
+        tail -n 200 "${PL_MAIN_ROOT}/log/platforma.log" || true
+        echo "::error::Platforma did not listen on 6345 and 6347 within ${PL_START_TIMEOUT} s"
+        exit 1
+
+    # Post steps run in reverse order: the last one declared runs first.
+    - uses: milaboratory/github-ci/actions/post/shell@v4
+      env:
+        PL_MAIN_ROOT: ${{ steps.launch-pl.outputs.main-root }}
+        PL_PACKAGES_ROOT: ${{ steps.launch-pl.outputs.packages-root }}
+      with:
+        run: |
+          set -o nounset
+          set -o pipefail
+
+          # Best effort: a cleanup that cannot finish must never turn a passing job red.
+          echo "Removing '${PL_MAIN_ROOT}' and '${PL_PACKAGES_ROOT}'"
+          rm -rf "${PL_MAIN_ROOT}" "${PL_PACKAGES_ROOT}" ||
+            echo "::warning title=pl-backend cleanup::failed to remove platforma state roots"
+
+    - uses: milaboratory/github-ci/actions/post/artifact@v4
+      with:
+        name: platforma-dump
+        archive: true
+        path: |
+          ${{ steps.launch-pl.outputs.main-root }}
+
+    - uses: milaboratory/github-ci/actions/post/shell@v4
+      env:
+        PL_MAIN_ROOT: ${{ steps.launch-pl.outputs.main-root }}
+      with:
+        run: |
+          # No errexit: every command is teardown, and one that fails must not skip the rest.
+          set -o nounset
+          set -o pipefail
+
+          docker logs platforma-backend > "${PL_MAIN_ROOT}/container-logs.txt" 2>&1 ||
+            echo "::warning title=pl-backend teardown::failed to collect container logs"
+          docker inspect --format '{{.Config.Image}} {{.Image}}' platforma-backend > "${PL_MAIN_ROOT}/container-image.txt" ||
+            echo "::warning title=pl-backend teardown::failed to collect the image"
+
+          docker rm --force platforma-backend ||
+            echo "::warning title=pl-backend teardown::failed to remove the container"
+
+          sudo chown -R "$(id -u):$(id -g)" "${PL_MAIN_ROOT}" ||
+            echo "::warning title=pl-backend teardown::failed to chown platforma state"

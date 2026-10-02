@@ -13,8 +13,7 @@ env:
 
 jobs:
   test:
-    # hz self-hosted DinD runner — this job runs pl-compose (docker compose up a
-    # Platforma backend), so it needs a real Docker daemon.
+    # hz self-hosted DinD runner: this job runs a Platforma backend container, so it needs Docker.
     runs-on: hz-ubuntu-dind
     steps:
       - name: Generate GitHub App token
@@ -82,7 +81,7 @@ jobs:
 
       - name: Start Platforma Docker
         if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
-        uses: milaboratory/github-ci/actions/docker/pl-compose@v4
+        uses: ./.github/actions/pl-backend
         env:
           PL_LICENSE: ${{ secrets.MI_LICENSE }}
           MI_LICENSE: ${{ secrets.MI_LICENSE }}
