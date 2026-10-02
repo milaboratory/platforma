@@ -1,0 +1,13 @@
+{
+  "name": "@milaboratories/no-env",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Run a command with environment variables removed - a portable 'env -u'",
+  "type": "module",
+  "bin": {
+    "no-env": "./bin/no-env.mjs"
+  },
+  "files": [
+    "./bin/**/*"
+  ]
+}

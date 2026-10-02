@@ -18,7 +18,12 @@
 // npm-latest for the SDK families) lives in the separate `onInitOrUpdate`
 // frame (`rootCatalogBumpRules`), which fires on init + update-deps only.
 
-import { ensureWorkspaceModulePaths, ensureCatalogAbsent, type RunContext } from "../engine/api";
+import {
+  ensureWorkspaceModulePaths,
+  ensureCatalogAbsent,
+  ensureCatalogVersion,
+  type RunContext,
+} from "../engine/api";
 import { matchesBumpPattern, type DerivedCatalogPin } from "../engine/registry-client";
 import { RETIRED_TOOLCHAIN_DEPS } from "./shared/retired-deps";
 
@@ -63,6 +68,7 @@ for (const name of SDK_CATALOG_PACKAGES) {
 export const INFRA_CATALOG_FLOOR: Record<string, string> = {
   turbo: "~2.8.11",
   shx: "~0.4.0",
+  "cross-env": "~10.1.0",
   "@changesets/cli": "~2.29.8",
   vitest: "~4.0.18",
   typescript: "~5.9.3",
@@ -120,6 +126,17 @@ export function rootPnpmWorkspaceInitial(ctx: RunContext): Record<string, unknow
 
 export function rootPnpmWorkspaceRules(): void {
   ensureWorkspaceModulePaths();
+  // Curated infra floor, ADD-IF-ABSENT. This runs on EVERY refresh, not just
+  // init/update-deps, because the package.json rules hand out `catalog:`
+  // references for these on every refresh too (root devDeps: turbo, shx,
+  // cross-env, …). Seeding only on init/update-deps left a default refresh
+  // writing a `catalog:` for a key the catalog did not yet carry, and
+  // `pnpm install` then failed with ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC.
+  // Add-if-absent keeps the refresh contract intact: a version the block
+  // already pins is never touched, and a seeded key is a fixpoint.
+  for (const [name, version] of Object.entries(INFRA_CATALOG_FLOOR)) {
+    ensureCatalogVersion(name, version);
+  }
   // Catalog side of the retired-dep cleanup — the per-package side sheds the
   // matching `catalog:` references.
   for (const name of RETIRED_TOOLCHAIN_DEPS) ensureCatalogAbsent(name);

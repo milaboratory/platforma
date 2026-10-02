@@ -26,7 +26,7 @@
     "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
     "update-proto": "./sync-proto.sh && ./generate-grpc.sh && ./generate-rest.sh",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
   "dependencies": {
@@ -54,6 +54,7 @@
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "openapi-typescript": "catalog:",
+    "shx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

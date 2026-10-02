@@ -30,7 +30,7 @@
     "linter:check": "ts-builder linter --check",
     "types:check": "pnpm generate-pinned && ts-builder type-check --target node",
     "fmt": "ts-builder format",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz"
   },
   "dependencies": {
     "yaml": "catalog:"
@@ -40,6 +40,7 @@
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "dedent": "catalog:",
+    "shx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

@@ -16,13 +16,14 @@
     "check": "ts-builder check --target node",
     "fmt": "ts-builder format",
     "build": "ts-builder build --target node",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz"
   },
   "devDependencies": {
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "shx": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
