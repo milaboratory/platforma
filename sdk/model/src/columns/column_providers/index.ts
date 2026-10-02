@@ -3,7 +3,11 @@ import {
   type ColumnEntriesProvider,
   type PObjectId,
 } from "@milaboratories/pl-model-common";
-import type { GlobalCfgRenderCtx, PColumnDataUniversal } from "../../render/internal";
+import type {
+  AccessorHandle,
+  GlobalCfgRenderCtx,
+  PColumnDataUniversal,
+} from "../../render/internal";
 import { getCfgRenderCtx } from "../../internal";
 import { MainAccessorName, StagingAccessorName } from "../../render/internal";
 import { TreeNodeAccessor } from "../../render/accessor";
@@ -16,8 +20,8 @@ export * from "./providers";
 
 /**
  * Build the default set of ColumnsProviders for the ambient render ctx:
- *  - `AccessorColumnsProvider` over `outputs` (if present)
- *  - `AccessorColumnsProvider` over `prerun`  (if present)
+ *  - `AccessorColumnsProvider` over `outputs` (if present and not errored)
+ *  - `AccessorColumnsProvider` over `prerun`  (if present and not errored)
  *  - `ResultPoolColumnsProvider` over `rawResultPool`
  *
  * Pulls handles directly from the ambient `cfgRenderCtx`. Returns `[]` when
@@ -43,20 +47,49 @@ export function getCtxProviders(deps?: {
 
   const providers: (ColumnEntriesProvider<TreeNodeAccessor> & ColumnsProvider)[] = [];
 
-  const outputs = ctx.getAccessorHandleByName(MainAccessorName);
-  if (outputs !== undefined) {
-    providers.push(ColumnsProvider(new TreeNodeAccessor(outputs, [MainAccessorName])));
-  }
+  const outputs = ctxAccessorProvider(ctx, MainAccessorName);
+  if (outputs !== undefined) providers.push(outputs);
 
-  const prerun = ctx.getAccessorHandleByName(StagingAccessorName);
-  if (prerun !== undefined) {
-    providers.push(ColumnsProvider(new TreeNodeAccessor(prerun, [StagingAccessorName])));
-  }
+  const prerun = ctxAccessorProvider(ctx, StagingAccessorName);
+  if (prerun !== undefined) providers.push(prerun);
 
   providers.push(ColumnsProvider(ctx.getUpstreamBlockCtx()));
 
   _ctxProvidersCache.set(ctx, providers);
   return providers;
+}
+
+/**
+ * Handle of a well-known ctx accessor. Returns `undefined` when the accessor is absent or
+ * its resource is in error. One broken block output then does not hide the other sources.
+ * The handle lookup throws when the block output field carries an error. `getError()` cannot
+ * detect that in advance, so only the lookup is guarded.
+ * @internal
+ */
+export function ctxAccessorHandle(
+  ctx: GlobalCfgRenderCtx,
+  name: string,
+): AccessorHandle | undefined {
+  let handle: AccessorHandle | undefined;
+  try {
+    handle = ctx.getAccessorHandleByName(name);
+  } catch {
+    return undefined;
+  }
+  if (handle === undefined || ctx.getError(handle) !== undefined) {
+    return undefined;
+  }
+  return handle;
+}
+
+/** Accessor provider for a well-known ctx accessor, skipping an errored one. */
+function ctxAccessorProvider(
+  ctx: GlobalCfgRenderCtx,
+  name: string,
+): (ColumnEntriesProvider<TreeNodeAccessor> & ColumnsProvider) | undefined {
+  const handle = ctxAccessorHandle(ctx, name);
+  if (handle === undefined) return undefined;
+  return ColumnsProvider(new TreeNodeAccessor(handle, [name]));
 }
 
 export function isColumnProvider(source: unknown): source is ColumnsProvider {

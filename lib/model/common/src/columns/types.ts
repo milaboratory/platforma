@@ -26,6 +26,8 @@ export interface FieldTraversalStepLike {
   readonly assertFieldType?: "Input" | "Output" | "Service" | "OTW" | "Dynamic" | "MTW";
   /** Don't terminate chain if current resource or field has an error associated. */
   readonly ignoreError?: true;
+  /** Return `undefined` for a field that has an error and no value, instead of a throw. */
+  readonly pureFieldErrorToUndefined?: true;
 }
 
 /**
