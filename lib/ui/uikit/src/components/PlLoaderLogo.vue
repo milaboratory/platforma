@@ -18,7 +18,12 @@ const backgroundColor = props.backgroundColor ?? "var(--color-div-bw)";
 </script>
 
 <template>
-  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" :class="styles.root">
+  <svg
+    data-testid="pl-loader-logo"
+    viewBox="0 0 64 64"
+    xmlns="http://www.w3.org/2000/svg"
+    :class="styles.root"
+  >
     <path d="m32 3 26 15H6z" />
     <path d="M32 18h26v28H32z" />
     <path d="M32 45.5h26L32 61z" />

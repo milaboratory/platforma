@@ -14,6 +14,7 @@ const props = defineProps<{
   <div
     tabindex="0"
     class="pl-checkbox-base"
+    data-testid="pl-checkbox-base"
     :class="{
       ...(props.indeterminate ? { indeterminate: true } : { checked: props.modelValue }),
       disabled,

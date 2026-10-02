@@ -356,11 +356,16 @@ const computedError = computed(() => {
 </script>
 
 <template>
-  <div class="pl-autocomplete-multi__envelope" @click="setFocusOnInput">
+  <div
+    class="pl-autocomplete-multi__envelope"
+    @click="setFocusOnInput"
+    data-testid="pl-autocomplete-multi"
+  >
     <div
       ref="rootRef"
       :tabindex="tabindex"
       class="pl-autocomplete-multi"
+      data-testid="pl-autocomplete-multi-control"
       :class="{ open: data.open, error: Boolean(computedError), disabled: isDisabled }"
       @keydown="handleKeydown"
       @focusout="onFocusOut"
@@ -376,13 +381,15 @@ const computedError = computed(() => {
             :placeholder="placeholderRef"
             spellcheck="false"
             autocomplete="chrome-off"
+            data-testid="pl-autocomplete-multi-input"
             @focus="data.open = true"
           />
-          <div v-if="!data.open" class="chips-container">
+          <div v-if="!data.open" class="chips-container" data-testid="pl-autocomplete-multi-chips">
             <PlChip
               v-for="(opt, i) in selectedOptionsRef"
               :key="i"
               closeable
+              data-testid="pl-autocomplete-multi-chip"
               small
               @click.stop="data.open = true"
               @close="unselectOption(opt.value)"
@@ -392,17 +399,30 @@ const computedError = computed(() => {
           </div>
 
           <div class="pl-autocomplete-multi__controls">
-            <PlMaskIcon24 v-if="isOptionsLoading" name="loading" />
+            <PlMaskIcon24
+              v-if="isOptionsLoading"
+              name="loading"
+              data-testid="pl-autocomplete-multi-loading"
+            />
             <slot name="append" />
-            <div class="pl-autocomplete-multi__arrow-wrapper" @click.stop="toggleOpen">
+            <div
+              class="pl-autocomplete-multi__arrow-wrapper"
+              data-testid="pl-autocomplete-multi-arrow"
+              @click.stop="toggleOpen"
+            >
               <div class="arrow-icon arrow-icon-default" />
             </div>
           </div>
         </div>
-        <label v-if="label">
-          <PlSvg v-if="required" :uri="SvgRequired" />
+        <label v-if="label" data-testid="pl-autocomplete-multi-label">
+          <PlSvg v-if="required" :uri="SvgRequired" data-testid="pl-autocomplete-multi-required" />
           <span>{{ label }}</span>
-          <PlTooltip v-if="slots.tooltip" class="info" position="top">
+          <PlTooltip
+            v-if="slots.tooltip"
+            class="info"
+            position="top"
+            data-testid="pl-autocomplete-multi-tooltip"
+          >
             <template #tooltip>
               <slot name="tooltip" />
             </template>
@@ -413,15 +433,20 @@ const computedError = computed(() => {
           ref="overlay"
           :root="rootRef"
           class="pl-autocomplete-multi__options"
+          data-testid="pl-autocomplete-multi-options"
           :gap="5"
           tabindex="-1"
           @focusout="onFocusOut"
         >
-          <div class="pl-autocomplete-multi__open-chips-container">
+          <div
+            class="pl-autocomplete-multi__open-chips-container"
+            data-testid="pl-autocomplete-multi-chips"
+          >
             <PlChip
               v-for="(opt, i) in selectedOptionsRef"
               :key="i"
               closeable
+              data-testid="pl-autocomplete-multi-chip"
               small
               @close="unselectOption(opt.value)"
             >
@@ -437,16 +462,33 @@ const computedError = computed(() => {
             :is-hovered="data.activeOption == index"
             size="medium"
             use-checkbox
+            data-testid="pl-autocomplete-multi-option"
             @click.stop="selectOption(item.value)"
           />
-          <div v-if="!filteredOptionsRef.length && !isOptionsLoading" class="nothing-found">
+          <div
+            v-if="!filteredOptionsRef.length && !isOptionsLoading"
+            class="nothing-found"
+            data-testid="pl-autocomplete-multi-options-empty"
+          >
             {{ emptyOptionsText }}
           </div>
         </DropdownOverlay>
         <DoubleContour class="pl-autocomplete-multi__contour" :group-position="groupPosition" />
       </div>
     </div>
-    <div v-if="computedError" class="pl-autocomplete-multi__error">{{ computedError }}</div>
-    <div v-else-if="helper" class="pl-autocomplete-multi__helper">{{ helper }}</div>
+    <div
+      v-if="computedError"
+      class="pl-autocomplete-multi__error"
+      data-testid="pl-autocomplete-multi-error"
+    >
+      {{ computedError }}
+    </div>
+    <div
+      v-else-if="helper"
+      class="pl-autocomplete-multi__helper"
+      data-testid="pl-autocomplete-multi-helper"
+    >
+      {{ helper }}
+    </div>
   </div>
 </template>

@@ -157,28 +157,50 @@ const onContentScroll = (ev: Event) => {
 </script>
 
 <template>
-  <div ref="root" class="pl-log-view" :class="{ 'has-error': computedError }">
-    <label v-if="label">
+  <div
+    ref="root"
+    data-testid="pl-log-view"
+    class="pl-log-view"
+    :class="{ 'has-error': computedError }"
+  >
+    <label v-if="label" data-testid="pl-log-view-label">
       <span>{{ label }}</span>
-      <PlTooltip v-if="slots.tooltip" class="info" position="top">
+      <PlTooltip v-if="slots.tooltip" data-testid="pl-log-view-tooltip" class="info" position="top">
         <template #tooltip>
           <slot name="tooltip" />
         </template>
       </PlTooltip>
     </label>
     <DoubleContour class="pl-log-view__contour" />
-    <div class="pl-log-view__copy">
+    <div data-testid="pl-log-view-actions" class="pl-log-view__copy">
       <PlTooltip :close-delay="800" position="top">
-        <PlMaskIcon24 title="Copy content" :name="iconName" @click="onClickCopy" />
+        <PlMaskIcon24
+          data-testid="pl-log-view-copy"
+          title="Copy content"
+          :name="iconName"
+          @click="onClickCopy"
+        />
         <template #tooltip>{{ copyActive ? "copied" : "copy" }}</template>
       </PlTooltip>
       <PlTooltip v-if="downloadFilename" :close-delay="800" position="top">
-        <PlIcon24 name="download" @click="() => onClickDownload(downloadFilename!)" />
+        <PlIcon24
+          data-testid="pl-log-view-download"
+          name="download"
+          @click="() => onClickDownload(downloadFilename!)"
+        />
         <template #tooltip>download</template>
       </PlTooltip>
     </div>
-    <div v-if="computedError" class="pl-log-view__error">{{ computedError }}</div>
-    <div v-else ref="contentRef" class="pl-log-view__content" @scroll="onContentScroll">
+    <div v-if="computedError" data-testid="pl-log-view-error" class="pl-log-view__error">
+      {{ computedError }}
+    </div>
+    <div
+      v-else
+      ref="contentRef"
+      data-testid="pl-log-view-content"
+      class="pl-log-view__content"
+      @scroll="onContentScroll"
+    >
       {{ computedValue }}
     </div>
   </div>

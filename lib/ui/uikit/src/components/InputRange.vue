@@ -77,9 +77,10 @@ function validateInput(isLeft: boolean, event: Event) {
 
 <template>
   <!-- {{ data }} -->
-  <div :class="classes" class="ui-input-range" v-bind="$attrs">
+  <div :class="classes" class="ui-input-range" data-testid="pl-input-range" v-bind="$attrs">
     <input
       v-model="valuesModel.left"
+      data-testid="pl-input-range-left"
       class="text-s"
       type="text"
       @change="updateModel"
@@ -87,9 +88,12 @@ function validateInput(isLeft: boolean, event: Event) {
       @focusout="isFocused = false"
       @input="validateInput(true, $event)"
     />
-    <div class="ui-input-range__separator">{{ props.separator }}</div>
+    <div data-testid="pl-input-range-separator" class="ui-input-range__separator">
+      {{ props.separator }}
+    </div>
     <input
       v-model="valuesModel.right"
+      data-testid="pl-input-range-right"
       class="text-s"
       type="text"
       @change="updateModel"

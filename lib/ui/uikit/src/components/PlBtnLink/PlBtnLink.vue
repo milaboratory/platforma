@@ -36,12 +36,13 @@ const hover = ref(false);
 
 <template>
   <div
+    data-testid="pl-btn-link"
     class="ui-btn-link"
     :class="{ disabled, loading, hover }"
     @mouseover="hover = true"
     @mouseleave="hover = false"
   >
-    <BtnSecondary round :hover="hover" v-bind="props" />
+    <BtnSecondary data-testid="pl-btn-link-button" round :hover="hover" v-bind="props" />
     <slot />
   </div>
 </template>

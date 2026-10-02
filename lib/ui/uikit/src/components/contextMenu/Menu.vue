@@ -14,9 +14,14 @@ const onClickOption = (opt: ContextOption) => {
 </script>
 
 <template>
-  <div class="context-menu">
-    <div v-for="(opt, i) in options" :key="i" @click.stop="onClickOption(opt)">
-      <span>{{ opt.text }}</span>
+  <div class="context-menu" data-testid="pl-context-menu">
+    <div
+      v-for="(opt, i) in options"
+      :key="i"
+      data-testid="pl-context-menu-item"
+      @click.stop="onClickOption(opt)"
+    >
+      <span data-testid="pl-context-menu-item-text">{{ opt.text }}</span>
     </div>
   </div>
 </template>

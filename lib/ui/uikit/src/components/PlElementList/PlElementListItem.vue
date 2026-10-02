@@ -43,11 +43,12 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div @click="(event) => emit('click', event)">
-    <div v-if="hasBeforeSlot" :class="beforeClass">
+  <div data-testid="pl-element-list-item" @click="(event) => emit('click', event)">
+    <div v-if="hasBeforeSlot" data-testid="pl-element-list-item-before" :class="beforeClass">
       <slot name="before" :item="props.item" :index="props.index" />
     </div>
     <div
+      data-testid="pl-element-list-item-card"
       :class="[
         $style.root,
         $attrs.class,
@@ -60,6 +61,7 @@ const emit = defineEmits<{
       ]"
     >
       <div
+        data-testid="pl-element-list-item-head"
         :class="[
           $style.head,
           titleClass,
@@ -72,6 +74,7 @@ const emit = defineEmits<{
         <div v-if="props.showDragHandle || isExpandable" :class="$style.headIcons">
           <div
             v-if="props.showDragHandle"
+            data-testid="pl-element-list-item-drag"
             :class="[$style.action, $style.draggable, { [$style.disable]: !props.isDraggable }]"
             :data-draggable="props.isDraggable"
           >
@@ -79,18 +82,23 @@ const emit = defineEmits<{
           </div>
           <PlIcon16
             v-if="isExpandable"
+            data-testid="pl-element-list-item-expand"
             :class="[$style.contentChevron, { [$style.opened]: props.isExpanded }]"
             name="chevron-down"
           />
         </div>
 
-        <div :class="$style.title">
+        <div data-testid="pl-element-list-item-title" :class="$style.title">
           <slot name="title" :item="props.item" :index="props.index" />
         </div>
 
-        <div :class="[$style.actions, $style.showOnHover]">
+        <div
+          data-testid="pl-element-list-item-actions"
+          :class="[$style.actions, $style.showOnHover]"
+        >
           <div
             v-if="props.isToggable"
+            data-testid="pl-element-list-item-toggle"
             :class="[$style.action, $style.clickable, { [$style.disable]: !props.isToggable }]"
             @click.stop="emit('toggle', props.item, props.index)"
           >
@@ -98,6 +106,7 @@ const emit = defineEmits<{
           </div>
           <div
             v-if="props.isPinnable"
+            data-testid="pl-element-list-item-pin"
             :class="[
               $style.action,
               $style.clickable,
@@ -112,6 +121,7 @@ const emit = defineEmits<{
           </div>
           <div
             v-if="props.isRemovable"
+            data-testid="pl-element-list-item-remove"
             :class="[$style.action, $style.clickable]"
             @click.stop="emit('remove', props.item, props.index)"
           >
@@ -121,12 +131,13 @@ const emit = defineEmits<{
       </div>
       <div
         v-if="hasContentSlot && props.isExpanded"
+        data-testid="pl-element-list-item-content"
         :class="[$style.body, contentClass, { [$style.disabled]: props.isToggled }]"
       >
         <slot name="content" :item="props.item" :index="props.index" />
       </div>
     </div>
-    <div v-if="hasAfterSlot" :class="afterClass">
+    <div v-if="hasAfterSlot" data-testid="pl-element-list-item-after" :class="afterClass">
       <slot name="after" :item="props.item" :index="props.index" />
     </div>
   </div>
