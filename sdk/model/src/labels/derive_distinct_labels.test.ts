@@ -968,3 +968,252 @@ describe("deriveDistinctLabels v2 — linker path & qualifications", () => {
     ]);
   });
 });
+
+describe("shared distinctions over presence-only ones", () => {
+  const col = (label: string, trace: Trace): PColumnSpec =>
+    createSpec({
+      annotations: { [Annotation.Label]: label, [Annotation.Trace]: JSON.stringify(trace) },
+    });
+  const dataset = { type: "dataset", label: "DS", importance: 100 };
+  const seqCluster = { type: "seq-clustering", label: "Seq cluster", importance: 30 };
+  const esmCluster = { type: "esm-clustering", label: "ESM2 cluster", importance: 30 };
+  const enrichment = (label: string) => ({ type: "enrichment", label, importance: 35 });
+
+  test("a group keeps its own shared distinction when another group pins a presence-only type", () => {
+    // The clustering types stay in the global set for the Cluster Size pair, where they separate
+    // only by presence. They would also separate the Enrichment Quality pair the same way and
+    // push out each enrichment block's own label, which both of those columns carry.
+    const specs = [
+      col("Enrichment Quality", [dataset, seqCluster, enrichment("Enr seq")]),
+      col("Enrichment Quality", [dataset, esmCluster, enrichment("Enr esm")]),
+      col("Cluster Size", [dataset, seqCluster]),
+      col("Cluster Size", [dataset, esmCluster]),
+      col("UMAP1", []),
+    ];
+    expect(deriveDistinctLabels(specs)).toEqual([
+      "Enrichment Quality / Enr seq",
+      "Enrichment Quality / Enr esm",
+      "Cluster Size / Seq cluster",
+      "Cluster Size / ESM2 cluster",
+      "UMAP1",
+    ]);
+  });
+
+  test("a member whose shown parts are a subset of a peer's counts as bare", () => {
+    // Two datasets keep the dataset in every name, so "CS / DS1" is not the bare label itself.
+    const ds = (label: string) => ({ ...dataset, label });
+    const specs = [
+      col("CS", [ds("DS1"), seqCluster]),
+      col("CS", [ds("DS1"), esmCluster]),
+      col("X", [ds("DS1")]),
+      col("X", [ds("DS2")]),
+      col("UMAP1", []),
+    ];
+    expect(deriveDistinctLabels(specs)).toEqual([
+      "CS / DS1 / Seq cluster",
+      "CS / DS1 / ESM2 cluster",
+      "X / DS1",
+      "X / DS2",
+      "UMAP1",
+    ]);
+  });
+
+  test("re-labelled groups keep their qualification tags", () => {
+    const anchor = "anc" as PObjectId;
+    const qual = (k: string) => ({
+      forQueries: { [anchor]: [{ axis: { name: "ax" }, contextDomain: { k } }] },
+      forHit: [],
+    });
+    const entries: Entry[] = [
+      { spec: col("EQ", [seqCluster, enrichment("e1")]), qualifications: qual("1") },
+      { spec: col("EQ", [esmCluster, enrichment("e2")]), qualifications: qual("1") },
+      { spec: col("CS", [seqCluster]), qualifications: qual("1") },
+      { spec: col("CS", [seqCluster]), qualifications: qual("2") },
+      { spec: col("CS", [esmCluster]), qualifications: qual("1") },
+    ];
+    expect(deriveDistinctLabels(entries)).toEqual([
+      "EQ / e1 [anc: ax k=1]",
+      "EQ / e2 [anc: ax k=1]",
+      "CS / Seq cluster [anc: ax k=1]",
+      "CS / Seq cluster [anc: ax k=2]",
+      "CS / ESM2 cluster [anc: ax k=1]",
+    ]);
+  });
+
+  test("bare names are fixed in groups spanning several samples", () => {
+    const sample = (label: string) => ({ type: "sample", label, importance: 50 });
+    const specs = [
+      col("Count", [sample("S1"), seqCluster]),
+      col("Count", [sample("S1"), esmCluster]),
+      col("Count", [sample("S2"), seqCluster]),
+      col("Count", [sample("S2"), esmCluster]),
+      col("UMAP1", []),
+    ];
+    expect(deriveDistinctLabels(specs)).toEqual([
+      "Count / S1 / Seq cluster",
+      "Count / S1 / ESM2 cluster",
+      "Count / S2 / Seq cluster",
+      "Count / S2 / ESM2 cluster",
+      "UMAP1",
+    ]);
+  });
+
+  test("a low-importance shared part does not replace a more important own part", () => {
+    const run = (label: string) => ({ type: "run", label, importance: 1 });
+    const specs = [
+      col("Score", [run("r1"), seqCluster]),
+      col("Score", [run("r2"), esmCluster]),
+      col("CS", [run("r1"), seqCluster]),
+      col("CS", [run("r1"), esmCluster]),
+      col("UMAP1", []),
+    ];
+    expect(deriveDistinctLabels(specs).slice(0, 2)).toEqual([
+      "Score / Seq cluster",
+      "Score / ESM2 cluster",
+    ]);
+  });
+
+  test("when the shared re-naming would clash, the bare member still gets its own part", () => {
+    const specs = [
+      col("EQ", [seqCluster, enrichment("e1")]),
+      col("EQ", [esmCluster, enrichment("e2")]),
+      col("EQ / e1", []), // takes the name the shared re-naming would give the first column
+      col("CS", [seqCluster]),
+      col("CS", [esmCluster]),
+      col("UMAP1", []),
+    ];
+    const labels = deriveDistinctLabels(specs);
+    // The bare member adds the part of the same kind its peer shows: its clustering.
+    expect(labels.slice(0, 2)).toEqual(["EQ / Seq cluster", "EQ / ESM2 cluster"]);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  test("without a shown label, only bare labels get a part", () => {
+    const specs = [
+      col("EQ", [dataset, seqCluster, enrichment("e1")]),
+      col("EQ", [dataset, esmCluster, enrichment("e2")]),
+      col("CS", [dataset, seqCluster]),
+      col("CS", [dataset, esmCluster]),
+    ];
+    expect(deriveDistinctLabels(specs)).toEqual([
+      "DS / Seq cluster / e1",
+      "DS / e2",
+      "DS / Seq cluster",
+      "DS / ESM2 cluster",
+    ]);
+  });
+
+  test("without a shown label, unrelated columns get no suffix", () => {
+    // One group spans the whole list here, so the picked part must not spread to other columns.
+    const sample = (label: string) => ({ type: "sample", label, importance: 50 });
+    const host = (label: string) => ({ type: "host", label, importance: 10 });
+    const specs = [
+      col("Same", [sample("S1"), host("H1")]),
+      col("Same", [sample("S1"), { type: "x", label: "X", importance: 30 }]),
+      col("Same", [sample("S2"), host("H2")]),
+      col("Same", [sample("S3"), host("H3")]),
+      col("Same", [sample("S4"), host("H4")]),
+    ];
+    expect(deriveDistinctLabels(specs)).toEqual(["S1 / H1", "S1 / X", "S2", "S3", "S4"]);
+  });
+
+  test("the part a bare member adds is shown by every member that carries it", () => {
+    const sample = (label: string) => ({ type: "sample", label, importance: 50 });
+    const specs = [
+      col("data", [sample("S2")]),
+      col("data", [sample("S1"), seqCluster]),
+      col("data", [sample("S1"), esmCluster]),
+      col("UMAP1", []),
+    ];
+    expect(deriveDistinctLabels(specs)).toEqual([
+      "data / S2",
+      "data / S1 / Seq cluster",
+      "data / S1 / ESM2 cluster",
+      "UMAP1",
+    ]);
+  });
+
+  test("qualification tags never stand in for shared parts, and can be added to a bare label", () => {
+    const anchor = "anc" as PObjectId;
+    const qual = (k: string) => ({
+      forQueries: { [anchor]: [{ axis: { name: "ax" }, contextDomain: { k } }] },
+      forHit: [],
+    });
+    const run = (label: string) => ({ type: "run", label, importance: 1 });
+    const tagged: Entry[] = [
+      { spec: col("CS", [seqCluster]), qualifications: qual("1") },
+      { spec: col("CS", [seqCluster]), qualifications: qual("2") },
+      { spec: col("CS", [esmCluster]) },
+      { spec: col("X", [seqCluster]) },
+      { spec: col("X", [esmCluster]) },
+    ];
+    expect(deriveDistinctLabels(tagged).slice(0, 3)).toEqual([
+      "CS / Seq cluster [anc: ax k=1]",
+      "CS / Seq cluster [anc: ax k=2]",
+      "CS / ESM2 cluster",
+    ]);
+    const onlyTag: Entry[] = [
+      { spec: col("A", [run("run1")]) },
+      { spec: col("A", []), qualifications: qual("1") },
+      { spec: col("A", [run("run2")]) },
+      { spec: col("UMAP1", []) },
+    ];
+    expect(deriveDistinctLabels(onlyTag).slice(0, 3)).toEqual([
+      "A / run1",
+      "A [anc: ax k=1]",
+      "A / run2",
+    ]);
+  });
+
+  test("qualification tags don't change which kind of part a bare label adds", () => {
+    const anchor = "anc" as PObjectId;
+    const qual = (k: string) => ({
+      forQueries: { [anchor]: [{ axis: { name: "ax" }, contextDomain: { k } }] },
+      forHit: [],
+    });
+    const sample = { type: "sample", label: "S1", importance: 50 };
+    const seq = (label: string) => ({ ...seqCluster, label });
+    const run = { type: "run", label: "R", importance: 40 };
+    const entries: Entry[] = [
+      { spec: col("D", [sample, seq("Seq cluster")]), qualifications: qual("1") },
+      { spec: col("D", [sample, seq("Seq cluster 2")]), qualifications: qual("1") },
+      { spec: col("D", [sample, run, esmCluster]) },
+      { spec: col("D", [sample, seq("Seq cluster")]), qualifications: qual("2") },
+      { spec: col("UMAP1", []) },
+    ];
+    expect(deriveDistinctLabels(entries)[2]).toBe("D / ESM2 cluster");
+  });
+
+  test("labels stay unique when different trace types share the same text", () => {
+    const part = (type: string, label: string) => ({ type, label, importance: 10 });
+    const specs = [
+      col("L", [part("s1", "S"), part("x1", "X"), part("w", "W")]),
+      col("L", [part("s1", "S"), part("x1", "X")]),
+      col("L", [part("s1", "S"), part("t", "T")]),
+      col("L", [part("s1", "S"), part("x2", "X")]),
+      col("L", [part("q", "Q")]),
+      col("L", [part("s2", "S")]),
+      col("UMAP1", []),
+    ];
+    const labels = deriveDistinctLabels(specs);
+    expect(new Set(labels).size).toBe(labels.length);
+  });
+
+  test("with no shared distinction, the bare member shows its own part", () => {
+    // Same enrichment subtitle on both (e.g. identical defaults), different clusterings.
+    const specs = [
+      col("Enrichment Quality", [dataset, seqCluster, enrichment("Same default")]),
+      col("Enrichment Quality", [dataset, esmCluster, enrichment("Same default")]),
+      col("Cluster Size", [dataset, seqCluster]),
+      col("Cluster Size", [dataset, esmCluster]),
+      col("UMAP1", []), // a column without trace keeps native labels in, as in a graph frame
+    ];
+    expect(deriveDistinctLabels(specs)).toEqual([
+      "Enrichment Quality / Seq cluster",
+      "Enrichment Quality / ESM2 cluster",
+      "Cluster Size / Seq cluster",
+      "Cluster Size / ESM2 cluster",
+      "UMAP1",
+    ]);
+  });
+});
