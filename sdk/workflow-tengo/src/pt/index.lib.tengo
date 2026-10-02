@@ -416,6 +416,7 @@ workflow := func() {
 	cpuCeiling := undefined
 	mem := undefined
 	memFloor := undefined
+	polarsMaxThreads := undefined
 	scratchFreeSpace := undefined
 	inputCache := undefined
 	queue := execConstants.MEDIUM_QUEUE
@@ -945,6 +946,26 @@ workflow := func() {
 		},
 
 		/**
+		 * Sets the Polars thread count (POLARS_MAX_THREADS) of the run.
+		 *
+		 *     .polarsMaxThreads(16)          16, or the granted cores if fewer
+		 *     .polarsMaxThreads("granted")   the granted cores
+		 *
+		 * Default: 8, or the granted cores if fewer. The count is never below 2.
+		 *
+		 * More threads use more memory. The auto-sized RAM request assumes 8 threads and
+		 * does not change with this setting. Set `.cpu()` to grant the cores.
+		 *
+		 * @param threads: int | string - an integer of at least 2, or "granted"
+		 * @return builder
+		 */
+		polarsMaxThreads: func(threads) {
+			sizing.assertPolarsMaxThreads(threads)
+			polarsMaxThreads = threads
+			return self
+		},
+
+		/**
 		 * Sets the amount of RAM to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
 		 *
 		 * @param amount: number | string - amount of RAM in bytes or string with size suffix (case-insensitive):
@@ -1125,6 +1146,7 @@ workflow := func() {
 				cpuCeiling: cpuCeiling,
 				mem: mem,
 				memFloor: memFloor,
+				polarsMaxThreads: polarsMaxThreads,
 				scratchFreeSpace: scratchFreeSpace,
 				inputCache: inputCache
 			}

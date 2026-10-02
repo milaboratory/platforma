@@ -18,7 +18,7 @@ import type { ExtendedResourceData } from "./state";
  *
  *   PL_TREE_BENCH=1 pnpm exec vitest run src/delta_benchmark.test.ts
  *
- * Delta arms report as skipped on a backend without `treeChangedSince:v1`, rather than
+ * Delta arms report as skipped on a backend without `treeChangedSince:v2`, rather than
  * silently measuring the fallback.
  */
 
@@ -125,7 +125,7 @@ async function runArm(
   seed: { root: SignedResourceId; leaves: SignedResourceId[] },
 ): Promise<Row | undefined> {
   const caps = pl.serverInfo.capabilities ?? [];
-  if (arm.mode === "backend-delta" && !hasCapability(caps, "treeChangedSince:v1")) return undefined;
+  if (arm.mode === "backend-delta" && !hasCapability(caps, "treeChangedSince:v2")) return undefined;
 
   // Scalar, not an array: the constructor takes SignedResourceId | Set<SignedResourceId>.
   const state = new PlTreeState(seed.root, DefaultFinalResourceDataPredicate);
@@ -208,7 +208,7 @@ function report(rows: Row[], skipped: string[], failed: string[] = []) {
   }
 
   if (skipped.length > 0) {
-    lines.push("", `skipped (backend lacks treeChangedSince:v1): ${skipped.join(", ")}`);
+    lines.push("", `skipped (backend lacks treeChangedSince:v2): ${skipped.join(", ")}`);
   }
   if (failed.length > 0) {
     lines.push("", "FAILED ARMS:");

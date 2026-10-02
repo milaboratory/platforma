@@ -50,13 +50,13 @@ export interface TreeLoadingRequest {
 }
 
 /** Controls which tree-loading path is used.
- * - `"auto"` (default): use delta polling when the backend advertises `treeChangedSince:v1`,
+ * - `"auto"` (default): use delta polling when the backend advertises `treeChangedSince:v2`,
  *   else backend streaming when it advertises `treeFilter:v2`, else client-side BFS.
  * - `"client-bfs"`: always use client-side BFS, even on capable backends.
  * - `"backend-streaming"`: always prefer backend streaming; if the capability is absent,
  *   logs a warning and falls back to BFS (never throws).
  * - `"backend-delta"`: always prefer delta polling, which hands the backend the transaction's
- *   change token and takes only what changed since it; if `treeChangedSince:v1` is absent,
+ *   change token and takes only what changed since it; if `treeChangedSince:v2` is absent,
  *   logs a warning and falls back to the best available path (never throws).
  */
 export type TraversalMode = "auto" | "client-bfs" | "backend-streaming" | "backend-delta";
@@ -81,7 +81,7 @@ export function resolveTreeLoadingAlgorithm(
     case "backend-delta":
       if (delta) return "backend-delta";
       (logger ?? console).warn(
-        "traversalMode=backend-delta but backend lacks treeChangedSince:v1 capability; falling back to " +
+        "traversalMode=backend-delta but backend lacks treeChangedSince:v2 capability; falling back to " +
           (streaming ? "backend-streaming" : "client-bfs"),
       );
       return streaming ? "backend-streaming" : "client-bfs";
@@ -167,6 +167,8 @@ export type TreeLoadingStat = ResourceUpdateStat & {
   /** Delta path: extra rounds spent resolving references a delta body pointed at but the
    * response did not carry. */
   deltaResolutionRounds: number;
+  /** Roots dropped from the mirror because they are absent from the backend. */
+  rootsDropped: number;
   /** Delta path: polls that sent a token and got back a response the size of the whole
    * mirror, which is what a refused token looks like from here - rejection is silent, so this
    * is the only tell. Heuristic: a genuinely large change set trips it too. */
@@ -197,6 +199,7 @@ export function initialTreeLoadingStat(): TreeLoadingStat {
     deltaSeedsSent: 0,
     deltaResolutionRounds: 0,
     deltaSuspectedFullAnswers: 0,
+    rootsDropped: 0,
     resourcesNew: 0,
     resourcesChanged: 0,
     resourcesUnchanged: 0,
@@ -246,7 +249,7 @@ export function supportsResourceTreeTraversal(capabilities: readonly string[] = 
 }
 
 function supportsTreeDelta(capabilities: readonly string[] = []): boolean {
-  return hasCapability(capabilities, "treeChangedSince:v1");
+  return hasCapability(capabilities, "treeChangedSince:v2");
 }
 
 export function collectStatsForResource(resource: ExtendedResourceData, stats?: TreeLoadingStat) {
@@ -404,9 +407,9 @@ async function processResourceTreeStream(
       resourceReady: frame.resourceReady,
       error: frame.error,
       originalResourceId: frame.originalResourceId,
-      // traverseWasStopped: backend matched traverse stop rules — children were not streamed.
-      // Mark as terminal; fields are resolved below.
-      final: frame.final || frame.traverseWasStopped,
+      // The backend's flag as sent. A stopped traversal (children not streamed) is handled
+      // through the fields below, not by claiming the backend marked the resource final.
+      final: frame.final,
       inputsLocked: frame.inputsLocked,
       outputsLocked: frame.outputsLocked,
       fields: frame.fields,
