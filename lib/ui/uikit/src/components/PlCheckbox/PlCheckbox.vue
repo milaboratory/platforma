@@ -36,9 +36,20 @@ const slots = useSlots();
 </script>
 
 <template>
-  <div v-if="slots['default']" class="pl-checkbox" :class="{ disabled }">
-    <PlCheckboxBase v-bind="props" @update:model-value="$emit('update:modelValue', $event)" />
-    <label @click="$emit('update:modelValue', !$props.modelValue)"><slot /></label>
+  <div v-if="slots['default']" class="pl-checkbox" :class="{ disabled }" data-testid="pl-checkbox">
+    <PlCheckboxBase
+      data-testid="pl-checkbox-input"
+      v-bind="props"
+      @update:model-value="$emit('update:modelValue', $event)"
+    />
+    <label data-testid="pl-checkbox-label" @click="$emit('update:modelValue', !$props.modelValue)"
+      ><slot
+    /></label>
   </div>
-  <PlCheckboxBase v-else v-bind="props" @update:model-value="$emit('update:modelValue', $event)" />
+  <PlCheckboxBase
+    v-else
+    data-testid="pl-checkbox"
+    v-bind="props"
+    @update:model-value="$emit('update:modelValue', $event)"
+  />
 </template>

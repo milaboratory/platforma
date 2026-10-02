@@ -58,9 +58,15 @@ onMounted(createHistogram);
 </script>
 
 <template>
-  <div :class="$style.component">
-    <div v-if="settings.title && !settings.compact" :class="$style.title">{{ settings.title }}</div>
-    <div ref="chart" />
+  <div data-testid="pl-chart-histogram" :class="$style.component">
+    <div
+      v-if="settings.title && !settings.compact"
+      data-testid="pl-chart-histogram-title"
+      :class="$style.title"
+    >
+      {{ settings.title }}
+    </div>
+    <div ref="chart" data-testid="pl-chart-histogram-chart" />
   </div>
 </template>
 

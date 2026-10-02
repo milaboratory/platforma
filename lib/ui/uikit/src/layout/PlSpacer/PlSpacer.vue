@@ -10,5 +10,5 @@ export default {
 </script>
 
 <template>
-  <div class="pl-layout-component" style="flex-grow: 1" />
+  <div class="pl-layout-component" data-testid="pl-spacer" style="flex-grow: 1" />
 </template>

@@ -146,6 +146,7 @@ function handleSuggestOptions(params: {
 <template>
   <Teleport v-if="teleportTarget" :to="teleportTarget">
     <PlBtnGhost
+      data-testid="pl-table-filters"
       :icon="hasFilters || hasDefaultFilters ? 'filter-on' : 'filter'"
       @click.stop="showManager = true"
     >
@@ -153,10 +154,14 @@ function handleSuggestOptions(params: {
     </PlBtnGhost>
   </Teleport>
 
-  <PlSlideModal v-model="showManager" :close-on-outside-click="false">
+  <PlSlideModal
+    v-model="showManager"
+    data-testid="pl-table-filters-panel"
+    :close-on-outside-click="false"
+  >
     <template #title>Manage Filters</template>
 
-    <div :class="$style.root">
+    <div data-testid="pl-table-filters-content" :class="$style.root">
       <PlAdvancedFilterComponent
         :filters="filters as PlAdvancedFilter"
         :options="options"
@@ -171,16 +176,21 @@ function handleSuggestOptions(params: {
         @update-filters="onUpdateFilters"
       >
         <template #group-title="{ index }">
-          <div v-if="hasDefaultFilters && index === 0" :class="$style.defaultGroupTitle">
+          <div
+            v-if="hasDefaultFilters && index === 0"
+            data-testid="pl-table-filters-default-group-title"
+            :class="$style.defaultGroupTitle"
+          >
             Default Group
             <PlBtnGhost
               v-if="isFunction(props.onResetDefaultFilters)"
+              data-testid="pl-table-filters-reset-default"
               icon="restart"
               :class="$style.restartBtn"
               @click.stop="props.onResetDefaultFilters()"
             />
           </div>
-          <div v-else>Custom Group</div>
+          <div v-else data-testid="pl-table-filters-custom-group-title">Custom Group</div>
         </template>
       </PlAdvancedFilterComponent>
     </div>
