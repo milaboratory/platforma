@@ -2,6 +2,7 @@ import type { QuickJSHandle, VmFunctionImplementation } from "quickjs-emscripten
 import type {
   CollectionHandle,
   ColumnsCollectionDriverHost,
+  ColumnsFilterOptions,
   DiscoverColumnsOptions,
   InferServiceModel,
   PoolEntry,
@@ -264,7 +265,7 @@ export function getServiceInjectors(): ServiceInjectorMap {
             pinHandle(
               driver.filter(
                 vm.vm.getString(handle) as CollectionHandle,
-                vm.importObjectViaJson(opts) as DiscoverColumnsOptions,
+                vm.importObjectViaJson(opts) as ColumnsFilterOptions,
                 bindings,
               ),
             ),
