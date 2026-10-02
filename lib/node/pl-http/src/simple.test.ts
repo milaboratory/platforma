@@ -1,8 +1,9 @@
+import { TestTags } from "@milaboratories/build-configs";
 import { test } from "vitest";
 import { defaultHttpDispatcher } from ".";
 import { request } from "undici";
 
-test("simple http request", async ({ expect }) => {
+test("simple http request", { tags: [TestTags.Flaky] }, async ({ expect }) => {
   const dispatcher = defaultHttpDispatcher();
   const response = await request(
     "https://blocks.pl-open.science/v2/milaboratories/repertoire-diversity/overview.json",
