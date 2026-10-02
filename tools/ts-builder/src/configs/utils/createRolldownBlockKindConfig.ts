@@ -1,6 +1,7 @@
 import type { RolldownOptions } from "rolldown";
 import { dts } from "rolldown-plugin-dts";
 import { createRolldownNodeConfig, type RolldownNodeConfigProps } from "./createRolldownNodeConfig";
+import { sourcemapsEnabled } from "./sourcemaps";
 
 export interface RolldownBlockKindConfigProps extends RolldownNodeConfigProps {
   output?: string;
@@ -29,12 +30,14 @@ export function createRolldownBlockKindConfig(
     {
       input: { kind: "src/index.ts" },
       external: () => false,
-      plugins: [dts({ tsconfig: "tsconfig.json", emitDtsOnly: false, sourcemap: true })],
+      plugins: [
+        dts({ tsconfig: "tsconfig.json", emitDtsOnly: false, sourcemap: sourcemapsEnabled() }),
+      ],
       output: {
         dir: output,
         format: "es",
         entryFileNames: "[name].js",
-        sourcemap: true,
+        sourcemap: sourcemapsEnabled(),
       },
       transform: {
         target: "ES2022",

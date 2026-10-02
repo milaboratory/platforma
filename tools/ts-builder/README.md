@@ -114,6 +114,15 @@ ts-builder --target browser init-tsconfig
 - `serve --host <host>` - Host for dev server (default: localhost)
 - `types -p, --project <path>` - Path to tsconfig.json
 
+### Environment variables
+
+- `NO_SOURCEMAPS=1` - Build without JavaScript source maps. By default production builds emit
+  `.js.map` files that embed the original TypeScript (`sourcesContent`), so a package published
+  with them ships its source. Set this for release builds and keep maps locally for debugging.
+  Declaration maps (`.d.ts.map`) contain no source; browser-lib/block-ui builds still emit them,
+  node and block model/kind/facade builds drop them too. Add the variable to the
+  build task's `env` in `turbo.json`, so builds with and without maps never share a cache entry.
+
 ## Block Development Examples
 
 ```bash

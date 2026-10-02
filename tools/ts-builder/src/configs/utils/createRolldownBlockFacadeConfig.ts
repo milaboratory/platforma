@@ -1,5 +1,6 @@
 import type { RolldownOptions } from "rolldown";
 import { dts } from "rolldown-plugin-dts";
+import { sourcemapsEnabled } from "./sourcemaps";
 
 export interface RolldownBlockFacadeConfigProps {
   output?: string;
@@ -22,12 +23,14 @@ export function createRolldownBlockFacadeConfig(
     // the runtime .js must bundle its inlined helpers, so nothing heavy follows
     // the consumer's install.
     external: () => false,
-    plugins: [dts({ tsconfig: "tsconfig.json", emitDtsOnly: false, sourcemap: true })],
+    plugins: [
+      dts({ tsconfig: "tsconfig.json", emitDtsOnly: false, sourcemap: sourcemapsEnabled() }),
+    ],
     output: {
       dir: output,
       format: "es",
       entryFileNames: "[name].js",
-      sourcemap: true,
+      sourcemap: sourcemapsEnabled(),
     },
     transform: {
       target: "ES2022",

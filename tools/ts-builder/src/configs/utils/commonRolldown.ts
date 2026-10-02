@@ -1,10 +1,13 @@
 import { dts } from "rolldown-plugin-dts";
 import type { RolldownOptions, RolldownPluginOption } from "rolldown";
+import { sourcemapsEnabled } from "./sourcemaps";
 
 const useSources = process.env.USE_SOURCES === "1";
 
+// The dts plugin turns on output source maps for the whole build when its own
+// `sourcemap` is set, so it has to follow the same switch.
 const dtsPlugin = dts({
-  sourcemap: true,
+  sourcemap: sourcemapsEnabled(),
   ...(useSources && {
     compilerOptions: {
       customConditions: ["sources"],
@@ -37,7 +40,7 @@ export function createBuildEntry(input: string[], output: string, format: Format
       dir: output,
       format,
       entryFileNames,
-      sourcemap: true,
+      sourcemap: sourcemapsEnabled(),
       preserveModules: true,
       preserveModulesRoot: "src",
     },

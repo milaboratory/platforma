@@ -1,5 +1,6 @@
 import type { RolldownOptions } from "rolldown";
 import { createRolldownNodeConfig, type RolldownNodeConfigProps } from "./createRolldownNodeConfig";
+import { sourcemapsEnabled } from "./sourcemaps";
 
 export function createRolldownBlockModelConfig(props?: RolldownNodeConfigProps): RolldownOptions[] {
   const base = createRolldownNodeConfig(props);
@@ -15,7 +16,7 @@ export function createRolldownBlockModelConfig(props?: RolldownNodeConfigProps):
         name: "block-model",
         format: "umd",
         entryFileNames: "bundle.js",
-        sourcemap: true,
+        sourcemap: sourcemapsEnabled(),
       },
     },
   ];

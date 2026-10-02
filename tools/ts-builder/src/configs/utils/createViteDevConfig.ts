@@ -3,6 +3,7 @@ import { existsSync, readFileSync, realpathSync } from "node:fs";
 import sourcemaps from "rollup-plugin-sourcemaps2";
 import type { ConfigEnv, UserConfig } from "vite";
 import commonjs from "vite-plugin-commonjs";
+import { sourcemapsEnabled } from "./sourcemaps";
 
 // @vue/compiler-sfc resolves types imported into SFC macros (e.g.
 // defineProps<ImportedType>()) by reading files. By default it falls back to
@@ -34,10 +35,10 @@ export function createViteDevConfig({ mode, command }: ConfigEnv): UserConfig {
     build: {
       target: ["chrome140"],
       emptyOutDir: isProd,
-      sourcemap: isProd,
+      sourcemap: isProd && sourcemapsEnabled(),
       minify: isProd,
       rolldownOptions: {
-        plugins: isProd ? [sourcemaps()] : [],
+        plugins: isProd && sourcemapsEnabled() ? [sourcemaps()] : [],
       },
     },
     resolve: {
