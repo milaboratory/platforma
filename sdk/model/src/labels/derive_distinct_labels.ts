@@ -140,6 +140,8 @@ function deriveStems(values: Entry[], options: DeriveLabelsOptions): string[] {
 
   const build = (typeSet: Set<string>, force: boolean) =>
     buildLabels(records, typeSet, forceTraceElements, separator, force);
+  const finalize = (minimized: Set<string>, rendered: string[]) =>
+    repairBareLabels(rendered, minimized, records, stats, forceTraceElements, separator);
 
   if (mainTypes.length === 0) {
     if (secondaryTypes.length !== 0)
@@ -168,15 +170,9 @@ function deriveStems(values: Entry[], options: DeriveLabelsOptions): string[] {
         forcedSet,
         separator,
       );
-      const rendered = build(minimized, false) ?? throwError("Failed to derive unique labels");
-      return repairBareByPresence(
-        rendered,
+      return finalize(
         minimized,
-        records,
-        stats,
-        forcedSet,
-        forceTraceElements,
-        separator,
+        build(minimized, false) ?? throwError("Failed to derive unique labels"),
       );
     }
 
@@ -196,15 +192,9 @@ function deriveStems(values: Entry[], options: DeriveLabelsOptions): string[] {
     forcedSet,
     separator,
   );
-  const rendered = build(minimized, true) ?? throwError("Failed to derive unique labels");
-  return repairBareByPresence(
-    rendered,
+  return finalize(
     minimized,
-    records,
-    stats,
-    forcedSet,
-    forceTraceElements,
-    separator,
+    build(minimized, true) ?? throwError("Failed to derive unique labels"),
   );
 }
 
@@ -451,92 +441,262 @@ function minimizeTypeSet(
   return result;
 }
 
-const ABSENT_VALUE = " absent"; // sentinel value for "row has no entry of this type"
-
-/** Whether `fullType`'s rendered value differs across the group (absence counts as a value). */
-function typeDistinguishes(records: EnrichedRecord[], group: number[], fullType: string): boolean {
-  const values = new Set<string>();
-  for (const i of group) {
-    const ft = records[i].fullTrace.find((e) => e.fullType === fullType);
-    values.add(ft?.label ?? ABSENT_VALUE);
-    if (values.size > 1) return true;
-  }
-  return false;
-}
-
-/** The highest-importance trace type this row HAS (outside `typeSet`) that sets it apart from its
- *  group peers. `undefined` when the row carries nothing distinguishing of its own. */
-function bestDistinguishingType(
-  records: EnrichedRecord[],
-  group: number[],
-  row: number,
-  typeSet: Set<string>,
-  forcedSet: Set<string>,
-  forceTraceElements: Set<string> | undefined,
-  stats: TypeStats,
-): string | undefined {
-  return records[row].fullTrace.reduce<{ type: string; imp: number } | undefined>((best, ft) => {
-    if (typeSet.has(ft.fullType) || forcedSet.has(ft.fullType) || forceTraceElements?.has(ft.type))
-      return best;
-    if (!typeDistinguishes(records, group, ft.fullType)) return best;
-    const imp = stats.importances.get(ft.fullType) ?? 0;
-    return best === undefined || imp > best.imp ? { type: ft.fullType, imp } : best;
-  }, undefined)?.type;
-}
-
 /**
- * Un-bare columns distinguished only "by absence". After minimization a column can end up with a
- * bare trace zone (only the forced native label) while a peer sharing that same base renders extra
- * tokens — the column reads as unique purely because it LACKS what the peer has. For each such bare
- * column this re-renders JUST that column's label with the highest-importance trace type it actually
- * carries that tells it apart from its peers, so every colliding column is distinguished by a token
- * it HAS rather than by omission.
- *
- * Patches individual labels rather than the shared type set on purpose: the set is global, so adding
- * a type there would also decorate unrelated columns in other groups that happen to carry it. Only
- * bare columns' labels grow (a superset of their previous value), so uniqueness is preserved. Groups
- * are keyed by the base = the label rendered from the forced types alone.
+ * Repairs labels told apart only by what they lack: in a group with the same shown base, a
+ * member is bare when its shown parts are a strict subset of a peer's. The group is re-labelled
+ * from parts all members carry, or bare members add a hidden part (group-wide when labels stay
+ * unique), whichever keeps the more important distinction; labels stay unique across the list.
  */
-function repairBareByPresence(
+function repairBareLabels(
   labels: string[],
   minimized: Set<string>,
   records: EnrichedRecord[],
   stats: TypeStats,
-  forcedSet: Set<string>,
   forceTraceElements: Set<string> | undefined,
   separator: string,
 ): string[] {
-  const base = records.map((r) => renderRecordLabel(r, forcedSet, forceTraceElements, separator));
-  const isBare = records.map(
-    (r, i) => renderRecordLabel(r, minimized, forceTraceElements, separator) === base[i],
-  );
+  const traces = records.map((r) => new Map(r.fullTrace.map((ft) => [ft.fullType, ft.label])));
+  const isQualification = (t: string) => isSyntheticType(t.split("@")[0]);
+  // Trace steps from the end of each column's trace, used to match parts of the same kind; the
+  // native label and qualification tags are not steps, so they don't shift the count.
+  const depths = records.map((r) => {
+    const steps = r.fullTrace.filter(
+      (ft) => ft.fullType !== LABEL_TYPE_FULL && !isQualification(ft.fullType),
+    );
+    return new Map(steps.map((ft, idx) => [ft.fullType, steps.length - idx]));
+  });
+  const isForced = (t: string) => forceTraceElements?.has(t.split("@")[0]) === true;
+  const isDistinctionType = (t: string) => t !== LABEL_TYPE_FULL && !isQualification(t);
+  const importance = (t: string) => stats.importances.get(t) ?? 0;
+  const byImportance = (a: string, b: string) => importance(b) - importance(a);
+  const render = (i: number, types: Set<string>) =>
+    renderRecordLabel(records[i], types, forceTraceElements, separator);
+  const partKey = (t: string, l: string | undefined) => `${t}\u0000${l}`;
 
-  const groups = records.reduce<Map<string, number[]>>(
-    (acc, _, i) => acc.set(base[i] ?? "", [...(acc.get(base[i] ?? "") ?? []), i]),
-    new Map(),
-  );
+  const labelShown = minimized.has(LABEL_TYPE_FULL);
+  const baseTypes = new Set<string>(labelShown ? [LABEL_TYPE_FULL] : []);
+  const qualTypes = [...minimized].filter(isQualification);
+
+  // Group by the shown base; columns without one share a group and only get the bare fix.
+  const groups = new Map<string, number[]>();
+  records.forEach((_, i) => {
+    const key = render(i, baseTypes) ?? "";
+    const group = groups.get(key);
+    if (group) group.push(i);
+    else groups.set(key, [i]);
+  });
 
   const patched = [...labels];
-  for (const group of groups.values()) {
-    // Only asymmetric groups need repair: a bare column beside a richer peer. When every column is
-    // equally bare there is nothing to un-hide (they carry no distinguishing token of their own).
-    if (!group.some((i) => !isBare[i])) continue;
-    for (const i of group) {
-      if (!isBare[i]) continue;
-      const chosen = bestDistinguishingType(
-        records,
-        group,
-        i,
-        minimized,
-        forcedSet,
-        forceTraceElements,
-        stats,
+  const counts = new Map<string, number>();
+  const addCount = (l: string, d: number) => counts.set(l, (counts.get(l) ?? 0) + d);
+  for (const l of patched) addCount(l, 1);
+
+  // Applies new labels to some columns unless one clashes with a label elsewhere.
+  const tryApply = (members: number[], next: string[]): boolean => {
+    if (new Set(next).size !== members.length) return false;
+    for (const i of members) addCount(patched[i], -1);
+    const clashes = next.some((l) => (counts.get(l) ?? 0) > 0);
+    members.forEach((i, k) => {
+      if (!clashes) patched[i] = next[k];
+      addCount(patched[i], 1);
+    });
+    return !clashes;
+  };
+
+  for (const [key, group] of groups) {
+    if (group.length < 2) continue;
+    const shown = group.map((i) =>
+      [...traces[i]].filter(([t]) => t !== LABEL_TYPE_FULL && (minimized.has(t) || isForced(t))),
+    );
+    const partKeys = shown.map((parts) => parts.map(([t, l]) => partKey(t, l)));
+    // Members showing the same parts are compared once, as one part set; identical columns
+    // then cost nothing. sigOf maps each member to its set, setMembers lists a set's members.
+    const sigIndex = new Map<string, number>();
+    const setKeys: string[][] = [];
+    const setMembers: number[][] = [];
+    const sigOf = partKeys.map((keys, k) => {
+      const sig = [...keys].sort().join("\u0001");
+      let s = sigIndex.get(sig);
+      if (s === undefined) {
+        s = setKeys.length;
+        sigIndex.set(sig, s);
+        setKeys.push(keys);
+        setMembers.push([]);
+      }
+      setMembers[s].push(k);
+      return s;
+    });
+    const setSets = setKeys.map((keys) => new Set(keys));
+    const postings = new Map<string, number[]>();
+    setKeys.forEach((keys, s) =>
+      keys.forEach((p) => {
+        const list = postings.get(p);
+        if (list) list.push(s);
+        else postings.set(p, [s]);
+      }),
+    );
+    // Superset sets: part sets holding all of a set's parts and more (non-empty means bare).
+    // Candidates come from the posting list of its rarest part.
+    const withParts = setKeys.map((_, s) => s).filter((s) => setKeys[s].length > 0);
+    const supersetSets = setKeys.map((keys, s) => {
+      if (keys.length === 0) return withParts;
+      const rarest = keys.reduce((a, b) =>
+        postings.get(a)!.length <= postings.get(b)!.length ? a : b,
       );
-      if (chosen === undefined) continue;
-      const withToken = new Set([...minimized, chosen]);
-      patched[i] =
-        renderRecordLabel(records[i], withToken, forceTraceElements, separator) ?? patched[i];
+      return postings
+        .get(rarest)!
+        .filter(
+          (t) => t !== s && setSets[t].size > keys.length && keys.every((x) => setSets[t].has(x)),
+        );
+    });
+    const bare = group.map((_, k) => supersetSets[sigOf[k]].length > 0);
+    if (!bare.some(Boolean)) continue;
+
+    const typeCount = new Map<string, number>();
+    for (const i of group)
+      for (const t of traces[i].keys()) typeCount.set(t, (typeCount.get(t) ?? 0) + 1);
+    const isUneven = (t: string) => (typeCount.get(t) ?? 0) > 0 && typeCount.get(t)! < group.length;
+    const unevenMax = Math.max(
+      ...[...minimized]
+        .filter((t) => isDistinctionType(t) && !isForced(t) && isUneven(t))
+        .map(importance),
+    );
+
+    // Shared re-labelling, only when the base is a shown label so its text identifies the group.
+    // Parts are chosen without tags, so tags alone never stand in for a shared distinction.
+    let sharedLabels: string[] | undefined;
+    let sharedMax = Number.NEGATIVE_INFINITY;
+    if (labelShown && key !== "") {
+      const shared = [...typeCount]
+        .filter(([t, n]) => n === group.length && isDistinctionType(t))
+        .map(([t]) => t)
+        .sort(byImportance);
+      const chosen = new Set(baseTypes);
+      const distinctCount = (types: Set<string>) =>
+        new Set(group.map((i) => render(i, types) ?? "")).size;
+      let count = distinctCount(chosen);
+      for (const t of shared) {
+        if (count === group.length) break;
+        const next = distinctCount(new Set([...chosen, t]));
+        if (next > count) {
+          if (chosen.size === baseTypes.size) sharedMax = importance(t);
+          chosen.add(t);
+          count = next;
+        }
+      }
+      const withTags = new Set([...chosen, ...qualTypes]);
+      const rendered = group.map((i) => render(i, withTags));
+      const complete = rendered.filter((l): l is string => l !== undefined);
+      if (
+        count === group.length &&
+        complete.length === group.length &&
+        new Set(complete).size === group.length
+      )
+        sharedLabels = complete;
     }
+
+    // Bare fix: each bare member picks a hidden part that differs from at least one peer making it
+    // bare, preferring the trace step those peers show extra, then importance.
+    const applyBareFix = (): boolean => {
+      const bareMembers = group.filter((_, k) => bare[k]);
+      const oldBare = new Map<string, number>();
+      for (const i of bareMembers) oldBare.set(patched[i], (oldBare.get(patched[i]) ?? 0) + 1);
+      const isFree = (l: string) => (counts.get(l) ?? 0) - (oldBare.get(l) ?? 0) === 0;
+      const shownTypes = (k: number) => [...baseTypes, ...shown[k].map(([t]) => t), ...qualTypes];
+
+      // Per part set: each type's labels among its members, and how many members carry it, so
+      // "does some peer differ" is answered per set without scanning every member.
+      const setLabels = new Map<number, Map<string, { labels: Set<string>; n: number }>>();
+      const labelsIn = (s: number) => {
+        let byType = setLabels.get(s);
+        if (byType) return byType;
+        byType = new Map();
+        for (const m of setMembers[s])
+          for (const [t, l] of traces[group[m]]) {
+            const entry = byType.get(t) ?? { labels: new Set<string>(), n: 0 };
+            entry.labels.add(l);
+            entry.n++;
+            byType.set(t, entry);
+          }
+        setLabels.set(s, byType);
+        return byType;
+      };
+      const someDiffers = (s: number, u: string, mine: string | undefined) => {
+        const entry = labelsIn(s).get(u);
+        if (entry === undefined) return mine !== undefined;
+        if (entry.n < setMembers[s].length) return true;
+        return entry.labels.size > 1 || !entry.labels.has(mine ?? "");
+      };
+      const extraDepthsOf = new Map<number, Set<number | undefined>>();
+      const extraDepths = (s: number) => {
+        let depthsSet = extraDepthsOf.get(s);
+        if (depthsSet) return depthsSet;
+        depthsSet = new Set(
+          supersetSets[s].flatMap((t) => {
+            const rep = setMembers[t][0];
+            return shown[rep]
+              .filter(([u, l]) => !isQualification(u) && !setSets[s].has(partKey(u, l)))
+              .map(([u]) => depths[group[rep]].get(u));
+          }),
+        );
+        extraDepthsOf.set(s, depthsSet);
+        return depthsSet;
+      };
+
+      const picks = new Map<number, { type: string; label: string }>();
+      group.forEach((i, k) => {
+        if (!bare[k]) return;
+        const peers = supersetSets[sigOf[k]];
+        const kindDepths = extraDepths(sigOf[k]);
+        const sameKind = (u: string) => (kindDepths.has(depths[i].get(u)) ? 1 : 0);
+        const candidates = [...traces[i].keys()]
+          .filter((u) => u !== LABEL_TYPE_FULL && !minimized.has(u) && !isForced(u))
+          .filter((u) => peers.some((t) => someDiffers(t, u, traces[i].get(u))))
+          .sort((a, b) => sameKind(b) - sameKind(a) || byImportance(a, b));
+        for (const u of candidates) {
+          const label = render(i, new Set([...shownTypes(k), u]));
+          if (label !== undefined && isFree(label)) {
+            picks.set(i, { type: u, label });
+            break;
+          }
+        }
+      });
+      if (picks.size === 0) return false;
+
+      // Consistent first: every member shows the picked part types it carries. Only within a
+      // shown-label group; without one the group spans unrelated columns.
+      if (labelShown && key !== "") {
+        const picked = [...new Set([...picks.values()].map((p) => p.type))];
+        const consistent = group.map((i, k) => render(i, new Set([...shownTypes(k), ...picked])));
+        const full = consistent.filter((l): l is string => l !== undefined);
+        if (full.length === group.length && tryApply(group, full)) return true;
+      }
+
+      // Otherwise only bare members change. They may share a new label only if they shared the old
+      // one, and none may take the old label of a bare member that keeps it; repeat until stable.
+      const proposed = new Map([...picks].map(([i, p]) => [i, p.label]));
+      for (let changed = true; changed; ) {
+        changed = false;
+        const firstOld = new Map<string, string>();
+        for (const [i, l] of proposed) {
+          const old = firstOld.get(l);
+          if (old === undefined) firstOld.set(l, patched[i]);
+          else if (old !== patched[i]) changed = proposed.delete(i);
+        }
+        const kept = new Set(bareMembers.filter((i) => !proposed.has(i)).map((i) => patched[i]));
+        for (const [i, l] of proposed) if (kept.has(l)) changed = proposed.delete(i);
+      }
+      for (const i of bareMembers) addCount(patched[i], -1);
+      for (const i of bareMembers) {
+        patched[i] = proposed.get(i) ?? patched[i];
+        addCount(patched[i], 1);
+      }
+      return proposed.size > 0;
+    };
+
+    if (sharedLabels && sharedMax >= unevenMax && tryApply(group, sharedLabels)) continue;
+    if (applyBareFix()) continue;
+    if (sharedLabels && sharedMax < unevenMax) tryApply(group, sharedLabels);
   }
 
   return patched;
