@@ -1,6 +1,11 @@
 import type { Branded } from "../../branding";
 import type { PoolEntry } from "../../pool_entry";
-import type { AccessorHandle, AccessorLike, UpstreamBlockCtx } from "../../columns/types";
+import type {
+  AccessorHandle,
+  AccessorLike,
+  ColumnsSourceError,
+  UpstreamBlockCtx,
+} from "../../columns/types";
 import type { ColumnUniversalId } from "../pframe/spec/ids";
 import type { ColumnsDiscoverOptions, ColumnsFilterOptions } from "./discover_columns_options";
 import type { PFrameSpecDriver } from "../pframe/spec_driver";
@@ -26,12 +31,15 @@ export type CollectionHandle = Branded<string, "CollectionHandle">;
  * - `"accessor"`    – walk the host tree starting at the given accessor
  *   handle from a `path` prefix.
  * - `"ids"`         – pre-resolved id list (sandbox-materialised provider).
+ * - `"errors"`      – errors of a source the sandbox could not hand over as
+ *   columns (an errored block output), reported by {@link ColumnsCollectionDriver.getErrors}.
  */
 export type SerializedColumnsSource =
   | { readonly kind: "collection"; readonly handle: CollectionHandle }
   | { readonly kind: "result_pool" }
   | { readonly kind: "accessor"; readonly accessor: AccessorHandle; readonly path: string[] }
-  | { readonly kind: "ids"; readonly ids: ColumnUniversalId[]; readonly isFinal: boolean };
+  | { readonly kind: "ids"; readonly ids: ColumnUniversalId[]; readonly isFinal: boolean }
+  | { readonly kind: "errors"; readonly errors: ColumnsSourceError[] };
 
 /**
  * Per-call host bindings the driver needs to resolve sources whose
@@ -91,6 +99,12 @@ export interface ColumnsCollectionDriverModel {
   /** Canonical id list for the columns visible through this collection. */
   getColumns(handle: CollectionHandle): ColumnUniversalId[];
 
+  /**
+   * Errors met in the collection's sources. Absent on a host older than this
+   * method.
+   */
+  getErrors?(handle: CollectionHandle): ColumnsSourceError[];
+
   /** Append one or more sources and return a fresh collection handle. */
   addSource(
     handle: CollectionHandle,
@@ -125,6 +139,7 @@ export interface ColumnsCollectionDriver {
   isEmpty(handle: CollectionHandle): boolean;
   isFinal(handle: CollectionHandle): boolean;
   getColumns(handle: CollectionHandle, host: ColumnsCollectionDriverHost): ColumnUniversalId[];
+  getErrors(handle: CollectionHandle): ColumnsSourceError[];
 
   addSource(
     handle: CollectionHandle,

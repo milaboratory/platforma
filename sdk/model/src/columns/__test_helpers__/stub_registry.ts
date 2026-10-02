@@ -76,7 +76,9 @@ function buildStubProvider(
   return {
     getPObjectEntries: () => entries,
     isFinal: () => isFinal,
+    getSourceErrors: () => [],
     getColumns: () => columns,
+    getErrors: () => [],
   };
 }
 
@@ -127,6 +129,7 @@ function stubAccessorFor(id: PObjectId, cfg: NormalizedLeafConfig): TreeNodeAcce
     getDataAsJson: <T>() => cfg.spec as unknown as T,
     listInputFields: () => (cfg.spec !== undefined ? [specField] : []),
     getInputsLocked: () => cfg.accessorLocked,
+    getFieldError: () => undefined,
   };
   return stub as unknown as TreeNodeAccessor;
 }

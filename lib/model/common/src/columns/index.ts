@@ -4,3 +4,4 @@ export * from "./column_registry";
 export * from "./column_selector";
 export * from "./dedup";
 export * from "./providers";
+export * from "./column_field";

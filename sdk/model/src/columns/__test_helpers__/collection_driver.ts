@@ -53,6 +53,7 @@ const COLUMNS_COLLECTION_METHODS: ReadonlyArray<string> = [
   "isEmpty",
   "isFinal",
   "getColumns",
+  "getErrors",
   "addSource",
   "discover",
   "filter",
@@ -90,6 +91,7 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
     isEmpty: (h) => impl.isEmpty(h),
     isFinal: (h) => impl.isFinal(h),
     getColumns: (h) => impl.getColumns(h, bindings),
+    getErrors: (h) => impl.getErrors(h),
     addSource: (h, srcs) => impl.addSource(h, srcs, bindings).key,
     discover: (h, o) => impl.discover(h, o, bindings).key,
     filter: (h, o) => impl.filter(h, o, bindings).key,
@@ -153,7 +155,8 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
  *     stub-accessor whose `getDataAsJson()` returns the spec.
  *   - `traverse({field: `${name}.data`})` → `undefined` (data is not
  *     materialised in tests).
- *   - `listInputFields()` → `[]` (data absent).
+ *   - `listInputFields()` → `[<id>.spec]` (data absent).
+ *   - `getFieldError()` → `undefined` (no field errors).
  *   - `getInputsLocked()` → `true` (no pending resolution).
  */
 function buildStubProvider(
@@ -170,7 +173,9 @@ function buildStubProvider(
   return {
     getPObjectEntries: () => entries,
     isFinal: () => true,
+    getSourceErrors: () => [],
     getColumns: () => columns,
+    getErrors: () => [],
   };
 }
 
@@ -190,8 +195,9 @@ function stubAccessorFor(id: PObjectId, spec: PColumnSpec): TreeNodeAccessor {
       return field === specField ? specHolder : undefined;
     },
     getDataAsJson: <T>() => spec as unknown as T,
-    listInputFields: () => [],
+    listInputFields: () => [specField],
     getInputsLocked: () => true,
+    getFieldError: () => undefined,
   };
   return stub as unknown as TreeNodeAccessor;
 }
