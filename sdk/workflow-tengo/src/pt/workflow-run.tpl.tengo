@@ -29,6 +29,8 @@ self.body(func(inputs) {
     mem := inputs.mem
     inputCache := inputs.inputCache
     memFloor := inputs.memFloor
+    memSlope := inputs.memSlope
+    memIntercept := inputs.memIntercept
     polarsMaxThreads := inputs.polarsMaxThreads
     scratchFreeSpace := inputs.scratchFreeSpace
 
@@ -45,12 +47,12 @@ self.body(func(inputs) {
         arg("--frame-dir").arg(inFramesFolder).
         arg("--spill-dir").argExpr(spillFolderExpr).
         writeFile("workflow_sc.json", workflowJsonStruct);
-    // Size the ptabler run from total input volume, unless the block author sets cpu, mem
-    // or scratchFreeSpace. An explicit request always wins. The formulas, the measured slopes behind
-    // them and the thread ceiling they assume live in :pt.sizing.
+    // The total input volume sets the cpu, mem and scratchFreeSpace requests. An explicit
+    // request from the block always wins. :pt.sizing holds the formulas, the measured
+    // slopes and the thread limit.
     ramReq := mem
     if is_undefined(ramReq) {
-        ramReq = sizing.ramFormula(memFloor)
+        ramReq = sizing.ramFormula({ floor: memFloor, slope: memSlope, intercept: memIntercept })
     }
     cpuReq := cpu
     if is_undefined(cpuReq) {
