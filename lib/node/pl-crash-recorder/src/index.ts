@@ -1,8 +1,11 @@
 export {
+  endSession,
   openRecorder,
   newSessionId,
   listSessions,
   sessionIdFromFile,
+  SUPERSEDED_REASON,
+  type EndSessionOptions,
   type Recorder,
   type RecorderOptions,
   type SessionFileInfo,

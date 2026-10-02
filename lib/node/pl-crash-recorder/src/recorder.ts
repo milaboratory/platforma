@@ -87,6 +87,8 @@ export function openRecorder(options: RecorderOptions): Recorder {
   fs.mkdirSync(dir, { recursive: true });
 
   const file = path.join(dir, `${SESSION_FILE_PREFIX}-${sessionId}.ndjson`);
+  const liveKey = path.resolve(file);
+  liveWriters.get(liveKey)?.close(SUPERSEDED_REASON);
   const state: WriterState = {
     fd: fs.openSync(file, "a"),
     bytes: 0,
@@ -151,6 +153,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
       if (state.closed) return;
       event(SESSION_END_RECORD, { reason, mem: memorySnapshot() });
       state.closed = true;
+      liveWriters.delete(liveKey);
       try {
         fs.closeSync(state.fd);
       } catch {
@@ -163,6 +166,7 @@ export function openRecorder(options: RecorderOptions): Recorder {
   // must describe its own session even if the parked segment is lost.
   state.header = { role, pid: process.pid, meta, env: describeEnvironment() };
   event(SESSION_RECORD, { ...state.header, mem: memorySnapshot() });
+  liveWriters.set(liveKey, { recorder, close: (reason) => recorder.close(reason) });
 
   return recorder;
 }
@@ -207,6 +211,32 @@ export function listSessions(dir: string): SessionFileInfo[] {
     .sort((lhs, rhs) => rhs.mtimeMs - lhs.mtimeMs);
 }
 
+export type EndSessionOptions = {
+  /** Which part of the app ends the session, e.g. `main`. */
+  role?: string;
+  /** Free-form context stored in the header written before the end record. */
+  meta?: Record<string, unknown>;
+};
+
+/**
+ * Ends a session on behalf of a recorder that can no longer close it, such as a
+ * worker the parent terminated on a planned quit.
+ *
+ * Returns true when it wrote the end record, and false when the session has no
+ * log or its log already ends.
+ */
+export function endSession(
+  dir: string,
+  sessionId: string,
+  reason: string,
+  options: EndSessionOptions = {},
+): boolean {
+  const file = path.join(dir, `${SESSION_FILE_PREFIX}-${sessionId}.ndjson`);
+  if (!fs.existsSync(file) || hasSessionEnd(file)) return false;
+  openRecorder({ dir, sessionId, role: options.role, meta: options.meta }).close(reason);
+  return true;
+}
+
 /**
  * Parses a crash log, tolerating a final line cut short by a hard kill.
  *
@@ -220,7 +250,8 @@ export function readSession(file: string): ParsedSession {
   let truncatedTail = false;
   const parked = `${file}.1`;
   if (fs.existsSync(parked)) {
-    for (const line of fs.readFileSync(parked, "utf8").split("\n")) {
+    for (const rawLine of fs.readFileSync(parked, "utf8").split("\n")) {
+      const line = withoutLeadingNul(rawLine);
       if (line === "") continue;
       try {
         records.push(JSON.parse(line) as LogRecord);
@@ -230,7 +261,8 @@ export function readSession(file: string): ParsedSession {
     }
   }
   const lines = fs.readFileSync(file, "utf8").split("\n");
-  for (const [index, line] of lines.entries()) {
+  for (const [index, rawLine] of lines.entries()) {
+    const line = withoutLeadingNul(rawLine);
     if (line === "") continue;
     try {
       records.push(JSON.parse(line) as LogRecord);
@@ -239,6 +271,13 @@ export function readSession(file: string): ParsedSession {
     }
   }
   return { file, records, truncatedTail };
+}
+
+// A power loss can leave NUL bytes before the next record on ext4 or NTFS.
+function withoutLeadingNul(line: string): string {
+  let start = 0;
+  while (line.charCodeAt(start) === 0) start++;
+  return line.slice(start);
 }
 
 /**
@@ -265,7 +304,19 @@ export function sessionIdFromFile(file: string): string {
   return match ? match[1] : path.basename(file);
 }
 
+/** End reason of a recorder that a newer recorder on the same file replaced. */
+export const SUPERSEDED_REASON = "superseded";
+
 // Internals
+
+/** Open recorders of this thread by file, each with the close of its owner. Two writers break rotation. */
+const liveWriters = new Map<string, { recorder: Recorder; close: (reason: string) => void }>();
+
+/** Makes a supersede of `recorder` call `close`. A session uses it to stop its samplers too. */
+export function setRecorderOwner(recorder: Recorder, close: (reason: string) => void): void {
+  const key = path.resolve(recorder.file);
+  if (liveWriters.get(key)?.recorder === recorder) liveWriters.set(key, { recorder, close });
+}
 
 /** How many sticky records a session may keep, bounding the rewritten preamble. */
 const MAX_STICKY_RECORDS = 64;
@@ -395,18 +446,42 @@ function trackOpenOperation(state: WriterState, record: LogRecord): void {
   }
 }
 
+/** Tail bytes read to find the last line; an end record is far smaller. */
+const TAIL_BYTES = 64 * 1024;
+
+// A closed recorder writes nothing after its end record, so any later line means a live one.
 function hasSessionEnd(file: string): boolean {
-  const size = fs.statSync(file).size;
-  if (size === 0) return false;
-  const window = Math.min(size, 8192);
-  const buffer = Buffer.alloc(window);
   const fd = fs.openSync(file, "r");
   try {
-    fs.readSync(fd, buffer, 0, window, size - window);
+    // A power loss can leave NUL bytes after the last record on ext4 or NTFS.
+    const contentEnd = endWithoutTrailingNul(fd, fs.fstatSync(fd).size);
+    const length = Math.min(contentEnd, TAIL_BYTES);
+    const tail = Buffer.alloc(length);
+    fs.readSync(fd, tail, 0, length, contentEnd - length);
+    if (length < 2 || tail[length - 1] !== 0x0a) return false;
+    const lineStart = tail.lastIndexOf(0x0a, length - 2) + 1;
+    if (lineStart === 0 && length < contentEnd) return false;
+    const { type } = JSON.parse(tail.subarray(lineStart, length - 1).toString("utf8")) as LogRecord;
+    return type === SESSION_END_RECORD;
+  } catch {
+    return false;
   } finally {
     fs.closeSync(fd);
   }
-  return buffer.toString("utf8").includes(`"type":"${SESSION_END_RECORD}"`);
+}
+
+function endWithoutTrailingNul(fd: number, size: number): number {
+  const chunk = Buffer.alloc(TAIL_BYTES);
+  let end = size;
+  while (end > 0) {
+    const length = Math.min(end, TAIL_BYTES);
+    fs.readSync(fd, chunk, 0, length, end - length);
+    let index = length;
+    while (index > 0 && chunk[index - 1] === 0x00) index--;
+    if (index > 0) return end - length + index;
+    end -= length;
+  }
+  return 0;
 }
 
 function describeEnvironment(): SessionEnvironment {
