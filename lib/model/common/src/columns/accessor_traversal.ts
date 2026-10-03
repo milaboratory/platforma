@@ -1,4 +1,5 @@
-import { createGlobalPObjectId, createLocalPObjectId } from "../pool";
+import type { PObjectSpec } from "../pool";
+import { createGlobalPObjectId, createLocalPObjectId, isPColumnSpec } from "../pool";
 import { ResourceTypeName } from "../resource_types";
 import type { AccessorLike, LeafEntry, UpstreamBlockCtx } from "./types";
 
@@ -12,8 +13,10 @@ export const DESCEND_TYPES: ReadonlyArray<string> = [
 ];
 
 /**
- * Enumerate column names backing a PFrame accessor — derived from
- * `<name>.spec` field names, without resolving the spec resources.
+ * Enumerate column names backing a PFrame accessor, from the `<name>.spec`
+ * field names. A name whose spec has resolved to a non-column object (a
+ * `kind: "File"` export, for example) is skipped. A name whose spec has no
+ * data yet is kept, because it may still resolve to a column.
  */
 export function listColumnNames<A extends AccessorLike<A>>(
   accessor: A,
@@ -25,6 +28,10 @@ export function listColumnNames<A extends AccessorLike<A>>(
     if (!field.endsWith(".spec")) continue;
     const raw = field.slice(0, -".spec".length);
     if (!raw.startsWith(prefix)) continue;
+    const spec = accessor
+      .traverse({ field, assertFieldType: "Input", ignoreError: true })
+      ?.getDataAsJson<PObjectSpec>();
+    if (spec !== undefined && !isPColumnSpec(spec)) continue;
     out.push(raw.slice(prefix.length));
   }
   return out;
