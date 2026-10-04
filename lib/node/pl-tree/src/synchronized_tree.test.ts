@@ -821,12 +821,16 @@ test("a tree of shared roots survives a re-login: it rediscovers the roots under
     // under the color it was created with, so it is recognized by its type.
     const holdsSharedRoot = () => tree.dumpState().some((r) => r.type.name === sharedType.name);
     try {
-      // Starts the polling loop, whose first pass rediscovers the roots; the poll after the
-      // re-login falls inside the discovery interval, so it reads the roots it already holds.
+      // The new session's token is obtained first, so the re-login below takes no time: the poll
+      // after it falls inside the discovery interval, and reads the roots the tree already holds
+      // under signatures the new session refuses.
+      const relogin = await login();
+
+      // Starts the polling loop, whose first pass rediscovers the roots.
       await tree.refreshState();
       expect(holdsSharedRoot()).toBe(true);
 
-      authInformation.jwtToken = (await login()).jwtToken;
+      authInformation.jwtToken = relogin.jwtToken;
 
       await tree.refreshState();
       expect(holdsSharedRoot()).toBe(true);
