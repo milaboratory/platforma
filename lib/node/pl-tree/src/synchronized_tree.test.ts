@@ -1,15 +1,19 @@
 import { test, expect } from "vitest";
-import { DefaultFinalResourceDataPredicate, field, TestHelpers } from "@milaboratories/pl-client";
-import type {
-  FinalResourceDataPredicate,
+import {
+  DefaultFinalResourceDataPredicate,
+  field,
+  GrantType,
   PlClient,
-  SignedResourceId,
+  TestHelpers,
+  UnauthenticatedPlClient,
 } from "@milaboratories/pl-client";
+import type { FinalResourceDataPredicate, SignedResourceId } from "@milaboratories/pl-client";
 import { TestStructuralResourceType1 } from "./test_utils";
 import { Computable } from "@milaboratories/computable";
 import { SynchronizedTreeState } from "./synchronized_tree";
 import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import tp from "timers/promises";
+import { randomUUID } from "node:crypto";
 
 test("simple synchronized tree test", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
@@ -783,4 +787,59 @@ test("bursts of concurrent refreshes read once each, at least the floor apart, a
       await tree.terminate();
     }
   });
+}, 60_000);
+
+test("a tree of shared roots survives a re-login: it rediscovers the roots under the new session", async () => {
+  const { conf, auth } = await TestHelpers.getTestClientConf();
+  const { test_user: user, test_password: password } = TestHelpers.getTestConfig();
+  if (user === undefined || password === undefined)
+    throw new Error("a re-login needs the test user's credentials");
+  const login = async () => await (await UnauthenticatedPlClient.build(conf)).login(user, password);
+  // The client reads its token from this object on every call until it refreshes the token, which
+  // a fresh one does not need within the test. Replacing the token here is what a re-login does to
+  // a running client: a new session, under which no signature the old one received verifies.
+  const authInformation = await login();
+  const alternativeRoot = `test_${Date.now()}_${randomUUID()}`;
+  const pl = await PlClient.init({ ...conf, alternativeRoot }, { ...auth, authInformation });
+  const sharedType = { name: `SharedRootAcrossRelogin_${randomUUID()}`, version: "1" };
+  try {
+    await pl.withWriteTx("ShareRoot", async (tx) => {
+      const r = tx.createStruct(sharedType);
+      tx.createField(field(tx.clientRoot, "shared"), "Dynamic", r);
+      tx.lock(r);
+      const gid = await r.globalId;
+      tx.grantAccess(gid, "", { writable: false }, GrantType.ANY_AUTHORISED);
+      await tx.commit();
+    });
+
+    const tree = await SynchronizedTreeState.init(
+      pl,
+      { kind: "shared", resourceType: sharedType },
+      { stopPollingDelay: 60_000, pollingInterval: 10 },
+    );
+    // The tree holds the root under the color of the grant it was discovered through, not
+    // under the color it was created with, so it is recognized by its type.
+    const holdsSharedRoot = () => tree.dumpState().some((r) => r.type.name === sharedType.name);
+    try {
+      // Starts the polling loop, whose first pass rediscovers the roots; the poll after the
+      // re-login falls inside the discovery interval, so it reads the roots it already holds.
+      await tree.refreshState();
+      expect(holdsSharedRoot()).toBe(true);
+
+      authInformation.jwtToken = (await login()).jwtToken;
+
+      await tree.refreshState();
+      expect(holdsSharedRoot()).toBe(true);
+    } finally {
+      await tree.terminate();
+    }
+  } finally {
+    await pl.close();
+    const cleanup = await TestHelpers.getTestClient();
+    try {
+      await cleanup.deleteAlternativeRoot(alternativeRoot);
+    } finally {
+      await cleanup.close();
+    }
+  }
 }, 60_000);
