@@ -10,6 +10,7 @@ import type {
 } from "@milaboratories/pl-client";
 import type { Filter } from "@milaboratories/pl-client";
 import {
+  isPermissionDenied,
   isUnauthenticated,
   isTimeoutOrCancelError,
   isUnimplementedError,
@@ -467,13 +468,16 @@ export class SynchronizedTreeState {
     try {
       await this.loadAndApply(stats, txOps);
     } catch (e) {
-      // Discovery-tree self-heal: a discovered root whose grant was revoked/expired fails the whole
-      // ResourceTree poll with Unauthenticated. Re-discover (drops dead roots) and retry once. This is
-      // self-discriminating — a genuinely dead session also fails discover()'s own call, so real auth
-      // loss still propagates. Only for discovery trees; explicit-root trees propagate as-is.
-      if (this.sharedSeeds.length > 0 && isUnauthenticated(e)) {
+      // Discovery-tree self-heal: a discovered root the backend refuses fails the whole ResourceTree
+      // poll - its signature is from an earlier session (after a re-login), or, on some backends,
+      // its grant was revoked. Depending on the backend that is PermissionDenied or Unauthenticated.
+      // Re-discover (re-signs every root under the current session and drops roots no longer
+      // granted) and retry once. This is self-discriminating — a
+      // genuinely dead session also fails discover()'s own call, so real auth loss still propagates.
+      // Only for discovery trees; explicit-root trees propagate as-is.
+      if (this.sharedSeeds.length > 0 && (isUnauthenticated(e) || isPermissionDenied(e))) {
         this.logger?.warn(
-          "discovery tree: Unauthenticated on ResourceTree (likely revoked/expired root); re-discovering and retrying",
+          "discovery tree: a discovered root's signature was refused on ResourceTree; re-discovering and retrying",
         );
         await this.discover();
         await this.loadAndApply(stats, txOps);

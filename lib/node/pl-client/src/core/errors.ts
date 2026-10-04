@@ -34,6 +34,8 @@ export function isPermissionDenied(err: unknown, nested: boolean = false): boole
   if ((err as any).name == "RpcError" && (err as any).code == "PERMISSION_DENIED") return true;
   if ((err as any).name == "RESTError" && (err as any).status.code == Code.PERMISSION_DENIED)
     return true;
+  // PlError (e.g. UnrecoverablePlError from a failed streaming tx) carries the status code numerically.
+  if (err instanceof PlError && err.status?.code === Code.PERMISSION_DENIED) return true;
   if ((err as any).cause !== undefined && !nested)
     return isPermissionDenied((err as any).cause, true);
   return false;
