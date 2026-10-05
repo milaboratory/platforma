@@ -57,6 +57,15 @@ type GetUniqueSourceValuesParams = {
   searchQueryValue?: string;
 };
 
+type GetUniqueAxisValuesParams = {
+  axisSpec: AxisSpec;
+  /** Columns carrying the axis; their keys are merged. */
+  parentColumnIds: PObjectId[];
+  limit?: number;
+  searchQuery?: string;
+  searchQueryValue?: string;
+};
+
 type GetAxisUniqueValuesParams = {
   axisId: AxisId;
   parentColumnIds: PObjectId[];
@@ -345,7 +354,7 @@ function getDiscreteValuesFromAnnotation(columnSpec: PColumnSpec): undefined | S
 async function getAxisValuesWithLabels(
   handle: PFrameHandle,
   params: {
-    columnId: PObjectId;
+    parentColumnIds: PObjectId[];
     axisSpec: AxisSpec;
     labelsColumnId: PObjectId | undefined;
     limit?: number;
@@ -353,7 +362,8 @@ async function getAxisValuesWithLabels(
     searchQueryValue?: string;
   },
 ): Promise<SuggestionResponse> {
-  const { columnId, axisSpec, labelsColumnId, limit, searchQuery, searchQueryValue } = params;
+  const { parentColumnIds, axisSpec, labelsColumnId, limit, searchQuery, searchQueryValue } =
+    params;
   const strAxisId = canonicalizeAxisId(getAxisId(axisSpec));
 
   let filters: PTableRecordSingleValueFilterV2[] = [];
@@ -388,7 +398,7 @@ async function getAxisValuesWithLabels(
 
     const response = await getAxisUniqueValues(handle, {
       axisId: getAxisId(axisSpec),
-      parentColumnIds: [columnId],
+      parentColumnIds,
       limit,
       filters,
     });
@@ -443,7 +453,7 @@ export async function getUniqueSourceValuesWithLabels(
     const labelsColumnId = await getColumnOrAxisValueLabelsId(handle, strAxisId);
 
     return getAxisValuesWithLabels(handle, {
-      columnId,
+      parentColumnIds: [columnId],
       axisSpec,
       labelsColumnId,
       limit,
@@ -455,6 +465,29 @@ export async function getUniqueSourceValuesWithLabels(
   // Handle column values
   return getColumnValuesWithLabels(handle, {
     columnId,
+    limit,
+    searchQuery,
+    searchQueryValue,
+  });
+}
+
+/**
+ * Suggestions for an axis on its own, not through one column: keys are merged
+ * across all parent columns carrying the axis, labelled by the axis label column
+ * when the PFrame has one.
+ */
+export async function getUniqueAxisValuesWithLabels(
+  handle: PFrameHandle,
+  params: GetUniqueAxisValuesParams,
+): Promise<SuggestionResponse> {
+  const { axisSpec, parentColumnIds, limit, searchQuery, searchQueryValue } = params;
+  const strAxisId = canonicalizeAxisId(getAxisId(axisSpec));
+  const labelsColumnId = await getColumnOrAxisValueLabelsId(handle, strAxisId);
+
+  return getAxisValuesWithLabels(handle, {
+    parentColumnIds,
+    axisSpec,
+    labelsColumnId,
     limit,
     searchQuery,
     searchQueryValue,
