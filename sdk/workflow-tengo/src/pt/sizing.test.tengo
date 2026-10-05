@@ -131,6 +131,81 @@ TestCpuCurve := func() {
 	test.isEqual(sizing.CPU_MAX, _cpu(1000 * GiB))  // clamped
 }
 
+_cpuWith := func(inputBytes, opts) {
+	return _evalAt(sizing.cpuFormula(opts), inputBytes)
+}
+
+_cpuFallback := func(opts) {
+	return f.fallbackOf(sizing.cpuFormula(opts))
+}
+
+TestCpuDefaultFormulaIsUnchanged := func() {
+	// The default formula is part of every ptabler command, so its tree must not change.
+	old := f.size({ default: 0 }).dividedByFloor(f.gib(16)).plus(f.const(2)).
+		between(f.const(2), f.const(8)).
+		staticFallback(2)
+	test.isEqual(f.astOf(old), f.astOf(sizing.cpuFormula()))
+	test.isEqual(f.astOf(old), f.astOf(sizing.cpuFormula({})))
+	test.isEqual(f.astOf(old), f.astOf(sizing.cpuFormula({ floor: undefined, intercept: undefined, slope: undefined, ceiling: undefined })))
+	test.isEqual(f.fallbackOf(old), _cpuFallback(undefined))
+}
+
+TestCpuFloorOnTheDefaultCurve := func() {
+	test.isEqual(4, _cpuWith(0, { floor: 4 }))
+	test.isEqual(4, _cpuWith(16 * GiB, { floor: 4 }))    // curve gives 3
+	test.isEqual(6, _cpuWith(64 * GiB, { floor: 4 }))    // curve gives 6
+	test.isEqual(8, _cpuWith(1000 * GiB, { floor: 4 }))  // default ceiling
+}
+
+TestCpuFloorAboveTheDefaultCapIsTheRequest := func() {
+	test.isEqual(16, _cpuWith(0, { floor: 16 }))
+	test.isEqual(16, _cpuWith(1000 * GiB, { floor: 16 }))
+}
+
+TestCpuInterceptKeepsTheDefaultSlopeAndRemovesTheCap := func() {
+	test.isEqual(4, _cpuWith(0, { intercept: 4 }))
+	test.isEqual(5, _cpuWith(16 * GiB, { intercept: 4 }))       // 4 + 16/16
+	test.isEqual(66, _cpuWith(1000 * GiB, { intercept: 4 }))    // 4 + floor(1000/16), no ceiling
+}
+
+TestCpuSlope := func() {
+	test.isEqual(2, _cpuWith(0, { slope: 0.25 }))
+	test.isEqual(4, _cpuWith(8 * GiB, { slope: 0.25 }))         // 2 + 0.25*8
+	test.isEqual(4, _cpuWith(11 * GiB, { slope: 0.25 }))        // 2 + floor(2.75)
+	test.isEqual(252, _cpuWith(1000 * GiB, { slope: 0.25 }))    // no ceiling
+	test.isEqual(10, _cpuWith(8 * GiB, { slope: 1 }))           // integer slope
+}
+
+TestCpuSlopeKeepsTwoDecimals := func() {
+	test.isEqual(_cpuWith(100 * GiB, { slope: 0.25 }), _cpuWith(100 * GiB, { slope: 0.257 }))
+	test.isEqual(31, _cpuWith(100 * GiB, { slope: 0.29 }))      // 2 + 29, not 2 + 28
+}
+
+TestCpuZeroSlopeIsFlat := func() {
+	test.isEqual(2, _cpuWith(1000 * GiB, { slope: 0 }))
+	test.isEqual(6, _cpuWith(1000 * GiB, { slope: 0, intercept: 6 }))
+	test.isEqual(12, _cpuWith(1000 * GiB, { slope: 0, floor: 12 }))
+}
+
+TestCpuCeiling := func() {
+	test.isEqual(4, _cpuWith(1000 * GiB, { ceiling: 4 }))                 // default curve, lower ceiling
+	test.isEqual(16, _cpuWith(1000 * GiB, { ceiling: 16 }))               // default curve, higher ceiling
+	test.isEqual(32, _cpuWith(1000 * GiB, { slope: 0.25, ceiling: 32 }))  // custom curve, at the ceiling
+	test.isEqual(12, _cpuWith(0, { floor: 12, ceiling: 12 }))
+}
+
+TestCpuFallback := func() {
+	test.isEqual(2, _cpuFallback({}))
+	test.isEqual(4, _cpuFallback({ floor: 4 }))
+	test.isEqual(6, _cpuFallback({ intercept: 6 }))
+	test.isEqual(4, _cpuFallback({ intercept: 6, ceiling: 4 }))
+	test.isEqual(16, _cpuFallback({ floor: 16 }))
+}
+
+// ll.assert rejects a floor, intercept or ceiling that is not an integer of at least 1, a
+// negative slope, and a ceiling below the floor. ll.assert stops the template, and is_error
+// cannot catch that. Thus no test checks it.
+
 // ---- polars threads -------------------------------------------------------
 // POLARS_MAX_THREADS = between(system.cpu, 2, 8), evaluated by the backend.
 
