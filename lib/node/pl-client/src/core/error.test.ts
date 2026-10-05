@@ -1,5 +1,12 @@
 import * as tp from "node:timers/promises";
-import { isTimeoutOrCancelError, isTransientCallFailure } from "./errors";
+import {
+  isPermissionDenied,
+  isTimeoutOrCancelError,
+  isTransientCallFailure,
+  isUnauthenticated,
+  UnrecoverablePlError,
+} from "./errors";
+import { Code } from "../proto-grpc/google/rpc/code";
 import { test, expect } from "vitest";
 
 /** Shapes the predicates match on: an RpcError-like from grpc, a RESTError-like from REST. */
@@ -34,4 +41,21 @@ test("timeout of sleep error type detection", async () => {
     expect(isTimeoutOrCancelError(err)).toEqual(true);
   }
   expect(noError).toBe(false);
+});
+
+test("a status inside a failed transaction is classified by its code, like a call-level error", () => {
+  const inTransaction = (code: Code) =>
+    new UnrecoverablePlError({ code, message: "refused", details: [] });
+
+  expect(isPermissionDenied(inTransaction(Code.PERMISSION_DENIED))).toBe(true);
+  expect(isUnauthenticated(inTransaction(Code.UNAUTHENTICATED))).toBe(true);
+
+  expect(isPermissionDenied(inTransaction(Code.UNAUTHENTICATED))).toBe(false);
+  expect(isPermissionDenied(inTransaction(Code.NOT_FOUND))).toBe(false);
+
+  // A wrapper one level up is unwrapped, as for every other shape.
+  const wrapped = new Error("tree update failed", {
+    cause: inTransaction(Code.PERMISSION_DENIED),
+  });
+  expect(isPermissionDenied(wrapped)).toBe(true);
 });
