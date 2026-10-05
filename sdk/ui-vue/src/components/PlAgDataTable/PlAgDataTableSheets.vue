@@ -79,12 +79,17 @@ function onSheetChanged(i: number, newValue: string | number): void {
 </script>
 
 <template>
-  <div v-if="$slots['before'] || sheets.length > 0 || $slots['after']" :class="$style.container">
+  <div
+    v-if="$slots['before'] || sheets.length > 0 || $slots['after']"
+    data-testid="pl-ag-data-table-sheets"
+    :class="$style.container"
+  >
     <slot name="before" />
     <template v-for="(sheet, i) in sheets" :key="i">
       <!-- For some reason state[i] is undefined when the sheet initially loads, so v-if to suppress the error -->
       <PlDropdownLine
         v-if="state[i]"
+        data-testid="pl-ag-data-table-sheets-dropdown"
         :model-value="state[i].value"
         :options="sheet.options"
         :prefix="sheet.prefix"

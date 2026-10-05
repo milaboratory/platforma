@@ -12,9 +12,19 @@ const settings = computed(() => props.params.value || undefined);
 </script>
 
 <template>
-  <div class="pl-ag-chart-stacked-bar-cell">
-    <PlChartStackedBarCompact v-if="settings" :settings="settings" />
-    <div v-else class="pl-ag-chart-stacked-bar-cell__not-ready">Not ready</div>
+  <div data-testid="pl-ag-chart-stacked-bar-cell" class="pl-ag-chart-stacked-bar-cell">
+    <PlChartStackedBarCompact
+      v-if="settings"
+      data-testid="pl-ag-chart-stacked-bar-cell-chart"
+      :settings="settings"
+    />
+    <div
+      v-else
+      data-testid="pl-ag-chart-stacked-bar-cell-not-ready"
+      class="pl-ag-chart-stacked-bar-cell__not-ready"
+    >
+      Not ready
+    </div>
   </div>
 </template>
 

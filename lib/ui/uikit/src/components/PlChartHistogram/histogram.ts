@@ -14,13 +14,18 @@ import { axisBottom, axisLeft } from "d3-axis";
 const gx = (svg: Selection<SVGGElement, unknown, null, undefined>, height: number) => {
   return svg
     .append("g")
+    .attr("data-testid", "pl-chart-histogram-x-axis")
     .style("font-size", "14px")
     .style("font-weight", "500")
     .attr("transform", `translate(0,${height})`);
 };
 
 const gy = (svg: Selection<SVGGElement, unknown, null, undefined>) => {
-  return svg.append("g").style("font-size", "14px").style("font-weight", "500");
+  return svg
+    .append("g")
+    .attr("data-testid", "pl-chart-histogram-y-axis")
+    .style("font-size", "14px")
+    .style("font-weight", "500");
 };
 
 const createYScale = (bins: BinLike[], height: number) => {

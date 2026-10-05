@@ -9,6 +9,7 @@ export function drawBins(svg: SVG, bins: BinLike[], dimension: ChartOptions, sca
   const tooltip = select("body")
     .append("div")
     .attr("class", "svg-tooltip")
+    .attr("data-testid", "pl-chart-histogram-tooltip")
     .style("position", "absolute")
     .style("visibility", "hidden");
 
@@ -31,6 +32,7 @@ export function drawBins(svg: SVG, bins: BinLike[], dimension: ChartOptions, sca
     .data(bins)
     .enter()
     .append("rect")
+    .attr("data-testid", "pl-chart-histogram-bar")
     .attr("x", (d) => x(d.x0!)) // Position the bar based on the bin start
     .attr("y", (d) => y(d.length)) // Height based on bin count
     .attr("width", (d) => x(d.x1!) - x(d.x0!)) // Bar width based on logarithmic intervals

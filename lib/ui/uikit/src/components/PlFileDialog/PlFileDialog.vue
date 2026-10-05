@@ -98,6 +98,7 @@ const importFiles = (importedFiles: ImportedFiles) => {
     :no-content-gutters="true"
     :close-on-outside-click="closeOnOutsideClick"
     class="pl-dialog-modal"
+    data-testid="pl-file-dialog"
     :class="style.component"
     :model-value="modelValue"
     width="688px"
@@ -107,15 +108,24 @@ const importFiles = (importedFiles: ImportedFiles) => {
   >
     <template #title>{{ title ?? defaultTitle }}</template>
     <div style="margin: 0 24px">
-      <PlBtnGroup v-model="mode" :options="modeOptions" />
+      <PlBtnGroup v-model="mode" :options="modeOptions" data-testid="pl-file-dialog-mode" />
     </div>
     <Remote v-if="mode === 'remote'" ref="remote" v-bind="$props" :submit="submit" />
     <Local v-if="mode === 'local'" :import-files="importFiles" v-bind="$props" />
     <template v-if="mode === 'remote'" #actions>
-      <PlBtnPrimary style="min-width: 160px" :disabled="!remoteRef?.isReady" @click.stop="submit"
+      <PlBtnPrimary
+        style="min-width: 160px"
+        :disabled="!remoteRef?.isReady"
+        data-testid="pl-file-dialog-import"
+        @click.stop="submit"
         >Import</PlBtnPrimary
       >
-      <PlBtnGhost :justify-center="false" @click.stop="closeModal">Cancel</PlBtnGhost>
+      <PlBtnGhost
+        :justify-center="false"
+        data-testid="pl-file-dialog-cancel"
+        @click.stop="closeModal"
+        >Cancel</PlBtnGhost
+      >
     </template>
   </PlDialogModal>
 </template>

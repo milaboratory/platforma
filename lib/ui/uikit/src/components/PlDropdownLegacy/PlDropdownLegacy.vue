@@ -317,11 +317,12 @@ watchPostEffect(() => {
 </script>
 
 <template>
-  <div class="ui-dropdown__envelope">
+  <div class="ui-dropdown__envelope" data-testid="pl-dropdown-legacy">
     <div
       ref="root"
       :tabindex="tabindex"
       class="ui-dropdown"
+      data-testid="pl-dropdown-legacy-control"
       :class="{ open: data.open, error, disabled: isDisabled }"
       @keydown="handleKeydown"
       @focusout="onFocusOut"
@@ -337,18 +338,24 @@ watchPostEffect(() => {
             :placeholder="computedPlaceholder"
             spellcheck="false"
             autocomplete="chrome-off"
+            data-testid="pl-dropdown-legacy-input"
             @focus="onInputFocus"
           />
 
-          <div v-if="!data.open" @click="setFocusOnInput">
+          <div v-if="!data.open" data-testid="pl-dropdown-legacy-value" @click="setFocusOnInput">
             <LongText class="input-value"> {{ textValue }} </LongText>
           </div>
 
           <div class="ui-dropdown__controls">
-            <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
+            <PlMaskIcon24
+              v-if="isLoadingOptions"
+              name="loading"
+              data-testid="pl-dropdown-legacy-loading"
+            />
             <PlIcon16
               v-if="clearable && hasValue"
               class="clear"
+              data-testid="pl-dropdown-legacy-clear"
               name="delete-clear"
               @click.stop="clear"
             />
@@ -356,28 +363,45 @@ watchPostEffect(() => {
             <div
               v-if="arrowIconLarge"
               class="arrow-icon"
+              data-testid="pl-dropdown-legacy-arrow"
               :class="[`icon-24 ${arrowIconLarge}`]"
               @click.stop="toggleOpen"
             />
             <div
               v-else-if="arrowIcon"
               class="arrow-icon"
+              data-testid="pl-dropdown-legacy-arrow"
               :class="[`icon-16 ${arrowIcon}`]"
               @click.stop="toggleOpen"
             />
-            <div v-else class="arrow-icon arrow-icon-default" @click.stop="toggleOpen" />
+            <div
+              v-else
+              class="arrow-icon arrow-icon-default"
+              data-testid="pl-dropdown-legacy-arrow"
+              @click.stop="toggleOpen"
+            />
           </div>
         </div>
-        <label v-if="label">
-          <PlSvg v-if="required" :uri="SvgRequired" />
+        <label v-if="label" data-testid="pl-dropdown-legacy-label">
+          <PlSvg v-if="required" :uri="SvgRequired" data-testid="pl-dropdown-legacy-required" />
           <span>{{ label }}</span>
-          <PlTooltip v-if="slots.tooltip" class="info" position="top">
+          <PlTooltip
+            v-if="slots.tooltip"
+            class="info"
+            position="top"
+            data-testid="pl-dropdown-legacy-tooltip"
+          >
             <template #tooltip>
               <slot name="tooltip" />
             </template>
           </PlTooltip>
         </label>
-        <div v-if="data.open" ref="list" class="ui-dropdown__options">
+        <div
+          v-if="data.open"
+          ref="list"
+          class="ui-dropdown__options"
+          data-testid="pl-dropdown-legacy-options"
+        >
           <DropdownListItem
             v-for="(item, index) in filteredRef"
             :key="index"
@@ -385,17 +409,32 @@ watchPostEffect(() => {
             :is-selected="item.isSelected"
             :is-hovered="item.isActive"
             :size="optionSize"
+            data-testid="pl-dropdown-legacy-option"
             @click.stop="selectOption(item.value)"
           />
-          <div v-if="!filteredRef.length" class="nothing-found">Nothing found</div>
+          <div
+            v-if="!filteredRef.length"
+            class="nothing-found"
+            data-testid="pl-dropdown-legacy-options-empty"
+          >
+            Nothing found
+          </div>
         </div>
         <DoubleContour class="ui-dropdown__contour" />
       </div>
     </div>
-    <div v-if="computedError" class="ui-dropdown__error">{{ computedError }}</div>
-    <div v-else-if="isLoadingOptions && loadingOptionsHelper" class="ui-dropdown__helper">
+    <div v-if="computedError" class="ui-dropdown__error" data-testid="pl-dropdown-legacy-error">
+      {{ computedError }}
+    </div>
+    <div
+      v-else-if="isLoadingOptions && loadingOptionsHelper"
+      class="ui-dropdown__helper"
+      data-testid="pl-dropdown-legacy-helper"
+    >
       {{ loadingOptionsHelper }}
     </div>
-    <div v-else-if="helper" class="ui-dropdown__helper">{{ helper }}</div>
+    <div v-else-if="helper" class="ui-dropdown__helper" data-testid="pl-dropdown-legacy-helper">
+      {{ helper }}
+    </div>
   </div>
 </template>
