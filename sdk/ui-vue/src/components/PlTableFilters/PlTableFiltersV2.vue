@@ -1,10 +1,8 @@
 <script lang="ts" setup>
 import type {
-  AxisId,
   PTableColumnSpec,
   PlDataTableFiltersWithMeta,
   PFrameHandle,
-  PObjectId,
   PTableColumnId,
   PColumnSpec,
 } from "@platforma-sdk/model";
@@ -13,24 +11,22 @@ import {
   Domain,
   readAnnotation,
   readDomain,
-  getAxisId,
+  getUniqueAxisValuesWithLabels,
   getUniqueSourceValuesWithLabels,
-  extractPObjectId,
   getPTableColumnId,
   deriveDistinctLabels,
-  matchAxisId,
 } from "@platforma-sdk/model";
 import { computed, ref } from "vue";
 import { PlBtnGhost, PlSlideModal, usePlBlockPageTitleTeleportTarget } from "@milaboratories/uikit";
 import {
   PlAdvancedFilter,
   PlAdvancedFilterComponent,
-  PlAdvancedFilterSupportedFilters,
   type PlAdvancedFilterItem,
 } from "../PlAdvancedFilter";
 import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
 import type { Nil } from "@milaboratories/helpers";
 import { isFunction, isNil } from "es-toolkit";
+import { resolveSuggestSource, TABLE_FILTER_TYPES } from "./suggest-source";
 
 const props = defineProps<{
   columns: PTableColumnSpec[];
@@ -98,25 +94,7 @@ const options = computed<PlAdvancedFilterItem[]>(() => {
   });
 });
 
-// Supported filters (same set as FilterSidebar)
-const supportedFilters = [
-  "isNA",
-  "isNotNA",
-  "greaterThan",
-  "greaterThanOrEqual",
-  "lessThan",
-  "lessThanOrEqual",
-  "patternEquals",
-  "patternNotEquals",
-  "patternContainSubsequence",
-  "patternNotContainSubsequence",
-  "patternMatchesRegularExpression",
-  "patternFuzzyContainSubsequence",
-  "equal",
-  "notEqual",
-  "inSet",
-  "notInSet",
-] as (typeof PlAdvancedFilterSupportedFilters)[number][];
+const supportedFilters = TABLE_FILTER_TYPES;
 
 // getSuggestOptions - provide discrete values from column annotations
 function handleSuggestOptions(params: {
@@ -135,47 +113,25 @@ function handleSuggestOptions(params: {
     throw new Error("ColumnId should be a table column id for suggest options");
   }
 
-  const source = resolveSuggestSource(tableColumnId, params.axisIdx);
-
-  return getUniqueSourceValuesWithLabels(props.pframeHandle, {
-    ...source,
+  const search = {
     limit: 100,
     searchQuery: params.searchType === "label" ? params.searchStr : undefined,
     searchQueryValue: params.searchType === "value" ? params.searchStr : undefined,
-  }).then((v) => v.values);
-}
-
-// Internals
-
-function resolveSuggestSource(
-  tableColumnId: PTableColumnId,
-  axisIdx: undefined | number,
-): { columnId: PObjectId; axisIdx: undefined | number } {
-  if (tableColumnId.type === "column") {
-    return { columnId: extractPObjectId(tableColumnId.id), axisIdx };
-  }
-  const host = findAxisHost(tableColumnId.id);
-  if (isNil(host)) {
-    throw new Error(
-      `No column in the table carries axis ${tableColumnId.id.name}, cannot fetch suggest options`,
-    );
-  }
-  return host;
-}
-
-/**
- * Axis keys are read through a column that carries the axis. A column with a
- * discrete-values annotation is skipped: its suggestions would be its own
- * annotated values, not the axis keys.
- */
-function findAxisHost(axisId: AxisId): undefined | { columnId: PObjectId; axisIdx: number } {
-  for (const col of props.columns) {
-    if (col.type !== "column") continue;
-    if (!isNil(readAnnotation(col.spec, Annotation.DiscreteValues))) continue;
-    const axisIdx = col.spec.axesSpec.findIndex((axis) => matchAxisId(axisId, getAxisId(axis)));
-    if (axisIdx !== -1) return { columnId: extractPObjectId(col.id), axisIdx };
-  }
-  return undefined;
+  };
+  const source = resolveSuggestSource(props.columns, tableColumnId, params.axisIdx);
+  const response =
+    source.type === "column"
+      ? getUniqueSourceValuesWithLabels(props.pframeHandle, {
+          columnId: source.columnId,
+          axisIdx: source.axisIdx,
+          ...search,
+        })
+      : getUniqueAxisValuesWithLabels(props.pframeHandle, {
+          axisSpec: source.axisSpec,
+          parentColumnIds: source.parentColumnIds,
+          ...search,
+        });
+  return response.then((v) => v.values);
 }
 </script>
 
