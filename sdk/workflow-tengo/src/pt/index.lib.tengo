@@ -410,6 +410,10 @@ workflow := func() {
 	pframeCounter := 0
 
 	cpu := undefined
+	cpuFloor := undefined
+	cpuIntercept := undefined
+	cpuSlope := undefined
+	cpuCeiling := undefined
 	mem := undefined
 	memFloor := undefined
 	memSlope := undefined
@@ -867,13 +871,79 @@ workflow := func() {
 		/**
 		 * Sets the number of CPUs to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
 		 *
-		 * If not set, the CPU request is sized from the input data volume:
-		 * `between(2 + size / 16 GiB, 2, 8)`. Setting an explicit value overrides this.
+		 * If not set, the input data volume sets the CPU request:
+		 *
+		 *     between(intercept + slope × size, floor, ceiling)
+		 *
+		 * The defaults are intercept 2, slope 1 core per 16 GiB, floor 2 and ceiling 8.
+		 * `.cpuIntercept()`, `.cpuSlope()`, `.cpuFloor()` and `.cpuCeiling()` change them. A
+		 * floor above 8 raises the default ceiling to the floor. With `.cpuSlope()` or
+		 * `.cpuIntercept()`, there is no ceiling unless `.cpuCeiling()` sets one.
+		 *
+		 * An explicit value replaces the formula and ignores those setters.
+		 *
+		 * More cores do not give Polars more threads. Polars uses at most 8 threads by
+		 * default.
 		 *
 		 * @param amount: number - number of cores requested for command.
 		 */
 		cpu: func(amount) {
 			cpu = amount
+			return self
+		},
+
+		/**
+		 * Sets the floor of the auto-sized CPU request (see `.cpu()`). Default 2. If a
+		 * caller also sets `.cpu()`, `.cpu()` wins.
+		 *
+		 * @param cores: int - at least 1
+		 * @return builder
+		 */
+		cpuFloor: func(cores) {
+			sizing.assertCpuCores(cores, "cpuFloor")
+			cpuFloor = cores
+			return self
+		},
+
+		/**
+		 * Sets the intercept of the auto-sized CPU request (see `.cpu()`). Default 2. It
+		 * removes the default ceiling of 8. If a caller also sets `.cpu()`, `.cpu()` wins.
+		 *
+		 * @param cores: int - at least 1
+		 * @return builder
+		 */
+		cpuIntercept: func(cores) {
+			sizing.assertCpuCores(cores, "cpuIntercept")
+			cpuIntercept = cores
+			return self
+		},
+
+		/**
+		 * Sets the slope of the auto-sized CPU request (see `.cpu()`), in cores per GiB of
+		 * input. Default 1 core per 16 GiB. The value keeps two decimals: 0.257 gives 0.25.
+		 * Slope 0 gives a flat request. It removes the default ceiling of 8. If a caller also
+		 * sets `.cpu()`, `.cpu()` wins.
+		 *
+		 * @param slope: number - at least 0, e.g. `0.25`
+		 * @return builder
+		 */
+		cpuSlope: func(slope) {
+			sizing.assertCpuSlope(slope)
+			cpuSlope = slope
+			return self
+		},
+
+		/**
+		 * Sets the ceiling of the auto-sized CPU request (see `.cpu()`). Default 8 on the
+		 * default curve, and no ceiling with `.cpuSlope()` or `.cpuIntercept()`. The
+		 * ceiling must not be less than the floor. If a caller also sets `.cpu()`, `.cpu()` wins.
+		 *
+		 * @param cores: int - at least 1
+		 * @return builder
+		 */
+		cpuCeiling: func(cores) {
+			sizing.assertCpuCores(cores, "cpuCeiling")
+			cpuCeiling = cores
 			return self
 		},
 
@@ -1094,6 +1164,10 @@ workflow := func() {
 			runMetaInputs := {
 				queue: queue,
 				cpu: cpu,
+				cpuFloor: cpuFloor,
+				cpuIntercept: cpuIntercept,
+				cpuSlope: cpuSlope,
+				cpuCeiling: cpuCeiling,
 				mem: mem,
 				memFloor: memFloor,
 				memSlope: memSlope,

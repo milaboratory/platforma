@@ -26,6 +26,10 @@ self.body(func(inputs) {
 
     queue := inputs.queue
     cpu := inputs.cpu
+    cpuFloor := inputs.cpuFloor
+    cpuIntercept := inputs.cpuIntercept
+    cpuSlope := inputs.cpuSlope
+    cpuCeiling := inputs.cpuCeiling
     mem := inputs.mem
     inputCache := inputs.inputCache
     memFloor := inputs.memFloor
@@ -56,7 +60,7 @@ self.body(func(inputs) {
     }
     cpuReq := cpu
     if is_undefined(cpuReq) {
-        cpuReq = sizing.cpuFormula()
+        cpuReq = sizing.cpuFormula({ floor: cpuFloor, intercept: cpuIntercept, slope: cpuSlope, ceiling: cpuCeiling })
     }
     scratchReq := scratchFreeSpace
     if is_undefined(scratchReq) {
