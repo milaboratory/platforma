@@ -28,8 +28,8 @@ const clear = () => {
 </script>
 
 <template>
-  <div ref="root" :class="$style.component">
-    <PlIcon24 name="search" />
+  <div ref="root" :class="$style.component" data-testid="pl-search-field">
+    <PlIcon24 name="search" data-testid="pl-search-field-icon" />
     <input
       ref="input"
       v-model="model"
@@ -37,15 +37,17 @@ const clear = () => {
       :placeholder="props.placeholder || 'Find...'"
       type="text"
       spellcheck="false"
+      data-testid="pl-search-field-input"
     />
     <PlIcon16
       v-if="props.clearable && nonEmpty"
       :class="$style.clear"
       name="delete-clear"
+      data-testid="pl-search-field-clear"
       @click.stop="clear"
     />
 
-    <PlTooltip v-if="hasHelper" class="info" position="bottom">
+    <PlTooltip v-if="hasHelper" class="info" position="bottom" data-testid="pl-search-field-helper">
       <template #tooltip>
         <slot name="helper">
           {{ props.helper }}

@@ -297,8 +297,8 @@ const getItemClassAfter = getClassFunction(props.itemClassAfter);
 </script>
 
 <template>
-  <div :class="$style.root">
-    <div ref="pinnedContainerRef" :class="$style.list">
+  <div data-testid="pl-element-list" :class="$style.root">
+    <div ref="pinnedContainerRef" data-testid="pl-element-list-pinned" :class="$style.list">
       <PlElementListItem
         v-for="([originalIndex, item], pinnedIndex) in pinnedItemsRef"
         :key="pinnedKeysRef[pinnedIndex]"
@@ -339,7 +339,12 @@ const getItemClassAfter = getClassFunction(props.itemClassAfter);
         </template>
       </PlElementListItem>
     </div>
-    <div v-if="hasUnpinnedItems" ref="unpinnedContainerRef" :class="$style.list">
+    <div
+      v-if="hasUnpinnedItems"
+      ref="unpinnedContainerRef"
+      data-testid="pl-element-list-unpinned"
+      :class="$style.list"
+    >
       <PlElementListItem
         v-for="([originalIndex, item], unpinnedIndex) in unpinnedItemsRef"
         :key="unpinnedKeysRef[unpinnedIndex]"

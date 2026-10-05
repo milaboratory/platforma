@@ -76,6 +76,7 @@ const options = computed(() =>
 
 <template>
   <PlDropdownMulti
+    data-testid="pl-dropdown-multi-ref"
     v-bind="props"
     :options="options"
     @update:model-value="$emit('update:modelValue', $event)"

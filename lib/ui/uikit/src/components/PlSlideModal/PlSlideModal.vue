@@ -19,18 +19,19 @@ const props = withDefaults(defineProps<Props>(), defaultProps);
 
 <template>
   <PlPureSlideModal
+    data-testid="pl-slide-modal"
     v-bind="{ ...props, ...attrs }"
     :class="[$style.root, { 'has-title': slots.title, 'has-actions': slots.actions }]"
   >
-    <div v-if="slots.title" class="pl-slide-modal__title">
+    <div v-if="slots.title" data-testid="pl-slide-modal-title" class="pl-slide-modal__title">
       <span class="pl-slide-modal__title-content">
         <slot name="title" />
       </span>
     </div>
-    <div class="pl-slide-modal__content">
+    <div data-testid="pl-slide-modal-content" class="pl-slide-modal__content">
       <slot />
     </div>
-    <div v-if="slots.actions" class="pl-slide-modal__actions">
+    <div v-if="slots.actions" data-testid="pl-slide-modal-actions" class="pl-slide-modal__actions">
       <slot name="actions" />
     </div>
   </PlPureSlideModal>

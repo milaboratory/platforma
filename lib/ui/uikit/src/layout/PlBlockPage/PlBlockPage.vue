@@ -53,27 +53,56 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div class="pl-layout-component pl-block-page" :class="{ noBodyGutters: props.noBodyGutters }">
-    <div v-if="slots.title || props.title" :class="styles.header">
+  <div
+    class="pl-layout-component pl-block-page"
+    data-testid="pl-block-page"
+    :class="{ noBodyGutters: props.noBodyGutters }"
+  >
+    <div
+      v-if="slots.title || props.title"
+      data-testid="pl-block-page-header"
+      :class="styles.header"
+    >
       <div class="pl-block-page__title">
         <div class="pl-block-page__title__default">
-          <span v-if="slots.title"><slot name="title" /></span>
-          <span v-else>{{ props.title }}</span>
+          <span v-if="slots.title" data-testid="pl-block-page-title"><slot name="title" /></span>
+          <span v-else data-testid="pl-block-page-title">{{ props.title }}</span>
           <slot name="after-title" />
         </div>
-        <div class="pl-block-page__title__append">
-          <div ref="teleportTarget" class="pl-block-page__title__append__teleport" />
+        <div class="pl-block-page__title__append" data-testid="pl-block-page-append">
+          <div
+            ref="teleportTarget"
+            class="pl-block-page__title__append__teleport"
+            data-testid="pl-block-page-append-teleport"
+          />
           <slot name="append" />
         </div>
       </div>
-      <div v-if="subtitle !== undefined" :class="styles.subtitle">
-        <input v-model.lazy.trim="subtitle" :placeholder="props.subtitlePlaceholder" />
-        <PlIcon24 :class="styles.editIcon" name="edit" color="var(--ic-02)" />
+      <div
+        v-if="subtitle !== undefined"
+        data-testid="pl-block-page-subtitle"
+        :class="styles.subtitle"
+      >
+        <input
+          v-model.lazy.trim="subtitle"
+          data-testid="pl-block-page-subtitle-input"
+          :placeholder="props.subtitlePlaceholder"
+        />
+        <PlIcon24
+          data-testid="pl-block-page-subtitle-edit-icon"
+          :class="styles.editIcon"
+          name="edit"
+          color="var(--ic-02)"
+        />
       </div>
     </div>
     <div v-else />
-    <div class="pl-block-page__body">
-      <PlPlaceholder v-show="loadingPlaceholder" v-bind="loadingPlaceholder" />
+    <div class="pl-block-page__body" data-testid="pl-block-page-body">
+      <PlPlaceholder
+        v-show="loadingPlaceholder"
+        data-testid="pl-block-page-loading-placeholder"
+        v-bind="loadingPlaceholder"
+      />
       <div :style="{ display: loadingPlaceholder ? 'none' : 'contents' }">
         <slot />
       </div>

@@ -65,7 +65,7 @@ function updateSelectedStep(step: Filter) {
 </script>
 
 <template>
-  <PlSidebarGroup>
+  <PlSidebarGroup data-testid="pl-annotations">
     <template #item-0>
       <AnnotationsSidebar
         :annotation="props.annotation"

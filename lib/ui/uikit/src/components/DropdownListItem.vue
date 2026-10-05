@@ -47,21 +47,31 @@ const checkboxSvg = computed(() => (props.isSelected ? CheckboxCheckedSvg : Chec
 </script>
 
 <template>
-  <div :class="classes" class="dropdown-list-item">
+  <div :class="classes" class="dropdown-list-item" data-testid="pl-dropdown-list-item">
     <!-- eslint-disable vue/no-v-html -->
-    <div v-if="props.useCheckbox" :class="checkboxClasses" v-html="checkboxSvg" />
+    <div
+      v-if="props.useCheckbox"
+      :class="checkboxClasses"
+      data-testid="pl-dropdown-list-item-checkbox"
+      v-html="checkboxSvg"
+    />
     <!--eslint-enable-->
     <div class="dropdown-list-item__title-container">
-      <div class="dropdown-list-item__title text-s">
+      <div class="dropdown-list-item__title text-s" data-testid="pl-dropdown-list-item-title">
         {{ option.label }}
       </div>
-      <div v-if="option.description" class="dropdown-list-item__description text-description">
+      <div
+        v-if="option.description"
+        class="dropdown-list-item__description text-description"
+        data-testid="pl-dropdown-list-item-description"
+      >
         {{ option.description }}
       </div>
     </div>
     <div
       v-if="!props.useCheckbox && props.isSelected"
       class="dropdown-list-item__icon flex-self-start"
+      data-testid="pl-dropdown-list-item-selected-icon"
     />
   </div>
 </template>

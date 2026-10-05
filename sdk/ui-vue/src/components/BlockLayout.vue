@@ -41,9 +41,11 @@ const progress = computed(() => app.value?.progress?.());
 </script>
 
 <template>
-  <div class="block block__layout">
+  <div data-testid="pl-block-layout" class="block block__layout">
     <BlockLoader :value="progress" />
-    <div v-if="sdk.error" :class="$style.error">{{ sdk.error }}</div>
+    <div v-if="sdk.error" data-testid="pl-block-layout-error" :class="$style.error">
+      {{ sdk.error }}
+    </div>
     <LoaderPage v-else-if="!sdk.loaded">Loading...</LoaderPage>
     <component :is="CurrentView" v-else-if="CurrentView" :key="href" />
     <NotFound v-else />

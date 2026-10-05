@@ -27,8 +27,9 @@ const styles = useCssModule();
 </script>
 
 <template>
-  <div :class="styles.root">
+  <div data-testid="pl-placeholder" :class="styles.root">
     <div
+      data-testid="pl-placeholder-background"
       :class="[
         styles.background,
         {
@@ -37,15 +38,26 @@ const styles = useCssModule();
         },
       ]"
     />
-    <div :class="styles.content">
-      <PlLoaderLogo :size="64" color="var(--color-div-grey)" />
-      <div v-if="props.title || props.subtitle" :class="styles.text">
-        <div v-if="props.title" :class="styles.title">{{ props.title }}</div>
-        <div v-if="props.subtitle" :class="styles.subtitle">
+    <div data-testid="pl-placeholder-content" :class="styles.content">
+      <PlLoaderLogo data-testid="pl-placeholder-loader" :size="64" color="var(--color-div-grey)" />
+      <div
+        v-if="props.title || props.subtitle"
+        data-testid="pl-placeholder-text"
+        :class="styles.text"
+      >
+        <div v-if="props.title" data-testid="pl-placeholder-title" :class="styles.title">
+          {{ props.title }}
+        </div>
+        <div v-if="props.subtitle" data-testid="pl-placeholder-subtitle" :class="styles.subtitle">
           <template v-if="Array.isArray(props.subtitle)">
-            <span v-for="(item, key) of props.subtitle" :key>{{ item }}</span>
+            <span
+              v-for="(item, key) of props.subtitle"
+              :key
+              data-testid="pl-placeholder-subtitle-item"
+              >{{ item }}</span
+            >
           </template>
-          <span v-else>{{ props.subtitle }}</span>
+          <span v-else data-testid="pl-placeholder-subtitle-item">{{ props.subtitle }}</span>
         </div>
       </div>
     </div>

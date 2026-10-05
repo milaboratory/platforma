@@ -58,6 +58,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div
+    data-testid="pl-ag-row-num-header"
     style="
       position: absolute;
       inset: 0;
@@ -68,11 +69,12 @@ onBeforeUnmount(() => {
   >
     <PlCheckbox
       v-if="isSelectable"
+      data-testid="pl-ag-row-num-header-checkbox"
       :model-value="someRowsSelected"
       :indeterminate="someRowsSelected && !allRowsSelected"
       @update:model-value="toggleSelectAll"
     />
-    <span v-else>
+    <span v-else data-testid="pl-ag-row-num-header-label">
       {{ params.displayName }}
     </span>
   </div>

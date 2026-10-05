@@ -53,10 +53,15 @@ const updateModel = (value: M) => {
 </script>
 
 <template>
-  <div class="pl-checkbox-group" :class="{ disabled }">
-    <label v-if="label">
+  <div class="pl-checkbox-group" :class="{ disabled }" data-testid="pl-checkbox-group">
+    <label v-if="label" data-testid="pl-checkbox-group-label">
       <span>{{ label }}</span>
-      <PlTooltip v-if="slots.tooltip" class="info" position="top">
+      <PlTooltip
+        v-if="slots.tooltip"
+        class="info"
+        position="top"
+        data-testid="pl-checkbox-group-tooltip"
+      >
         <template #tooltip>
           <slot name="tooltip" />
         </template>
@@ -68,14 +73,20 @@ const updateModel = (value: M) => {
         value: it.value,
       }))"
       :key="i"
+      data-testid="pl-checkbox-group-option"
     >
       <PlCheckboxBase
         :disabled="disabled"
+        data-testid="pl-checkbox-group-option-input"
         :label="opt.label"
         :model-value="hasValue(opt.value)"
         @update:model-value="() => updateModel(opt.value)"
       />
-      <label @click.stop="() => updateModel(opt.value)">{{ opt.label }}</label>
+      <label
+        data-testid="pl-checkbox-group-option-label"
+        @click.stop="() => updateModel(opt.value)"
+        >{{ opt.label }}</label
+      >
     </div>
   </div>
 </template>

@@ -16,9 +16,11 @@ defineExpose({
 </script>
 
 <template>
-  <div class="grid-overlay-container">
+  <div data-testid="pl-ag-data-table-no-rows" class="grid-overlay-container">
     <div class="grid-icon-sad-cat" />
-    <span class="text-subtitle-m">{{ params.text || "Empty" }}</span>
+    <span data-testid="pl-ag-data-table-no-rows-text" class="text-subtitle-m">{{
+      params.text || "Empty"
+    }}</span>
   </div>
 </template>
 
