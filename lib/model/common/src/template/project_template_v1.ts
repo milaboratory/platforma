@@ -192,8 +192,30 @@ export type BlockPackLocatorOverride =
  */
 export type ProjectTemplateV1 = {
   readonly schema: ProjectTemplateSchemaV1;
+  /**
+   * What the template is for, in the words of whoever made it — the description a stored
+   * template carries, written down so that a file brought back in says the same thing.
+   * Absent when there is none; a blank one is never written.
+   */
+  readonly description?: string;
   readonly blocks: readonly ProjectTemplateV1Entry[];
 };
+
+/**
+ * The document with its description set, or removed when the given one is blank or absent.
+ *
+ * Keeps the key order a reader of the file expects, the format marker first and the list of
+ * blocks last, so the description sits above the blocks it describes.
+ */
+export function withTemplateDescription(
+  document: ProjectTemplateV1,
+  description: string | undefined,
+): ProjectTemplateV1 {
+  const text = description?.trim() ?? "";
+  return text === ""
+    ? { schema: document.schema, blocks: document.blocks }
+    : { schema: document.schema, description: text, blocks: document.blocks };
+}
 
 //
 // Reading a decoded document.
@@ -293,7 +315,12 @@ export function readProjectTemplateV1(value: unknown): ProjectTemplateV1ReadResu
   }
 
   for (const key of Object.keys(value)) {
-    if (key !== "schema" && key !== "blocks") fail([], `Unrecognized key: '${key}'`);
+    if (key !== "schema" && key !== "description" && key !== "blocks")
+      fail([], `Unrecognized key: '${key}'`);
+  }
+
+  if (value.description !== undefined && typeof value.description !== "string") {
+    fail(["description"], `Expected text, got ${describe(value.description)}.`);
   }
 
   if (value.schema !== PROJECT_TEMPLATE_SCHEMA_V1) {
@@ -321,7 +348,14 @@ export function readProjectTemplateV1(value: unknown): ProjectTemplateV1ReadResu
   });
 
   if (issues.length > 0) return { ok: false, issues };
-  return { ok: true, document: { schema: PROJECT_TEMPLATE_SCHEMA_V1, blocks } };
+  const document: ProjectTemplateV1 = { schema: PROJECT_TEMPLATE_SCHEMA_V1, blocks };
+  return {
+    ok: true,
+    document: withTemplateDescription(
+      document,
+      typeof value.description === "string" ? value.description : undefined,
+    ),
+  };
 }
 
 /**
