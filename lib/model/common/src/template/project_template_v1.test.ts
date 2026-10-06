@@ -15,7 +15,7 @@ import {
   parseBlockPackReference,
   parseProjectTemplateV1,
   readProjectTemplateV1,
-  withTemplateDescription,
+  withTemplateMeta,
   type BlockPackLocationReference,
   type BlockPackReference,
   type ProjectTemplateV1,
@@ -220,6 +220,34 @@ describe("parseProjectTemplateV1", () => {
     expect(doc).not.toHaveProperty("description");
   });
 
+  test("a label is read as written, trimmed, and a blank one reads as none", () => {
+    const named = parseProjectTemplateV1({
+      schema: "template-v1",
+      label: "  Мой анализ (v2) ",
+      blocks: [{ id: "samples", kind: "@platforma-open/foo.kind@^1.0.0" }],
+    });
+    const blank = parseProjectTemplateV1({
+      schema: "template-v1",
+      label: "",
+      blocks: [{ id: "samples", kind: "@platforma-open/foo.kind@^1.0.0" }],
+    });
+
+    expect(named.label).toBe("Мой анализ (v2)");
+    expect(blank).not.toHaveProperty("label");
+  });
+
+  test("a label that is not text is reported on its own path", () => {
+    const result = readProjectTemplateV1({
+      schema: "template-v1",
+      label: ["a"],
+      blocks: [],
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues[0].path).toEqual(["label"]);
+  });
+
   test("a description that is not text is reported on its own path", () => {
     const result = readProjectTemplateV1({
       schema: "template-v1",
@@ -347,23 +375,32 @@ test("the parser's output type is exactly ProjectTemplateV1", () => {
   expectTypeOf<ReturnType<typeof parseProjectTemplateV1>>().toEqualTypeOf<ProjectTemplateV1>();
 });
 
-describe("withTemplateDescription", () => {
+describe("withTemplateMeta", () => {
   const document = parseProjectTemplateV1({
     schema: "template-v1",
     blocks: [{ id: "samples", kind: "@platforma-open/foo.kind@^1.0.0" }],
   });
 
-  test("puts the description between the format marker and the blocks", () => {
-    const described = withTemplateDescription(document, "What it builds");
+  test("puts the label and description between the format marker and the blocks", () => {
+    const described = withTemplateMeta(document, {
+      label: " My Study ",
+      description: "What it builds",
+    });
 
-    expect(Object.keys(described)).toEqual(["schema", "description", "blocks"]);
+    expect(Object.keys(described)).toEqual(["schema", "label", "description", "blocks"]);
+    expect(described.label).toBe("My Study");
     expect(described.description).toBe("What it builds");
   });
 
-  test("a blank or absent description removes the one already there", () => {
-    const described = withTemplateDescription(document, "What it builds");
+  test("a blank or absent label or description removes the one already there", () => {
+    const described = withTemplateMeta(document, {
+      label: "My Study",
+      description: "What it builds",
+    });
 
-    expect(withTemplateDescription(described, "  ")).not.toHaveProperty("description");
-    expect(withTemplateDescription(described, undefined)).not.toHaveProperty("description");
+    expect(
+      withTemplateMeta(described, { label: "  ", description: "What it builds" }),
+    ).not.toHaveProperty("label");
+    expect(withTemplateMeta(described, {})).toStrictEqual(document);
   });
 });

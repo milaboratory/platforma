@@ -193,6 +193,12 @@ export type BlockPackLocatorOverride =
 export type ProjectTemplateV1 = {
   readonly schema: ProjectTemplateSchemaV1;
   /**
+   * The template's name — the label a stored template carries, written down so that a file
+   * brought back in is called what it was called, whatever the file itself is named. Absent when
+   * there is none; a blank one is never written.
+   */
+  readonly label?: string;
+  /**
    * What the template is for, in the words of whoever made it — the description a stored
    * template carries, written down so that a file brought back in says the same thing.
    * Absent when there is none; a blank one is never written.
@@ -202,19 +208,24 @@ export type ProjectTemplateV1 = {
 };
 
 /**
- * The document with its description set, or removed when the given one is blank or absent.
+ * The document with its label and description set as given, trimmed, each removed when the given
+ * one is blank or absent.
  *
- * Keeps the key order a reader of the file expects, the format marker first and the list of
- * blocks last, so the description sits above the blocks it describes.
+ * Keeps the key order a reader of the file expects: the format marker first, then the name and
+ * what it is for, and the list of blocks last.
  */
-export function withTemplateDescription(
+export function withTemplateMeta(
   document: ProjectTemplateV1,
-  description: string | undefined,
+  meta: { readonly label?: string; readonly description?: string },
 ): ProjectTemplateV1 {
-  const text = description?.trim() ?? "";
-  return text === ""
-    ? { schema: document.schema, blocks: document.blocks }
-    : { schema: document.schema, description: text, blocks: document.blocks };
+  const label = meta.label?.trim() ?? "";
+  const description = meta.description?.trim() ?? "";
+  return {
+    schema: document.schema,
+    ...(label === "" ? {} : { label }),
+    ...(description === "" ? {} : { description }),
+    blocks: document.blocks,
+  };
 }
 
 //
@@ -315,12 +326,13 @@ export function readProjectTemplateV1(value: unknown): ProjectTemplateV1ReadResu
   }
 
   for (const key of Object.keys(value)) {
-    if (key !== "schema" && key !== "description" && key !== "blocks")
+    if (key !== "schema" && key !== "label" && key !== "description" && key !== "blocks")
       fail([], `Unrecognized key: '${key}'`);
   }
 
-  if (value.description !== undefined && typeof value.description !== "string") {
-    fail(["description"], `Expected text, got ${describe(value.description)}.`);
+  for (const key of ["label", "description"] as const) {
+    if (value[key] !== undefined && typeof value[key] !== "string")
+      fail([key], `Expected text, got ${describe(value[key])}.`);
   }
 
   if (value.schema !== PROJECT_TEMPLATE_SCHEMA_V1) {
@@ -351,10 +363,10 @@ export function readProjectTemplateV1(value: unknown): ProjectTemplateV1ReadResu
   const document: ProjectTemplateV1 = { schema: PROJECT_TEMPLATE_SCHEMA_V1, blocks };
   return {
     ok: true,
-    document: withTemplateDescription(
-      document,
-      typeof value.description === "string" ? value.description : undefined,
-    ),
+    document: withTemplateMeta(document, {
+      label: typeof value.label === "string" ? value.label : undefined,
+      description: typeof value.description === "string" ? value.description : undefined,
+    }),
   };
 }
 
