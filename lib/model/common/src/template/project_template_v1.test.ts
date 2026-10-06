@@ -15,6 +15,7 @@ import {
   parseBlockPackReference,
   parseProjectTemplateV1,
   readProjectTemplateV1,
+  withTemplateDescription,
   type BlockPackLocationReference,
   type BlockPackReference,
   type ProjectTemplateV1,
@@ -199,6 +200,38 @@ describe("parseProjectTemplateV1", () => {
     expect(doc.blocks[0].params).toEqual({});
   });
 
+  test("a description is read as written, trimmed", () => {
+    const doc = parseProjectTemplateV1({
+      schema: "template-v1",
+      description: "  Bulk RNA-seq from FASTQ to clonotypes.\n",
+      blocks: [{ id: "samples", kind: "@platforma-open/foo.kind@^1.0.0" }],
+    });
+
+    expect(doc.description).toBe("Bulk RNA-seq from FASTQ to clonotypes.");
+  });
+
+  test("a blank description reads as none", () => {
+    const doc = parseProjectTemplateV1({
+      schema: "template-v1",
+      description: "   ",
+      blocks: [{ id: "samples", kind: "@platforma-open/foo.kind@^1.0.0" }],
+    });
+
+    expect(doc).not.toHaveProperty("description");
+  });
+
+  test("a description that is not text is reported on its own path", () => {
+    const result = readProjectTemplateV1({
+      schema: "template-v1",
+      description: 42,
+      blocks: [],
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.issues[0].path).toEqual(["description"]);
+  });
+
   test("kind is required — it carries the params contract", () => {
     expect(() =>
       parseProjectTemplateV1({
@@ -312,4 +345,25 @@ test("the parser's output type is exactly ProjectTemplateV1", () => {
   // NOTE: vitest runs without `--typecheck` and tsconfig excludes *.test.ts, so this
   // assertion is authoring-time only; it is verified by running tsc over this file.
   expectTypeOf<ReturnType<typeof parseProjectTemplateV1>>().toEqualTypeOf<ProjectTemplateV1>();
+});
+
+describe("withTemplateDescription", () => {
+  const document = parseProjectTemplateV1({
+    schema: "template-v1",
+    blocks: [{ id: "samples", kind: "@platforma-open/foo.kind@^1.0.0" }],
+  });
+
+  test("puts the description between the format marker and the blocks", () => {
+    const described = withTemplateDescription(document, "What it builds");
+
+    expect(Object.keys(described)).toEqual(["schema", "description", "blocks"]);
+    expect(described.description).toBe("What it builds");
+  });
+
+  test("a blank or absent description removes the one already there", () => {
+    const described = withTemplateDescription(document, "What it builds");
+
+    expect(withTemplateDescription(described, "  ")).not.toHaveProperty("description");
+    expect(withTemplateDescription(described, undefined)).not.toHaveProperty("description");
+  });
 });
