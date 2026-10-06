@@ -13,12 +13,17 @@
  * Nothing is stored redundantly: the caller passes the linker path (`linkers`) and the hit spec;
  * root and every token are computed on the fly. The caller also supplies the `stem` (label+trace+
  * quals from the existing single-entity machinery); this module only adds the path postfix, and
- * only where stems collide.
+ * only where stems collide, or where the path holds a linker annotated `Annotation.Linker.AlwaysLabel`.
+ * Such a linker's step is rendered on every row it lies on ("forced"); the other steps, and the root,
+ * are added only as collisions require. So in a mixed chain the forced postfix names the opted-in
+ * steps only. A row without an opted-in linker keeps the label it would get if nothing were forced,
+ * unless that makes the group collide.
  */
 import {
   Annotation,
   canonicalizeJson,
   getAxisId,
+  isLinkerAlwaysLabeled,
   readAnnotation,
   type AxisSpec,
   type PColumnSpec,
@@ -168,6 +173,11 @@ type Group = {
   format: LinkerFormatter;
 };
 
+/** Steps of an entry's opted-in (always-labeled) linkers. */
+function forcedSteps(entry: PostfixEntry): number[] {
+  return (entry.linkers ?? []).flatMap((l, i) => (isLinkerAlwaysLabeled(l) ? [i] : []));
+}
+
 function deriveSlotKey(group: Group, slot: Slot, row: number): string {
   if (slot.kind === "root") {
     const r = group.roots[row];
@@ -203,8 +213,8 @@ function getDiscriminates(group: Group, slot: Slot): boolean {
   return new Set(group.entries.map((_, r) => deriveSlotKey(group, slot, r))).size > 1;
 }
 
-/** Render one row against a chosen slot set: the distinguishing root + linker pieces, formatted. */
-function renderRow(group: Group, slots: Slot[], row: number): string {
+/** Render one row against a chosen slot set plus its forced steps, formatted. */
+function renderRow(group: Group, slots: Slot[], forced: number[], row: number): string {
   const rootSpec = group.roots[row];
   const rootText = slots.some((s) => s.kind === "root")
     ? deriveSlotToken(group, { kind: "root" }, row)
@@ -214,12 +224,15 @@ function renderRow(group: Group, slots: Slot[], row: number): string {
       ? { spec: rootSpec, text: rootText }
       : undefined;
 
-  const linkers = slots
-    .filter((s): s is { kind: "linker"; i: number } => s.kind === "linker")
-    .sort((a, b) => a.i - b.i)
-    .map((s) => {
-      const spec = group.entries[row].linkers?.[s.i];
-      const text = deriveSlotToken(group, s, row);
+  const linkerSteps = new Set([
+    ...slots.flatMap((s) => (s.kind === "linker" ? [s.i] : [])),
+    ...forced,
+  ]);
+  const linkers = [...linkerSteps]
+    .sort((a, b) => a - b)
+    .map((i) => {
+      const spec = group.entries[row].linkers?.[i];
+      const text = deriveSlotToken(group, { kind: "linker", i }, row);
       return spec !== undefined && text !== undefined ? { spec, text } : undefined;
     })
     .filter((l): l is LinkerPart<PColumnSpec> => !isNil(l));
@@ -231,8 +244,8 @@ function renderRow(group: Group, slots: Slot[], row: number): string {
   return group.format({ root, linkers }, group.entries[row].hit, group.indices[row]) || "";
 }
 
-function renderAll(group: Group, slots: Slot[]): string[] {
-  return group.entries.map((_, r) => renderRow(group, slots, r));
+function renderAll(group: Group, slots: Slot[], forced: number[][]): string[] {
+  return group.entries.map((_, r) => renderRow(group, slots, forced[r], r));
 }
 
 function allUnique(rendered: string[]): boolean {
@@ -240,16 +253,42 @@ function allUnique(rendered: string[]): boolean {
 }
 
 /**
- * Minimal slot set that makes the group unique. Escalate by priority (root, then linkers by step),
- * then drop any redundant slot; render every row symmetrically against the result.
+ * Minimal slot set that makes the group unique, given each row's forced steps. Escalate by priority
+ * (root, then linkers by step), then drop any redundant slot; rows render symmetrically against it.
  *
  * KNOWN LIMITATION (review point): symmetric render can over-decorate a row in a mixed group (e.g.
  * `via Sample MapperA` where `via Sample` alone is already unique for that row). Per-row trimming is
  * a generalized `dropRedundantLinkerSuffix`; naive greedy trimming is unstable, so it's deferred.
  */
+function chooseSlots(group: Group, forced: number[][]): Slot[] {
+  const maxLen = Math.max(0, ...group.entries.map((e) => e.linkers?.length ?? 0));
+  const slots: Slot[] = [
+    { kind: "root" },
+    ...Array.from({ length: maxLen }, (_, i): Slot => ({ kind: "linker", i })),
+  ];
+
+  const escalated = slots.reduce<Slot[]>(
+    (acc, slot) =>
+      allUnique(renderAll(group, acc, forced)) || !getDiscriminates(group, slot)
+        ? acc
+        : (acc.push(slot), acc),
+    [],
+  );
+  return escalated.reduce<Slot[]>((acc, slot) => {
+    const trial = acc.filter((s) => s !== slot);
+    return allUnique(renderAll(group, trial, forced)) ? trial : acc;
+  }, escalated);
+}
+
+/**
+ * Rows with no opted-in linker must keep their plain label (as if nothing were forced). Prefer slots
+ * chosen with forced steps in view when that holds; else plain slots with forced steps on top; if
+ * that collides too, the forced-aware choice.
+ */
 function resolveGroup(
   entries: PostfixEntry[],
   indices: number[],
+  forced: number[][],
   format: LinkerFormatter,
 ): string[] {
   const group: Group = {
@@ -260,31 +299,21 @@ function resolveGroup(
     indices,
     format,
   };
-  const maxLen = Math.max(0, ...entries.map((e) => e.linkers?.length ?? 0));
-
-  const slots: Slot[] = [
-    { kind: "root" },
-    ...Array.from({ length: maxLen }, (_, i): Slot => ({ kind: "linker", i })),
-  ];
-
-  const escalated = slots.reduce<Slot[]>(
-    (acc, slot) =>
-      allUnique(renderAll(group, acc)) || !getDiscriminates(group, slot)
-        ? acc
-        : (acc.push(slot), acc),
-    [],
-  );
-  const chosen = escalated.reduce<Slot[]>((acc, slot) => {
-    const trial = acc.filter((s) => s !== slot);
-    return allUnique(renderAll(group, trial)) ? trial : acc;
-  }, escalated);
-
-  return renderAll(group, chosen);
+  const none = entries.map(() => []);
+  const plainSlots = chooseSlots(group, none);
+  const plain = renderAll(group, plainSlots, none);
+  const aware = renderAll(group, chooseSlots(group, forced), forced);
+  if (allUnique(aware) && aware.every((r, i) => forced[i].length > 0 || r === plain[i])) {
+    return aware;
+  }
+  const onTop = renderAll(group, plainSlots, forced);
+  return allUnique(onTop) ? onTop : aware;
 }
 
 /**
  * Full label per entry: `stem` plus, where stems collide, a minimal postfix distinguishing the
- * linked columns by the difference between their sources.
+ * linked columns by the difference between their sources. Entries reached through an opted-in
+ * linker always get a postfix naming it, colliding or not.
  */
 export function derivePostfixes(
   entries: PostfixEntry[],
@@ -295,11 +324,14 @@ export function derivePostfixes(
     new Map(),
   );
 
+  const forced = entries.map(forcedSteps);
   const postfix = [...groups.values()].reduce<Map<number, string>>((acc, idxs) => {
-    if (idxs.length < 2) return acc; // stem already unique — no postfix
+    // Stem already unique → no postfix, unless the path holds an opted-in linker.
+    if (idxs.length < 2 && forced[idxs[0]].length === 0) return acc;
     const resolved = resolveGroup(
       idxs.map((i) => entries[i]),
       idxs,
+      idxs.map((i) => forced[i]),
       format,
     );
     return idxs.reduce((m, i, k) => m.set(i, resolved[k]), acc);

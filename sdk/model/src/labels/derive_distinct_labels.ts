@@ -50,7 +50,8 @@ export type Entry =
       /** Extra trace entries merged with the base trace from annotations. */
       extraTrace?: ExtendedTraceEntry[];
       /** Linker steps (`[0]` source-most) traversed to reach this column; rendered as a "via …"
-       *  postfix only when needed for uniqueness — see {@link derivePostfixes}. */
+       *  postfix when needed for uniqueness, and always for a step whose linker is annotated
+       *  `Annotation.Linker.AlwaysLabel` — see {@link derivePostfixes}. */
       linkerPath?: LinkerStep[];
       /** Axis qualifications applied to the hit column / already-bound anchors; rendered as "[…]" suffixes. */
       qualifications?: MatchQualifications;
@@ -100,6 +101,8 @@ export type DeriveLabelsOptions = {
  *     qualifications) and produces the minimal distinguishing "stem".
  *  2. {@link derivePostfixes} — for columns still colliding on their stem, appends a "via …" postfix
  *     describing the difference between their linker sources (root axis, then linker chain).
+ *     A column reached through a linker annotated `Annotation.Linker.AlwaysLabel` gets a postfix
+ *     naming that linker even when its stem is unique.
  */
 export function deriveDistinctLabels(values: Entry[], options: DeriveLabelsOptions = {}): string[] {
   const stems = deriveStems(values, options);
