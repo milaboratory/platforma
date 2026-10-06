@@ -1,0 +1,464 @@
+/**
+ * Decoding and spec math for `ColumnUniversalId` — the recursive column
+ * identifier minted by the model side.
+ *
+ * Tengo counterpart of `lib/model/common/src/drivers/pframe/spec/ids.ts`
+ * (`extractPObjectId`, `reconstructSpecFromId`) plus the per-layer math from
+ * `filtered_column.ts` and `overridden.ts`. Everything here is a pure function
+ * over decoded JSON — no resource resolution, no context, no rendering — so it
+ * is unit-testable offline.
+ *
+ * An id is a canonically serialized JSON string in one of five key forms:
+ *
+ *   leaf, global   {__isRef: true, blockId, name}
+ *   leaf, local    {resolvePath, name}
+ *   Overridden     {__isOverridden: true, source, specOverrides}
+ *   Filtered       {__isFiltered: true, source, axisFilters}
+ *   Discovered     {__isDiscovered: true, column, path?, columnQualifications?,
+ *                   queriesQualifications?}
+ *
+ * `source` / `column` / `path[].column` are themselves id **strings**, not
+ * maps — the structure nests by serialized id.
+ *
+ * Layering invariant guaranteed by the model SDK: Overridden is always
+ * outermost, and a chain carries at most one layer of each kind before
+ * reaching a leaf.
+ *
+ * A sixth, older shape also reaches these code paths: the legacy
+ * `FilteredPColumnId` `{source, axisFilters}` whose `source` is a *map*
+ * (an anchored selector), not a string. It is recognized separately and its
+ * pool key derivation is preserved byte-for-byte.
+ */
+
+ll := import(":ll")
+maps := import(":maps")
+canonical := import(":canonical")
+json := import("json")
+
+// Id kinds returned by `kindOf`.
+KIND_LEAF_GLOBAL := "leafGlobal"
+KIND_LEAF_LOCAL := "leafLocal"
+KIND_OVERRIDDEN := "overridden"
+KIND_FILTERED := "filtered"
+KIND_DISCOVERED := "discovered"
+KIND_LEGACY_FILTERED := "legacyFiltered"
+KIND_SELECTOR := "selector"
+
+/**
+ * Decodes an id into its key map. Accepts an already-decoded map unchanged.
+ *
+ * @param id {string|map} - canonical id string or decoded key
+ * @return map - the decoded key
+ */
+decode := func(id) {
+	if is_string(id) {
+		return json.decode(id)
+	}
+	if is_map(id) {
+		return id
+	}
+	ll.panic("column-id: invalid column ID type, expected string or map, got: %v", id)
+}
+
+/**
+ * Classifies a decoded key.
+ *
+ * Marker fields are tested before the legacy duck-test, because a new-form
+ * Filtered key carries both `__isFiltered` and `source`/`axisFilters` and must
+ * not be mistaken for the legacy shape.
+ *
+ * @param key {map} - decoded key
+ * @return string - one of the KIND_* constants
+ */
+kindOf := func(key) {
+	ll.assert(is_map(key), "column-id: expected decoded key map, got: %v", key)
+
+	if key.__isOverridden == true {
+		return KIND_OVERRIDDEN
+	}
+	if key.__isFiltered == true {
+		return KIND_FILTERED
+	}
+	if key.__isDiscovered == true {
+		return KIND_DISCOVERED
+	}
+	if key.__isRef == true {
+		return KIND_LEAF_GLOBAL
+	}
+	// Legacy FilteredPColumnId: `source` is an anchored selector map.
+	if is_map(key.source) && !is_undefined(key.axisFilters) {
+		return KIND_LEGACY_FILTERED
+	}
+	if !is_undefined(key.resolvePath) {
+		return KIND_LEAF_LOCAL
+	}
+	return KIND_SELECTOR
+}
+
+/**
+ * Whether `value` is (or decodes to) one of the five `ColumnUniversalKey`
+ * forms. Ordinary strings and selector maps return false.
+ *
+ * @param value {any}
+ * @return bool
+ */
+isUniversalId := func(value) {
+	key := undefined
+	if is_string(value) {
+		// Every canonical id is a JSON object; skip the parse otherwise.
+		if len(value) == 0 || value[0] != '{' {
+			return false
+		}
+		key = json.decode(value)
+		if !is_map(key) {
+			return false
+		}
+	} else if is_map(value) {
+		key = value
+	} else {
+		return false
+	}
+
+	kind := kindOf(key)
+	return kind == KIND_LEAF_GLOBAL || kind == KIND_LEAF_LOCAL ||
+		kind == KIND_OVERRIDDEN || kind == KIND_FILTERED || kind == KIND_DISCOVERED
+}
+
+/**
+ * The key a bundle stores and retrieves a column under.
+ *
+ * Two rules, and the split between them is load-bearing:
+ *
+ *  - Legacy `FilteredPColumnId` keys on its `source` selector, because the
+ *    bundle resolves the unfiltered source once and slices per read. Preserved
+ *    exactly as it was to keep existing bundles byte-identical.
+ *  - Everything else keys on the id itself. For recipe ids this is deliberate:
+ *    two ids that reach the same physical column by different routes (or with
+ *    different projections) are different columns to a consumer, and must not
+ *    collapse into one pool entry. It also makes the registration key and the
+ *    read key identical by construction, which is the invariant the bundle's
+ *    two seams have to share.
+ *
+ * @param id {string|map} - canonical id string or decoded key
+ * @return string - pool key
+ */
+poolKey := func(id) {
+	key := decode(id)
+	if kindOf(key) == KIND_LEGACY_FILTERED {
+		return canonical.encode(key.source)
+	}
+	return is_string(id) ? id : canonical.encode(key)
+}
+
+/**
+ * Walks a rich id down to its terminal leaf id.
+ *
+ * Mirrors `extractPObjectId` (ids.ts:238-254).
+ *
+ * @param id {string|map}
+ * @return string - the leaf id, canonically encoded
+ */
+extractLeafId := undefined
+extractLeafId = func(id) {
+	key := decode(id)
+	kind := kindOf(key)
+
+	if kind == KIND_LEAF_GLOBAL || kind == KIND_LEAF_LOCAL {
+		return is_string(id) ? id : canonical.encode(key)
+	}
+	if kind == KIND_OVERRIDDEN || kind == KIND_FILTERED {
+		return extractLeafId(key.source)
+	}
+	if kind == KIND_DISCOVERED {
+		return extractLeafId(key.column)
+	}
+	if kind == KIND_LEGACY_FILTERED {
+		ll.panic("column-id: legacy FilteredPColumnId has a selector source, not a leaf id: %v", key)
+	}
+	ll.panic("column-id: cannot extract a leaf from a selector query: %v", key)
+}
+
+/**
+ * Peels every layer of an id in one pass.
+ *
+ * Returns:
+ *   leafId       {string}      terminal leaf id
+ *   axisFilters  {array|undef} `[axisIdx, value]` pairs from the Filtered layer
+ *   specOverrides{map|undef}   patch from the Overridden layer
+ *   discovery    {map|undef}   the Discovered key, if present
+ *
+ * Repeating a layer breaks the SDK's invariant and panics rather than silently
+ * keeping the outermost occurrence.
+ *
+ * @param id {string|map}
+ * @return map
+ */
+unwrap := func(id) {
+	leafId := undefined
+	axisFilters := undefined
+	specOverrides := undefined
+	discovery := undefined
+
+	current := id
+	for {
+		key := decode(current)
+		kind := kindOf(key)
+
+		if kind == KIND_LEAF_GLOBAL || kind == KIND_LEAF_LOCAL {
+			leafId = is_string(current) ? current : canonical.encode(key)
+			break
+		}
+
+		if kind == KIND_OVERRIDDEN {
+			ll.assert(is_undefined(specOverrides),
+				"column-id: nested Overridden layers, invariant broken: %v", id)
+			specOverrides = key.specOverrides
+			current = key.source
+		} else if kind == KIND_FILTERED {
+			ll.assert(is_undefined(axisFilters),
+				"column-id: nested Filtered layers, invariant broken: %v", id)
+			axisFilters = key.axisFilters
+			current = key.source
+		} else if kind == KIND_DISCOVERED {
+			ll.assert(is_undefined(discovery),
+				"column-id: nested Discovered layers, invariant broken: %v", id)
+			discovery = key
+			current = key.column
+		} else {
+			ll.panic("column-id: cannot unwrap id of kind %q: %v", kind, key)
+		}
+	}
+
+	return {
+		leafId: leafId,
+		axisFilters: axisFilters,
+		specOverrides: specOverrides,
+		discovery: discovery
+	}
+}
+
+/**
+ * Every id the recipe physically depends on: the hit chain plus one entry per
+ * linker hop. Each returned element is a full `ColumnUniversalId`, not a leaf —
+ * a linker may itself carry projections.
+ *
+ * Order is registration order: linkers first (outermost hop first), hit last.
+ *
+ * @param id {string|map}
+ * @return array of id strings
+ */
+referencedIds := func(id) {
+	key := decode(id)
+	u := unwrap(id)
+
+	result := []
+	if !is_undefined(u.discovery) && is_array(u.discovery.path) {
+		for _, step in u.discovery.path {
+			ll.assert(step.type == "linker",
+				"column-id: unsupported discovery step type %q (only \"linker\" is allowed)", step.type)
+			result = append(result, step.column)
+		}
+	}
+	return append(result, is_string(id) ? id : canonical.encode(key))
+}
+
+/**
+ * Drops the axes pinned by `axisFilters` from a spec's `axesSpec`.
+ *
+ * Positional against `spec.axesSpec`, mirroring `applyAxisFilters`
+ * (filtered_column.ts:103-107).
+ *
+ * @param spec {map}
+ * @param axisFilters {array} - `[axisIdx, value]` pairs
+ * @return map - spec with the pinned axes removed
+ */
+applyAxisFilters := func(spec, axisFilters) {
+	if is_undefined(axisFilters) || len(axisFilters) == 0 {
+		return spec
+	}
+
+	fixed := {}
+	for _, filter in axisFilters {
+		ll.assert(is_array(filter) && len(filter) == 2,
+			"column-id: axis filter must be a [axisIdx, value] pair, got: %v", filter)
+		ll.assert(is_int(filter[0]),
+			"column-id: axis filter index must be an integer, got: %v — " +
+			"name-keyed filters must be normalized before reaching here", filter[0])
+		fixed[string(filter[0])] = true
+	}
+
+	axesSpec := []
+	for i, axis in spec.axesSpec {
+		if is_undefined(fixed[string(i)]) {
+			axesSpec = append(axesSpec, axis)
+		}
+	}
+
+	result := maps.clone(spec)
+	result.axesSpec = axesSpec
+	return result
+}
+
+// Shallow record merge; `b` wins. Returns undefined only if both are absent.
+_mergeRecord := func(a, b) {
+	if is_undefined(b) {
+		return a
+	}
+	if is_undefined(a) {
+		return b
+	}
+	return maps.merge(a, b)
+}
+
+// Applies one positional axis patch: `name`/`type` overwrite, the three
+// metadata records deep-merge.
+_mergeAxisPatch := func(axis, patch) {
+	result := maps.merge(axis, patch)
+	if !is_undefined(patch.annotations) {
+		result.annotations = _mergeRecord(axis.annotations, patch.annotations)
+	}
+	if !is_undefined(patch.domain) {
+		result.domain = _mergeRecord(axis.domain, patch.domain)
+	}
+	if !is_undefined(patch.contextDomain) {
+		result.contextDomain = _mergeRecord(axis.contextDomain, patch.contextDomain)
+	}
+	return result
+}
+
+/**
+ * Applies an Overridden layer's `specOverrides` on top of a resolved spec.
+ *
+ * Mirrors `applySpecOverrides` (overridden.ts:188-212) with one deliberate
+ * divergence: a patch whose index is past the end of `axesSpec` appends a new
+ * axis on the model side, but the workflow registers specs against data that
+ * already exists, and an axis with no data behind it is incoherent. Such a
+ * patch panics here instead of silently producing a spec the engine cannot
+ * satisfy.
+ *
+ * @param base {map} - resolved spec
+ * @param overrides {map|undefined} - `SpecOverrides` patch
+ * @return map
+ */
+applySpecOverrides := func(base, overrides) {
+	if is_undefined(overrides) {
+		return base
+	}
+
+	result := maps.clone(base)
+	if !is_undefined(overrides.annotations) {
+		result.annotations = _mergeRecord(base.annotations, overrides.annotations)
+	}
+	if !is_undefined(overrides.domain) {
+		result.domain = _mergeRecord(base.domain, overrides.domain)
+	}
+	if !is_undefined(overrides.contextDomain) {
+		result.contextDomain = _mergeRecord(base.contextDomain, overrides.contextDomain)
+	}
+
+	if !is_undefined(overrides.axesSpec) {
+		axesSpec := []
+		for _, axis in base.axesSpec {
+			axesSpec = append(axesSpec, axis)
+		}
+		// Patch keys survive JSON decoding as strings.
+		for k, patch in overrides.axesSpec {
+			idx := int(k)
+			ll.assert(idx >= 0 && idx < len(axesSpec),
+				"column-id: axesSpec patch at index %v has no axis to patch (spec has %v axes) — " +
+				"the workflow cannot introduce an axis that carries no data", idx, len(axesSpec))
+			axesSpec[idx] = _mergeAxisPatch(axesSpec[idx], patch)
+		}
+		result.axesSpec = axesSpec
+	}
+
+	return result
+}
+
+/**
+ * Reconstructs the effective spec of an id, given the spec of its terminal
+ * leaf. Layers apply leaf-first, matching `reconstructSpecFromId`
+ * (ids.ts:270-294):
+ *
+ *   Discovered  pass-through — the linker chain enables co-indexing, it does
+ *               not remap the hit's own axes. The post-join axes of a
+ *               Discovered column are a property of the *frame* it enters, not
+ *               of this spec; see `linkerSides` for that math.
+ *   Filtered    drops the pinned axes
+ *   Overridden  applies the patch
+ *
+ * @param baseSpec {map} - spec of the leaf `unwrap(id).leafId` resolves to
+ * @param id {string|map}
+ * @return map
+ */
+effectiveSpec := func(baseSpec, id) {
+	u := unwrap(id)
+	spec := applyAxisFilters(baseSpec, u.axisFilters)
+	return applySpecOverrides(spec, u.specOverrides)
+}
+
+/**
+ * Normalizes an `EnrichmentRef` (`{__isEnrichment: "v1", hit, path?,
+ * qualifications?}`) into the `ColumnDiscoveredKey` shape.
+ *
+ * `EnrichmentRef` is the strictly narrower of the two: its hit and every hop are
+ * bare global ids, and its only step type is `linker`. So this direction is
+ * total, and the workflow can carry one mechanism instead of two.
+ *
+ * The reverse direction is lossy and deliberately absent — a Discovered key
+ * whose hit or hop carries a projection has no v1 representation.
+ *
+ * A hop may also arrive already resolved as a `{spec, data}` map instead of an
+ * id (the v1 form allows it for prerun-sourced columns); such a payload is
+ * passed through untouched for the caller to resolve.
+ *
+ * @param ref {map} - an EnrichmentRef
+ * @return map - a ColumnDiscoveredKey
+ */
+fromEnrichmentRef := func(ref) {
+	ll.assert(is_map(ref) && ref.__isEnrichment == "v1",
+		"column-id: expected an EnrichmentRef (__isEnrichment == \"v1\"), got: %v", ref)
+	ll.assert(!is_undefined(ref.hit), "column-id: EnrichmentRef is missing 'hit': %v", ref)
+
+	key := { __isDiscovered: true, column: ref.hit }
+
+	if is_array(ref.path) && len(ref.path) > 0 {
+		path := []
+		for _, step in ref.path {
+			ll.assert(step.type == "linker",
+				"column-id: unsupported enrichment step type %q (only \"linker\" is allowed)", step.type)
+			ll.assert(!is_undefined(step.linker),
+				"column-id: linker step is missing 'linker': %v", step)
+			path = append(path, { type: "linker", column: step.linker })
+		}
+		key.path = path
+	}
+
+	if is_array(ref.qualifications) && len(ref.qualifications) > 0 {
+		key.columnQualifications = ref.qualifications
+	}
+
+	return key
+}
+
+export ll.toStrict({
+	KIND_LEAF_GLOBAL: KIND_LEAF_GLOBAL,
+	KIND_LEAF_LOCAL: KIND_LEAF_LOCAL,
+	KIND_OVERRIDDEN: KIND_OVERRIDDEN,
+	KIND_FILTERED: KIND_FILTERED,
+	KIND_DISCOVERED: KIND_DISCOVERED,
+	KIND_LEGACY_FILTERED: KIND_LEGACY_FILTERED,
+	KIND_SELECTOR: KIND_SELECTOR,
+
+	decode: decode,
+	kindOf: kindOf,
+	isUniversalId: isUniversalId,
+	poolKey: poolKey,
+	extractLeafId: extractLeafId,
+	unwrap: unwrap,
+	referencedIds: referencedIds,
+	applyAxisFilters: applyAxisFilters,
+	applySpecOverrides: applySpecOverrides,
+	effectiveSpec: effectiveSpec,
+	fromEnrichmentRef: fromEnrichmentRef
+})
