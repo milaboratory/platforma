@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.16.11
+
+### Patch Changes
+
+- 277e74b: Structure refresh keeps Tengo unit tests in the workflow `test` script. With `src/**/*.test.tengo` files, the script runs `pl-tengo test`; with co-located `*.test.ts` files too, it runs `pl-tengo test && vitest run --passWithNoTests`.
+
 ## 2.16.10
 
 ### Patch Changes

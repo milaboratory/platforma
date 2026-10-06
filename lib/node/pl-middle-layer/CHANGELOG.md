@@ -1,5 +1,12 @@
 # @milaboratories/pl-middle-layer
 
+## 1.73.10
+
+### Patch Changes
+
+- Updated dependencies [277e74b]
+  - @platforma-sdk/block-tools@2.16.11
+
 ## 1.73.9
 
 ### Patch Changes
