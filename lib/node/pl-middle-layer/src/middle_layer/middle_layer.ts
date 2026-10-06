@@ -76,11 +76,7 @@ import {
 } from "../mutator/project";
 import type { ProjectTemplateExportOutcome } from "../model/template_serializer";
 import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
-import {
-  asProjectId,
-  asTemplateId,
-  withTemplateDescription,
-} from "@milaboratories/pl-model-common";
+import { asProjectId, asTemplateId, withTemplateMeta } from "@milaboratories/pl-model-common";
 import { extractConfig, ensureError } from "@platforma-sdk/model";
 import type { TemplateApplyProblem, TemplateApplyReport } from "../model/template_apply";
 import { TemplateEntryRejected, kindMismatch } from "../model/template_apply";
@@ -952,14 +948,17 @@ export class MiddleLayer {
    * seen, applied and shared like one saved from a project.
    *
    * The document's description becomes the template's own, which stays editable; the stored
-   * document keeps only the blocks, so there is one description to edit and nothing to drift.
+   * document keeps only the blocks, without the label and description it was written with, so
+   * there is one name and one description to edit and nothing to drift.
    *
    * The template lands in `folder`, or at the top level, under `label` made free among the
    * templates already there. A folder deleted meanwhile costs the template its placement, not its
    * existence.
    *
    * @param document the parsed template to store
-   * @param options.label the name to store it under; suffixed when a template there carries it
+   * @param options.label the name to store it under — usually the document's own label, which
+   *   the caller weighs against whatever else it knows, such as the file's name; suffixed when a
+   *   template there carries it
    * @param options.folder where it lands; the top level when absent
    */
   public async importTemplate(
@@ -975,7 +974,7 @@ export class MiddleLayer {
         tx,
         this.templateListResourceId,
         { label: name, description: document.description },
-        { schemaVersion: 1, document: withTemplateDescription(document, undefined) },
+        { schemaVersion: 1, document: withTemplateMeta(document, {}) },
       );
 
       const created = await tpl.globalId;

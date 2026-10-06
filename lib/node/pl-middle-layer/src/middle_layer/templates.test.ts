@@ -7,10 +7,7 @@ import type {
   ProjectTemplateV1,
   ProjectTemplateV1Entry,
 } from "@milaboratories/pl-model-common";
-import {
-  PROJECT_TEMPLATE_SCHEMA_V1,
-  withTemplateDescription,
-} from "@milaboratories/pl-model-common";
+import { PROJECT_TEMPLATE_SCHEMA_V1, withTemplateMeta } from "@milaboratories/pl-model-common";
 import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import type { BlockPackProvider } from "../model/template_resolve";
 import type { ShareId } from "../model/sharing_model";
@@ -80,13 +77,17 @@ test("a rename changes the label and leaves the stored document byte-identical",
 
 test("an imported template takes the file's description as its own, under a free name", async () => {
   await withMl(async (ml) => {
-    const document = withTemplateDescription(documentOf(entry("a")), "What it builds");
+    const document = withTemplateMeta(documentOf(entry("a")), {
+      label: "Written in the file",
+      description: "What it builds",
+    });
 
     const first = await ml.importTemplate(document, { label: " Imported " });
     const second = await ml.importTemplate(document, { label: "Imported" });
 
-    // The description moves to the template's own, editable one: the stored document keeps only
-    // the blocks, so there is one description and nothing for an edit to leave behind.
+    // The description moves to the template's own, editable one, and the label is the one asked
+    // for: the stored document keeps only the blocks, so there is one name and one description,
+    // and nothing for an edit to leave behind.
     expect((await ml.getTemplateData(first)).document).toStrictEqual(documentOf(entry("a")));
 
     const list = await awaitTemplateList(ml, (l) => l.length === 2);
