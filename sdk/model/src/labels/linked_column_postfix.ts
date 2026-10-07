@@ -361,11 +361,19 @@ export function derivePostfixes(
 
   // A forced postfix can repeat another stem's label (`Counts` + `via Anchor` vs a `Counts via
   // Anchor` column). Such a group resolves again, escalating its postfix past the other labels.
+  const counts = new Map<string, number>();
+  const bump = (l: string, d: number) => counts.set(l, (counts.get(l) ?? 0) + d);
+  labels.forEach((l) => bump(l, 1));
   for (const idxs of groups.values()) {
     if (idxs.every((i) => forced[i].length === 0)) continue;
+    const own = idxs.map((i) => labels[i]);
+    // A label counted more often than within the group is another stem's too.
+    if (own.every((l) => counts.get(l) === own.filter((o) => o === l).length)) continue;
     const stem = entries[idxs[0]].stem;
     const taken = new Set(labels.filter((_, j) => entries[j].stem !== stem));
-    if (idxs.some((i) => taken.has(labels[i]))) assign(idxs, resolve(idxs, taken));
+    own.forEach((l) => bump(l, -1));
+    assign(idxs, resolve(idxs, taken));
+    idxs.forEach((i) => bump(labels[i], 1));
   }
   return labels;
 }
