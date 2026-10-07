@@ -100,6 +100,25 @@ test("an imported template takes the file's description as its own, under a free
   });
 });
 
+test("an import into a folder deleted meanwhile lands at the top level, under a name free there", async () => {
+  await withMl(async (ml) => {
+    const document = documentOf(entry("a"));
+    const topLevel = await ml.importTemplate(document, { label: "Imported" });
+
+    const folder = await ml.createFolder("Gone");
+    const planned = await ml.previewFolderDeletion(folder);
+    expect(planned.ok).toBe(true);
+    if (!planned.ok) return;
+    expect((await ml.deleteFolder(folder, planned.removal)).ok).toBe(true);
+
+    const orphan = await ml.importTemplate(document, { label: "Imported", folder });
+
+    const list = await awaitTemplateList(ml, (l) => l.length === 2);
+    expect(list.find((t) => t.id === topLevel)?.label).toBe("Imported");
+    expect(list.find((t) => t.id === orphan)?.label).not.toBe("Imported");
+  });
+});
+
 test("an entry nothing can resolve creates no project, and every entry is reported", async () => {
   await withMl(async (ml) => {
     const stored = await storeTemplate(ml, "Nothing implements these", {
