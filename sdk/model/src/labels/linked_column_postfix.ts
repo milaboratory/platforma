@@ -318,6 +318,7 @@ function resolveGroup(
   // Plain labels as they were before forced steps existed, taken labels included.
   const plainSlots = chooseSlots({ ...group, taken: new Set() }, none);
   const plain = renderAll(group, plainSlots, none);
+  if (forced.every((steps) => steps.length === 0)) return plain;
   const aware = renderAll(group, chooseSlots(group, forced), forced);
   if (allUnique(group, aware) && aware.every((r, i) => forced[i].length > 0 || r === plain[i])) {
     return aware;
