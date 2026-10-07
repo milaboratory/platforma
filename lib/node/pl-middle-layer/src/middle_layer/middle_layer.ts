@@ -968,7 +968,16 @@ export class MiddleLayer {
     const { folder } = options;
     const signedRid = await this.pl.withWriteTx("MLImportTemplate", async (tx) => {
       const tree = await openFoldersTx(tx, this.foldersRids);
-      const name = foldersUniqueName(options.label.trim(), tree.namesTakenIn(folder, "template"));
+      // The name is made free where the template actually lands: the top level when the folder
+      // asked for is gone.
+      const destination =
+        folder !== undefined && tree.view.folders.some((candidate) => candidate.id === folder)
+          ? folder
+          : undefined;
+      const name = foldersUniqueName(
+        options.label.trim(),
+        tree.namesTakenIn(destination, "template"),
+      );
 
       const tpl = createTemplate(
         tx,
@@ -978,8 +987,11 @@ export class MiddleLayer {
       );
 
       const created = await tpl.globalId;
-      if (folder !== undefined && tree.view.folders.some((candidate) => candidate.id === folder))
-        tree.place([{ kind: "template", id: asTemplateId(resourceIdToString(created)) }], folder);
+      if (destination !== undefined)
+        tree.place(
+          [{ kind: "template", id: asTemplateId(resourceIdToString(created)) }],
+          destination,
+        );
       await tx.commit();
       return created;
     });
