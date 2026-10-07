@@ -22,6 +22,7 @@ import {
 } from "@milaboratories/pl-client";
 import {
   createRenderHeavyBlock,
+  type BlockStatusData,
   createBContextFromUpstreams,
   createBContextEnd,
 } from "./template/render_block";
@@ -706,6 +707,15 @@ export class ProjectMutator {
     return { ref, value: jsonBytes, status: "Ready" };
   }
 
+  /** Data of the root status context of a block render. */
+  private blockStatusData(blockId: string, info: BlockInfo): BlockStatusData {
+    return {
+      name: this.getBlock(blockId).label,
+      blockPack: JSON.stringify(info.source),
+      blockId,
+    };
+  }
+
   private getBlock(blockId: string): Block {
     for (const block of allBlocks(this.struct)) if (block.id === blockId) return block;
     throw new Error("block not found");
@@ -1166,12 +1176,17 @@ export class ProjectMutator {
     const tpl = info.getTemplate(this.tx);
 
     // Use currentPrerunArgs for staging rendering
-    const results = createRenderHeavyBlock(this.tx, tpl, {
-      args: prerunArgsRef,
-      blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
-      isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(false)),
-      context: ctx,
-    });
+    const results = createRenderHeavyBlock(
+      this.tx,
+      tpl,
+      {
+        args: prerunArgsRef,
+        blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
+        isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(false)),
+        context: ctx,
+      },
+      this.blockStatusData(blockId, info),
+    );
 
     // Here we set the staging ctx to the input context of the staging workflow, not the output because exports
     // of one staging context should stay within the same block, and not travel downstream.
@@ -1201,12 +1216,17 @@ export class ProjectMutator {
 
     const tpl = info.getTemplate(this.tx);
 
-    const results = createRenderHeavyBlock(this.tx, tpl, {
-      args: info.fields.currentArgs.ref!,
-      blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
-      isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(true)),
-      context: ctx,
-    });
+    const results = createRenderHeavyBlock(
+      this.tx,
+      tpl,
+      {
+        args: info.fields.currentArgs.ref!,
+        blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
+        isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(true)),
+        context: ctx,
+      },
+      this.blockStatusData(blockId, info),
+    );
     this.setBlockField(
       blockId,
       "prodCtx",
