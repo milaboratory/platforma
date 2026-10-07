@@ -472,6 +472,11 @@ message TxAPI {
       NotificationAPI.Ack.Request notification_ack = 155; // acknowledge notification handled by controller
       NotificationAPI.Discard.Request notification_discard = 156; // discard notification handled by controller
 
+      ActionContextAPI.Create.Request action_context_create = 90; // create the root action context of a render
+      ActionContextAPI.SetBaggage.Request action_context_set_baggage = 91; // set a data key of an action context in its creating transaction
+      ActionContextAPI.RecordTransition.Request action_context_record_transition = 92; // record an action transition of a resource
+      ActionContextAPI.SetReading.Request action_context_set_reading = 93; // set a reading of a resource
+
       ResourceKVAPI.Set.Request resource_key_value_set = 200; // set a value to a resource's key-value store.
       ResourceKVAPI.Get.Request resource_key_value_get = 201; // get a value from a resource's key-value store.
       ResourceKVAPI.GetIfExists.Request resource_key_value_get_if_exists = 202; // get a value from a KV if the value exists.
@@ -574,6 +579,11 @@ message TxAPI {
       NotificationAPI.Get.Response notification_get = 154;
       NotificationAPI.Ack.Response notification_ack = 155;
       NotificationAPI.Discard.Response notification_discard = 156;
+
+      ActionContextAPI.Create.Response action_context_create = 90;
+      ActionContextAPI.SetBaggage.Response action_context_set_baggage = 91;
+      ActionContextAPI.RecordTransition.Response action_context_record_transition = 92;
+      ActionContextAPI.SetReading.Response action_context_set_reading = 93;
 
       ResourceKVAPI.Set.Response resource_key_value_set = 200;
       ResourceKVAPI.Get.Response resource_key_value_get = 201;
@@ -691,6 +701,12 @@ message ResourceAPI {
 
       optional bytes data = 4;
       bytes color_proof = 5;
+
+      // The resource that caused the creation, e.g. the renderer of a template.
+      // The new resource inherits the action context of the parent. Zero means no parent.
+      // The parent must have a valid signature with a color that matches the color of the new resource.
+      uint64 parent_id = 6;
+      bytes parent_signature = 7;
     }
 
     message Response {
@@ -705,6 +721,12 @@ message ResourceAPI {
 
       optional bytes data = 4;
       bytes color_proof = 5;
+
+      // The resource that caused the creation, e.g. the renderer of a template.
+      // The new resource inherits the action context of the parent. Zero means no parent.
+      // The parent must have a valid signature with a color that matches the color of the new resource.
+      uint64 parent_id = 6;
+      bytes parent_signature = 7;
     }
 
     message Response {
@@ -1556,6 +1578,63 @@ message ControllerAPI {
       string controller_type = 1;
     }
 
+    message Response {}
+  }
+}
+
+// ActionContextAPI reports the block action context of a render into its action context.
+// A request names a resource the caller holds. The server resolves the status stamp
+// of that resource to its ActionContext.
+message ActionContextAPI {
+  message Transition {
+    uint32 state = 1;  // model.ActionState
+    string detail = 2; // for the user
+    string reason = 3; // only with the Terminated state
+  }
+
+  // Create the root action context of a render without a stamp.
+  message Create {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+    }
+    message Response {}
+  }
+
+  // Set a data key of the action context of a render.
+  // Allowed only in the transaction that created the context.
+  message SetBaggage {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+      string key = 3;
+      string value = 4;
+    }
+    message Response {}
+  }
+
+  // Record a transition of the resource under a namespace.
+  // Stored as transition/<namespace>/<resource>/<ns> in the action context.
+  message RecordTransition {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+      string namespace = 3;
+      Transition transition = 4;
+    }
+    message Response {}
+  }
+
+  // Set an reading of the resource under a namespace.
+  // Stored as reading/<namespace>/<resource>/<key> in the action context.
+  message SetReading {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+      string namespace = 3;
+      string key = 4;
+      bytes value = 5;
+    }
     message Response {}
   }
 }
