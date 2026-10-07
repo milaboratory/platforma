@@ -256,12 +256,12 @@ export async function getAxisUniqueValues(
       ),
     );
 
-    const overflow = responses.some((r) => r.overflow);
+    const merged = uniq(
+      flatten(responses.map((r) => Array.from(r.values.data as ArrayLike<unknown>).map(String))),
+    );
     return {
-      values: uniq(
-        flatten(responses.map((r) => Array.from(r.values.data as ArrayLike<unknown>).map(String))),
-      ),
-      overflow,
+      values: merged.slice(0, limit),
+      overflow: merged.length > limit || responses.some((r) => r.overflow),
     };
   } catch (err) {
     console.error("PFrame: getUniqueValues for axis error", err);
