@@ -1,5 +1,12 @@
 # @milaboratories/columns-collection-driver
 
+## 0.2.9
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+
 ## 0.2.8
 
 ### Patch Changes

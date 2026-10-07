@@ -1,5 +1,30 @@
 # @milaboratories/pl-middle-layer
 
+## 1.74.0
+
+### Minor Changes
+
+- de59755: A `template-v1` document may carry an optional `label` and `description`, each read trimmed and dropped when blank; `withTemplateMeta` sets or removes them. The middle layer's new `importTemplate` stores a template from a document under the label it is given, taking the document's description as the template's own.
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+  - @milaboratories/columns-collection-driver@0.2.9
+  - @milaboratories/pl-model-middle-layer@1.34.2
+  - @milaboratories/pf-spec-driver@1.5.8
+  - @milaboratories/pf-driver@1.9.8
+  - @milaboratories/pl-client@3.18.2
+  - @milaboratories/pl-crash-recorder@0.3.5
+  - @milaboratories/pl-deployments@3.0.21
+  - @milaboratories/pl-drivers@1.16.33
+  - @platforma-sdk/model@1.84.17
+  - @platforma-sdk/block-tools@2.16.12
+  - @milaboratories/pl-model-backend@1.4.36
+  - @milaboratories/pl-errors@1.4.51
+  - @milaboratories/pl-tree@1.16.3
+  - @platforma-sdk/workflow-tengo@6.15.0
+
 ## 1.73.10
 
 ### Patch Changes
