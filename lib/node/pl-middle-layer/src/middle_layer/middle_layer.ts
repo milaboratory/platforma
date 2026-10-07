@@ -76,7 +76,7 @@ import {
 } from "../mutator/project";
 import type { ProjectTemplateExportOutcome } from "../model/template_serializer";
 import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
-import { asProjectId, asTemplateId } from "@milaboratories/pl-model-common";
+import { asProjectId, asTemplateId, withTemplateMeta } from "@milaboratories/pl-model-common";
 import { extractConfig, ensureError } from "@platforma-sdk/model";
 import type { TemplateApplyProblem, TemplateApplyReport } from "../model/template_apply";
 import { TemplateEntryRejected, kindMismatch } from "../model/template_apply";
@@ -941,6 +941,68 @@ export class MiddleLayer {
     const templateId = asTemplateId(resourceIdToString(signedRid));
     this.templateIdCache.set(templateId, signedRid);
     return { ok: true, templateId };
+  }
+
+  /**
+   * Stores a template brought in from outside — a template file the user picked — so it can be
+   * seen, applied and shared like one saved from a project.
+   *
+   * The document's description becomes the template's own, which stays editable; the stored
+   * document keeps only the blocks, without the label and description it was written with, so
+   * there is one name and one description to edit and nothing to drift.
+   *
+   * The template lands in `folder`, or at the top level, under `label` made free among the
+   * templates already there. A folder deleted meanwhile costs the template its placement, not its
+   * existence.
+   *
+   * @param document the parsed template to store
+   * @param options.label the name to store it under — usually the document's own label, which
+   *   the caller weighs against whatever else it knows, such as the file's name; suffixed when a
+   *   template there carries it
+   * @param options.folder where it lands; the top level when absent
+   */
+  public async importTemplate(
+    document: ProjectTemplateV1,
+    options: { label: string; folder?: FolderId },
+  ): Promise<TemplateId> {
+    const { folder } = options;
+    const signedRid = await this.pl.withWriteTx("MLImportTemplate", async (tx) => {
+      const tree = await openFoldersTx(tx, this.foldersRids);
+      // The name is made free where the template actually lands: the top level when the folder
+      // asked for is gone.
+      const destination =
+        folder !== undefined && tree.view.folders.some((candidate) => candidate.id === folder)
+          ? folder
+          : undefined;
+      const name = foldersUniqueName(
+        options.label.trim(),
+        tree.namesTakenIn(destination, "template"),
+      );
+
+      const tpl = createTemplate(
+        tx,
+        this.templateListResourceId,
+        { label: name, description: document.description },
+        { schemaVersion: 1, document: withTemplateMeta(document, {}) },
+      );
+
+      const created = await tpl.globalId;
+      if (destination !== undefined)
+        tree.place(
+          [{ kind: "template", id: asTemplateId(resourceIdToString(created)) }],
+          destination,
+        );
+      await tx.commit();
+      return created;
+    });
+    await Promise.all([
+      this.templateListTree.refreshState(),
+      ...(folder === undefined ? [] : [this.foldersTree.refreshState()]),
+    ]);
+
+    const templateId = asTemplateId(resourceIdToString(signedRid));
+    this.templateIdCache.set(templateId, signedRid);
+    return templateId;
   }
 
   /**
