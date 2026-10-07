@@ -6,6 +6,8 @@ import {
   ValueType,
   getDenormalizedAxesList,
   getNormalizedAxesList,
+  isLinkerAlwaysLabeled,
+  type PColumnSpec,
 } from "./spec";
 import { canonicalizeJson, stringifyJson } from "../../../json";
 import { describe, expect, test } from "vitest";
@@ -165,5 +167,29 @@ describe("Linker columns", () => {
     expect(a.parentAxesSpec.length).toBe(0);
     expect(b.parentAxesSpec.length).toBe(0);
     expect(c.parentAxesSpec.length).toBe(0);
+  });
+});
+
+describe("isLinkerAlwaysLabeled", () => {
+  const linker = (annotations: Annotation): PColumnSpec => ({
+    kind: "PColumn",
+    name: "linker",
+    valueType: ValueType.Int,
+    axesSpec: [makeTestAxis({ name: "a" }), makeTestAxis({ name: "b" })],
+    annotations,
+  });
+
+  test.each([
+    ["true", true],
+    ["false", false],
+    ["True", false],
+  ])("annotation %s → %s", (value, expected) => {
+    expect(isLinkerAlwaysLabeled(linker({ [Annotation.Linker.AlwaysLabel]: value }))).toBe(
+      expected,
+    );
+  });
+
+  test("absent annotation → false", () => {
+    expect(isLinkerAlwaysLabeled(linker({}))).toBe(false);
   });
 });
