@@ -7,33 +7,41 @@ import { tplTest } from "@platforma-sdk/test";
  * and the error message contains command name, stderr output,
  * exit code, and original command arguments.
  */
-tplTest.concurrent("exec error: command exits with non-zero code", async ({ helper, expect }) => {
-  const commandName = "test-failing-command";
-  const errorMessage = "something went wrong in the test command";
-  const exitCode = "1";
+tplTest.concurrent(
+  "exec error: command exits with non-zero code",
+  async ({ helper, expect }) => {
+    const commandName = "test-failing-command";
+    const errorMessage = "something went wrong in the test command";
+    const exitCode = "1";
 
-  const result = await helper.renderTemplate(false, "exec.run.fail_with_error", ["main"], (tx) => ({
-    commandName: tx.createValue(Pl.JsonObject, JSON.stringify(commandName)),
-    errorMessage: tx.createValue(Pl.JsonObject, JSON.stringify(errorMessage)),
-    exitCode: tx.createValue(Pl.JsonObject, JSON.stringify(exitCode)),
-  }));
-  const mainResult = result.computeOutput("main", (a) => a?.getDataAsString());
+    const result = await helper.renderTemplate(
+      false,
+      "exec.run.fail_with_error",
+      ["main"],
+      (tx) => ({
+        commandName: tx.createValue(Pl.JsonObject, JSON.stringify(commandName)),
+        errorMessage: tx.createValue(Pl.JsonObject, JSON.stringify(errorMessage)),
+        exitCode: tx.createValue(Pl.JsonObject, JSON.stringify(exitCode)),
+      }),
+    );
+    const mainResult = result.computeOutput("main", (a) => a?.getDataAsString());
 
-  const error = await mainResult.awaitStableValue().catch((e: Error) => e);
-  expect(error).toBeInstanceOf(Error);
+    const error = await mainResult.awaitStableValue().catch((e: Error) => e);
+    expect(error).toBeInstanceOf(Error);
 
-  const msg = (error as Error).message;
-  // must contain the command name set by block developer
-  expect(msg).toContain(commandName);
-  // must contain the stderr output
-  expect(msg).toContain(errorMessage);
-  // must mention the exit code
-  expect(msg).toMatch(/Exited with code 1/);
-  // must contain original command arguments so the user can identify what failed
-  expect(msg).toContain("sh");
-  expect(msg).toContain(`exit ${exitCode}`);
-},
-// A Kubernetes deploy runs the command as its own Job, and a pod scheduled plus an image
-// pulled already costs more than the 15s default. At that budget the case reported a bare
-// timeout and never reached the assertions on the error message.
-300_000);
+    const msg = (error as Error).message;
+    // must contain the command name set by block developer
+    expect(msg).toContain(commandName);
+    // must contain the stderr output
+    expect(msg).toContain(errorMessage);
+    // must mention the exit code
+    expect(msg).toMatch(/Exited with code 1/);
+    // must contain original command arguments so the user can identify what failed
+    expect(msg).toContain("sh");
+    expect(msg).toContain(`exit ${exitCode}`);
+  },
+  // A Kubernetes deploy runs the command as its own Job, and a pod scheduled plus an image
+  // pulled already costs more than the 15s default. At that budget the case reported a bare
+  // timeout and never reached the assertions on the error message.
+  300_000,
+);
