@@ -192,17 +192,7 @@ export type BlockPackLocatorOverride =
  */
 export type ProjectTemplateV1 = {
   readonly schema: ProjectTemplateSchemaV1;
-  /**
-   * The template's name — the label a stored template carries, written down so that a file
-   * brought back in is called what it was called, whatever the file itself is named. Absent when
-   * there is none; a blank one is never written.
-   */
   readonly label?: string;
-  /**
-   * What the template is for, in the words of whoever made it — the description a stored
-   * template carries, written down so that a file brought back in says the same thing.
-   * Absent when there is none; a blank one is never written.
-   */
   readonly description?: string;
   readonly blocks: readonly ProjectTemplateV1Entry[];
 };
