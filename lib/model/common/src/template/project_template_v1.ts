@@ -192,8 +192,31 @@ export type BlockPackLocatorOverride =
  */
 export type ProjectTemplateV1 = {
   readonly schema: ProjectTemplateSchemaV1;
+  readonly label?: string;
+  readonly description?: string;
   readonly blocks: readonly ProjectTemplateV1Entry[];
 };
+
+/**
+ * The document with its label and description set as given, trimmed, each removed when the given
+ * one is blank or absent.
+ *
+ * Keeps the key order a reader of the file expects: the format marker first, then the name and
+ * what it is for, and the list of blocks last.
+ */
+export function withTemplateMeta(
+  document: ProjectTemplateV1,
+  meta: { readonly label?: string; readonly description?: string },
+): ProjectTemplateV1 {
+  const label = meta.label?.trim() ?? "";
+  const description = meta.description?.trim() ?? "";
+  return {
+    schema: document.schema,
+    ...(label === "" ? {} : { label }),
+    ...(description === "" ? {} : { description }),
+    blocks: document.blocks,
+  };
+}
 
 //
 // Reading a decoded document.
@@ -293,7 +316,13 @@ export function readProjectTemplateV1(value: unknown): ProjectTemplateV1ReadResu
   }
 
   for (const key of Object.keys(value)) {
-    if (key !== "schema" && key !== "blocks") fail([], `Unrecognized key: '${key}'`);
+    if (key !== "schema" && key !== "label" && key !== "description" && key !== "blocks")
+      fail([], `Unrecognized key: '${key}'`);
+  }
+
+  for (const key of ["label", "description"] as const) {
+    if (value[key] !== undefined && typeof value[key] !== "string")
+      fail([key], `Expected text, got ${describe(value[key])}.`);
   }
 
   if (value.schema !== PROJECT_TEMPLATE_SCHEMA_V1) {
@@ -321,7 +350,14 @@ export function readProjectTemplateV1(value: unknown): ProjectTemplateV1ReadResu
   });
 
   if (issues.length > 0) return { ok: false, issues };
-  return { ok: true, document: { schema: PROJECT_TEMPLATE_SCHEMA_V1, blocks } };
+  const document: ProjectTemplateV1 = { schema: PROJECT_TEMPLATE_SCHEMA_V1, blocks };
+  return {
+    ok: true,
+    document: withTemplateMeta(document, {
+      label: typeof value.label === "string" ? value.label : undefined,
+      description: typeof value.description === "string" ? value.description : undefined,
+    }),
+  };
 }
 
 /**
