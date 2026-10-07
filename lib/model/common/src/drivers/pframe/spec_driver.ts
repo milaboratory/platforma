@@ -89,8 +89,16 @@ export interface DiscoverColumnsRequest {
   includeColumns?: MultiColumnSelector[];
   /** Exclude columns matching these selectors (OR-ed); applied after include filter */
   excludeColumns?: MultiColumnSelector[];
-  /** Already integrated axes with qualifications */
-  axes: ColumnAxesWithQualifications[];
+  /**
+   * Anchors at the coarse end: discovery walks down to what they contain.
+   * Mutually exclusive with {@link DiscoverColumnsRequest.leafAxes}.
+   */
+  axes?: ColumnAxesWithQualifications[];
+  /**
+   * Anchors at the fine end: discovery walks up to what contains them.
+   * Mutually exclusive with {@link DiscoverColumnsRequest.axes}.
+   */
+  leafAxes?: ColumnAxesWithQualifications[];
   /** Maximum number of hops allowed between provided axes integration and returned hits (0 = direct only) */
   maxHops?: number;
   /** Constraints controlling axes matching and qualification behavior */
