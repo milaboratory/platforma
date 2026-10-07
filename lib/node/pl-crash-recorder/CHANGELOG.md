@@ -1,5 +1,12 @@
 # @milaboratories/pl-flight-recorder
 
+## 0.3.5
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+
 ## 0.3.4
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @milaboratories/pl-client
 
+## 3.18.2
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+
 ## 3.18.1
 
 ### Patch Changes
