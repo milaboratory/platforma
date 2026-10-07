@@ -171,6 +171,8 @@ type Group = {
   roots: (AxisSpec | undefined)[];
   indices: number[];
   format: LinkerFormatter;
+  /** Full labels of other stems' columns; a row's label must not repeat one. */
+  taken: Set<string>;
 };
 
 /** Steps of an entry's opted-in (always-labeled) linkers. */
@@ -248,8 +250,18 @@ function renderAll(group: Group, slots: Slot[], forced: number[][]): string[] {
   return group.entries.map((_, r) => renderRow(group, slots, forced[r], r));
 }
 
-function allUnique(rendered: string[]): boolean {
-  return new Set(rendered).size === rendered.length;
+function fullLabel(stem: string, postfix: string): string {
+  return postfix ? `${stem} ${postfix}` : stem;
+}
+
+/** Distinct rendered labels, not counting any that repeats a taken label. */
+function countDistinct(group: Group, rendered: string[]): number {
+  const labels = rendered.map((p, r) => fullLabel(group.entries[r].stem, p));
+  return new Set(labels.filter((l) => !group.taken.has(l))).size;
+}
+
+function allUnique(group: Group, rendered: string[]): boolean {
+  return countDistinct(group, rendered) === rendered.length;
 }
 
 /**
@@ -267,16 +279,17 @@ function chooseSlots(group: Group, forced: number[][]): Slot[] {
     ...Array.from({ length: maxLen }, (_, i): Slot => ({ kind: "linker", i })),
   ];
 
-  const escalated = slots.reduce<Slot[]>(
-    (acc, slot) =>
-      allUnique(renderAll(group, acc, forced)) || !getDiscriminates(group, slot)
-        ? acc
-        : (acc.push(slot), acc),
-    [],
-  );
+  const distinct = (slotSet: Slot[]) => countDistinct(group, renderAll(group, slotSet, forced));
+  const escalated = slots.reduce<Slot[]>((acc, slot) => {
+    if (allUnique(group, renderAll(group, acc, forced))) return acc;
+    // A slot with the same key on every row can still split rows once forced steps render beside
+    // it, or move a row off a taken label.
+    const helps = getDiscriminates(group, slot) || distinct([...acc, slot]) > distinct(acc);
+    return helps ? [...acc, slot] : acc;
+  }, []);
   return escalated.reduce<Slot[]>((acc, slot) => {
     const trial = acc.filter((s) => s !== slot);
-    return allUnique(renderAll(group, trial, forced)) ? trial : acc;
+    return allUnique(group, renderAll(group, trial, forced)) ? trial : acc;
   }, escalated);
 }
 
@@ -290,6 +303,7 @@ function resolveGroup(
   indices: number[],
   forced: number[][],
   format: LinkerFormatter,
+  taken: Set<string>,
 ): string[] {
   const group: Group = {
     entries,
@@ -298,16 +312,18 @@ function resolveGroup(
     ),
     indices,
     format,
+    taken,
   };
   const none = entries.map(() => []);
-  const plainSlots = chooseSlots(group, none);
+  // Plain labels as they were before forced steps existed, taken labels included.
+  const plainSlots = chooseSlots({ ...group, taken: new Set() }, none);
   const plain = renderAll(group, plainSlots, none);
   const aware = renderAll(group, chooseSlots(group, forced), forced);
-  if (allUnique(aware) && aware.every((r, i) => forced[i].length > 0 || r === plain[i])) {
+  if (allUnique(group, aware) && aware.every((r, i) => forced[i].length > 0 || r === plain[i])) {
     return aware;
   }
   const onTop = renderAll(group, plainSlots, forced);
-  return allUnique(onTop) ? onTop : aware;
+  return allUnique(group, onTop) ? onTop : aware;
 }
 
 /**
@@ -325,20 +341,31 @@ export function derivePostfixes(
   );
 
   const forced = entries.map(forcedSteps);
-  const postfix = [...groups.values()].reduce<Map<number, string>>((acc, idxs) => {
-    // Stem already unique → no postfix, unless the path holds an opted-in linker.
-    if (idxs.length < 2 && forced[idxs[0]].length === 0) return acc;
-    const resolved = resolveGroup(
+  const resolve = (idxs: number[], taken: Set<string>) =>
+    resolveGroup(
       idxs.map((i) => entries[i]),
       idxs,
       idxs.map((i) => forced[i]),
       format,
+      taken,
     );
-    return idxs.reduce((m, i, k) => m.set(i, resolved[k]), acc);
-  }, new Map());
+  const labels = entries.map((e) => e.stem);
+  const assign = (idxs: number[], resolved: string[]) =>
+    idxs.forEach((i, k) => (labels[i] = fullLabel(entries[i].stem, resolved[k])));
 
-  return entries.map((e, i) => {
-    const p = postfix.get(i);
-    return p ? `${e.stem} ${p}` : e.stem;
-  });
+  for (const idxs of groups.values()) {
+    // Stem already unique → no postfix, unless the path holds an opted-in linker.
+    if (idxs.length < 2 && forced[idxs[0]].length === 0) continue;
+    assign(idxs, resolve(idxs, new Set()));
+  }
+
+  // A forced postfix can repeat another stem's label (`Counts` + `via Anchor` vs a `Counts via
+  // Anchor` column). Such a group resolves again, escalating its postfix past the other labels.
+  for (const idxs of groups.values()) {
+    if (idxs.every((i) => forced[i].length === 0)) continue;
+    const stem = entries[idxs[0]].stem;
+    const taken = new Set(labels.filter((_, j) => entries[j].stem !== stem));
+    if (idxs.some((i) => taken.has(labels[i]))) assign(idxs, resolve(idxs, taken));
+  }
+  return labels;
 }

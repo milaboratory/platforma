@@ -213,6 +213,24 @@ describe("opted-in linkers (Annotation.Linker.AlwaysLabel)", () => {
     ]);
   });
 
+  test("forced step beside a root reproducing another root: the common linker step splits them", () => {
+    const anchor = (src: AxisSpec) => linker("Anchor", src);
+    const labels = derivePostfixes([
+      { stem: "Counts", hit, linkers: [anchor(axSample)] },
+      { stem: "Counts", hit, linkers: [anchor(sourceAxis("anchorCloneId", "Clone Anchor"))] },
+      { stem: "Counts", hit, linkers: [optedIn("Anchor", axClone)] },
+    ]);
+    expect(new Set(labels).size).toBe(3);
+  });
+
+  test("forced postfix repeating another stem's label: the root is added", () => {
+    const labels = derivePostfixes([
+      { stem: "Counts", hit, linkers: [optedIn("Anchor", axSample)] },
+      { stem: "Counts via Anchor" },
+    ]);
+    expect(labels).toEqual(["Counts via Sample Anchor", "Counts via Anchor"]);
+  });
+
   test("unlabelled opted-in linker adds nothing", () => {
     const unlabelled: PColumnSpec = {
       kind: "PColumn",
