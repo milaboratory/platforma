@@ -1,5 +1,11 @@
 # @platforma-sdk/model
 
+## 1.84.19
+
+### Patch Changes
+
+- fc41fe4: Table filters: suggest values for axis columns, merged across every table column carrying the axis, instead of failing with "Data loading error"; offer "In List" / "Not In List" predicates. New `getUniqueAxisValuesWithLabels` in `@platforma-sdk/model`.
+
 ## 1.84.17
 
 ### Patch Changes
