@@ -221,6 +221,24 @@ test("action context create and setData", async () => {
   await withAdminTempRoot(async (pl) => {
     const EphRenderTemplate = { name: "EphRenderTemplate", version: "1" };
 
+    // Without actionContextApi:v1 the action context handle must send nothing: an older backend would reject
+    // the unknown messages and fail the transaction.
+    if (!pl.hasCapability("actionContextApi:v1")) {
+      const render = await pl.withWriteTx("actionContextNoop", async (tx) => {
+        const r = tx.createEphemeral(EphRenderTemplate, "{}");
+        tx.createField(field(tx.clientRoot, "render"), "Dynamic", r);
+        tx.actionContext(r).create();
+        tx.actionContext(r).setBaggage("name", "block title");
+        await tx.commit();
+        return await toGlobalResourceId(r);
+      });
+      await pl.withReadTx("actionContextNoopCheck", async (tx) => {
+        const renderData = await tx.getResourceData(render, true);
+        expect(renderData.fields.find((f) => f.name === "status")).toBeUndefined();
+      });
+      return;
+    }
+
     // The middle layer creates the root context of a block render and sets its baggage in one transaction.
     const render = await pl.withWriteTx("actionContextCreate", async (tx) => {
       const r = tx.createEphemeral(EphRenderTemplate, "{}");
