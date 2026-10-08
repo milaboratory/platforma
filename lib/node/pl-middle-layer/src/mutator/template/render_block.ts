@@ -1,4 +1,10 @@
-import type { AnyRef, PlTransaction, ResourceRef, ResourceType } from "@milaboratories/pl-client";
+import type {
+  AnyRef,
+  AnyFieldRef,
+  PlTransaction,
+  ResourceRef,
+  ResourceType,
+} from "@milaboratories/pl-client";
 import { field, Pl } from "@milaboratories/pl-client";
 import { randomUUID } from "node:crypto";
 import { createRenderTemplate, createRenderTemplateWithResource } from "./render_template";
@@ -41,15 +47,17 @@ export type BlockActionContextBaggage = {
 
 /**
  * Creates the heavy block render. With `baggage`, it also creates the root action context of the
- * render and sets its baggage, in the same transaction. The transaction skips the status calls when the
- * backend does not advertise `actionContextApi:v1`.
+ * render and sets its baggage, in the same transaction, and returns `status`: a reference to the
+ * render's "actionContext" field. The render is garbage collected after its outputs resolve, so the caller
+ * must hold this reference to keep the context. Without `actionContextApi:v1` on the backend, nothing is
+ * created and `status` is undefined.
  */
 export function createRenderHeavyBlock(
   tx: PlTransaction,
   tpl: AnyRef,
   inputs: HeavyBlockInputs,
   baggage?: BlockActionContextBaggage,
-): HeavyBlockOutputs {
+): HeavyBlockOutputs & { actionContext?: AnyFieldRef } {
   const { render, outputs } = createRenderTemplateWithResource(
     tx,
     tpl,
@@ -58,15 +66,15 @@ export function createRenderHeavyBlock(
     HeavyBlockOutputNames,
   );
 
-  if (status !== undefined) {
-    const renderActionContext = tx.actionContext(render);
-    renderActionContext.create();
-    renderActionContext.setBaggage("name", baggage.name);
-    renderActionContext.setBaggage("block-pack", baggage.blockPack);
-    renderActionContext.setBaggage("block-id", baggage.blockId);
-  }
+  if (baggage === undefined || !tx.actionContextApiEnabled) return outputs;
 
-  return outputs;
+  const renderActionContext = tx.actionContext(render);
+  renderActionContext.create();
+  renderActionContext.setBaggage("name", baggage.name);
+  renderActionContext.setBaggage("block-pack", baggage.blockPack);
+  renderActionContext.setBaggage("block-id", baggage.blockId);
+
+  return { ...outputs, actionContext: field(render, "actionContext") };
 }
 
 export type LightBlockInputs = {
