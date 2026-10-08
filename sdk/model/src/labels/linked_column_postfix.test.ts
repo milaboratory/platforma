@@ -110,3 +110,147 @@ describe("prototype — structural postfix (difference of sources)", () => {
     "per-row minimal trim: A should drop the non-load-bearing linker → 'Counts via Sample'",
   );
 });
+
+describe("opted-in linkers (Annotation.Linker.AlwaysLabel)", () => {
+  const axSample = sourceAxis("sampleId", "Sample");
+  const axClone = sourceAxis("cloneId", "Clone");
+  const axAnchor = sourceAxis("anchorId", "Anchor clone");
+
+  function optedIn(linkLabel: string, src: AxisSpec): PColumnSpec {
+    const l = linker(linkLabel, src);
+    return { ...l, annotations: { ...l.annotations, [Annotation.Linker.AlwaysLabel]: "true" } };
+  }
+
+  test("opted-in linker names a column whose stem is unique", () => {
+    const labels = derivePostfixes([
+      { stem: "Read counts" },
+      { stem: "IC50", hit, linkers: [optedIn("Nearest Anchor", axAnchor)] },
+    ]);
+    expect(labels).toEqual(["Read counts", "IC50 via Nearest Anchor"]);
+  });
+
+  test("plain linker leaves a unique column unnamed", () => {
+    const labels = derivePostfixes([{ stem: "IC50", hit, linkers: [linker("Mapper", axAnchor)] }]);
+    expect(labels).toEqual(["IC50"]);
+  });
+
+  test("mixed chain, unique stem: only the opted-in step is named", () => {
+    const labels = derivePostfixes([
+      {
+        stem: "IC50",
+        hit,
+        linkers: [linker("Clone to lineage", axClone), optedIn("Nearest Anchor", axAnchor)],
+      },
+    ]);
+    expect(labels).toEqual(["IC50 via Nearest Anchor"]);
+  });
+
+  test("mixed chains colliding: collision handling adds the plain step", () => {
+    const labels = derivePostfixes([
+      { stem: "IC50", hit, linkers: [linker("MapperA", axClone), optedIn("Anchor", axAnchor)] },
+      { stem: "IC50", hit, linkers: [linker("MapperB", axClone), optedIn("Anchor", axAnchor)] },
+    ]);
+    expect(labels).toEqual(["IC50 via MapperA > Anchor", "IC50 via MapperB > Anchor"]);
+  });
+
+  test("collision with a direct column: the opted-in step alone distinguishes", () => {
+    const labels = derivePostfixes([
+      { stem: "Counts" },
+      { stem: "Counts", hit, linkers: [optedIn("Anchor", axSample)] },
+    ]);
+    expect(labels).toEqual(["Counts", "Counts via Anchor"]);
+  });
+
+  test("same opted-in linker label, different roots: root is added as before", () => {
+    const labels = derivePostfixes([
+      { stem: "Counts", hit, linkers: [optedIn("Anchor", axSample)] },
+      { stem: "Counts", hit, linkers: [optedIn("Anchor", axClone)] },
+    ]);
+    expect(labels).toEqual(["Counts via Sample Anchor", "Counts via Clone Anchor"]);
+  });
+
+  test("custom formatter renders the forced postfix", () => {
+    const labels = derivePostfixes(
+      [{ stem: "IC50", hit, linkers: [optedIn("Nearest Anchor", axAnchor)] }],
+      ({ linkers }) => `(from ${linkers.map((l) => l.text).join(", ")})`,
+    );
+    expect(labels).toEqual(["IC50 (from Nearest Anchor)"]);
+  });
+
+  test("mixed group, same root: plain row keeps its label, opted-in row names its step", () => {
+    const rows = (anchor: PColumnSpec) => [
+      { stem: "X", hit, linkers: [anchor] },
+      { stem: "X", hit, linkers: [linker("Cluster", axClone)] },
+      { stem: "X" },
+    ];
+    expect(derivePostfixes(rows(linker("Anchor", axClone)))).toEqual([
+      "X via Anchor",
+      "X via Cluster",
+      "X",
+    ]);
+    expect(derivePostfixes(rows(optedIn("Anchor", axClone)))).toEqual([
+      "X via Anchor",
+      "X via Cluster",
+      "X",
+    ]);
+  });
+
+  test("mixed group, different roots: plain row keeps its root-only label", () => {
+    const rows = (anchor: PColumnSpec) => [
+      { stem: "X", hit, linkers: [anchor] },
+      { stem: "X", hit, linkers: [linker("Cluster", axSample)] },
+      { stem: "X" },
+    ];
+    expect(derivePostfixes(rows(linker("Anchor", axClone)))).toEqual([
+      "X via Clone",
+      "X via Sample",
+      "X",
+    ]);
+    expect(derivePostfixes(rows(optedIn("Anchor", axClone)))).toEqual([
+      "X via Clone Anchor",
+      "X via Sample",
+      "X",
+    ]);
+  });
+
+  test("forced step beside a root reproducing another root: the common linker step splits them", () => {
+    const anchor = (src: AxisSpec) => linker("Anchor", src);
+    const labels = derivePostfixes([
+      { stem: "Counts", hit, linkers: [anchor(axSample)] },
+      { stem: "Counts", hit, linkers: [anchor(sourceAxis("anchorCloneId", "Clone Anchor"))] },
+      { stem: "Counts", hit, linkers: [optedIn("Anchor", axClone)] },
+    ]);
+    expect(new Set(labels).size).toBe(3);
+  });
+
+  test("forced postfix repeating another stem's label: the root is added", () => {
+    const labels = derivePostfixes([
+      { stem: "Counts", hit, linkers: [optedIn("Anchor", axSample)] },
+      { stem: "Counts via Anchor" },
+    ]);
+    expect(labels).toEqual(["Counts via Sample Anchor", "Counts via Anchor"]);
+  });
+
+  test("unlabelled opted-in linker adds nothing", () => {
+    const unlabelled: PColumnSpec = {
+      kind: "PColumn",
+      name: "anchorLinker",
+      valueType: "Int",
+      axesSpec: [axAnchor, TARGET],
+      annotations: { [Annotation.Linker.AlwaysLabel]: "true" },
+    };
+    expect(derivePostfixes([{ stem: "IC50", hit, linkers: [unlabelled] }])).toEqual(["IC50"]);
+  });
+
+  test.each([["false"], ["True"], [undefined]])("annotation value %s does not opt in", (value) => {
+    const l = linker("Nearest Anchor", axAnchor);
+    const annotated: PColumnSpec = {
+      ...l,
+      annotations: {
+        ...l.annotations,
+        ...(value === undefined ? {} : { [Annotation.Linker.AlwaysLabel]: value }),
+      },
+    };
+    expect(derivePostfixes([{ stem: "IC50", hit, linkers: [annotated] }])).toEqual(["IC50"]);
+  });
+});
