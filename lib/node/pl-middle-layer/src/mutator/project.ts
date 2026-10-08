@@ -792,6 +792,7 @@ export class ProjectMutator {
       this.setBlockFieldObj(blockId, "stagingCtxPrevious", fields.stagingCtx!);
       this.setBlockFieldObj(blockId, "stagingUiCtxPrevious", fields.stagingUiCtx!);
     }
+    this.deleteBlockFields(blockId, "stagingStatus");
     if (this.deleteBlockFields(blockId, "stagingOutput", "stagingCtx", "stagingUiCtx"))
       this.resetStagingRefreshTimestamp();
   }
@@ -807,7 +808,7 @@ export class ProjectMutator {
       this.setBlockFieldObj(blockId, "prodCtxPrevious", fields.prodCtx!);
       this.setBlockFieldObj(blockId, "prodUiCtxPrevious", fields.prodUiCtx!);
     }
-    this.deleteBlockFields(blockId, "prodOutput", "prodCtx", "prodUiCtx", "prodArgs");
+    this.deleteBlockFields(blockId, "prodOutput", "prodCtx", "prodUiCtx", "prodArgs", "prodStatus");
   }
 
   /** Running blocks are reset, settled ones (Ready or finished Error) moved to limbo. Returns if
@@ -836,6 +837,7 @@ export class ProjectMutator {
       return true;
     } else {
       // reset - clean up any partial/inconsistent production stat
+      this.deleteBlockFields(blockId, "prodStatus");
       return this.deleteBlockFields(
         blockId,
         "prodOutput",
@@ -1197,6 +1199,8 @@ export class ProjectMutator {
     // thus creating a certain discrepancy between staging workflow context behavior and desktop's result pool.
     this.setBlockField(blockId, "stagingUiCtx", this.exportCtx(results.context), "NotReady");
     this.setBlockField(blockId, "stagingOutput", results.result, "NotReady");
+    if (results.status !== undefined)
+      this.setBlockField(blockId, "stagingStatus", results.status, "NotReady");
   }
 
   private renderProductionFor(blockId: string) {
@@ -1235,6 +1239,8 @@ export class ProjectMutator {
     );
     this.setBlockField(blockId, "prodUiCtx", this.exportCtx(results.context), "NotReady");
     this.setBlockField(blockId, "prodOutput", results.result, "NotReady");
+    if (results.status !== undefined)
+      this.setBlockField(blockId, "prodStatus", results.status, "NotReady");
 
     // saving inputs for which we rendered the production
     this.setBlockFieldObj(blockId, "prodArgs", info.fields.currentArgs);
@@ -1757,6 +1763,7 @@ export class ProjectMutator {
         // skipping finished blocks
         continue;
 
+      this.deleteBlockFields(blockId, "prodStatus");
       if (this.deleteBlockFields(blockId, "prodOutput", "prodCtx", "prodUiCtx", "prodArgs")) {
         // was actually stopped
         stopped.push(blockId);
