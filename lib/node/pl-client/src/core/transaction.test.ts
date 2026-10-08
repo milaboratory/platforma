@@ -221,6 +221,24 @@ test("status context create and setData", async () => {
   await withAdminTempRoot(async (pl) => {
     const EphRenderTemplate = { name: "EphRenderTemplate", version: "1" };
 
+    // Without statusApi:v1 the status handle must send nothing: an older backend would reject
+    // the unknown messages and fail the transaction.
+    if (!pl.hasCapability("statusApi:v1")) {
+      const render = await pl.withWriteTx("statusNoop", async (tx) => {
+        const r = tx.createEphemeral(EphRenderTemplate, "{}");
+        tx.createField(field(tx.clientRoot, "render"), "Dynamic", r);
+        tx.status(r).create();
+        tx.status(r).setData("name", "block title");
+        await tx.commit();
+        return await toGlobalResourceId(r);
+      });
+      await pl.withReadTx("statusNoopCheck", async (tx) => {
+        const renderData = await tx.getResourceData(render, true);
+        expect(renderData.fields.find((f) => f.name === "status")).toBeUndefined();
+      });
+      return;
+    }
+
     // The middle layer creates the root context of a block render and sets its data in one transaction.
     const render = await pl.withWriteTx("statusCreate", async (tx) => {
       const r = tx.createEphemeral(EphRenderTemplate, "{}");
