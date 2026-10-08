@@ -18,8 +18,25 @@ maps := import(":maps")
  *
  * @return template: smart.resource - resource of tengo template with given name.
  */
+// names of the templates imported in this run, by template resource id; render() uses them to name
+// the status context of a render
+_templateNames := {}
+
 importTemplate := func(tplName) {
-	return smart.resource(plapi.getTemplateId(tplName))
+	id := plapi.getTemplateId(tplName)
+	_templateNames[string(id)] = tplName
+	return smart.resource(id)
+}
+
+/**
+ * Returns the name of a template imported with importTemplate in this run.
+ *
+ * @param tpl: template resource or template resource id
+ * @return name: string, or undefined when the template was not imported with importTemplate
+ */
+templateName := func(tpl) {
+	id := smart.isResource(tpl) ? tpl.id : tpl
+	return _templateNames[string(id)]
 }
 
 /**
@@ -66,6 +83,7 @@ isAssetInfo := func(toCheck) {
 
 export ll.toStrict({
 	importTemplate      : importTemplate,
+	templateName        : templateName,
 	importSoftware      : swinfo.importSoftware,
 	isSoftwareInfo      : swinfo.isSoftwareInfo,
 	importAsset         : importAsset,

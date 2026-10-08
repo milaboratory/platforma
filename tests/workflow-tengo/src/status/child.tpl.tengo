@@ -1,0 +1,10 @@
+// child: reports an attribute into the status context it inherited from its parent render
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+self.defineOutputs(["done"])
+
+self.body(func(inputs) {
+	self.status().setAttr("exec", "progress", "40")
+	return { done: "ok" }
+})

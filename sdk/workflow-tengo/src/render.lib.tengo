@@ -10,6 +10,8 @@ oop := import(":oop")
 tx := import("tx")
 maps := import(":maps")
 feats := import(":feats")
+assets := import(":assets")
+status := import(":status")
 
 
 _SUBSCRIPTION_FIELD := "subscription"
@@ -27,15 +29,19 @@ _SUBSCRIPTION_FIELD := "subscription"
  *                                  would be considered as copies of each-other.
  *              - inputCache: (optional) a cache time from 'times' library for all inputs.
  *                                  Can be used only with non-ephemeral templates.
+ *              - name: (optional) display name of the render in the block status tree.
+ *                                  Defaults to the template name given to assets.importTemplate().
  * @return renderer: a smart resource with additional output("name") method
  */
 createUniversal := func(tpl, isEph, inputs, ...opts) {
 	ll.assert(len(opts) <= 1, "too many arguments, expected at most one options object")
 	metaInputs := undefined
 	inputCache := undefined
+	statusName := undefined
 	if len(opts) == 1 && opts[0] {
 		metaInputs = opts[0].metaInputs
 		inputCache = opts[0].inputCache
+		statusName = opts[0].name
 	}
 
 	if !is_undefined(inputCache) && inputCache > 0 && isEph {
@@ -88,6 +94,14 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 	rbuilder.createInputField(tplutil.INPUTS_MAP_FIELD).set(inputsMap.build())
 	// build
 	renderer := rbuilder.lockInputsAndBuild()
+
+	// name the status context the backend created for the render (it has the current renderer as parent)
+	if is_undefined(statusName) {
+		statusName = assets.templateName(tpl)
+	}
+	if !is_undefined(statusName) {
+		status.of(renderer.id).setData("name", statusName)
+	}
 
 	self := undefined
 	self = ll.toStrict(oop.inherit(renderer, {

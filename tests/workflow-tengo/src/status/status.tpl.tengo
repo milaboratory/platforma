@@ -1,0 +1,30 @@
+// status: creates its own root status context, records a transition and renders a child template
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+feats := import("@platforma-sdk/workflow-tengo:feats")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+self.defineOutputs(["status", "child"])
+
+self.body(func(inputs) {
+	// the test renders this template without a parent, so it has no status context yet
+	self.status().create()
+	self.status().record("tpl", "Running", "root body")
+
+	child := render.createEphemeral(assets.importTemplate(":status.child"), {})
+
+	statusRef := smart.createNullResource()
+	if feats.statusApi {
+		// holds the status context after the render is collected, as the middle layer does;
+		// the field was created by status().create() above, after the renderer info was read
+		statusRef = smart.field(ll.fieldId(self.renderer().id, "status"))
+	}
+
+	return {
+		status: statusRef,
+		child: child.output("done")
+	}
+})
