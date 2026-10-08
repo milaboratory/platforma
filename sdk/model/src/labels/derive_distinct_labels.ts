@@ -650,7 +650,7 @@ function repairBareLabels(
         const kindDepths = extraDepths(sigOf[k]);
         const sameKind = (u: string) => (kindDepths.has(depths[i].get(u)) ? 1 : 0);
         const candidates = [...traces[i].keys()]
-          .filter((u) => u !== LABEL_TYPE_FULL && !minimized.has(u) && !isForced(u))
+          .filter((u) => !minimized.has(u) && !isForced(u))
           .filter((u) => peers.some((t) => someDiffers(t, u, traces[i].get(u))))
           .sort((a, b) => sameKind(b) - sameKind(a) || byImportance(a, b));
         for (const u of candidates) {
