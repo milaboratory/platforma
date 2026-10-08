@@ -31,7 +31,6 @@ import {
 import {
   rootPnpmWorkspaceInitial,
   SDK_CATALOG_PACKAGES,
-  INFRA_CATALOG_FLOOR,
   DERIVED_CATALOG_PINS,
   RUNENV_PYTHON,
   RUNENV_PYTHON_VERSION,
@@ -67,12 +66,12 @@ export function rootCatalogBumpRules(): void {
               for (const pin of DERIVED_CATALOG_PINS) {
                 pinCatalogToDependencyOf(pin.entry, { of: pin.of, ofVersion: pin.ofVersion });
               }
-              // Curated infra floor → fixed version, ADD-IF-ABSENT (seeds
-              // shx/turbo/vitest/changesets when missing; never touches a
-              // version the block already pins).
-              for (const [name, version] of Object.entries(INFRA_CATALOG_FLOOR)) {
-                ensureCatalogVersion(name, version);
-              }
+              // The curated infra floor is seeded by `rootPnpmWorkspaceRules`,
+              // which runs on every refresh — the root package.json rules hand
+              // out `catalog:` references for those entries on every refresh
+              // too, so seeding them only here would leave a plain refresh with
+              // an unresolvable reference.
+              //
               // The python runenv pin is relevant only to software-bearing
               // blocks; seed it add-if-absent when one is present.
               if (ctx.modules.some((m) => m.scope === "software")) {
