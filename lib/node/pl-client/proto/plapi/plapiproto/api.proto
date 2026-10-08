@@ -472,6 +472,11 @@ message TxAPI {
       NotificationAPI.Ack.Request notification_ack = 155; // acknowledge notification handled by controller
       NotificationAPI.Discard.Request notification_discard = 156; // discard notification handled by controller
 
+      StatusAPI.Create.Request status_create = 90; // create the root status context of a render
+      StatusAPI.SetData.Request status_set_data = 91; // set a data key of a status context in its creating transaction
+      StatusAPI.RecordTransition.Request status_record_transition = 92; // record a status transition of a resource
+      StatusAPI.SetAttr.Request status_set_attr = 93; // set a status attribute of a resource
+
       ResourceKVAPI.Set.Request resource_key_value_set = 200; // set a value to a resource's key-value store.
       ResourceKVAPI.Get.Request resource_key_value_get = 201; // get a value from a resource's key-value store.
       ResourceKVAPI.GetIfExists.Request resource_key_value_get_if_exists = 202; // get a value from a KV if the value exists.
@@ -574,6 +579,11 @@ message TxAPI {
       NotificationAPI.Get.Response notification_get = 154;
       NotificationAPI.Ack.Response notification_ack = 155;
       NotificationAPI.Discard.Response notification_discard = 156;
+
+      StatusAPI.Create.Response status_create = 90;
+      StatusAPI.SetData.Response status_set_data = 91;
+      StatusAPI.RecordTransition.Response status_record_transition = 92;
+      StatusAPI.SetAttr.Response status_set_attr = 93;
 
       ResourceKVAPI.Set.Response resource_key_value_set = 200;
       ResourceKVAPI.Get.Response resource_key_value_get = 201;
@@ -691,6 +701,12 @@ message ResourceAPI {
 
       optional bytes data = 4;
       bytes color_proof = 5;
+
+      // The resource that caused the creation, e.g. the renderer of a template.
+      // The new resource inherits the status context of the parent. Zero means no parent.
+      // The parent must have a valid signature with a color that matches the color of the new resource.
+      uint64 parent_id = 6;
+      bytes parent_signature = 7;
     }
 
     message Response {
@@ -705,6 +721,12 @@ message ResourceAPI {
 
       optional bytes data = 4;
       bytes color_proof = 5;
+
+      // The resource that caused the creation, e.g. the renderer of a template.
+      // The new resource inherits the status context of the parent. Zero means no parent.
+      // The parent must have a valid signature with a color that matches the color of the new resource.
+      uint64 parent_id = 6;
+      bytes parent_signature = 7;
     }
 
     message Response {
@@ -1556,6 +1578,63 @@ message ControllerAPI {
       string controller_type = 1;
     }
 
+    message Response {}
+  }
+}
+
+// StatusAPI reports the block status of a render into its status context.
+// A request names a resource the caller holds. The server resolves the status stamp
+// of that resource to its StatusContext.
+message StatusAPI {
+  message Transition {
+    uint32 state = 1;  // model.StatusState
+    string detail = 2; // for the user
+    string reason = 3; // only with the Terminated state
+  }
+
+  // Create the root status context of a render without a stamp.
+  message Create {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+    }
+    message Response {}
+  }
+
+  // Set a data key of the status context of a render.
+  // Allowed only in the transaction that created the context.
+  message SetData {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+      string key = 3;
+      string value = 4;
+    }
+    message Response {}
+  }
+
+  // Record a transition of the resource under a topic.
+  // Stored as transition/<topic>/<resource>/<ns> in the status context.
+  message RecordTransition {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+      string topic = 3;
+      Transition transition = 4;
+    }
+    message Response {}
+  }
+
+  // Set an attribute of the resource under a topic.
+  // Stored as attr/<topic>/<resource>/<key> in the status context.
+  message SetAttr {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+      string topic = 3;
+      string key = 4;
+      bytes value = 5;
+    }
     message Response {}
   }
 }

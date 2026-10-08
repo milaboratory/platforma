@@ -34,7 +34,10 @@ export type BackendCapability =
   | "crossTreeRefs:v1" // cross-color field attach (accept a foreign-colored shared envelope)
   | "userListing:v1" // list users for the recipient picker
   | "publicGrants:v1" // public (everyone) grants allowed for any role
-  | "txListGrants:v1"; // list grants inside a transaction (batched recipient reads)
+  | "txListGrants:v1" // list grants inside a transaction (batched recipient reads)
+  // Block status API: TX status messages (create, setData, setAttr, recordTransition) and a parent
+  // on struct/ephemeral creates. Without it, PlTransaction.status() sends nothing.
+  | "statusApi:v1";
 
 /** True iff `capabilities` advertises the requested token. */
 export function hasCapability(

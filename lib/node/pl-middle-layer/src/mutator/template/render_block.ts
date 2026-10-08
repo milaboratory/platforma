@@ -1,7 +1,13 @@
-import type { AnyRef, PlTransaction, ResourceRef, ResourceType } from "@milaboratories/pl-client";
+import type {
+  AnyRef,
+  AnyFieldRef,
+  PlTransaction,
+  ResourceRef,
+  ResourceType,
+} from "@milaboratories/pl-client";
 import { field, Pl } from "@milaboratories/pl-client";
 import { randomUUID } from "node:crypto";
-import { createRenderTemplate } from "./render_template";
+import { createRenderTemplate, createRenderTemplateWithResource } from "./render_template";
 
 export const BContextEnd: ResourceType = { name: "BContextEnd", version: "1" };
 export const BContext: ResourceType = { name: "BContext", version: "1" };
@@ -30,12 +36,45 @@ export type HeavyBlockOutputs = {
 
 export const HeavyBlockOutputNames: (keyof HeavyBlockOutputs)[] = ["context", "result"];
 
+/** Data of the root status context of a block render. See the block status spec. */
+export type BlockStatusData = {
+  /** Display name of the block. */
+  name: string;
+  /** JSON of the block pack spec. */
+  blockPack: string;
+  blockId: string;
+};
+
+/**
+ * Creates the heavy block render. With `status`, it also creates the root status context of the
+ * render and sets its data, in the same transaction, and returns `status`: a reference to the
+ * render's "status" field. The render is garbage collected after its outputs resolve, so the caller
+ * must hold this reference to keep the context. Without `statusApi:v1` on the backend, nothing is
+ * created and `status` is undefined.
+ */
 export function createRenderHeavyBlock(
   tx: PlTransaction,
   tpl: AnyRef,
   inputs: HeavyBlockInputs,
-): HeavyBlockOutputs {
-  return createRenderTemplate(tx, tpl, true, inputs, HeavyBlockOutputNames);
+  status?: BlockStatusData,
+): HeavyBlockOutputs & { status?: AnyFieldRef } {
+  const { render, outputs } = createRenderTemplateWithResource(
+    tx,
+    tpl,
+    true,
+    inputs,
+    HeavyBlockOutputNames,
+  );
+
+  if (status === undefined || !tx.statusApiEnabled) return outputs;
+
+  const renderStatus = tx.status(render);
+  renderStatus.create();
+  renderStatus.setData("name", status.name);
+  renderStatus.setData("block-pack", status.blockPack);
+  renderStatus.setData("block-id", status.blockId);
+
+  return { ...outputs, status: field(render, "status") };
 }
 
 export type LightBlockInputs = {

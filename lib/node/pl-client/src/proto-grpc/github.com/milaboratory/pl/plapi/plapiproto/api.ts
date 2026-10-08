@@ -413,6 +413,30 @@ export interface TxAPI_ClientMessage {
          */
         notificationDiscard: NotificationAPI_Discard_Request; // discard notification handled by controller
     } | {
+        oneofKind: "statusCreate";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.StatusAPI.Create.Request status_create = 90
+         */
+        statusCreate: StatusAPI_Create_Request; // create the root status context of a render
+    } | {
+        oneofKind: "statusSetData";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.StatusAPI.SetData.Request status_set_data = 91
+         */
+        statusSetData: StatusAPI_SetData_Request; // set a data key of a status context in its creating transaction
+    } | {
+        oneofKind: "statusRecordTransition";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.StatusAPI.RecordTransition.Request status_record_transition = 92
+         */
+        statusRecordTransition: StatusAPI_RecordTransition_Request; // record a status transition of a resource
+    } | {
+        oneofKind: "statusSetAttr";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.StatusAPI.SetAttr.Request status_set_attr = 93
+         */
+        statusSetAttr: StatusAPI_SetAttr_Request; // set a status attribute of a resource
+    } | {
         oneofKind: "resourceKeyValueSet";
         /**
          * @generated from protobuf field: MiLaboratories.PL.API.ResourceKVAPI.Set.Request resource_key_value_set = 200
@@ -808,6 +832,30 @@ export interface TxAPI_ServerMessage {
          */
         notificationDiscard: NotificationAPI_Discard_Response;
     } | {
+        oneofKind: "statusCreate";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.StatusAPI.Create.Response status_create = 90
+         */
+        statusCreate: StatusAPI_Create_Response;
+    } | {
+        oneofKind: "statusSetData";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.StatusAPI.SetData.Response status_set_data = 91
+         */
+        statusSetData: StatusAPI_SetData_Response;
+    } | {
+        oneofKind: "statusRecordTransition";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.StatusAPI.RecordTransition.Response status_record_transition = 92
+         */
+        statusRecordTransition: StatusAPI_RecordTransition_Response;
+    } | {
+        oneofKind: "statusSetAttr";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.StatusAPI.SetAttr.Response status_set_attr = 93
+         */
+        statusSetAttr: StatusAPI_SetAttr_Response;
+    } | {
         oneofKind: "resourceKeyValueSet";
         /**
          * @generated from protobuf field: MiLaboratories.PL.API.ResourceKVAPI.Set.Response resource_key_value_set = 200
@@ -1169,6 +1217,18 @@ export interface ResourceAPI_CreateStruct_Request {
      * @generated from protobuf field: bytes color_proof = 5
      */
     colorProof: Uint8Array;
+    /**
+     * The resource that caused the creation, e.g. the renderer of a template.
+     * The new resource inherits the status context of the parent. Zero means no parent.
+     * The parent must have a valid signature with a color that matches the color of the new resource.
+     *
+     * @generated from protobuf field: uint64 parent_id = 6
+     */
+    parentId: bigint;
+    /**
+     * @generated from protobuf field: bytes parent_signature = 7
+     */
+    parentSignature: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.CreateStruct.Response
@@ -1208,6 +1268,18 @@ export interface ResourceAPI_CreateEphemeral_Request {
      * @generated from protobuf field: bytes color_proof = 5
      */
     colorProof: Uint8Array;
+    /**
+     * The resource that caused the creation, e.g. the renderer of a template.
+     * The new resource inherits the status context of the parent. Zero means no parent.
+     * The parent must have a valid signature with a color that matches the color of the new resource.
+     *
+     * @generated from protobuf field: uint64 parent_id = 6
+     */
+    parentId: bigint;
+    /**
+     * @generated from protobuf field: bytes parent_signature = 7
+     */
+    parentSignature: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.CreateEphemeral.Response
@@ -3022,6 +3094,163 @@ export interface ControllerAPI_ClearFeatures_Request {
 export interface ControllerAPI_ClearFeatures_Response {
 }
 /**
+ * StatusAPI reports the block status of a render into its status context.
+ * A request names a resource the caller holds. The server resolves the status stamp
+ * of that resource to its StatusContext.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI
+ */
+export interface StatusAPI {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.Transition
+ */
+export interface StatusAPI_Transition {
+    /**
+     * @generated from protobuf field: uint32 state = 1
+     */
+    state: number; // model.StatusState
+    /**
+     * @generated from protobuf field: string detail = 2
+     */
+    detail: string; // for the user
+    /**
+     * @generated from protobuf field: string reason = 3
+     */
+    reason: string; // only with the Terminated state
+}
+/**
+ * Create the root status context of a render without a stamp.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.Create
+ */
+export interface StatusAPI_Create {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.Create.Request
+ */
+export interface StatusAPI_Create_Request {
+    /**
+     * @generated from protobuf field: uint64 resource_id = 1
+     */
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: bytes resource_signature = 2
+     */
+    resourceSignature: Uint8Array;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.Create.Response
+ */
+export interface StatusAPI_Create_Response {
+}
+/**
+ * Set a data key of the status context of a render.
+ * Allowed only in the transaction that created the context.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.SetData
+ */
+export interface StatusAPI_SetData {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.SetData.Request
+ */
+export interface StatusAPI_SetData_Request {
+    /**
+     * @generated from protobuf field: uint64 resource_id = 1
+     */
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: bytes resource_signature = 2
+     */
+    resourceSignature: Uint8Array;
+    /**
+     * @generated from protobuf field: string key = 3
+     */
+    key: string;
+    /**
+     * @generated from protobuf field: string value = 4
+     */
+    value: string;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.SetData.Response
+ */
+export interface StatusAPI_SetData_Response {
+}
+/**
+ * Record a transition of the resource under a topic.
+ * Stored as transition/<topic>/<resource>/<ns> in the status context.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.RecordTransition
+ */
+export interface StatusAPI_RecordTransition {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.RecordTransition.Request
+ */
+export interface StatusAPI_RecordTransition_Request {
+    /**
+     * @generated from protobuf field: uint64 resource_id = 1
+     */
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: bytes resource_signature = 2
+     */
+    resourceSignature: Uint8Array;
+    /**
+     * @generated from protobuf field: string topic = 3
+     */
+    topic: string;
+    /**
+     * @generated from protobuf field: MiLaboratories.PL.API.StatusAPI.Transition transition = 4
+     */
+    transition?: StatusAPI_Transition;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.RecordTransition.Response
+ */
+export interface StatusAPI_RecordTransition_Response {
+}
+/**
+ * Set an attribute of the resource under a topic.
+ * Stored as attr/<topic>/<resource>/<key> in the status context.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.SetAttr
+ */
+export interface StatusAPI_SetAttr {
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.SetAttr.Request
+ */
+export interface StatusAPI_SetAttr_Request {
+    /**
+     * @generated from protobuf field: uint64 resource_id = 1
+     */
+    resourceId: bigint;
+    /**
+     * @generated from protobuf field: bytes resource_signature = 2
+     */
+    resourceSignature: Uint8Array;
+    /**
+     * @generated from protobuf field: string topic = 3
+     */
+    topic: string;
+    /**
+     * @generated from protobuf field: string key = 4
+     */
+    key: string;
+    /**
+     * @generated from protobuf field: bytes value = 5
+     */
+    value: Uint8Array;
+}
+/**
+ * @generated from protobuf message MiLaboratories.PL.API.StatusAPI.SetAttr.Response
+ */
+export interface StatusAPI_SetAttr_Response {
+}
+/**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceKVAPI
  */
 export interface ResourceKVAPI {
@@ -4782,6 +5011,10 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
             { no: 154, name: "notification_get", kind: "message", oneof: "request", T: () => NotificationAPI_Get_Request },
             { no: 155, name: "notification_ack", kind: "message", oneof: "request", T: () => NotificationAPI_Ack_Request },
             { no: 156, name: "notification_discard", kind: "message", oneof: "request", T: () => NotificationAPI_Discard_Request },
+            { no: 90, name: "status_create", kind: "message", oneof: "request", T: () => StatusAPI_Create_Request },
+            { no: 91, name: "status_set_data", kind: "message", oneof: "request", T: () => StatusAPI_SetData_Request },
+            { no: 92, name: "status_record_transition", kind: "message", oneof: "request", T: () => StatusAPI_RecordTransition_Request },
+            { no: 93, name: "status_set_attr", kind: "message", oneof: "request", T: () => StatusAPI_SetAttr_Request },
             { no: 200, name: "resource_key_value_set", kind: "message", oneof: "request", T: () => ResourceKVAPI_Set_Request },
             { no: 201, name: "resource_key_value_get", kind: "message", oneof: "request", T: () => ResourceKVAPI_Get_Request },
             { no: 202, name: "resource_key_value_get_if_exists", kind: "message", oneof: "request", T: () => ResourceKVAPI_GetIfExists_Request },
@@ -5062,6 +5295,30 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
                         notificationDiscard: NotificationAPI_Discard_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).notificationDiscard)
                     };
                     break;
+                case /* MiLaboratories.PL.API.StatusAPI.Create.Request status_create */ 90:
+                    message.request = {
+                        oneofKind: "statusCreate",
+                        statusCreate: StatusAPI_Create_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).statusCreate)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.StatusAPI.SetData.Request status_set_data */ 91:
+                    message.request = {
+                        oneofKind: "statusSetData",
+                        statusSetData: StatusAPI_SetData_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).statusSetData)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.StatusAPI.RecordTransition.Request status_record_transition */ 92:
+                    message.request = {
+                        oneofKind: "statusRecordTransition",
+                        statusRecordTransition: StatusAPI_RecordTransition_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).statusRecordTransition)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.StatusAPI.SetAttr.Request status_set_attr */ 93:
+                    message.request = {
+                        oneofKind: "statusSetAttr",
+                        statusSetAttr: StatusAPI_SetAttr_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).statusSetAttr)
+                    };
+                    break;
                 case /* MiLaboratories.PL.API.ResourceKVAPI.Set.Request resource_key_value_set */ 200:
                     message.request = {
                         oneofKind: "resourceKeyValueSet",
@@ -5284,6 +5541,18 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
         /* MiLaboratories.PL.API.ResourceAPI.TreeSize.Request resource_tree_size = 71; */
         if (message.request.oneofKind === "resourceTreeSize")
             ResourceAPI_TreeSize_Request.internalBinaryWrite(message.request.resourceTreeSize, writer.tag(71, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.StatusAPI.Create.Request status_create = 90; */
+        if (message.request.oneofKind === "statusCreate")
+            StatusAPI_Create_Request.internalBinaryWrite(message.request.statusCreate, writer.tag(90, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.StatusAPI.SetData.Request status_set_data = 91; */
+        if (message.request.oneofKind === "statusSetData")
+            StatusAPI_SetData_Request.internalBinaryWrite(message.request.statusSetData, writer.tag(91, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.StatusAPI.RecordTransition.Request status_record_transition = 92; */
+        if (message.request.oneofKind === "statusRecordTransition")
+            StatusAPI_RecordTransition_Request.internalBinaryWrite(message.request.statusRecordTransition, writer.tag(92, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.StatusAPI.SetAttr.Request status_set_attr = 93; */
+        if (message.request.oneofKind === "statusSetAttr")
+            StatusAPI_SetAttr_Request.internalBinaryWrite(message.request.statusSetAttr, writer.tag(93, WireType.LengthDelimited).fork(), options).join();
         /* MiLaboratories.PL.API.FieldAPI.Create.Request field_create = 101; */
         if (message.request.oneofKind === "fieldCreate")
             FieldAPI_Create_Request.internalBinaryWrite(message.request.fieldCreate, writer.tag(101, WireType.LengthDelimited).fork(), options).join();
@@ -5451,6 +5720,10 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
             { no: 154, name: "notification_get", kind: "message", oneof: "response", T: () => NotificationAPI_Get_Response },
             { no: 155, name: "notification_ack", kind: "message", oneof: "response", T: () => NotificationAPI_Ack_Response },
             { no: 156, name: "notification_discard", kind: "message", oneof: "response", T: () => NotificationAPI_Discard_Response },
+            { no: 90, name: "status_create", kind: "message", oneof: "response", T: () => StatusAPI_Create_Response },
+            { no: 91, name: "status_set_data", kind: "message", oneof: "response", T: () => StatusAPI_SetData_Response },
+            { no: 92, name: "status_record_transition", kind: "message", oneof: "response", T: () => StatusAPI_RecordTransition_Response },
+            { no: 93, name: "status_set_attr", kind: "message", oneof: "response", T: () => StatusAPI_SetAttr_Response },
             { no: 200, name: "resource_key_value_set", kind: "message", oneof: "response", T: () => ResourceKVAPI_Set_Response },
             { no: 201, name: "resource_key_value_get", kind: "message", oneof: "response", T: () => ResourceKVAPI_Get_Response },
             { no: 202, name: "resource_key_value_get_if_exists", kind: "message", oneof: "response", T: () => ResourceKVAPI_GetIfExists_Response },
@@ -5735,6 +6008,30 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
                         notificationDiscard: NotificationAPI_Discard_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).notificationDiscard)
                     };
                     break;
+                case /* MiLaboratories.PL.API.StatusAPI.Create.Response status_create */ 90:
+                    message.response = {
+                        oneofKind: "statusCreate",
+                        statusCreate: StatusAPI_Create_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).statusCreate)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.StatusAPI.SetData.Response status_set_data */ 91:
+                    message.response = {
+                        oneofKind: "statusSetData",
+                        statusSetData: StatusAPI_SetData_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).statusSetData)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.StatusAPI.RecordTransition.Response status_record_transition */ 92:
+                    message.response = {
+                        oneofKind: "statusRecordTransition",
+                        statusRecordTransition: StatusAPI_RecordTransition_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).statusRecordTransition)
+                    };
+                    break;
+                case /* MiLaboratories.PL.API.StatusAPI.SetAttr.Response status_set_attr */ 93:
+                    message.response = {
+                        oneofKind: "statusSetAttr",
+                        statusSetAttr: StatusAPI_SetAttr_Response.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).statusSetAttr)
+                    };
+                    break;
                 case /* MiLaboratories.PL.API.ResourceKVAPI.Set.Response resource_key_value_set */ 200:
                     message.response = {
                         oneofKind: "resourceKeyValueSet",
@@ -5966,6 +6263,18 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
         /* MiLaboratories.PL.API.ResourceAPI.TreeSize.Response resource_tree_size = 71; */
         if (message.response.oneofKind === "resourceTreeSize")
             ResourceAPI_TreeSize_Response.internalBinaryWrite(message.response.resourceTreeSize, writer.tag(71, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.StatusAPI.Create.Response status_create = 90; */
+        if (message.response.oneofKind === "statusCreate")
+            StatusAPI_Create_Response.internalBinaryWrite(message.response.statusCreate, writer.tag(90, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.StatusAPI.SetData.Response status_set_data = 91; */
+        if (message.response.oneofKind === "statusSetData")
+            StatusAPI_SetData_Response.internalBinaryWrite(message.response.statusSetData, writer.tag(91, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.StatusAPI.RecordTransition.Response status_record_transition = 92; */
+        if (message.response.oneofKind === "statusRecordTransition")
+            StatusAPI_RecordTransition_Response.internalBinaryWrite(message.response.statusRecordTransition, writer.tag(92, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.StatusAPI.SetAttr.Response status_set_attr = 93; */
+        if (message.response.oneofKind === "statusSetAttr")
+            StatusAPI_SetAttr_Response.internalBinaryWrite(message.response.statusSetAttr, writer.tag(93, WireType.LengthDelimited).fork(), options).join();
         /* MiLaboratories.PL.API.FieldAPI.Create.Response field_create = 101; */
         if (message.response.oneofKind === "fieldCreate")
             FieldAPI_Create_Response.internalBinaryWrite(message.response.fieldCreate, writer.tag(101, WireType.LengthDelimited).fork(), options).join();
@@ -6985,13 +7294,17 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
             { no: 2, name: "id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "type", kind: "message", T: () => ResourceType },
             { no: 4, name: "data", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
-            { no: 5, name: "color_proof", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 5, name: "color_proof", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 6, name: "parent_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 7, name: "parent_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_CreateStruct_Request>): ResourceAPI_CreateStruct_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.id = 0n;
         message.colorProof = new Uint8Array(0);
+        message.parentId = 0n;
+        message.parentSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateStruct_Request>(this, message, value);
         return message;
@@ -7012,6 +7325,12 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
                     break;
                 case /* bytes color_proof */ 5:
                     message.colorProof = reader.bytes();
+                    break;
+                case /* uint64 parent_id */ 6:
+                    message.parentId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes parent_signature */ 7:
+                    message.parentSignature = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -7037,6 +7356,12 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
         /* bytes color_proof = 5; */
         if (message.colorProof.length)
             writer.tag(5, WireType.LengthDelimited).bytes(message.colorProof);
+        /* uint64 parent_id = 6; */
+        if (message.parentId !== 0n)
+            writer.tag(6, WireType.Varint).uint64(message.parentId);
+        /* bytes parent_signature = 7; */
+        if (message.parentSignature.length)
+            writer.tag(7, WireType.LengthDelimited).bytes(message.parentSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -7147,13 +7472,17 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
             { no: 2, name: "id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "type", kind: "message", T: () => ResourceType },
             { no: 4, name: "data", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
-            { no: 5, name: "color_proof", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 5, name: "color_proof", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 6, name: "parent_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 7, name: "parent_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceAPI_CreateEphemeral_Request>): ResourceAPI_CreateEphemeral_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.id = 0n;
         message.colorProof = new Uint8Array(0);
+        message.parentId = 0n;
+        message.parentSignature = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ResourceAPI_CreateEphemeral_Request>(this, message, value);
         return message;
@@ -7174,6 +7503,12 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
                     break;
                 case /* bytes color_proof */ 5:
                     message.colorProof = reader.bytes();
+                    break;
+                case /* uint64 parent_id */ 6:
+                    message.parentId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes parent_signature */ 7:
+                    message.parentSignature = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -7199,6 +7534,12 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
         /* bytes color_proof = 5; */
         if (message.colorProof.length)
             writer.tag(5, WireType.LengthDelimited).bytes(message.colorProof);
+        /* uint64 parent_id = 6; */
+        if (message.parentId !== 0n)
+            writer.tag(6, WireType.Varint).uint64(message.parentId);
+        /* bytes parent_signature = 7; */
+        if (message.parentSignature.length)
+            writer.tag(7, WireType.LengthDelimited).bytes(message.parentSignature);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -14601,6 +14942,686 @@ class ControllerAPI_ClearFeatures_Response$Type extends MessageType<ControllerAP
  * @generated MessageType for protobuf message MiLaboratories.PL.API.ControllerAPI.ClearFeatures.Response
  */
 export const ControllerAPI_ClearFeatures_Response = new ControllerAPI_ClearFeatures_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI$Type extends MessageType<StatusAPI> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI", []);
+    }
+    create(value?: PartialMessage<StatusAPI>): StatusAPI {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI): StatusAPI {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI
+ */
+export const StatusAPI = new StatusAPI$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_Transition$Type extends MessageType<StatusAPI_Transition> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.Transition", [
+            { no: 1, name: "state", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
+            { no: 2, name: "detail", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "reason", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<StatusAPI_Transition>): StatusAPI_Transition {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.state = 0;
+        message.detail = "";
+        message.reason = "";
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_Transition>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_Transition): StatusAPI_Transition {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint32 state */ 1:
+                    message.state = reader.uint32();
+                    break;
+                case /* string detail */ 2:
+                    message.detail = reader.string();
+                    break;
+                case /* string reason */ 3:
+                    message.reason = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_Transition, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint32 state = 1; */
+        if (message.state !== 0)
+            writer.tag(1, WireType.Varint).uint32(message.state);
+        /* string detail = 2; */
+        if (message.detail !== "")
+            writer.tag(2, WireType.LengthDelimited).string(message.detail);
+        /* string reason = 3; */
+        if (message.reason !== "")
+            writer.tag(3, WireType.LengthDelimited).string(message.reason);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.Transition
+ */
+export const StatusAPI_Transition = new StatusAPI_Transition$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_Create$Type extends MessageType<StatusAPI_Create> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.Create", []);
+    }
+    create(value?: PartialMessage<StatusAPI_Create>): StatusAPI_Create {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_Create>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_Create): StatusAPI_Create {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_Create, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.Create
+ */
+export const StatusAPI_Create = new StatusAPI_Create$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_Create_Request$Type extends MessageType<StatusAPI_Create_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.Create.Request", [
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+        ]);
+    }
+    create(value?: PartialMessage<StatusAPI_Create_Request>): StatusAPI_Create_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_Create_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_Create_Request): StatusAPI_Create_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 resource_id */ 1:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_Create_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 resource_id = 1; */
+        if (message.resourceId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.Create.Request
+ */
+export const StatusAPI_Create_Request = new StatusAPI_Create_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_Create_Response$Type extends MessageType<StatusAPI_Create_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.Create.Response", []);
+    }
+    create(value?: PartialMessage<StatusAPI_Create_Response>): StatusAPI_Create_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_Create_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_Create_Response): StatusAPI_Create_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_Create_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.Create.Response
+ */
+export const StatusAPI_Create_Response = new StatusAPI_Create_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_SetData$Type extends MessageType<StatusAPI_SetData> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.SetData", []);
+    }
+    create(value?: PartialMessage<StatusAPI_SetData>): StatusAPI_SetData {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_SetData>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_SetData): StatusAPI_SetData {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_SetData, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.SetData
+ */
+export const StatusAPI_SetData = new StatusAPI_SetData$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_SetData_Request$Type extends MessageType<StatusAPI_SetData_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.SetData.Request", [
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 4, name: "value", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+        ]);
+    }
+    create(value?: PartialMessage<StatusAPI_SetData_Request>): StatusAPI_SetData_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
+        message.key = "";
+        message.value = "";
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_SetData_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_SetData_Request): StatusAPI_SetData_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 resource_id */ 1:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                case /* string key */ 3:
+                    message.key = reader.string();
+                    break;
+                case /* string value */ 4:
+                    message.value = reader.string();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_SetData_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 resource_id = 1; */
+        if (message.resourceId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
+        /* string key = 3; */
+        if (message.key !== "")
+            writer.tag(3, WireType.LengthDelimited).string(message.key);
+        /* string value = 4; */
+        if (message.value !== "")
+            writer.tag(4, WireType.LengthDelimited).string(message.value);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.SetData.Request
+ */
+export const StatusAPI_SetData_Request = new StatusAPI_SetData_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_SetData_Response$Type extends MessageType<StatusAPI_SetData_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.SetData.Response", []);
+    }
+    create(value?: PartialMessage<StatusAPI_SetData_Response>): StatusAPI_SetData_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_SetData_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_SetData_Response): StatusAPI_SetData_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_SetData_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.SetData.Response
+ */
+export const StatusAPI_SetData_Response = new StatusAPI_SetData_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_RecordTransition$Type extends MessageType<StatusAPI_RecordTransition> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.RecordTransition", []);
+    }
+    create(value?: PartialMessage<StatusAPI_RecordTransition>): StatusAPI_RecordTransition {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_RecordTransition>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_RecordTransition): StatusAPI_RecordTransition {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_RecordTransition, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.RecordTransition
+ */
+export const StatusAPI_RecordTransition = new StatusAPI_RecordTransition$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_RecordTransition_Request$Type extends MessageType<StatusAPI_RecordTransition_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.RecordTransition.Request", [
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "topic", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 4, name: "transition", kind: "message", T: () => StatusAPI_Transition }
+        ]);
+    }
+    create(value?: PartialMessage<StatusAPI_RecordTransition_Request>): StatusAPI_RecordTransition_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
+        message.topic = "";
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_RecordTransition_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_RecordTransition_Request): StatusAPI_RecordTransition_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 resource_id */ 1:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                case /* string topic */ 3:
+                    message.topic = reader.string();
+                    break;
+                case /* MiLaboratories.PL.API.StatusAPI.Transition transition */ 4:
+                    message.transition = StatusAPI_Transition.internalBinaryRead(reader, reader.uint32(), options, message.transition);
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_RecordTransition_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 resource_id = 1; */
+        if (message.resourceId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
+        /* string topic = 3; */
+        if (message.topic !== "")
+            writer.tag(3, WireType.LengthDelimited).string(message.topic);
+        /* MiLaboratories.PL.API.StatusAPI.Transition transition = 4; */
+        if (message.transition)
+            StatusAPI_Transition.internalBinaryWrite(message.transition, writer.tag(4, WireType.LengthDelimited).fork(), options).join();
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.RecordTransition.Request
+ */
+export const StatusAPI_RecordTransition_Request = new StatusAPI_RecordTransition_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_RecordTransition_Response$Type extends MessageType<StatusAPI_RecordTransition_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.RecordTransition.Response", []);
+    }
+    create(value?: PartialMessage<StatusAPI_RecordTransition_Response>): StatusAPI_RecordTransition_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_RecordTransition_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_RecordTransition_Response): StatusAPI_RecordTransition_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_RecordTransition_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.RecordTransition.Response
+ */
+export const StatusAPI_RecordTransition_Response = new StatusAPI_RecordTransition_Response$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_SetAttr$Type extends MessageType<StatusAPI_SetAttr> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.SetAttr", []);
+    }
+    create(value?: PartialMessage<StatusAPI_SetAttr>): StatusAPI_SetAttr {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_SetAttr>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_SetAttr): StatusAPI_SetAttr {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_SetAttr, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.SetAttr
+ */
+export const StatusAPI_SetAttr = new StatusAPI_SetAttr$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_SetAttr_Request$Type extends MessageType<StatusAPI_SetAttr_Request> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.SetAttr.Request", [
+            { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 3, name: "topic", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 4, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 5, name: "value", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+        ]);
+    }
+    create(value?: PartialMessage<StatusAPI_SetAttr_Request>): StatusAPI_SetAttr_Request {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.resourceId = 0n;
+        message.resourceSignature = new Uint8Array(0);
+        message.topic = "";
+        message.key = "";
+        message.value = new Uint8Array(0);
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_SetAttr_Request>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_SetAttr_Request): StatusAPI_SetAttr_Request {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* uint64 resource_id */ 1:
+                    message.resourceId = reader.uint64().toBigInt();
+                    break;
+                case /* bytes resource_signature */ 2:
+                    message.resourceSignature = reader.bytes();
+                    break;
+                case /* string topic */ 3:
+                    message.topic = reader.string();
+                    break;
+                case /* string key */ 4:
+                    message.key = reader.string();
+                    break;
+                case /* bytes value */ 5:
+                    message.value = reader.bytes();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_SetAttr_Request, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* uint64 resource_id = 1; */
+        if (message.resourceId !== 0n)
+            writer.tag(1, WireType.Varint).uint64(message.resourceId);
+        /* bytes resource_signature = 2; */
+        if (message.resourceSignature.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
+        /* string topic = 3; */
+        if (message.topic !== "")
+            writer.tag(3, WireType.LengthDelimited).string(message.topic);
+        /* string key = 4; */
+        if (message.key !== "")
+            writer.tag(4, WireType.LengthDelimited).string(message.key);
+        /* bytes value = 5; */
+        if (message.value.length)
+            writer.tag(5, WireType.LengthDelimited).bytes(message.value);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.SetAttr.Request
+ */
+export const StatusAPI_SetAttr_Request = new StatusAPI_SetAttr_Request$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class StatusAPI_SetAttr_Response$Type extends MessageType<StatusAPI_SetAttr_Response> {
+    constructor() {
+        super("MiLaboratories.PL.API.StatusAPI.SetAttr.Response", []);
+    }
+    create(value?: PartialMessage<StatusAPI_SetAttr_Response>): StatusAPI_SetAttr_Response {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        if (value !== undefined)
+            reflectionMergePartial<StatusAPI_SetAttr_Response>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: StatusAPI_SetAttr_Response): StatusAPI_SetAttr_Response {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: StatusAPI_SetAttr_Response, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.StatusAPI.SetAttr.Response
+ */
+export const StatusAPI_SetAttr_Response = new StatusAPI_SetAttr_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class ResourceKVAPI$Type extends MessageType<ResourceKVAPI> {
     constructor() {

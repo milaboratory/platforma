@@ -81,6 +81,20 @@ export interface KeyValue {
 }
 
 /** Key-Value pair from resource-attached KV storage */
+/**
+ * Status handle of one render in a transaction. It writes into the status context of the render.
+ * All calls are asynchronous: errors surface when the transaction commits.
+ */
+export interface StatusContextHandle {
+  /** Creates the root status context of a render that has no status context yet. */
+  create(): void;
+  /**
+   * Sets a data key of the status context of the render, e.g. "name", "block-pack", "block-id".
+   * Works only in the transaction that created the context: the data is immutable after it commits.
+   */
+  setData(key: string, value: string): void;
+}
+
 export interface KeyValueString {
   key: string;
   value: string;
@@ -282,6 +296,8 @@ export class PlTransaction {
     private readonly cachePredicate: FinalResourceDataPredicate,
     private readonly sharedResourceDataCache: LRUCache<SignedResourceId, ResourceDataCacheRecord>,
     private readonly enableFormattedErrors: boolean = false,
+    /** The backend advertises `statusApi:v1`. Without it, {@link status} sends nothing. */
+    public readonly statusApiEnabled: boolean = false,
   ) {
     // initiating transaction
     this.txOpen = this.sendSingleAndParse(
@@ -571,6 +587,9 @@ export class PlTransaction {
           data:
             data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
           colorProof: color ?? emptySignature,
+          // No parent: creating with a parent (status context inheritance) is not exposed here yet.
+          parentId: 0n,
+          parentSignature: emptySignature,
         },
       }),
       (r) => r.resourceCreateStruct.resourceId,
@@ -595,6 +614,9 @@ export class PlTransaction {
           data:
             data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
           colorProof: color ?? emptySignature,
+          // No parent: creating with a parent (status context inheritance) is not exposed here yet.
+          parentId: 0n,
+          parentSignature: emptySignature,
         },
       }),
       (r) => r.resourceCreateEphemeral.resourceId,
@@ -1074,6 +1096,35 @@ export class PlTransaction {
         value: toBytes(value),
       },
     });
+  }
+
+  /**
+   * Returns the status handle of a render. See the block status spec: the middle layer creates the
+   * root status context of a block render and sets its data in the same transaction.
+   * When the backend does not advertise `statusApi:v1`, the handle sends nothing: an older backend
+   * rejects the unknown messages and would fail the whole transaction.
+   */
+  public status(rId: AnyResourceRef): StatusContextHandle {
+    if (!this.statusApiEnabled) return { create: () => {}, setData: () => {} };
+
+    return {
+      create: () =>
+        this.sendVoidAsync({
+          oneofKind: "statusCreate",
+          statusCreate: {
+            ...this.toSignedResourceId(rId),
+          },
+        }),
+      setData: (key: string, value: string) =>
+        this.sendVoidAsync({
+          oneofKind: "statusSetData",
+          statusSetData: {
+            ...this.toSignedResourceId(rId),
+            key,
+            value,
+          },
+        }),
+    };
   }
 
   public deleteKValue(rId: AnyResourceRef, key: string): void {
