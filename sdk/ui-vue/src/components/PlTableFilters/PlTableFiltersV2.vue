@@ -11,8 +11,8 @@ import {
   Domain,
   readAnnotation,
   readDomain,
+  getUniqueAxisValuesWithLabels,
   getUniqueSourceValuesWithLabels,
-  extractPObjectId,
   getPTableColumnId,
   deriveDistinctLabels,
 } from "@platforma-sdk/model";
@@ -21,12 +21,12 @@ import { PlBtnGhost, PlSlideModal, usePlBlockPageTitleTeleportTarget } from "@mi
 import {
   PlAdvancedFilter,
   PlAdvancedFilterComponent,
-  PlAdvancedFilterSupportedFilters,
   type PlAdvancedFilterItem,
 } from "../PlAdvancedFilter";
 import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
 import type { Nil } from "@milaboratories/helpers";
 import { isFunction, isNil } from "es-toolkit";
+import { resolveSuggestSource, TABLE_FILTER_TYPES } from "./suggest-source";
 
 const props = defineProps<{
   columns: PTableColumnSpec[];
@@ -94,23 +94,7 @@ const options = computed<PlAdvancedFilterItem[]>(() => {
   });
 });
 
-// Supported filters (same set as FilterSidebar)
-const supportedFilters = [
-  "isNA",
-  "isNotNA",
-  "greaterThan",
-  "greaterThanOrEqual",
-  "lessThan",
-  "lessThanOrEqual",
-  "patternEquals",
-  "patternNotEquals",
-  "patternContainSubsequence",
-  "patternNotContainSubsequence",
-  "patternMatchesRegularExpression",
-  "patternFuzzyContainSubsequence",
-  "equal",
-  "notEqual",
-] as (typeof PlAdvancedFilterSupportedFilters)[number][];
+const supportedFilters = TABLE_FILTER_TYPES;
 
 // getSuggestOptions - provide discrete values from column annotations
 function handleSuggestOptions(params: {
@@ -125,21 +109,29 @@ function handleSuggestOptions(params: {
   }
 
   const tableColumnId = params.columnId as PTableColumnId;
-  if (
-    typeof tableColumnId !== "object" ||
-    tableColumnId === null ||
-    tableColumnId.type !== "column"
-  ) {
-    throw new Error("ColumnId should be of type 'column' for suggest options");
+  if (typeof tableColumnId !== "object" || tableColumnId === null) {
+    throw new Error("ColumnId should be a table column id for suggest options");
   }
 
-  return getUniqueSourceValuesWithLabels(props.pframeHandle, {
-    columnId: extractPObjectId(tableColumnId.id),
-    axisIdx: params.axisIdx,
+  const search = {
     limit: 100,
     searchQuery: params.searchType === "label" ? params.searchStr : undefined,
     searchQueryValue: params.searchType === "value" ? params.searchStr : undefined,
-  }).then((v) => v.values);
+  };
+  const source = resolveSuggestSource(props.columns, tableColumnId, params.axisIdx);
+  const response =
+    source.type === "column"
+      ? getUniqueSourceValuesWithLabels(props.pframeHandle, {
+          columnId: source.columnId,
+          axisIdx: source.axisIdx,
+          ...search,
+        })
+      : getUniqueAxisValuesWithLabels(props.pframeHandle, {
+          axisSpec: source.axisSpec,
+          parentColumnIds: source.parentColumnIds,
+          ...search,
+        });
+  return response.then((v) => v.values);
 }
 </script>
 
