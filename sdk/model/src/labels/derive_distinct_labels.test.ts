@@ -1098,8 +1098,24 @@ describe("shared distinctions over presence-only ones", () => {
     expect(deriveDistinctLabels(specs)).toEqual([
       "DS / Seq cluster / e1",
       "DS / e2",
-      "DS / Seq cluster",
+      "CS / DS / Seq cluster",
       "DS / ESM2 cluster",
+    ]);
+  });
+
+  test("a bare column falls back to its hidden native label", () => {
+    // The forced dataset alone is a strict subset of the peer's parts; only the label differs.
+    const specs = [
+      col("A", [dataset, { type: "t2", label: "T2", importance: 20 }]),
+      col("B", [
+        dataset,
+        { type: "t1", label: "T1", importance: 10 },
+        { type: "t2", label: "T2", importance: 0 },
+      ]),
+    ];
+    expect(deriveDistinctLabels(specs, { forceTraceElements: ["dataset"] })).toEqual([
+      "A / DS",
+      "DS / T1",
     ]);
   });
 
