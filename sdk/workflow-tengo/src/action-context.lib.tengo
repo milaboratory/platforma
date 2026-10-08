@@ -1,0 +1,80 @@
+/**
+ * Block action context reporting.
+ *
+ * Every call is a no-op when the backend does not support block action context (feats.actionContextApi), so
+ * templates can report unconditionally.
+ *
+ * The backend keeps one action context for each render. A resource created with a parent reports
+ * into the context of its parent: the SDK creates resources with the current renderer as parent
+ * (see defaultParent), so a command or a child render of a template lands in that template's tree.
+ *
+ * Namespaces "core", "render", "workdir" and "exec" are reserved for the backend and controllers.
+ * Namespaces and reading keys must not contain "/".
+ */
+
+ll := import(":ll")
+feats := import(":feats")
+tx := import("tx")
+
+_renderer := undefined
+
+/**
+ * @return the id of the current template renderer, or undefined without block action context support.
+ *         Pass it as parent when creating resources, so they inherit the renderer's action context.
+ */
+defaultParent := func() {
+	if !feats.actionContextApi {
+		return undefined
+	}
+
+	if is_undefined(_renderer) {
+		_renderer = ll.getCurrentTemplateRenderer().ID
+	}
+
+	return _renderer
+}
+
+/**
+ * Returns the action context handle of a resource.
+ *
+ * @param rid: resource id
+ * @return handle with:
+ *   - create(): creates the root action context of a render without a parent
+ *   - setBaggage(key, value): sets a baggage key of the action context of a render, in the transaction
+ *                          that created the context, e.g. the name of a template right after render()
+ *   - setReading(namespace, key, value): sets an reading of the resource; the value is a string or bytes
+ *   - record(namespace, state, ...detail): records a transition of the resource, state is a state name,
+ *                                      e.g. "Running"; detail is an optional string for the user
+ */
+of := func(rid) {
+	return ll.toStrict({
+		create: func() {
+			if feats.actionContextApi {
+				tx.statusCreate(rid)
+			}
+		},
+
+		setData: func(key, value) {
+			if feats.actionContextApi {
+				tx.actionContextSetBaggage(rid, key, value)
+			}
+		},
+
+		setReading: func(namespace, key, value) {
+			if feats.actionContextApi {
+				tx.actionContextSetReading(rid, namespace, key, value)
+			}
+		},
+
+		record: func(namespace, state, ...detail) {
+			if feats.actionContextApi {
+				tx.actionContextRecordTransition(rid, namespace, state, len(detail) > 0 ? detail[0] : "")
+			}
+		}
+	})
+}
+
+export ll.toStrict({
+	defaultParent: defaultParent,
+	of: of
+})

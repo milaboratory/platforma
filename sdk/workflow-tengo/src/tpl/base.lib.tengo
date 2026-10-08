@@ -150,6 +150,14 @@ tpl := func(ops) {
 		},
 
 		/**
+		 * Block action context handle of the current renderer: self.actionContext().record("tpl", "Running", "aligning reads").
+		 * See the action context library. All calls are no-ops on backends without block action context support.
+		 */
+		actionContext: func() {
+			return _renderer.actionContext()
+		},
+
+		/**
 		 * Whether this template is ephemeral (rendered by ephemeral template router)
 		 */
 		isEphemeral: func() {
@@ -732,6 +740,7 @@ tpl := func(ops) {
 		api: func() {
 			return ll.toStrict({
 				renderer                : self.renderer,
+				actionContext           : self.actionContext,
 				registerUnmarshaller    : self.registerUnmarshaller,
 				rawInputs               : self.rawInputs,
 				rawServiceInputs        : self.rawServiceInputs,
