@@ -1,0 +1,80 @@
+/**
+ * Block status reporting.
+ *
+ * Every call is a no-op when the backend does not support block status (feats.statusApi), so
+ * templates can report status unconditionally.
+ *
+ * The backend keeps one status context for each render. A resource created with a parent reports
+ * into the context of its parent: the SDK creates resources with the current renderer as parent
+ * (see defaultParent), so a command or a child render of a template lands in that template's tree.
+ *
+ * Topics "core", "render", "workdir" and "exec" are reserved for the backend and controllers.
+ * Topics and attribute keys must not contain "/".
+ */
+
+ll := import(":ll")
+feats := import(":feats")
+tx := import("tx")
+
+_renderer := undefined
+
+/**
+ * @return the id of the current template renderer, or undefined without block status support.
+ *         Pass it as parent when creating resources, so they inherit the renderer's status context.
+ */
+defaultParent := func() {
+	if !feats.statusApi {
+		return undefined
+	}
+
+	if is_undefined(_renderer) {
+		_renderer = ll.getCurrentTemplateRenderer().ID
+	}
+
+	return _renderer
+}
+
+/**
+ * Returns the status handle of a resource.
+ *
+ * @param rid: resource id
+ * @return handle with:
+ *   - create(): creates the root status context of a render without a parent
+ *   - setData(key, value): sets a data key of the status context of a render, in the transaction
+ *                          that created the context, e.g. the name of a template right after render()
+ *   - setAttr(topic, key, value): sets an attribute of the resource; the value is a string or bytes
+ *   - record(topic, state, ...detail): records a transition of the resource, state is a state name,
+ *                                      e.g. "Running"; detail is an optional string for the user
+ */
+of := func(rid) {
+	return ll.toStrict({
+		create: func() {
+			if feats.statusApi {
+				tx.statusCreate(rid)
+			}
+		},
+
+		setData: func(key, value) {
+			if feats.statusApi {
+				tx.statusSetData(rid, key, value)
+			}
+		},
+
+		setAttr: func(topic, key, value) {
+			if feats.statusApi {
+				tx.statusSetAttr(rid, topic, key, value)
+			}
+		},
+
+		record: func(topic, state, ...detail) {
+			if feats.statusApi {
+				tx.statusRecordTransition(rid, topic, state, len(detail) > 0 ? detail[0] : "")
+			}
+		}
+	})
+}
+
+export ll.toStrict({
+	defaultParent: defaultParent,
+	of: of
+})

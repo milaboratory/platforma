@@ -94,5 +94,9 @@ export ll.toStrict({
 	// true when backend populates the multi-step 'progress' map output field
 	// on Blob* import/upload resources. When false, the SDK synthesizes the
 	// same map shape locally (single entry "01" → handle).
-	multiStepProgress:        _isEnabled("multiStepProgress")
+	multiStepProgress:        _isEnabled("multiStepProgress"),
+
+	// true when backend supports block status: tx.status* functions and a parent argument on
+	// tx.createStruct and tx.createEphemeral. Use the status library, not the tx functions directly.
+	statusApi:                _isEnabled("statusApi")
 })

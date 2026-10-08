@@ -12,6 +12,7 @@ json := import("json")
 times := import("times")
 constants := import(":constants")
 ffDefault := import(":ll.get-future-field-default")
+status := import(":status")
 
 //////////////// definitions ////////////////
 
@@ -754,6 +755,15 @@ resource = func(r) {
 		},
 
 		/**
+		 * Returns the block status handle of the resource (see the status library):
+		 * setAttr(topic, key, value), record(topic, state, ...detail), setData(key, value), create().
+		 * All calls are no-ops on backends without block status support.
+		 */
+		status: func() {
+			return status.of(self.id)
+		},
+
+		/**
 		 * Sets a flag to a key value storage associated with resource
 		 *
 		 * @param key: string - key
@@ -1332,7 +1342,11 @@ resourceBuilder = func(r) {
  */
 structBuilder = func(resourceType, ...data) {
 	id := undefined
-	if len(data) > 0 && !is_undefined(data[0]) {
+	parent := status.defaultParent()
+	if !is_undefined(parent) {
+		// the new resource inherits the status context of the current renderer
+		id = tx.createStruct(resourceType.Name, resourceType.Version, len(data) > 0 ? data[0] : undefined, parent)
+	} else if len(data) > 0 && !is_undefined(data[0]) {
 		id = tx.createStruct(resourceType.Name, resourceType.Version, data[0])
 	} else {
 		id = tx.createStruct(resourceType.Name, resourceType.Version)
@@ -1473,7 +1487,11 @@ ephemeralMapBuilder = func(...resourceType) {
 
 ephemeralBuilder = func(resourceType, ...data) {
 	id := undefined
-	if (len(data) > 0) {
+	parent := status.defaultParent()
+	if !is_undefined(parent) {
+		// the new resource inherits the status context of the current renderer
+		id = tx.createEphemeral(resourceType.Name, resourceType.Version, len(data) > 0 ? data[0] : undefined, parent)
+	} else if (len(data) > 0) {
 		id = tx.createEphemeral(resourceType.Name, resourceType.Version, data[0])
 	} else {
 		id = tx.createEphemeral(resourceType.Name, resourceType.Version)

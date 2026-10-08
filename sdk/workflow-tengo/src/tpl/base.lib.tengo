@@ -150,6 +150,14 @@ tpl := func(ops) {
 		},
 
 		/**
+		 * Block status handle of the current renderer: self.status().record("tpl", "Running", "aligning reads").
+		 * See the status library. All calls are no-ops on backends without block status support.
+		 */
+		status: func() {
+			return _renderer.status()
+		},
+
+		/**
 		 * Whether this template is ephemeral (rendered by ephemeral template router)
 		 */
 		isEphemeral: func() {
@@ -732,6 +740,7 @@ tpl := func(ops) {
 		api: func() {
 			return ll.toStrict({
 				renderer                : self.renderer,
+				status                  : self.status,
 				registerUnmarshaller    : self.registerUnmarshaller,
 				rawInputs               : self.rawInputs,
 				rawServiceInputs        : self.rawServiceInputs,
