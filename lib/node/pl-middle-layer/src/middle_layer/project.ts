@@ -38,6 +38,8 @@ import { setTimeout } from "node:timers/promises";
 import { frontendData } from "./frontend_path";
 import type { NavigationState } from "@milaboratories/pl-model-common";
 import { getBlockParameters, blockOutputs } from "./block";
+import type { BlockStatusMode, BlockStatusNode } from "./block_status";
+import { readBlockStatusTree } from "./block_status";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectId, ProjectStructure } from "../model/project_model";
 import { projectFieldName } from "../model/project_model";
@@ -792,6 +794,17 @@ export class Project {
    * Returns a computable, that can be used to retrieve and watch full block state,
    * including outputs, arguments, ui state.
    * */
+  /**
+   * Reads the block status tree of a block render (see readBlockStatusTree): current state, not
+   * watched. Undefined when the block has no status context.
+   */
+  public async getBlockStatus(
+    blockId: string,
+    mode: BlockStatusMode = "prod",
+  ): Promise<BlockStatusNode | undefined> {
+    return await readBlockStatusTree(this.env.pl, this.rid, blockId, mode);
+  }
+
   public getBlockState(blockId: string): Computable<BlockStateInternalV3> {
     return this.getBlockComputables(blockId).fullState;
   }
