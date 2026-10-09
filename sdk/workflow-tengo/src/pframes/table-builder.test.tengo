@@ -22,6 +22,7 @@ TestTableBuilderReturnsBuilder := func() {
 	test.isTrue(!is_undefined(b.addColumns), "should have addColumns")
 	test.isTrue(!is_undefined(b.build), "should have build")
 	test.isTrue(!is_undefined(b.setJoinMode), "should have setJoinMode")
+	test.isTrue(!is_undefined(b.setColumnJoin), "should have setColumnJoin")
 	test.isTrue(!is_undefined(b.setAxisHeader), "should have setAxisHeader")
 	test.isTrue(!is_undefined(b.cpu), "should have cpu")
 	test.isTrue(!is_undefined(b.mem), "should have mem")
@@ -162,6 +163,23 @@ TestAddColumnsAcceptsArrayWithEnrichmentRef := func() {
 	test.isTrue(true, "addColumns accepts array mixing resolved columns and EnrichmentRefs")
 }
 
+TestSetColumnJoinAcceptsAllModes := func() {
+	for mode in ["left", "full", "inner"] {
+		b := tb.tableBuilder("tsv").setColumnJoin(mode)
+		test.isTrue(!is_undefined(b.build), "setColumnJoin should accept " + mode + " and chain")
+	}
+}
+
+TestAddColumnAcceptsJoinOpt := func() {
+	b := tb.tableBuilder("tsv")
+	b.addPrimary("main", sampleResolvedPrimary).
+		addColumn(sampleResolved, { header: "Left", join: "left" }).
+		addColumn(sampleResolved, { join: "full" }).
+		addColumns([sampleResolved], { headerPrefix: "i_", join: "inner" }).
+		addColumns({ axes: [{ anchor: "main", name: "id" }] }, { join: "left" })
+	test.isTrue(true, "addColumn / addColumns accept a join option")
+}
+
 // Note on panic-on-misuse coverage: Tengo unit tests can't catch panics
 // (`ll.panic` is terminal, no recover/try-catch). Misuse paths are guarded
 // by `ll.assert` in the source — see the assertions in:
@@ -169,6 +187,8 @@ TestAddColumnsAcceptsArrayWithEnrichmentRef := func() {
 //   - addPrimary():    name is_string, value shape (resolved/PrimaryRef/PlRef-bearing)
 //   - addColumns():    array elements must be resolved columns
 //   - setJoinMode():   "inner"|"full" only
+//   - setColumnJoin(): "left"|"full"|"inner" only
+//   - addColumn(s):    opts.join must be "left"|"full"|"inner"
 //   - setAxisHeader(): string-or-AxisSpec matcher, string header
 //   - cacheInputs():   integer duration
 //   - build():         len(primaries) > 0; ctx required when unresolved
