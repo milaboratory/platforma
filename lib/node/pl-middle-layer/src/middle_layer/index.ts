@@ -15,3 +15,9 @@ export type {
   TemplateId,
   TemplateListEntry,
 } from "./template_list";
+export type {
+  BlockStatusAttribute,
+  BlockStatusMode,
+  BlockStatusNode,
+  BlockStatusTransition,
+} from "./block_status";
