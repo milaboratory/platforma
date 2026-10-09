@@ -14,6 +14,7 @@ import { expect, test } from "vitest";
 import { ProjectHelper } from "../model/project_helper";
 import { projectFieldName } from "../model/project_model";
 import { BPSpecEnterV041NotPrepared, TestBPPreparer } from "../test/block_packs";
+import { readBlockStatusTree } from "../middle_layer/block_status";
 import { createProject, ProjectMutator } from "./project";
 
 type StatusContextData = Record<string, string>;
@@ -108,6 +109,16 @@ test("block status context outlives its render and is replaced on re-render", as
     expect(first.data["name"]).toEqual("Block1");
     expect(JSON.parse(first.data["block-pack"])).toBeTypeOf("object");
     expect(first.data["resource"]).toEqual(first.data["root"]);
+
+    // 4b. The read-back sees the same context with its data and the backend's first transition.
+    const tree = (await readBlockStatusTree(pl, prj, "block1", "prod"))!;
+    expect(tree).toBeDefined();
+    expect(tree.contextId).toEqual(first.contextId);
+    expect(tree.data["block-id"]).toEqual("block1");
+    expect(tree.transitions.map((t) => [t.topic, t.state])).toContainEqual([
+      "core",
+      "WaitingForInputs",
+    ]);
 
     // 5. Wait until the render is garbage collected; the context must stay readable.
     const renderId = resourceIdFromString(first.data["resource"])!;
