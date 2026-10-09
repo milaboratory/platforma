@@ -44,6 +44,30 @@ VALID_FORMATS := {
 	parquet: true
 }
 
+// How columns added with addColumn / addColumns are joined onto the trunk (the
+// primaries, after their filters and setJoinMode):
+//   full  (default) — keep the union; a column with keys outside the trunk brings
+//                     them back, including keys a primary's filter removed.
+//   left  — keep exactly the trunk's keys; a column only fills values, never adds keys.
+//           Use it with filtered primaries so added columns respect the filter.
+//   inner — keep only keys present in the column as well.
+VALID_COLUMN_JOINS := {
+	left: true,
+	full: true,
+	inner: true
+}
+
+// Reads and validates the optional `join` field of addColumn / addColumns opts.
+columnJoinOpt := func(opts) {
+	if len(opts) == 0 || !ll.isMap(opts[0]) || is_undefined(opts[0].join) {
+		return undefined
+	}
+	join := opts[0].join
+	ll.assert(!is_undefined(VALID_COLUMN_JOINS[join]),
+		"join must be one of [left, full, inner], got '%v'", join)
+	return join
+}
+
 // Returns true if `value` has a `{__isRef: true}` marker anywhere in its structure.
 // Walks iteratively — the input can be arbitrarily nested (PrimaryRef, arrays, plain maps).
 isUnresolved := func(value) {
@@ -128,7 +152,7 @@ isQuerySpec := func(q) {
  *                automatically; call pframes.tableBuilder(format) directly only when
  *                all inputs are pre-resolved.
  * @return TableBuilder with .addPrimary / .addColumn / .addColumns / .setJoinMode /
- *         .setAxisHeader / .cpu / .mem / .cacheInputs / .build
+ *         .setColumnJoin / .setAxisHeader / .cpu / .mem / .cacheInputs / .build
  */
 tableBuilder := func(format, ...ctxArg) {
 	ll.assert(!is_undefined(VALID_FORMATS[format]),
@@ -142,6 +166,7 @@ tableBuilder := func(format, ...ctxArg) {
 	_primaries := []
 	_columns := []
 	_joinMode := "inner"
+	_columnJoin := "full"
 	_axisHeaders := []
 	_cpu := undefined
 	_mem := undefined
@@ -192,7 +217,10 @@ tableBuilder := func(format, ...ctxArg) {
 		 *
 		 * @param query: ColumnQuerySpec (anchored axes reference primary names) |
 		 *               PColumnResult | PlRef | EnrichmentRef | ResolvedEnrichmentRef
-		 * @param opts: (optional) { header?: string } — column header in exported file
+		 * @param opts: (optional) {
+		 *                header?: string — column header in exported file,
+		 *                join?: "left" | "full" | "inner" — overrides setColumnJoin for this column
+		 *              }
 		 * @return self (for chaining)
 		 */
 		addColumn: func(query, ...opts) {
@@ -200,13 +228,15 @@ tableBuilder := func(format, ...ctxArg) {
 			if len(opts) > 0 && ll.isMap(opts[0]) {
 				header = opts[0].header
 			}
+			join := columnJoinOpt(opts)
 			if isUnresolved(query) || isEnrichmentRef(query) {
 				_hasUnresolved = true
 			}
 			_columns = append(_columns, {
 				query: query,
 				header: header,
-				mode: "single"
+				mode: "single",
+				join: join
 			})
 			return self
 		},
@@ -216,7 +246,10 @@ tableBuilder := func(format, ...ctxArg) {
 		 * of pre-resolved columns. Empty match set is allowed (produces no enrichments).
 		 *
 		 * @param query: ColumnQuerySpec | (PColumnResult | EnrichmentRef | ResolvedEnrichmentRef)[] | PlRef
-		 * @param opts: (optional) { headerPrefix?: string, headerSuffix?: string }
+		 * @param opts: (optional) {
+		 *                headerPrefix?: string, headerSuffix?: string,
+		 *                join?: "left" | "full" | "inner" — overrides setColumnJoin for these columns
+		 *              }
 		 * @return self (for chaining)
 		 */
 		addColumns: func(query, ...opts) {
@@ -226,6 +259,7 @@ tableBuilder := func(format, ...ctxArg) {
 				headerPrefix = opts[0].headerPrefix
 				headerSuffix = opts[0].headerSuffix
 			}
+			join := columnJoinOpt(opts)
 
 			// Per-element entries. Labeled enrichments override the
 			// shared header prefix/suffix with their own label.
@@ -254,7 +288,8 @@ tableBuilder := func(format, ...ctxArg) {
 						header: entryHeader,
 						headerPrefix: entryPrefix,
 						headerSuffix: entrySuffix,
-						mode: "multi"
+						mode: "multi",
+						join: join
 					})
 				}
 				return self
@@ -267,7 +302,8 @@ tableBuilder := func(format, ...ctxArg) {
 				query: query,
 				headerPrefix: headerPrefix,
 				headerSuffix: headerSuffix,
-				mode: "multi"
+				mode: "multi",
+				join: join
 			})
 			return self
 		},
@@ -282,6 +318,22 @@ tableBuilder := func(format, ...ctxArg) {
 			ll.assert(mode == "inner" || mode == "full",
 				"mode must be 'inner' or 'full', got '%s'", mode)
 			_joinMode = mode
+			return self
+		},
+
+		/**
+		 * Sets how columns added with addColumn / addColumns are joined onto the
+		 * trunk (the primaries, after their filters and setJoinMode). A column's own
+		 * `join` option overrides it.
+		 *   "full" (default) — keep the union; columns can bring back keys a filter removed
+		 *   "left"  — keep exactly the trunk's keys; columns only fill values. Use it
+		 *             with filtered primaries so added columns respect the filter.
+		 *   "inner" — keep only keys every such column also has
+		 */
+		setColumnJoin: func(mode) {
+			ll.assert(!is_undefined(VALID_COLUMN_JOINS[mode]),
+				"mode must be one of [left, full, inner], got '%v'", mode)
+			_columnJoin = mode
 			return self
 		},
 
@@ -469,7 +521,8 @@ tableBuilder := func(format, ...ctxArg) {
 					mode: c.mode,
 					header: c.header,
 					headerPrefix: c.headerPrefix,
-					headerSuffix: c.headerSuffix
+					headerSuffix: c.headerSuffix,
+					join: c.join
 				}
 				if isEnrichmentRef(c.query) {
 					resolvedHit := resolveColumn(c.query.hit)
@@ -560,12 +613,14 @@ tableBuilder := func(format, ...ctxArg) {
 				if !is_undefined(c.header) { entry.header = c.header }
 				if !is_undefined(c.headerPrefix) { entry.headerPrefix = c.headerPrefix }
 				if !is_undefined(c.headerSuffix) { entry.headerSuffix = c.headerSuffix }
+				if !is_undefined(c.join) { entry.join = c.join }
 				columnsMap[string(idx)] = entry
 			}
 
 			tplInputs := {
 				format: format,
 				joinMode: _joinMode,
+				columnJoin: _columnJoin,
 				axisHeaders: _axisHeaders,
 				primaryCount: len(primaryEntries),
 				columnCount: len(columnEntries),
