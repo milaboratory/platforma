@@ -39,6 +39,7 @@ self.awaitState("columns", { wildcard: "*" },
 self.body(func(inputs) {
 	format := inputs.format
 	joinMode := inputs.joinMode
+	columnJoin := inputs.columnJoin
 	axisHeaders := inputs.axisHeaders
 	primaryCount := inputs.primaryCount
 	columnCount := inputs.columnCount
@@ -91,6 +92,7 @@ self.body(func(inputs) {
 					headerSuffix: c.headerSuffix,
 					pFrameKey: "col" + string(nextKey),
 					mode: c.mode,
+					join: c.join,
 					path: []
 				})
 				nextKey += 1
@@ -117,6 +119,7 @@ self.body(func(inputs) {
 				headerSuffix: c.headerSuffix,
 				pFrameKey: "col" + string(nextKey),
 				mode: c.mode,
+				join: c.join,
 				path: path,
 				qualifications: c.qualifications
 			})
@@ -187,14 +190,20 @@ self.body(func(inputs) {
 		trunk = pt.p.full(filteredPrimaries...)
 	}
 
-	// Step 3: full-join enrichments to the trunk; path-bearing entries become
-	// LinkerJoin chains via buildQuery.
+	// Step 3: join enrichments onto the trunk; path-bearing entries become
+	// LinkerJoin chains via buildQuery. Each enrichment uses its own `join`, else
+	// the builder's columnJoin (full by default).
+	defaultJoin := is_undefined(columnJoin) ? "full" : columnJoin
+
 	frameInput := trunk
 	if len(enrichments) > 0 {
-		enrichEntries := []
+		enrichEntriesByJoin := { inner: [], left: [], full: [] }
 		for e in enrichments {
+			join := is_undefined(e.join) ? defaultJoin : e.join
+			ll.assert(!is_undefined(enrichEntriesByJoin[join]),
+				"build-table: unknown column join %q", join)
 			if len(e.path) == 0 {
-				enrichEntries = append(enrichEntries, ptColumn(e.pFrameKey))
+				enrichEntriesByJoin[join] = append(enrichEntriesByJoin[join], ptColumn(e.pFrameKey))
 			} else {
 				cols := {}
 				cols[e.pFrameKey] = columnsMap[e.pFrameKey]
@@ -217,11 +226,21 @@ self.body(func(inputs) {
 				if !is_undefined(e.qualifications) && len(e.qualifications) > 0 {
 					bqInput.qualifications = e.qualifications
 				}
-				enrichEntries = append(enrichEntries,
+				enrichEntriesByJoin[join] = append(enrichEntriesByJoin[join],
 					pt.p._rawQueryEntry(cols, bquery.buildQuery(bqInput)))
 			}
 		}
-		frameInput = pt.p.full(trunk, enrichEntries...)
+		// Narrowing joins first and full joins last, so the keys a full join adds
+		// are neither filled by a left join nor dropped by an inner one.
+		if len(enrichEntriesByJoin.inner) > 0 {
+			frameInput = pt.p.inner(frameInput, enrichEntriesByJoin.inner...)
+		}
+		if len(enrichEntriesByJoin.left) > 0 {
+			frameInput = pt.p.outer(frameInput, enrichEntriesByJoin.left...)
+		}
+		if len(enrichEntriesByJoin.full) > 0 {
+			frameInput = pt.p.full(frameInput, enrichEntriesByJoin.full...)
+		}
 	}
 
 	// Collect non-filter columns for label/axis processing.

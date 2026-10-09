@@ -219,6 +219,203 @@ tplTest.concurrent(
   },
 );
 
+// Added columns under a filtered primary. Primary "main" has A,B,C; the filter
+// keeps A,C; the added column "extra" has values for A,B,C.
+const extraCsv = dedent`
+  id,extra
+  A,100
+  B,200
+  C,300
+`;
+const extraSpec = specWithLong("extra", "pl7.app/extra", "Extra");
+const filteredPrimaryWithColumn = {
+  format: "tsv",
+  imports: {
+    main: { csv: primaryCsv, spec: primarySpec },
+    subset: { csv: filterCsv, spec: filterSpec },
+    extra: { csv: extraCsv, spec: extraSpec },
+  },
+  primaries: [{ name: "main", sourceImport: "main", filterImport: "subset" }],
+};
+
+tplTest.concurrent(
+  "tableBuilder: setColumnJoin('left') keeps added columns to the filtered keys",
+  async ({ helper, expect, driverKit }) => {
+    const content = await runEphemeralBuilder(helper, driverKit, {
+      ...filteredPrimaryWithColumn,
+      columns: [{ mode: "single", sourceImport: "extra" }],
+      columnJoin: "left",
+    });
+    const lines = content.trim().split("\n");
+
+    expect(lines[0]).toBe("ID\tScore\tExtra");
+    expect(lines.slice(1)).toEqual(["A\t10\t100", "C\t30\t300"]);
+  },
+);
+
+tplTest.concurrent(
+  "tableBuilder: by default (full) added columns bring back filtered-out keys",
+  async ({ helper, expect, driverKit }) => {
+    const content = await runEphemeralBuilder(helper, driverKit, {
+      ...filteredPrimaryWithColumn,
+      columns: [{ mode: "single", sourceImport: "extra" }],
+    });
+    const lines = content.trim().split("\n");
+
+    // B comes back from the added column, with no primary value.
+    expect(lines[0]).toBe("ID\tScore\tExtra");
+    expect(lines.slice(1).sort()).toEqual(["A\t10\t100", "B\t\t200", "C\t30\t300"]);
+  },
+);
+
+tplTest.concurrent(
+  "tableBuilder: a column's own join overrides setColumnJoin",
+  async ({ helper, expect, driverKit }) => {
+    const content = await runEphemeralBuilder(helper, driverKit, {
+      ...filteredPrimaryWithColumn,
+      columns: [{ mode: "single", sourceImport: "extra", opts: { join: "full" } }],
+      columnJoin: "left",
+    });
+    const lines = content.trim().split("\n");
+
+    expect(lines.slice(1).sort()).toEqual(["A\t10\t100", "B\t\t200", "C\t30\t300"]);
+  },
+);
+
+tplTest.concurrent(
+  "tableBuilder: an inner-joined column keeps only keys it shares with the trunk",
+  async ({ helper, expect, driverKit }) => {
+    // The inner-joined column has A only; the left-joined one has A,B,C.
+    const content = await runEphemeralBuilder(helper, driverKit, {
+      ...filteredPrimaryWithColumn,
+      imports: {
+        ...filteredPrimaryWithColumn.imports,
+        onlyA: { csv: "id,onlyA\nA,5", spec: specWithLong("onlyA", "pl7.app/onlyA", "OnlyA") },
+      },
+      columns: [
+        { mode: "single", sourceImport: "extra" },
+        { mode: "single", sourceImport: "onlyA", opts: { join: "inner" } },
+      ],
+      columnJoin: "left",
+    });
+    const lines = content.trim().split("\n");
+
+    expect(lines.slice(1)).toEqual(["A\t10\t100\t5"]);
+  },
+);
+
+tplTest.concurrent(
+  "tableBuilder: without a filter, added columns are full-joined by default",
+  async ({ helper, expect, driverKit }) => {
+    // Primary x has A,B; the added column y has A,C. The default full join keeps
+    // the union, as before setColumnJoin existed.
+    const content = await runEphemeralBuilder(helper, driverKit, {
+      format: "tsv",
+      imports: {
+        x: { csv: xCsv, spec: xSpec },
+        y: { csv: yCsv, spec: ySpec },
+      },
+      primaries: [{ name: "x", sourceImport: "x" }],
+      columns: [{ mode: "single", sourceImport: "y" }],
+    });
+    const lines = content.trim().split("\n");
+
+    expect(lines[0]).toBe("ID\tX\tY");
+    expect(lines.slice(1).sort()).toEqual(["A\t1\t10", "B\t2\t", "C\t\t30"]);
+  },
+);
+
+// A column on another axis, reached through a linker that is also an added column
+// (the case of a parent-level column joined to clonotypes): with a left join it
+// fills the filtered rows only. The linker maps A,B -> p1 and C -> p2; the parent
+// column also has p3, which no kept row links to.
+const parentAxis = {
+  name: "pl7.app/parent",
+  type: "String",
+  annotations: { [Annotation.Label]: "Parent" } satisfies Annotation,
+};
+const linkerCsv = dedent`
+  id,parent,link
+  A,p1,1
+  B,p1,1
+  C,p2,1
+`;
+const linkerSpec = {
+  axes: [
+    { column: "id", spec: primarySpec.axes[0].spec },
+    { column: "parent", spec: parentAxis },
+  ],
+  columns: [
+    {
+      column: "link",
+      id: "link",
+      spec: {
+        valueType: "Long",
+        name: "pl7.app/link",
+        annotations: { [Annotation.Label]: "Link" } satisfies Annotation,
+      },
+    },
+  ],
+  storageFormat: "Json",
+  partitionKeyLength: 0,
+};
+const parentCsv = dedent`
+  parent,regions
+  p1,CDR3
+  p2,FR3
+  p3,CDR1
+`;
+const parentSpec = {
+  axes: [{ column: "parent", spec: parentAxis }],
+  columns: [
+    {
+      column: "regions",
+      id: "regions",
+      spec: {
+        valueType: "String",
+        name: "pl7.app/regions",
+        annotations: { [Annotation.Label]: "Regions" } satisfies Annotation,
+      },
+    },
+  ],
+  storageFormat: "Json",
+  partitionKeyLength: 0,
+};
+
+tplTest.concurrent(
+  "tableBuilder: with setColumnJoin('left'), a column reached through a linker adds no keys",
+  async ({ helper, expect, driverKit }) => {
+    const content = await runEphemeralBuilder(helper, driverKit, {
+      format: "tsv",
+      imports: {
+        main: { csv: primaryCsv, spec: primarySpec },
+        subset: { csv: filterCsv, spec: filterSpec },
+        linker: { csv: linkerCsv, spec: linkerSpec },
+        parent: { csv: parentCsv, spec: parentSpec },
+      },
+      primaries: [{ name: "main", sourceImport: "main", filterImport: "subset" }],
+      columns: [
+        { mode: "single", sourceImport: "linker" },
+        { mode: "single", sourceImport: "parent" },
+      ],
+      columnJoin: "left",
+    });
+    const [header, ...rows] = content.trim().split("\n");
+    const columns = header.split("\t");
+    const id = columns.indexOf("ID");
+    const regions = columns.indexOf("Regions");
+
+    // Only A and C, each with its parent's value; no row without an ID (p3), no B.
+    expect(rows.map((r) => r.split("\t")[id]).sort()).toEqual(["A", "C"]);
+    expect(
+      Object.fromEntries(rows.map((r) => [r.split("\t")[id], r.split("\t")[regions]])),
+    ).toEqual({
+      A: "CDR3",
+      C: "FR3",
+    });
+  },
+);
+
 // End-to-end exercise of `addColumns` with a `ColumnQuerySpec` (multi-match).
 // Producer workflow exports four PColumns sharing a `pl7.app/id` axis:
 //   - `primary`  → anchor (named "pl7.app/test/primary")
