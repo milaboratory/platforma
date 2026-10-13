@@ -18,13 +18,16 @@ maps := import(":maps")
  *
  * @return template: smart.resource - resource of tengo template with given name.
  */
-// names of the templates imported in this run, by template resource id; render() uses them to name
-// the status context of a render
-_templateNames := {}
+// The names of the templates imported in this run, by template resource id. render() uses them to name
+// the status context of a render. Every import of this module is a new instance, so the names are kept
+// in the execution context, where all instances see them.
+_templateNames := func() {
+	return ll.moduleVars("assets.templateNames")
+}
 
 importTemplate := func(tplName) {
 	id := plapi.getTemplateId(tplName)
-	_templateNames[string(id)] = tplName
+	_templateNames().set(string(id), tplName)
 	return smart.resource(id)
 }
 
@@ -36,7 +39,7 @@ importTemplate := func(tplName) {
  */
 templateName := func(tpl) {
 	id := smart.isResource(tpl) ? tpl.id : tpl
-	return _templateNames[string(id)]
+	return _templateNames().get(string(id))
 }
 
 /**
