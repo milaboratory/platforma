@@ -1,4 +1,3 @@
-tx := import("tx")
 ll := import(":ll")
 render := import(":render")
 smart := import(":smart")

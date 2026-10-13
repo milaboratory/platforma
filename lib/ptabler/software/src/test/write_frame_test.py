@@ -16,6 +16,8 @@ the Rust crate `pframes_rs_exec` under
 import os
 import shutil
 import unittest
+from pathlib import Path
+from unittest import mock
 
 import duckdb
 import msgspec.json
@@ -23,6 +25,7 @@ import polars as pl
 import pyarrow as pa
 import pyarrow.parquet as pq
 from polars.testing import assert_frame_equal
+from polars_pf.json.spec import AxisType, ColumnType
 
 from ptabler.steps import GlobalSettings
 from ptabler.steps.util import normalize_path
@@ -203,6 +206,50 @@ class WriteFrameHappyPathTest(unittest.TestCase):
     structure) without hardcoding the v02 digest — the digest is owned by
     the Rust side and is exercised in detail by `convert.rs` rstests.
     """
+
+    def test_temp_files_go_to_the_spill_folder(self):
+        frame_name = "spill_frame"
+        frame_dir = os.path.join(global_settings.root_folder, normalize_path(frame_name))
+        spill_dir = os.path.join(global_settings.root_folder, "spill_test_folder")
+        for path in (frame_dir, spill_dir):
+            shutil.rmtree(path, ignore_errors=True)
+        os.makedirs(spill_dir)
+        settings = GlobalSettings(root_folder=global_settings.root_folder, spill_folder=Path(spill_dir))
+
+        step = WriteFrame(
+            input_table="input_table",
+            frame_name=frame_name,
+            axes=[AxisMapping(column="id", type=AxisType.Long)],
+            columns=[ColumnMapping(column="value", type=ColumnType.Double)],
+        )
+        lf = pl.LazyFrame({"id": [3, 1, 2], "value": [30.0, 10.0, 20.0]})
+
+        seen = []
+        original_sort = WriteFrame._sort
+
+        def recording_sort(self, unsorted_parquet, intermediate_parquet, spill_folder):
+            seen.append((unsorted_parquet, os.path.exists(unsorted_parquet), intermediate_parquet))
+            original_sort(self, unsorted_parquet, intermediate_parquet, spill_folder)
+
+        try:
+            with mock.patch.object(WriteFrame, "_sort", recording_sort):
+                PWorkflow(workflow=[step]).execute(
+                    global_settings=settings,
+                    initial_table_space={"input_table": lf},
+                )
+
+            self.assertEqual(len(seen), 1)
+            unsorted_parquet, existed, intermediate_parquet = seen[0]
+            self.assertTrue(existed)
+            for temp_file in (unsorted_parquet, intermediate_parquet):
+                self.assertEqual(os.path.commonpath([temp_file, spill_dir]), spill_dir)
+            self.assertEqual(
+                sorted(os.listdir(frame_dir)), ["partition_0.parquet", "value.datainfo"]
+            )
+            self.assertEqual(os.listdir(spill_dir), [])
+        finally:
+            for path in (frame_dir, spill_dir):
+                shutil.rmtree(path, ignore_errors=True)
 
     def test_write_not_partitioned_frame(self):
         frame_name = "happy_path_frame"

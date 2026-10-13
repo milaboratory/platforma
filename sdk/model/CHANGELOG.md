@@ -1,5 +1,67 @@
 # @platforma-sdk/model
 
+## 1.84.19
+
+### Patch Changes
+
+- fc41fe4: Table filters: suggest values for axis columns, merged across every table column carrying the axis, instead of failing with "Data loading error"; offer "In List" / "Not In List" predicates. New `getUniqueAxisValuesWithLabels` in `@platforma-sdk/model`.
+
+## 1.84.17
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+  - @milaboratories/pl-model-middle-layer@1.34.2
+  - @milaboratories/ptabler-expression-js@1.2.43
+
+## 1.84.10
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-model-common@1.52.0
+  - @milaboratories/pl-model-middle-layer@1.34.1
+  - @milaboratories/ptabler-expression-js@1.2.42
+
+## 1.84.3
+
+### Patch Changes
+
+- Updated dependencies [61aefa1]
+  - @milaboratories/pl-model-middle-layer@1.34.0
+
+## 1.84.1
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+  - @milaboratories/pl-model-middle-layer@1.33.0
+  - @milaboratories/ptabler-expression-js@1.2.41
+
+## 1.84.0
+
+### Minor Changes
+
+- 3716dcb: Graph aesthetic annotations: new `pl7.app/graph/shape` carries a default dot shape per column value (R shape codes). `pl7.app/graph/palette` gains `midPoint`, `min`, `max` and `log` for continuous columns, and its `mapping` is now optional so a continuous default needs no per-value entries. Both annotations are defaults a user can override in the interface.
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+  - @milaboratories/pl-model-middle-layer@1.32.2
+  - @milaboratories/ptabler-expression-js@1.2.40
+
+## 1.83.17
+
+### Patch Changes
+
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pl-model-common@1.49.0
+  - @milaboratories/pl-model-middle-layer@1.32.1
+  - @milaboratories/ptabler-expression-js@1.2.39
+
 ## 1.83.9
 
 ### Patch Changes

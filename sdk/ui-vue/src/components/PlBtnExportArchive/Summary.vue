@@ -12,19 +12,29 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <div :class="$style.summary">
-    <div :class="$style.name">
+  <div data-testid="pl-btn-export-archive-summary" :class="$style.summary">
+    <div data-testid="pl-btn-export-archive-summary-name" :class="$style.name">
       {{ item.fileName }}<span v-if="false" @click.stop="emit('cancel')">[TODO: Cancel]</span>
     </div>
-    <div v-if="item.status === 'in-progress'" :class="$style.details">
+    <div
+      v-if="item.status === 'in-progress'"
+      data-testid="pl-btn-export-archive-summary-status"
+      :class="$style.details"
+    >
       <span>{{ prettyBytes(item.current, {}) }}</span>
       <span>/</span>
       <span>{{ prettyBytes(item.size, {}) }}</span>
     </div>
-    <div v-else-if="item.status === 'completed'" :class="$style.details">
+    <div
+      v-else-if="item.status === 'completed'"
+      data-testid="pl-btn-export-archive-summary-status"
+      :class="$style.details"
+    >
       Done <span>{{ prettyBytes(item.size, {}) }}</span>
     </div>
-    <div v-else :class="$style.details">Pending</div>
+    <div v-else data-testid="pl-btn-export-archive-summary-status" :class="$style.details">
+      Pending
+    </div>
   </div>
 </template>
 

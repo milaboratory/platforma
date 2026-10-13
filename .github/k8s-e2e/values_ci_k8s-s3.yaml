@@ -1,0 +1,263 @@
+# Copy of helm/internal/values_ci_k8s-s3.yaml in milaboratory/pl. The chart sync to the public
+# platforma-helm repo leaves out helm/internal/, and this repo has no token that reads pl.
+# Keep it equal to the pl file.
+
+# =============================================================================
+# CI E2E Values Override — K8s Runner + Garage S3 (Shared Kueue)
+# =============================================================================
+# Used by e2e-tests.yaml to deploy Platforma with:
+#   - K8s runner via Kueue (shared mode — references existing ClusterQueues)
+#   - Garage S3 for primary storage (running in common-services namespace)
+#   - htpasswd auth (per-run secret created by reusable workflow)
+#   - Small CI-appropriate resource limits
+#
+# Overrides applied at deploy time:
+#   --set image.tag=<version>
+#   --set auth.htpasswd.secretName=<release>-htpasswd
+# =============================================================================
+
+# -- Image pull policy: use pre-pulled images on CI nodes
+image:
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: regcred
+
+# =============================================================================
+# LICENSE
+# =============================================================================
+
+license:
+  secretName: "platforma-license"
+  secretKey: "MI_LICENSE"
+
+# =============================================================================
+# AUTHENTICATION
+# =============================================================================
+# htpasswd secret created per-run by the reusable workflow before helm deploy.
+# Secret name is injected via --set auth.htpasswd.secretName=<release>-htpasswd
+
+auth:
+  htpasswd:
+    credentials: []
+    secretName: ""
+  ldap:
+    server: ""
+
+# =============================================================================
+# STORAGE
+# =============================================================================
+
+storage:
+  # -- Database (RWO): small size for CI. ceph-nvme = fast NVMe-backed RBD (RocksDB).
+  database:
+    size: 5Gi
+    storageClass: "ceph-nvme"
+
+  # -- Workspace: RWX so the Platforma pod + k8s-mode job pods (which can land on
+  # any node) share it. CephFS provides RWX. NOTE: local-path-nvme is node-local
+  # RWO — that's for the CI runner *agents* (work/dind), NOT the Platforma deploy.
+  workspace:
+    pvc:
+      enabled: true
+      accessMode: ReadWriteMany
+      size: 10Gi
+      chownOnCreate: false
+      storageClass: "ceph-fs"
+
+  # -- Main storage: Hetzner RadosGW (Ceph RGW). The e2e workflow injects a
+  # per-run prefix (--set storage.main.s3.prefix=<release>-primary/) matching the
+  # data-handler. noDataIntegrity true for Ceph; in-cluster endpoint (e2e runs on hz).
+  main:
+    type: s3
+    s3:
+      bucket: "platforma-e2e-storage"
+      region: "us-east-1"
+      prefix: ""
+      # Split-DNS: one canonical endpoint everywhere. Resolves to the in-cluster RGW
+      # ClusterIP from inside the cluster (fast fabric) and the public storage IPs
+      # from outside — so backend reads and Desktop presigned URLs use the same URL.
+      endpoint: "https://s3.hz.platforma.bio"
+      externalEndpoint: "https://s3.hz.platforma.bio"
+      noDataIntegrity: true
+      secretRef:
+        name: "platforma-e2e-s3-credentials"
+        accessKeyField: "access-key"
+        secretKeyField: "secret-key"
+
+# =============================================================================
+# JOB EXECUTION (Kueue — Shared Mode)
+# =============================================================================
+# References CI-dedicated ClusterQueues and WorkloadPriorityClasses
+# defined in helm/ci/kueue-dev-ci.yaml (applied once by cluster admin).
+# These are isolated from the staging Platforma instance (platforma-e2e).
+
+kueue:
+  mode: shared
+
+  maxJobResources:
+    cpu: 4
+    memory: 8Gi
+
+  pools:
+    ui:
+      nodeSelector: {}
+      tolerations: []
+    batch:
+      nodeSelector: {}
+      tolerations: []
+    # -- GPU node pools
+    # Routes GPU jobs via nodeAffinity on platforma.bio/gpu-memory-gib label.
+    # K8s scheduler + Cluster Autoscaler pick the cheapest node with enough VRAM.
+    # One job per GPU node (nvidia.com/gpu: 1 enforces exclusive access).
+    gpu:
+      enabled: false
+
+  shared:
+    # Share the cluster-wide Kueue queues that the staging Platforma (platforma-e2e)
+    # already owns: ClusterQueues are cluster-scoped with namespaceSelector {} so the
+    # CI LocalQueues created here (platforma-e2e-ci) admit against the same permanent
+    # queues. Both deployments run shared mode against one set — nothing per-run
+    # created/deleted, queues persist as long as the staging instance does.
+    clusterQueues:
+      ui: "platforma-ui"
+      batch: "platforma-batch"
+    workloadPriorityClasses:
+      uiTasks: "platforma-ui"
+      high: "platforma-high"
+      normal: "platforma-normal"
+      low: "platforma-low"
+
+# =============================================================================
+# DATA SOURCES (data libraries for tests)
+# =============================================================================
+
+dataSources:
+  # test-assets lives in our in-cluster RGW (migrated off AWS S3). The chart's
+  # dataSources block has no `endpoint` field, so it emits the s3:// form + injects
+  # the key/secret env from secretRef. We override ONLY the URL to the RGW
+  # S3-compatible endpoint form via app.extraArgs below (rendered after this block;
+  # --data-library-s3 is a go-flags map keyed by lib name, so the later value wins).
+  - name: "test-assets"
+    type: s3
+    s3:
+      bucket: "platforma-e2e-test-assets"
+      region: "eu-central-1"
+      prefix: "test-assets/"
+      endpoint: "https://s3.hz.platforma.bio/"
+      secretRef:
+        name: "platforma-e2e-s3-credentials"
+        accessKeyField: "access-key"
+        secretKeyField: "secret-key"
+
+# =============================================================================
+# NETWORKING
+# =============================================================================
+# No ingress needed — tests connect via cluster-internal service DNS.
+
+ingress:
+  enabled: false
+
+# =============================================================================
+# APPLICATION
+# =============================================================================
+
+app:
+  resources:
+    requests:
+      cpu: "1"
+      memory: 2Gi
+    limits:
+      cpu: "4"
+      memory: 4Gi
+
+  debug:
+    enabled: true
+
+  # Grant testuser1 admin role via the env form of --admin-user (PL_ADMIN_USERS). The
+  # MILAB-5933 admin test flows (alternative roots, user-root creation) require an admin
+  # login. Using env avoids the extraArgs[2] collision with the reusable workflow's
+  # --k8s-job-name-prefix injection (a dense YAML list can't add a 4th arg without
+  # renumbering that hardcoded index). The htpasswd (reusable workflow) has only
+  # testuser1, so it serves as both the regular and the admin test user.
+  # Trust the public ECR the in-repo software images are pushed to (env form of
+  # --trusted-docker-registry, matched by registry host). The test-command builds
+  # ptabler and ptexter during the run and autopushes them to
+  # public.ecr.aws/u5p1x5q2/pl-containers; without this the backend refuses every
+  # command that uses them. Packages pulled from the default containers.pl-open.science
+  # are trusted already.
+  env:
+    variables:
+      PL_ADMIN_USERS: "testuser1"
+      PL_TRUSTED_DOCKER_REGISTRY: "public.ecr.aws"
+
+  # index 0, 1 defined here; index 2 is injected by the e2e-tests reusable workflow:
+  #   --set "app.extraArgs[2]=--k8s-job-name-prefix=<release>-"
+  # --k8s-max-cpu-request / --k8s-max-ram-request are NOT listed here because the
+  # chart already emits them from kueue.maxJobResources; duplicating them in extraArgs
+  # would pass conflicting values and overwriting index 2 would silently drop them.
+  extraArgs:
+    # Log to stdout so VictoriaLogs (Vector) + kubectl logs capture backend logs
+    # persistently (dir:// is lost when the pod recycles). index 0.
+    - "--log-dst=stream://stdout"
+    - "--keep-workdirs=24h" # index 1. Is here just to align with e2e-tests workflow.
+
+  logging:
+    persistence:
+      enabled: false
+
+  # Auth: htpasswd secret injected at deploy time via --set auth.htpasswd.secretName
+
+# =============================================================================
+# SERVICE ACCOUNTS
+# =============================================================================
+
+serviceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+jobServiceAccount:
+  create: true
+  name: ""
+  annotations: {}
+
+# =============================================================================
+# JOB CONFIGURATION
+# =============================================================================
+
+jobs:
+  secretName: "platforma-license"
+
+  # Scratch storage. The chart leaves `enabled` unset, which resolves to
+  # `environment == "aws"` — false here — so the deploy never passed
+  # --has-scratch-space and the backend never advertised 'scratchSpace:v1'.
+  # The scratch suites then had nothing to measure and reported an empty
+  # command output as a failure.
+  #
+  # ceph-nvme is the RWO NVMe-backed RBD class the database already uses, and
+  # the scratch claim is an ephemeral RWO volume made per job and deleted with
+  # it, so the class fits without anything new on the cluster. `create: false`
+  # keeps the chart from declaring a class it does not own.
+  #
+  # maxRequest shrinks an oversized ask instead of rejecting it, which keeps a
+  # block that asks for hundreds of gigabytes from trying to provision that on
+  # a CI cluster sized for 4 CPU / 8Gi jobs. The suites ask for 1-2GiB.
+  scratchStorage:
+    enabled: true
+    network:
+      maxRequest: 10Gi
+      storageClass:
+        create: false
+        name: "ceph-nvme"
+
+# =============================================================================
+# VALIDATION
+# =============================================================================
+# Disable secret existence pre-flight checks: the GHA runner service account
+# (dev-ci-pl-gha-rs-no-permission) cannot `get namespaces`, so the Helm
+# template's `lookup "v1" "Namespace"` call errors instead of returning empty.
+# Required secrets are created before helm deploy by the reusable workflow.
+
+validation:
+  checkSecrets: false

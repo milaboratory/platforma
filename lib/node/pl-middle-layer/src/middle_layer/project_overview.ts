@@ -172,7 +172,7 @@ export function projectOverview(
           featureFlags,
           isIncompatibleWithRuntime,
         } =
-          ifNotUndef(bp, ({ bpId, cfg }) => {
+          ifNotUndef(bp, ({ bpId, cfg, info: blockPackInfo }) => {
             if (!env.runtimeCapabilities.checkCompatibility(cfg.featureFlags)) {
               return {
                 isIncompatibleWithRuntime: true,
@@ -191,18 +191,32 @@ export function projectOverview(
             }
             const codeWithInfo = codeWithInfoOrError.value;
             return {
-              sections: computableFromCfgOrRF(env, blockCtx, cfg.sections, codeWithInfo, bpId).wrap(
-                {
-                  recover: (cause) => {
-                    env.logger.error(new Error("Error in block model sections", { cause }));
-                    return [];
-                  },
+              sections: computableFromCfgOrRF(
+                env,
+                blockCtx,
+                cfg.sections,
+                codeWithInfo,
+                bpId,
+                {},
+                blockPackInfo.source,
+              ).wrap({
+                recover: (cause) => {
+                  env.logger.error(new Error("Error in block model sections", { cause }));
+                  return [];
                 },
-              ) as ComputableStableDefined<BlockSection[]>,
+              }) as ComputableStableDefined<BlockSection[]>,
               title: ifNotUndef(
                 cfg.title,
                 (title) =>
-                  computableFromCfgOrRF(env, blockCtxArgsOnly, title, codeWithInfo, bpId).wrap({
+                  computableFromCfgOrRF(
+                    env,
+                    blockCtxArgsOnly,
+                    title,
+                    codeWithInfo,
+                    bpId,
+                    {},
+                    blockPackInfo.source,
+                  ).wrap({
                     recover: (cause) => {
                       env.logger.error(new Error("Error in block model title", { cause }));
                       return "Invalid title";
@@ -212,7 +226,15 @@ export function projectOverview(
               subtitle: ifNotUndef(
                 cfg.subtitle,
                 (subtitle) =>
-                  computableFromCfgOrRF(env, blockCtxArgsOnly, subtitle, codeWithInfo, bpId).wrap({
+                  computableFromCfgOrRF(
+                    env,
+                    blockCtxArgsOnly,
+                    subtitle,
+                    codeWithInfo,
+                    bpId,
+                    {},
+                    blockPackInfo.source,
+                  ).wrap({
                     recover: (cause) => {
                       env.logger.error(new Error("Error in block model subtitle", { cause }));
                       return "Invalid subtitle";
@@ -222,7 +244,15 @@ export function projectOverview(
               tags: ifNotUndef(
                 cfg.tags,
                 (tags) =>
-                  computableFromCfgOrRF(env, blockCtx, tags, codeWithInfo, bpId).wrap({
+                  computableFromCfgOrRF(
+                    env,
+                    blockCtx,
+                    tags,
+                    codeWithInfo,
+                    bpId,
+                    {},
+                    blockPackInfo.source,
+                  ).wrap({
                     recover: (cause) => {
                       env.logger.error(new Error("Error in block model tags", { cause }));
                       return [];

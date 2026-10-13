@@ -10,6 +10,7 @@ export * from "./core/unauth_client";
 export * from "./core/auth";
 export * from "./core/capabilities";
 export * from "./core/final";
+export * from "./core/finality";
 export * from "./core/tree_filter";
 export * from "./core/user_resources";
 export * from "./core/wire";

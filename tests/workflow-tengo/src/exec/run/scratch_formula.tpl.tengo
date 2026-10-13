@@ -12,10 +12,13 @@
  */
 self := import("@platforma-sdk/workflow-tengo:tpl")
 exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
 
 f := exec.formula
 
 self.defineOutputs(["scratch"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
 self.body(func(inputs) {
 	scratch := f.gib(2).times(1)
@@ -24,7 +27,7 @@ self.body(func(inputs) {
 	}
 
 	run := exec.builder().
-		cmd("sh").
+		software(shellSw).
 		resources({
 			onCPU: {
 				cpu: 1,

@@ -174,52 +174,77 @@ if (!props.cellStyle) {
   <div
     :class="{ 'pl-file-input__cell-style': !!cellStyle, 'has-file': !!fileName }"
     class="pl-file-input__envelope"
+    data-testid="pl-file-input"
   >
     <div
       ref="rootRef"
       :class="{ dashed, error: hasErrors }"
       class="pl-file-input"
+      data-testid="pl-file-input-control"
       tabindex="0"
       @keyup.enter="openFileDialog"
       @click.stop="openFileDialog"
     >
-      <div :style="progressStyle" class="pl-file-input__progress" />
-      <label v-if="!cellStyle && label" ref="label">
-        <PlSvg v-if="required" :uri="SvgRequired" />
+      <div
+        :style="progressStyle"
+        class="pl-file-input__progress"
+        data-testid="pl-file-input-progress"
+      />
+      <label v-if="!cellStyle && label" ref="label" data-testid="pl-file-input-label">
+        <PlSvg v-if="required" :uri="SvgRequired" data-testid="pl-file-input-required" />
         <span>{{ label }}</span>
-        <PlTooltip v-if="slots.tooltip || filePath" class="info" position="top">
+        <PlTooltip
+          v-if="slots.tooltip || filePath"
+          class="info"
+          position="top"
+          data-testid="pl-file-input-tooltip"
+        >
           <template #tooltip>
             <slot v-if="slots.tooltip" name="tooltip" />
             <template v-else>{{ filePath }}</template>
           </template>
         </PlTooltip>
       </label>
-      <PlMaskIcon24 v-if="hasErrors" name="restart" />
-      <PlMaskIcon24 v-else-if="isUploading" name="cloud-upload" />
-      <PlMaskIcon24 v-else-if="isUploaded" name="success" />
-      <PlMaskIcon24 v-else name="paper-clip" />
-      <div :data-placeholder="placeholder ?? 'Choose file'" class="pl-file-input__filename">
+      <PlMaskIcon24 v-if="hasErrors" name="restart" data-testid="pl-file-input-status-icon" />
+      <PlMaskIcon24
+        v-else-if="isUploading"
+        name="cloud-upload"
+        data-testid="pl-file-input-status-icon"
+      />
+      <PlMaskIcon24 v-else-if="isUploaded" name="success" data-testid="pl-file-input-status-icon" />
+      <PlMaskIcon24 v-else name="paper-clip" data-testid="pl-file-input-status-icon" />
+      <div
+        :data-placeholder="placeholder ?? 'Choose file'"
+        class="pl-file-input__filename"
+        data-testid="pl-file-input-filename"
+      >
         {{ fileName }}
       </div>
-      <div v-if="uploadStats" class="pl-file-input__stats">{{ uploadStats }}</div>
+      <div v-if="uploadStats" class="pl-file-input__stats" data-testid="pl-file-input-stats">
+        {{ uploadStats }}
+      </div>
       <PlMaskIcon24
         v-if="modelValue"
         class="pl-file-input__clear"
+        data-testid="pl-file-input-clear"
         name="close"
         @click.stop="clear"
       />
       <DoubleContour class="pl-file-input__contour" />
     </div>
-    <div v-if="hasErrors" class="pl-file-input__error">
+    <div v-if="hasErrors" class="pl-file-input__error" data-testid="pl-file-input-error">
       {{ computedErrorMessage }}
     </div>
-    <div v-else-if="helper" class="pl-file-input__helper">{{ helper }}</div>
+    <div v-else-if="helper" class="pl-file-input__helper" data-testid="pl-file-input-helper">
+      {{ helper }}
+    </div>
+    <!-- Teleported to <body> by PlDialogModal; kept inside so the component has a single root. -->
+    <PlFileDialog
+      v-model="data.fileDialogOpen"
+      :close-on-outside-click="fileDialogCloseOnOutsideClick"
+      :extensions="extensions"
+      :title="fileDialogTitle"
+      @import:files="onImport"
+    />
   </div>
-  <PlFileDialog
-    v-model="data.fileDialogOpen"
-    :close-on-outside-click="fileDialogCloseOnOutsideClick"
-    :extensions="extensions"
-    :title="fileDialogTitle"
-    @import:files="onImport"
-  />
 </template>

@@ -1,5 +1,58 @@
 # @platforma-open/software-ptabler
 
+## 2.1.14
+
+### Patch Changes
+
+- 974b2c1: Size the DuckDB memory limit of the `write_frame` sort from the free memory. The DuckDB default is 80% of the memory it detects (the cgroup limit or the RAM). It ignores the memory that the Polars phase still holds, so the process was OOM-killed in the sort. On Linux, the limit is now 70% of the detected memory minus the resident size of the process, never below 16 MiB, and never above the DuckDB default. On macOS and Windows the DuckDB default stays.
+- 1c11af2: pt: put the ptabler spill on scratch space, sized from the plan
+
+  ptabler spills into `{system.scratch.path}/ptabler-spill`: the tables pframes-rs writes for each `read_frame`, the DuckDB sort files, and now also the `unsorted.parquet` and `intermediate.parquet` files of `write_frame`. Before, all of it went to the working directory, which on AWS is EFS in Elastic Throughput mode and bills every GB read and written.
+
+  The run requests scratch space with a formula in `:pt.sizing`:
+
+      scratch = size * (16 * (read_frames + 1) + 2 * write_frames)
+
+  and 0 below 16 GiB, so a small run keeps its spill on the working directory's filesystem and does not wait for a volume. The factors cover the measured peak of every tested data shape by 1.8x or more. `pt.workflow().scratchFreeSpace(amount)` sets the request by hand.
+
+  `exec`: a `scratchFreeSpace` formula may now evaluate to 0, which asks for the temporary directory without a sized device, as a static 0 does. Before, 0 failed the positive-integer check.
+
+## 2.1.13
+
+### Patch Changes
+
+- 7b5f8f1: Let the docker build flags reach the build.
+
+  Both packages define their own `turbo.json`, and a task's `passThroughEnv` replaces the root list rather than extending it. Theirs named only `AWS_*` and `PL_AWS_*`, so `PL_DOCKER_NO_BUILD` and its siblings were stripped before the build ran and the CI defaults applied instead: build the image and push it.
+
+## 2.1.12
+
+### Patch Changes
+
+- e4f6443: Let the docker build flags reach the build.
+
+  Both packages define their own `turbo.json`, and a task's `passThroughEnv` replaces the root list rather than extending it. Theirs named only `AWS_*` and `PL_AWS_*`, so `PL_DOCKER_NO_BUILD` and its siblings were stripped before the build ran and the CI defaults applied instead: build the image and push it.
+
+## 2.1.11
+
+### Patch Changes
+
+- 31a3f60: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.61. The Linux pframes-rs-node addon no longer ships debug info. Its download shrinks from 208 MB to about 28 MB. Bump runenv-python-3 to 1.13.2, which bundles polars-pf 1.1.61 for ptabler.
+
+## 2.1.10
+
+### Patch Changes
+
+- cdbc497: Writing a table back over the file it was read from no longer crashes.
+
+  The read is lazy, so sinking straight to the target truncated a file polars was still reading. A local filesystem hides that behind cached pages; a network filesystem does not, and the process died with a bus error. A write to a file the same workflow also reads now lands in a sibling temporary file that is moved into place once every sink has been collected, carrying the target's mode across so a file staged writable stays writable. Every other write keeps the direct sink it always had.
+
+## 2.1.9
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+
 ## 2.1.8
 
 ### Patch Changes

@@ -41,6 +41,7 @@
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
     "@platforma-open/milaboratories.software-test-utils": "catalog:",
+    "@platforma-open/milaboratories.software-venv-identity-test": "workspace:*",
     "@platforma-sdk/tengo-builder": "workspace:*",
     "@platforma-sdk/test": "workspace:*",
     "@types/node": "catalog:",

@@ -69,14 +69,26 @@ const toggleAllFiltered = () => {
 
 <template>
   <Teleport v-if="teleportTarget" :to="teleportTarget">
-    <PlBtnGhost icon="columns" @click.stop="slideModal = !slideModal"> Columns </PlBtnGhost>
+    <PlBtnGhost
+      data-testid="pl-ag-grid-column-manager"
+      icon="columns"
+      @click.stop="slideModal = !slideModal"
+    >
+      Columns
+    </PlBtnGhost>
   </Teleport>
 
-  <PlSlideModal v-model="slideModal" :width="width" close-on-outside-click>
+  <PlSlideModal
+    v-model="slideModal"
+    data-testid="pl-ag-grid-column-manager-panel"
+    :width="width"
+    close-on-outside-click
+  >
     <template #title>Manage Columns</template>
-    <div :class="$style.searchRow">
-      <PlSearchField v-model="query" clearable />
+    <div data-testid="pl-ag-grid-column-manager-search-row" :class="$style.searchRow">
+      <PlSearchField v-model="query" data-testid="pl-ag-grid-column-manager-search" clearable />
       <PlBtnSecondary
+        data-testid="pl-ag-grid-column-manager-toggle-all"
         :class="$style.toggleAllBtn"
         :disabled="toggleableFilteredItems.length === 0"
         @click.stop="toggleAllFiltered"
@@ -86,6 +98,7 @@ const toggleAllFiltered = () => {
       </PlBtnSecondary>
     </div>
     <PlElementList
+      data-testid="pl-ag-grid-column-manager-list"
       :items="filteredItems"
       :get-item-key="(item) => item.id"
       :is-draggable="(item) => !item.column.getColDef().lockPosition"
@@ -113,7 +126,7 @@ const toggleAllFiltered = () => {
       disable-removing
     >
       <template #item-title="{ item }">
-        <span>
+        <span data-testid="pl-ag-grid-column-manager-item">
           <span
             v-for="(segment, i) of segments.get(item.label)"
             :key="i"

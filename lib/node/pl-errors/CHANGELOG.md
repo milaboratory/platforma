@@ -1,5 +1,87 @@
 # @milaboratories/pl-errors
 
+## 1.4.51
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.18.2
+
+## 1.4.50
+
+### Patch Changes
+
+- Updated dependencies [41f0c56]
+  - @milaboratories/pl-client@3.18.1
+
+## 1.4.49
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-client@3.18.0
+
+## 1.4.48
+
+### Patch Changes
+
+- Updated dependencies [90073ff]
+  - @milaboratories/pl-client@3.17.7
+
+## 1.4.47
+
+### Patch Changes
+
+- Updated dependencies [fd9f892]
+  - @milaboratories/pl-client@3.17.6
+
+## 1.4.46
+
+### Patch Changes
+
+- Updated dependencies [9c97fb0]
+  - @milaboratories/pl-client@3.17.5
+
+## 1.4.45
+
+### Patch Changes
+
+- Updated dependencies [7b19fcc]
+  - @milaboratories/pl-client@3.17.4
+
+## 1.4.44
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.17.3
+
+## 1.4.43
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.17.2
+
+## 1.4.42
+
+### Patch Changes
+
+- Updated dependencies [a8e1308]
+  - @milaboratories/pl-client@3.17.1
+  - @milaboratories/ts-helpers@1.8.6
+
+## 1.4.41
+
+### Patch Changes
+
+- Updated dependencies [13aff26]
+- Updated dependencies [ddc7746]
+  - @milaboratories/pl-client@3.17.0
+
+## 1.4.40
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.16.2
+
 ## 1.4.39
 
 ### Patch Changes

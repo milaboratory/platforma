@@ -1,5 +1,152 @@
 # @milaboratories/pl-tree
 
+## 1.16.3
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.18.2
+- @milaboratories/pl-errors@1.4.51
+
+## 1.16.2
+
+### Patch Changes
+
+- 41f0c56: A signature refused inside a transaction is now recognized whether the backend answers it with PERMISSION_DENIED or, as older backends do, UNAUTHENTICATED:
+
+  - `isPermissionDenied` matches the status of a failed transaction (`PlError`), as `isUnauthenticated` already did.
+  - A tree of shared roots re-discovers its roots and retries when a poll is refused with either code, for example after a re-login, when every signature from the earlier session stops verifying.
+  - A queued streaming request that a failed transaction closes now fails with the transaction's error instead of an internal placeholder, so a reader can classify why it failed. The tree's re-discovery depended on this and did not always run.
+
+- Updated dependencies [41f0c56]
+  - @milaboratories/pl-client@3.18.1
+  - @milaboratories/pl-errors@1.4.50
+
+## 1.16.1
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-client@3.18.0
+  - @milaboratories/pl-errors@1.4.49
+
+## 1.16.0
+
+### Minor Changes
+
+- 90073ff: pl-tree defect fixes: readers are notified when a resource becomes final, when a lock changes,
+  when a required field appears and when a Dynamic or MTW field comes back under another type;
+  any error while applying an update invalidates the mirror and raises `TreeStateUpdateError`, so
+  the synchronization loop rebuilds it, and consecutive rebuilds back off from 100 ms to 5 s; a
+  deleted root leaves the tree (new `rootsNeverFinal` option to existence-check roots the
+  predicate calls final too); a dynamic field removal re-evaluates finality; `listDynamicFields`
+  excludes Service fields (visible to blocks); the backend `final` flag follows updates; common
+  traversal options reach `getField`; data getters and `getKeyValueAsJson` enforce the usage
+  guard. Also: an unresolved or absent field of a final resource reads as stable; invalidation
+  re-runs readers waiting for a resource the tree does not hold; `terminate()` rejects pending
+  `refreshState()` calls; the streaming loader passes the backend `final` flag through as sent,
+  whether or not the traversal stopped at the resource.
+
+  pl-client: for a non-errored StreamManager whose field list lacks `stream` or `downloadable`, or
+  has `stream` still empty, the finality predicate returns false and does not throw.
+
+### Patch Changes
+
+- c539b39: Delta resolution rounds start with a shallow walk: round n of a poll uses
+  `unconditionalDepth = min(2^(n-1), 32)` (1, 2, 4, 8, 16, 32, 32, …), so a poll does not re-send
+  up to 32 levels of subtree the mirror already holds under deduplicated outputs.
+- Updated dependencies [90073ff]
+  - @milaboratories/pl-client@3.17.7
+  - @milaboratories/pl-errors@1.4.48
+
+## 1.15.7
+
+### Patch Changes
+
+- fd9f892: Comment and test skip-message wording for the `treeChangedSince:v2` gate. No behaviour change.
+- Updated dependencies [fd9f892]
+  - @milaboratories/pl-client@3.17.6
+  - @milaboratories/pl-errors@1.4.47
+
+## 1.15.6
+
+### Patch Changes
+
+- 9c97fb0: Gate delta tree sync on `treeChangedSince:v2`. v1 backends emit body-less unchanged frames the client misreads as stop markers, flooding the log; until a backend advertises v2 the tree falls back to backend-streaming.
+- Updated dependencies [9c97fb0]
+  - @milaboratories/pl-client@3.17.5
+  - @milaboratories/pl-errors@1.4.46
+
+## 1.15.5
+
+### Patch Changes
+
+- Updated dependencies [7b19fcc]
+  - @milaboratories/pl-client@3.17.4
+  - @milaboratories/pl-errors@1.4.45
+
+## 1.15.4
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.17.3
+- @milaboratories/pl-errors@1.4.44
+
+## 1.15.3
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.17.2
+- @milaboratories/pl-errors@1.4.43
+
+## 1.15.2
+
+### Patch Changes
+
+- Updated dependencies [a8e1308]
+  - @milaboratories/pl-client@3.17.1
+  - @milaboratories/pl-errors@1.4.42
+  - @milaboratories/computable@2.9.8
+  - @milaboratories/ts-helpers@1.8.6
+
+## 1.15.1
+
+### Patch Changes
+
+- 6cfda51: Make `PlTreeState.updateFromResourceData` 11% faster on a steady tree-sync poll and 23% faster on a first load, mainly by walking stored fields and kv entries in lockstep with the incoming ones instead of hashing every freshly decoded name.
+- 6310b85: Fix a `RangeError: Maximum call stack size exceeded` in `loadTreeStateViaResourceTree` when a stop-marker follow-up round returns a very large number of resources, which left the synchronized tree permanently failing on every poll.
+
+## 1.15.0
+
+### Minor Changes
+
+- 3e33e3c: Add the `backend-delta` tree loading algorithm: it hands the backend the change token its
+  transaction was opened at and takes only the resources that changed since, resolving
+  references a delta pointed at but did not carry. Requires the `treeChangedSince:v1` backend
+  capability. `TreeLoadingRequest` gains the required members `roots` and `knownResources`, and
+  an optional `changedSinceToken`.
+- 4068d5c: `auto` now resolves to `backend-delta` whenever the backend advertises
+  `treeChangedSince:v1`, falling back to `backend-streaming` and then `client-bfs`. This
+  changes which algorithm an existing caller gets, without any change on their side.
+  `MI_TREE_TRAVERSAL` accepts `backend-delta` too.
+
+### Patch Changes
+
+- 37707e3: Resolve the tree loading algorithm once, when a synchronized tree is created, instead of on
+  every poll. `resolveTreeLoadingAlgorithm` holds the `auto` rule and the fallbacks for a
+  preference the backend cannot serve; the tree logs the algorithm it will run and keeps it for
+  its life.
+- Updated dependencies [13aff26]
+- Updated dependencies [ddc7746]
+  - @milaboratories/pl-client@3.17.0
+  - @milaboratories/pl-errors@1.4.41
+
+## 1.14.4
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.16.2
+- @milaboratories/pl-errors@1.4.40
+
 ## 1.14.3
 
 ### Patch Changes

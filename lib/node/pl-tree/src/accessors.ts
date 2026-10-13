@@ -268,7 +268,7 @@ export class PlTreeNodeAccessor {
             }
           : { ...commonOptions, ..._step };
 
-      const next = current.getField(_step);
+      const next = current.getField(step);
 
       if (next === undefined) return undefined;
 
@@ -296,8 +296,9 @@ export class PlTreeNodeAccessor {
               `field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`,
             ),
           };
-        // existing but unpopulated field is unstable because it must be resolved at some point
-        this.onUnstableLambda("unpopulated_field:" + step.field);
+        // existing but unpopulated field is unstable because it must be resolved at some point,
+        // unless its resource is final and so never will be
+        if (!current.resource.finalState) this.onUnstableLambda("unpopulated_field:" + step.field);
         return undefined;
       }
 
@@ -368,14 +369,17 @@ export class PlTreeNodeAccessor {
   }
 
   public getData(): Uint8Array | undefined {
+    this.instanceData.guard();
     return this.resource.data;
   }
 
   public getDataAsString(): string | undefined {
+    this.instanceData.guard();
     return this.resource.getDataAsString();
   }
 
   public getDataAsJson<T = unknown>(): T | undefined {
+    this.instanceData.guard();
     return this.resource.getDataAsJson<T>();
   }
 
@@ -421,6 +425,7 @@ export class PlTreeNodeAccessor {
     key: string,
     unstableIfNotFound: boolean = false,
   ): T | undefined {
+    this.instanceData.guard();
     const result = this.resource.getKeyValueAsJson<T>(this.instanceData.ctx.watcher, key);
     if (result === undefined) {
       if (unstableIfNotFound) this.instanceData.ctx.markUnstable("key_not_found_j:" + key);

@@ -1583,8 +1583,11 @@ blockTest(
 
 blockTest(
   "v3: should create read-logs block, render it and read logs from a file",
-  // The timeout is higher here because pl - core must download a software for this test.
-  { timeout: 20000 },
+  // pl-core downloads a software for this test and then runs it, and on a Kubernetes deploy
+  // that run is a pod scheduled and an image pulled. 20s covered neither and the case reported
+  // a bare timeout. The sibling that only renders a block already takes 90s, and the two that
+  // download take 600s.
+  { timeout: 300000 },
   async ({ rawPrj: project, ml, helpers: _helpers, expect }) => {
     const blockId = await project.addBlock("ReadLogs", readLogsSpec);
 
