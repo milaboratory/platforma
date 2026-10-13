@@ -90,8 +90,16 @@ export async function initDriverKit(
   // These drivers only count files they download in this session; trim leftovers from earlier ones first.
   await Promise.all([
     trimCacheDir(ops.logger, ops.blobDownloadPath, ops.blobDriverOps.cacheSoftSizeBytes),
-    trimCacheDir(ops.logger, ops.downloadBlobToURLPath, ops.downloadBlobToURLDriverOps.cacheSoftSizeBytes),
-    trimCacheDir(ops.logger, frontendDownloadPath, ops.frontendDownloadDriverOps.cacheSoftSizeBytes),
+    trimCacheDir(
+      ops.logger,
+      ops.downloadBlobToURLPath,
+      ops.downloadBlobToURLDriverOps.cacheSoftSizeBytes,
+    ),
+    trimCacheDir(
+      ops.logger,
+      frontendDownloadPath,
+      ops.frontendDownloadDriverOps.cacheSoftSizeBytes,
+    ),
   ]);
 
   const downloadClient = createDownloadClient(ops.logger, pl, ops.localProjections);
