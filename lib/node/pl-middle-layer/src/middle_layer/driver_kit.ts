@@ -12,6 +12,7 @@ import {
   LsDriver,
   UploadDriver,
   DownloadUrlDriver,
+  trimCacheDir,
 } from "@milaboratories/pl-drivers";
 import type * as Sdk from "@milaboratories/pl-model-common";
 import type { Signer } from "@milaboratories/ts-helpers";
@@ -85,6 +86,13 @@ export async function initDriverKit(
   };
 
   const signer = new HmacSha256Signer(ops.localSecret);
+
+  // These drivers only count files they download in this session; trim leftovers from earlier ones first.
+  await Promise.all([
+    trimCacheDir(ops.logger, ops.blobDownloadPath, ops.blobDriverOps.cacheSoftSizeBytes),
+    trimCacheDir(ops.logger, ops.downloadBlobToURLPath, ops.downloadBlobToURLDriverOps.cacheSoftSizeBytes),
+    trimCacheDir(ops.logger, frontendDownloadPath, ops.frontendDownloadDriverOps.cacheSoftSizeBytes),
+  ]);
 
   const downloadClient = createDownloadClient(ops.logger, pl, ops.localProjections);
   const logsClient = createLogsClient(pl, ops.logger);
