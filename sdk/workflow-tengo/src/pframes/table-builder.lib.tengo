@@ -51,6 +51,9 @@ VALID_FORMATS := {
 //   left  — keep exactly the trunk's keys; a column only fills values, never adds keys.
 //           Use it with filtered primaries so added columns respect the filter.
 //   inner — keep only keys present in the column as well.
+// When columns use different modes, they are applied in a fixed order regardless of
+// the order they were added: inner, then left, then full. Keys a full-joined column
+// adds therefore get no values from the left- or inner-joined columns.
 VALID_COLUMN_JOINS := {
 	left: true,
 	full: true,
@@ -329,6 +332,9 @@ tableBuilder := func(format, ...ctxArg) {
 		 *   "left"  — keep exactly the trunk's keys; columns only fill values. Use it
 		 *             with filtered primaries so added columns respect the filter.
 		 *   "inner" — keep only keys every such column also has
+		 * Mixed modes are applied in a fixed order, regardless of the order columns
+		 * were added: inner, then left, then full. A key a full-joined column brings
+		 * back is not filled by left- or inner-joined columns: their cells stay empty.
 		 */
 		setColumnJoin: func(mode) {
 			ll.assert(!is_undefined(VALID_COLUMN_JOINS[mode]),
