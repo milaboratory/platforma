@@ -65,8 +65,17 @@ function getProcessName(pid: number): string {
   return "";
 }
 
-export function processStop(pid: number, force: boolean = false) {
-  return process.kill(pid, force ? "SIGKILL" : "SIGINT");
+/**
+ * Signals the process to stop. Returns false if it had already exited: a backend that crashed is
+ * as stopped as one we stop, and throwing ESRCH here left callers unable to reconnect.
+ */
+export function processStop(pid: number, force: boolean = false): boolean {
+  try {
+    return process.kill(pid, force ? "SIGKILL" : "SIGINT");
+  } catch (e: unknown) {
+    if (e instanceof Error && "code" in e && e.code === "ESRCH") return false;
+    throw e;
+  }
 }
 
 export async function processWaitStopped(pid: number, maxMs: number) {
