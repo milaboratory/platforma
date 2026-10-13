@@ -17,7 +17,10 @@ export type BlockStatusTransition = {
   reason: string;
 };
 
-/** A status attribute: attr/<topic>/<resource>/<key>/<tx ID> in a status context. */
+/**
+ * A status attribute: attr/<topic>/<resource>/<key> in a status context. The backend stores it as
+ * attr/<topic>/<resource>/<key>/<tx ID>, with the ID of the transaction that wrote the value as the version.
+ */
 export type BlockStatusAttribute = {
   topic: string;
   resource: string;
@@ -91,8 +94,8 @@ async function readStatusNode(
         detail: parsed.detail ?? "",
         reason: parsed.reason ?? "",
       });
-    } else if (parts[0] === "attr" && parts.length === 5) {
-      // the last part is the version: the ID of the transaction that wrote the value
+    } else if (parts[0] === "attr" && (parts.length === 4 || parts.length === 5)) {
+      // a fifth part is the version: the ID of the transaction that wrote the value
       attributes.push({ topic: parts[1], resource: parts[2], key: parts[3], value });
     }
   }
