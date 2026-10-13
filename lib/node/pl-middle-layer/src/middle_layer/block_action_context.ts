@@ -17,7 +17,10 @@ export type BlockActionTransition = {
   reason: string;
 };
 
-/** A reading: reading/<namespace>/<resource>/<key>/<tx ID> in an action context. */
+/**
+ * A reading: reading/<namespace>/<resource>/<key> in an action context. The backend stores it as
+ * reading/<namespace>/<resource>/<key>/<tx ID>, with the ID of the transaction that wrote the value as the version.
+ */
 export type BlockActionReading = {
   namespace: string;
   resource: string;
@@ -95,8 +98,8 @@ async function readActionContextNode(
         detail: parsed.detail ?? "",
         reason: parsed.reason ?? "",
       });
-    } else if (parts[0] === "reading" && parts.length === 5) {
-      // the last part is the version: the ID of the transaction that wrote the value
+    } else if (parts[0] === "reading" && (parts.length === 4 || parts.length === 5)) {
+      // a fifth part is the version: the ID of the transaction that wrote the value
       readings.push({ namespace: parts[1], resource: parts[2], key: parts[3], value });
     }
   }
