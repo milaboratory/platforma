@@ -37,24 +37,23 @@ async function listEntries(dir: string): Promise<CacheEntry[]> {
     throw e;
   }
 
-  return await Promise.all(
-    names.map(async (name) => {
-      const entryPath = path.join(dir, name);
-      const stat = await fsp.stat(entryPath);
-      const size = stat.isDirectory() ? await dirSize(entryPath) : stat.size;
-      return { path: entryPath, size, mtimeMs: stat.mtimeMs };
-    }),
-  );
+  // Sequential on purpose: a large leftover cache must not queue a stat per file at startup.
+  const entries: CacheEntry[] = [];
+  for (const name of names) {
+    const entryPath = path.join(dir, name);
+    // lstat: a dangling link inside an extracted archive must not abort the whole trim.
+    const stat = await fsp.lstat(entryPath);
+    const size = stat.isDirectory() ? await dirSize(entryPath) : stat.size;
+    entries.push({ path: entryPath, size, mtimeMs: stat.mtimeMs });
+  }
+  return entries;
 }
 
 async function dirSize(dir: string): Promise<number> {
-  const dirents = await fsp.readdir(dir, { withFileTypes: true });
-  const sizes = await Promise.all(
-    dirents.map(async (dirent) => {
-      const entryPath = path.join(dir, dirent.name);
-      if (dirent.isDirectory()) return await dirSize(entryPath);
-      return (await fsp.stat(entryPath)).size;
-    }),
-  );
-  return sizes.reduce((sum, size) => sum + size, 0);
+  let total = 0;
+  for (const dirent of await fsp.readdir(dir, { withFileTypes: true })) {
+    const entryPath = path.join(dir, dirent.name);
+    total += dirent.isDirectory() ? await dirSize(entryPath) : (await fsp.lstat(entryPath)).size;
+  }
+  return total;
 }
