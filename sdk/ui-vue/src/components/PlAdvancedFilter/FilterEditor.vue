@@ -282,10 +282,11 @@ const stringMatchesError = computed(() => {
 });
 </script>
 <template>
-  <div :class="$style.filterWrapper">
+  <div data-testid="pl-advanced-filter-filter" :class="$style.filterWrapper">
     <!-- top element - column selector / column label - for all filter types-->
     <div
       v-if="enableDnd"
+      data-testid="pl-advanced-filter-column-chip"
       :class="[$style.top, $style.columnChip, { [$style.error]: currentError }]"
     >
       <div :class="[$style.typeIcon, { [$style.error]: currentError }]">
@@ -299,7 +300,11 @@ const stringMatchesError = computed(() => {
           "
         />
       </div>
-      <div :class="$style.titleWrapper" :title="currentOption?.label ?? ''">
+      <div
+        data-testid="pl-advanced-filter-column-title"
+        :class="$style.titleWrapper"
+        :title="currentOption?.label ?? ''"
+      >
         <div :class="$style.title">
           {{
             inconsistentSourceSelected
@@ -308,12 +313,17 @@ const stringMatchesError = computed(() => {
           }}
         </div>
       </div>
-      <div :class="$style.closeIcon" @click="onDelete(props.filter.column)">
+      <div
+        data-testid="pl-advanced-filter-remove"
+        :class="$style.closeIcon"
+        @click="onDelete(props.filter.column)"
+      >
         <PlIcon16 name="close" />
       </div>
     </div>
     <div v-else :class="$style.top">
       <PlDropdown
+        data-testid="pl-advanced-filter-column"
         :model-value="columnAsSourceAndFixedAxes.source"
         :errorStatus="currentError"
         :options="sourceOptions"
@@ -321,14 +331,23 @@ const stringMatchesError = computed(() => {
         group-position="top-left"
         @update:model-value="changeSourceId"
       />
-      <div :class="$style.closeButton" @click="onDelete(props.filter.column)">
+      <div
+        data-testid="pl-advanced-filter-remove"
+        :class="$style.closeButton"
+        @click="onDelete(props.filter.column)"
+      >
         <PlIcon16 name="close" />
       </div>
     </div>
 
-    <div v-if="currentOption?.axesToBeFixed?.length" :class="$style.fixedAxesBlock">
+    <div
+      v-if="currentOption?.axesToBeFixed?.length"
+      data-testid="pl-advanced-filter-fixed-axes"
+      :class="$style.fixedAxesBlock"
+    >
       <template v-for="value in currentOption?.axesToBeFixed" :key="value.idx">
         <PlAutocomplete
+          data-testid="pl-advanced-filter-fixed-axis"
           :model-value="columnAsSourceAndFixedAxes.axisFiltersByIndex[value.idx]"
           :label="value.label"
           :options-search="
@@ -351,6 +370,7 @@ const stringMatchesError = computed(() => {
       "
     >
       <PlDropdown
+        data-testid="pl-advanced-filter-type"
         :model-value="props.filter.type"
         :options="filterTypesOptions"
         :group-position="
@@ -364,14 +384,16 @@ const stringMatchesError = computed(() => {
     <template v-if="props.filter.type === 'patternFuzzyContainSubsequence'">
       <div :class="$style.middle">
         <PlTextField
+          data-testid="pl-advanced-filter-value"
           :model-value="props.filter.value"
           placeholder="Substring"
           group-position="middle"
           @update:model-value="(v) => updateFilterProp('value', v)"
         />
       </div>
-      <div :class="$style.innerSection">
+      <div data-testid="pl-advanced-filter-fuzzy-settings" :class="$style.innerSection">
         <Slider
+          data-testid="pl-advanced-filter-max-edits"
           :model-value="props.filter.maxEdits"
           :max="5"
           breakpoints
@@ -379,6 +401,7 @@ const stringMatchesError = computed(() => {
           @update:model-value="(v) => updateFilterProp('maxEdits', v)"
         />
         <PlToggleSwitch
+          data-testid="pl-advanced-filter-substitutions-only"
           :model-value="props.filter.substitutionsOnly"
           label="Substitutions only"
           @update:model-value="(v) => updateFilterProp('substitutionsOnly', v)"
@@ -390,6 +413,7 @@ const stringMatchesError = computed(() => {
     <div :class="$style.bottom">
       <PlAutocomplete
         v-if="props.filter.type === 'patternEquals' || props.filter.type === 'patternNotEquals'"
+        data-testid="pl-advanced-filter-value"
         :model-value="props.filter.value"
         :options-search="
           (str, type) => getSuggestOptionsFn(columnAsSourceAndFixedAxes.source, type, str)
@@ -400,6 +424,7 @@ const stringMatchesError = computed(() => {
       />
       <PlAutocompleteMulti
         v-if="props.filter.type === 'inSet' || props.filter.type === 'notInSet'"
+        data-testid="pl-advanced-filter-value"
         :model-value="props.filter.value"
         :options-search="
           (str, type) => getMultiSuggestOptionsFn(columnAsSourceAndFixedAxes.source, type, str)
@@ -410,12 +435,14 @@ const stringMatchesError = computed(() => {
       />
       <PlNumberField
         v-if="isNumericFilter(props.filter)"
+        data-testid="pl-advanced-filter-value"
         :model-value="props.filter.x"
         group-position="bottom"
         @update:model-value="(v) => updateFilterProp('x', v)"
       />
       <PlNumberField
         v-if="isPositionFilter(props.filter)"
+        data-testid="pl-advanced-filter-value"
         :model-value="props.filter.n"
         group-position="bottom"
         @update:model-value="(v) => updateFilterProp('n', v)"
@@ -425,6 +452,7 @@ const stringMatchesError = computed(() => {
           props.filter.type === 'patternContainSubsequence' ||
           props.filter.type === 'patternNotContainSubsequence'
         "
+        data-testid="pl-advanced-filter-value"
         :model-value="props.filter.value"
         placeholder="Substring"
         group-position="bottom"
@@ -432,6 +460,7 @@ const stringMatchesError = computed(() => {
       />
       <PlTextField
         v-if="props.filter.type === 'patternMatchesRegularExpression'"
+        data-testid="pl-advanced-filter-value"
         :model-value="props.filter.value"
         :error="stringMatchesError ? 'Regular expression is not valid' : undefined"
         placeholder="Regular expression"
@@ -440,6 +469,7 @@ const stringMatchesError = computed(() => {
       />
       <PlDropdown
         v-if="props.filter.type === 'patternFuzzyContainSubsequence'"
+        data-testid="pl-advanced-filter-wildcard"
         :model-value="props.filter.wildcard"
         clearable
         placeholder="Wildcard value"

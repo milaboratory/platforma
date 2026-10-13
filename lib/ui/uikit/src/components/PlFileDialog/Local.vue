@@ -90,12 +90,20 @@ const openNativeDialog = async () => {
 </script>
 
 <template>
-  <div :class="style.local" @drop="onDrop" @dragover.prevent @click="openNativeDialog">
+  <div
+    :class="style.local"
+    data-testid="pl-file-dialog-local"
+    @drop="onDrop"
+    @dragover.prevent
+    @click="openNativeDialog"
+  >
     <PlIcon24 name="cloud-upload" />
-    <span>{{ label }}</span>
-    <span v-if="extensions" :class="style.supported"
+    <span data-testid="pl-file-dialog-local-label">{{ label }}</span>
+    <span v-if="extensions" :class="style.supported" data-testid="pl-file-dialog-local-formats"
       >Supported formats: {{ extensions.join(", ") }}</span
     >
-    <span v-if="data.error" class="alert-error">{{ data.error }}</span>
+    <span v-if="data.error" class="alert-error" data-testid="pl-file-dialog-local-error">{{
+      data.error
+    }}</span>
   </div>
 </template>

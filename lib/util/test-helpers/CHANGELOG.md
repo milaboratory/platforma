@@ -1,5 +1,11 @@
 # @milaboratories/test-helpers
 
+## 1.2.6
+
+### Patch Changes
+
+- 9839cba: Empty commit to fix release
+
 ## 1.2.5
 
 ### Patch Changes

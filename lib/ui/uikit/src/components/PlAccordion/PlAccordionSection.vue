@@ -50,13 +50,22 @@ defineProps<{
 </script>
 
 <template>
-  <div class="pl-accordion-section">
-    <PlSectionSeparator :class="$style.separator" :compact="compact" @click="open = !open">
-      <PlMaskIcon16 name="chevron-right" :class="[{ [$style.down]: open }, $style.chevron]" />
+  <div class="pl-accordion-section" data-testid="pl-accordion-section">
+    <PlSectionSeparator
+      data-testid="pl-accordion-section-header"
+      :class="$style.separator"
+      :compact="compact"
+      @click="open = !open"
+    >
+      <PlMaskIcon16
+        data-testid="pl-accordion-section-chevron"
+        name="chevron-right"
+        :class="[{ [$style.down]: open }, $style.chevron]"
+      />
       {{ label }}
     </PlSectionSeparator>
     <ExpandTransition>
-      <div v-if="open" :class="$style.content">
+      <div v-if="open" data-testid="pl-accordion-section-body" :class="$style.content">
         <slot />
       </div>
     </ExpandTransition>

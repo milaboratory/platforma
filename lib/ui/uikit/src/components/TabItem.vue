@@ -28,8 +28,8 @@ const classes = computed<string>(() => {
 });
 </script>
 <template>
-  <div :class="classes" class="dropdown-tab-item">
-    <div class="dropdown-tab-item__title text-caps13">
+  <div data-testid="pl-tab-item" :class="classes" class="dropdown-tab-item">
+    <div data-testid="pl-tab-item-title" class="dropdown-tab-item__title text-caps13">
       {{ label }}
     </div>
   </div>

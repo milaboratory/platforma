@@ -10,19 +10,27 @@ const slots = defineSlots<{
 </script>
 
 <template>
-  <div :class="$style.root">
+  <div data-testid="pl-sidebar-item" :class="$style.root">
     <slot name="header">
-      <div v-if="slots['header-content']" :class="$style.header">
+      <div
+        v-if="slots['header-content']"
+        data-testid="pl-sidebar-item-header"
+        :class="$style.header"
+      >
         <slot name="header-content" />
       </div>
     </slot>
     <slot name="body">
-      <div v-if="slots['body-content']" :class="$style.body">
+      <div v-if="slots['body-content']" data-testid="pl-sidebar-item-body" :class="$style.body">
         <slot name="body-content" />
       </div>
     </slot>
     <slot name="footer">
-      <div v-if="slots['footer-content']" :class="$style.footer">
+      <div
+        v-if="slots['footer-content']"
+        data-testid="pl-sidebar-item-footer"
+        :class="$style.footer"
+      >
         <slot name="footer-content" />
       </div>
     </slot>

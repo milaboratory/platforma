@@ -104,4 +104,63 @@ describe("co-located test wiring (real STRUCTURE)", () => {
     // (workflow tsconfig is JSON, but parseYaml reads JSON too; types:[] unchanged)
     expect(wfTs.types).toEqual([]);
   });
+
+  test("a workflow Tengo test wires `pl-tengo test` without vitest", async () => {
+    const { fs } = simulateInit({ vars: VARS, registryLookup: mockLookup });
+    fs.write("workflow/src/lib.test.tengo", `test := import(":test")\n`);
+
+    await refresh(fs);
+
+    const workflow = JSON.parse(fs.read("workflow/package.json")) as Pkg;
+    expect(workflow.scripts?.test).toBe("pl-tengo test");
+    expect(workflow.devDependencies?.vitest).toBeUndefined();
+
+    const after = fs.read("workflow/package.json");
+    await refresh(fs);
+    expect(fs.read("workflow/package.json")).toBe(after);
+  });
+
+  test("a Tengo-only workflow replaces a stale vitest script and drops the vitest devDep", async () => {
+    const { fs } = simulateInit({ vars: VARS, registryLookup: mockLookup });
+    fs.write("workflow/src/sub/deep/lib.test.tengo", `test := import(":test")\n`);
+    const stale = JSON.parse(fs.read("workflow/package.json")) as Pkg;
+    stale.scripts = { ...stale.scripts, test: "vitest run --passWithNoTests" };
+    stale.devDependencies = { ...stale.devDependencies, vitest: "catalog:" };
+    fs.write("workflow/package.json", JSON.stringify(stale, null, 2) + "\n");
+
+    await refresh(fs);
+
+    const workflow = JSON.parse(fs.read("workflow/package.json")) as Pkg;
+    expect(workflow.scripts?.test).toBe("pl-tengo test");
+    expect(workflow.devDependencies?.vitest).toBeUndefined();
+  });
+
+  test("Tengo and vitest workflow tests wire both runners and restore a drifted script", async () => {
+    const { fs } = simulateInit({ vars: VARS, registryLookup: mockLookup });
+    fs.write("workflow/src/lib.test.tengo", `test := import(":test")\n`);
+    fs.write("workflow/src/wf.test.ts", `import { test } from "vitest";\ntest("x", () => {});\n`);
+    const drifted = JSON.parse(fs.read("workflow/package.json")) as Pkg;
+    drifted.scripts = { ...drifted.scripts, test: "vitest run --passWithNoTests" };
+    fs.write("workflow/package.json", JSON.stringify(drifted, null, 2) + "\n");
+
+    await refresh(fs);
+
+    const workflow = JSON.parse(fs.read("workflow/package.json")) as Pkg;
+    expect(workflow.scripts?.test).toBe("pl-tengo test && vitest run --passWithNoTests");
+    expect(workflow.devDependencies?.vitest).toBe("catalog:");
+
+    const after = fs.read("workflow/package.json");
+    await refresh(fs);
+    expect(fs.read("workflow/package.json")).toBe(after);
+  });
+
+  test("a Tengo test template for vitest (`*.test.tpl.tengo`) does not wire `pl-tengo test`", async () => {
+    const { fs } = simulateInit({ vars: VARS, registryLookup: mockLookup });
+    fs.write("workflow/src/test/run.test.tpl.tengo", `self := import(":tpl")\n`);
+
+    await refresh(fs);
+
+    const workflow = JSON.parse(fs.read("workflow/package.json")) as Pkg;
+    expect(workflow.scripts?.test).toBeUndefined();
+  });
 });

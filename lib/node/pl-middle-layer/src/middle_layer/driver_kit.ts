@@ -19,12 +19,12 @@ import { isAsyncDisposable } from "@milaboratories/helpers";
 import { HmacSha256Signer } from "@milaboratories/ts-helpers";
 import type { InternalPFrameDriver } from "../pool";
 import { createPFrameDriver } from "../pool";
-import type { Recorder } from "@milaboratories/pl-flight-recorder";
+import type { Recorder } from "@milaboratories/pl-crash-recorder";
 import {
-  openFlightSession,
+  openRecordingSession,
   wrapDataDriver,
   wrapModelDriver,
-} from "@milaboratories/pl-flight-recorder";
+} from "@milaboratories/pl-crash-recorder";
 import type { DriverKitOps, DriverKitOpsConstructor } from "./ops";
 import { DefaultDriverKitOpsPaths, DefaultDriverKitOpsSettings } from "./ops";
 
@@ -53,11 +53,11 @@ export interface MiddleLayerDriverKit extends Sdk.DriverKit, AsyncDisposable {
   readonly frontendDriver: DownloadUrlDriver;
 
   /**
-   * Diagnostics log for the model layer, present only when flight recording is
+   * Diagnostics log for the model layer, present only when crash recording is
    * switched on. Render spans are written through it so that a join recorded by
    * the instrumented pFrame driver can be attributed to the block that built it.
    * */
-  readonly flightRecorder?: Recorder;
+  readonly crashRecorder?: Recorder;
 
   /**
    * Signer is initialized from local secret in drivers initialization routine,
@@ -140,12 +140,12 @@ export async function initDriverKit(
   // this one driver, so instrumenting it here covers the whole model layer
   // without touching the call sites. The session is undefined unless recording
   // is switched on, in which case the driver is used exactly as before.
-  const flightSession = openFlightSession({ role: "middle-layer" });
-  const pFrameDriver: InternalPFrameDriver = flightSession
+  const recordingSession = openRecordingSession({ role: "middle-layer" });
+  const pFrameDriver: InternalPFrameDriver = recordingSession
     ? wrapDataDriver(
-        wrapModelDriver(rawPFrameDriver, flightSession.recorder, flightSession.registry),
-        flightSession.recorder,
-        flightSession.registry,
+        wrapModelDriver(rawPFrameDriver, recordingSession.recorder, recordingSession.registry),
+        recordingSession.recorder,
+        recordingSession.registry,
       )
     : rawPFrameDriver;
 
@@ -166,7 +166,7 @@ export async function initDriverKit(
     uploadDriver,
     pFrameDriver,
     frontendDriver: frontendDownloadDriver,
-    flightRecorder: flightSession?.recorder,
+    crashRecorder: recordingSession?.recorder,
   };
 
   const dispose = async () => {
@@ -174,7 +174,7 @@ export async function initDriverKit(
       isAsyncDisposable(driver) ? [driver[Symbol.asyncDispose]()] : [],
     );
     await Promise.all(disposePromises);
-    flightSession?.close("driver-kit-disposed");
+    recordingSession?.close("driver-kit-disposed");
   };
 
   return {

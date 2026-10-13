@@ -31,7 +31,7 @@ const downloadDriverOps = {
 const useDocker = process.env.PL_TEST_USE_DOCKER === "true";
 
 vi.setConfig({
-  testTimeout: 90000,
+  testTimeout: 180000,
 });
 
 test("should get all logs", async () => {

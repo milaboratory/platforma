@@ -47,8 +47,9 @@ const currentProgress = computed(() => {
 </script>
 
 <template>
-  <div style="height: 100%">
+  <div data-testid="pl-ag-cell-file" style="height: 100%">
     <PlFileInput
+      data-testid="pl-ag-cell-file-input"
       show-filename-only
       clearable
       cell-style

@@ -5,7 +5,6 @@
 
 tx := import("tx")
 ll := import(":ll")
-text := import("text")
 regexp := import(":regexp")
 smart := import(":smart")
 maps := import(":maps")

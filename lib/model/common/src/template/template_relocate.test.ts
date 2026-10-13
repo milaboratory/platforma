@@ -109,6 +109,63 @@ describe("relocateBlockIds", () => {
     });
   });
 
+  describe("a domain that qualifies an axis", () => {
+    // An axis a block produced names that block in its domain — `pl7.app/sampleId` is
+    // qualified by the block that defined the samples, a clonotype key by the run that called
+    // the clonotypes. A chart bound to such an axis is bound to a reference.
+    const axis = (runId: string) => ({
+      kind: "axis",
+      name: "pl7.app/vdj/clonotypeKey",
+      type: "String",
+      domain: { "pl7.app/vdj/chain": "IGHeavy", "pl7.app/vdj/clonotypingRunId": runId },
+    });
+
+    test("an entry naming one of this template's entries is repointed", () => {
+      expect(relocateBlockIds({ x: axis("old") }, to("old", "new"))).toEqual({ x: axis("new") });
+    });
+
+    test("an entry that is not an entry id is left alone", () => {
+      // The map is the whole test of what is a reference: nothing reads a value's shape, so an
+      // ordinary qualifier cannot be caught by it.
+      const moved = relocateBlockIds({ x: axis("old") }, to("old", "new")) as {
+        x: { domain: Record<string, string> };
+      };
+
+      expect(moved.x.domain["pl7.app/vdj/chain"]).toBe("IGHeavy");
+    });
+
+    test("a domain naming a block this template does not carry keeps it", () => {
+      // The ordering rule again: an entry created later is not in the map yet, and the applied
+      // block reports itself as missing references rather than pointing at the wrong block.
+      expect(relocateBlockIds({ x: axis("later") }, to("earlier", "new"))).toEqual({
+        x: axis("later"),
+      });
+    });
+
+    test("a qualifier that merely collides with an entry id is NOT a reference", () => {
+      // Entry ids are validated only as non-empty strings, so a hand-written template names its
+      // entries readably. `algo` is a qualifier of the data, and an entry called `closest` does
+      // not make it one: matching the map is not evidence, the key is.
+      const params = { method: { domain: { algo: "closest", chain: "IGHeavy" } } };
+
+      expect(relocateBlockIds(params, to("closest", "new"))).toEqual(params);
+    });
+
+    test("a domain INSIDE a recognized identifier is still spec data, and stays", () => {
+      // The boundary of the rule above. This id is taken apart by the structural remapper,
+      // which never descends to the generic object case, so its overrides are untouched.
+      const id = createColumnOverriddenId({
+        source: leafId("old", "clonotypes"),
+        specOverrides: { domain: { producedBy: "old" } },
+      });
+
+      const moved = relocateBlockIds({ a: id }, to("old", "new")) as { a: string };
+      const key = JSON.parse(moved.a) as { specOverrides: { domain: unknown } };
+
+      expect(key.specOverrides.domain).toEqual({ producedBy: "old" });
+    });
+  });
+
   describe("depth", () => {
     test("three nested forms are repointed at the bottom and rebuilt on the way up", () => {
       const deep = (block: string) =>

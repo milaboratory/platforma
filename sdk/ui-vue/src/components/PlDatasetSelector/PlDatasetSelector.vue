@@ -125,6 +125,7 @@ function onChange(selection: Selection | undefined) {
 
 <template>
   <PlDropdown
+    data-testid="pl-dataset-selector"
     :model-value="selectionValue"
     :options="dropdownOptions"
     :label="label"

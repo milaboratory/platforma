@@ -1,5 +1,139 @@
 # @platforma-sdk/block-tools
 
+## 2.16.13
+
+### Patch Changes
+
+- f69c796: Make software docker image builds work when `docker` is podman. Replace `--provenance=false --sbom=false` with `BUILDX_NO_DEFAULT_ATTESTATIONS=1` in the `docker build` environment. Docker buildx output does not change: the default provenance attestation stays off and SBOM is off by default. Podman rejects both flags and ignores the variable.
+- Updated dependencies [f69c796]
+  - @platforma-sdk/package-builder-lib@1.4.1
+
+## 2.16.12
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+  - @milaboratories/pl-model-middle-layer@1.34.2
+  - @milaboratories/pl-model-backend@1.4.36
+
+## 2.16.11
+
+### Patch Changes
+
+- 277e74b: Structure refresh keeps Tengo unit tests in the workflow `test` script. With `src/**/*.test.tengo` files, the script runs `pl-tengo test`; with co-located `*.test.ts` files too, it runs `pl-tengo test && vitest run --passWithNoTests`.
+
+## 2.16.10
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.35
+
+## 2.16.9
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-model-common@1.52.0
+  - @milaboratories/pl-model-backend@1.4.34
+  - @milaboratories/pl-model-middle-layer@1.34.1
+
+## 2.16.8
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.33
+
+## 2.16.7
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.32
+
+## 2.16.6
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.31
+
+## 2.16.5
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.30
+
+## 2.16.4
+
+### Patch Changes
+
+- Updated dependencies [61aefa1]
+  - @milaboratories/pl-model-middle-layer@1.34.0
+
+## 2.16.3
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+  - @milaboratories/pl-model-middle-layer@1.33.0
+  - @milaboratories/pl-model-backend@1.4.29
+
+## 2.16.2
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+  - @milaboratories/pl-model-middle-layer@1.32.2
+  - @milaboratories/pl-model-backend@1.4.28
+
+## 2.16.1
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.27
+- @milaboratories/pl-model-common@1.49.0
+- @milaboratories/pl-model-middle-layer@1.32.1
+- @platforma-sdk/package-builder-lib@1.4.0
+- @milaboratories/pl-http@1.2.4
+- @milaboratories/resolve-helper@1.1.3
+- @milaboratories/ts-helpers@1.8.6
+
+## 2.16.0
+
+### Minor Changes
+
+- fbf82fc: The workflow `check` script now drops unused tengo imports.
+
+  A block's `check` runs `pl-tengo imports && pl-tengo check`. The first command finds the
+  imports the tengo sources do not use: it fixes them for a person and reports them for CI,
+  which keeps a change nobody reviewed out of a CI run.
+
+  The command belongs to `check` and not to `build`. The build task declares every tracked file
+  as its input, so a command that rewrites sources inside it would change the inputs turbo has
+  already hashed, and the cached result would belong to a tree that no longer exists. `check` is
+  a task of its own that the build already depends on, so the sources are clean and stable by
+  the time the build reads them.
+
+  The builder version a block uses needs no change here: `@platforma-sdk/tengo-builder` is
+  resolved to the latest release on `init` and on `refresh --update-deps-only`, so `pnpm
+upgrade-sdk` brings both the new builder and this script.
+
+## 2.15.3
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.26
+
+## 2.15.2
+
+### Patch Changes
+
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pl-model-common@1.49.0
+  - @milaboratories/pl-model-middle-layer@1.32.1
+  - @milaboratories/pl-model-backend@1.4.25
+
 ## 2.15.1
 
 ### Patch Changes

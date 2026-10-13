@@ -10,7 +10,7 @@
 
 import type { FileSystem } from "./fs/api";
 
-export const STRUCTURE_VERSION = 2;
+export const STRUCTURE_VERSION = 3;
 export const STRUCTURE_MIN_SUPPORTED = 0;
 /** Block-relative path of the structurer metadata file. */
 export const STRUCTURE_META_FILE = ".structure";

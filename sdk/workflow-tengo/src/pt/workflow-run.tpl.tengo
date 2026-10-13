@@ -2,6 +2,7 @@ assets := import(":assets")
 exec := import(":exec")
 ll := import(":ll")
 util := import(":pt.util")
+sizing := import(":pt.sizing")
 pframesUtil := import(":pframes.util")
 
 self := import(":tpl.light")
@@ -25,49 +26,60 @@ self.body(func(inputs) {
 
     queue := inputs.queue
     cpu := inputs.cpu
+    cpuFloor := inputs.cpuFloor
+    cpuIntercept := inputs.cpuIntercept
+    cpuSlope := inputs.cpuSlope
+    cpuCeiling := inputs.cpuCeiling
     mem := inputs.mem
     inputCache := inputs.inputCache
+    memFloor := inputs.memFloor
+    memSlope := inputs.memSlope
+    memIntercept := inputs.memIntercept
+    polarsMaxThreads := inputs.polarsMaxThreads
+    scratchFreeSpace := inputs.scratchFreeSpace
 
     workdirProcessorName := "import_dir";
     inFramesFolder := "input_frame"
-    spillFolder := "pframes_spill"
+    spillFolderExpr := "{system.scratch.path + '/ptabler-spill'}"
 
     ptCmd := exec.builder().
         setQueue(queue).
         printErrStreamToStdout().
         software(ptSoftware).
-        envExpr("POLARS_MAX_THREADS", "{max(2,system.cpu)}").
+        envExpr("POLARS_MAX_THREADS", sizing.polarsMaxThreadsExpr(polarsMaxThreads)).
         arg("workflow_sc.json").
         arg("--frame-dir").arg(inFramesFolder).
-        arg("--spill-dir").arg(spillFolder).
+        arg("--spill-dir").argExpr(spillFolderExpr).
         writeFile("workflow_sc.json", workflowJsonStruct);
-    // Size the ptabler (Polars) run from the total input data volume, unless the
-    // block author set an explicit cpu/mem (an explicit request always wins).
-    // ptabler runs Polars in lazy + streaming mode with disk spill (--spill-dir),
-    // so peak RAM stays a modest multiple of the input size rather than the whole
-    // dataset. f.size() sums the stored (parquet) blob size of all input files via
-    // getBlobSize (a metadata read, no pre-exec). Both dimensions carry a
-    // .staticFallback so the run also resolves on backends that cannot evaluate
-    // resource formulas (no getBlobSize).
-    //     ram = between(2 GiB + 4 * size, 2 GiB, 64 GiB)
-    //     cpu = between(2 + size / 16 GiB, 2, 8)
-    f := exec.formula
+    // The total input volume sets the cpu, mem and scratchFreeSpace requests. An explicit
+    // request from the block always wins. :pt.sizing holds the formulas, the measured
+    // slopes and the thread limit.
     ramReq := mem
     if is_undefined(ramReq) {
-        ramReq = f.size({ default: 0 }).times(4).plus(f.gib(2)).
-            between(f.gib(2), f.gib(64)).
-            staticFallback("4GiB")
+        ramReq = sizing.ramFormula({ floor: memFloor, slope: memSlope, intercept: memIntercept })
     }
     cpuReq := cpu
     if is_undefined(cpuReq) {
-        cpuReq = f.size({ default: 0 }).dividedByFloor(f.gib(16)).plus(f.const(2)).
-            between(f.const(2), f.const(8)).
-            staticFallback(2)
+        cpuReq = sizing.cpuFormula({ floor: cpuFloor, intercept: cpuIntercept, slope: cpuSlope, ceiling: cpuCeiling })
+    }
+    scratchReq := scratchFreeSpace
+    if is_undefined(scratchReq) {
+        readFrames := 0
+        writeFrames := 0
+        for step in workflowJsonStruct.workflow {
+            if step.type == "read_frame" {
+                readFrames += 1
+            } else if step.type == "write_frame" {
+                writeFrames += 1
+            }
+        }
+        scratchReq = sizing.scratchFormula(readFrames, writeFrames)
     }
     ptCmd.resources({
         onCPU: {
             cpu: cpuReq,
-            ram: ramReq
+            ram: ramReq,
+            scratchFreeSpace: scratchReq
         }
     })
     if !is_undefined(inputCache) {

@@ -4,7 +4,6 @@
 
 self := import(":tpl.light")
 
-text := import("text")
 workdir := import(":workdir")
 runcmd := import(":exec.runcmd")
 path := import(":path")

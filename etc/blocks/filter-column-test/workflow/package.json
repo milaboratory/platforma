@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "shx rm -rf dist && pl-tengo build",
-    "check": "pl-tengo check",
+    "check": "pl-tengo imports && pl-tengo check",
     "format": "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'"
   },
   "dependencies": {

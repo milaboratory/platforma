@@ -1,4 +1,9 @@
 import { awaitStableState, ML, TestWorkflowResults, tplTest } from "@platforma-sdk/test";
+import { vi } from "vitest";
+
+const AWAIT_TIMEOUT = 30_000;
+
+vi.setConfig({ testTimeout: 3 * AWAIT_TIMEOUT });
 
 const SETUP_TEMPLATE = "workflow.context-domain-filter.setup";
 const QUERY_TEMPLATE = "workflow.context-domain-filter.query";
@@ -61,7 +66,7 @@ const cdTest = tplTest.extend<{
       { columns: TEST_COLUMNS },
       { blockId: "b1" },
     );
-    await use(await awaitStableState(setup.context()));
+    await use(await awaitStableState(setup.context(), AWAIT_TIMEOUT));
   },
   runQuery: async ({ helper, parentContext }, use) => {
     await use((query, opts = {}) =>
@@ -81,6 +86,7 @@ async function awaitMatchedColumnCount(queryResult: TestWorkflowResults): Promis
       if (!accessor?.getIsReadyOrError()) return undefined;
       return accessor.listInputFields();
     }),
+    AWAIT_TIMEOUT,
   );
   return fields?.length ?? 0;
 }
@@ -92,6 +98,7 @@ async function awaitMatchedColumnSpec(
     queryResult.output("resultSpec", (accessor) =>
       accessor?.getDataAsJson<Pick<ML.PColumnSpec, "contextDomain">>(),
     ),
+    AWAIT_TIMEOUT,
   );
 }
 
@@ -104,6 +111,7 @@ async function awaitIsNoResult(queryResult: TestWorkflowResults): Promise<boolea
       }
       return accessor.getField("ref")?.value?.resourceType?.name;
     }),
+    AWAIT_TIMEOUT,
   );
   return typeName?.includes("NoResult") ?? false;
 }

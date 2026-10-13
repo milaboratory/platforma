@@ -2,11 +2,9 @@ ll := import(":ll")
 fmt := import("fmt")
 text := import("text")
 maps := import(":maps")
-enum := import("enum")
 smart := import(":smart")
 regexp := import(":regexp")
 
-json := import("json")
 
 //
 // Tools for implementing your own checks:

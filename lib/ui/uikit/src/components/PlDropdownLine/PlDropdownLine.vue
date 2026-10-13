@@ -262,11 +262,14 @@ useElementPosition(container, (pos) => {
     tabindex="0"
     :class="classes"
     class="pl-line-dropdown uc-pointer"
+    data-testid="pl-dropdown-line"
     @keydown="handleKeydown"
     @focusout="onFocusOut"
     @click="toggleList"
   >
-    <div class="pl-line-dropdown__prefix">{{ props?.prefix }}</div>
+    <div class="pl-line-dropdown__prefix" data-testid="pl-dropdown-line-prefix">
+      {{ props?.prefix }}
+    </div>
 
     <ResizableInput
       v-model="inputModel"
@@ -276,8 +279,17 @@ useElementPosition(container, (pos) => {
     />
 
     <div class="pl-line-dropdown__icon-wrapper">
-      <div v-show="!canShowClearBtn" class="pl-line-dropdown__icon" />
-      <div v-show="canShowClearBtn" class="pl-line-dropdown__icon-clear" @click="clearModel" />
+      <div
+        v-show="!canShowClearBtn"
+        class="pl-line-dropdown__icon"
+        data-testid="pl-dropdown-line-arrow"
+      />
+      <div
+        v-show="canShowClearBtn"
+        class="pl-line-dropdown__icon-clear"
+        data-testid="pl-dropdown-line-clear"
+        @click="clearModel"
+      />
     </div>
     <Teleport v-if="data.isOpen" to="body">
       <div
@@ -286,6 +298,7 @@ useElementPosition(container, (pos) => {
         :style="optionsStyle"
         tabindex="-1"
         class="pl-line-dropdown__items"
+        data-testid="pl-dropdown-line-options"
         @focusout="onFocusOut"
         @click.stop
       >
@@ -304,12 +317,17 @@ useElementPosition(container, (pos) => {
               :is-selected="isItemSelected(item)"
               :is-hovered="data.activeOption == index"
               size="medium"
+              data-testid="pl-dropdown-line-option"
               @click.stop="selectItem(item)"
             />
           </slot>
         </template>
 
-        <div v-if="options.length === 0" class="pl-line-dropdown__no-item">
+        <div
+          v-if="options.length === 0"
+          class="pl-line-dropdown__no-item"
+          data-testid="pl-dropdown-line-options-empty"
+        >
           <div class="pl-line-dropdown__no-item-title text-s">
             Didn't find anything that matched
           </div>
@@ -321,6 +339,7 @@ useElementPosition(container, (pos) => {
         :style="optionsStyle"
         tabindex="-1"
         class="pl-line-dropdown__items-tabs"
+        data-testid="pl-dropdown-line-options"
         @focusout="onFocusOut"
         @click.stop
       >
@@ -336,11 +355,16 @@ useElementPosition(container, (pos) => {
               :option="item"
               :is-selected="isItemSelected(item)"
               :is-hovered="data.activeOption == index"
+              data-testid="pl-dropdown-line-option"
               @click.stop="selectItem(item)"
             />
           </slot>
         </template>
-        <div v-if="options.length === 0" class="pl-line-dropdown__no-item">
+        <div
+          v-if="options.length === 0"
+          class="pl-line-dropdown__no-item"
+          data-testid="pl-dropdown-line-options-empty"
+        >
           <div class="pl-line-dropdown__no-item-title text-s">
             Didn't find anything that matched
           </div>

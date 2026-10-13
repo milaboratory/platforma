@@ -238,6 +238,9 @@ export type lineProcessingResult = {
   context: sourceParserContext;
   artifacts: TypedArtifactName[];
   option: CompilerOption | undefined;
+  /** Set when the line is a module import, for every module: Platforma
+   *  artifacts, `plapi` and the Tengo standard library alike. */
+  moduleImport?: ImportInfo;
 };
 
 export function parseSingleSourceLine(
@@ -347,7 +350,7 @@ function processModuleImport(
         ["software", newGetSoftwareInfoRE(iInfo.alias)],
       ]);
     }
-    return { line: originalLine, context, artifacts: [], option: undefined };
+    return { line: originalLine, context, artifacts: [], option: undefined, moduleImport: iInfo };
   }
 
   if (
@@ -391,7 +394,7 @@ function processModuleImport(
   const artifact = parseArtifactName(iInfo.module, "library", localPackageName);
   if (!artifact) {
     // not a Platforma Tengo library import
-    return { line: originalLine, context, artifacts: [], option: undefined };
+    return { line: originalLine, context, artifacts: [], option: undefined, moduleImport: iInfo };
   }
 
   if (globalizeImports) {
@@ -401,7 +404,13 @@ function processModuleImport(
     );
   }
 
-  return { line: originalLine, context, artifacts: [artifact], option: undefined };
+  return {
+    line: originalLine,
+    context,
+    artifacts: [artifact],
+    option: undefined,
+    moduleImport: iInfo,
+  };
 }
 
 function processAssetImport(
@@ -495,7 +504,7 @@ function processAssetImport(
   return { line: originalLine, context, artifacts: [], option: undefined };
 }
 
-interface ImportInfo {
+export interface ImportInfo {
   module: string; // the module name without wrapping quotes: import("<module>")
   alias: string; // the name of variable that keeps imported module: <alias> := import("<module>")
 }

@@ -1,5 +1,234 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.15.0
+
+### Minor Changes
+
+- e69c8e8: `pt.workflow()` gains setters for the auto-sized CPU request, `between(intercept + slope × size, floor, ceiling)`:
+
+  - `.cpuFloor(cores)`: the floor. Default 2.
+  - `.cpuIntercept(cores)`: the intercept. Default 2.
+  - `.cpuSlope(slope)`: cores per GiB of input, at least 0, kept to two decimals. Default 1 core per 16 GiB.
+  - `.cpuCeiling(cores)`: the ceiling. Default 8 on the default curve. `.cpuSlope()` or `.cpuIntercept()` removes the default ceiling.
+
+  `.cpu(n)` still replaces the formula. The default CPU request does not change.
+
+## 6.14.0
+
+### Minor Changes
+
+- 06ada71: ptabler auto-sized RAM request is now `max(intercept + slope × size, floor)`, with no upper limit:
+
+  - Slope: 10 GiB per input GiB (was 6). `.memSlope(slope)` sets it. It must be an integer of at least 0. Slope 0 gives a flat request of `max(intercept, floor)`.
+  - Intercept: 4 GiB (was 2 GiB). `.memIntercept(bytes)` sets it. It must be at least 4 GiB.
+  - Floor: 4 GiB (was 2 GiB). `.memFloor(bytes)` sets it. A floor above 256 GiB is now accepted.
+  - The 256 GiB ceiling is removed. The backend still clamps a request that no node can give.
+  - The static fallback, for backends that cannot evaluate resource formulas, is `max(intercept, floor)` in bytes.
+  - `RAM_CAP_GIB` is removed from the `:pt.sizing` exports. `ramFormula` takes an options map `{ floor, slope, intercept }`.
+
+## 6.13.0
+
+### Minor Changes
+
+- 7dde18a: `pt.workflow()` gains `.polarsMaxThreads(threads)`. It sets the Polars thread count of a ptabler run.
+
+  - `.polarsMaxThreads(n)` uses n threads, or the granted cores if fewer. n must be an integer of at least 2.
+  - `.polarsMaxThreads("granted")` uses all granted cores, and never fewer than 2.
+  - The default stays at 8 threads, or the granted cores if fewer.
+
+  More threads use more memory. The auto-sized RAM request does not change with this setting.
+
+## 6.12.1
+
+### Patch Changes
+
+- 893ee62: ptabler runs clamp `POLARS_MAX_THREADS` to 8, whatever cpu the run is granted. The auto-sized RAM request is calibrated at 8 Polars threads; above 12 threads a run could need more than it was granted.
+
+## 6.12.0
+
+### Minor Changes
+
+- 1c11af2: pt: put the ptabler spill on scratch space, sized from the plan
+
+  ptabler spills into `{system.scratch.path}/ptabler-spill`: the tables pframes-rs writes for each `read_frame`, the DuckDB sort files, and now also the `unsorted.parquet` and `intermediate.parquet` files of `write_frame`. Before, all of it went to the working directory, which on AWS is EFS in Elastic Throughput mode and bills every GB read and written.
+
+  The run requests scratch space with a formula in `:pt.sizing`:
+
+      scratch = size * (16 * (read_frames + 1) + 2 * write_frames)
+
+  and 0 below 16 GiB, so a small run keeps its spill on the working directory's filesystem and does not wait for a volume. The factors cover the measured peak of every tested data shape by 1.8x or more. `pt.workflow().scratchFreeSpace(amount)` sets the request by hand.
+
+  `exec`: a `scratchFreeSpace` formula may now evaluate to 0, which asks for the temporary directory without a sized device, as a static 0 does. Before, 0 failed the positive-integer check.
+
+### Patch Changes
+
+- Updated dependencies [974b2c1]
+- Updated dependencies [1c11af2]
+  - @platforma-open/milaboratories.software-ptabler@2.1.14
+
+## 6.11.1
+
+### Patch Changes
+
+- 946a752: fix: xsv converter can be launched in k8s installations.
+- Updated dependencies [7b5f8f1]
+  - @platforma-open/milaboratories.software-ptabler@2.1.13
+  - @platforma-open/milaboratories.software-ptexter@1.2.6
+
+## 6.11.0
+
+### Minor Changes
+
+- ff119f5: pt: size the default ptabler RAM request from the measured plan shapes, and add `memFloor()`
+
+  The default request becomes `between(2 GiB + 6 * size, 2 GiB, 256 GiB)`, from
+  `between(2 GiB + 4 * size, 2 GiB, 64 GiB)`. The CPU formula, the 2 GiB floor and the
+  `4GiB` static fallback do not change. An explicit `mem()` still wins.
+
+  The old `4 x` slope sat below the steepest plan shape. Measured need per GiB of input,
+  at 8 Polars threads:
+
+  | plan shape                       | need per input GiB        |
+  | -------------------------------- | ------------------------- |
+  | concat + aggregate with `max_by` | **4.94**                  |
+  | bulk export                      | 2.92                      |
+  | single-cell export               | 1.40                      |
+  | `write_frame`                    | `4.13 x^0.68`, sub-linear |
+
+  Each law is fitted on real inputs, R2 0.97 or better. One formula serves every shape,
+  so it carries the steepest.
+
+  8 threads is the ceiling this formula runs at. The CPU formula clamps to 8, and no call
+  site in the SDK or in any block sets `cpu` without also setting `mem`. The same
+  aggregate shape needs `6.85 x` at 32 threads, which only a site that pins `cpu` above 8
+  and leaves `mem` auto would reach.
+
+  The slope is 6 rather than 5. The margin covers a known unit mismatch: the fits are
+  against uncompressed TSV bytes, and `f.size()` reports stored blob bytes, so a parquet
+  input understates the volume the plan decodes. Splitting the two input classes is
+  separate work.
+
+  The shallower shapes are now over-granted. This is deliberate. The backend clamps an
+  oversized request without a log and sets pod requests == limits, so an over-grant costs
+  concurrency and an under-grant costs an OOM kill with no traceback.
+
+  `pt.workflow().memFloor(bytes)` raises the lower bound of the auto-sized request and
+  leaves auto-sizing on. `annotations/compute` used a flat `.mem("12GiB")`, which ignored
+  input volume even though the run reads a column bundle. It now takes 12 GiB as a floor
+  and the measured slope above it. Use `memFloor()` rather than `mem()` when the intent
+  is "at least this much".
+
+  `memFloor()` rejects a floor above the 256 GiB ceiling. Raising the ceiling to match
+  would make `between(floor, floor)` return the floor for every input, which is the flat
+  pin the setter exists to avoid. Use `mem()` for a fixed request above the ceiling.
+
+  The two formulas move out of the template body into `:pt.sizing`, so they can be unit
+  tested against a fake metric resolver rather than only read. `pt/sizing.test.tengo`
+  covers the floor, the slope, both ceilings and the CPU curve.
+
+### Patch Changes
+
+- Updated dependencies [e4f6443]
+  - @platforma-open/milaboratories.software-ptabler@2.1.12
+  - @platforma-open/milaboratories.software-ptexter@1.2.5
+
+## 6.10.5
+
+### Patch Changes
+
+- 17536f5: `pl-tengo imports` replaces the clean-imports shell script.
+
+  Unused tengo imports used to be found by a bash script that only `workflow-tengo` could run.
+  It needed bash, `mapfile` and a GNU-ish `grep` and `awk`, so no block had access to it, and it
+  read the source with a plain text search. That search had no idea what a comment is, so an
+  alias left behind in a comment counted as a usage and the import survived. It also had no word
+  boundary, so `ll` looked used whenever an unrelated `xll.` appeared, and it only looked at
+  Platforma artifact imports — the whole tengo standard library was invisible to it.
+
+  The check now runs inside the builder, on the parser the compiler itself uses. Comments come
+  back empty from that parser, so an alias mentioned only in a comment is correctly reported as
+  unused. Every import is checked, the standard library included.
+
+  An import counts as used when its alias appears with a dot somewhere else in the code:
+  `text.split(...)`. A module passed around as a plain value is not recognised as a usage, so
+  such an import is reported. This is deliberate. Keeping an import the source no longer needs
+  costs nothing at runtime, while dropping one it does need breaks the build.
+
+  The command has three modes. `--check` reports and fails without touching a file, `--fix`
+  removes the unused imports, and with neither option it fixes the sources for a person and
+  checks them for CI. CI must report the problem, not make a change nobody reviewed.
+
+  A source the parser cannot read is reported and left as it is, while the other sources are
+  still cleaned and the command exits with an error. One broken source no longer blocks the
+  cleanup of everything else, and `pl-tengo check` reports the parse problem in full right after.
+
+  `workflow-tengo` now calls the command instead of the script, so both `scripts/clean-imports.sh`
+  and the `scripts/build.sh` wrapper around it are gone.
+
+  - @platforma-open/milaboratories.software-ptabler@2.1.11
+  - @platforma-open/milaboratories.software-ptexter@1.2.4
+
+## 6.10.4
+
+### Patch Changes
+
+- 31a3f60: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.61. The Linux pframes-rs-node addon no longer ships debug info. Its download shrinks from 208 MB to about 28 MB. Bump runenv-python-3 to 1.13.2, which bundles polars-pf 1.1.61 for ptabler.
+- d326918: The TMPDIR compatibility layer now also works on Windows.
+
+  A backend from before the temporary-directory contract has the SDK provide `TMPDIR` itself, through
+  a wrapper script staged into the working directory. That wrapper is a POSIX shell script, so a
+  Windows host used to be a hard error telling the user to update the backend — which stopped blocks
+  that were running fine before the contract existed.
+
+  Windows now gets a wrapper of its own: a `.cmd` batch file that creates `<workdir>\.pl\tmp` and sets
+  `TMPDIR`, `TMP` and `TEMP` to it. `TEMP` is the one the POSIX wrapper has no reason to set and this
+  one must — Win32 `GetTempPath`, which most native software reaches its temporary directory through,
+  reads `TMP` then `TEMP` and never `TMPDIR`.
+
+  Which wrapper is staged follows the shape that will actually run, not the host: a command in a
+  container gets the shell script even on a Windows machine, because the container is Linux. Only the
+  one that runs is written, so no command's identity — and no command's cache — changes on a host that
+  was already working.
+
+  One consequence worth knowing on Windows: the runner already starts every local command through
+  `cmd.exe /c`, and the batch file forwards its arguments with `%*`, so an argument is parsed by
+  cmd.exe twice instead of once. A literal `%name%` inside an argument is therefore expanded one more
+  time than before. Quoted arguments, spaces and `&`, `|`, `>` are unaffected.
+
+- Updated dependencies [31a3f60]
+  - @platforma-open/milaboratories.software-ptabler@2.1.11
+
+## 6.10.3
+
+### Patch Changes
+
+- Updated dependencies [cdbc497]
+  - @platforma-open/milaboratories.software-ptabler@2.1.10
+
+## 6.10.2
+
+### Patch Changes
+
+- 7104497: Save python dependency specs into the run environment so its identity reflects them
+
+  A python run environment was saved holding only the bare venv, and its dependencies were installed
+  afterwards. Its content hash was therefore a function of the interpreter alone, so two environments
+  built from one interpreter were indistinguishable and deduplication handed every software whichever
+  was registered first — a script could run under another package's venv and fail to import a
+  dependency it declares.
+
+  The dependency files are now written into the environment before it is saved, as conda already does
+  with `env-spec.yaml` and R with `renv.lock`.
+
+## 6.10.1
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+- Updated dependencies [f2ed96c]
+  - @platforma-open/milaboratories.software-ptabler@2.1.9
+  - @platforma-open/milaboratories.software-ptexter@1.2.4
+
 ## 6.10.0
 
 ### Minor Changes

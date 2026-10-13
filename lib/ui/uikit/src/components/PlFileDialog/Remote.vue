@@ -278,52 +278,80 @@ const lsContainerRef = ref<HTMLElement | undefined>();
 </script>
 
 <template>
-  <div :class="style.remote" @click.stop="deselectAll">
+  <div :class="style.remote" data-testid="pl-file-dialog-remote" @click.stop="deselectAll">
     <div :class="style.search">
       <div>
         <PlDropdown
           v-model="data.storageEntry"
           label="Select storage"
           :options="data.storageOptions"
+          data-testid="pl-file-dialog-storage"
         />
       </div>
       <div>
-        <PlSearchField v-model="data.search" label="Search in folder" clearable />
+        <PlSearchField
+          v-model="data.search"
+          label="Search in folder"
+          clearable
+          data-testid="pl-file-dialog-search"
+        />
       </div>
     </div>
-    <div :class="style['ls-container']" ref="lsContainerRef">
+    <div :class="style['ls-container']" ref="lsContainerRef" data-testid="pl-file-dialog-browser">
       <div :class="style['ls-head']">
-        <div :class="style['breadcrumbs']">
+        <div :class="style['breadcrumbs']" data-testid="pl-file-dialog-breadcrumbs">
           <template v-for="(s, i) in breadcrumbs" :key="i">
-            <div :title="s.path" @click="setDirPath(s.path)">{{ s.name }}</div>
+            <div
+              :title="s.path"
+              data-testid="pl-file-dialog-breadcrumb"
+              @click="setDirPath(s.path)"
+            >
+              {{ s.name }}
+            </div>
             <PlIcon16 v-if="s.index !== breadcrumbs.length - 1" name="chevron-right" />
           </template>
         </div>
         <div :class="style.selected">
-          <span>Selected: {{ selectedFiles.length }}</span>
+          <span data-testid="pl-file-dialog-selected-count"
+            >Selected: {{ selectedFiles.length }}</span
+          >
           <Shortcuts :container="lsContainerRef" />
         </div>
       </div>
-      <div v-if="data.currentLoadingPath !== undefined" class="ls-loader">
+      <div
+        v-if="data.currentLoadingPath !== undefined"
+        class="ls-loader"
+        data-testid="pl-file-dialog-loading"
+      >
         <i class="mask-24 mask-loading loader-icon" />
       </div>
-      <div v-else-if="!data.storageEntry" :class="style['ls-empty']">
+      <div
+        v-else-if="!data.storageEntry"
+        :class="style['ls-empty']"
+        data-testid="pl-file-dialog-empty"
+      >
         <div :class="style.cat" />
         <div :class="style.message">Select storage to preview</div>
       </div>
-      <div v-else-if="data.error" :class="style['ls-error']">
+      <div v-else-if="data.error" :class="style['ls-error']" data-testid="pl-file-dialog-error">
         <div :class="style.cat" />
         <div :class="style.message">{{ data.error }}</div>
       </div>
-      <div v-else :class="style['ls-body']">
+      <div v-else :class="style['ls-body']" data-testid="pl-file-dialog-items">
         <template v-for="file in visibleItems" :key="file.id">
-          <div v-if="file.isDir" :class="style.isDir" @click="setDirPath(file.path)">
+          <div
+            v-if="file.isDir"
+            :class="style.isDir"
+            data-testid="pl-file-dialog-dir"
+            @click="setDirPath(file.path)"
+          >
             <PlIcon16 name="chevron-right" />
             <span v-text-overflown :title="file.name">{{ file.name }}</span>
           </div>
           <div
             v-else
             :class="{ [style.canBeSelected]: file.canBeSelected, [style.selected]: file.selected }"
+            data-testid="pl-file-dialog-file"
             @click.stop="(ev) => selectFile(ev, file)"
           >
             <PlMaskIcon16 name="box" :class="style.isFile" />

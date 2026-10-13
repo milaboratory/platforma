@@ -1,0 +1,169 @@
+name: _test-k8s-s3
+
+# The suites against a backend that helm deploys on the hz cluster: every command runs as a
+# Kubernetes Job and reaches only what its image carries, and data lives in S3. `_test.yaml`
+# runs the same suites against a docker-compose backend with the local runner.
+on:
+  workflow_call: {}
+
+env:
+  BODY_LIMIT: "1048576000"
+
+jobs:
+  test-k8s-s3:
+    name: monorepo tests (k8s)
+    runs-on: hz-ubuntu-dind
+    timeout-minutes: 120
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      NAMESPACE: platforma-e2e-ci
+      HELM_RELEASE_NAME: pl-sdk-k8s-${{ github.run_id }}
+      HTPASSWD_SECRET: pl-sdk-k8s-${{ github.run_id }}-htpasswd
+      PL_IMAGE_REPOSITORY: 511903394050.dkr.ecr.eu-central-1.amazonaws.com/pl
+      PL_IMAGE_TAG: main
+      PL_ADDRESS: http://pl-sdk-k8s-${{ github.run_id }}-platforma.platforma-e2e-ci.svc.cluster.local:6345?request-timeout=3000
+    steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.GH_ZEN_APP_ID }}
+          private-key: ${{ secrets.GH_ZEN_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+
+      # The public mirror of helm/charts in milaboratory/pl, synced on every push to pl main.
+      - name: Checkout helm chart
+        uses: actions/checkout@v4
+        with:
+          repository: milaboratory/platforma-helm
+          path: _helm
+          sparse-checkout: charts/platforma
+
+      - uses: ./.github/actions/setup
+        with:
+          npmjs-token: ${{ secrets.NPMJS_TOKEN }}
+          github-token: ${{ steps.app-token.outputs.token }}
+          aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
+          turbo-s3-bucket: ${{ vars.HZ_CI_TURBO_S3_BUCKET }}
+          turbo-s3-endpoint: https://${{ vars.HZ_CI_TURBO_S3_ENDPOINT }}
+          turbo-s3-region: ${{ vars.HZ_CI_TURBO_S3_REGION }}
+          turbo-s3-access-key: ${{ secrets.HZ_CI_TURBO_S3_ACCESS_KEY }}
+          turbo-s3-secret-key: ${{ secrets.HZ_CI_TURBO_S3_SECRET_KEY }}
+          cache-s3-access-key: ${{ secrets.HZ_CI_CACHE_S3_ACCESS_KEY }}
+          cache-s3-secret-key: ${{ secrets.HZ_CI_CACHE_S3_SECRET_KEY }}
+          quay-username: ${{ secrets.QUAY_USERNAME }}
+          quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
+
+      - uses: azure/setup-kubectl@v4.0.0
+        with:
+          version: v1.35.2
+
+      - uses: azure/setup-helm@v4.0.0
+        with:
+          version: v3.15.2
+
+      - name: Create htpasswd secret
+        run: |
+          HASH=$(openssl passwd -apr1 "testpassword1")
+          kubectl create secret generic "${HTPASSWD_SECRET}" \
+            --namespace "${NAMESPACE}" \
+            --from-literal=htpasswd="testuser1:${HASH}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Helm deploy
+        env:
+          HELM_DRIVER: configmap
+        run: |
+          helm upgrade --install "${HELM_RELEASE_NAME}" _helm/charts/platforma \
+            --values .github/k8s-e2e/values_ci_k8s-s3.yaml \
+            --set image.repository="${PL_IMAGE_REPOSITORY}" \
+            --set image.tag="${PL_IMAGE_TAG}" \
+            --set auth.htpasswd.secretName="${HTPASSWD_SECRET}" \
+            --set "app.extraArgs[2]=--k8s-job-name-prefix=${HELM_RELEASE_NAME}-" \
+            --atomic \
+            --timeout 5m0s \
+            --namespace "${NAMESPACE}"
+
+      - name: Wait for backend
+        run: |
+          kubectl wait --for=condition=ready pod -n "${NAMESPACE}" \
+            -l app.kubernetes.io/instance="${HELM_RELEASE_NAME}" --timeout=5m
+          HP="${PL_ADDRESS#http://}"; HP="${HP%%\?*}"
+          for i in $(seq 1 30); do
+            if timeout 3 bash -c "exec 3<>/dev/tcp/${HP%:*}/${HP##*:}" 2>/dev/null; then exit 0; fi
+            echo "backend not reachable yet (${i}/30)"; sleep 5
+          done
+          kubectl get svc,endpoints,pods -n "${NAMESPACE}" -l app.kubernetes.io/instance="${HELM_RELEASE_NAME}" -o wide
+          exit 1
+
+      - name: Run tests
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ steps.app-token.outputs.token }}
+          # testuser1 is the only htpasswd user and an admin through PL_ADMIN_USERS in
+          # values_ci_k8s-s3.yaml, so the regular and admin test users are the same login.
+          PL_TEST_USER: testuser1
+          PL_TEST_PASSWORD: testpassword1
+          PL_TEST_ADMIN_USER: testuser1
+          PL_TEST_ADMIN_PASSWORD: testpassword1
+          PL_TEST_STORAGE_ID: test-assets
+          PL_TEST_K8S: "1"
+          # Each command is a Job, so a case spends most of the default 60s scheduling pods
+          # and pulling images.
+          LONG_TEST_TIMEOUT: "300000"
+          DOCKER_BUILD_SUMMARY: "false"
+          # The backend reads in-repo software as images. The build pushes them to Quay, as
+          # `_test.yaml` does, and writes the containers.pl-open.science name into the .sw.json;
+          # dev-local would write the dev ECR otherwise.
+          PL_PKG_DEV: local
+          PL_DOCKER_BUILD: "1"
+          PL_DOCKER_AUTOPUSH: "1"
+          PL_DOCKER_REGISTRY: containers.pl-open.science/milaboratories/pl-containers
+          PL_DOCKER_REGISTRY_PUSH_TO: quay.io/milaboratories/pl-containers
+        run: |
+          pnpm run pl_team:test \
+            --filter=@platforma-sdk/workflow-tengo-tests \
+            --filter=@milaboratories/pl-client \
+            --filter=@milaboratories/pl-tree \
+            --filter=@milaboratories/drivers-ml-blocks-integration \
+            --filter=@platforma-sdk/test
+
+      - name: Collect diagnostics
+        if: failure()
+        run: |
+          D="${RUNNER_TEMP}/k8s-diagnostics"; mkdir -p "$D"
+          SEL="app.kubernetes.io/instance=${HELM_RELEASE_NAME}"
+          kubectl describe pods -n "${NAMESPACE}" -l "$SEL" > "$D/pod-describe.txt" 2>&1 || true
+          kubectl logs -n "${NAMESPACE}" -l "$SEL" --all-containers --tail=10000 > "$D/backend.log" 2>&1 || true
+          kubectl get events -n "${NAMESPACE}" --sort-by=.lastTimestamp > "$D/events.txt" 2>&1 || true
+          kubectl get jobs,workloads -n "${NAMESPACE}" -o wide 2>&1 | grep -e NAME -e "${HELM_RELEASE_NAME}" > "$D/jobs.txt" || true
+          for P in $(kubectl get pods -n "${NAMESPACE}" --no-headers -o custom-columns=N:.metadata.name | grep "^${HELM_RELEASE_NAME}-" || true); do
+            kubectl logs "$P" -n "${NAMESPACE}" --all-containers --tail=500 > "$D/job-$P.log" 2>&1 || true
+          done
+
+      - name: Upload diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-diagnostics-${{ github.run_id }}
+          path: ${{ runner.temp }}/k8s-diagnostics/
+          retention-days: 7
+
+      - name: Helm uninstall
+        if: always()
+        env:
+          HELM_DRIVER: configmap
+        run: helm uninstall "${HELM_RELEASE_NAME}" --namespace "${NAMESPACE}" || true
+
+      - name: Delete run PVCs and htpasswd secret
+        if: always()
+        run: |
+          kubectl get pvc -n "${NAMESPACE}" --no-headers -o custom-columns=N:.metadata.name 2>/dev/null \
+            | grep "^${HELM_RELEASE_NAME}" \
+            | xargs -r kubectl delete pvc -n "${NAMESPACE}" --wait=false --ignore-not-found || true
+          kubectl delete secret "${HTPASSWD_SECRET}" --namespace "${NAMESPACE}" --ignore-not-found

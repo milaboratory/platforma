@@ -1,3 +1,5 @@
+import type { TraversalMode } from "@milaboratories/pl-tree";
+
 export type MlDebugFlags = {
   logTreeStats?: "cumulative" | "per-request";
   logProjectMutationStat: boolean;
@@ -8,10 +10,18 @@ export type MlDebugFlags = {
   logProjectOverviewStat: boolean;
   logJsExecStat: boolean;
   /** Resolved value of MI_TREE_TRAVERSAL env var, or undefined if not set. */
-  treeTraversalMode?: "auto" | "client-bfs" | "backend-streaming";
+  treeTraversalMode?: TraversalMode;
 };
 
-const VALID_TRAVERSAL_MODES = ["auto", "client-bfs", "backend-streaming"] as const;
+// Kept in step with TraversalMode by the satisfies clause: a mode added there without being
+// listed here would stop being forceable through the env var, which is how backend-delta was
+// missed when it became the default.
+const VALID_TRAVERSAL_MODES = [
+  "auto",
+  "client-bfs",
+  "backend-streaming",
+  "backend-delta",
+] as const satisfies readonly TraversalMode[];
 
 /**
  * Parse the raw MI_TREE_TRAVERSAL env value into a typed TraversalMode.
@@ -22,10 +32,9 @@ const VALID_TRAVERSAL_MODES = ["auto", "client-bfs", "backend-streaming"] as con
 export function parseTraversalMode(
   raw: string | undefined,
   warn: (msg: string) => void = console.warn,
-): "auto" | "client-bfs" | "backend-streaming" | undefined {
+): TraversalMode | undefined {
   if (raw === undefined) return undefined;
-  if ((VALID_TRAVERSAL_MODES as readonly string[]).includes(raw))
-    return raw as "auto" | "client-bfs" | "backend-streaming";
+  if ((VALID_TRAVERSAL_MODES as readonly string[]).includes(raw)) return raw as TraversalMode;
   warn(
     `MI_TREE_TRAVERSAL="${raw}" is not a valid traversal mode ` +
       `(valid: ${VALID_TRAVERSAL_MODES.join(", ")}); falling back to "auto"`,

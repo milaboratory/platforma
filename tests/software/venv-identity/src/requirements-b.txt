@@ -1,0 +1,3 @@
+# Entrypoint B declares no installable package.
+# Differs from entrypoint A's requirements only in content, so both installs
+# succeed offline while the two environments must still stay distinct.

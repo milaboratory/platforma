@@ -8,11 +8,12 @@ ll := import("@platforma-sdk/workflow-tengo:ll")
 
 self.defineOutputs(["p"])
 
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
 self.body(func(inputs) {
 	run := exec.builder().
 		cpu(1).ram("50Mi").
-		cmd("/usr/bin/env").
-		arg("bash").
+		software(shellSw).
 		arg("-c").
 		arg("echo 'text1' > file1.txt && echo 'text2' > file2.txt").
 		processWorkdir("p", assets.importTemplate(":exec.run.wd_processor_1"), {}).

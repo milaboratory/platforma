@@ -10,18 +10,36 @@ import type {
 } from "@milaboratories/pl-client";
 import type { Filter } from "@milaboratories/pl-client";
 import {
+  isPermissionDenied,
   isUnauthenticated,
   isTimeoutOrCancelError,
   isUnimplementedError,
+  resourceIdToString,
 } from "@milaboratories/pl-client";
 import type { ExtendedResourceData } from "./state";
 import { PlTreeState, TreeStateUpdateError } from "./state";
-import type { PruningFunction, TraversalMode, TreeLoadingStat } from "./sync";
-import { constructTreeLoadingRequest, initialTreeLoadingStat, loadTreeState } from "./sync";
+import type {
+  PruningFunction,
+  TraversalMode,
+  TreeLoadingAlgorithmName,
+  TreeLoadingStat,
+} from "./sync";
+import {
+  constructTreeLoadingRequest,
+  initialTreeLoadingStat,
+  loadTreeState,
+  resolveTreeLoadingAlgorithm,
+  supportsResourceTreeTraversal,
+} from "./sync";
 import type { PersistedTree } from "./persisted_tree";
 import { captureTreeState, restoreTreeState } from "./persisted_tree";
 import * as tp from "node:timers/promises";
-import type { MiLogger } from "@milaboratories/ts-helpers";
+import type {
+  InfiniteRetryOptions,
+  InfiniteRetryState,
+  MiLogger,
+} from "@milaboratories/ts-helpers";
+import { createInfiniteRetryState, nextInfiniteRetryState } from "@milaboratories/ts-helpers";
 
 /** Hard floor between consecutive tree-refresh calls.
  * Applies even when {@link scheduleOnNextState} has woken the loop early,
@@ -49,6 +67,17 @@ const RTT_POLL_FACTOR = 2;
  * rather than slow, and spacing polls further only delays noticing it recovered. */
 const MAX_RTT_POLL_INTERVAL_MS = 30_000;
 
+/** Waits between rebuilds after consecutive {@link TreeStateUpdateError}s. The first retry
+ * comes after the ordinary floor, so a one-off inconsistency heals as fast as a normal poll;
+ * a persistent one settles at one full read per {@link MAX_POLLING_INTERVAL_MS}. */
+const REBUILD_RETRY: InfiniteRetryOptions = {
+  type: "exponentialWithMaxDelayBackoff",
+  initialDelay: MIN_POLLING_INTERVAL_MS,
+  maxDelay: MAX_POLLING_INTERVAL_MS,
+  backoffMultiplier: 2,
+  jitter: 0.2,
+};
+
 type StatLoggingMode = "cumulative" | "per-request";
 
 export type SynchronizedTreeOps = {
@@ -61,7 +90,10 @@ export type SynchronizedTreeOps = {
   /** ResourceTree field filter for modern backend path. */
   fieldFilter?: Filter;
 
-  /** ResourceTree traversal stop rules for modern backend path. */
+  /** ResourceTree traversal stop rules for the streaming path.
+   * @deprecated the backend ignores these under a change token, and the delta algorithm - what
+   * `auto` now picks on a capable backend - never sends them. They still prune a
+   * `backend-streaming` walk and a token-less delta poll's fallback. */
   traverseStopRules?: Filter;
 
   /** Interval after last sync to sleep before the next one */
@@ -77,6 +109,13 @@ export type SynchronizedTreeOps = {
 
   /** Controls which tree-loading path to use.  Default `"auto"`. */
   traversalMode?: TraversalMode;
+
+  /** Treat every explicit root as never final, whatever its type, so every poll seeds it and,
+   * once it is held, checks that it still exists. Without it a root the predicate calls final is never re-read,
+   * and a deleted final root is never noticed. Roots discovered for shared-type seeds are not
+   * covered: a discovered resource may already be held final, and discovery itself drops a root
+   * that is gone. */
+  rootsNeverFinal?: boolean;
 
   /** A previously persisted mirror to seed the tree with, before its first refresh, so that
    * refresh transfers only what changed while the tree was gone.
@@ -132,13 +171,7 @@ const DISCOVERY_INTERVAL_MS = 3_000;
  * `resourcesUnchanged` is excluded by design, since a cycle that only re-fetched unchanged
  * state is exactly the idle case the backoff exists for. */
 function countedChanges(stat: TreeLoadingStat): number {
-  // `fieldsRemoved` is included despite being a per-field count, because it is the one change
-  // that never shows up in `resourcesChanged`: the removed-dynamic-field branch in
-  // `updateFromResourceData` does not set its `changed` flag, so a cycle that only dropped a
-  // field (and garbage-collected whatever it pointed at) otherwise reads as an idle cycle.
-  // That double-counts a resource that both changed and lost a field, which is harmless here:
-  // every caller compares this against an earlier value rather than reading it as a total.
-  return stat.resourcesNew + stat.resourcesChanged + stat.resourcesMarkedFinal + stat.fieldsRemoved;
+  return stat.resourcesNew + stat.resourcesChanged + stat.resourcesMarkedFinal + stat.rootsDropped;
 }
 
 /** The poll-cadence policy, as a pure function of the last cycle's outcome.
@@ -185,6 +218,15 @@ export class SynchronizedTreeState {
   private readonly fieldFilter?: Filter;
   private readonly traverseStopRules?: Filter;
   private readonly traversalMode: TraversalMode;
+  /** Resolved once from {@link traversalMode} and the server's capabilities, and used by every
+   * poll of this tree. Selecting per poll was only sound while no algorithm kept state between
+   * polls; pinning it here is what lets one do so. Only ever reassigned by the one-way
+   * demotion in {@link loadAndApply} when the backend advertises delta but issues no token. */
+  private algorithm: TreeLoadingAlgorithmName;
+  /** Change token the last successful delta apply was dated at, handed to the next poll so
+   * the backend sends only what moved since. Undefined until the first delta poll commits
+   * one, and again whenever {@link discardDeltaToken} drops it. */
+  private deltaToken: Uint8Array | undefined;
   private readonly logStat?: StatLoggingMode;
   private readonly hooks: PollingComputableHooks;
   private readonly abortController = new AbortController();
@@ -220,14 +262,29 @@ export class SynchronizedTreeState {
       pollingInterval,
       stopPollingDelay,
       logStat,
+      rootsNeverFinal,
     } = ops;
     this.pruning = pruning;
     this.fieldFilter = fieldFilter;
     this.traverseStopRules = traverseStopRules;
     this.traversalMode = traversalMode ?? "auto";
+    this.algorithm = resolveTreeLoadingAlgorithm(
+      this.traversalMode,
+      pl.serverInfo.capabilities ?? [],
+      logger,
+    );
+    logger?.info(`tree loading algorithm: ${this.algorithm} (traversalMode=${this.traversalMode})`);
     this.pollingInterval = pollingInterval;
     this.effectivePollingInterval = pollingInterval;
-    this.finalPredicate = finalPredicateOverride ?? pl.finalPredicate;
+    const basePredicate = finalPredicateOverride ?? pl.finalPredicate;
+    // Explicit roots only: they are fixed before the first resource is ever evaluated, so no
+    // root can have been marked final before the option applied to it.
+    const explicitRoots = new Set(
+      seeds.flatMap((s): SignedResourceId[] => (s.kind === "resource" ? [s.root] : [])),
+    );
+    this.finalPredicate = rootsNeverFinal
+      ? (r) => !explicitRoots.has(r.id) && basePredicate(r)
+      : basePredicate;
     this.logStat = logStat;
 
     this.explicitRoots = seeds
@@ -411,13 +468,16 @@ export class SynchronizedTreeState {
     try {
       await this.loadAndApply(stats, txOps);
     } catch (e) {
-      // Discovery-tree self-heal: a discovered root whose grant was revoked/expired fails the whole
-      // ResourceTree poll with Unauthenticated. Re-discover (drops dead roots) and retry once. This is
-      // self-discriminating — a genuinely dead session also fails discover()'s own call, so real auth
-      // loss still propagates. Only for discovery trees; explicit-root trees propagate as-is.
-      if (this.sharedSeeds.length > 0 && isUnauthenticated(e)) {
+      // Discovery-tree self-heal: a discovered root the backend refuses fails the whole ResourceTree
+      // poll - its signature is from an earlier session (after a re-login), or, on some backends,
+      // its grant was revoked. Depending on the backend that is PermissionDenied or Unauthenticated.
+      // Re-discover (re-signs every root under the current session and drops roots no longer
+      // granted) and retry once. This is self-discriminating — a
+      // genuinely dead session also fails discover()'s own call, so real auth loss still propagates.
+      // Only for discovery trees; explicit-root trees propagate as-is.
+      if (this.sharedSeeds.length > 0 && (isUnauthenticated(e) || isPermissionDenied(e))) {
         this.logger?.warn(
-          "discovery tree: Unauthenticated on ResourceTree (likely revoked/expired root); re-discovering and retrying",
+          "discovery tree: a discovered root's signature was refused on ResourceTree; re-discovering and retrying",
         );
         await this.discover();
         await this.loadAndApply(stats, txOps);
@@ -430,6 +490,7 @@ export class SynchronizedTreeState {
       pruningFunction: this.pruning,
       fieldFilter: this.fieldFilter,
       traverseStopRules: this.traverseStopRules,
+      changedSinceToken: this.deltaToken,
     });
     // A shared-type-seed tree with no currently-discovered roots is legitimately empty:
     // there is nothing to traverse, and tx.resourceTree([]) would throw "at least one seed
@@ -437,21 +498,88 @@ export class SynchronizedTreeState {
     // adds roots later via setRoots(), which schedules the next refresh. Explicit-root trees
     // never hit this (their root set is non-empty by construction).
     if (request.seedResources.length === 0 && request.finalResources.size === 0) return;
-    const data = await this.pl.withReadTx(
+    const checkedRoots = this.state.nonFinalRoots();
+    const { data, nextToken, rootsExist } = await this.pl.withReadTx(
       "ReadingTree",
       async (tx) => {
-        return await loadTreeState(
+        // Started, not awaited, before the walk. The token dates the transaction rather than
+        // the response, so it is not an input to the request - the request carries the
+        // PREVIOUS poll's token. Awaiting it here would block on the tx-open response before
+        // sending the tree request, costing a whole round trip that streaming does not pay,
+        // because requests pipeline on one bidi stream and withReadTx does not await the open.
+        const tokenPromise =
+          this.algorithm === "backend-delta" ? tx.getNextSinceToken() : undefined;
+        // A walk seeded at a deleted resource yields nothing and no error, so a deleted root
+        // would stay in the mirror for good. Checked in the same transaction, pipelined the
+        // same way as the token. The catch only keeps a rejection that lands while the walk is
+        // still running from being reported as unhandled; it is awaited below.
+        const existence = Promise.all(checkedRoots.map((rid) => tx.resourceExists(rid)));
+        existence.catch(() => {});
+        const data = await loadTreeState(
           tx,
           request,
           stats,
           this.pl.serverInfo.capabilities ?? [],
-          this.traversalMode,
+          this.algorithm,
           this.logger,
         );
+        return { data, nextToken: await tokenPromise, rootsExist: await existence };
       },
       txOps,
     );
     this.state.updateFromResourceData(data, { allowOrphanInputs: true, stat: stats });
+
+    // Repeated until nothing more drops: a deleted root held by another deleted root is
+    // refused (still referenced) until its holder has been dropped.
+    let gone = checkedRoots.filter((_, i) => !rootsExist[i]);
+    let dropped = true;
+    while (dropped) {
+      dropped = false;
+      gone = gone.filter((rid) => {
+        if (!this.state.dropDeletedRoot(rid)) return true;
+        dropped = true;
+        if (stats) stats.rootsDropped++;
+        this.logger?.warn(
+          `tree root ${resourceIdToString(rid)} no longer exists; dropped from the tree`,
+        );
+        return false;
+      });
+    }
+
+    // Only with the whole batch applied: advancing past a partial apply loses the dropped
+    // resources for good. A throw above leaves the old token; for an update error the loop then
+    // rebuilds the mirror and discards it.
+    if (nextToken !== undefined) this.deltaToken = nextToken;
+    else if (this.algorithm === "backend-delta") this.demoteFromDelta();
+  }
+
+  /** Give up on delta for the life of this tree, once, when the backend advertises
+   * `treeChangedSince:v2` but hands out no token.
+   *
+   * Without this the tree stays on delta with `deltaToken` permanently unset, and every poll
+   * is then a token-less delta poll: a full tree read that also sends no stop rules, so it
+   * transfers the subtrees the streaming path prunes away. Nothing else detects it -
+   * `deltaSuspectedFullAnswers` only fires when a token WAS sent - so it would run at the
+   * poll interval, forever, silently. Streaming is the correct destination: it is what `auto`
+   * would have picked without the capability, and it restores the stop rules. */
+  private demoteFromDelta() {
+    this.algorithm = supportsResourceTreeTraversal(this.pl.serverInfo.capabilities ?? [])
+      ? "backend-streaming"
+      : "client-bfs";
+    this.logger?.warn(
+      `tree: backend advertises treeChangedSince:v2 but issued no change token; ` +
+        `falling back to ${this.algorithm} for the life of this tree`,
+    );
+  }
+
+  /** Discards the change token, so the next delta poll asks for the full tree. Required
+   * whenever the mirror stops being a faithful record of what the token says we hold: a
+   * rebuild after {@link TreeStateUpdateError}, or a root-set change, which reshapes the
+   * traversal the token was earned under. */
+  private discardDeltaToken(reason: string) {
+    if (this.deltaToken === undefined) return;
+    this.deltaToken = undefined;
+    this.logger?.info(`tree delta token discarded (${reason}); next poll reads the full tree`);
   }
 
   /** Discovery sync for shared-type seeds: re-polls `ListUserResources` (gRPC-only) and
@@ -477,8 +605,16 @@ export class SynchronizedTreeState {
       for (const id of ids) discovered.add(id);
     }
 
+    const rootsChanged =
+      discovered.size !== this.discoveredRoots.length ||
+      this.discoveredRoots.some((id) => !discovered.has(id));
+
     this.discoveredRoots = [...discovered];
     this.state.setRoots(this.currentRootSet());
+
+    // A root arriving brings a subtree the token would skip as unchanged, and one leaving
+    // takes its subtree with it. Either way the token no longer describes what we hold.
+    if (rootsChanged) this.discardDeltaToken("root set changed");
   }
 
   /** If true this tree state is permanently terminaed. */
@@ -493,6 +629,9 @@ export class SynchronizedTreeState {
 
     // paces the discovery poll for shared-type seeds; 0 forces discovery on the first pass.
     let lastDiscovery = 0;
+
+    // Set while the tree is being rebuilt after consecutive update errors; spaces the rebuilds.
+    let rebuildRetry: InfiniteRetryState | undefined;
 
     while (true) {
       if (!this.keepRunning || this.terminated) break;
@@ -535,6 +674,8 @@ export class SynchronizedTreeState {
           );
         lastUpdate = Date.now();
 
+        rebuildRetry = undefined;
+
         // notifying that we got new state
         if (toNotify !== undefined) for (const n of toNotify) n.resolve();
       } catch (e: any) {
@@ -550,22 +691,37 @@ export class SynchronizedTreeState {
 
         // catching tree update errors, as they may leave our tree in inconsistent state
         if (e instanceof TreeStateUpdateError) {
+          rebuildRetry =
+            rebuildRetry === undefined
+              ? createInfiniteRetryState(REBUILD_RETRY)
+              : nextInfiniteRetryState(rebuildRetry);
+
           // important error logging, this should never happen
-          this.logger?.error(e);
+          this.logger?.error(
+            new Error(
+              `tree rebuilt after an update error; next read in ${Math.round(rebuildRetry.nextDelay)}ms`,
+              {
+                cause: e,
+              },
+            ),
+          );
 
           // marking everybody who used previous state as changed
           this.state.invalidateTree("stat update error");
           // creating new tree with the full current root set (re-discovered on next iteration)
           this.state = new PlTreeState(this.currentRootSet(), this.finalPredicate);
-
-          // scheduling state update without delay
-          continue;
+          // The new mirror holds nothing, so the old token would skip everything.
+          this.discardDeltaToken("tree rebuilt after update error");
 
           // unfortunately external observer may still see tree in its default
           // empty state, though this is best we can do in this exceptional
           // situation, and hope on caching layers inside computables to present
           // some stale state until we reconstruct the tree again
-        } else this.logger?.warn(e);
+        } else {
+          // Not an inconsistency: the ordinary cadence applies, not the rebuild backoff.
+          rebuildRetry = undefined;
+          this.logger?.warn(e);
+        }
       }
 
       if (!this.keepRunning || this.terminated) break;
@@ -583,10 +739,16 @@ export class SynchronizedTreeState {
 
       if (!this.keepRunning || this.terminated) break;
 
-      // Phase 2: optional remainder up to pollingInterval — interruptible by
-      // scheduleOnNextState so that an external nudge wakes the loop promptly.
+      // Phase 2: the interruptible remainder — up to pollingInterval, or, while rebuilding, up
+      // to the rebuild backoff, so a persistent update error cannot become a hot loop of full
+      // reads. The polling interval does not apply while rebuilding: readers see the empty
+      // rebuilt tree until the next read. A nudge (scheduleOnNextState) cuts either short; the
+      // floor above still bounds nudged reads.
       if (this.scheduledOnNextState.length === 0) {
-        const remaining = Math.max(0, this.effectivePollingInterval - MIN_POLLING_INTERVAL_MS);
+        const remaining = Math.max(
+          0,
+          (rebuildRetry?.nextDelay ?? this.effectivePollingInterval) - MIN_POLLING_INTERVAL_MS,
+        );
         if (remaining > 0) {
           try {
             this.currentLoopDelayInterrupt = new AbortController();
@@ -628,6 +790,12 @@ export class SynchronizedTreeState {
     this.keepRunning = false;
     this.terminated = true;
     this.abortController.abort();
+
+    // Refreshes still queued would otherwise never settle: the loop takes them only at the top
+    // of an iteration, and a terminated loop runs no further iteration.
+    const pending = this.scheduledOnNextState;
+    this.scheduledOnNextState = [];
+    for (const n of pending) n.reject(new Error("tree synchronization is terminated"));
 
     if (this.currentLoop === undefined) return;
     await this.currentLoop;

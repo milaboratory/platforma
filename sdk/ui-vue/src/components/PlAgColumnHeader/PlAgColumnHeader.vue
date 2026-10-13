@@ -63,24 +63,42 @@ function showMenu() {
 </script>
 
 <template>
-  <div class="pl-ag-column-header d-flex align-center gap-6" @click="onSortRequested">
-    <div class="pl-ag-column-header__title d-flex align-center gap-6 flex-grow-1">
-      <PlMaskIcon16 :name="icon" class="pl-ag-column-header__type-icon" />
+  <div
+    data-testid="pl-ag-column-header"
+    class="pl-ag-column-header d-flex align-center gap-6"
+    @click="onSortRequested"
+  >
+    <div
+      data-testid="pl-ag-column-header-title"
+      class="pl-ag-column-header__title d-flex align-center gap-6 flex-grow-1"
+    >
+      <PlMaskIcon16
+        data-testid="pl-ag-column-header-type-icon"
+        :name="icon"
+        class="pl-ag-column-header__type-icon"
+      />
       <PlTooltip>
         <template v-if="params.tooltip" #tooltip>{{ params.tooltip }}</template>
-        <span>{{ params.displayName }}</span>
+        <span data-testid="pl-ag-column-header-name">{{ params.displayName }}</span>
       </PlTooltip>
-      <PlTooltip v-if="params.info" max-width="500px" position="bottom" :close-delay="10000000000">
+      <PlTooltip
+        v-if="params.info"
+        data-testid="pl-ag-column-header-info"
+        max-width="500px"
+        position="bottom"
+        :close-delay="10000000000"
+      >
         <template #tooltip>
           <span style="white-space: pre-wrap">{{ params.info }}</span>
         </template>
         <PlMaskIcon16 name="info" />
       </PlTooltip>
-      <PlMaskIcon16 v-if="sortIcon" :name="sortIcon" />
+      <PlMaskIcon16 v-if="sortIcon" data-testid="pl-ag-column-header-sort" :name="sortIcon" />
     </div>
     <div
       v-if="params.enableMenu"
       ref="menuActivatorBtn"
+      data-testid="pl-ag-column-header-menu"
       class="pl-ag-column-header__menu-icon"
       @click.stop="showMenu"
     >

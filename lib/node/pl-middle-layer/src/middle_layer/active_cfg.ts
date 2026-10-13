@@ -39,7 +39,15 @@ export function activeConfigs(
       for (const cfg of activeOutputConfigs) {
         ret.push(
           Computable.wrapError(
-            computableFromCfgOrRF(env, blockCtx, cfg, codeWithInfoOrError.value, bp.bpId),
+            computableFromCfgOrRF(
+              env,
+              blockCtx,
+              cfg,
+              codeWithInfoOrError.value,
+              bp.bpId,
+              {},
+              bp.info.source,
+            ),
           ),
         );
       }

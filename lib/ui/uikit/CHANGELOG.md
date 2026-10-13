@@ -1,5 +1,90 @@
 # @milaboratories/uikit
 
+## 2.15.40
+
+### Patch Changes
+
+- Updated dependencies [fc41fe4]
+  - @platforma-sdk/model@1.84.19
+
+## 2.15.39
+
+### Patch Changes
+
+- @platforma-sdk/model@1.84.17
+
+## 2.15.38
+
+### Patch Changes
+
+- ad7b703: Components render default `data-testid` anchors for E2E tests: `pl-<component>` on the root and `pl-<component>-<part>` on inner parts (inputs, options, buttons, titles, chart marks, …). A `data-testid` passed by the caller replaces the root one. PlFileInput now has a single root (its file dialog moved inside), so attributes passed to it are no longer dropped.
+
+## 2.15.37
+
+### Patch Changes
+
+- @platforma-sdk/model@1.84.10
+
+## 2.15.36
+
+### Patch Changes
+
+- 33c1499: Remove the background from outlined control labels
+
+## 2.15.35
+
+### Patch Changes
+
+- a37d7c6: PlTextArea: the textarea uses the base font instead of the browser's monospace default
+
+## 2.15.34
+
+### Patch Changes
+
+- @platforma-sdk/model@1.84.3
+
+## 2.15.33
+
+### Patch Changes
+
+- 43e07a3: Fix an infinite grid-remount loop in `PlAgDataTableV2` that recreated the whole
+  AG Grid around twenty times a second — strobing the column headers and filling
+  the console with AG Grid licence banners — on opening a page whose table had a
+  saved grid state, most often right after a block rebuild.
+
+  `computedCached`'s `writeThrough` made a set visible to readers immediately, but
+  the cache was still overwritten whenever the source re-emitted. A set is
+  debounced, so between the write and its arrival in the project state the source
+  still holds the value the write moved away from; a running block has that state
+  pushed back repeatedly, and each push reverted the cache. The stored grid state
+  therefore flipped between what the grid had and what the project still held, and
+  every flip made the reload watch destroy and recreate the grid — which, because
+  the flips never stopped on their own, never converged.
+
+  A write-through value now stays authoritative until the source reports it back.
+  Since `get` maps set values to themselves, that is exactly when the round trip
+  has completed; a change from elsewhere arriving mid-flight is dropped in favour
+  of the local write that is about to land.
+
+## 2.15.32
+
+### Patch Changes
+
+- @platforma-sdk/model@1.84.1
+
+## 2.15.31
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @platforma-sdk/model@1.84.0
+
+## 2.15.30
+
+### Patch Changes
+
+- @platforma-sdk/model@1.83.17
+
 ## 2.15.29
 
 ### Patch Changes

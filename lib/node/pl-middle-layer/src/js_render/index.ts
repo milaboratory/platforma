@@ -1,5 +1,6 @@
 import type { MiddleLayerEnvironment } from "../middle_layer/middle_layer";
 import type { BlockCodeWithInfo, ConfigRenderLambda } from "@platforma-sdk/model";
+import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import type { ComputableRenderingOps } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
 import type { QuickJSWASMModule } from "quickjs-emscripten";
@@ -8,7 +9,7 @@ import type { DeadlineSettings } from "./context";
 import { JsExecutionContext } from "./context";
 import type { BlockContextAny } from "../middle_layer/block_ctx";
 import { getDebugFlags } from "../debug";
-import { recordModelRenderSync } from "@milaboratories/pl-flight-recorder";
+import { recordModelRenderSync } from "@milaboratories/pl-crash-recorder";
 
 /** Memory ceiling applied to every QuickJS runtime that evaluates model code. */
 const QUICK_JS_MEMORY_LIMIT = 1024 * 1024 * 8;
@@ -87,6 +88,7 @@ export function computableFromRF(
   codeWithInfo: BlockCodeWithInfo,
   configKey: string,
   ops: Partial<ComputableRenderingOps> = {},
+  blockPack?: BlockPackSpec,
 ): Computable<unknown> {
   // adding configKey to reload all outputs on block-pack update
   const key = `${ctx.blockId}#lambda#${configKey}#${fh.handle}`;
@@ -130,9 +132,13 @@ export function computableFromRF(
         { computableCtx: cCtx, blockCtx: ctx, mlEnv: env },
       );
 
-      const flightRecorder = env.driverKit.flightRecorder;
+      const crashRecorder = env.driverKit.crashRecorder;
       const renderInfo = {
         blockId: ctx.blockId,
+        // A block id is unique to one project; these say which code it is, so a
+        // log can be read against the right version without the project.
+        ...describeBlockPack(blockPack),
+        sdkVersion: codeWithInfo.sdkVersion,
         key,
         lambda: fh.handle,
         // The sandbox has its own 8 MB ceiling, so the model's own objects can
@@ -142,7 +148,7 @@ export function computableFromRF(
         getStats: () => ({ ...rCtx.stats }),
       };
 
-      return recordModelRenderSync(flightRecorder, renderInfo, () => {
+      return recordModelRenderSync(crashRecorder, renderInfo, () => {
         rCtx.evaluateBundle(code.content);
         const result = rCtx.runCallback(fh.handle);
 
@@ -178,7 +184,7 @@ export function computableFromRF(
             // A deferred render resumes here, potentially many times, and each
             // resumption can build joins of its own, so each gets its own span.
             return recordModelRenderSync(
-              flightRecorder,
+              crashRecorder,
               { ...renderInfo, recalculation: recalculationCounter },
               () => {
                 // resolving futures
@@ -256,4 +262,29 @@ export function executeSingleLambda(
   } finally {
     scope.dispose();
   }
+}
+
+/**
+ * The part of a block pack that names the code, and nothing else.
+ *
+ * Registry packs carry an organization, name and version, which is what a reader
+ * needs to open the right source. Local and development packs carry a filesystem
+ * path instead; the path is deliberately not recorded — it identifies the
+ * machine rather than the code, and its `type` already says that no published
+ * version exists to look up.
+ */
+function describeBlockPack(spec: BlockPackSpec | undefined): {
+  block?: string;
+  blockVersion?: string;
+  blockSource?: string;
+} {
+  if (spec === undefined) return {};
+  if (spec.type === "from-registry-v1" || spec.type === "from-registry-v2") {
+    return {
+      block: `${spec.id.organization}:${spec.id.name}`,
+      blockVersion: spec.id.version,
+      blockSource: spec.type,
+    };
+  }
+  return { block: "(unpublished)", blockSource: spec.type };
 }

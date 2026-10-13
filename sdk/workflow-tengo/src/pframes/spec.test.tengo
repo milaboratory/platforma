@@ -1,6 +1,5 @@
 test := import(":test")
 pSpec := import(":pframes.spec")
-json := import("json")
 
 TestMakeTrace := func() {
 	trace1 := pSpec.makeTrace(undefined, {type: "type", label: "the label"})

@@ -29,12 +29,19 @@ const parts = computed(() => {
 </script>
 
 <template>
-  <div :class="[$style.component]" :style="style">
-    <div :class="$style.container">
-      <div v-if="!parts.length" :class="$style.notReady">Not ready</div>
+  <div data-testid="pl-chart-stacked-bar-compact-row" :class="[$style.component]" :style="style">
+    <div data-testid="pl-chart-stacked-bar-compact-bar" :class="$style.container">
+      <div
+        v-if="!parts.length"
+        data-testid="pl-chart-stacked-bar-compact-not-ready"
+        :class="$style.notReady"
+      >
+        Not ready
+      </div>
       <div
         v-for="(p, i) in parts"
         :key="i"
+        data-testid="pl-chart-stacked-bar-compact-segment"
         :title.prop="p.description ?? p.label"
         :style="{
           width: `${p.fraction}%`,

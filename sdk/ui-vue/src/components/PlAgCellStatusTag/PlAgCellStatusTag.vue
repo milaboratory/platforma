@@ -7,8 +7,8 @@ defineProps<{ params?: ICellRendererParams & { type: PlStatusTagType } }>();
 </script>
 
 <template>
-  <div class="pl-ag-cell-status-tag d-flex align-center">
-    <PlStatusTag :type="params?.type" />
+  <div data-testid="pl-ag-cell-status-tag" class="pl-ag-cell-status-tag d-flex align-center">
+    <PlStatusTag data-testid="pl-ag-cell-status-tag-tag" :type="params?.type" />
   </div>
 </template>
 

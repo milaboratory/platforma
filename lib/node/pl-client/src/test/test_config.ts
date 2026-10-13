@@ -19,6 +19,8 @@ export interface TestConfig {
   test_proxy?: string;
   test_user?: string;
   test_password?: string;
+  test_admin_user?: string;
+  test_admin_password?: string;
 }
 
 const CONFIG_FILE = "test_config.json";
@@ -44,6 +46,12 @@ export function getTestConfig(): TestConfig {
 
   if (process.env.PL_TEST_PROXY !== undefined) conf.test_proxy = process.env.PL_TEST_PROXY;
 
+  if (process.env.PL_TEST_ADMIN_USER !== undefined)
+    conf.test_admin_user = process.env.PL_TEST_ADMIN_USER;
+
+  if (process.env.PL_TEST_ADMIN_PASSWORD !== undefined)
+    conf.test_admin_password = process.env.PL_TEST_ADMIN_PASSWORD;
+
   if (conf.address === undefined)
     throw new Error(
       `can't resolve platform address (checked ${CONFIG_FILE} file and PL_ADDRESS environment var)`,
@@ -52,13 +60,37 @@ export function getTestConfig(): TestConfig {
   return conf as TestConfig;
 }
 
-/** Default request timeout for tests (ms) */
-export const TEST_REQUEST_TIMEOUT = 500;
+/**
+ * Default request timeout for tests (ms).
+ *
+ * Kept short so a hung call fails the test instead of the suite's own budget. A deploy the
+ * tests reach over cluster DNS needs more than that on first contact, where the deadline
+ * covers name resolution too:
+ *
+ *   RpcError: Deadline exceeded after 0.500s,waiting for name resolution
+ *
+ * That call builds the shared client, so the whole file dies with it and retries only
+ * repeat the error against an undefined client. PL_TEST_REQUEST_TIMEOUT raises the budget
+ * where resolution is slow, and every other environment keeps the short one.
+ */
+export const TEST_REQUEST_TIMEOUT = Number(process.env.PL_TEST_REQUEST_TIMEOUT ?? 500);
 
-/** Returns PlClientConfig with reduced timeout for tests */
+/** True when the address carries an explicit `request-timeout` query parameter. */
+function addressStatesRequestTimeout(address: string): boolean {
+  if (address.indexOf("://") === -1) return false;
+  return new URL(address).searchParams.has("request-timeout");
+}
+
+/** Returns PlClientConfig with reduced timeout for tests, unless the address sets its own */
 export function plAddressToTestConfig(address: string): PlClientConfig {
   const plConf = plAddressToConfig(address);
-  plConf.defaultRequestTimeout = TEST_REQUEST_TIMEOUT;
+  // An explicit request-timeout in the address wins over TEST_REQUEST_TIMEOUT. In the k8s e2e
+  // deploy the client dials a cluster service DNS name, and the first call on a cold channel must
+  // finish name resolution and get a load-balancer pick before it is even sent; 500ms does not
+  // cover that, so whichever test happened to open the cold channel died with DEADLINE_EXCEEDED
+  // ("Waiting for LB pick") against a healthy backend. Addresses that carry no request-timeout
+  // keep the short default, so local runs still fail fast.
+  if (!addressStatesRequestTimeout(address)) plConf.defaultRequestTimeout = TEST_REQUEST_TIMEOUT;
   return plConf;
 }
 
@@ -176,6 +208,72 @@ export async function getTestClientConf(): Promise<{ conf: PlClientConfig; auth:
 export async function getTestLLClient(confOverrides: Partial<PlClientConfig> = {}) {
   const { conf, auth } = await getTestClientConf();
   return await LLPlClient.build({ ...conf, ...confOverrides }, { auth });
+}
+
+/** Returns a config logged in as the admin test user, or the ordinary test config where no
+ * admin credentials are set. A backend that needs no auth, and one whose single test user
+ * already holds the admin role, both leave PL_TEST_ADMIN_USER and PL_TEST_ADMIN_PASSWORD
+ * unset, and a test that asks for admin must still run there. */
+export async function getTestAdminClientConf(): Promise<{ conf: PlClientConfig; auth: AuthOps }> {
+  const tConf = getTestConfig();
+
+  if (tConf.test_admin_user === undefined || tConf.test_admin_password === undefined)
+    return await getTestClientConf();
+
+  const plConf = plAddressToTestConfig(tConf.address);
+  const uClient = await UnauthenticatedPlClient.build(plConf);
+  const authInformation = await uClient.login(tConf.test_admin_user, tConf.test_admin_password);
+
+  return {
+    conf: plConf,
+    auth: {
+      authInformation,
+      onUpdate: () => {},
+      onAuthError: () => {},
+      onUpdateError: () => {},
+    },
+  };
+}
+
+export async function getTestAdminLLClient(confOverrides: Partial<PlClientConfig> = {}) {
+  const { conf, auth } = await getTestAdminClientConf();
+  return await LLPlClient.build({ ...conf, ...confOverrides }, { auth });
+}
+
+export async function getTestAdminClient(
+  alternativeRoot?: string,
+  confOverrides: Partial<PlClientConfig> = {},
+) {
+  const { conf, auth } = await getTestAdminClientConf();
+  if (alternativeRoot !== undefined && conf.alternativeRoot !== undefined)
+    throw new Error("test pl address configured with alternative root");
+  return await PlClient.init({ ...conf, ...confOverrides, alternativeRoot }, auth);
+}
+
+export async function withAdminTempRoot<T>(body: (pl: PlClient) => Promise<T>): Promise<T | void> {
+  const alternativeRoot = `test_${Date.now()}_${randomUUID()}`;
+  let altRootId: OptionalSignedResourceId = NullSignedResourceId;
+  try {
+    const client = await getTestAdminClient(alternativeRoot);
+    altRootId = client.clientRoot;
+    try {
+      const value = await body(client);
+      const rawClient = await getTestAdminClient();
+      try {
+        await rawClient.deleteAlternativeRoot(alternativeRoot);
+      } catch (cleanupErr: any) {
+        console.warn(`Failed to clean up alternative root ${alternativeRoot}:`, cleanupErr.message);
+      } finally {
+        await rawClient.close();
+      }
+      return value;
+    } finally {
+      await client.close();
+    }
+  } catch (err: any) {
+    console.log(`ALTERNATIVE ROOT: ${alternativeRoot} (${resourceIdToString(altRootId)})`);
+    throw err;
+  }
 }
 
 export async function getTestClient(

@@ -4,7 +4,6 @@ ll := import(":ll")
 oop := import(":oop")
 validation := import(":validation")
 assets := import(":assets")
-smart := import(":smart")
 render := import(":render")
 pkg := import(":exec.package")
 internal := import(":exec.python.internal")
@@ -137,6 +136,7 @@ pythonVenvBuilder := func() {
 			pyVenvInputs := {
 				toolset: toolset,
 				dependencies: depsMap,
+				dependencyFileNames: dependencies,
 				// software: softwareRef,
 				pythonDescriptor: pythonDescriptor,
 				python: pythonPkg,

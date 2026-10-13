@@ -23,8 +23,10 @@ const legends = computed(() =>
 </script>
 
 <template>
-  <div :class="$style.component">
-    <div v-if="settings.title" :class="$style.title">{{ settings.title }}</div>
+  <div data-testid="pl-chart-stacked-bar" :class="$style.component">
+    <div v-if="settings.title" data-testid="pl-chart-stacked-bar-title" :class="$style.title">
+      {{ settings.title }}
+    </div>
     <StackedRow :value="data" />
     <Legends
       v-if="showLegends && legends.length"

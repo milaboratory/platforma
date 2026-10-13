@@ -29,13 +29,20 @@ function normalizePlaceholderText(
 </script>
 
 <template>
-  <div :class="style.container">
-    <div v-if="params.variant === 'not-ready'" :class="style.notReadyWrapper">
+  <div data-testid="pl-ag-data-table-loading" :class="style.container">
+    <div
+      v-if="params.variant === 'not-ready'"
+      data-testid="pl-ag-data-table-not-ready"
+      :class="style.notReadyWrapper"
+    >
       <div :class="style.iconCatInBag" />
-      <h3 :class="style.text">{{ params.notReadyText || "Data is not computed" }}</h3>
+      <h3 data-testid="pl-ag-data-table-not-ready-text" :class="style.text">
+        {{ params.notReadyText || "Data is not computed" }}
+      </h3>
     </div>
     <PlPlaceholder
       v-else
+      data-testid="pl-ag-data-table-loading-placeholder"
       v-bind="
         normalizePlaceholderText(
           {

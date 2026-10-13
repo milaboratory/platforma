@@ -1,4 +1,6 @@
 ll := import(":ll")
+units := import(":units")
+sizing := import(":pt.sizing")
 exp := import(":pt.expression")
 util := import(":pt.util")
 assets := import(":assets")
@@ -408,7 +410,16 @@ workflow := func() {
 	pframeCounter := 0
 
 	cpu := undefined
+	cpuFloor := undefined
+	cpuIntercept := undefined
+	cpuSlope := undefined
+	cpuCeiling := undefined
 	mem := undefined
+	memFloor := undefined
+	memSlope := undefined
+	memIntercept := undefined
+	polarsMaxThreads := undefined
+	scratchFreeSpace := undefined
 	inputCache := undefined
 	queue := execConstants.MEDIUM_QUEUE
 
@@ -860,13 +871,99 @@ workflow := func() {
 		/**
 		 * Sets the number of CPUs to request from the underlying executor (i.e. Google/AWS Batch, PBS, Slurm, etc.).
 		 *
-		 * If not set, the CPU request is sized from the input data volume:
-		 * `between(2 + size / 16 GiB, 2, 8)`. Setting an explicit value overrides this.
+		 * If not set, the input data volume sets the CPU request:
+		 *
+		 *     between(intercept + slope × size, floor, ceiling)
+		 *
+		 * The defaults are intercept 2, slope 1 core per 16 GiB, floor 2 and ceiling 8.
+		 * `.cpuIntercept()`, `.cpuSlope()`, `.cpuFloor()` and `.cpuCeiling()` change them. A
+		 * floor above 8 raises the default ceiling to the floor. With `.cpuSlope()` or
+		 * `.cpuIntercept()`, there is no ceiling unless `.cpuCeiling()` sets one.
+		 *
+		 * An explicit value replaces the formula and ignores those setters.
+		 *
+		 * More cores do not give Polars more threads. Polars uses at most 8 threads by
+		 * default.
 		 *
 		 * @param amount: number - number of cores requested for command.
 		 */
 		cpu: func(amount) {
 			cpu = amount
+			return self
+		},
+
+		/**
+		 * Sets the floor of the auto-sized CPU request (see `.cpu()`). Default 2. If a
+		 * caller also sets `.cpu()`, `.cpu()` wins.
+		 *
+		 * @param cores: int - at least 1
+		 * @return builder
+		 */
+		cpuFloor: func(cores) {
+			sizing.assertCpuCores(cores, "cpuFloor")
+			cpuFloor = cores
+			return self
+		},
+
+		/**
+		 * Sets the intercept of the auto-sized CPU request (see `.cpu()`). Default 2. It
+		 * removes the default ceiling of 8. If a caller also sets `.cpu()`, `.cpu()` wins.
+		 *
+		 * @param cores: int - at least 1
+		 * @return builder
+		 */
+		cpuIntercept: func(cores) {
+			sizing.assertCpuCores(cores, "cpuIntercept")
+			cpuIntercept = cores
+			return self
+		},
+
+		/**
+		 * Sets the slope of the auto-sized CPU request (see `.cpu()`), in cores per GiB of
+		 * input. Default 1 core per 16 GiB. The value keeps two decimals: 0.257 gives 0.25.
+		 * Slope 0 gives a flat request. It removes the default ceiling of 8. If a caller also
+		 * sets `.cpu()`, `.cpu()` wins.
+		 *
+		 * @param slope: number - at least 0, e.g. `0.25`
+		 * @return builder
+		 */
+		cpuSlope: func(slope) {
+			sizing.assertCpuSlope(slope)
+			cpuSlope = slope
+			return self
+		},
+
+		/**
+		 * Sets the ceiling of the auto-sized CPU request (see `.cpu()`). Default 8 on the
+		 * default curve, and no ceiling with `.cpuSlope()` or `.cpuIntercept()`. The
+		 * ceiling must not be less than the floor. If a caller also sets `.cpu()`, `.cpu()` wins.
+		 *
+		 * @param cores: int - at least 1
+		 * @return builder
+		 */
+		cpuCeiling: func(cores) {
+			sizing.assertCpuCores(cores, "cpuCeiling")
+			cpuCeiling = cores
+			return self
+		},
+
+		/**
+		 * Sets the Polars thread count (POLARS_MAX_THREADS) of the run.
+		 *
+		 *     .polarsMaxThreads(16)          16, or the granted cores if fewer
+		 *     .polarsMaxThreads("granted")   the granted cores
+		 *
+		 * Default: 8, or the granted cores if fewer. The count is never below 2.
+		 *
+		 * More threads use more memory. The auto-sized RAM request assumes 8 threads and
+		 * does not change with this setting. Set `.cpu()` to grant the cores.
+		 *
+		 * @param threads: int | string - an integer of at least 2, or "granted"
+		 * @return builder
+		 */
+		polarsMaxThreads: func(threads) {
+			sizing.assertPolarsMaxThreads(threads)
+			polarsMaxThreads = threads
 			return self
 		},
 
@@ -879,13 +976,84 @@ workflow := func() {
 		 *                                  when operating with bytes, you may use 'units' package for convenience:
 		 *                                    120 * units.GiB
 		 *
-		 * If not set, the RAM request is sized from the input data volume:
-		 * `between(2 GiB + 4 × size, 2 GiB, 64 GiB)`. Setting an explicit value overrides this.
+		 * If not set, the input data volume sets the RAM request:
+		 *
+		 *     max(intercept + slope × size, floor)
+		 *
+		 * The defaults are intercept 4 GiB, slope 10 and floor 4 GiB. The request has no
+		 * upper limit. `.memIntercept()`, `.memSlope()` and `.memFloor()` change the
+		 * defaults. An explicit value replaces the formula and ignores those setters.
 		 *
 		 * @return builder
 		 */
 		mem: func(amount) {
 			mem = amount
+			return self
+		},
+
+		/**
+		 * Sets the floor of the auto-sized RAM request (see `.mem()`). Default 4 GiB.
+		 * Above the floor, the request still follows input volume.
+		 *
+		 * Use this, not `.mem()`, for "at least this much". `.mem()` ignores input volume.
+		 * If a caller sets both, `.mem()` wins.
+		 *
+		 * `f.size()` counts only the files that `addFile()` attaches. A run whose input is
+		 * only non-partitioned JSON p-columns measures 0. It gets max(intercept, floor).
+		 *
+		 * @param amount: int - bytes, greater than 0, e.g. `12 * units.GiB`
+		 * @return builder
+		 */
+		memFloor: func(amount) {
+			sizing.assertRamFloor(amount)
+			memFloor = amount
+			return self
+		},
+
+		/**
+		 * Sets the slope of the auto-sized RAM request (see `.mem()`), in GiB of RAM per
+		 * GiB of input. Default 10. The slope must be an integer of at least 0. Slope 0
+		 * gives a flat request of max(intercept, floor), for small inputs. If a caller
+		 * also sets `.mem()`, `.mem()` wins.
+		 *
+		 * @param slope: int - at least 0, e.g. `6`
+		 * @return builder
+		 */
+		memSlope: func(slope) {
+			sizing.assertRamSlope(slope)
+			memSlope = slope
+			return self
+		},
+
+		/**
+		 * Sets the intercept of the auto-sized RAM request (see `.mem()`). Default and
+		 * minimum 4 GiB. If a caller also sets `.mem()`, `.mem()` wins.
+		 *
+		 * @param amount: int - bytes, at least 4 GiB, e.g. `8 * units.GiB`
+		 * @return builder
+		 */
+		memIntercept: func(amount) {
+			sizing.assertRamIntercept(amount)
+			memIntercept = amount
+			return self
+		},
+
+		/**
+		 * Sets the scratch space request of the run by hand. ptabler writes its spill files
+		 * (pframes-rs tables, DuckDB sort files, intermediate parquet) there.
+		 *
+		 * If not set, the request is sized from the input data volume and the number of
+		 * read_frame and write_frame steps; see `:pt.sizing`. Set it when a plan spills more
+		 * than that estimate, or `0` to keep the spill in the working directory.
+		 *
+		 * @param amount: number | string - bytes (0 or at least 16 MiB), or a size string
+		 *                such as "200GiB"
+		 * @return builder
+		 */
+		scratchFreeSpace: func(amount) {
+			ll.assert(is_string(amount) || (is_int(amount) && (amount == 0 || amount >= 16 * units.MiB)),
+				"pt.workflow.scratchFreeSpace: expected 0, at least 16 MiB in bytes, or a size string, got %v", amount)
+			scratchFreeSpace = amount
 			return self
 		},
 
@@ -996,7 +1164,16 @@ workflow := func() {
 			runMetaInputs := {
 				queue: queue,
 				cpu: cpu,
+				cpuFloor: cpuFloor,
+				cpuIntercept: cpuIntercept,
+				cpuSlope: cpuSlope,
+				cpuCeiling: cpuCeiling,
 				mem: mem,
+				memFloor: memFloor,
+				memSlope: memSlope,
+				memIntercept: memIntercept,
+				polarsMaxThreads: polarsMaxThreads,
+				scratchFreeSpace: scratchFreeSpace,
 				inputCache: inputCache
 			}
 			ptResult := render.create(workflowRunTpl, runInputs, {

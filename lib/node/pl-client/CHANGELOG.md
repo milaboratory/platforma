@@ -1,5 +1,129 @@
 # @milaboratories/pl-client
 
+## 3.18.2
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+
+## 3.18.1
+
+### Patch Changes
+
+- 41f0c56: A signature refused inside a transaction is now recognized whether the backend answers it with PERMISSION_DENIED or, as older backends do, UNAUTHENTICATED:
+
+  - `isPermissionDenied` matches the status of a failed transaction (`PlError`), as `isUnauthenticated` already did.
+  - A tree of shared roots re-discovers its roots and retries when a poll is refused with either code, for example after a re-login, when every signature from the earlier session stops verifying.
+  - A queued streaming request that a failed transaction closes now fails with the transaction's error instead of an internal placeholder, so a reader can classify why it failed. The tree's re-discovery depended on this and did not always run.
+
+## 3.18.0
+
+### Minor Changes
+
+- f4567dd: Finality is one table built in layers (`FinalityTable`): `StrictFinality` (the base: nothing
+  observable changes after final, except the writes its entries name), `CacheFinality` (adds the
+  types whose only later writes are KV; used by the transaction resource cache) and `TreeFinality`
+  (adds `Blob` and `StreamManager` under the reader assumptions stated at their entries; the
+  default `PlClient.finalPredicate`). A layer only adds to its parent.
+  `DefaultFinalResourceDataPredicate` is deprecated and delegates to `TreeFinality`.
+  Finality rules: `BResolveSingle`, `BResolveChoice` and `BlobCopy/*` are final once ready (or a
+  duplicate, or errored) with outputs locked and every supplied field settled; `LSProvider` is
+  never final; `Frontend/FromLocalTgz`, `json/bool`, `json/null` and `json/errorTrace` are always
+  final. The project tree's stop rules are generated from `TreeFinality`, each entry declaring how
+  it translates. `ResourceTypePrefix.BlobCopy` identifies blob-copy resource types.
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-model-common@1.52.0
+
+## 3.17.7
+
+### Patch Changes
+
+- 90073ff: pl-tree defect fixes: readers are notified when a resource becomes final, when a lock changes,
+  when a required field appears and when a Dynamic or MTW field comes back under another type;
+  any error while applying an update invalidates the mirror and raises `TreeStateUpdateError`, so
+  the synchronization loop rebuilds it, and consecutive rebuilds back off from 100 ms to 5 s; a
+  deleted root leaves the tree (new `rootsNeverFinal` option to existence-check roots the
+  predicate calls final too); a dynamic field removal re-evaluates finality; `listDynamicFields`
+  excludes Service fields (visible to blocks); the backend `final` flag follows updates; common
+  traversal options reach `getField`; data getters and `getKeyValueAsJson` enforce the usage
+  guard. Also: an unresolved or absent field of a final resource reads as stable; invalidation
+  re-runs readers waiting for a resource the tree does not hold; `terminate()` rejects pending
+  `refreshState()` calls; the streaming loader passes the backend `final` flag through as sent,
+  whether or not the traversal stopped at the resource.
+
+  pl-client: for a non-errored StreamManager whose field list lacks `stream` or `downloadable`, or
+  has `stream` still empty, the finality predicate returns false and does not throw.
+
+## 3.17.6
+
+### Patch Changes
+
+- fd9f892: Comment and test skip-message wording for the `treeChangedSince:v2` gate. No behaviour change.
+
+## 3.17.5
+
+### Patch Changes
+
+- 9c97fb0: Gate delta tree sync on `treeChangedSince:v2`. v1 backends emit body-less unchanged frames the client misreads as stop markers, flooding the log; until a backend advertises v2 the tree falls back to backend-streaming.
+
+## 3.17.4
+
+### Patch Changes
+
+- 7b19fcc: Open the signed transaction on the session that minted the root signature. The two active
+  timeout tests sent a signature from one session on a client of another, which the backend
+  rejects with "signature authentication failed: session ID mismatch".
+
+## 3.17.3
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+
+## 3.17.2
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+
+## 3.17.1
+
+### Patch Changes
+
+- a8e1308: Keep the request timeout the test address states.
+
+  `plAddressToTestConfig` overwrote `defaultRequestTimeout` with the 500ms local budget, so `?request-timeout=3000` on `PL_ADDRESS` had no effect. Against the Kubernetes deploy a call that needs more than 500ms hit the deadline and retried until the case ran out of time. The test budget now applies only to an address that states no timeout of its own.
+
+  - @milaboratories/pl-model-common@1.49.0
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.6
+
+## 3.17.0
+
+### Minor Changes
+
+- 13aff26: Sync the plapi protocol with the delta tree contract and add the `treeChangedSince:v1`
+  capability token. `Tree.Request` gains `unconditional_depth`, `traverse_stop_rules` is
+  deprecated in favour of `changed_since_token`, and the retired `resource_unchanged` frame
+  flag is gone.
+- ddc7746: Carry the delta tree change token through `PlTransaction`. `getNextSinceToken()` returns the
+  token the transaction was opened at, and `resourceTree()` accepts `changedSinceToken` plus
+  `unconditionalDepth` to poll with it and to read back what a delta referenced but did not
+  send. `traverseStopRules` is deprecated, and does not apply under a token.
+
+## 3.16.2
+
+### Patch Changes
+
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pl-model-common@1.49.0
+
 ## 3.16.1
 
 ### Patch Changes

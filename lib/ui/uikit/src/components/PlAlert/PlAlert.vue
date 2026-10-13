@@ -80,19 +80,21 @@ const iconMap = {
 <template>
   <div
     v-if="modelValue"
+    data-testid="pl-alert"
     class="pl-alert"
     :style="{ maxHeight }"
     :class="[{ monospace, whiteSpacePre }, type ? `pl-alert__${type}` : '']"
   >
-    <div v-if="icon && type" class="pl-alert__icon">
+    <div v-if="icon && type" data-testid="pl-alert-icon" class="pl-alert__icon">
       <div :class="`icon-24 icon-${iconMap[type]}`" />
     </div>
     <div class="pl-alert__main">
-      <label v-if="label">{{ label }}</label>
-      <div class="pl-alert__main__text"><slot /></div>
+      <label v-if="label" data-testid="pl-alert-label">{{ label }}</label>
+      <div data-testid="pl-alert-message" class="pl-alert__main__text"><slot /></div>
     </div>
     <PlCloseModalBtn
       v-if="closeable"
+      data-testid="pl-alert-close"
       class="pl-alert__close-btn"
       @click="$emit('update:modelValue', false)"
     />

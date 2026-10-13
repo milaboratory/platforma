@@ -13,7 +13,6 @@ pBuilder := import(":pframes.builder")
 ll := import(":ll")
 assets := import(":assets")
 xsvIF := import(":pframes.xsv-import-file")
-text := import("text")
 
 importXsvIfNullTpl := assets.importTemplate(":pframes.xsv-import-if-not-null")
 

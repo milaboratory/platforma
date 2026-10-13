@@ -1,0 +1,312 @@
+// Default resource sizing for a ptabler run. :pt.workflow-run uses it when the block does
+// not set cpu or mem. sizing.test.tengo tests the formulas with a fake metric resolver.
+//
+//     ram                = max(intercept + slope * size, floor)
+//     cpu                = between(2 + size / 16 GiB, 2, 8)
+//                          .cpuFloor(), .cpuIntercept(), .cpuSlope() and .cpuCeiling() change it
+//     POLARS_MAX_THREADS = between(system.cpu, 2, 8)
+//
+// Defaults: intercept 4 GiB, slope 10, floor 4 GiB. .memIntercept(), .memSlope() and
+// .memFloor() replace them. The intercept is at least RAM_INTERCEPT_MIN_GIB. The slope is an
+// integer, at least RAM_SLOPE_MIN. Slope 0 gives a flat request of max(intercept, floor).
+//
+// Measured need per GiB of input, per plan shape, at 8 Polars threads. The plans come from
+// the MiXCR blocks. The plans of other blocks can need more or less.
+//     concat + aggregate with max_by   4.94   <- the steepest one reachable here
+//     bulk export                      2.92
+//     single-cell export               1.40
+//     write_frame                      4.13 x^0.68, sub-linear
+// One formula serves every shape, so it carries the steepest. The slopes hold at 8
+// Polars threads or fewer; the same aggregate shape needs 6.22 at 16 threads. By default,
+// the thread count is therefore clamped to POLARS_THREADS_DEFAULT for every cpu grant. An
+// explicit cpu() above 8 reserves cores that Polars does not use. A block can set the
+// thread count with .polarsMaxThreads(). The RAM formula does not change with the thread
+// count.
+//
+// The measurements use uncompressed TSV bytes. f.size() gives stored blob bytes, which
+// for a parquet input are fewer than the bytes the plan decodes. RAM_SLOPE is 10, not 5,
+// to cover that difference.
+//
+// The RAM request has no upper limit. The backend clamps a request that is larger than a
+// node can give.
+//
+// f.size() counts only the files that addFile() attaches. writeFile() attaches a
+// non-partitioned JSON p-column, so f.size() counts 0 for it. A frame made only from those
+// columns gets max(intercept, floor). See :exec.formula for the full rule.
+
+// Scratch space holds everything ptabler spills: the table pframes-rs writes for each
+// read_frame, and for each write_frame the unsorted and intermediate parquet files and the
+// temporary files of the DuckDB sort. Peak scratch per GiB of input, measured with DuckDB
+// forced to spill the whole sort:
+//     read_frames  shape              peak / input
+//     0            parquet -> frame   9.5
+//     1            4 shapes           1.9 - 11.9
+//     3            4 shapes           3.5 - 36.4
+//     6            2 shapes           29 - 61
+// The steepest shape is a sequential Long axis with constant values: it stores in about
+// 2 bytes per row, and pframes-rs writes its joined table uncompressed. Every read_frame
+// table lives until collect_all ends, so the need grows with their count; the sorts run
+// one at a time, but every write_frame keeps its compressed unsorted file until its turn.
+//
+//     scratch = size * (16 * (read_frames + 1) + 2 * write_frames)
+//
+// covers every measurement by 1.8x or more. Below SCRATCH_DEVICE_MIN_GIB the request is 0:
+// the spill stays on the working directory's filesystem, as before, and a small run does not
+// wait for a volume to be created and attached. A plan with no frames asks for 0 too.
+//
+// The formula is an estimate, not a bound. A column that compresses far better than the
+// shapes above can need more, and the volume then fills and the run fails with a disk
+// error. Use pt.workflow().scratchFreeSpace() to set the size by hand.
+
+f := import(":exec.formula")
+ll := import(":ll")
+units := import(":units")
+
+RAM_INTERCEPT_GIB := 4
+RAM_INTERCEPT_MIN_GIB := 4
+RAM_SLOPE := 10
+RAM_SLOPE_MIN := 0
+RAM_FLOOR_GIB := 4
+
+SCRATCH_PER_READ_FRAME := 16
+SCRATCH_SORT := 16
+SCRATCH_PER_WRITE_FRAME := 2
+SCRATCH_DEVICE_MIN_GIB := 16
+
+CPU_MIN := 2
+CPU_MAX := 8
+CPU_GIB_PER_CORE := 16
+
+POLARS_THREADS_MIN := 2
+POLARS_THREADS_DEFAULT := 8
+POLARS_THREADS_GRANTED := "granted"
+
+// Backend expression for POLARS_MAX_THREADS; system.cpu is the granted core count.
+POLARS_MAX_THREADS_EXPR := format("{min(%d,max(%d,system.cpu))}", POLARS_THREADS_DEFAULT, POLARS_THREADS_MIN)
+
+/**
+ * Checks a value for .polarsMaxThreads().
+ *
+ * @param threads: int | "granted"
+ */
+assertPolarsMaxThreads := func(threads) {
+	ll.assert((is_int(threads) && threads >= POLARS_THREADS_MIN) || threads == POLARS_THREADS_GRANTED,
+		"pt.sizing: polarsMaxThreads must be an integer of at least %d or %q, got %v",
+		POLARS_THREADS_MIN, POLARS_THREADS_GRANTED, threads)
+}
+
+/**
+ * Backend expression for POLARS_MAX_THREADS. The result is never below
+ * POLARS_THREADS_MIN. The expression caps a number at the granted cores (system.cpu).
+ *
+ * @param threads: int | "granted" | undefined - undefined gives POLARS_MAX_THREADS_EXPR.
+ * @return string
+ */
+polarsMaxThreadsExpr := func(threads) {
+	if is_undefined(threads) {
+		return POLARS_MAX_THREADS_EXPR
+	}
+	assertPolarsMaxThreads(threads)
+	if threads == POLARS_THREADS_GRANTED {
+		return format("{max(%d,system.cpu)}", POLARS_THREADS_MIN)
+	}
+	return format("{min(%d,max(%d,system.cpu))}", threads, POLARS_THREADS_MIN)
+}
+
+/**
+ * Checks a slope for ramFormula and .memSlope().
+ *
+ * @param slope: int - GiB of RAM per GiB of input
+ */
+assertRamSlope := func(slope) {
+	ll.assert(is_int(slope) && slope >= RAM_SLOPE_MIN,
+		"pt.sizing: memory slope must be an integer of at least %d, got %v", RAM_SLOPE_MIN, slope)
+}
+
+/**
+ * Checks an intercept for ramFormula and .memIntercept().
+ *
+ * @param intercept: int - bytes
+ */
+assertRamIntercept := func(intercept) {
+	ll.assert(is_int(intercept) && intercept >= RAM_INTERCEPT_MIN_GIB * units.GiB,
+		"pt.sizing: memory intercept must be an integer number of bytes of at least %d GiB, got %v", RAM_INTERCEPT_MIN_GIB, intercept)
+}
+
+/**
+ * Checks a floor for ramFormula and .memFloor().
+ *
+ * @param floor: int - bytes
+ */
+assertRamFloor := func(floor) {
+	ll.assert(is_int(floor) && floor > 0,
+		"pt.sizing: memory floor must be a positive integer number of bytes, got %v", floor)
+}
+
+/**
+ * The default RAM formula: max(intercept + slope * size, floor).
+ *
+ * @param opts: map - each key is optional, and undefined gives the default:
+ *          floor: int - bytes, from .memFloor(). Default RAM_FLOOR_GIB.
+ *          slope: int - GiB of RAM per GiB of input, from .memSlope(). Default RAM_SLOPE.
+ *          intercept: int - bytes, from .memIntercept(). Default RAM_INTERCEPT_GIB.
+ * @return formula
+ */
+ramFormula := func(opts) {
+	ll.assert(is_map(opts), "pt.sizing.ramFormula: expected an options map, got %v", opts)
+
+	floor := is_undefined(opts.floor) ? RAM_FLOOR_GIB * units.GiB : opts.floor
+	slope := is_undefined(opts.slope) ? RAM_SLOPE : opts.slope
+	intercept := is_undefined(opts.intercept) ? RAM_INTERCEPT_GIB * units.GiB : opts.intercept
+	assertRamFloor(floor)
+	assertRamSlope(slope)
+	assertRamIntercept(intercept)
+
+	// The formula never asks for less than max(intercept, floor). The static fallback must
+	// not ask for less either.
+	fallback := intercept > floor ? intercept : floor
+
+	return f.size({ default: 0 }).times(slope).plus(f.const(intercept)).
+		atLeast(f.const(floor)).
+		staticFallback(fallback)
+}
+
+/**
+ * Checks a CPU floor, intercept or ceiling for cpuFormula and its setters.
+ *
+ * @param cores: int - at least 1
+ * @param name: string - the setter, for the error message
+ */
+assertCpuCores := func(cores, name) {
+	ll.assert(is_int(cores) && cores >= 1,
+		"pt.sizing: %s must be an integer of at least 1, got %v", name, cores)
+}
+
+/**
+ * Checks a CPU slope for cpuFormula and .cpuSlope().
+ *
+ * @param slope: number - cores per GiB of input, at least 0
+ */
+assertCpuSlope := func(slope) {
+	ll.assert((is_int(slope) || is_float(slope)) && slope >= 0,
+		"pt.sizing: cpuSlope must be a number of at least 0, got %v", slope)
+}
+
+/**
+ * Converts a CPU slope to hundredths of a core per GiB. Digits after the second decimal
+ * are dropped: 0.257 gives 25. The small offset stops 0.29 * 100 = 28.999... from
+ * giving 28.
+ *
+ * @param slope: number - at least 0
+ * @return int
+ */
+cpuSlopeHundredths := func(slope) {
+	assertCpuSlope(slope)
+	return int(float(slope) * 100 + 0.000001)
+}
+
+/**
+ * The default CPU formula:
+ *
+ *     between(intercept + slope * size, floor, ceiling)
+ *
+ * The default curve is 2 + size / 16 GiB. Its ceiling is CPU_MAX, or the floor if the
+ * floor is larger. With .cpuSlope() or .cpuIntercept(), the curve has no ceiling.
+ * .cpuCeiling() sets the ceiling in both cases.
+ *
+ * @param opts: map | undefined - each key is optional:
+ *          floor: int - cores, from .cpuFloor(). Default CPU_MIN.
+ *          intercept: int - cores, from .cpuIntercept(). Default CPU_MIN.
+ *          slope: number - cores per GiB of input, from .cpuSlope(). Two decimals.
+ *                 Default 1 core per 16 GiB.
+ *          ceiling: int - cores, from .cpuCeiling(). Must not be less than the floor.
+ * @return formula
+ */
+cpuFormula := func(...args) {
+	ll.assert(len(args) <= 1, "pt.sizing.cpuFormula: expected at most one options map")
+	opts := len(args) == 1 && !is_undefined(args[0]) ? args[0] : {}
+	ll.assert(is_map(opts), "pt.sizing.cpuFormula: expected an options map, got %v", opts)
+
+	floor := is_undefined(opts.floor) ? CPU_MIN : opts.floor
+	intercept := is_undefined(opts.intercept) ? CPU_MIN : opts.intercept
+	assertCpuCores(floor, "cpuFloor")
+	assertCpuCores(intercept, "cpuIntercept")
+
+	// Without .cpuSlope(), the slope term stays size / 16 GiB. That is 0.0625 cores per
+	// GiB, which two decimals cannot hold.
+	slopeTerm := f.size({ default: 0 }).dividedByFloor(f.gib(CPU_GIB_PER_CORE))
+	if !is_undefined(opts.slope) {
+		slopeTerm = f.size({ default: 0 }).times(cpuSlopeHundredths(opts.slope)).dividedByFloor(f.gib(100))
+	}
+	curve := slopeTerm.plus(f.const(intercept))
+	defaultCurve := is_undefined(opts.slope) && is_undefined(opts.intercept)
+
+	ceiling := undefined
+	if !is_undefined(opts.ceiling) {
+		assertCpuCores(opts.ceiling, "cpuCeiling")
+		ll.assert(opts.ceiling >= floor,
+			"pt.sizing: cpuCeiling (%d) must not be less than cpuFloor (%d)", opts.ceiling, floor)
+		ceiling = opts.ceiling
+	} else if defaultCurve {
+		ceiling = floor > CPU_MAX ? floor : CPU_MAX
+	}
+
+	// The static fallback is the smallest value the formula can give.
+	fallback := intercept > floor ? intercept : floor
+	if !is_undefined(ceiling) && fallback > ceiling {
+		fallback = ceiling
+	}
+
+	if is_undefined(ceiling) {
+		return curve.atLeast(f.const(floor)).staticFallback(fallback)
+	}
+	return curve.between(f.const(floor), f.const(ceiling)).staticFallback(fallback)
+}
+
+/**
+ * The default scratch formula.
+ *
+ * @param readFrames: number - read_frame steps in the workflow
+ * @param writeFrames: number - write_frame steps in the workflow
+ * @return formula, or 0 for a workflow without frames
+ */
+scratchFormula := func(readFrames, writeFrames) {
+	ll.assert(is_int(readFrames) && readFrames >= 0 && is_int(writeFrames) && writeFrames >= 0,
+		"pt.sizing: frame counts must be non-negative integers, got %v and %v", readFrames, writeFrames)
+	if readFrames == 0 && writeFrames == 0 {
+		return 0
+	}
+	factor := SCRATCH_PER_READ_FRAME * readFrames + SCRATCH_SORT + SCRATCH_PER_WRITE_FRAME * writeFrames
+	estimate := f.size({ default: 0 }).times(factor)
+	return f.when(estimate.lt(f.gib(SCRATCH_DEVICE_MIN_GIB)), 0).otherwise(estimate)
+}
+
+export {
+	ramFormula: ramFormula,
+	assertRamSlope: assertRamSlope,
+	assertRamIntercept: assertRamIntercept,
+	assertRamFloor: assertRamFloor,
+	cpuFormula: cpuFormula,
+	assertCpuCores: assertCpuCores,
+	assertCpuSlope: assertCpuSlope,
+	scratchFormula: scratchFormula,
+	polarsMaxThreadsExpr: polarsMaxThreadsExpr,
+	assertPolarsMaxThreads: assertPolarsMaxThreads,
+
+	POLARS_MAX_THREADS_EXPR: POLARS_MAX_THREADS_EXPR,
+	POLARS_THREADS_MIN:     POLARS_THREADS_MIN,
+	POLARS_THREADS_DEFAULT: POLARS_THREADS_DEFAULT,
+
+	// exported for the unit tests and for callers that need the documented numbers
+	RAM_INTERCEPT_GIB: RAM_INTERCEPT_GIB,
+	RAM_INTERCEPT_MIN_GIB: RAM_INTERCEPT_MIN_GIB,
+	RAM_SLOPE:         RAM_SLOPE,
+	RAM_SLOPE_MIN:     RAM_SLOPE_MIN,
+	RAM_FLOOR_GIB:     RAM_FLOOR_GIB,
+	CPU_MIN:           CPU_MIN,
+	CPU_MAX:           CPU_MAX,
+	SCRATCH_PER_READ_FRAME:  SCRATCH_PER_READ_FRAME,
+	SCRATCH_SORT:            SCRATCH_SORT,
+	SCRATCH_PER_WRITE_FRAME: SCRATCH_PER_WRITE_FRAME,
+	SCRATCH_DEVICE_MIN_GIB:  SCRATCH_DEVICE_MIN_GIB
+}

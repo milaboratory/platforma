@@ -175,12 +175,14 @@ const onFocusOut = (event: FocusEvent) => {
   <div
     ref="root"
     :class="{ disabled: disabled || isLoadingOptions, loading: isLoadingOptions }"
+    data-testid="pl-btn-split"
     class="pl-btn-split d-flex"
     @focusout="onFocusOut"
     @keydown="handleKeydown"
   >
     <div
       ref="buttonAction"
+      data-testid="pl-btn-split-action"
       class="pl-btn-split__title flex-grow-1 d-flex align-center text-s-btn"
       tabindex="0"
       @click="emitEnter"
@@ -190,18 +192,26 @@ const onFocusOut = (event: FocusEvent) => {
     </div>
     <div
       ref="menuActivator"
+      data-testid="pl-btn-split-toggle"
       class="pl-btn-split__icon-container d-flex align-center justify-center"
       tabindex="0"
       @click="data.open = !data.open"
     >
-      <PlIcon16 v-if="isLoadingOptions" name="loading" />
+      <PlIcon16 v-if="isLoadingOptions" data-testid="pl-btn-split-loading" name="loading" />
       <PlIcon16 v-else :name="iconName" class="pl-btn-split__icon" />
     </div>
 
     <Teleport v-if="data.open" to="body">
-      <div ref="list" class="pl-dropdown__options" :style="optionsStyle" tabindex="-1">
+      <div
+        ref="list"
+        data-testid="pl-btn-split-menu"
+        class="pl-dropdown__options"
+        :style="optionsStyle"
+        tabindex="-1"
+      >
         <DropdownListItem
           v-for="(item, index) in items"
+          data-testid="pl-btn-split-option"
           :key="index"
           :option="item"
           :is-selected="item.isSelected"
