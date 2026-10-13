@@ -305,6 +305,51 @@ tplTest.concurrent(
 );
 
 tplTest.concurrent(
+  "tableBuilder: mixed column joins apply inner, then left, then full",
+  async ({ helper, expect, driverKit }) => {
+    // Trunk after the filter: A, C. Columns, added full first to show that call order
+    // does not matter: "extra" (A,B,C) full, "onlyA" (A) inner, "leftAB" (A,B) left.
+    // inner keeps A; left fills A; full then brings back B and C with only its own
+    // value, so the inner and left cells stay empty on those rows.
+    const content = await runEphemeralBuilder(helper, driverKit, {
+      ...filteredPrimaryWithColumn,
+      imports: {
+        ...filteredPrimaryWithColumn.imports,
+        onlyA: { csv: "id,onlyA\nA,5", spec: specWithLong("onlyA", "pl7.app/onlyA", "OnlyA") },
+        leftAB: {
+          csv: "id,leftAB\nA,7\nB,8",
+          spec: specWithLong("leftAB", "pl7.app/leftAB", "LeftAB"),
+        },
+      },
+      columns: [
+        { mode: "single", sourceImport: "extra", opts: { join: "full" } },
+        { mode: "single", sourceImport: "onlyA", opts: { join: "inner" } },
+        { mode: "single", sourceImport: "leftAB", opts: { join: "left" } },
+      ],
+    });
+    // Strip only trailing newlines: trim() would also drop the last row's empty trailing cells.
+    const [header, ...rows] = content.replace(/\n+$/, "").split("\n");
+    const columns = header.split("\t");
+    const byId = Object.fromEntries(
+      rows.map((r) => {
+        const cells = r.split("\t");
+        return [
+          cells[columns.indexOf("ID")],
+          Object.fromEntries(columns.map((c, i) => [c, cells[i]])),
+        ];
+      }),
+    );
+
+    expect(Object.keys(byId).sort()).toEqual(["A", "B", "C"]);
+    expect(byId.A).toMatchObject({ Score: "10", Extra: "100", OnlyA: "5", LeftAB: "7" });
+    // B: brought back by the full-joined column only; left has a value for B (8) but
+    // is applied before the full join, so it stays empty.
+    expect(byId.B).toMatchObject({ Score: "", Extra: "200", OnlyA: "", LeftAB: "" });
+    expect(byId.C).toMatchObject({ Score: "", Extra: "300", OnlyA: "", LeftAB: "" });
+  },
+);
+
+tplTest.concurrent(
   "tableBuilder: without a filter, added columns are full-joined by default",
   async ({ helper, expect, driverKit }) => {
     // Primary x has A,B; the added column y has A,C. The default full join keeps
