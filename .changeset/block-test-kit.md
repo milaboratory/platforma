@@ -10,3 +10,5 @@ Block test kit: the pieces a block test needs beyond `blockTest`.
 - `PFrameReader` and `readColumn`/`readColumnMap`/`findColumn`/`listLocalColumns` over a PFrame handle.
 - `publishXsv`: publish a table into the result pool through an xsv-import block.
 - Dataset fixtures: `xsvImportSpec`, `renderTsv`, `vdjDataset`, `peptideDataset`, and the canonical anchored ids `VDJ_CDR3_ID` / `PEPTIDE_SEQUENCE_ID`.
+- Dataset shapes are declarative: `DatasetShape` + `buildDataset(shape, rows)`; `vdjShape`/`peptideShape` are plain data to spread, and `vdjDataset`/`peptideDataset` take `columns`, `cells` and `shape` hooks.
+- `BlockModelHarness`: backend-free model tests. Loads a block's model under a fake render context and calls its facade callbacks (`args`, `prerunArgs`, `templateParams`, `initialData`, `dataFromParams`, `validateParams`) and data-only render lambdas (`sections`).

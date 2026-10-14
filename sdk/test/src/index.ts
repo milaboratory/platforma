@@ -6,6 +6,7 @@ export * from "./block-state";
 export * from "./pframe-read";
 export * from "./publish-xsv";
 export * from "./fixtures";
+export * from "./model-harness";
 export { awaitStableState, sleep } from "./util";
 
 export * as ML from "@milaboratories/pl-middle-layer";
