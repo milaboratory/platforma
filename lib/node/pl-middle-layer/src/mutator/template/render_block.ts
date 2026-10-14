@@ -47,7 +47,8 @@ export type BlockActionContextBaggage = {
 
 /**
  * Creates the heavy block render. With `baggage`, it also creates the root action context of the
- * render and sets its baggage, in the same transaction, and returns `status`: a reference to the
+ * render and sets its baggage, in the same transaction. The baggage gets a new random `run-id`: each
+ * render is one run of the block, and the child contexts copy it. Returns `actionContext`: a reference to the
  * render's "actionContext" field. The render is garbage collected after its outputs resolve, so the caller
  * must hold this reference to keep the context. Without `actionContextApi:v1` on the backend, nothing is
  * created and `status` is undefined.
@@ -73,6 +74,7 @@ export function createRenderHeavyBlock(
   renderActionContext.setBaggage("name", baggage.name);
   renderActionContext.setBaggage("block-pack", baggage.blockPack);
   renderActionContext.setBaggage("block-id", baggage.blockId);
+  renderActionContext.setBaggage("run-id", randomUUID());
 
   return { ...outputs, actionContext: field(render, "actionContext") };
 }
