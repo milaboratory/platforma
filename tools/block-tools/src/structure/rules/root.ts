@@ -50,9 +50,9 @@ export function rootRules(): void {
 
         managed(
           ".changeset/config.json",
-          generate(() => rootChangesetConfigInitial()),
-          () => {
-            rootChangesetConfigRules();
+          generate((ctx) => rootChangesetConfigInitial(ctx)),
+          (ctx) => {
+            rootChangesetConfigRules(ctx);
           },
         );
         seed(".changeset/scaffold.md", text(EMPTY_CHANGESET_SEED));
