@@ -62,7 +62,7 @@ export function registerBlockActionContextTools(server: McpServer, ctx: ToolCont
     {
       description:
         "Get the block action context tree of a block run: one node per template render, each with its baggage " +
-        "(name, block-pack, block-id, run-id, resource, root), its action transition in time order " +
+        "(name, block-pack, block-id, run-id), the render it belongs to (resource), its action transition in time order " +
         "(namespace, reporting resource, state, detail, reason), its readings (namespace, resource, key, " +
         "value) and its child renders. Use it to see which step a block is in or where it waits. " +
         "The result is cut to maxDepth levels and the latest maxTransitions per node; a node with " +

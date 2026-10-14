@@ -97,6 +97,7 @@ describe("readBlockActionContextTree", () => {
     ))!;
 
     expect(tree.contextId).toEqual("10");
+    expect(tree.resource).toEqual("NG:0x10");
     expect(tree.baggage).toEqual({ name: "prod render" });
     expect(tree.transitions.map((t) => [t.timestampNs, t.state])).toEqual([
       ["999", "WaitingForInputs"],
@@ -119,7 +120,9 @@ describe("readBlockActionContextTree", () => {
         reason: "",
       },
     ]);
+    expect(childNode.resource).toEqual("NG:0x20");
     expect(childNode.children.map((c) => c.contextId)).toEqual(["30"]);
+    expect(childNode.children[0].resource).toBeUndefined();
     expect(childNode.children[0].children).toEqual([]);
   });
 
