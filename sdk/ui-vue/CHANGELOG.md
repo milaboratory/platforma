@@ -1,5 +1,19 @@
 # @platforma-sdk/ui-vue
 
+## 1.85.0
+
+### Patch Changes
+
+- 2a781e0: tableBuilder: setColumnJoin("left" | "full" | "inner") and a per-column join option control how columns added with addColumn / addColumns are joined onto the primaries. The default stays "full". Use "left" with a filtered primary so added columns don't bring back keys the filter removed.
+
+  buildDatasetOptions: new requireEnrichments option (default true). Set it to false for blocks that only need the dataset and its filters, so blocks that enrich the dataset no longer make them stale when they run.
+
+  PlDatasetSelector: a stored selection whose requireEnrichments flag differs from the options' is now shown instead of appearing empty.
+
+- Updated dependencies [2a781e0]
+  - @platforma-sdk/model@1.85.0
+  - @milaboratories/uikit@2.15.42
+
 ## 1.84.20
 
 ### Patch Changes
