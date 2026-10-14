@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.16.14
+
+### Patch Changes
+
+- 6635396: `structure refresh` adds a changesets `fixed` group of the block, model, ui and workflow packages, so a change in any sibling now releases a new block version.
+
 ## 2.16.13
 
 ### Patch Changes
