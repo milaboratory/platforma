@@ -32,7 +32,7 @@ export type BlockStatusAttribute = {
 /** One status context: the status of one render and the renders it created. */
 export type BlockStatusNode = {
   contextId: string;
-  /** Context data: resource, root, name, block-pack, block-id and so on. */
+  /** Context data: resource, root, name, block-pack, block-id, run-id and so on. */
   data: Record<string, string>;
   /** In time order. */
   transitions: BlockStatusTransition[];
