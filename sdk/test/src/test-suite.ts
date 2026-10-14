@@ -16,9 +16,11 @@ import path from "node:path";
 import { test } from "vitest";
 import type { BlockTestCtx, MiddleLayerInitOps } from "./test-block";
 import { createRawHelpers, initTestMiddleLayer } from "./test-block";
+import { sleep } from "./util";
 
 /** Set `KEEP_PL_ROOT=1` to keep the backend root and work folder after the file finishes. */
 const KEEP = process.env.KEEP_PL_ROOT === "1";
+const CREATE_PROJECT_ATTEMPTS = 4;
 
 export class BlockTestSession {
   private readonly projects: ProjectId[] = [];
@@ -37,7 +39,7 @@ export class BlockTestSession {
    */
   project(label: string): Promise<BlockTestCtx> {
     const next = this.creating.then(async () => {
-      const prjId = await this.ml.createProject({ label });
+      const prjId = await this.createProject(label);
       this.projects.push(prjId);
       await this.ml.openProject(prjId);
       const rawPrj = this.ml.getOpenedProject(prjId);
@@ -50,6 +52,26 @@ export class BlockTestSession {
     });
     this.creating = next.catch(() => undefined);
     return next;
+  }
+
+  /**
+   * Creation retried a few times: other test workers write the same project list through
+   * their own middle layers, and under load the client gives up after its own retries.
+   */
+  private async createProject(label: string): Promise<ProjectId> {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await this.ml.createProject({ label });
+      } catch (e) {
+        const message = e instanceof Error ? e.message : String(e);
+        if (attempt >= CREATE_PROJECT_ATTEMPTS || !/max number of attempts/.test(message)) throw e;
+        const delay = 1000 + Math.random() * 2000;
+        console.warn(
+          `createProject(${label}) hit write contention (attempt ${attempt}); retrying in ${Math.round(delay)} ms`,
+        );
+        await sleep(delay);
+      }
+    }
   }
 
   /**

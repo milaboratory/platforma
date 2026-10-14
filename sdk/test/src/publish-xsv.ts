@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import * as fsp from "node:fs/promises";
 import path from "node:path";
 import type { BlockTestCtx } from "./test-block";
+import { addBlock } from "./block-state";
 import { awaitBlockDone } from "./test-block";
 import type { XsvImportSpec } from "./fixtures/xsv-spec";
 
@@ -40,7 +41,7 @@ export async function publishXsv(ctx: BlockTestCtx, opts: PublishXsvOptions): Pr
     `${opts.label.replace(/\W+/g, "_")}-${randomUUID()}.${ext}`,
   );
   await fsp.writeFile(file, opts.content);
-  const blockId = await ctx.rawPrj.addBlock(opts.label, opts.block);
+  const blockId = await addBlock(ctx.rawPrj, opts.label, opts.block);
   const fileHandle = await ctx.helpers.getLocalFileHandle(file);
   await ctx.rawPrj.mutateBlockStorage(blockId, {
     operation: "update-block-data",

@@ -1,4 +1,4 @@
-import type { Project } from "@milaboratories/pl-middle-layer";
+import type { BlockPackSpecAny, Project } from "@milaboratories/pl-middle-layer";
 import { getStorageData, normalizeBlockStorage } from "@platforma-sdk/model";
 import { sleep } from "./util";
 
@@ -51,4 +51,38 @@ export async function stableOutput<T>(
   throw new Error(
     `Output ${name} of ${blockId} did not settle within ${timeoutMs} ms: ${JSON.stringify(last)}`,
   );
+}
+
+export type AddBlockOptions = {
+  /** Attempts before the last error propagates. */
+  attempts?: number;
+};
+
+const ADD_BLOCK_ATTEMPTS = 3;
+
+/**
+ * `rawPrj.addBlock` with a bounded retry on a stale template reference. Under concurrent
+ * block additions the middle layer's template cache can hand out a template resource the
+ * backend has since dropped, and the add fails assigning the block pack's `template` field
+ * ("target resource ... does not exist"). The next attempt loads the template afresh.
+ */
+export async function addBlock(
+  rawPrj: Project,
+  label: string,
+  spec: BlockPackSpecAny,
+  opts: AddBlockOptions = {},
+): Promise<string> {
+  const attempts = opts.attempts ?? ADD_BLOCK_ATTEMPTS;
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await rawPrj.addBlock(label, spec);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      if (attempt >= attempts || !/does not exist/.test(message)) throw e;
+      console.warn(
+        `addBlock(${label}) hit a stale template reference (attempt ${attempt}); retrying`,
+      );
+      await sleep(500 + Math.random() * 1000);
+    }
+  }
 }
