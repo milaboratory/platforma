@@ -32,7 +32,12 @@ export type BlockStatusAttribute = {
 /** One status context: the status of one render and the renders it created. */
 export type BlockStatusNode = {
   contextId: string;
-  /** Context data: resource, root, name, block-pack, block-id, run-id and so on. */
+  /**
+   * The render the context belongs to: the resource of its first transition under topic "core".
+   * Undefined until that transition is applied, or on a backend without block status reports.
+   */
+  resource?: string;
+  /** Context data: name, block-pack, block-id, run-id and so on. */
   data: Record<string, string>;
   /** In time order. */
   transitions: BlockStatusTransition[];
@@ -110,6 +115,7 @@ async function readStatusNode(
 
   return {
     contextId: String(parseSignedResourceId(contextRef).globalId),
+    resource: transitions.find((t) => t.topic === "core")?.resource,
     data,
     transitions,
     attributes,

@@ -62,7 +62,7 @@ export function registerBlockStatusTools(server: McpServer, ctx: ToolContext): v
     {
       description:
         "Get the block status tree of a block run: one node per template render, each with its data " +
-        "(name, block-pack, block-id, run-id, resource, root), its status transitions in time order " +
+        "(name, block-pack, block-id, run-id), the render it belongs to (resource), its status transitions in time order " +
         "(topic, reporting resource, state, detail, reason), its attributes (topic, resource, key, " +
         "value) and its child renders. Use it to see which step a block is in or where it waits. " +
         "The result is cut to maxDepth levels and the latest maxTransitions per node; a node with " +
