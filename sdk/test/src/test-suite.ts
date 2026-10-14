@@ -52,9 +52,13 @@ export class BlockTestSession {
     return next;
   }
 
-  /** Close every project the session opened. */
-  closeProjects(): void {
-    for (const prjId of this.projects.splice(0)) this.ml.closeProject(prjId);
+  /**
+   * Close every project the session opened. Awaited before the middle layer closes: closing
+   * a project drops it from the middle layer's open set before its destroy finishes, so an
+   * un-awaited close outlives the shared drivers.
+   */
+  async closeProjects(): Promise<void> {
+    await Promise.all(this.projects.splice(0).map((prjId) => this.ml.closeProject(prjId)));
   }
 }
 
@@ -75,7 +79,7 @@ export async function openBlockTestSession(
   const session = new BlockTestSession(pl, ml, workFolder);
   const close = async () => {
     try {
-      session.closeProjects();
+      await session.closeProjects();
       await ml.close();
     } finally {
       await pl.close();

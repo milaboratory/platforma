@@ -1,5 +1,6 @@
 import type { MiddleLayer } from "@milaboratories/pl-middle-layer";
 import type { PColumnSpec, PFrameHandle, PObjectId } from "@platforma-sdk/model";
+import { pTableValue } from "@platforma-sdk/model";
 
 export type PFrameDriver = MiddleLayer["driverKit"]["pFrameDriver"];
 
@@ -72,18 +73,11 @@ export async function readColumnById(
   const col = table.find((c) => c.spec.type === "column");
   if (col === undefined) throw new Error("Column data missing from table response");
   const n = col.data.data.length;
-  const isNA = (v: { isNA?: Uint8Array }, i: number) =>
-    v.isNA !== undefined && (v.isNA[Math.floor(i / 8)] & (1 << (7 - (i % 8)))) !== 0;
   const rows: ColumnRow[] = [];
   for (let i = 0; i < n; i++) {
     const keys = axes.map((a) => String(a.data.data[i]));
-    const raw = col.data.data[i];
-    const value = isNA(col.data, i)
-      ? null
-      : typeof raw === "bigint"
-        ? Number(raw)
-        : (raw as string | number);
-    rows.push({ keys, value });
+    // Reads NA from the bitmap or, for older desktop versions, from the magic values.
+    rows.push({ keys, value: pTableValue(col.data, i) });
   }
   return rows;
 }
@@ -97,7 +91,7 @@ export async function readColumn(
   return await readColumnById(driver, pf, findColumn(columns, q).columnId);
 }
 
-/** Map of a column keyed by its last axis: axis key → value. */
+/** Map of a column keyed by its last axis: axis key → value. Throws on a repeated key. */
 export async function readColumnMap(
   driver: PFrameDriver,
   pf: PFrameHandle,
@@ -105,7 +99,16 @@ export async function readColumnMap(
   q: ColumnQuery,
 ): Promise<Map<string, string | number | null>> {
   const rows = await readColumn(driver, pf, columns, q);
-  return new Map(rows.map((r) => [r.keys[r.keys.length - 1], r.value]));
+  const result = new Map<string, string | number | null>();
+  for (const row of rows) {
+    const key = row.keys[row.keys.length - 1];
+    if (result.has(key))
+      throw new Error(
+        `Last-axis key ${JSON.stringify(key)} repeats in ${JSON.stringify(q)}; read rows instead`,
+      );
+    result.set(key, row.value);
+  }
+  return result;
 }
 
 /** Readers bound to one PFrame, for tests that read many columns of one output. */

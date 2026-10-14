@@ -79,14 +79,23 @@ export function xsvImportSpec(input: XsvImportSpecInput): XsvImportSpec {
   };
 }
 
-/** Render rows to TSV with `columns` as the header; a missing cell is empty. */
+/**
+ * Render rows to TSV with `columns` as the header; a missing cell is empty. A cell holding
+ * a tab or line break is rejected: TSV has no escaping, so it would change the table.
+ */
 export function renderTsv(
   columns: string[],
   rows: Record<string, string | number | undefined>[],
 ): string {
-  const lines = [columns.join("\t")];
+  const cell = (value: string | number | undefined): string => {
+    const text = value === undefined ? "" : String(value);
+    if (/[\t\r\n]/.test(text))
+      throw new Error(`TSV cell holds a tab or line break: ${JSON.stringify(text)}`);
+    return text;
+  };
+  const lines = [columns.map(cell).join("\t")];
   for (const row of rows) {
-    lines.push(columns.map((c) => (row[c] === undefined ? "" : String(row[c]))).join("\t"));
+    lines.push(columns.map((c) => cell(row[c])).join("\t"));
   }
   return lines.join("\n") + "\n";
 }
