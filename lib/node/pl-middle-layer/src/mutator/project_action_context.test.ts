@@ -108,6 +108,7 @@ test("block action context outlives its render and is replaced on re-render", as
     expect(first.baggage["name"]).toEqual("Block1");
     expect(JSON.parse(first.baggage["block-pack"])).toBeTypeOf("object");
     expect(first.baggage["resource"]).toEqual(first.baggage["root"]);
+    expect(first.baggage["run-id"]).toMatch(/^[0-9a-f-]{36}$/);
 
     // 5. Wait until the render is garbage collected; the context must stay readable.
     const renderId = resourceIdFromString(first.baggage["resource"])!;
@@ -124,6 +125,7 @@ test("block action context outlives its render and is replaced on re-render", as
     const second = (await readActionContext(pl, prj, "block1"))!;
     expect(second.contextId).not.toEqual(first.contextId);
     expect(second.baggage["resource"]).not.toEqual(first.baggage["resource"]);
+    expect(second.baggage["run-id"]).not.toEqual(first.baggage["run-id"]);
 
     // 7. Render and stop production in one transaction: prodActionContext must be removed.
     await pl.withWriteTx("RenderAndStop", async (tx) => {
