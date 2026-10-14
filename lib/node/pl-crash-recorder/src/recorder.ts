@@ -89,8 +89,14 @@ export function openRecorder(options: RecorderOptions): Recorder {
   const file = path.join(dir, `${SESSION_FILE_PREFIX}-${sessionId}.ndjson`);
   const liveKey = path.resolve(file);
   liveWriters.get(liveKey)?.close(SUPERSEDED_REASON);
+  const fd = fs.openSync(file, "a");
+  try {
+    if (endsMidLine(file)) fs.writeSync(fd, "\n");
+  } catch {
+    // Without the newline, only the cut-off line and the next record are lost.
+  }
   const state: WriterState = {
-    fd: fs.openSync(file, "a"),
+    fd,
     bytes: 0,
     preambleBytes: 0,
     seq: 0,
@@ -212,7 +218,7 @@ export function listSessions(dir: string): SessionFileInfo[] {
 }
 
 export type EndSessionOptions = {
-  /** Which part of the app ends the session, e.g. `main`. */
+  /** Which part of the app ends the session. Defaults to `main`. */
   role?: string;
   /** Free-form context stored in the header written before the end record. */
   meta?: Record<string, unknown>;
@@ -233,7 +239,8 @@ export function endSession(
 ): boolean {
   const file = path.join(dir, `${SESSION_FILE_PREFIX}-${sessionId}.ndjson`);
   if (!fs.existsSync(file) || hasSessionEnd(file)) return false;
-  openRecorder({ dir, sessionId, role: options.role, meta: options.meta }).close(reason);
+  const { role = "main", meta } = options;
+  openRecorder({ dir, sessionId, role, meta }).close(reason);
   return true;
 }
 
@@ -465,6 +472,20 @@ function hasSessionEnd(file: string): boolean {
     return type === SESSION_END_RECORD;
   } catch {
     return false;
+  } finally {
+    fs.closeSync(fd);
+  }
+}
+
+// A kill mid-write leaves a partial last line that would merge with the next record.
+function endsMidLine(file: string): boolean {
+  const fd = fs.openSync(file, "r");
+  try {
+    const contentEnd = endWithoutTrailingNul(fd, fs.fstatSync(fd).size);
+    if (contentEnd === 0) return false;
+    const last = Buffer.alloc(1);
+    fs.readSync(fd, last, 0, 1, contentEnd - 1);
+    return last[0] !== 0x0a;
   } finally {
     fs.closeSync(fd);
   }

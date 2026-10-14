@@ -231,6 +231,57 @@ describe("ending a session from outside", () => {
     expect(fs.readFileSync(recorder.file, "utf8")).toBe(before);
   });
 
+  test("a last line cut off by a kill does not merge with the next header", () => {
+    const file = writeDeadLog("1-1-cut", '{"seq":3,"type":"mem-self","me');
+
+    expect(endSession(dir, "1-1-cut", "app-quit")).toBe(true);
+
+    const { records } = readSession(file);
+    expect(records.map((r) => r.type)).toEqual([
+      "session",
+      "getShape-begin",
+      "session",
+      "session-end",
+    ]);
+    expect(records.at(-1)?.reason).toBe("app-quit");
+    expect(listSessions(dir)[0].crashed).toBe(false);
+  });
+
+  test("a cut-off last line padded with NUL bytes does not merge with the next header", () => {
+    const file = writeDeadLog("1-1-cut-nul", '{"seq":3,"type":"mem-self","me');
+    fs.appendFileSync(file, Buffer.alloc(4096));
+
+    expect(endSession(dir, "1-1-cut-nul", "app-quit")).toBe(true);
+
+    const { records } = readSession(file);
+    expect(records.map((r) => r.type)).toEqual([
+      "session",
+      "getShape-begin",
+      "session",
+      "session-end",
+    ]);
+    expect(records.at(-1)?.reason).toBe("app-quit");
+    expect(listSessions(dir)[0].crashed).toBe(false);
+  });
+
+  test("a reopened log that ends with a full line gets no empty line", () => {
+    const recorder = openRecorder({ dir });
+    endSession(dir, recorder.sessionId, "app-quit");
+
+    expect(fs.readFileSync(recorder.file, "utf8")).not.toContain("\n\n");
+  });
+
+  test("the header names the main process when no role is given", () => {
+    const recorder = openRecorder({ dir, role: "middle-layer" });
+
+    expect(endSession(dir, recorder.sessionId, "app-quit")).toBe(true);
+
+    const roles = readSession(recorder.file)
+      .records.filter((r) => r.type === "session")
+      .map((r) => r.role);
+    expect(roles).toEqual(["middle-layer", "main"]);
+  });
+
   test("a session with no log gets none", () => {
     expect(endSession(dir, "1-1-absent", "app-quit")).toBe(false);
     expect(fs.readdirSync(dir)).toEqual([]);
@@ -528,6 +579,16 @@ function fakeModelDriver() {
     createPTable: (_def: unknown) => "t",
     createPTableV2: (_def: unknown) => "t2",
   };
+}
+
+function writeDeadLog(sessionId: string, cutOffLine: string): string {
+  const file = path.join(dir, `session-${sessionId}.ndjson`);
+  const lines = [
+    { seq: 1, type: "session", role: "middle-layer" },
+    { seq: 2, type: "getShape-begin", handle: "t1" },
+  ].map((record) => `${JSON.stringify(record)}\n`);
+  fs.writeFileSync(file, `${lines.join("")}${cutOffLine}`);
+  return file;
 }
 
 function recordsOf(recorder: Recorder): Record<string, any>[] {
