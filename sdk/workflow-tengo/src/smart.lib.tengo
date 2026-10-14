@@ -756,8 +756,8 @@ resource = func(r) {
 
 		/**
 		 * Returns the block action context handle of the resource (see the action context library):
-		 * setReading(namespace, key, value), record(namespace, state, ...detail), setBaggage(key, value), create().
-		 * All calls are no-ops on backends without block action context support.
+		 * setReading(namespace, key, value), record(namespace, state, ...detail). All calls are no-ops on backends
+		 * without block action context support, or when the resource has no action context.
 		 */
 		actionContext: func() {
 			return actionContext.of(self.id)
@@ -1342,11 +1342,7 @@ resourceBuilder = func(r) {
  */
 structBuilder = func(resourceType, ...data) {
 	id := undefined
-	parent := status.defaultParent()
-	if !is_undefined(parent) {
-		// the new resource inherits the action context of the current renderer
-		id = tx.createStruct(resourceType.Name, resourceType.Version, len(data) > 0 ? data[0] : undefined, parent)
-	} else if len(data) > 0 && !is_undefined(data[0]) {
+	if len(data) > 0 && !is_undefined(data[0]) {
 		id = tx.createStruct(resourceType.Name, resourceType.Version, data[0])
 	} else {
 		id = tx.createStruct(resourceType.Name, resourceType.Version)
@@ -1487,11 +1483,7 @@ ephemeralMapBuilder = func(...resourceType) {
 
 ephemeralBuilder = func(resourceType, ...data) {
 	id := undefined
-	parent := status.defaultParent()
-	if !is_undefined(parent) {
-		// the new resource inherits the action context of the current renderer
-		id = tx.createEphemeral(resourceType.Name, resourceType.Version, len(data) > 0 ? data[0] : undefined, parent)
-	} else if (len(data) > 0) {
+	if (len(data) > 0) {
 		id = tx.createEphemeral(resourceType.Name, resourceType.Version, data[0])
 	} else {
 		id = tx.createEphemeral(resourceType.Name, resourceType.Version)

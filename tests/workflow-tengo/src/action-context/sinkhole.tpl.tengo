@@ -1,0 +1,21 @@
+// sinkhole: creates its own action context and renders a child with the action context turned off
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+self.defineOutputs(["context", "info", "done"])
+
+self.body(func(inputs) {
+	contextId := self.actionContext().create({ "name": "root", "run-id": "run-2" })
+	self.actionContext().record("tpl", "Running", "root body")
+
+	child := render.createEphemeral(assets.importTemplate(":action-context.sinkholed"), {}, { actionContext: false })
+
+	return {
+		context: smart.resource(contextId),
+		info: child.output("info"),
+		done: child.output("done")
+	}
+})
