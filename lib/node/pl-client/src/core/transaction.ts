@@ -82,17 +82,35 @@ export interface KeyValue {
 
 /** Key-Value pair from resource-attached KV storage */
 /**
- * Status handle of one render in a transaction. It writes into the status context of the render.
+ * Block status states. The numbers match plapi.StatusState on the backend.
+ * States are lossy by design: they are for the user, and no logic may depend on them.
+ */
+export const BlockStatusStates = {
+  WaitingForInputs: 1,
+  Running: 2,
+  WaitingWorkdirGate: 3,
+  WaitingSubmissionGate: 4,
+  PopulatingWorkdir: 5,
+  CollectingOutputs: 6,
+  WaitingForScheduler: 7,
+  WaitingForMachine: 8,
+  Terminated: 9,
+  Completed: 10,
+} as const;
+
+/** A block status state name, e.g. "Running". */
+export type BlockStatusState = keyof typeof BlockStatusStates;
+
+/**
+ * Status handle of one resource in a transaction. Reports go to the status context that the
+ * "status" field of the resource points to; a resource without it is a no-op on the backend.
  * All calls are asynchronous: errors surface when the transaction commits.
  */
-export interface StatusContextHandle {
-  /** Creates the root status context of a render that has no status context yet. */
-  create(): void;
-  /**
-   * Sets a data key of the status context of the render, e.g. "name", "block-pack", "block-id".
-   * Works only in the transaction that created the context: the data is immutable after it commits.
-   */
-  setData(key: string, value: string): void;
+export interface StatusReportHandle {
+  /** Records a transition of the resource under topic: transition/<topic>/<resource>/<ns>. */
+  recordTransition(topic: string, state: BlockStatusState, detail?: string): void;
+  /** Sets an attribute of the resource under topic: attr/<topic>/<resource>/<key>. */
+  setAttr(topic: string, key: string, value: string | Uint8Array): void;
 }
 
 export interface KeyValueString {
@@ -587,9 +605,6 @@ export class PlTransaction {
           data:
             data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
           colorProof: color ?? emptySignature,
-          // No parent: creating with a parent (status context inheritance) is not exposed here yet.
-          parentId: 0n,
-          parentSignature: emptySignature,
         },
       }),
       (r) => r.resourceCreateStruct.resourceId,
@@ -614,9 +629,6 @@ export class PlTransaction {
           data:
             data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
           colorProof: color ?? emptySignature,
-          // No parent: creating with a parent (status context inheritance) is not exposed here yet.
-          parentId: 0n,
-          parentSignature: emptySignature,
         },
       }),
       (r) => r.resourceCreateEphemeral.resourceId,
@@ -1099,29 +1111,31 @@ export class PlTransaction {
   }
 
   /**
-   * Returns the status handle of a render. See the block status spec: the middle layer creates the
-   * root status context of a block render and sets its data in the same transaction.
+   * Returns the status report handle of a resource.
    * When the backend does not advertise `statusApi:v1`, the handle sends nothing: an older backend
    * rejects the unknown messages and would fail the whole transaction.
    */
-  public status(rId: AnyResourceRef): StatusContextHandle {
-    if (!this.statusApiEnabled) return { create: () => {}, setData: () => {} };
+  public status(rId: AnyResourceRef): StatusReportHandle {
+    if (!this.statusApiEnabled) return { recordTransition: () => {}, setAttr: () => {} };
 
     return {
-      create: () =>
+      recordTransition: (topic: string, state: BlockStatusState, detail?: string) =>
         this.sendVoidAsync({
-          oneofKind: "statusCreate",
-          statusCreate: {
+          oneofKind: "statusRecordTransition",
+          statusRecordTransition: {
             ...this.toSignedResourceId(rId),
+            topic,
+            transition: { state: BlockStatusStates[state], detail: detail ?? "", reason: "" },
           },
         }),
-      setData: (key: string, value: string) =>
+      setAttr: (topic: string, key: string, value: string | Uint8Array) =>
         this.sendVoidAsync({
-          oneofKind: "statusSetData",
-          statusSetData: {
+          oneofKind: "statusSetAttr",
+          statusSetAttr: {
             ...this.toSignedResourceId(rId),
+            topic,
             key,
-            value,
+            value: typeof value === "string" ? Buffer.from(value) : value,
           },
         }),
     };

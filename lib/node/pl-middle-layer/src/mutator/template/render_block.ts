@@ -1,10 +1,4 @@
-import type {
-  AnyRef,
-  AnyFieldRef,
-  PlTransaction,
-  ResourceRef,
-  ResourceType,
-} from "@milaboratories/pl-client";
+import type { AnyRef, PlTransaction, ResourceRef, ResourceType } from "@milaboratories/pl-client";
 import { field, Pl } from "@milaboratories/pl-client";
 import { randomUUID } from "node:crypto";
 import { createRenderTemplate, createRenderTemplateWithResource } from "./render_template";
@@ -45,20 +39,24 @@ export type BlockStatusData = {
   blockId: string;
 };
 
+/** Resource type of a block status context. See StatusContextV1Type in the backend. */
+export const StatusContextType: ResourceType = { name: "StatusContext", version: "1" };
+
 /**
  * Creates the heavy block render. With `status`, it also creates the root status context of the
- * render and sets its data, in the same transaction. The data gets a new random `run-id`: each
- * render is one run of the block, and the child contexts copy it. Returns `status`: a reference to the
- * render's "status" field. The render is garbage collected after its outputs resolve, so the caller
- * must hold this reference to keep the context. Without `statusApi:v1` on the backend, nothing is
- * created and `status` is undefined.
+ * render in the same transaction: a StatusContext resource with the data, which the render's
+ * one-time-writable "status" field points to. The data gets a new random `run-id`: each render is one run of the
+ * block, and the contexts the templates create copy it. With `statusApi:v1` on the backend, the
+ * context also gets the WaitingForInputs transition of the render under topic "core".
+ * Returns `status`: the context. The render is garbage collected after its outputs resolve, so the
+ * caller must hold the context to keep it.
  */
 export function createRenderHeavyBlock(
   tx: PlTransaction,
   tpl: AnyRef,
   inputs: HeavyBlockInputs,
   status?: BlockStatusData,
-): HeavyBlockOutputs & { status?: AnyFieldRef } {
+): HeavyBlockOutputs & { status?: ResourceRef } {
   const { render, outputs } = createRenderTemplateWithResource(
     tx,
     tpl,
@@ -67,16 +65,21 @@ export function createRenderHeavyBlock(
     HeavyBlockOutputNames,
   );
 
-  if (status === undefined || !tx.statusApiEnabled) return outputs;
+  if (status === undefined) return outputs;
 
-  const renderStatus = tx.status(render);
-  renderStatus.create();
-  renderStatus.setData("name", status.name);
-  renderStatus.setData("block-pack", status.blockPack);
-  renderStatus.setData("block-id", status.blockId);
-  renderStatus.setData("run-id", randomUUID());
+  const context = tx.createEphemeral(
+    StatusContextType,
+    JSON.stringify({
+      name: status.name,
+      "block-pack": status.blockPack,
+      "block-id": status.blockId,
+      "run-id": randomUUID(),
+    }),
+  );
+  tx.createField(field(render, "status"), "OTW", context);
+  tx.status(render).recordTransition("core", "WaitingForInputs");
 
-  return { ...outputs, status: field(render, "status") };
+  return { ...outputs, status: context };
 }
 
 export type LightBlockInputs = {

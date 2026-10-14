@@ -123,8 +123,7 @@ export interface ProjectField {
     | "stagingCtxPrevious"
     | "stagingUiCtxPrevious"
     | "stagingOutputPrevious"
-    // Root status context of the current render, held through the render's "status" field so it
-    // outlives the render. Set only when the backend advertises statusApi:v1.
+    // Root status context of the current render. The project holds it so it outlives the render.
     | "prodStatus"
     | "stagingStatus";
 }
