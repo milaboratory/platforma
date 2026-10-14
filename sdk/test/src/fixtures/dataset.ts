@@ -15,6 +15,8 @@ export type ShapeAxis = {
   type?: XsvValueType;
   domain?: Record<string, string>;
   annotations?: Record<string, string>;
+  /** Rows whose cell matches are skipped by every column keyed on this axis. */
+  filterOutRegex?: string;
 };
 
 /** One column of a shape: its file column, its pool identity, and its role in the dataset. */
@@ -46,13 +48,17 @@ export type DatasetShape = {
 /** One row, keyed by file column. A missing cell is empty. */
 export type ShapeRow = Record<string, string | number | undefined>;
 
+/** A table ready to publish through xsv-import. */
+export type PublishableDataset = {
+  spec: XsvImportSpec;
+  content: string;
+};
+
 /**
  * A table ready to publish through xsv-import, with the handles a consuming block needs to
  * wire itself to it.
  */
-export type SyntheticDataset = {
-  spec: XsvImportSpec;
-  content: string;
+export type SyntheticDataset = PublishableDataset & {
   /** File column of the anchor abundance, the ref a consumer's `datasetRef` points at. */
   anchorColumn: string;
   /** Anchored id of the sequence column, as a consumer's sequence options report it. */
@@ -100,6 +106,7 @@ export function shapeSpec(shape: DatasetShape): XsvImportSpec {
   return xsvImportSpec({
     axes: shape.axes.map((a) => ({
       column: a.column,
+      filterOutRegex: a.filterOutRegex,
       spec: {
         name: a.name,
         type: a.type ?? "String",
