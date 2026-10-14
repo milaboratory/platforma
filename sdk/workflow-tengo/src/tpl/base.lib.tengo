@@ -1,6 +1,7 @@
 ll := import(":ll")
 render := import(":render")
 smart := import(":smart")
+actionContext := import(":action-context")
 times := import("times")
 sets := import(":sets")
 maps := import(":maps")
@@ -151,10 +152,10 @@ tpl := func(ops) {
 
 		/**
 		 * Block action context handle of the current renderer: self.actionContext().record("tpl", "Running", "aligning reads").
-		 * See the action context library. All calls are no-ops on backends without block action context support.
+		 * See actionContext.self() in the action context library: setReading, record, baggage, create.
 		 */
 		actionContext: func() {
-			return _renderer.actionContext()
+			return actionContext.self()
 		},
 
 		/**
