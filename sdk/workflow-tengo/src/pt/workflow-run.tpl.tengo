@@ -71,6 +71,11 @@ self.body(func(inputs) {
                 readFrames += 1
             } else if step.type == "write_frame" {
                 writeFrames += 1
+            } else if step.type == "import_parquet_frame" {
+                // Reads a frame-sized input and writes a frame, with the same sort
+                // spill in between, so it costs one of each.
+                readFrames += 1
+                writeFrames += 1
             }
         }
         scratchReq = sizing.scratchFormula(readFrames, writeFrames)
