@@ -96,7 +96,7 @@ export ll.toStrict({
 	// same map shape locally (single entry "01" → handle).
 	multiStepProgress:        _isEnabled("multiStepProgress"),
 
-	// true when backend supports block status: tx.status* functions and a parent argument on
-	// tx.createStruct and tx.createEphemeral. Use the status library, not the tx functions directly.
+	// true when backend supports block status reports: tx.statusRecordTransition and tx.statusSetAttr.
+	// Use the status library, not the tx functions directly.
 	statusApi:                _isEnabled("statusApi")
 })

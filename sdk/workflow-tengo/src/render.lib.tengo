@@ -31,6 +31,8 @@ _SUBSCRIPTION_FIELD := "subscription"
  *                                  Can be used only with non-ephemeral templates.
  *              - name: (optional) display name of the render in the block status tree.
  *                                  Defaults to the template name given to assets.importTemplate().
+ *              - status: (optional) false puts the render and everything it creates into the status
+ *                                  sinkhole: their block status is not recorded.
  * @return renderer: a smart resource with additional output("name") method
  */
 createUniversal := func(tpl, isEph, inputs, ...opts) {
@@ -38,10 +40,12 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 	metaInputs := undefined
 	inputCache := undefined
 	statusName := undefined
+	statusOff := false
 	if len(opts) == 1 && opts[0] {
 		metaInputs = opts[0].metaInputs
 		inputCache = opts[0].inputCache
 		statusName = opts[0].name
+		statusOff = opts[0].status == false
 	}
 
 	if !is_undefined(inputCache) && inputCache > 0 && isEph {
@@ -95,12 +99,14 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 	// build
 	renderer := rbuilder.lockInputsAndBuild()
 
-	// name the status context the backend created for the render (it has the current renderer as parent)
-	if is_undefined(statusName) {
-		statusName = assets.templateName(tpl)
-	}
-	if !is_undefined(statusName) {
-		status.of(renderer.id).setData("name", statusName)
+	// the status of the render: a context under the context of the current renderer, or the sinkhole
+	if statusOff {
+		status.sinkhole(renderer.id)
+	} else {
+		if is_undefined(statusName) {
+			statusName = assets.templateName(tpl)
+		}
+		status.createChild(renderer.id, statusName)
 	}
 
 	self := undefined

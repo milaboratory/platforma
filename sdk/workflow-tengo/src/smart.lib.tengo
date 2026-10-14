@@ -756,8 +756,8 @@ resource = func(r) {
 
 		/**
 		 * Returns the block status handle of the resource (see the status library):
-		 * setAttr(topic, key, value), record(topic, state, ...detail), setData(key, value), create().
-		 * All calls are no-ops on backends without block status support.
+		 * setAttr(topic, key, value), record(topic, state, ...detail). All calls are no-ops on backends
+		 * without block status support, or when the resource has no status context.
 		 */
 		status: func() {
 			return status.of(self.id)
@@ -1342,11 +1342,7 @@ resourceBuilder = func(r) {
  */
 structBuilder = func(resourceType, ...data) {
 	id := undefined
-	parent := status.defaultParent()
-	if !is_undefined(parent) {
-		// the new resource inherits the status context of the current renderer
-		id = tx.createStruct(resourceType.Name, resourceType.Version, len(data) > 0 ? data[0] : undefined, parent)
-	} else if len(data) > 0 && !is_undefined(data[0]) {
+	if len(data) > 0 && !is_undefined(data[0]) {
 		id = tx.createStruct(resourceType.Name, resourceType.Version, data[0])
 	} else {
 		id = tx.createStruct(resourceType.Name, resourceType.Version)
@@ -1487,11 +1483,7 @@ ephemeralMapBuilder = func(...resourceType) {
 
 ephemeralBuilder = func(resourceType, ...data) {
 	id := undefined
-	parent := status.defaultParent()
-	if !is_undefined(parent) {
-		// the new resource inherits the status context of the current renderer
-		id = tx.createEphemeral(resourceType.Name, resourceType.Version, len(data) > 0 ? data[0] : undefined, parent)
-	} else if (len(data) > 0) {
+	if (len(data) > 0) {
 		id = tx.createEphemeral(resourceType.Name, resourceType.Version, data[0])
 	} else {
 		id = tx.createEphemeral(resourceType.Name, resourceType.Version)

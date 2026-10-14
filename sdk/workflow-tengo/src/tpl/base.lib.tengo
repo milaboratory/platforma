@@ -1,6 +1,7 @@
 ll := import(":ll")
 render := import(":render")
 smart := import(":smart")
+status := import(":status")
 times := import("times")
 sets := import(":sets")
 maps := import(":maps")
@@ -151,10 +152,10 @@ tpl := func(ops) {
 
 		/**
 		 * Block status handle of the current renderer: self.status().record("tpl", "Running", "aligning reads").
-		 * See the status library. All calls are no-ops on backends without block status support.
+		 * See status.self() in the status library: setAttr, record, data, create.
 		 */
 		status: func() {
-			return _renderer.status()
+			return status.self()
 		},
 
 		/**
