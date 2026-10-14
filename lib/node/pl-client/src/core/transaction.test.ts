@@ -1,6 +1,7 @@
 import { withAdminTempRoot, withTempRoot } from "../test/test_config";
 import { StructTestResource, ValueTestResource } from "../helpers/pl";
 import { field, toGlobalFieldId, toGlobalResourceId } from "./transaction";
+import { resourceIdToString } from "./types";
 import { getField } from "./types";
 import { RecoverablePlError } from "./errors";
 import * as tp from "node:timers/promises";
@@ -217,58 +218,55 @@ test("resourceTree empty seeds fails", async () => {
   });
 });
 
-test("action context create and setData", async () => {
+test("action context reports land in the action context of the resource", async () => {
   await withAdminTempRoot(async (pl) => {
     const EphRenderTemplate = { name: "EphRenderTemplate", version: "1" };
+    const ActionContext = { name: "ActionContext", version: "1" };
 
-    // Without actionContextApi:v1 the action context handle must send nothing: an older backend would reject
-    // the unknown messages and fail the transaction.
+    // The middle layer creates the action context with the resource API and points the render's
+    // "actionContext" field to it.
+    const { render, context } = await pl.withWriteTx("actionContextCreate", async (tx) => {
+      const r = tx.createEphemeral(EphRenderTemplate, "{}");
+      const c = tx.createEphemeral(ActionContext, JSON.stringify({ name: "block title" }));
+      tx.createField(field(tx.clientRoot, "render"), "Dynamic", r);
+      tx.createField(field(tx.clientRoot, "context"), "Dynamic", c);
+      tx.createField(field(r, "actionContext"), "OTW", c);
+      tx.actionContext(r).recordTransition("core", "WaitingForInputs");
+      tx.actionContext(r).setReading("exec", "progress", "40");
+      await tx.commit();
+      return { render: await toGlobalResourceId(r), context: await toGlobalResourceId(c) };
+    });
+
+    // Without actionContextApi:v1 the handle sends nothing: an older backend would reject the unknown
+    // messages and fail the transaction.
     if (!pl.hasCapability("actionContextApi:v1")) {
-      const render = await pl.withWriteTx("actionContextNoop", async (tx) => {
-        const r = tx.createEphemeral(EphRenderTemplate, "{}");
-        tx.createField(field(tx.clientRoot, "render"), "Dynamic", r);
-        tx.actionContext(r).create();
-        tx.actionContext(r).setBaggage("name", "block title");
-        await tx.commit();
-        return await toGlobalResourceId(r);
-      });
       await pl.withReadTx("actionContextNoopCheck", async (tx) => {
-        const renderData = await tx.getResourceData(render, true);
-        expect(renderData.fields.find((f) => f.name === "status")).toBeUndefined();
+        expect(await tx.listKeyValuesString(context)).toEqual([]);
       });
       return;
     }
 
-    // The middle layer creates the root context of a block render and sets its baggage in one transaction.
-    const render = await pl.withWriteTx("actionContextCreate", async (tx) => {
-      const r = tx.createEphemeral(EphRenderTemplate, "{}");
-      tx.createField(field(tx.clientRoot, "render"), "Dynamic", r);
-      tx.actionContext(r).create();
-      tx.actionContext(r).setBaggage("name", "block title");
-      tx.actionContext(r).setBaggage("block-id", "block-1");
-      await tx.commit();
-      return await toGlobalResourceId(r);
-    });
-
-    await pl.withReadTx("actionContextCheck", async (tx) => {
-      const renderData = await tx.getResourceData(render, true);
-      const actionContextField = getField(renderData, "status");
-      expect(actionContextField.type).toEqual("Service");
-
-      const context = await tx.getResourceData(actionContextField.value, false);
-      expect(context.type.name).toEqual("ActionContext");
-      const data = JSON.parse(Buffer.from(context.data!).toString()) as Record<string, string>;
-      expect(data["name"]).toEqual("block title");
-      expect(data["block-id"]).toEqual("block-1");
-      expect(data["resource"]).toEqual(data["root"]);
-    });
-
-    // Context data is immutable after the creating transaction.
-    await expect(
-      pl.withWriteTx("actionContextLateSetBaggage", async (tx) => {
-        tx.actionContext(render).setBaggage("name", "late");
-        await tx.commit();
-      }),
-    ).rejects.toThrow(/immutable/);
+    // Reports are applied asynchronously after the commit.
+    // The backend writes the global ID of the render into the transition key.
+    const renderId = resourceIdToString(render);
+    for (let attempt = 0; ; attempt++) {
+      const kv = await pl.withReadTx("actionContextCheck", async (tx) =>
+        tx.listKeyValuesString(context),
+      );
+      const transition = kv.find((e) => e.key.startsWith("transition/core/"));
+      const reading = kv.find((e) => e.key.startsWith("reading/exec/"));
+      if (transition !== undefined && reading !== undefined) {
+        expect(JSON.parse(transition.value)).toEqual({
+          state: "WaitingForInputs",
+          detail: "",
+          reason: "",
+        });
+        expect(reading.value).toEqual("40");
+        expect(transition.key.split("/")[2].toLowerCase()).toEqual(renderId.toLowerCase());
+        break;
+      }
+      expect(attempt).toBeLessThan(100);
+      await tp.setTimeout(50);
+    }
   });
 });

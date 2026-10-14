@@ -123,8 +123,7 @@ export interface ProjectField {
     | "stagingCtxPrevious"
     | "stagingUiCtxPrevious"
     | "stagingOutputPrevious"
-    // Root action context of the current render, held through the render's "actionContext" field so it
-    // outlives the render. Set only when the backend advertises actionContextApi:v1.
+    // Root action context of the current render. The project holds it so it outlives the render.
     | "prodActionContext"
     | "stagingActionContext";
 }
