@@ -96,7 +96,7 @@ export ll.toStrict({
 	// same map shape locally (single entry "01" → handle).
 	multiStepProgress:        _isEnabled("multiStepProgress"),
 
-	// true when backend supports block action context: tx.status* functions and a parent argument on
-	// tx.createStruct and tx.createEphemeral. Use the action context library, not the tx functions directly.
+	// true when backend supports block action context reports: tx.actionContextRecordTransition and tx.actionContextSetReading.
+	// Use the action context library, not the tx functions directly.
 	actionContextApi:                _isEnabled("actionContextApi")
 })

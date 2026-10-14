@@ -31,6 +31,8 @@ _SUBSCRIPTION_FIELD := "subscription"
  *                                  Can be used only with non-ephemeral templates.
  *              - name: (optional) display name of the render in the block action context tree.
  *                                  Defaults to the template name given to assets.importTemplate().
+ *              - actionContext: (optional) false puts the render and everything it creates into the action
+ *                                  sinkhole: their block action context is not recorded.
  * @return renderer: a smart resource with additional output("name") method
  */
 createUniversal := func(tpl, isEph, inputs, ...opts) {
@@ -38,10 +40,12 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 	metaInputs := undefined
 	inputCache := undefined
 	actionContextName := undefined
+	actionContextOff := false
 	if len(opts) == 1 && opts[0] {
 		metaInputs = opts[0].metaInputs
 		inputCache = opts[0].inputCache
 		actionContextName = opts[0].name
+		actionContextOff = opts[0].actionContext == false
 	}
 
 	if !is_undefined(inputCache) && inputCache > 0 && isEph {
@@ -95,12 +99,14 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 	// build
 	renderer := rbuilder.lockInputsAndBuild()
 
-	// name the action context the backend created for the render (it has the current renderer as parent)
-	if is_undefined(actionContextName) {
-		actionContextName = assets.templateName(tpl)
-	}
-	if !is_undefined(actionContextName) {
-		actionContext.of(renderer.id).setBaggage("name", actionContextName)
+	// the action context of the render: a context under the context of the current renderer, or the sinkhole
+	if actionContextOff {
+		actionContext.sinkhole(renderer.id)
+	} else {
+		if is_undefined(actionContextName) {
+			actionContextName = assets.templateName(tpl)
+		}
+		actionContext.createChild(renderer.id, actionContextName)
 	}
 
 	self := undefined
