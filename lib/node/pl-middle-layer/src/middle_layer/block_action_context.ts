@@ -32,7 +32,12 @@ export type BlockActionReading = {
 /** One action context: the action context of one render and the renders it created. */
 export type BlockActionContextNode = {
   contextId: string;
-  /** Context baggage: resource, root, name, block-pack, block-id, run-id and so on. */
+  /**
+   * The render the context belongs to: the resource of its first transition under namespace "core".
+   * Undefined until that transition is applied, or on a backend without block action context reports.
+   */
+  resource?: string;
+  /** Context baggage: name, block-pack, block-id, run-id and so on. */
   baggage: Record<string, string>;
   /** In time order. */
   transitions: BlockActionTransition[];
@@ -114,6 +119,7 @@ async function readActionContextNode(
 
   return {
     contextId: String(parseSignedResourceId(contextRef).globalId),
+    resource: transitions.find((t) => t.namespace === "core")?.resource,
     baggage,
     transitions,
     readings,
