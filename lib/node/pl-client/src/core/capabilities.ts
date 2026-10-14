@@ -35,8 +35,8 @@ export type BackendCapability =
   | "userListing:v1" // list users for the recipient picker
   | "publicGrants:v1" // public (everyone) grants allowed for any role
   | "txListGrants:v1" // list grants inside a transaction (batched recipient reads)
-  // Block action context API: TX status messages (create, setData, setReading, recordTransition) and a parent
-  // on struct/ephemeral creates. Without it, PlTransaction.actionContext() sends nothing.
+  // Block action context reports: TX messages action_context_record_transition and action_context_set_reading.
+  // Without it, PlTransaction.actionContext() sends nothing.
   | "actionContextApi:v1";
 
 /** True iff `capabilities` advertises the requested token. */

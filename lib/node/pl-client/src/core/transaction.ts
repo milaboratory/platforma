@@ -82,17 +82,35 @@ export interface KeyValue {
 
 /** Key-Value pair from resource-attached KV storage */
 /**
- * Action context handle of one render in a transaction. It writes into the action context of the render.
+ * Block action context states. The numbers match plapi.ActionState on the backend.
+ * States are lossy by design: they are for the user, and no logic may depend on them.
+ */
+export const ActionStates = {
+  WaitingForInputs: 1,
+  Running: 2,
+  WaitingWorkdirGate: 3,
+  WaitingSubmissionGate: 4,
+  PopulatingWorkdir: 5,
+  CollectingOutputs: 6,
+  WaitingForScheduler: 7,
+  WaitingForMachine: 8,
+  Terminated: 9,
+  Completed: 10,
+} as const;
+
+/** A block action context state name, e.g. "Running". */
+export type ActionState = keyof typeof ActionStates;
+
+/**
+ * Action context handle of one resource in a transaction. Reports go to the action context that the
+ * "actionContext" field of the resource points to; a resource without it is a no-op on the backend.
  * All calls are asynchronous: errors surface when the transaction commits.
  */
 export interface ActionContextHandle {
-  /** Creates the root action context of a render that has no action context yet. */
-  create(): void;
-  /**
-   * Sets a data key of the action context of the render, e.g. "name", "block-pack", "block-id".
-   * Works only in the transaction that created the context: the data is immutable after it commits.
-   */
-  setBaggage(key: string, value: string): void;
+  /** Records a transition of the resource under namespace: transition/<namespace>/<resource>/<ns>. */
+  recordTransition(namespace: string, state: ActionState, detail?: string): void;
+  /** Sets an reading of the resource under namespace: reading/<namespace>/<resource>/<key>. */
+  setReading(namespace: string, key: string, value: string | Uint8Array): void;
 }
 
 export interface KeyValueString {
@@ -587,9 +605,6 @@ export class PlTransaction {
           data:
             data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
           colorProof: color ?? emptySignature,
-          // No parent: creating with a parent (action context inheritance) is not exposed here yet.
-          parentId: 0n,
-          parentSignature: emptySignature,
         },
       }),
       (r) => r.resourceCreateStruct.resourceId,
@@ -614,9 +629,6 @@ export class PlTransaction {
           data:
             data === undefined ? undefined : typeof data === "string" ? Buffer.from(data) : data,
           colorProof: color ?? emptySignature,
-          // No parent: creating with a parent (action context inheritance) is not exposed here yet.
-          parentId: 0n,
-          parentSignature: emptySignature,
         },
       }),
       (r) => r.resourceCreateEphemeral.resourceId,
@@ -1136,29 +1148,31 @@ export class PlTransaction {
   }
 
   /**
-   * Returns the action context handle of a render. See the block action context spec: the middle layer creates the
-   * root action context of a block render and sets its baggage in the same transaction.
+   * Returns the action context report handle of a resource.
    * When the backend does not advertise `actionContextApi:v1`, the handle sends nothing: an older backend
    * rejects the unknown messages and would fail the whole transaction.
    */
   public actionContext(rId: AnyResourceRef): ActionContextHandle {
-    if (!this.actionContextApiEnabled) return { create: () => {}, setData: () => {} };
+    if (!this.actionContextApiEnabled) return { recordTransition: () => {}, setReading: () => {} };
 
     return {
-      create: () =>
+      recordTransition: (namespace: string, state: ActionState, detail?: string) =>
         this.sendVoidAsync({
-          oneofKind: "actionContextCreate",
-          actionContextCreate: {
+          oneofKind: "actionContextRecordTransition",
+          actionContextRecordTransition: {
             ...this.toSignedResourceId(rId),
+            namespace,
+            transition: { state: ActionStates[state], detail: detail ?? "", reason: "" },
           },
         }),
-      setData: (key: string, value: string) =>
+      setReading: (namespace: string, key: string, value: string | Uint8Array) =>
         this.sendVoidAsync({
-          oneofKind: "actionContextSetBaggage",
-          actionContextSetBaggage: {
+          oneofKind: "actionContextSetReading",
+          actionContextSetReading: {
             ...this.toSignedResourceId(rId),
+            namespace,
             key,
-            value,
+            value: typeof value === "string" ? Buffer.from(value) : value,
           },
         }),
     };
