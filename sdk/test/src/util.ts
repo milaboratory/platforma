@@ -33,3 +33,5 @@ export async function awaitStableState<S>(
     } else throw e;
   }
 }
+
+export const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
