@@ -741,6 +741,7 @@ builder := func() {
 		},
 
 		/**
+		 * @deprecated Use cacheMillis, cacheSeconds, cacheMinutes, cacheHours or cacheDays instead.
 		 * Sets the cache time.
 		 *
 		 * You MUST build the duration with the unit constants of the standard 'times' library:
