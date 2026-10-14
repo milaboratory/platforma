@@ -1,5 +1,13 @@
 # @milaboratories/pl-mcp-server
 
+## 33.0.0
+
+### Patch Changes
+
+- Updated dependencies [2a781e0]
+  - @platforma-sdk/model@1.85.0
+  - @milaboratories/pl-middle-layer@1.74.4
+
 ## 32.0.0
 
 ### Patch Changes
