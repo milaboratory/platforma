@@ -108,6 +108,7 @@ test("block status context outlives its render and is replaced on re-render", as
     expect(first.data["name"]).toEqual("Block1");
     expect(JSON.parse(first.data["block-pack"])).toBeTypeOf("object");
     expect(first.data["resource"]).toEqual(first.data["root"]);
+    expect(first.data["run-id"]).toMatch(/^[0-9a-f-]{36}$/);
 
     // 5. Wait until the render is garbage collected; the context must stay readable.
     const renderId = resourceIdFromString(first.data["resource"])!;
@@ -124,6 +125,7 @@ test("block status context outlives its render and is replaced on re-render", as
     const second = (await readStatusContext(pl, prj, "block1"))!;
     expect(second.contextId).not.toEqual(first.contextId);
     expect(second.data["resource"]).not.toEqual(first.data["resource"]);
+    expect(second.data["run-id"]).not.toEqual(first.data["run-id"]);
 
     // 7. Render and stop production in one transaction: prodStatus must be removed.
     await pl.withWriteTx("RenderAndStop", async (tx) => {
