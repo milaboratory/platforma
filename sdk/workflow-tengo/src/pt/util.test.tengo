@@ -434,3 +434,49 @@ TestRenameFilterQualificationsAbsentStaysAbsent := func() {
 		"absent qualifications must stay absent after rename")
 }
 
+
+TestMakeImportParquetFrameStep := func() {
+	step := util.makeImportParquetFrameStep(
+		"pframe_1",
+		"anonymous_1.parquet",
+		{
+			axes: [
+				{ column: "key", spec: { name: "key", type: "String" } },
+				{ column: "dim", spec: { name: "dim", type: "Int" } }
+			],
+			columns: [{ column: "value", spec: { name: "value", valueType: "Float" } }],
+			partitionKeyLength: 1
+		},
+		{ key: "col1", dim: "col2", value: "col3" },
+		{ value: true }
+	)
+	test.isEqual({
+		type: "import_parquet_frame",
+		file: "anonymous_1.parquet",
+		frameName: "pframe_1",
+		axes: [
+			{ column: "col1", source: "key", type: "String" },
+			{ column: "col2", source: "dim", type: "Int" }
+		],
+		columns: [{ column: "col3", source: "value", type: "Float", notNull: true }],
+		partitionKeyLength: 1,
+		strict: false
+	}, step)
+}
+
+TestMakeImportParquetFrameStepDefaults := func() {
+	step := util.makeImportParquetFrameStep(
+		"pframe_2",
+		"in.parquet",
+		{
+			axes: [{ column: "a", spec: { name: "a", type: "Long" } }],
+			columns: [{ column: "v", spec: { name: "v", valueType: "Double" } }]
+		},
+		{ a: "col1", v: "col2" },
+		{}
+	)
+	// No partitionKeyLength or strict in params, and a column outside notNullSet.
+	test.isEqual(0, step.partitionKeyLength)
+	test.isEqual(false, step.strict)
+	test.isEqual(false, step.columns[0].notNull)
+}
