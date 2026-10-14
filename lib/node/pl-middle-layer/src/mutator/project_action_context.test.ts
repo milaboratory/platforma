@@ -1,4 +1,4 @@
-import type { PlClient } from "@milaboratories/pl-client";
+import type { PlClient, SignedResourceId } from "@milaboratories/pl-client";
 import {
   ContinuePolling,
   field,
@@ -18,13 +18,15 @@ import { createProject, ProjectMutator } from "./project";
 
 type ActionContextBaggage = Record<string, string>;
 
-/** Reads the action context that prodActionContext resolves to, or undefined if the field is absent.
+/** Reads the action context that prodActionContext points to, or undefined if the field is absent.
  * Polls until the field reference is resolved: it resolves asynchronously after the commit. */
 async function readActionContext(
   pl: PlClient,
   prj: Awaited<ReturnType<typeof toGlobalResourceId>>,
   blockId: string,
-): Promise<{ contextId: string; data: ActionContextBaggage } | undefined> {
+): Promise<
+  { contextId: string; contextRef: SignedResourceId; baggage: ActionContextBaggage } | undefined
+> {
   return await poll(pl, async ({ tx }) => {
     const project = await tx.getResourceData(prj, true);
     const actionContextField = project.fields.find(
@@ -38,8 +40,21 @@ async function readActionContext(
     expect(context.type.name).toEqual("ActionContext");
     return {
       contextId: String(parseSignedResourceId(contextRef).globalId),
+      contextRef,
       baggage: JSON.parse(Buffer.from(context.data!).toString()) as ActionContextBaggage,
     };
+  });
+}
+
+/** Returns the render an action context belongs to: the resource of its core transition.
+ * Polls until the transition lands: reports are applied asynchronously after the commit. */
+async function contextRender(pl: PlClient, contextRef: SignedResourceId): Promise<string> {
+  return await poll(pl, async ({ tx }) => {
+    const kv = await tx.listKeyValuesString(contextRef);
+    const core = kv.find((e) => e.key.startsWith("transition/core/"));
+    if (core === undefined) throw new ContinuePolling();
+    expect(JSON.parse(core.value)).toEqual({ state: "WaitingForInputs", detail: "", reason: "" });
+    return core.key.split("/")[2];
   });
 }
 
@@ -48,11 +63,11 @@ test("block action context outlives its render and is replaced on re-render", as
   // Scenario:
   //  1. Create a project and render production of one block.
   //  2. Wait until the production output is final.
-  //  3. Without actionContextApi:v1 on the backend: no prodActionContext field. Stop here.
-  //  4. Read the action context through prodActionContext and check its baggage.
-  //  5. Wait until the render is garbage collected; the context must stay readable.
-  //  6. Re-render production: prodActionContext must point at a new context for the new render.
-  //  7. Render and stop production in one transaction: prodActionContext must be removed.
+  //  3. Read the action context through prodActionContext and check its baggage.
+  //  4. With actionContextApi:v1 on the backend: the context has the core transition of the render. Wait
+  //     until the render is garbage collected; the context must stay readable.
+  //  5. Re-render production: prodActionContext must point at a new context with a new run-id.
+  //  6. Render and stop production in one transaction: prodActionContext must be removed.
   //
 
   const quickJs = await getQuickJS();
@@ -95,39 +110,39 @@ test("block action context outlives its render and is replaced on re-render", as
       await prjR.get(projectFieldName("block1", "prodOutput")).then((r) => r.final());
     });
 
-    // 3. Without actionContextApi:v1 on the backend: no prodActionContext field.
-    if (!pl.hasCapability("actionContextApi:v1")) {
-      expect(await readActionContext(pl, prj, "block1")).toBeUndefined();
-      return;
-    }
-
-    // 4. Read the action context through prodActionContext and check its baggage.
+    // 3. Read the action context through prodActionContext and check its baggage.
     const first = (await readActionContext(pl, prj, "block1"))!;
     expect(first).toBeDefined();
+    expect(Object.keys(first.baggage).sort()).toEqual(["block-id", "block-pack", "name", "run-id"]);
     expect(first.baggage["block-id"]).toEqual("block1");
     expect(first.baggage["name"]).toEqual("Block1");
     expect(JSON.parse(first.baggage["block-pack"])).toBeTypeOf("object");
-    expect(first.baggage["resource"]).toEqual(first.baggage["root"]);
     expect(first.baggage["run-id"]).toMatch(/^[0-9a-f-]{36}$/);
 
-    // 5. Wait until the render is garbage collected; the context must stay readable.
-    const renderId = resourceIdFromString(first.baggage["resource"])!;
-    await poll(pl, async (tx) => {
-      const render = await tx.tx.getResourceDataIfExists(renderId as never, false);
-      expect(render).toBeUndefined();
-    });
-    const afterGc = (await readActionContext(pl, prj, "block1"))!;
-    expect(afterGc.contextId).toEqual(first.contextId);
-    expect(afterGc.baggage).toEqual(first.baggage);
+    // 4. The core transition names the render; the context outlives it.
+    const actionContextApi = pl.hasCapability("actionContextApi:v1");
+    let firstRender: string | undefined;
+    if (actionContextApi) {
+      firstRender = await contextRender(pl, first.contextRef);
+      const renderId = resourceIdFromString(firstRender)!;
+      await poll(pl, async (tx) => {
+        const render = await tx.tx.getResourceDataIfExists(renderId as never, false);
+        expect(render).toBeUndefined();
+      });
+      const afterGc = (await readActionContext(pl, prj, "block1"))!;
+      expect(afterGc.contextId).toEqual(first.contextId);
+      expect(afterGc.baggage).toEqual(first.baggage);
+    }
 
-    // 6. Re-render production: prodActionContext must point at a new context for the new render.
+    // 5. Re-render production: prodActionContext must point at a new context with a new run-id.
     await renderBlock([4, 5, 6], false);
     const second = (await readActionContext(pl, prj, "block1"))!;
     expect(second.contextId).not.toEqual(first.contextId);
-    expect(second.baggage["resource"]).not.toEqual(first.baggage["resource"]);
     expect(second.baggage["run-id"]).not.toEqual(first.baggage["run-id"]);
+    if (actionContextApi)
+      expect(await contextRender(pl, second.contextRef)).not.toEqual(firstRender);
 
-    // 7. Render and stop production in one transaction: prodActionContext must be removed.
+    // 6. Render and stop production in one transaction: prodActionContext must be removed.
     await pl.withWriteTx("RenderAndStop", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.setStates([

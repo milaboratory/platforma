@@ -453,30 +453,16 @@ export interface TxAPI_ClientMessage {
         notificationDiscard: NotificationAPI_Discard_Request; // discard notification handled by controller
       }
     | {
-        oneofKind: "actionContextCreate";
-        /**
-         * @generated from protobuf field: MiLaboratories.PL.API.ActionContextAPI.Create.Request action_context_create = 90
-         */
-        actionContextCreate: ActionContextAPI_Create_Request; // create the root action context of a render
-      }
-    | {
-        oneofKind: "actionContextSetBaggage";
-        /**
-         * @generated from protobuf field: MiLaboratories.PL.API.ActionContextAPI.SetBaggage.Request action_context_set_baggage = 91
-         */
-        actionContextSetBaggage: ActionContextAPI_SetBaggage_Request; // set a data key of an action context in its creating transaction
-      }
-    | {
         oneofKind: "actionContextRecordTransition";
         /**
-         * @generated from protobuf field: MiLaboratories.PL.API.ActionContextAPI.RecordTransition.Request action_context_record_transition = 92
+         * @generated from protobuf field: MiLaboratories.PL.API.ActionContextAPI.RecordTransition.Request action_context_record_transition = 90
          */
         actionContextRecordTransition: ActionContextAPI_RecordTransition_Request; // record an action transition of a resource
       }
     | {
         oneofKind: "actionContextSetReading";
         /**
-         * @generated from protobuf field: MiLaboratories.PL.API.ActionContextAPI.SetReading.Request action_context_set_reading = 93
+         * @generated from protobuf field: MiLaboratories.PL.API.ActionContextAPI.SetReading.Request action_context_set_reading = 91
          */
         actionContextSetReading: ActionContextAPI_SetReading_Request; // set a reading of a resource
       }
@@ -939,30 +925,16 @@ export interface TxAPI_ServerMessage {
         notificationDiscard: NotificationAPI_Discard_Response;
       }
     | {
-        oneofKind: "actionContextCreate";
-        /**
-         * @generated from protobuf field: MiLaboratories.PL.API.ActionContextAPI.Create.Response action_context_create = 90
-         */
-        actionContextCreate: ActionContextAPI_Create_Response;
-      }
-    | {
-        oneofKind: "actionContextSetBaggage";
-        /**
-         * @generated from protobuf field: MiLaboratories.PL.API.ActionContextAPI.SetBaggage.Response action_context_set_baggage = 91
-         */
-        actionContextSetBaggage: ActionContextAPI_SetBaggage_Response;
-      }
-    | {
         oneofKind: "actionContextRecordTransition";
         /**
-         * @generated from protobuf field: MiLaboratories.PL.API.ActionContextAPI.RecordTransition.Response action_context_record_transition = 92
+         * @generated from protobuf field: MiLaboratories.PL.API.ActionContextAPI.RecordTransition.Response action_context_record_transition = 90
          */
         actionContextRecordTransition: ActionContextAPI_RecordTransition_Response;
       }
     | {
         oneofKind: "actionContextSetReading";
         /**
-         * @generated from protobuf field: MiLaboratories.PL.API.ActionContextAPI.SetReading.Response action_context_set_reading = 93
+         * @generated from protobuf field: MiLaboratories.PL.API.ActionContextAPI.SetReading.Response action_context_set_reading = 91
          */
         actionContextSetReading: ActionContextAPI_SetReading_Response;
       }
@@ -1335,18 +1307,6 @@ export interface ResourceAPI_CreateStruct_Request {
    * @generated from protobuf field: bytes color_proof = 5
    */
   colorProof: Uint8Array;
-  /**
-   * The resource that caused the creation, e.g. the renderer of a template.
-   * The new resource inherits the action context of the parent. Zero means no parent.
-   * The parent must have a valid signature with a color that matches the color of the new resource.
-   *
-   * @generated from protobuf field: uint64 parent_id = 6
-   */
-  parentId: bigint;
-  /**
-   * @generated from protobuf field: bytes parent_signature = 7
-   */
-  parentSignature: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.CreateStruct.Response
@@ -1385,18 +1345,6 @@ export interface ResourceAPI_CreateEphemeral_Request {
    * @generated from protobuf field: bytes color_proof = 5
    */
   colorProof: Uint8Array;
-  /**
-   * The resource that caused the creation, e.g. the renderer of a template.
-   * The new resource inherits the action context of the parent. Zero means no parent.
-   * The parent must have a valid signature with a color that matches the color of the new resource.
-   *
-   * @generated from protobuf field: uint64 parent_id = 6
-   */
-  parentId: bigint;
-  /**
-   * @generated from protobuf field: bytes parent_signature = 7
-   */
-  parentSignature: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPI.CreateEphemeral.Response
@@ -3139,9 +3087,10 @@ export interface ControllerAPI_ClearFeatures_Request {
  */
 export interface ControllerAPI_ClearFeatures_Response {}
 /**
- * ActionContextAPI reports the block action context of a render into its action context.
- * A request names a resource the caller holds. The server resolves the status stamp
- * of that resource to its ActionContext.
+ * ActionContextAPI reports the block action context of a resource into its action context.
+ * A request names a resource the caller holds. The server follows the "actionContext" one-time-writable field
+ * of that resource to its ActionContext. A resource without the field is a no-op.
+ * Clients create action contexts and the "actionContext" fields themselves, with the resource API.
  *
  * @generated from protobuf message MiLaboratories.PL.API.ActionContextAPI
  */
@@ -3163,61 +3112,6 @@ export interface ActionContextAPI_Transition {
    */
   reason: string; // only with the Terminated state
 }
-/**
- * Create the root action context of a render without a stamp.
- *
- * @generated from protobuf message MiLaboratories.PL.API.ActionContextAPI.Create
- */
-export interface ActionContextAPI_Create {}
-/**
- * @generated from protobuf message MiLaboratories.PL.API.ActionContextAPI.Create.Request
- */
-export interface ActionContextAPI_Create_Request {
-  /**
-   * @generated from protobuf field: uint64 resource_id = 1
-   */
-  resourceId: bigint;
-  /**
-   * @generated from protobuf field: bytes resource_signature = 2
-   */
-  resourceSignature: Uint8Array;
-}
-/**
- * @generated from protobuf message MiLaboratories.PL.API.ActionContextAPI.Create.Response
- */
-export interface ActionContextAPI_Create_Response {}
-/**
- * Set a data key of the action context of a render.
- * Allowed only in the transaction that created the context.
- *
- * @generated from protobuf message MiLaboratories.PL.API.ActionContextAPI.SetBaggage
- */
-export interface ActionContextAPI_SetBaggage {}
-/**
- * @generated from protobuf message MiLaboratories.PL.API.ActionContextAPI.SetBaggage.Request
- */
-export interface ActionContextAPI_SetBaggage_Request {
-  /**
-   * @generated from protobuf field: uint64 resource_id = 1
-   */
-  resourceId: bigint;
-  /**
-   * @generated from protobuf field: bytes resource_signature = 2
-   */
-  resourceSignature: Uint8Array;
-  /**
-   * @generated from protobuf field: string key = 3
-   */
-  key: string;
-  /**
-   * @generated from protobuf field: string value = 4
-   */
-  value: string;
-}
-/**
- * @generated from protobuf message MiLaboratories.PL.API.ActionContextAPI.SetBaggage.Response
- */
-export interface ActionContextAPI_SetBaggage_Response {}
 /**
  * Record a transition of the resource under a namespace.
  * Stored as transition/<namespace>/<resource>/<ns> in the action context.
@@ -5248,27 +5142,13 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
       },
       {
         no: 90,
-        name: "action_context_create",
-        kind: "message",
-        oneof: "request",
-        T: () => ActionContextAPI_Create_Request,
-      },
-      {
-        no: 91,
-        name: "action_context_set_baggage",
-        kind: "message",
-        oneof: "request",
-        T: () => ActionContextAPI_SetBaggage_Request,
-      },
-      {
-        no: 92,
         name: "action_context_record_transition",
         kind: "message",
         oneof: "request",
         T: () => ActionContextAPI_RecordTransition_Request,
       },
       {
-        no: 93,
+        no: 91,
         name: "action_context_set_reading",
         kind: "message",
         oneof: "request",
@@ -5891,29 +5771,7 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
             ),
           };
           break;
-        case /* MiLaboratories.PL.API.ActionContextAPI.Create.Request action_context_create */ 90:
-          message.request = {
-            oneofKind: "actionContextCreate",
-            actionContextCreate: ActionContextAPI_Create_Request.internalBinaryRead(
-              reader,
-              reader.uint32(),
-              options,
-              (message.request as any).actionContextCreate,
-            ),
-          };
-          break;
-        case /* MiLaboratories.PL.API.ActionContextAPI.SetBaggage.Request action_context_set_baggage */ 91:
-          message.request = {
-            oneofKind: "actionContextSetBaggage",
-            actionContextSetBaggage: ActionContextAPI_SetBaggage_Request.internalBinaryRead(
-              reader,
-              reader.uint32(),
-              options,
-              (message.request as any).actionContextSetBaggage,
-            ),
-          };
-          break;
-        case /* MiLaboratories.PL.API.ActionContextAPI.RecordTransition.Request action_context_record_transition */ 92:
+        case /* MiLaboratories.PL.API.ActionContextAPI.RecordTransition.Request action_context_record_transition */ 90:
           message.request = {
             oneofKind: "actionContextRecordTransition",
             actionContextRecordTransition:
@@ -5925,7 +5783,7 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
               ),
           };
           break;
-        case /* MiLaboratories.PL.API.ActionContextAPI.SetReading.Request action_context_set_reading */ 93:
+        case /* MiLaboratories.PL.API.ActionContextAPI.SetReading.Request action_context_set_reading */ 91:
           message.request = {
             oneofKind: "actionContextSetReading",
             actionContextSetReading: ActionContextAPI_SetReading_Request.internalBinaryRead(
@@ -6380,32 +6238,18 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
         writer.tag(71, WireType.LengthDelimited).fork(),
         options,
       ).join();
-    /* MiLaboratories.PL.API.ActionContextAPI.Create.Request action_context_create = 90; */
-    if (message.request.oneofKind === "actionContextCreate")
-      ActionContextAPI_Create_Request.internalBinaryWrite(
-        message.request.actionContextCreate,
-        writer.tag(90, WireType.LengthDelimited).fork(),
-        options,
-      ).join();
-    /* MiLaboratories.PL.API.ActionContextAPI.SetBaggage.Request action_context_set_baggage = 91; */
-    if (message.request.oneofKind === "actionContextSetBaggage")
-      ActionContextAPI_SetBaggage_Request.internalBinaryWrite(
-        message.request.actionContextSetBaggage,
-        writer.tag(91, WireType.LengthDelimited).fork(),
-        options,
-      ).join();
-    /* MiLaboratories.PL.API.ActionContextAPI.RecordTransition.Request action_context_record_transition = 92; */
+    /* MiLaboratories.PL.API.ActionContextAPI.RecordTransition.Request action_context_record_transition = 90; */
     if (message.request.oneofKind === "actionContextRecordTransition")
       ActionContextAPI_RecordTransition_Request.internalBinaryWrite(
         message.request.actionContextRecordTransition,
-        writer.tag(92, WireType.LengthDelimited).fork(),
+        writer.tag(90, WireType.LengthDelimited).fork(),
         options,
       ).join();
-    /* MiLaboratories.PL.API.ActionContextAPI.SetReading.Request action_context_set_reading = 93; */
+    /* MiLaboratories.PL.API.ActionContextAPI.SetReading.Request action_context_set_reading = 91; */
     if (message.request.oneofKind === "actionContextSetReading")
       ActionContextAPI_SetReading_Request.internalBinaryWrite(
         message.request.actionContextSetReading,
-        writer.tag(93, WireType.LengthDelimited).fork(),
+        writer.tag(91, WireType.LengthDelimited).fork(),
         options,
       ).join();
     /* MiLaboratories.PL.API.FieldAPI.Create.Request field_create = 101; */
@@ -6958,27 +6802,13 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
       },
       {
         no: 90,
-        name: "action_context_create",
-        kind: "message",
-        oneof: "response",
-        T: () => ActionContextAPI_Create_Response,
-      },
-      {
-        no: 91,
-        name: "action_context_set_baggage",
-        kind: "message",
-        oneof: "response",
-        T: () => ActionContextAPI_SetBaggage_Response,
-      },
-      {
-        no: 92,
         name: "action_context_record_transition",
         kind: "message",
         oneof: "response",
         T: () => ActionContextAPI_RecordTransition_Response,
       },
       {
-        no: 93,
+        no: 91,
         name: "action_context_set_reading",
         kind: "message",
         oneof: "response",
@@ -7610,29 +7440,7 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
             ),
           };
           break;
-        case /* MiLaboratories.PL.API.ActionContextAPI.Create.Response action_context_create */ 90:
-          message.response = {
-            oneofKind: "actionContextCreate",
-            actionContextCreate: ActionContextAPI_Create_Response.internalBinaryRead(
-              reader,
-              reader.uint32(),
-              options,
-              (message.response as any).actionContextCreate,
-            ),
-          };
-          break;
-        case /* MiLaboratories.PL.API.ActionContextAPI.SetBaggage.Response action_context_set_baggage */ 91:
-          message.response = {
-            oneofKind: "actionContextSetBaggage",
-            actionContextSetBaggage: ActionContextAPI_SetBaggage_Response.internalBinaryRead(
-              reader,
-              reader.uint32(),
-              options,
-              (message.response as any).actionContextSetBaggage,
-            ),
-          };
-          break;
-        case /* MiLaboratories.PL.API.ActionContextAPI.RecordTransition.Response action_context_record_transition */ 92:
+        case /* MiLaboratories.PL.API.ActionContextAPI.RecordTransition.Response action_context_record_transition */ 90:
           message.response = {
             oneofKind: "actionContextRecordTransition",
             actionContextRecordTransition:
@@ -7644,7 +7452,7 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
               ),
           };
           break;
-        case /* MiLaboratories.PL.API.ActionContextAPI.SetReading.Response action_context_set_reading */ 93:
+        case /* MiLaboratories.PL.API.ActionContextAPI.SetReading.Response action_context_set_reading */ 91:
           message.response = {
             oneofKind: "actionContextSetReading",
             actionContextSetReading: ActionContextAPI_SetReading_Response.internalBinaryRead(
@@ -8121,32 +7929,18 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
         writer.tag(71, WireType.LengthDelimited).fork(),
         options,
       ).join();
-    /* MiLaboratories.PL.API.ActionContextAPI.Create.Response action_context_create = 90; */
-    if (message.response.oneofKind === "actionContextCreate")
-      ActionContextAPI_Create_Response.internalBinaryWrite(
-        message.response.actionContextCreate,
-        writer.tag(90, WireType.LengthDelimited).fork(),
-        options,
-      ).join();
-    /* MiLaboratories.PL.API.ActionContextAPI.SetBaggage.Response action_context_set_baggage = 91; */
-    if (message.response.oneofKind === "actionContextSetBaggage")
-      ActionContextAPI_SetBaggage_Response.internalBinaryWrite(
-        message.response.actionContextSetBaggage,
-        writer.tag(91, WireType.LengthDelimited).fork(),
-        options,
-      ).join();
-    /* MiLaboratories.PL.API.ActionContextAPI.RecordTransition.Response action_context_record_transition = 92; */
+    /* MiLaboratories.PL.API.ActionContextAPI.RecordTransition.Response action_context_record_transition = 90; */
     if (message.response.oneofKind === "actionContextRecordTransition")
       ActionContextAPI_RecordTransition_Response.internalBinaryWrite(
         message.response.actionContextRecordTransition,
-        writer.tag(92, WireType.LengthDelimited).fork(),
+        writer.tag(90, WireType.LengthDelimited).fork(),
         options,
       ).join();
-    /* MiLaboratories.PL.API.ActionContextAPI.SetReading.Response action_context_set_reading = 93; */
+    /* MiLaboratories.PL.API.ActionContextAPI.SetReading.Response action_context_set_reading = 91; */
     if (message.response.oneofKind === "actionContextSetReading")
       ActionContextAPI_SetReading_Response.internalBinaryWrite(
         message.response.actionContextSetReading,
-        writer.tag(93, WireType.LengthDelimited).fork(),
+        writer.tag(91, WireType.LengthDelimited).fork(),
         options,
       ).join();
     /* MiLaboratories.PL.API.FieldAPI.Create.Response field_create = 101; */
@@ -9668,14 +9462,6 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
       { no: 3, name: "type", kind: "message", T: () => ResourceType },
       { no: 4, name: "data", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
       { no: 5, name: "color_proof", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
-      {
-        no: 6,
-        name: "parent_id",
-        kind: "scalar",
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/,
-      },
-      { no: 7, name: "parent_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
     ]);
   }
   create(
@@ -9684,8 +9470,6 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
     const message = globalThis.Object.create(this.messagePrototype!);
     message.id = 0n;
     message.colorProof = new Uint8Array(0);
-    message.parentId = 0n;
-    message.parentSignature = new Uint8Array(0);
     if (value !== undefined)
       reflectionMergePartial<ResourceAPI_CreateStruct_Request>(this, message, value);
     return message;
@@ -9717,12 +9501,6 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
           break;
         case /* bytes color_proof */ 5:
           message.colorProof = reader.bytes();
-          break;
-        case /* uint64 parent_id */ 6:
-          message.parentId = reader.uint64().toBigInt();
-          break;
-        case /* bytes parent_signature */ 7:
-          message.parentSignature = reader.bytes();
           break;
         default:
           let u = options.readUnknownField;
@@ -9762,11 +9540,6 @@ class ResourceAPI_CreateStruct_Request$Type extends MessageType<ResourceAPI_Crea
     /* bytes color_proof = 5; */
     if (message.colorProof.length)
       writer.tag(5, WireType.LengthDelimited).bytes(message.colorProof);
-    /* uint64 parent_id = 6; */
-    if (message.parentId !== 0n) writer.tag(6, WireType.Varint).uint64(message.parentId);
-    /* bytes parent_signature = 7; */
-    if (message.parentSignature.length)
-      writer.tag(7, WireType.LengthDelimited).bytes(message.parentSignature);
     let u = options.writeUnknownFields;
     if (u !== false) (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
     return writer;
@@ -9918,14 +9691,6 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
       { no: 3, name: "type", kind: "message", T: () => ResourceType },
       { no: 4, name: "data", kind: "scalar", opt: true, T: 12 /*ScalarType.BYTES*/ },
       { no: 5, name: "color_proof", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
-      {
-        no: 6,
-        name: "parent_id",
-        kind: "scalar",
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/,
-      },
-      { no: 7, name: "parent_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
     ]);
   }
   create(
@@ -9934,8 +9699,6 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
     const message = globalThis.Object.create(this.messagePrototype!);
     message.id = 0n;
     message.colorProof = new Uint8Array(0);
-    message.parentId = 0n;
-    message.parentSignature = new Uint8Array(0);
     if (value !== undefined)
       reflectionMergePartial<ResourceAPI_CreateEphemeral_Request>(this, message, value);
     return message;
@@ -9967,12 +9730,6 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
           break;
         case /* bytes color_proof */ 5:
           message.colorProof = reader.bytes();
-          break;
-        case /* uint64 parent_id */ 6:
-          message.parentId = reader.uint64().toBigInt();
-          break;
-        case /* bytes parent_signature */ 7:
-          message.parentSignature = reader.bytes();
           break;
         default:
           let u = options.readUnknownField;
@@ -10012,11 +9769,6 @@ class ResourceAPI_CreateEphemeral_Request$Type extends MessageType<ResourceAPI_C
     /* bytes color_proof = 5; */
     if (message.colorProof.length)
       writer.tag(5, WireType.LengthDelimited).bytes(message.colorProof);
-    /* uint64 parent_id = 6; */
-    if (message.parentId !== 0n) writer.tag(6, WireType.Varint).uint64(message.parentId);
-    /* bytes parent_signature = 7; */
-    if (message.parentSignature.length)
-      writer.tag(7, WireType.LengthDelimited).bytes(message.parentSignature);
     let u = options.writeUnknownFields;
     if (u !== false) (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
     return writer;
@@ -20868,399 +20620,6 @@ class ActionContextAPI_Transition$Type extends MessageType<ActionContextAPI_Tran
  * @generated MessageType for protobuf message MiLaboratories.PL.API.ActionContextAPI.Transition
  */
 export const ActionContextAPI_Transition = new ActionContextAPI_Transition$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class ActionContextAPI_Create$Type extends MessageType<ActionContextAPI_Create> {
-  constructor() {
-    super("MiLaboratories.PL.API.ActionContextAPI.Create", []);
-  }
-  create(value?: PartialMessage<ActionContextAPI_Create>): ActionContextAPI_Create {
-    const message = globalThis.Object.create(this.messagePrototype!);
-    if (value !== undefined) reflectionMergePartial<ActionContextAPI_Create>(this, message, value);
-    return message;
-  }
-  internalBinaryRead(
-    reader: IBinaryReader,
-    length: number,
-    options: BinaryReadOptions,
-    target?: ActionContextAPI_Create,
-  ): ActionContextAPI_Create {
-    let message = target ?? this.create(),
-      end = reader.pos + length;
-    while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
-      switch (fieldNo) {
-        default:
-          let u = options.readUnknownField;
-          if (u === "throw")
-            throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
-            );
-          let d = reader.skip(wireType);
-          if (u !== false)
-            (u === true ? UnknownFieldHandler.onRead : u)(
-              this.typeName,
-              message,
-              fieldNo,
-              wireType,
-              d,
-            );
-      }
-    }
-    return message;
-  }
-  internalBinaryWrite(
-    message: ActionContextAPI_Create,
-    writer: IBinaryWriter,
-    options: BinaryWriteOptions,
-  ): IBinaryWriter {
-    let u = options.writeUnknownFields;
-    if (u !== false) (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-    return writer;
-  }
-}
-/**
- * @generated MessageType for protobuf message MiLaboratories.PL.API.ActionContextAPI.Create
- */
-export const ActionContextAPI_Create = new ActionContextAPI_Create$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class ActionContextAPI_Create_Request$Type extends MessageType<ActionContextAPI_Create_Request> {
-  constructor() {
-    super("MiLaboratories.PL.API.ActionContextAPI.Create.Request", [
-      {
-        no: 1,
-        name: "resource_id",
-        kind: "scalar",
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/,
-      },
-      { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
-    ]);
-  }
-  create(value?: PartialMessage<ActionContextAPI_Create_Request>): ActionContextAPI_Create_Request {
-    const message = globalThis.Object.create(this.messagePrototype!);
-    message.resourceId = 0n;
-    message.resourceSignature = new Uint8Array(0);
-    if (value !== undefined)
-      reflectionMergePartial<ActionContextAPI_Create_Request>(this, message, value);
-    return message;
-  }
-  internalBinaryRead(
-    reader: IBinaryReader,
-    length: number,
-    options: BinaryReadOptions,
-    target?: ActionContextAPI_Create_Request,
-  ): ActionContextAPI_Create_Request {
-    let message = target ?? this.create(),
-      end = reader.pos + length;
-    while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
-      switch (fieldNo) {
-        case /* uint64 resource_id */ 1:
-          message.resourceId = reader.uint64().toBigInt();
-          break;
-        case /* bytes resource_signature */ 2:
-          message.resourceSignature = reader.bytes();
-          break;
-        default:
-          let u = options.readUnknownField;
-          if (u === "throw")
-            throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
-            );
-          let d = reader.skip(wireType);
-          if (u !== false)
-            (u === true ? UnknownFieldHandler.onRead : u)(
-              this.typeName,
-              message,
-              fieldNo,
-              wireType,
-              d,
-            );
-      }
-    }
-    return message;
-  }
-  internalBinaryWrite(
-    message: ActionContextAPI_Create_Request,
-    writer: IBinaryWriter,
-    options: BinaryWriteOptions,
-  ): IBinaryWriter {
-    /* uint64 resource_id = 1; */
-    if (message.resourceId !== 0n) writer.tag(1, WireType.Varint).uint64(message.resourceId);
-    /* bytes resource_signature = 2; */
-    if (message.resourceSignature.length)
-      writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
-    let u = options.writeUnknownFields;
-    if (u !== false) (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-    return writer;
-  }
-}
-/**
- * @generated MessageType for protobuf message MiLaboratories.PL.API.ActionContextAPI.Create.Request
- */
-export const ActionContextAPI_Create_Request = new ActionContextAPI_Create_Request$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class ActionContextAPI_Create_Response$Type extends MessageType<ActionContextAPI_Create_Response> {
-  constructor() {
-    super("MiLaboratories.PL.API.ActionContextAPI.Create.Response", []);
-  }
-  create(
-    value?: PartialMessage<ActionContextAPI_Create_Response>,
-  ): ActionContextAPI_Create_Response {
-    const message = globalThis.Object.create(this.messagePrototype!);
-    if (value !== undefined)
-      reflectionMergePartial<ActionContextAPI_Create_Response>(this, message, value);
-    return message;
-  }
-  internalBinaryRead(
-    reader: IBinaryReader,
-    length: number,
-    options: BinaryReadOptions,
-    target?: ActionContextAPI_Create_Response,
-  ): ActionContextAPI_Create_Response {
-    let message = target ?? this.create(),
-      end = reader.pos + length;
-    while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
-      switch (fieldNo) {
-        default:
-          let u = options.readUnknownField;
-          if (u === "throw")
-            throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
-            );
-          let d = reader.skip(wireType);
-          if (u !== false)
-            (u === true ? UnknownFieldHandler.onRead : u)(
-              this.typeName,
-              message,
-              fieldNo,
-              wireType,
-              d,
-            );
-      }
-    }
-    return message;
-  }
-  internalBinaryWrite(
-    message: ActionContextAPI_Create_Response,
-    writer: IBinaryWriter,
-    options: BinaryWriteOptions,
-  ): IBinaryWriter {
-    let u = options.writeUnknownFields;
-    if (u !== false) (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-    return writer;
-  }
-}
-/**
- * @generated MessageType for protobuf message MiLaboratories.PL.API.ActionContextAPI.Create.Response
- */
-export const ActionContextAPI_Create_Response = new ActionContextAPI_Create_Response$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class ActionContextAPI_SetBaggage$Type extends MessageType<ActionContextAPI_SetBaggage> {
-  constructor() {
-    super("MiLaboratories.PL.API.ActionContextAPI.SetBaggage", []);
-  }
-  create(value?: PartialMessage<ActionContextAPI_SetBaggage>): ActionContextAPI_SetBaggage {
-    const message = globalThis.Object.create(this.messagePrototype!);
-    if (value !== undefined)
-      reflectionMergePartial<ActionContextAPI_SetBaggage>(this, message, value);
-    return message;
-  }
-  internalBinaryRead(
-    reader: IBinaryReader,
-    length: number,
-    options: BinaryReadOptions,
-    target?: ActionContextAPI_SetBaggage,
-  ): ActionContextAPI_SetBaggage {
-    let message = target ?? this.create(),
-      end = reader.pos + length;
-    while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
-      switch (fieldNo) {
-        default:
-          let u = options.readUnknownField;
-          if (u === "throw")
-            throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
-            );
-          let d = reader.skip(wireType);
-          if (u !== false)
-            (u === true ? UnknownFieldHandler.onRead : u)(
-              this.typeName,
-              message,
-              fieldNo,
-              wireType,
-              d,
-            );
-      }
-    }
-    return message;
-  }
-  internalBinaryWrite(
-    message: ActionContextAPI_SetBaggage,
-    writer: IBinaryWriter,
-    options: BinaryWriteOptions,
-  ): IBinaryWriter {
-    let u = options.writeUnknownFields;
-    if (u !== false) (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-    return writer;
-  }
-}
-/**
- * @generated MessageType for protobuf message MiLaboratories.PL.API.ActionContextAPI.SetBaggage
- */
-export const ActionContextAPI_SetBaggage = new ActionContextAPI_SetBaggage$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class ActionContextAPI_SetBaggage_Request$Type extends MessageType<ActionContextAPI_SetBaggage_Request> {
-  constructor() {
-    super("MiLaboratories.PL.API.ActionContextAPI.SetBaggage.Request", [
-      {
-        no: 1,
-        name: "resource_id",
-        kind: "scalar",
-        T: 4 /*ScalarType.UINT64*/,
-        L: 0 /*LongType.BIGINT*/,
-      },
-      { no: 2, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
-      { no: 3, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-      { no: 4, name: "value", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-    ]);
-  }
-  create(
-    value?: PartialMessage<ActionContextAPI_SetBaggage_Request>,
-  ): ActionContextAPI_SetBaggage_Request {
-    const message = globalThis.Object.create(this.messagePrototype!);
-    message.resourceId = 0n;
-    message.resourceSignature = new Uint8Array(0);
-    message.key = "";
-    message.value = "";
-    if (value !== undefined)
-      reflectionMergePartial<ActionContextAPI_SetBaggage_Request>(this, message, value);
-    return message;
-  }
-  internalBinaryRead(
-    reader: IBinaryReader,
-    length: number,
-    options: BinaryReadOptions,
-    target?: ActionContextAPI_SetBaggage_Request,
-  ): ActionContextAPI_SetBaggage_Request {
-    let message = target ?? this.create(),
-      end = reader.pos + length;
-    while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
-      switch (fieldNo) {
-        case /* uint64 resource_id */ 1:
-          message.resourceId = reader.uint64().toBigInt();
-          break;
-        case /* bytes resource_signature */ 2:
-          message.resourceSignature = reader.bytes();
-          break;
-        case /* string key */ 3:
-          message.key = reader.string();
-          break;
-        case /* string value */ 4:
-          message.value = reader.string();
-          break;
-        default:
-          let u = options.readUnknownField;
-          if (u === "throw")
-            throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
-            );
-          let d = reader.skip(wireType);
-          if (u !== false)
-            (u === true ? UnknownFieldHandler.onRead : u)(
-              this.typeName,
-              message,
-              fieldNo,
-              wireType,
-              d,
-            );
-      }
-    }
-    return message;
-  }
-  internalBinaryWrite(
-    message: ActionContextAPI_SetBaggage_Request,
-    writer: IBinaryWriter,
-    options: BinaryWriteOptions,
-  ): IBinaryWriter {
-    /* uint64 resource_id = 1; */
-    if (message.resourceId !== 0n) writer.tag(1, WireType.Varint).uint64(message.resourceId);
-    /* bytes resource_signature = 2; */
-    if (message.resourceSignature.length)
-      writer.tag(2, WireType.LengthDelimited).bytes(message.resourceSignature);
-    /* string key = 3; */
-    if (message.key !== "") writer.tag(3, WireType.LengthDelimited).string(message.key);
-    /* string value = 4; */
-    if (message.value !== "") writer.tag(4, WireType.LengthDelimited).string(message.value);
-    let u = options.writeUnknownFields;
-    if (u !== false) (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-    return writer;
-  }
-}
-/**
- * @generated MessageType for protobuf message MiLaboratories.PL.API.ActionContextAPI.SetBaggage.Request
- */
-export const ActionContextAPI_SetBaggage_Request = new ActionContextAPI_SetBaggage_Request$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class ActionContextAPI_SetBaggage_Response$Type extends MessageType<ActionContextAPI_SetBaggage_Response> {
-  constructor() {
-    super("MiLaboratories.PL.API.ActionContextAPI.SetBaggage.Response", []);
-  }
-  create(
-    value?: PartialMessage<ActionContextAPI_SetBaggage_Response>,
-  ): ActionContextAPI_SetBaggage_Response {
-    const message = globalThis.Object.create(this.messagePrototype!);
-    if (value !== undefined)
-      reflectionMergePartial<ActionContextAPI_SetBaggage_Response>(this, message, value);
-    return message;
-  }
-  internalBinaryRead(
-    reader: IBinaryReader,
-    length: number,
-    options: BinaryReadOptions,
-    target?: ActionContextAPI_SetBaggage_Response,
-  ): ActionContextAPI_SetBaggage_Response {
-    let message = target ?? this.create(),
-      end = reader.pos + length;
-    while (reader.pos < end) {
-      let [fieldNo, wireType] = reader.tag();
-      switch (fieldNo) {
-        default:
-          let u = options.readUnknownField;
-          if (u === "throw")
-            throw new globalThis.Error(
-              `Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`,
-            );
-          let d = reader.skip(wireType);
-          if (u !== false)
-            (u === true ? UnknownFieldHandler.onRead : u)(
-              this.typeName,
-              message,
-              fieldNo,
-              wireType,
-              d,
-            );
-      }
-    }
-    return message;
-  }
-  internalBinaryWrite(
-    message: ActionContextAPI_SetBaggage_Response,
-    writer: IBinaryWriter,
-    options: BinaryWriteOptions,
-  ): IBinaryWriter {
-    let u = options.writeUnknownFields;
-    if (u !== false) (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-    return writer;
-  }
-}
-/**
- * @generated MessageType for protobuf message MiLaboratories.PL.API.ActionContextAPI.SetBaggage.Response
- */
-export const ActionContextAPI_SetBaggage_Response = new ActionContextAPI_SetBaggage_Response$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class ActionContextAPI_RecordTransition$Type extends MessageType<ActionContextAPI_RecordTransition> {
   constructor() {

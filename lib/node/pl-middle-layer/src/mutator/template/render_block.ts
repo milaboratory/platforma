@@ -1,10 +1,4 @@
-import type {
-  AnyRef,
-  AnyFieldRef,
-  PlTransaction,
-  ResourceRef,
-  ResourceType,
-} from "@milaboratories/pl-client";
+import type { AnyRef, PlTransaction, ResourceRef, ResourceType } from "@milaboratories/pl-client";
 import { field, Pl } from "@milaboratories/pl-client";
 import { randomUUID } from "node:crypto";
 import { createRenderTemplate, createRenderTemplateWithResource } from "./render_template";
@@ -45,20 +39,24 @@ export type BlockActionContextBaggage = {
   blockId: string;
 };
 
+/** Resource type of a block action context. See ActionContextV1Type in the backend. */
+export const ActionContextType: ResourceType = { name: "ActionContext", version: "1" };
+
 /**
  * Creates the heavy block render. With `baggage`, it also creates the root action context of the
- * render and sets its baggage, in the same transaction. The baggage gets a new random `run-id`: each
- * render is one run of the block, and the child contexts copy it. Returns `actionContext`: a reference to the
- * render's "actionContext" field. The render is garbage collected after its outputs resolve, so the caller
- * must hold this reference to keep the context. Without `actionContextApi:v1` on the backend, nothing is
- * created and `status` is undefined.
+ * render in the same transaction: an ActionContext resource with the baggage, which the render's
+ * one-time-writable "actionContext" field points to. The baggage gets a new random `run-id`: each render is one run of the
+ * block, and the contexts the templates create copy it. With `actionContextApi:v1` on the backend, the
+ * context also gets the WaitingForInputs transition of the render under namespace "core".
+ * Returns `actionContext`: the context. The render is garbage collected after its outputs resolve, so the
+ * caller must hold the context to keep it.
  */
 export function createRenderHeavyBlock(
   tx: PlTransaction,
   tpl: AnyRef,
   inputs: HeavyBlockInputs,
   baggage?: BlockActionContextBaggage,
-): HeavyBlockOutputs & { actionContext?: AnyFieldRef } {
+): HeavyBlockOutputs & { actionContext?: ResourceRef } {
   const { render, outputs } = createRenderTemplateWithResource(
     tx,
     tpl,
@@ -67,16 +65,21 @@ export function createRenderHeavyBlock(
     HeavyBlockOutputNames,
   );
 
-  if (baggage === undefined || !tx.actionContextApiEnabled) return outputs;
+  if (baggage === undefined) return outputs;
 
-  const renderActionContext = tx.actionContext(render);
-  renderActionContext.create();
-  renderActionContext.setBaggage("name", baggage.name);
-  renderActionContext.setBaggage("block-pack", baggage.blockPack);
-  renderActionContext.setBaggage("block-id", baggage.blockId);
-  renderActionContext.setBaggage("run-id", randomUUID());
+  const context = tx.createEphemeral(
+    ActionContextType,
+    JSON.stringify({
+      name: baggage.name,
+      "block-pack": baggage.blockPack,
+      "block-id": baggage.blockId,
+      "run-id": randomUUID(),
+    }),
+  );
+  tx.createField(field(render, "actionContext"), "OTW", context);
+  tx.actionContext(render).recordTransition("core", "WaitingForInputs");
 
-  return { ...outputs, actionContext: field(render, "actionContext") };
+  return { ...outputs, actionContext: context };
 }
 
 export type LightBlockInputs = {
