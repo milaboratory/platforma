@@ -19,6 +19,13 @@ const VARS: BlockVars = {
 
 const PATH = ".changeset/config.json";
 
+const FIXED_GROUP = [
+  "@platforma-open/test-org.demo.block",
+  "@platforma-open/test-org.demo.model",
+  "@platforma-open/test-org.demo.ui",
+  "@platforma-open/test-org.demo.workflow",
+];
+
 function refresh(fs: MemoryFileSystem, isSdkInternal = false) {
   return engineRun(STRUCTURE, fs, discoverRunContext({ fs, isSdkInternal }), {
     templates: defaultTemplateProvider(),
@@ -63,6 +70,46 @@ describe("root .changeset/config.json", () => {
     expect(after.$schema).toBe("https://unpkg.com/@changesets/config@3.0.2/schema.json");
     expect(after["//privatePackages"]).toBe("a note the author added");
     expect(after.access).toBe("restricted");
+  });
+
+  test("init fixes the facade to its model/ui/workflow siblings", () => {
+    const { fs } = simulateInit({ vars: VARS });
+    expect(JSON.parse(fs.read(PATH)).fixed).toEqual([FIXED_GROUP]);
+  });
+
+  test("refresh adds the group to a block that predates it", () => {
+    const { fs } = simulateInit({ vars: VARS });
+    fs.write(PATH, JSON.stringify({ ...JSON.parse(fs.read(PATH)), fixed: [] }, null, 2));
+
+    refresh(fs);
+    expect(JSON.parse(fs.read(PATH)).fixed).toEqual([FIXED_GROUP]);
+  });
+
+  test("refresh merges into the author group that overlaps and keeps the others", () => {
+    const { fs } = simulateInit({ vars: VARS });
+    const authored = {
+      ...JSON.parse(fs.read(PATH)),
+      fixed: [
+        ["@platforma-open/test-org.demo.software-a", "@platforma-open/test-org.demo.software-b"],
+        ["@platforma-open/test-org.demo.extra", "@platforma-open/test-org.demo.ui"],
+        ["@platforma-open/test-org.demo.model"],
+      ],
+    };
+    fs.write(PATH, JSON.stringify(authored, null, 2));
+
+    refresh(fs);
+    expect(JSON.parse(fs.read(PATH)).fixed).toEqual([
+      ["@platforma-open/test-org.demo.software-a", "@platforma-open/test-org.demo.software-b"],
+      [...FIXED_GROUP, "@platforma-open/test-org.demo.extra"],
+    ]);
+  });
+
+  test("refresh of a canonical config changes nothing", () => {
+    const { fs } = simulateInit({ vars: VARS });
+    const before = fs.read(PATH);
+
+    refresh(fs);
+    expect(fs.read(PATH)).toBe(before);
   });
 
   test("sdk-internal blocks get no config — the monorepo owns it", () => {
