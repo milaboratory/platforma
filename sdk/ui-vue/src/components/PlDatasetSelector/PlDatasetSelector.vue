@@ -88,8 +88,12 @@ const selectionValue = computed<Selection | undefined>(() => {
   // stored enrichments are a snapshot at selection time and won't match
   // `dropdownOptions` after `props.options` recomputes (e.g. when the
   // result pool gains or loses an enrichment column).
+  // The option's ref, not the stored one, for the same reason: a ref stored with
+  // a different `requireEnrichments` flag than the options carry (e.g. saved
+  // before a block changed its `buildDatasetOptions` mode) would not match any
+  // option and the selection would show empty.
   const option = props.options?.find((o) => plRefsEqual(o.primary.ref, primary.column, true));
-  return makeSelection(primary.column, primary.filter, option?.enrichments);
+  return makeSelection(option?.primary.ref ?? primary.column, primary.filter, option?.enrichments);
 });
 
 const dropdownOptions = computed<ListOption<Selection>[] | undefined>(() => {
