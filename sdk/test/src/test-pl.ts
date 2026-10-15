@@ -10,10 +10,13 @@ import {
 } from "@milaboratories/pl-middle-layer";
 import type { SynchronizedTreeOps } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
-import { randomUUID } from "node:crypto";
-import * as fsp from "node:fs/promises";
-import path from "node:path";
 import { test } from "vitest";
+import {
+  createWorkFolder,
+  deleteAlternativeRoot,
+  newAlternativeRoot,
+  removeWorkFolder,
+} from "./util";
 
 // oxlint-disable-next-line jest/expect-expect jest/no-disabled-tests
 export const plTest = test.extend<{
@@ -23,12 +26,11 @@ export const plTest = test.extend<{
   tmpFolder: string;
 }>({
   tmpFolder: async ({ onTestFinished }, use) => {
-    const workFolder = path.resolve(`work/${randomUUID()}`);
-    await fsp.mkdir(workFolder, { recursive: true });
+    const workFolder = await createWorkFolder();
     await use(workFolder);
     onTestFinished(async (context) => {
       if (context.task.result?.state === "pass") {
-        await fsp.rm(workFolder, { recursive: true, maxRetries: 3, retryDelay: 100 });
+        await removeWorkFolder(workFolder);
       } else {
         console.log(`TEST FAILED TMP FOLDER IS PRESERVED: ${workFolder}`);
       }
@@ -36,7 +38,7 @@ export const plTest = test.extend<{
   },
 
   pl: async ({ onTestFinished }, use) => {
-    const alternativeRoot = `test_${Date.now()}_${randomUUID()}`;
+    const alternativeRoot = newAlternativeRoot();
     let altRootId: OptionalSignedResourceId = NullSignedResourceId;
     const client = await TestHelpers.getTestClient(alternativeRoot);
     altRootId = client.clientRoot;
@@ -49,14 +51,7 @@ export const plTest = test.extend<{
     }
     onTestFinished(async (context) => {
       if (context.task.result?.state === "pass") {
-        const rawClient = await TestHelpers.getTestClient();
-        try {
-          await rawClient.deleteAlternativeRoot(alternativeRoot);
-        } finally {
-          // Close the cleanup client to avoid dangling gRPC channels
-          // that can cause segfaults during process exit
-          await rawClient.close();
-        }
+        await deleteAlternativeRoot(alternativeRoot);
       } else {
         console.log(
           `TEST FAILED SO ALTERNATIVE ROOT IS PRESERVED IN PL: ${alternativeRoot} (${resourceIdToString(
