@@ -7,6 +7,7 @@ export * from "./pframe-read";
 export * from "./publish-xsv";
 export * from "./fixtures";
 export * from "./model-harness";
+export * from "./recording";
 export { awaitStableState } from "./util";
 
 export * as ML from "@milaboratories/pl-middle-layer";
