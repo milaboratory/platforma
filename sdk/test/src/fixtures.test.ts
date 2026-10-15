@@ -3,6 +3,7 @@ import {
   VDJ_CDR3_ID,
   anchoredColumnId,
   buildDataset,
+  datasetFromTsv,
   peptideDataset,
   renderTsv,
   vdjDataset,
@@ -79,14 +80,28 @@ describe("buildDataset", () => {
     );
   });
 
-  test("refuses a shape without an anchor or with two sequences", () => {
+  test("refuses a shape without an anchor; several sequence columns leave sequenceId unset", () => {
     const shape = vdjShape();
     expect(() =>
       buildDataset({ ...shape, columns: shape.columns.filter((c) => c.role !== "anchor") }, []),
     ).toThrow(/role 'anchor'/);
-    expect(() =>
-      buildDataset({ ...shape, columns: [...shape.columns, shape.columns[1]] }, []),
-    ).toThrow(/2 sequence columns/);
+    const two = buildDataset(
+      { ...shape, columns: [...shape.columns, { ...shape.columns[1], column: "cdr1aa" }] },
+      [],
+    );
+    expect(two.sequenceId).toBeUndefined();
+    expect(two.anchorColumn).toBe("cellCount");
+  });
+
+  test("a committed TSV is accepted only when its header matches the shape", () => {
+    const shape = vdjShape();
+    const ok = datasetFromTsv(
+      shape,
+      "sampleId\tclonotypeKey\tcellCount\tcdr3aa\tlabel\nS1\tc1\t1\tCAR\tc1\n",
+    );
+    expect(ok.anchorColumn).toBe("cellCount");
+    expect(ok.sequenceId).toBe(VDJ_CDR3_ID);
+    expect(() => datasetFromTsv(shape, "sampleId\tcellCount\n")).toThrow(/header does not match/);
   });
 
   test("peptide rows carry their length", () => {

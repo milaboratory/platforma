@@ -61,8 +61,11 @@ export type PublishableDataset = {
 export type SyntheticDataset = PublishableDataset & {
   /** File column of the anchor abundance, the ref a consumer's `datasetRef` points at. */
   anchorColumn: string;
-  /** Anchored id of the sequence column, as a consumer's sequence options report it. */
-  sequenceId: ColumnUniversalId;
+  /**
+   * Anchored id of the sequence column, as a consumer's sequence options report it. Set
+   * when the shape has exactly one column with role `sequence`.
+   */
+  sequenceId?: ColumnUniversalId;
   /** File column of the subset column, when the dataset has one. */
   filterColumn?: string;
   /** The shape this dataset was built from. */
@@ -94,11 +97,36 @@ export function anchoredColumnId(
   }) as ColumnUniversalId;
 }
 
+function roleColumns(shape: DatasetShape, role: ShapeColumn["role"]): ShapeColumn[] {
+  return shape.columns.filter((c) => c.role === role);
+}
+
 function roleColumn(shape: DatasetShape, role: ShapeColumn["role"]): ShapeColumn | undefined {
-  const hits = shape.columns.filter((c) => c.role === role);
+  const hits = roleColumns(shape, role);
   if (hits.length > 1)
     throw new Error(`Shape has ${hits.length} ${role} columns: ${hits.map((c) => c.column)}`);
   return hits[0];
+}
+
+/** The handles a consumer wires with, read off a shape's column roles. */
+function shapeHandles(shape: DatasetShape) {
+  const anchor = roleColumn(shape, "anchor");
+  if (anchor === undefined) throw new Error("Shape has no column with role 'anchor'");
+  const sequences = roleColumns(shape, "sequence");
+  const sequence = sequences.length === 1 ? sequences[0] : undefined;
+  return {
+    anchorColumn: anchor.column,
+    sequenceId:
+      sequence === undefined
+        ? undefined
+        : anchoredColumnId(sequence.name, sequence.domain, sequence.parentAxes),
+    filterColumn: roleColumn(shape, "subset")?.column,
+  };
+}
+
+/** File columns of a shape, axes first, in the order its TSV must carry them. */
+export function shapeHeader(shape: DatasetShape): string[] {
+  return [...shape.axes.map((a) => a.column), ...shape.columns.map((c) => c.column)];
 }
 
 /** Derive the xsv-import spec of a shape. */
@@ -132,20 +160,26 @@ export function shapeSpec(shape: DatasetShape): XsvImportSpec {
 
 /** Render `rows` under `shape` into a dataset ready for `publishXsv`. */
 export function buildDataset(shape: DatasetShape, rows: ShapeRow[]): SyntheticDataset {
-  const anchor = roleColumn(shape, "anchor");
-  if (anchor === undefined) throw new Error("Shape has no column with role 'anchor'");
-  const sequence = roleColumn(shape, "sequence");
-  if (sequence === undefined) throw new Error("Shape has no column with role 'sequence'");
-  const subset = roleColumn(shape, "subset");
-  const header = [...shape.axes.map((a) => a.column), ...shape.columns.map((c) => c.column)];
   return {
     spec: shapeSpec(shape),
-    content: renderTsv(header, rows),
-    anchorColumn: anchor.column,
-    sequenceId: anchoredColumnId(sequence.name, sequence.domain, sequence.parentAxes),
-    filterColumn: subset?.column,
+    content: renderTsv(shapeHeader(shape), rows),
+    ...shapeHandles(shape),
     shape,
   };
+}
+
+/**
+ * A committed TSV under `shape`: the file's header must list the shape's file columns in
+ * order, so a drift between the two fails here and not inside the import.
+ */
+export function datasetFromTsv(shape: DatasetShape, content: string): SyntheticDataset {
+  const header = content.split(/\r?\n/, 1)[0].split("\t");
+  const expected = shapeHeader(shape);
+  if (header.join("\t") !== expected.join("\t"))
+    throw new Error(
+      `TSV header does not match the shape.\n  file:  ${header.join(", ")}\n  shape: ${expected.join(", ")}`,
+    );
+  return { spec: shapeSpec(shape), content, ...shapeHandles(shape), shape };
 }
 
 /** One row of a sequence dataset. `sample` defaults to "S1"; `label` to the key. */

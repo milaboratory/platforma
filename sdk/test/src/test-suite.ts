@@ -54,6 +54,22 @@ export class BlockTestSession {
     return next;
   }
 
+  private readonly memo = new Map<string, Promise<unknown>>();
+
+  /**
+   * Run `make` once per session under `key` and share the result: scenarios several tests
+   * read get one project and one run. A failed `make` is not cached.
+   */
+  once<T>(key: string, make: () => Promise<T>): Promise<T> {
+    let p = this.memo.get(key) as Promise<T> | undefined;
+    if (p === undefined) {
+      p = make();
+      this.memo.set(key, p);
+      p.catch(() => this.memo.delete(key));
+    }
+    return p;
+  }
+
   /**
    * Creation retried a few times: other test workers write the same project list through
    * their own middle layers, and under load the client gives up after its own retries.
