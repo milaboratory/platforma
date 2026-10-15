@@ -164,6 +164,20 @@ export class JsExecutionContext {
   }
 
   public runCallback(cbName: string, ...args: unknown[]): QuickJSHandle {
+    return this.runCallbackInScope(this.scope, cbName, ...args);
+  }
+
+  /** Tells whether the evaluated bundle registered a callback under `cbName`. */
+  public hasCallback(cbName: string): boolean {
+    return Scope.withScope(
+      (localScope) =>
+        this.vm.typeof(localScope.manage(this.vm.getProp(this.callbackRegistry, cbName))) ===
+        "function",
+    );
+  }
+
+  /** Runs a registered callback; the result handle is owned by `target` instead of the context scope. */
+  public runCallbackInScope(target: Scope, cbName: string, ...args: unknown[]): QuickJSHandle {
     const t0 = performance.now();
     try {
       this.deadlineSetter({ currentExecutionTarget: cbName, deadline: Date.now() + 10000 });
@@ -173,7 +187,7 @@ export class JsExecutionContext {
         if (this.vm.typeof(targetCallback) !== "function")
           throw new Error(`No such callback: ${cbName}`);
 
-        return this.scope.manage(
+        return target.manage(
           this.vm.unwrapResult(
             this.vm.callFunction(
               targetCallback,

@@ -8,7 +8,7 @@ import {
 } from "@platforma-sdk/model";
 import { LRUCache } from "lru-cache";
 import type { QuickJSWASMModule } from "quickjs-emscripten";
-import { executeSingleLambda } from "../js_render";
+import { executeSingleLambda, WarmModelVms } from "../js_render";
 import type { SignedResourceId } from "@milaboratories/pl-client";
 import { ConsoleLoggerAdapter, type MiLogger } from "@milaboratories/ts-helpers";
 import { getDebugFlags } from "../debug";
@@ -65,10 +65,19 @@ export class ProjectHelper {
     },
   });
 
+  private readonly warmVms: WarmModelVms;
+
   constructor(
     private readonly quickJs: QuickJSWASMModule,
     public readonly logger: MiLogger = new ConsoleLoggerAdapter(),
-  ) {}
+  ) {
+    this.warmVms = new WarmModelVms(quickJs);
+  }
+
+  /** Releases the VMs kept for block model callbacks. */
+  public dispose(): void {
+    this.warmVms.dispose();
+  }
 
   // =============================================================================
   // Args Derivation from Storage (V3+)
@@ -96,8 +105,7 @@ export class ProjectHelper {
     }
 
     try {
-      const result = executeSingleLambda(
-        this.quickJs,
+      const result = this.warmVms.run(
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.ArgsDerive],
         extractCodeWithInfo(blockConfig),
         storageJson,
@@ -126,8 +134,7 @@ export class ProjectHelper {
     }
 
     try {
-      const result = executeSingleLambda(
-        this.quickJs,
+      const result = this.warmVms.run(
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.PrerunArgsDerive],
         extractCodeWithInfo(blockConfig),
         storageJson,
@@ -202,8 +209,7 @@ export class ProjectHelper {
     }
 
     try {
-      const result = executeSingleLambda(
-        this.quickJs,
+      const result = this.warmVms.run(
         callback,
         extractCodeWithInfo(blockConfig),
         storageJson,
@@ -270,8 +276,7 @@ export class ProjectHelper {
     }
 
     try {
-      const result = executeSingleLambda(
-        this.quickJs,
+      const result = this.warmVms.run(
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageInitial],
         extractCodeWithInfo(blockConfig),
       ) as string;
@@ -322,8 +327,7 @@ export class ProjectHelper {
     if (callback === undefined) return { value: undefined };
 
     try {
-      const result = executeSingleLambda(
-        this.quickJs,
+      const result = this.warmVms.run(
         callback,
         extractCodeWithInfo(blockConfig),
         JSON.stringify(params ?? {}),
@@ -402,8 +406,7 @@ export class ProjectHelper {
     }
 
     try {
-      const result = executeSingleLambda(
-        this.quickJs,
+      const result = this.warmVms.run(
         callback,
         extractCodeWithInfo(blockConfig),
         // Params cross the VM boundary as text, like storage does. `undefined` would
@@ -456,8 +459,7 @@ export class ProjectHelper {
       );
     }
     try {
-      const result = executeSingleLambda(
-        this.quickJs,
+      const result = this.warmVms.run(
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageApplyUpdate],
         extractCodeWithInfo(blockConfig),
         currentStorageJson,
@@ -504,8 +506,7 @@ export class ProjectHelper {
     }
 
     try {
-      const result = executeSingleLambda(
-        this.quickJs,
+      const result = this.warmVms.run(
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageMigrate],
         extractCodeWithInfo(blockConfig),
         currentStorageJson,

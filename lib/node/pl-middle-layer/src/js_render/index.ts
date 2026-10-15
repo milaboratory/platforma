@@ -10,6 +10,7 @@ import { JsExecutionContext } from "./context";
 import type { BlockContextAny } from "../middle_layer/block_ctx";
 import { getDebugFlags } from "../debug";
 import { recordModelRenderSync } from "@milaboratories/pl-crash-recorder";
+import { LRUCache } from "lru-cache";
 
 /** Memory ceiling applied to every QuickJS runtime that evaluates model code. */
 const QUICK_JS_MEMORY_LIMIT = 1024 * 1024 * 8;
@@ -287,4 +288,92 @@ function describeBlockPack(spec: BlockPackSpec | undefined): {
     };
   }
   return { block: "(unpublished)", blockSource: spec.type };
+}
+
+type WarmVm = {
+  readonly scope: Scope;
+  readonly rCtx: JsExecutionContext;
+};
+
+/**
+ * Keeps model bundles evaluated in live VMs for lifecycle callbacks.
+ *
+ * Bundle evaluation is mostly parse and compile, and costs tens of milliseconds for a typical
+ * block. A callback itself takes a few. Calls on one bundle share its VM, so module state that
+ * block code changes in a successful call stays for later calls. A VM that fails a call is
+ * dropped. One VM takes about 1.5 MB of the shared QuickJS memory.
+ */
+export class WarmModelVms {
+  private readonly vms: LRUCache<string, WarmVm>;
+  private disposed = false;
+
+  constructor(
+    private readonly quickJs: QuickJSWASMModule,
+    max: number = 32,
+  ) {
+    this.vms = new LRUCache<string, WarmVm>({
+      max,
+      dispose: (vm) => vm.scope.dispose(),
+    });
+  }
+
+  /** Runs one callback of the block model, as {@link executeSingleLambda} does. */
+  public run(fh: ConfigRenderLambda, codeWithInfo: BlockCodeWithInfo, ...args: unknown[]): unknown {
+    if (this.disposed) throw new Error("Block model VMs are disposed");
+    const key = codeWithInfo.code.content;
+    let vm = this.vms.get(key);
+    if (vm === undefined) {
+      vm = this.create(codeWithInfo);
+      this.vms.set(key, vm);
+    }
+    const rCtx = vm.rCtx;
+    if (!rCtx.hasCallback(fh.handle)) throw new Error(`No such callback: ${fh.handle}`);
+    try {
+      return Scope.withScope((callScope) => {
+        const importedResult = rCtx.importObjectUniversal(
+          rCtx.runCallbackInScope(callScope, fh.handle, ...args),
+        );
+        if (getDebugFlags().logJsExecStat)
+          console.log(`[jsExec] ${fh.handle} (warm): ${JSON.stringify(rCtx.stats)}`);
+        return importedResult;
+      });
+    } catch (e) {
+      this.vms.delete(key);
+      throw e;
+    }
+  }
+
+  /** Disposes all VMs. */
+  public dispose(): void {
+    this.disposed = true;
+    this.vms.clear();
+  }
+
+  private create(codeWithInfo: BlockCodeWithInfo): WarmVm {
+    const scope = new Scope();
+    try {
+      const runtime = scope.manage(this.quickJs.newRuntime());
+      runtime.setMemoryLimit(QUICK_JS_MEMORY_LIMIT);
+      runtime.setMaxStackSize(1024 * 320);
+      let deadlineSettings: DeadlineSettings | undefined;
+      runtime.setInterruptHandler(() => {
+        if (deadlineSettings === undefined) return false;
+        return Date.now() > deadlineSettings.deadline;
+      });
+      const vm = scope.manage(runtime.newContext());
+      const rCtx = new JsExecutionContext(
+        scope,
+        vm,
+        (s) => {
+          deadlineSettings = s;
+        },
+        codeWithInfo.featureFlags,
+      );
+      rCtx.evaluateBundle(codeWithInfo.code.content);
+      return { scope, rCtx };
+    } catch (e) {
+      scope.dispose();
+      throw e;
+    }
+  }
 }
