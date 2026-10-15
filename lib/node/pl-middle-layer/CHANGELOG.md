@@ -1,5 +1,17 @@
 # @milaboratories/pl-middle-layer
 
+## 1.74.6
+
+### Patch Changes
+
+- 5d27046: Stop building the block storage debug view in the project overview and the block state. It evaluated the model bundle of every Model API v2 block in a new QuickJS VM on each overview update, which blocked the middle layer for about 3 s per edit in a 36-block project. `storageDebugView` is now deprecated and left undefined; debug tools read `blockStorage`.
+- Updated dependencies [5d27046]
+  - @milaboratories/pl-model-middle-layer@1.34.3
+  - @milaboratories/pf-driver@1.9.9
+  - @platforma-sdk/model@1.85.2
+  - @platforma-sdk/block-tools@2.16.15
+  - @milaboratories/pf-spec-driver@1.5.9
+
 ## 1.74.5
 
 ### Patch Changes
