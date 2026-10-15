@@ -762,7 +762,6 @@ export class Project {
           postprocessValue: (v) => {
             const blockOverview = v.overview?.blocks?.find((b) => b.id == blockId);
             const sdkVersion = blockOverview?.sdkVersion;
-            const storageDebugView = blockOverview?.storageDebugView;
             const toString = sdkVersion && shouldStillUseStringErrors(sdkVersion);
             const newOutputs =
               toString && v.outputs !== undefined ? convertErrorsToStrings(v.outputs) : v.outputs;
@@ -771,7 +770,6 @@ export class Project {
               ...v.parameters,
               outputs: newOutputs,
               navigationState: v.navigationState,
-              storageDebugView,
             } as BlockStateInternalV3;
           },
         },
