@@ -40,8 +40,8 @@ export class BlockTestSession {
   project(label: string): Promise<BlockTestCtx> {
     const next = this.creating.then(async () => {
       const prjId = await this.createProject(label);
-      this.projects.push(prjId);
       await this.ml.openProject(prjId);
+      this.projects.push(prjId);
       const rawPrj = this.ml.getOpenedProject(prjId);
       return {
         rawPrj,
@@ -80,7 +80,14 @@ export class BlockTestSession {
    * un-awaited close outlives the shared drivers.
    */
   async closeProjects(): Promise<void> {
-    await Promise.all(this.projects.splice(0).map((prjId) => this.ml.closeProject(prjId)));
+    const results = await Promise.allSettled(
+      this.projects.splice(0).map((prjId) => this.ml.closeProject(prjId)),
+    );
+    const failed = results.filter((r) => r.status === "rejected");
+    if (failed.length > 0)
+      throw new Error(
+        `${failed.length} project(s) failed to close: ${failed.map((r) => String(r.reason)).join("; ")}`,
+      );
   }
 }
 
@@ -99,12 +106,16 @@ export async function openBlockTestSession(
     throw e;
   }
   const session = new BlockTestSession(pl, ml, workFolder);
+  // Every layer closes even when the one above it failed; the first failure is rethrown.
   const close = async () => {
     try {
       await session.closeProjects();
-      await ml.close();
     } finally {
-      await pl.close();
+      try {
+        await ml.close();
+      } finally {
+        await pl.close();
+      }
     }
     if (KEEP) {
       console.log(`KEEP_PL_ROOT: alternative root ${alternativeRoot}, work folder ${workFolder}`);
