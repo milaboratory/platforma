@@ -77,6 +77,12 @@ export class BlockModelHarness<Data = unknown, Args = unknown, Params = unknown>
       const config = (platforma as { config?: BlockConfigContainer }).config;
       if (config === undefined)
         throw new Error("The imported module's `platforma` carries no config; is it a V3 model?");
+      if (Object.keys(registry).length === 0)
+        throw new Error(
+          "The model registered nothing: it was already loaded in this worker before the harness " +
+            "installed its registry. Import the block only through the harness's importer; a " +
+            "helper module that imports the block at its top level defeats it.",
+        );
       return new BlockModelHarness<Data, Args, Params>(registry, config, stateRef);
     } catch (e) {
       delete g.cfgRenderCtx;
