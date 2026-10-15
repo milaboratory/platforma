@@ -23,7 +23,8 @@ import {
 import { finalityStopRules } from "./finality_stop_rules";
 import type { ComputableStableDefined, ComputableValueOrErrors } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
-import { projectOverview } from "./project_overview";
+import { blockSdkVersion, projectOverview } from "./project_overview";
+import { getBlockPackInfo } from "./util";
 import type { BlockPackSpecAny } from "../model";
 import { randomUUID } from "node:crypto";
 import { withProject, withProjectAuthored } from "../mutator/project";
@@ -751,17 +752,17 @@ export class Project {
       const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
       const fullState = Computable.make(
         (ctx) => {
+          const prj = ctx.accessor(this.projectTree.entry()).node();
           return {
             parameters: getBlockParameters(this.projectTree.entry(), blockId, ctx),
             outputs,
             navigationState: this.navigationStates.getState(blockId),
-            overview: this.overview,
+            sdkVersion: blockSdkVersion(getBlockPackInfo(prj, blockId), this.env),
           };
         },
         {
           postprocessValue: (v) => {
-            const blockOverview = v.overview?.blocks?.find((b) => b.id == blockId);
-            const sdkVersion = blockOverview?.sdkVersion;
+            const sdkVersion = v.sdkVersion;
             const toString = sdkVersion && shouldStillUseStringErrors(sdkVersion);
             const newOutputs =
               toString && v.outputs !== undefined ? convertErrorsToStrings(v.outputs) : v.outputs;

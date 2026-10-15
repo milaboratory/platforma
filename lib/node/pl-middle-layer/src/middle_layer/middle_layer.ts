@@ -1993,6 +1993,7 @@ export class MiddleLayer {
       await TreeSnapshotStore.purge(ops.treeSnapshotPath, logger);
     }
 
+    const projectHelper = new ProjectHelper(quickJs, logger);
     const env: MiddleLayerEnvironment = {
       pl,
       blockEventDispatcher: new BlockEventDispatcher(),
@@ -2012,9 +2013,10 @@ export class MiddleLayer {
       runtimeCapabilities,
       serviceRegistry,
       quickJs,
-      projectHelper: new ProjectHelper(quickJs, logger),
+      projectHelper,
       treeSnapshots,
       dispose: async () => {
+        projectHelper.dispose();
         await serviceRegistry.dispose();
         await retryHttpDispatcher.destroy();
         await driverKit.dispose();

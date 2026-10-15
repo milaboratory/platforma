@@ -27,6 +27,7 @@ import { type BlockSection, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/
 import { extractCodeWithInfo, wrapCallback } from "@platforma-sdk/model";
 import { computableFromCfgOrRF } from "./render";
 import type { NavigationStates } from "./navigation_states";
+import type { BlockPackInfoAndId } from "./util";
 import { getBlockPackInfo } from "./util";
 import { resourceIdToString, type SignedResourceId } from "@milaboratories/pl-client";
 import { omitBy, isEqual } from "es-toolkit";
@@ -62,6 +63,21 @@ function argsEquals(
   const cleanA = omitBy(a, (_, key) => key.startsWith("__"));
   const cleanB = omitBy(b, (_, key) => key.startsWith("__"));
   return isEqual(cleanA, cleanB);
+}
+
+/** SDK version of a block model, as the project overview reports it. */
+export function blockSdkVersion(
+  bp: BlockPackInfoAndId | undefined,
+  env: MiddleLayerEnvironment,
+): string | undefined {
+  if (bp === undefined || !env.runtimeCapabilities.checkCompatibility(bp.cfg.featureFlags)) {
+    return undefined;
+  }
+  const codeWithInfo = wrapCallback(() => extractCodeWithInfo(bp.cfg));
+  if (codeWithInfo.error) {
+    return undefined;
+  }
+  return codeWithInfo.value.sdkVersion;
 }
 
 /** Returns derived general project state form the project resource */
