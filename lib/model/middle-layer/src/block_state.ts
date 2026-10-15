@@ -24,7 +24,7 @@ export type BlockStateInternalV3<
   /** Raw block storage - UI derives data using sdk/model */
   readonly blockStorage: unknown;
 
-  /** Storage debug view (JSON string) for block debug panel. */
+  /** @deprecated No longer filled by the middle layer. Read `blockStorage` instead. */
   readonly storageDebugView?: StringifiedJson<StorageDebugView>;
 
   /** Outputs rendered with block config */
