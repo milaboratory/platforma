@@ -38,6 +38,8 @@ export {
   peptideDataset,
   peptideShape,
 } from "./fixtures/peptide";
+export type { ModelRenderState } from "./model-harness";
+export { BlockModelHarness } from "./model-harness";
 export { awaitStableState } from "./util";
 
 export * as ML from "@milaboratories/pl-middle-layer";
