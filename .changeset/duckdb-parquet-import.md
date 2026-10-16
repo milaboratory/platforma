@@ -22,4 +22,6 @@ the default are unchanged. Because sorting at this size is expensive in scratch,
 step first checks whether the input is already ordered by its axes and streams
 straight through when it is.
 
-`write_frame` picks up the same sort tuning, since it issues the same ORDER BY.
+The sort tuning is scoped to the new step. `write_frame` issues the same ORDER BY
+and has the same exposure, but only at a row count no caller has reached, and capping
+its threads would slow every PFrame the platform writes.

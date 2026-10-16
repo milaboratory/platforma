@@ -33,7 +33,7 @@ from polars_pf import AxisMapping, ColumnMapping, ConversionParams, convert
 from polars_pf.json.spec import AxisType, ColumnType
 
 from .base import PStep, StepContext
-from .memory import set_duckdb_memory_limit, tune_duckdb_for_sort
+from .memory import set_duckdb_memory_limit
 from ..common import toPolarsType
 
 __all__ = [
@@ -217,8 +217,10 @@ class WriteFrame(PStep, tag="write_frame"):
             memory_log = set_duckdb_memory_limit(conn)
             if memory_log is not None:
                 print(f"write_frame: {memory_log}", flush=True)
-            for line in tune_duckdb_for_sort(conn):
-                print(f"write_frame: {line}", flush=True)
+            # Deliberately not tune_duckdb_for_sort(): this sort has the same per-thread
+            # exposure as the one in import_parquet_frame, but only at a row count no
+            # caller has reached, and capping threads here would slow every PFrame the
+            # platform writes. Revisit if a write_frame sort is ever seen to die.
             conn.execute(
                 f"""
                 COPY (SELECT * FROM read_parquet(?) ORDER BY {order_by})
