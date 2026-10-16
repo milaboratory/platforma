@@ -7,7 +7,7 @@ export * from "./pframe-read";
 export * from "./publish-xsv";
 export * from "./fixtures";
 export * from "./model-harness";
-export { expectRecording, recordedDataset } from "./recording";
+export { RECORDED_BLOCK_ID, expectRecording, recordColumns, recordedDataset } from "./recording";
 export type {
   ColumnSource,
   ExpectRecordingOptions,
