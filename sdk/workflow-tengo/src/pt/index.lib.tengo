@@ -451,6 +451,63 @@ workflow := func() {
 			steps = append(steps, step)
 		},
 
+		/**
+		 * Imports a Parquet file directly into a PFrame, in one DuckDB pass, without
+		 * ever building a Polars frame. Equivalent to `wf.frame(file).…saveFrameDirect(
+		 * frameName, params)` for the plain projection-and-cast case, but with no u32
+		 * row ceiling, so it carries columns the Polars chain cannot import at all.
+		 *
+		 * Takes the same `params` as `saveFrameDirect`; each entry's `column` names the
+		 * field in the source Parquet. Nothing is read from the tablespace.
+		 *
+		 * @param fileRef {reference} - resource reference to the source Parquet file
+		 * @param frameName {string} - name to retrieve the frame by after `run()`
+		 * @param params {map} - { axes, columns, partitionKeyLength?, strict? }
+		 * @param notNullColumns {string[]} - (optional) source columns whose null rows
+		 *                                    are dropped, as the Polars chain would
+		 * @returns {object} - the workflow object, for chaining
+		 */
+		importParquetFrame: func(fileRef, frameName, params, ...notNullColumns) {
+			ll.assert(len(frameName) > 0, "frameName must be a non-empty string")
+			ll.assert(smart.isReference(fileRef),
+				"fileRef must be a valid resource reference, got: %v", fileRef)
+			util.validateParamsForSaveFrameDirect(params)
+
+			fileName := self._newAnonymousFileId("parquet")
+			inFiles = append(inFiles, { file: fileRef, name: fileName })
+
+			// colN renaming, exactly as saveFrameDirect does, so the frame info and the
+			// written field names match what the Polars path would have produced.
+			translation := {}
+			columnCount := 0
+			for ax in params.axes {
+				columnCount += 1
+				translation[ax.column] = "col" + string(columnCount)
+			}
+			for col in params.columns {
+				columnCount += 1
+				translation[col.column] = "col" + string(columnCount)
+			}
+
+			notNullSet := {}
+			if len(notNullColumns) > 0 {
+				ll.assert(is_array(notNullColumns[0]),
+					"notNullColumns must be an array of column names, got: %v", notNullColumns[0])
+				for column in notNullColumns[0] {
+					notNullSet[column] = true
+				}
+			}
+
+			colInfo := util.makeFrameColumnInfo(params, translation)
+			sequentialFrameName := self._newUniquePFrameName()
+			self._saveFrameInfo(frameName, sequentialFrameName, colInfo)
+
+			self.addRawStep(util.makeImportParquetFrameStep(
+				sequentialFrameName, fileName, params, translation, notNullSet))
+
+			return self
+		},
+
 		// Test helper: returns the last raw step map (calls step fn with nil ctx).
 		// Only valid for steps that do not use ctx (e.g. read_csv, read_parquet).
 		_testGetLastRawStep: func() {
