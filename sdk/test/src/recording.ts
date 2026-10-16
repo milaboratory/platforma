@@ -282,7 +282,9 @@ export type ExpectRecordingOptions = RecordOptions & {
 
 /**
  * Snapshot the source's columns into the recording folder: both files are file snapshots,
- * so a run that differs fails with a line diff, and `vitest -u` rewrites them.
+ * so a run that differs fails with a line diff, and `vitest -u` rewrites them. Keep the
+ * folder in the formatter's ignore list: a formatter that rewrites `manifest.json` makes
+ * it differ from the snapshot.
  */
 export async function expectRecording(
   source: ColumnSource,
