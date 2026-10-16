@@ -278,8 +278,7 @@ catalog:
   "@bytecodealliance/jco-transpile": ^0.6.3
   "@bytecodealliance/preview2-shim": ^0.20.1
 
-  "quickjs-emscripten": 0.32.0
-
+  "quickjs-emscripten": "https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-0.32.1-bytecode.1.tgz"
   # UI
 
   "vue": 3.5.24
