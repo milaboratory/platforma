@@ -5,7 +5,7 @@
   writes has to carry the same wrapper.
 */
 
-import { randomUUID } from "node:crypto";
+import type { AxisValueType } from "@platforma-sdk/model";
 
 export type XsvValueType = "Int" | "Long" | "Float" | "Double" | "String";
 
@@ -23,7 +23,8 @@ export type XsvAxis = XsvRowParams & {
   spec: {
     /** Defaults to the file column label. */
     name?: string;
-    type: XsvValueType;
+    /** An axis keys rows, so it cannot be a floating-point type. */
+    type: AxisValueType;
     domain?: Record<string, string>;
     annotations?: Record<string, string>;
     parentAxes?: number[];
@@ -63,18 +64,21 @@ export type XsvImportSpec = Omit<XsvImportSpecInput, "axes" | "columns"> & {
   columns: XsvItem<XsvColumn>[];
 };
 
-const item = <T>(payload: T): XsvItem<T> => ({
-  id: randomUUID(),
-  disabled: false,
-  expanded: false,
-  payload,
-});
+/** An item with an id fixed by its position, so one input always gives the same block data. */
+const item =
+  (kind: string) =>
+  <T>(payload: T, idx: number): XsvItem<T> => ({
+    id: `${kind}-${idx}`,
+    disabled: false,
+    expanded: false,
+    payload,
+  });
 
 export function xsvImportSpec(input: XsvImportSpecInput): XsvImportSpec {
   return {
     ...input,
-    axes: input.axes.map(item),
-    columns: input.columns.map(item),
+    axes: input.axes.map(item("axis")),
+    columns: input.columns.map(item("column")),
     storageFormat: input.storageFormat ?? "Binary",
   };
 }
