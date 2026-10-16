@@ -76,6 +76,7 @@ export function findDescendantsByType<A extends AccessorLike<A>>(opts: {
         field: fields[i],
         assertFieldType: "Input",
         ignoreError: true,
+        pureFieldErrorToUndefined: true,
       });
       if (child !== undefined) stack.push({ node: child, path: [...path, fields[i]] });
     }
@@ -136,4 +137,27 @@ export function indexPoolBlock<A extends AccessorLike<A>>(
     }
   }
   return result;
+}
+
+type LeafSpecRead<A extends AccessorLike<A>> =
+  | { readonly spec: A | undefined }
+  | { readonly error: unknown };
+
+/** Read the `<name>.spec` field of a leaf, or the error of that field. */
+export function readLeafSpec<A extends AccessorLike<A>>({
+  accessor,
+  name,
+}: LeafEntry<A>): LeafSpecRead<A> {
+  // Use traverseOrError when AccessorLike has it (TreeNodeAccessor does not).
+  try {
+    return {
+      spec: accessor.traverse({
+        field: `${name}.spec`,
+        assertFieldType: "Input",
+        ignoreError: true,
+      }),
+    };
+  } catch (error) {
+    return { error };
+  }
 }

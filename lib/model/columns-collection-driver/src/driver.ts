@@ -13,6 +13,7 @@ import type {
   DiscoverColumnsOptions,
   DiscoverColumnsResponse,
   DiscoverColumnsStepInfo,
+  LeafEntry,
   MatchQualifications,
   NativePObjectId,
   PColumnSpec,
@@ -37,6 +38,7 @@ import {
   isPlRef,
   isEmptySpecDelta,
   matchingModeToConstraints,
+  readLeafSpec,
   reconstructSpecFromId,
   stringifyColumnDiscoveredId,
 } from "@milaboratories/pl-model-common";
@@ -59,6 +61,18 @@ type SourceContribution<A extends AccessorLike<A>> =
 interface CollectionState<A extends AccessorLike<A>> {
   readonly contributions: ReadonlyArray<SourceContribution<A>>;
   refs: number;
+}
+
+/** True when a listing shows the leaf: its spec field has no error. */
+function isListed<A extends AccessorLike<A>>(entry: LeafEntry<A>): boolean {
+  return !("error" in readLeafSpec(entry));
+}
+
+/** Ids of the provider's columns, without the columns whose spec field has an error. */
+function listedIds<A extends AccessorLike<A>>(provider: ColumnEntriesProvider<A>): PObjectId[] {
+  return Array.from(provider.getPObjectEntries().values())
+    .filter(isListed)
+    .map((e) => e.id);
 }
 
 /**
@@ -92,7 +106,7 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     for (const c of state.contributions) {
       switch (c.type) {
         case "provider":
-          if (c.provider.getPObjectEntries().size > 0) return false;
+          if (c.provider.getPObjectEntries().values().some(isListed)) return false;
           break;
         case "ids":
           if (c.ids.length > 0) return false;
@@ -128,7 +142,7 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     const all = state.contributions.flatMap((c) => {
       switch (c.type) {
         case "provider":
-          return Array.from(c.provider.getPObjectEntries().keys());
+          return listedIds(c.provider);
         case "ids":
           return [...c.ids];
       }
