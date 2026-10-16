@@ -97,6 +97,19 @@ describe("buildDataset", () => {
     ).toThrow(/2 sequence columns/);
   });
 
+  test("a sequence column without parentAxes is keyed on every axis", () => {
+    const shape = vdjShape();
+    const { parentAxes: _, ...spec } = shape.columns[1].spec;
+    shape.columns[1] = { ...shape.columns[1], spec };
+    expect(buildDataset(shape, []).sequenceId).toBe(
+      anchoredColumnId("pl7.app/vdj/sequence", spec.domain, [0, 1]),
+    );
+  });
+
+  test("refuses a separator other than tab", () => {
+    expect(() => buildDataset({ ...vdjShape(), separator: "," }, [])).toThrow(/render as TSV/);
+  });
+
   test("refuses a shape that repeats a file column", () => {
     const shape = vdjShape();
     const extra = { ...shape.columns[2], spec: { ...shape.columns[2].spec, name: "other" } };

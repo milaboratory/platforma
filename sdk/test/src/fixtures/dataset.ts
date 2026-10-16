@@ -99,6 +99,10 @@ export function buildDataset(shape: DatasetShape, rows: ShapeRow[]): SyntheticDa
   if (sequence === undefined) throw new Error("Shape has no column with role 'sequence'");
   const subset = roleColumn(shape, "subset");
   const header = [...shape.axes.map((a) => a.column), ...shape.columns.map((c) => c.column)];
+  if (shape.separator !== undefined && shape.separator !== "\t")
+    throw new Error(
+      `Datasets render as TSV; separator ${JSON.stringify(shape.separator)} is not supported`,
+    );
   const repeated = header.filter((c, i) => header.indexOf(c) !== i);
   if (repeated.length > 0) throw new Error(`Shape repeats file columns: ${repeated.join(", ")}`);
   return {
@@ -108,7 +112,7 @@ export function buildDataset(shape: DatasetShape, rows: ShapeRow[]): SyntheticDa
     sequenceId: anchoredColumnId(
       sequence.spec.name ?? sequence.column,
       sequence.spec.domain,
-      sequence.spec.parentAxes,
+      sequence.spec.parentAxes ?? shape.axes.map((_, idx) => idx),
     ),
     filterColumn: subset?.column,
     shape,

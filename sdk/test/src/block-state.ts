@@ -29,8 +29,9 @@ type OutputSnapshot = { ok: boolean; value?: unknown; errors?: unknown; stable?:
 /**
  * Read one block output once it is ok, defined and stable. Polls on a deadline rather than
  * awaiting stability: the stability wait gives up after a fixed number of tree changes,
- * which a busy backend exceeds long before anything is wrong. An error throws only once it
- * is stable; an upstream that is still recalculating can fail an output in passing.
+ * which a busy backend exceeds long before anything is wrong. An error throws only once the
+ * whole block state is stable; an upstream that is still recalculating can fail an output
+ * in passing, and an error snapshot carries no stability flag of its own.
  */
 export async function stableOutput<T>(
   rawPrj: Project,
@@ -43,10 +44,10 @@ export async function stableOutput<T>(
   const deadline = Date.now() + timeoutMs;
   let last: OutputSnapshot | undefined;
   while (Date.now() < deadline) {
-    const s = await state.getValue();
+    const { value: s, stable } = await state.getFullValue();
     last = (s.outputs as Record<string, OutputSnapshot | undefined> | undefined)?.[name];
     if (last?.ok && last.value !== undefined && last.stable !== false) return last.value as T;
-    if (last !== undefined && !last.ok && last.stable !== false)
+    if (last !== undefined && !last.ok && stable)
       throw new Error(`Output ${name} is not ok: ${JSON.stringify(last.errors)}`);
     await sleep(Math.min(pollInterval, Math.max(0, deadline - Date.now())));
   }
