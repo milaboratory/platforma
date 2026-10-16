@@ -22,15 +22,12 @@ export type AwaitBlockDoneOps = {
    * uploads a file never finishes under a wait on the project overview alone.
    */
   observeState?: boolean;
-  /** Poll period in observed mode, ms. */
-  pollInterval?: number;
 };
 
 export type AwaitBlockDoneNormalized = {
   timeout: AbortSignal;
   ignoreBlockError: boolean;
   observeState: boolean;
-  pollInterval: number;
 };
 
 function normalizeABDOpts(timeoutOrOps?: number | AwaitBlockDoneOps): AwaitBlockDoneNormalized {
@@ -50,12 +47,12 @@ function normalizeABDOpts(timeoutOrOps?: number | AwaitBlockDoneOps): AwaitBlock
     timeout: abortSignal,
     ignoreBlockError: Boolean(ops.ignoreBlockError),
     observeState: Boolean(ops.observeState),
-    pollInterval: ops.pollInterval ?? DEFAULT_AWAIT_BLOCK_DONE_POLL_INTERVAL,
   };
 }
 
 export const DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT = 5000;
-export const DEFAULT_AWAIT_BLOCK_DONE_POLL_INTERVAL = 1000;
+/** Poll period while the block's state is observed, ms. */
+const OBSERVED_POLL_INTERVAL = 1000;
 
 /**
  * Wait until the block reports `Done` on the project overview. Pass `observeState: true`
@@ -94,7 +91,7 @@ export async function awaitBlockDone(
     if (ops.observeState) {
       // The state read above is what keeps the block's outputs rendering, so wait a fixed
       // period and read again instead of waiting for the next overview change.
-      await sleep(ops.pollInterval, ops.timeout);
+      await sleep(OBSERVED_POLL_INTERVAL, ops.timeout);
       continue;
     }
     try {

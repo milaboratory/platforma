@@ -4,7 +4,7 @@
   columns keyed on the clonotype axis alone via `parentAxes`.
 */
 
-import { ANCHOR_ANNOTATIONS, anchoredColumnId, sequenceDataset } from "./dataset";
+import { ANCHOR_ANNOTATIONS, sequenceDataset } from "./dataset";
 import type { XsvAxis } from "./xsv-spec";
 import type {
   DatasetShape,
@@ -29,9 +29,6 @@ export const SAMPLE_AXIS: XsvAxis = {
 };
 
 export const VDJ_CDR3_DOMAIN = { "pl7.app/alphabet": "aminoacid", "pl7.app/vdj/feature": "CDR3" };
-
-/** Anchored id of the CDR3 column, as a consumer's sequence options report it. */
-export const VDJ_CDR3_ID = anchoredColumnId("pl7.app/vdj/sequence", VDJ_CDR3_DOMAIN);
 
 /** The VDJ shape; spread it to make a variant. */
 export function vdjShape(): DatasetShape {
@@ -86,7 +83,11 @@ export function vdjDataset(
       cdr3aa: r.seq,
       label: r.label ?? r.key,
     }),
-    opts,
-    "pl7.app/vdj/subset",
+    opts.subset === undefined
+      ? opts
+      : { ...opts, subset: { name: "pl7.app/vdj/subset", ...opts.subset } },
   );
 }
+
+/** Anchored id of the CDR3 column, as a consumer's sequence options report it. */
+export const VDJ_CDR3_ID = vdjDataset([]).sequenceId;

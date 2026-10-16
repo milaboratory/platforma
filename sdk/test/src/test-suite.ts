@@ -21,13 +21,18 @@ import {
   sleep,
 } from "./util";
 
-/** Set `KEEP_PL_ROOT=1` to keep the backend root and work folder after the file finishes. */
+/**
+  Like `plTest`, the backend root and work folder are kept when a test in the file failed,
+  and deleted otherwise; `KEEP_PL_ROOT=1` keeps them always.
+*/
 const KEEP = process.env.KEEP_PL_ROOT === "1";
 const CREATE_PROJECT_ATTEMPTS = 4;
 
 export class BlockTestSession {
   private readonly projects: ProjectId[] = [];
   private creating: Promise<unknown> = Promise.resolve();
+  /** Set when a test using the session failed, so its root is kept for inspection. */
+  failed = false;
 
   constructor(
     readonly pl: PlClient,
@@ -99,32 +104,43 @@ export async function openBlockTestSession(
 ): Promise<{ session: BlockTestSession; close: () => Promise<void> }> {
   const workFolder = await createWorkFolder();
   const alternativeRoot = newAlternativeRoot();
-  const pl = await TestHelpers.getTestClient(alternativeRoot);
-  let ml: MiddleLayer;
-  try {
-    ml = await initTestMiddleLayer(pl, workFolder, ops);
-  } catch (e) {
-    await pl.close();
+  const cleanUp = async () => {
+    await deleteAlternativeRoot(alternativeRoot);
+    await removeWorkFolder(workFolder);
+  };
+  const start = async () => {
+    const pl = await TestHelpers.getTestClient(alternativeRoot);
+    try {
+      return { pl, ml: await initTestMiddleLayer(pl, workFolder, ops) };
+    } catch (e) {
+      await pl.close();
+      throw e;
+    }
+  };
+  // A failed start leaves nothing behind: the original error propagates, a cleanup error
+  // is only reported.
+  const { pl, ml } = await start().catch(async (e: unknown) => {
+    await cleanUp().catch((c: unknown) => console.warn(`Cleanup after a failed start: ${c}`));
     throw e;
-  }
+  });
   const session = new BlockTestSession(pl, ml, workFolder);
   // Every layer closes even when the one above it failed; the first failure is rethrown.
   const close = async () => {
     try {
-      await session.closeProjects();
-    } finally {
       try {
-        await ml.close();
+        await session.closeProjects();
       } finally {
-        await pl.close();
+        try {
+          await ml.close();
+        } finally {
+          await pl.close();
+        }
       }
+    } finally {
+      if (KEEP || session.failed)
+        console.log(`Kept alternative root ${alternativeRoot} and work folder ${workFolder}`);
+      else await cleanUp();
     }
-    if (KEEP) {
-      console.log(`KEEP_PL_ROOT: alternative root ${alternativeRoot}, work folder ${workFolder}`);
-      return;
-    }
-    await deleteAlternativeRoot(alternativeRoot);
-    await removeWorkFolder(workFolder);
   };
   return { session, close };
 }
@@ -133,7 +149,7 @@ export async function openBlockTestSession(
  * `test` with a `session` fixture shared by every test in the file. Call
  * `session.project(label)` for a project of your own in each test.
  */
-export const suiteTest = test.extend<{ session: BlockTestSession }>({
+export const suiteTest = test.extend<{ session: BlockTestSession; markFailed: void }>({
   session: [
     // vitest requires the destructuring form even for a file-scoped fixture with no deps.
     // oxlint-disable-next-line no-empty-pattern
@@ -146,5 +162,12 @@ export const suiteTest = test.extend<{ session: BlockTestSession }>({
       }
     },
     { scope: "file" },
+  ],
+  markFailed: [
+    async ({ session, task }, use) => {
+      await use();
+      if (task.result?.state === "fail") session.failed = true;
+    },
+    { auto: true },
   ],
 });

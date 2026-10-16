@@ -14,9 +14,8 @@ export async function patchBlockData(
   blockId: string,
   patch: Record<string, unknown>,
 ): Promise<void> {
-  const state = (await rawPrj.getBlockState(blockId).getValue()) as { blockStorage: unknown };
-  const raw =
-    typeof state.blockStorage === "string" ? JSON.parse(state.blockStorage) : state.blockStorage;
+  const { blockStorage } = await rawPrj.getBlockState(blockId).getValue();
+  const raw = typeof blockStorage === "string" ? JSON.parse(blockStorage) : blockStorage;
   const current = getStorageData<Record<string, unknown>>(normalizeBlockStorage(raw));
   await rawPrj.mutateBlockStorage(blockId, {
     operation: "update-block-data",
@@ -56,11 +55,6 @@ export async function stableOutput<T>(
   );
 }
 
-export type AddBlockOptions = {
-  /** Attempts before the last error propagates. */
-  attempts?: number;
-};
-
 const ADD_BLOCK_ATTEMPTS = 3;
 const STALE_TEMPLATE_ERROR = /target resource .* does not exist/;
 
@@ -75,15 +69,13 @@ export async function addBlock(
   rawPrj: Project,
   label: string,
   spec: BlockPackSpecAny,
-  opts: AddBlockOptions = {},
 ): Promise<string> {
-  const attempts = opts.attempts ?? ADD_BLOCK_ATTEMPTS;
   for (let attempt = 1; ; attempt++) {
     try {
       return await rawPrj.addBlock(label, spec);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
-      if (attempt >= attempts || !STALE_TEMPLATE_ERROR.test(message)) throw e;
+      if (attempt >= ADD_BLOCK_ATTEMPTS || !STALE_TEMPLATE_ERROR.test(message)) throw e;
       console.warn(
         `addBlock(${label}) hit a stale template reference (attempt ${attempt}); retrying`,
       );

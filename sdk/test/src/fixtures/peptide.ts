@@ -3,7 +3,7 @@
   [sampleId, variantKey], and sequence, label and length keyed on the variant axis.
 */
 
-import { ANCHOR_ANNOTATIONS, anchoredColumnId, sequenceDataset } from "./dataset";
+import { ANCHOR_ANNOTATIONS, sequenceDataset } from "./dataset";
 import type {
   DatasetShape,
   SequenceDatasetOptions,
@@ -27,9 +27,6 @@ export const PEPTIDE_SEQUENCE_DOMAIN = {
   "pl7.app/alphabet": "aminoacid",
   "pl7.app/feature": "peptide",
 };
-
-/** Anchored id of the peptide sequence column. */
-export const PEPTIDE_SEQUENCE_ID = anchoredColumnId("pl7.app/sequence", PEPTIDE_SEQUENCE_DOMAIN);
 
 /** The peptide shape; spread it to make a variant. */
 export function peptideShape(): DatasetShape {
@@ -95,3 +92,6 @@ export function peptideDataset(
     opts,
   );
 }
+
+/** Anchored id of the peptide sequence column. */
+export const PEPTIDE_SEQUENCE_ID = peptideDataset([]).sequenceId;

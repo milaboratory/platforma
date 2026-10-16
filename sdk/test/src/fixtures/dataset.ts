@@ -4,7 +4,8 @@
   wires itself with. Shapes are plain data, so a block extends one by spreading it.
 */
 
-import type { ColumnUniversalId } from "@platforma-sdk/model";
+import type { AxisSpec, ColumnUniversalId, PColumnSpec } from "@platforma-sdk/model";
+import { AnchoredIdDeriver } from "@platforma-sdk/model";
 import type { XsvColumn, XsvImportSpec, XsvImportSpecInput } from "./xsv-spec";
 import { renderTsv, xsvImportSpec } from "./xsv-spec";
 
@@ -53,21 +54,33 @@ export const ANCHOR_ANNOTATIONS = {
   "pl7.app/label": "Number of Cells",
 };
 
-/**
- * The anchored id of a column keyed on `axes` of the `main` anchor, as the model's
- * anchored-id helpers produce it: domain keys sorted, then `name`.
- */
-export function anchoredColumnId(
-  name: string,
-  domain: Record<string, string> = {},
-  axes: number[] = [1],
-): ColumnUniversalId {
-  return JSON.stringify({
-    axes: axes.map((idx) => ({ anchor: "main", idx })),
-    domain: Object.fromEntries(Object.entries(domain).sort(([a], [b]) => a.localeCompare(b))),
-    name,
-  }) as ColumnUniversalId;
+/** The spec a shape's column is published with, as far as its identity goes. */
+function publishedSpec(shape: DatasetShape, c: ShapeColumn): PColumnSpec {
+  const axes = c.spec.parentAxes ?? shape.axes.map((_, idx) => idx);
+  return {
+    kind: "PColumn",
+    name: c.spec.name ?? c.column,
+    valueType: c.spec.valueType,
+    domain: c.spec.domain,
+    axesSpec: axes.map(
+      (idx): AxisSpec => ({
+        name: shape.axes[idx].spec.name ?? shape.axes[idx].column,
+        type: shape.axes[idx].spec.type,
+        domain: shape.axes[idx].spec.domain,
+      }),
+    ),
+  };
 }
+
+/** The anchored id of `column` against `anchor` as `main`, as a consumer's options report it. */
+const anchoredId = (
+  shape: DatasetShape,
+  anchor: ShapeColumn,
+  column: ShapeColumn,
+): ColumnUniversalId =>
+  new AnchoredIdDeriver({ main: publishedSpec(shape, anchor) }).deriveS(
+    publishedSpec(shape, column),
+  );
 
 function roleColumn(shape: DatasetShape, role: ShapeColumn["role"]): ShapeColumn | undefined {
   const hits = shape.columns.filter((c) => c.role === role);
@@ -109,11 +122,7 @@ export function buildDataset(shape: DatasetShape, rows: ShapeRow[]): SyntheticDa
     spec: shapeSpec(shape),
     content: renderTsv(header, rows),
     anchorColumn: anchor.column,
-    sequenceId: anchoredColumnId(
-      sequence.spec.name ?? sequence.column,
-      sequence.spec.domain,
-      sequence.spec.parentAxes ?? shape.axes.map((_, idx) => idx),
-    ),
+    sequenceId: anchoredId(shape, anchor, sequence),
     filterColumn: subset?.column,
     shape,
   };
@@ -133,8 +142,11 @@ export type SequenceRow = {
  * dataset: `shape` the axes and columns, `cells` the rendered row, `subset` the filter.
  */
 export type SequenceDatasetOptions = {
-  /** Mark these keys with a `pl7.app/isSubset` column; unmarked rows are absent from it. */
-  subset?: { members: string[]; label?: string };
+  /**
+   * Mark these keys with a `pl7.app/isSubset` column; unmarked rows are absent from it. The
+   * column is named `name`, or by the built-in shape.
+   */
+  subset?: { members: string[]; label?: string; name?: string };
   /**
    * Rewrite the shape before it is built: add, rename, re-annotate, drop or reorder
    * columns. Fill added columns through `cells`.
@@ -150,7 +162,6 @@ export function sequenceDataset(
   rows: SequenceRow[],
   toRow: (row: SequenceRow) => ShapeRow,
   opts: SequenceDatasetOptions = {},
-  subsetName = "pl7.app/subset",
 ): SyntheticDataset {
   let shape = base;
   if (opts.subset !== undefined) {
@@ -160,7 +171,7 @@ export function sequenceDataset(
       // skipped rather than imported as NA.
       filterOutRegex: "^$",
       spec: {
-        name: subsetName,
+        name: opts.subset.name ?? "pl7.app/subset",
         valueType: "Int",
         parentAxes: [1],
         annotations: {
