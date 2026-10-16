@@ -32,6 +32,7 @@ import type {
   SpecFrameHandle,
 } from "@milaboratories/pl-model-common";
 import { PoolEntryGuard } from "@milaboratories/pl-model-common";
+import { resolveColumnSpec } from "./column_registry";
 import type { JsExecutionContext } from "./context";
 import type { ComputableContextHelper } from "./computable_context";
 
@@ -200,16 +201,7 @@ export function getServiceInjectors(): ServiceInjectorMap {
         resolveAccessor: (h) => host.getAccessor(h),
         getUpstreamBlockCtxes: () => host.getRawUpstreamBlockCtx(),
         getSpecDriver: () => specDriver,
-        resolveSpec: (id: PObjectId) => {
-          const leaf = host.getColumnRegistry().resolve(id);
-          if (leaf === undefined) return undefined;
-          const specNode = leaf.accessor.traverse({
-            field: `${leaf.name}.spec`,
-            assertFieldType: "Input",
-            ignoreError: true,
-          });
-          return specNode?.getDataAsJson<PColumnSpec>();
-        },
+        resolveSpec: (id: PObjectId) => resolveColumnSpec(host.getColumnRegistry(), id),
       };
 
       const pinHandle = (entry: PoolEntry<CollectionHandle>): CollectionHandle => {
