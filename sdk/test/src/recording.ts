@@ -87,7 +87,8 @@ function fileColumnName(
 const columnOrder = (a: ListedColumn, b: ListedColumn) =>
   a.spec.name.localeCompare(b.spec.name) ||
   canonicalJson(a.spec.domain ?? {}).localeCompare(canonicalJson(b.spec.domain ?? {})) ||
-  canonicalJson(a.spec.axesSpec).localeCompare(canonicalJson(b.spec.axesSpec));
+  canonicalJson(a.spec.axesSpec).localeCompare(canonicalJson(b.spec.axesSpec)) ||
+  columnKey(a.spec).localeCompare(columnKey(b.spec));
 
 /** A column's full identity, independent of key order. */
 const columnKey = (spec: PColumnSpec) => canonicalJson(getPColumnSpecId(spec));
@@ -217,8 +218,9 @@ export async function recordColumns(source: ColumnSource, opts: RecordOptions): 
   // Widest columns first, so narrower ones find rows to fill.
   const order = [...plan].sort((a, b) => b.parentAxes.length - a.parentAxes.length);
   const rows: ShapeRow[] = [];
+  // JSON keeps axis tuples apart that a joined string would merge.
   const subKey = (row: ShapeRow, parentAxes: number[]) =>
-    parentAxes.map((i) => String(row[axes[i].column] ?? "")).join("\u0000");
+    JSON.stringify(parentAxes.map((i) => String(row[axes[i].column] ?? "")));
   const recorded = new Map<string, RecordingColumn>();
   for (const { col, column, parentAxes } of order) {
     const index = new Map<string, ShapeRow[]>();
@@ -248,7 +250,7 @@ export async function recordColumns(source: ColumnSource, opts: RecordOptions): 
     }
   }
 
-  const fullKey = (row: ShapeRow) => axes.map((a) => String(row[a.column] ?? "")).join("\u0000");
+  const fullKey = (row: ShapeRow) => JSON.stringify(axes.map((a) => String(row[a.column] ?? "")));
   rows.sort((a, b) => fullKey(a).localeCompare(fullKey(b)));
   return {
     version: RECORDING_VERSION,
