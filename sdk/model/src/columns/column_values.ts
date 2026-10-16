@@ -61,7 +61,7 @@ export function deriveColumnValueOptions(
   for (const { id, value } of entries) {
     if (!options.has(id)) options.set(id, { value: id, label: String(value) });
   }
-  return [...options.values()].sort((a, b) => NATURAL_ORDER.compare(a.label, b.label));
+  return [...options.values()].sort((a, b) => compareNatural(a.label, b.label));
 }
 
 // Internals
@@ -69,7 +69,7 @@ export function deriveColumnValueOptions(
 const RT_JSON = "PColumnData/Json";
 const RT_JSON_PARTITIONED = "PColumnData/JsonPartitioned";
 
-const NATURAL_ORDER = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
+const CHUNKS = /\d+|\D+/g;
 
 type JsonColumnData = { data?: Record<string, unknown> };
 
@@ -99,6 +99,38 @@ function readJsonCells(acc: TreeNodeAccessor): [PColumnKey, unknown][] | undefin
   }
 
   return undefined;
+}
+
+/**
+ * Natural order: runs of digits compare as numbers, other text case-insensitively, so "R2"
+ * comes before "R10". The model runtime has no `Intl`.
+ */
+function compareNatural(a: string, b: string): number {
+  const chunksA = a.match(CHUNKS) ?? [];
+  const chunksB = b.match(CHUNKS) ?? [];
+  for (let i = 0; i < Math.min(chunksA.length, chunksB.length); i++) {
+    const order = compareChunks(chunksA[i], chunksB[i]);
+    if (order !== 0) return order;
+  }
+  return chunksA.length - chunksB.length || compareStrings(a, b);
+}
+
+function compareChunks(a: string, b: string): number {
+  if (isDigits(a) && isDigits(b)) {
+    // Compared as digit strings, so numbers of any length keep their order.
+    const numberA = a.replace(/^0+(?=\d)/, "");
+    const numberB = b.replace(/^0+(?=\d)/, "");
+    return numberA.length - numberB.length || compareStrings(numberA, numberB);
+  }
+  return compareStrings(a.toLowerCase(), b.toLowerCase());
+}
+
+function isDigits(chunk: string): boolean {
+  return chunk.charCodeAt(0) >= 48 && chunk.charCodeAt(0) <= 57;
+}
+
+function compareStrings(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
 }
 
 /** A JSON-serialized key tuple; anything else is taken as a one-element key. */
