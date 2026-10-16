@@ -16,15 +16,17 @@ an index axis). Everything else keeps the Polars chain.
 from typing import List, Mapping, Optional
 import os
 import shutil
+import time
 
 import duckdb
+import pyarrow.parquet as pq
 from msgspec import Struct
 from polars_pf import AxisMapping, ColumnMapping, ConversionParams, convert
 
 from .base import PStep, StepContext
-from .memory import set_duckdb_memory_limit
+from .memory import set_duckdb_memory_limit, tune_duckdb_for_sort
 from .util import step_file_path
-from .write_frame import ROW_GROUP_SIZE, _escape
+from .write_frame import ROW_GROUP_SIZE, _escape, row_group_size_for
 
 __all__ = ["ImportAxisMapping", "ImportColumnMapping", "ImportParquetFrame"]
 
@@ -92,13 +94,18 @@ class ImportColumnMapping(Struct, rename="camel"):
 
 
 def build_import_query(
-    step: "ImportParquetFrame", source_path: str, target_path: str
+    step: "ImportParquetFrame", source_path: str, target_path: str,
+    row_group_size: int = ROW_GROUP_SIZE, already_sorted: bool = False,
 ) -> str:
     """The whole import as one statement: cast in an inner SELECT so the null filters
     and the sort see the cast values (a bare alias is not in scope in WHERE), then COPY
-    the ordered result out. TRY_CAST, not CAST, because the Polars chain this replaces
-    casts with strict=false: an unparseable value becomes null and is then dropped by
-    the filters below rather than failing the run."""
+    the result out. TRY_CAST, not CAST, because the Polars chain this replaces casts
+    with strict=false: an unparseable value becomes null and is then dropped by the
+    filters below rather than failing the run.
+
+    `already_sorted` drops the ORDER BY, leaving PRESERVE_ORDER to carry the source
+    order through. That is the whole point of checking: sorting 4.3e9 rows cost 196 GiB
+    of spill, and streaming the same rows in order cost none."""
     projection = ", ".join(
         f"TRY_CAST({_escape(m.source_field)} AS {to_duckdb_type(m.type)}) AS {_escape(m.column)}"
         for m in list(step.axes) + list(step.columns)
@@ -110,21 +117,49 @@ def build_import_query(
         conditions += [f"{_escape(a.column)} IS NOT NULL" for a in step.axes]
     where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
     order_by = ", ".join(f"{_escape(a.column)} ASC NULLS FIRST" for a in step.axes)
+    ordering = "" if already_sorted else f" ORDER BY {order_by}"
     return f"""
         COPY (
             SELECT * FROM (
                 SELECT {projection}
                 FROM read_parquet({_sql_literal(source_path)})
-            ){where}
-            ORDER BY {order_by}
+            ){where}{ordering}
         )
         TO {_sql_literal(target_path)}
         (
             PRESERVE_ORDER TRUE,
             FORMAT PARQUET,
-            ROW_GROUP_SIZE {ROW_GROUP_SIZE},
+            ROW_GROUP_SIZE {row_group_size},
             COMPRESSION 'UNCOMPRESSED'
         )
+    """
+
+
+def build_order_check_query(step: "ImportParquetFrame", source_path: str) -> str:
+    """Counts rows that break axis order, reading the file once with no sort.
+
+    `lag() OVER ()` with no window ORDER BY sees rows in file order, so DuckDB streams
+    it: 4.3e9 rows took 33s and spilled nothing, against 442s and 196 GiB to sort the
+    same file. Worth paying to find out whether the sort can be skipped entirely.
+
+    Compares the source columns rather than the cast ones. A TRY_CAST is monotonic for
+    the widths we map, and a row it nulls is dropped by the filters anyway. The null
+    filters likewise only remove rows, and removing rows cannot unsort what is left.
+    """
+    cur = [_escape(a.source_field) for a in step.axes]
+    prev = [f"lag({c}) OVER ()" for c in cur]
+    projected = ", ".join(
+        f"{c} AS k{i}, {p} AS p{i}" for i, (c, p) in enumerate(zip(cur, prev))
+    )
+    # Lexicographic "this row sorts before the previous one", unrolled over the axes.
+    terms = []
+    for i in range(len(cur)):
+        eq = " AND ".join(f"k{j} IS NOT DISTINCT FROM p{j}" for j in range(i))
+        less = f"k{i} < p{i}"
+        terms.append(f"({eq} AND {less})" if eq else f"({less})")
+    return f"""
+        SELECT count(*) FROM (SELECT {projected} FROM read_parquet({_sql_literal(source_path)}))
+        WHERE p0 IS NOT NULL AND ({" OR ".join(terms)})
     """
 
 
@@ -155,6 +190,12 @@ class ImportParquetFrame(PStep, tag="import_parquet_frame"):
         self._validate()
 
         source_path = step_file_path(ctx.settings.root_folder, self.file)
+        # Footer read only: cheap at any file size, and an upper bound on output rows.
+        source_rows = pq.read_metadata(source_path).num_rows
+        row_group_size = row_group_size_for(source_rows)
+        if row_group_size != ROW_GROUP_SIZE:
+            print(f"import_parquet_frame: {source_rows} rows, row group size "
+                  f"{row_group_size} (default {ROW_GROUP_SIZE})", flush=True)
         frame_dir = os.path.join(ctx.settings.root_folder, self.frame_name)
         os.makedirs(frame_dir)
 
@@ -168,24 +209,39 @@ class ImportParquetFrame(PStep, tag="import_parquet_frame"):
 
         intermediate_parquet = os.path.join(temp_dir, "intermediate.parquet")
         try:
-            self._sort(source_path, intermediate_parquet, spill_dir)
-            self._convert(intermediate_parquet, frame_dir)
+            self._sort(source_path, intermediate_parquet, spill_dir, row_group_size)
+            self._convert(intermediate_parquet, frame_dir, row_group_size)
         finally:
             if temp_dir != frame_dir:
                 shutil.rmtree(temp_dir, ignore_errors=True)
 
-    def _sort(self, source_path: str, intermediate_parquet: str, spill_dir: str) -> None:
+    def _sort(self, source_path: str, intermediate_parquet: str, spill_dir: str,
+              row_group_size: int) -> None:
         conn = duckdb.connect(database=":memory:")
         try:
             conn.execute("SET temp_directory TO ?;", [spill_dir])
             memory_log = set_duckdb_memory_limit(conn)
             if memory_log is not None:
                 print(f"import_parquet_frame: {memory_log}", flush=True)
-            conn.execute(build_import_query(self, source_path, intermediate_parquet))
+            # One streaming pass decides whether the sort is needed at all. Producers
+            # that emit rows in PColumn order (the embeddings writer, and anything else
+            # feeding batches of an already-sorted column) land here and skip it.
+            t = time.time()
+            out_of_order = conn.execute(build_order_check_query(self, source_path)).fetchone()[0]
+            already_sorted = out_of_order == 0
+            print(f"import_parquet_frame: order check {out_of_order} out-of-order rows "
+                  f"in {time.time() - t:.1f}s; "
+                  f"{'streaming in source order' if already_sorted else 'sorting'}",
+                  flush=True)
+            if not already_sorted:
+                for line in tune_duckdb_for_sort(conn):
+                    print(f"import_parquet_frame: {line}", flush=True)
+            conn.execute(build_import_query(
+                self, source_path, intermediate_parquet, row_group_size, already_sorted))
         finally:
             conn.close()
 
-    def _convert(self, intermediate_parquet: str, frame_dir: str) -> None:
+    def _convert(self, intermediate_parquet: str, frame_dir: str, row_group_size: int) -> None:
         params = ConversionParams(
             frame_dir=frame_dir,
             axes=[AxisMapping(column=a.column, type=a.type) for a in self.axes],
@@ -193,7 +249,7 @@ class ImportParquetFrame(PStep, tag="import_parquet_frame"):
             partition_key_length=self.partition_key_length,
             strict=self.strict,
             zstd_level=3,
-            row_group_size=ROW_GROUP_SIZE,
+            row_group_size=row_group_size,
             bloom_filter_fpp=0.05,
             data_page_size=256 * 1024,
             dict_page_size_limit=256 * 1024,
