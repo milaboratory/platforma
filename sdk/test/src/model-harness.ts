@@ -144,10 +144,10 @@ export class BlockModelHarness<Data = unknown, Args = unknown, Params = unknown>
     return getStorageData<Data>(this.initialStorage());
   }
 
-  /** The data a block starts with when a template supplies `params`. */
+  /** The data a block starts with when a template supplies `params`; absent params are `{}`, as the middle layer sends them. */
   dataFromParams(params: Params, blockIds: Record<string, string> = {}): Data {
     const result = this.callback(BlockStorageFacadeCallbacks.StorageInitialFromParams)(
-      JSON.stringify(params),
+      JSON.stringify(params ?? {}),
       JSON.stringify(blockIds),
     ) as { error: string } | { error?: undefined; storageJson: string };
     if (result.error !== undefined) throw new Error(`dataFromParams: ${result.error}`);
@@ -157,7 +157,7 @@ export class BlockModelHarness<Data = unknown, Args = unknown, Params = unknown>
   /** Why the kind rejects `params`, or undefined when it accepts them. */
   validateParams(params: unknown): string | undefined {
     const result = this.callback(BlockStorageFacadeCallbacks.InitializationParamsValidate)(
-      JSON.stringify(params),
+      JSON.stringify(params ?? {}),
     ) as { error?: string };
     return result.error;
   }
