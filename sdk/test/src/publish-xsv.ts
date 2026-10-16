@@ -17,12 +17,9 @@ export type PublishXsvOptions = {
   spec: XsvImportSpec;
   /** File body, header row included. */
   content: string;
-  ext?: "tsv" | "csv";
   /** Wait for the import to finish, ms. */
   timeout?: number;
 };
-
-export const XSV_IMPORT_OUTPUT = "outputPf";
 
 /**
  * Publish a table into the result pool through an xsv-import block. Returns the publisher's
@@ -33,13 +30,9 @@ export const XSV_IMPORT_OUTPUT = "outputPf";
  * column has to live in the same publisher as that anchor.
  */
 export async function publishXsv(ctx: BlockTestCtx, opts: PublishXsvOptions): Promise<string> {
-  const ext = opts.ext ?? "tsv";
   // One file per publish: the uploader checks the file's mtime, so two publishes of the same
   // content must never share a path.
-  const file = path.join(
-    ctx.tmpFolder,
-    `${opts.label.replace(/\W+/g, "_")}-${randomUUID()}.${ext}`,
-  );
+  const file = path.join(ctx.tmpFolder, `${opts.label.replace(/\W+/g, "_")}-${randomUUID()}.tsv`);
   await fsp.writeFile(file, opts.content);
   const blockId = await addBlock(ctx.rawPrj, opts.label, opts.block);
   const fileHandle = await ctx.helpers.getLocalFileHandle(file);

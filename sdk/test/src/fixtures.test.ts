@@ -1,13 +1,15 @@
 import { describe, expect, test } from "vitest";
 import {
   VDJ_CDR3_ID,
-  anchoredColumnId,
   buildDataset,
   peptideDataset,
   renderTsv,
   vdjDataset,
   vdjShape,
+  xsvImportSpec,
 } from "./fixtures";
+
+const CDR3_DOMAIN = '"domain":{"pl7.app/alphabet":"aminoacid","pl7.app/vdj/feature":"CDR3"}';
 
 const ROWS = [
   { key: "c1", seq: "CARDYW", count: 3 },
@@ -22,6 +24,21 @@ describe("renderTsv", () => {
   test("rejects a cell holding a tab or line break", () => {
     expect(() => renderTsv(["a"], [{ a: "x\ty" }])).toThrow(/tab or line break/);
     expect(() => renderTsv(["a\nb"], [])).toThrow(/tab or line break/);
+  });
+});
+
+describe("xsvImportSpec", () => {
+  test("gives items ids fixed by their position", () => {
+    const shape = vdjShape();
+    const ids = (s: ReturnType<typeof xsvImportSpec>) => [...s.axes, ...s.columns].map((i) => i.id);
+    expect(ids(xsvImportSpec(shape))).toEqual([
+      "axis-0",
+      "axis-1",
+      "column-0",
+      "column-1",
+      "column-2",
+    ]);
+    expect(xsvImportSpec(shape)).toEqual(xsvImportSpec(shape));
   });
 });
 
@@ -45,6 +62,7 @@ describe("vdjDataset", () => {
     expect(ds.content.split("\n")[2]).toBe("S2\tc2\t1\tCASSLG\tsecond\t1");
     const tag = ds.spec.columns.find((c) => c.payload.column === "tag")!.payload;
     expect(tag.filterOutRegex).toBe("^$");
+    expect(tag.spec.name).toBe("pl7.app/vdj/subset");
     expect(tag.spec.annotations).toEqual({ "pl7.app/label": "Picked", "pl7.app/isSubset": "true" });
   });
 
@@ -75,6 +93,12 @@ describe("vdjDataset", () => {
 });
 
 describe("buildDataset", () => {
+  test("the CDR3 id is the one the clustering block reports", () => {
+    expect(VDJ_CDR3_ID).toBe(
+      `{"axes":[{"anchor":"main","idx":1}],${CDR3_DOMAIN},"name":"pl7.app/vdj/sequence"}`,
+    );
+  });
+
   test("derives the sequence id from the sequence column's own axes", () => {
     const shape = vdjShape();
     shape.columns[1] = {
@@ -83,7 +107,26 @@ describe("buildDataset", () => {
     };
     const ds = buildDataset(shape, []);
     expect(ds.sequenceId).toBe(
-      anchoredColumnId("pl7.app/vdj/sequence", shape.columns[1].spec.domain, [0, 1]),
+      `{"axes":[{"anchor":"main","idx":0},{"anchor":"main","idx":1}],${CDR3_DOMAIN},"name":"pl7.app/vdj/sequence"}`,
+    );
+  });
+
+  test("an id carries no domain when the column has none, and anchors a shared one", () => {
+    const shape = vdjShape();
+    const withDomain = (anchor?: Record<string, string>, seq?: Record<string, string>) =>
+      buildDataset(
+        {
+          ...shape,
+          columns: [
+            { ...shape.columns[0], spec: { ...shape.columns[0].spec, domain: anchor } },
+            { ...shape.columns[1], spec: { ...shape.columns[1].spec, domain: seq } },
+          ],
+        },
+        [],
+      ).sequenceId;
+    expect(withDomain()).toBe('{"axes":[{"anchor":"main","idx":1}],"name":"pl7.app/vdj/sequence"}');
+    expect(withDomain({ run: "r1" }, { run: "r1", f: "x" })).toBe(
+      '{"axes":[{"anchor":"main","idx":1}],"domain":{"f":"x"},"domainAnchor":"main","name":"pl7.app/vdj/sequence"}',
     );
   });
 
@@ -102,7 +145,7 @@ describe("buildDataset", () => {
     const { parentAxes: _, ...spec } = shape.columns[1].spec;
     shape.columns[1] = { ...shape.columns[1], spec };
     expect(buildDataset(shape, []).sequenceId).toBe(
-      anchoredColumnId("pl7.app/vdj/sequence", spec.domain, [0, 1]),
+      `{"axes":[{"anchor":"main","idx":0},{"anchor":"main","idx":1}],${CDR3_DOMAIN},"name":"pl7.app/vdj/sequence"}`,
     );
   });
 
