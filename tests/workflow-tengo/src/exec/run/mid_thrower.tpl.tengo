@@ -1,0 +1,20 @@
+/**
+ * an intermediate template that fails on purpose.
+ *
+ * It takes the upstream exec's result as an input, so by the time this body runs the
+ * command has already succeeded. The failure therefore comes from template code, not
+ * from a command, which is the second shape the recovery hold has to survive.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+self.defineOutputs(["main"])
+
+self.body(func(inputs) {
+	ll.panic("intermediate template failed on purpose")
+
+	return {
+		main: inputs.value
+	}
+})
