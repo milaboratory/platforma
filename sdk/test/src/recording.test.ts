@@ -185,6 +185,36 @@ describe("diffRecordings", () => {
     expect(diffRecordings(expected, actual)).toEqual(["column label: 3 rows -> 2"]);
   });
 
+  test("axis tuples a NUL-joined key would merge stay separate rows", async () => {
+    const rec = await recordColumns(
+      source({
+        v: {
+          spec: spec("pl7.app/v", [CLUSTER, CLONE], "Int"),
+          rows: [
+            { keys: ["a\u0000b", "c"], value: 1 },
+            { keys: ["a", "b\u0000c"], value: 2 },
+          ],
+        },
+      }),
+      { scenario: "s", blockId: "b1" },
+    );
+    expect(rec.rows.map((r) => r.v)).toEqual([2, 1]);
+  });
+
+  test("columns differing only in value type keep their file names in any input order", async () => {
+    const cols = {
+      s: { spec: spec("pl7.app/x", [CLONE], "String"), rows: [{ keys: ["k"], value: "a" }] },
+      i: { spec: spec("pl7.app/x", [CLONE], "Int"), rows: [{ keys: ["k"], value: 1 }] },
+    };
+    const names = async (order: ("s" | "i")[]) =>
+      (
+        await recordColumns(source(Object.fromEntries(order.map((k) => [k, cols[k]]))), {
+          scenario: "s",
+        })
+      ).columns.map((c) => [c.column, c.spec.valueType]);
+    expect(await names(["s", "i"])).toEqual(await names(["i", "s"]));
+  });
+
   test("axis keys holding the join character stay apart", async () => {
     const rec = (value: number) =>
       recordColumns(
