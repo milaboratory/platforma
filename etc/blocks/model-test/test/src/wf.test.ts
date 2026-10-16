@@ -1,6 +1,6 @@
 import type { BlockData } from "@milaboratories/milaboratories.test-block-model.model";
 import { blockTest } from "@platforma-sdk/test";
-import { createPlDataTableStateV2, pluginOutputKey } from "@platforma-sdk/model";
+import { createPlDataTableStateV2, pluginOutputKey, type PluginHandle } from "@platforma-sdk/model";
 import { TestBlockModelBlockPointer } from "this-block";
 
 blockTest("with args", { timeout: 60000 }, async ({ rawPrj: project, expect }) => {
@@ -101,5 +101,17 @@ blockTest(
     const pframeOutput = outputs?.[pluginOutputKey("counter" as any, "pframeTest")] as any;
     expect(pframeOutput).toMatchObject({ ok: true, stable: true });
     expect(pframeOutput?.value).toMatch(/^pframe: created handle/);
+
+    // blockDependencies plugin: the block references no other block and nothing references it
+    expect(
+      outputs?.[pluginOutputKey("dependencies" as PluginHandle, "dependencies")],
+    ).toMatchObject({
+      ok: true,
+      value: { argsSource: "current", items: [], labels: {} },
+    });
+    expect(outputs?.[pluginOutputKey("dependencies" as PluginHandle, "dependents")]).toMatchObject({
+      ok: true,
+      value: { type: "ok", items: [], labels: {} },
+    });
   },
 );

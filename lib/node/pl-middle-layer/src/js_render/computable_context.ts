@@ -1,7 +1,7 @@
 import type { ComputableCtx } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
 import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
-import { checkBlockFlag } from "@platforma-sdk/model";
+import { checkBlockFlag, JsRenderInternal } from "@platforma-sdk/model";
 import type {
   ArchiveFormat,
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
@@ -21,7 +21,6 @@ import type {
   ValueOrError,
   RangeBytes,
   BlockCodeKnownFeatureFlags,
-  JsRenderInternal,
 } from "@platforma-sdk/model";
 import {
   isDataInfo,
@@ -55,7 +54,8 @@ import {
 import { getServiceInjectors } from "./service_injectors";
 import { MainAccessorName, StagingAccessorName } from "@platforma-sdk/model";
 import { buildColumnRegistry, resolvePColumnById } from "./column_registry";
-import type { ColumnRegistry, PObjectId } from "@milaboratories/pl-model-common";
+import type { ColumnRegistry, OutputDependency, PObjectId } from "@milaboratories/pl-model-common";
+import { readOutputDependencyIndex } from "../model/output_dependencies";
 import { collapseSpecOverrideNode } from "./spec_override_collapse";
 
 export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRenderCtxMethods<
@@ -336,6 +336,14 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   // Blocks
   //
 
+  public getBlockId(): string {
+    return this.blockCtx.blockId;
+  }
+
+  public argsField(name: string): string | undefined {
+    return this.blockCtx.argsField(this.requireComputableCtx, parseArgsFieldName(name));
+  }
+
   public getBlockLabel(blockId: string): string {
     const b = this.meta.get(blockId);
     if (b === undefined) throw new Error(`Block ${blockId} not found.`);
@@ -448,6 +456,16 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       }));
     }
     return this._upstreamBlockCtx;
+  }
+
+  //
+  // Output dependencies
+  //
+
+  public getOutputDependencies(): OutputDependency[] {
+    const prjEntry = notEmpty(this.blockCtx.projectEntry, "projectEntry");
+    const prj = this.requireComputableCtx.accessor(prjEntry).node();
+    return readOutputDependencyIndex(prj, this.env.projectHelper).get(this.blockCtx.blockId) ?? [];
   }
 
   //
@@ -679,6 +697,11 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
         }
       }
 
+      exportCtxFunction("argsField", (name) => {
+        const res = this.argsField(vm.getString(name));
+        return res === undefined ? vm.undefined : vm.newString(res);
+      });
+
       //
       // Methods for injected ctx object
       //
@@ -878,6 +901,10 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       // Blocks
       //
 
+      exportCtxFunction("getBlockId", () => {
+        return parent.exportSingleValue(this.getBlockId(), undefined);
+      });
+
       exportCtxFunction("getBlockLabel", (blockId) => {
         return parent.exportSingleValue(this.getBlockLabel(vm.getString(blockId)), undefined);
       });
@@ -914,6 +941,14 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
       exportCtxFunction("getUpstreamBlockCtx", () => {
         return parent.exportObjectUniversal(this.getUpstreamBlockCtx(), undefined);
+      });
+
+      //
+      // Output dependencies
+      //
+
+      exportCtxFunction("getOutputDependencies", () => {
+        return parent.exportObjectViaJson(this.getOutputDependencies(), undefined);
       });
 
       exportCtxFunction("createPFrame", (def) => {
@@ -1016,6 +1051,12 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       });
     });
   }
+}
+
+function parseArgsFieldName(name: string): JsRenderInternal.ArgsFieldName {
+  const known = JsRenderInternal.ArgsFieldNames.find((candidate) => candidate === name);
+  if (known === undefined) throw new Error(`Unknown args field: ${name}`);
+  return known;
 }
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {

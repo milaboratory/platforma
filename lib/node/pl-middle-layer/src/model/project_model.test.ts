@@ -7,3 +7,20 @@ test("project field parsing test", () => {
   const fieldName = projectFieldName(field.blockId, field.fieldName);
   expect(parseProjectField(fieldName)).toStrictEqual(field);
 });
+
+test.each([
+  "currentArgs",
+  "currentArgsIssues",
+  "currentDraftArgs",
+  "currentPrerunArgs",
+  "currentPrerunArgsIssues",
+  "currentDraftPrerunArgs",
+  "stagingArgs",
+  "stagingCtx",
+] satisfies ProjectField["fieldName"][])("field %s is parsed as itself", (fieldName) => {
+  const blockId = randomUUID();
+  expect(parseProjectField(projectFieldName(blockId, fieldName))).toStrictEqual({
+    blockId,
+    fieldName,
+  });
+});

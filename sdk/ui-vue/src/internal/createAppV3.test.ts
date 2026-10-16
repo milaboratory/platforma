@@ -209,6 +209,10 @@ const defaultBlockModelInfo = (pluginIds: PluginHandle[] = []): BlockModelInfo =
   pluginPublicOutputs: {},
 });
 
+function isData(value: unknown): value is Data {
+  return typeof value === "object" && value !== null && "count" in value && "label" in value;
+}
+
 function createDefaultState(plugins?: Record<string, unknown>) {
   return new BlockStateV3Mock<Data, Outputs>(defaultData(), defaultOutputs(), "/", plugins);
 }
@@ -694,6 +698,56 @@ describe("createAppV3", { timeout: 20_000 }, () => {
     await delay(patchPoolingDelay + 50);
 
     expect(app.plugins[pluginId].publicOutputs.doubled).toBe(14);
+
+    app.closedRef = true;
+  });
+
+  it("should compute args issues from the data being edited", async () => {
+    const state = createDefaultState();
+    const platforma = createMockApiV3<Data, Args, Outputs>(state, {
+      ...defaultBlockModelInfo(),
+      argsIssues: (data) =>
+        isData(data) && data.count === 0
+          ? [{ severity: "error", message: "Count is required" }]
+          : [{ severity: "warning", message: "Count is set" }],
+      prerunArgsIssues: (data) =>
+        isData(data) && data.label === "" ? [{ severity: "error", message: "Label" }] : [],
+    });
+    const initialState = await platforma.loadBlockState();
+    if ("error" in initialState) throw initialState.error;
+    if (initialState.value === undefined) throw new Error("no initial state");
+
+    const { app } = createAppV3<Data, Args, Outputs>(initialState.value, platforma, {
+      debug: false,
+      debounceSpan: 10,
+    });
+
+    expect(app.argsIssues).toEqual([{ severity: "error", message: "Count is required" }]);
+    expect(app.prerunArgsIssues).toEqual([{ severity: "error", message: "Label" }]);
+
+    app.model.data.count = 3;
+    app.model.data.label = "set";
+
+    expect(app.argsIssues).toEqual([{ severity: "warning", message: "Count is set" }]);
+    expect(app.prerunArgsIssues).toEqual([]);
+
+    app.closedRef = true;
+  });
+
+  it("should report no args issues for a model that cannot compute them", async () => {
+    const state = createDefaultState();
+    const platforma = createMockApiV3<Data, Args, Outputs>(state, defaultBlockModelInfo());
+    const initialState = await platforma.loadBlockState();
+    if ("error" in initialState) throw initialState.error;
+    if (initialState.value === undefined) throw new Error("no initial state");
+
+    const { app } = createAppV3<Data, Args, Outputs>(initialState.value, platforma, {
+      debug: false,
+      debounceSpan: 10,
+    });
+
+    expect(app.argsIssues).toEqual([]);
+    expect(app.prerunArgsIssues).toEqual([]);
 
     app.closedRef = true;
   });

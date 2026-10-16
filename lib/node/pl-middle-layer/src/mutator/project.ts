@@ -51,6 +51,7 @@ import {
   ProjectStructureAuthorKey,
   getServiceTemplateField,
   FieldsToDuplicate,
+  FieldsUnknownToOlderRuntimes,
 } from "../model/project_model";
 import { ModelAPIVersionMismatchError } from "@milaboratories/pl-errors";
 import { BlockPackTemplateField, createBlockPack } from "./block-pack/block_pack";
@@ -64,6 +65,7 @@ import type {
   ProjectMeta,
 } from "@milaboratories/pl-model-middle-layer";
 import { InitialBlockSettings, normalizeProjectMeta } from "@milaboratories/pl-model-middle-layer";
+import type { ArgsIssue } from "@milaboratories/pl-model-common";
 import Denque from "denque";
 import { exportContext, getPreparedExportTemplateEnvelope } from "./context_export";
 import { loadTemplate } from "./template/template_loading";
@@ -89,6 +91,15 @@ import { exportProjectAsTemplateV1 } from "../model/template_serializer";
 import type { TemplateParamsResult } from "../model/template_export";
 import { getDebugFlags } from "../debug";
 import type { BlockPackInfo } from "../model/block_pack";
+import {
+  ArgsChannelFields,
+  modelFingerprint,
+  storageFingerprint,
+  type ArgsChannel,
+  type ArgsIssuesRecord,
+  type ArgsIssuesSource,
+  type DerivedArgs,
+} from "../model/derived_args";
 
 type FieldStatus = "NotReady" | "Ready" | "Error";
 
@@ -120,7 +131,22 @@ function hasError(state: BlockFieldState | undefined): boolean {
   return state?.fieldError === true || state?.status === "Error";
 }
 
+/** Args a legacy (model API v1) block state holds: its `args` field, or the whole state when it has none. */
+function legacyStateArgs(state: unknown): unknown {
+  if (state !== null && typeof state === "object" && "args" in state) return state.args;
+  return state;
+}
+
 type BlockFieldStates = Partial<Record<ProjectField["fieldName"], BlockFieldState>>;
+
+/**
+ * Whether every field a block has is one an older middle layer does not know: what that middle
+ * layer leaves when it deletes the block. Such a block has no block pack, so it is no block of
+ * the project either way.
+ */
+function hasOnlyFieldsUnknownToOlderRuntimes(fields: BlockFieldStates): boolean {
+  return Object.keys(fields).every((name) => FieldsUnknownToOlderRuntimes.has(name));
+}
 type BlockFieldStateValue = Omit<BlockFieldState, "modCount">;
 
 interface BlockInfoState {
@@ -414,6 +440,11 @@ export class ProjectMutator {
     private readonly blockInfos: Map<string, BlockInfo>,
     private readonly ctxExportTplHolder: AnyResourceRef,
     private readonly projectHelper: ProjectHelper,
+    /**
+     * Fields of blocks no longer in the project, left behind by a middle layer that does not know
+     * them. They are removed with the first change saved: loading alone writes nothing.
+     */
+    private leftoverFields: readonly string[],
   ) {}
 
   private fixProblemsAndMigrate() {
@@ -432,14 +463,22 @@ export class ProjectMutator {
         this.deleteBlockFields(blockInfo.id, "prodArgs", "prodOutput", "prodCtx", "prodUiCtx");
     });
 
-    // Fix inconsistent staging fields (same FieldRef issue for stagingUiCtx)
+    // Fix inconsistent staging fields (same FieldRef issue for stagingUiCtx).
+    // stagingArgs goes with the staging it was rendered for, but its absence leaves the staging
+    // consistent: projects written before the field existed hold staging without it.
     this.blockInfos.forEach((blockInfo) => {
       if (
         blockInfo.fields.stagingOutput === undefined ||
         blockInfo.fields.stagingCtx === undefined ||
         blockInfo.fields.stagingUiCtx === undefined
       )
-        this.deleteBlockFields(blockInfo.id, "stagingOutput", "stagingCtx", "stagingUiCtx");
+        this.deleteBlockFields(
+          blockInfo.id,
+          "stagingOutput",
+          "stagingCtx",
+          "stagingUiCtx",
+          "stagingArgs",
+        );
     });
 
     // Fix inconsistent cache fields
@@ -784,6 +823,7 @@ export class ProjectMutator {
     }
     if (this.deleteBlockFields(blockId, "stagingOutput", "stagingCtx", "stagingUiCtx"))
       this.resetStagingRefreshTimestamp();
+    this.deleteBlockFields(blockId, "stagingArgs");
   }
 
   private resetProduction(blockId: string): void {
@@ -895,34 +935,136 @@ export class ProjectMutator {
     // Get initial storage from VM
     const initialStorageJson = this.projectHelper.getInitialStorageInVM(blockConfig);
     this.setBlockStorageRaw(blockId, initialStorageJson);
+    this.applyDerivedArgs(blockId, blockConfig, initialStorageJson);
+  }
 
-    // Derive prerunArgs first — always derived independently of args validation
-    const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
-      blockConfig,
-      initialStorageJson,
+  /**
+   * Derives the args and the prerun args of a block from `storageJson`, the storage it holds
+   * now, and writes the fields of both channels: the ready args, the args validation found
+   * errors in, and the issues found.
+   *
+   * @returns whether the prerun args changed, so the block's staging is to be rendered anew
+   */
+  private applyDerivedArgs(
+    blockId: string,
+    blockConfig: BlockConfig,
+    storageJson: string,
+  ): { prerunChanged: boolean } {
+    // Fingerprinting the model hashes its whole code bundle, so it is done only for issues to
+    // write, and once for both channels.
+    let source: ArgsIssuesSource | undefined;
+    const issuesSource = (): ArgsIssuesSource =>
+      (source ??= {
+        storageHash: storageFingerprint(storageJson),
+        modelHash: modelFingerprint(blockConfig),
+      });
+    this.writeDerivedArgs(
+      blockId,
+      "args",
+      this.projectHelper.deriveArgsFromStorage(blockConfig, storageJson),
+      issuesSource,
     );
-    if (prerunArgs !== undefined) {
-      this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
-    } else {
-      this.deleteBlockFields(blockId, "currentPrerunArgs");
-    }
+    const prerunChanged = this.writeDerivedArgs(
+      blockId,
+      "prerun",
+      this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageJson),
+      issuesSource,
+    );
+    return { prerunChanged };
+  }
 
-    // Derive args from storage - set or clear currentArgs based on derivation result
-    const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
-      blockConfig,
-      initialStorageJson,
-    );
-    // args() legitimately returns undefined when inputs are incomplete/invalid;
-    // treat that like a derivation failure and clear the field (never JSON-encode undefined).
-    if (!deriveArgsResult.error && deriveArgsResult.value !== undefined) {
-      this.setBlockFieldObj(
-        blockId,
-        "currentArgs",
-        this.createJsonFieldValue(deriveArgsResult.value),
-      );
-    } else {
-      this.deleteBlockFields(blockId, "currentArgs");
+  /**
+   * Writes the fields of one args channel from what the block derived. Ready args are written
+   * with their warnings; args with errors are written as the draft, with every issue found; args
+   * that are not ready for no reason given, or that the model failed to derive, clear all three
+   * fields. A list of issues is never written empty.
+   *
+   * @returns whether the channel's ready args differ from the ones it had
+   */
+  private writeDerivedArgs(
+    blockId: string,
+    channel: ArgsChannel,
+    derived: DerivedArgs,
+    issuesSource: () => ArgsIssuesSource,
+  ): boolean {
+    const fields = ArgsChannelFields[channel];
+    switch (derived.type) {
+      case "ready":
+        this.deleteBlockFields(blockId, fields.draft);
+        this.writeArgsIssues(blockId, fields.issues, derived.warnings, issuesSource);
+        return this.writeArgsValue(blockId, fields.current, derived.value);
+      case "blocked":
+        this.deleteBlockFields(blockId, fields.current);
+        if (derived.draft === undefined) this.deleteBlockFields(blockId, fields.draft);
+        else this.writeArgsValue(blockId, fields.draft, derived.draft);
+        this.writeArgsIssues(blockId, fields.issues, derived.issues, issuesSource);
+        return false;
+      case "notReady":
+        this.deleteBlockFields(blockId, fields.current, fields.draft, fields.issues);
+        return false;
+      case "failed":
+        this.projectHelper.logger.error(
+          new Error(`[applyDerivedArgs] ${channel} derivation failed for ${blockId}`, {
+            cause: derived.error,
+          }),
+        );
+        this.deleteBlockFields(blockId, fields.current, fields.draft, fields.issues);
+        return false;
     }
+  }
+
+  /**
+   * Writes the args of a block whose model does not derive them from storage: its prerun runs
+   * on the same args, and it reports no issues.
+   *
+   * @returns whether the prerun args differ from the ones the block had
+   */
+  private writeLegacyArgs(blockId: string, args: unknown): boolean {
+    this.deleteBlockFields(
+      blockId,
+      "currentDraftArgs",
+      "currentArgsIssues",
+      "currentDraftPrerunArgs",
+      "currentPrerunArgsIssues",
+    );
+    if (args === undefined) {
+      this.deleteBlockFields(blockId, "currentArgs", "currentPrerunArgs");
+      return false;
+    }
+    this.writeArgsValue(blockId, "currentArgs", args);
+    return this.writeArgsValue(blockId, "currentPrerunArgs", args);
+  }
+
+  /**
+   * Writes args to `fieldName`. Args are never gzipped: workflows read them, and cannot
+   * decompress.
+   *
+   * @returns whether the args differ from the ones the field held
+   */
+  private writeArgsValue(
+    blockId: string,
+    fieldName: keyof BlockFieldStates,
+    args: unknown,
+  ): boolean {
+    const data = canonicalJsonBytes(args);
+    const oldData = this.getBlockInfo(blockId).fields[fieldName]?.value;
+    const changed = oldData === undefined || Buffer.compare(oldData, data) !== 0;
+    this.setBlockField(blockId, fieldName, this.tx.createValue(Pl.JsonObject, data), "Ready", data);
+    return changed;
+  }
+
+  private writeArgsIssues(
+    blockId: string,
+    fieldName: keyof BlockFieldStates,
+    issues: ArgsIssue[],
+    source: () => ArgsIssuesSource,
+  ): void {
+    if (issues.length === 0) {
+      this.deleteBlockFields(blockId, fieldName);
+      return;
+    }
+    const record: ArgsIssuesRecord = { ...source(), issues };
+    this.setBlockFieldObj(blockId, fieldName, this.createJsonFieldValue(record));
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
@@ -944,9 +1086,8 @@ export class ProjectMutator {
         );
       }
 
-      // Derive args from storage using the block's config.args() callback
-      let args: unknown;
-      let prerunArgs: unknown;
+      // Only a change of prerunArgs resets staging
+      let prerunArgsChanged: boolean;
 
       if (req.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION) {
         const currentStorageJson = info.blockStorageJson;
@@ -967,62 +1108,15 @@ export class ProjectMutator {
           this.createGzJsonFieldValueFromContent(updatedStorageJson),
         );
 
-        // Derive prerunArgs first — always derived independently of args validation
-        prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(
+        prerunArgsChanged = this.applyDerivedArgs(
+          req.blockId,
           blockConfig,
           updatedStorageJson,
-        );
-
-        // Derive args from storage (VM extracts data internally)
-        const derivedArgsResult = this.projectHelper.deriveArgsFromStorage(
-          blockConfig,
-          updatedStorageJson,
-        );
-        args = derivedArgsResult.error ? undefined : derivedArgsResult.value;
+        ).prerunChanged;
       } else {
         this.setBlockFieldObj(req.blockId, "blockStorage", this.createGzJsonFieldValue(req.state));
-        if (req.state !== null && typeof req.state === "object" && "args" in req.state) {
-          args = (req.state as { args: unknown }).args;
-        } else {
-          args = req.state;
-        }
         // For the legacy blocks, prerunArgs = args (same as production args)
-        prerunArgs = args;
-      }
-
-      // Set or clear currentArgs based on derivation result
-      // NB: currentArgs must NOT be gzipped — they are read by Tengo workflows which can't decompress
-      if (args !== undefined) {
-        const currentArgsData = canonicalJsonBytes(args);
-        const argsPartRef = this.tx.createValue(Pl.JsonObject, currentArgsData);
-        this.setBlockField(req.blockId, "currentArgs", argsPartRef, "Ready", currentArgsData);
-      } else {
-        this.deleteBlockFields(req.blockId, "currentArgs");
-      }
-
-      // Set currentPrerunArgs field and check if it actually changed
-      // NB: currentPrerunArgs must NOT be gzipped — they are read by Tengo workflows which can't decompress
-      let prerunArgsChanged = false;
-      if (prerunArgs !== undefined) {
-        const prerunArgsData = canonicalJsonBytes(prerunArgs);
-        const oldPrerunArgsData = info.fields.currentPrerunArgs?.value;
-        // Check if prerunArgs actually changed
-        if (
-          oldPrerunArgsData === undefined ||
-          Buffer.compare(oldPrerunArgsData, prerunArgsData) !== 0
-        ) {
-          prerunArgsChanged = true;
-        }
-        const prerunArgsRef = this.tx.createValue(Pl.JsonObject, prerunArgsData);
-        this.setBlockField(
-          req.blockId,
-          "currentPrerunArgs",
-          prerunArgsRef,
-          "Ready",
-          prerunArgsData,
-        );
-      } else {
-        this.deleteBlockFields(req.blockId, "currentPrerunArgs");
+        prerunArgsChanged = this.writeLegacyArgs(req.blockId, legacyStateArgs(req.state));
       }
 
       blockChanged = true;
@@ -1145,8 +1239,9 @@ export class ProjectMutator {
     const info = this.getBlockInfo(blockId);
 
     // Skip if currentPrerunArgs is not set (prerunArgs() returned undefined or args derivation failed)
-    const prerunArgsRef = info.fields.currentPrerunArgs?.ref;
-    if (prerunArgsRef === undefined) {
+    const prerunArgs = info.fields.currentPrerunArgs;
+    const prerunArgsRef = prerunArgs?.ref;
+    if (prerunArgs === undefined || prerunArgsRef === undefined) {
       return;
     }
 
@@ -1182,6 +1277,13 @@ export class ProjectMutator {
     // thus creating a certain discrepancy between staging workflow context behavior and desktop's result pool.
     this.setBlockField(blockId, "stagingUiCtx", this.exportCtx(results.context), "NotReady");
     this.setBlockField(blockId, "stagingOutput", results.result, "NotReady");
+
+    // Saving prerun args the staging is rendered with
+    this.setBlockFieldObj(blockId, "stagingArgs", {
+      ref: prerunArgsRef,
+      status: prerunArgs.status,
+      value: prerunArgs.value,
+    });
   }
 
   private renderProductionFor(blockId: string) {
@@ -1251,55 +1353,34 @@ export class ProjectMutator {
 
     const blockConfig = info.config;
 
-    let args: unknown;
-    let prerunArgs: unknown;
-    let storageToWrite: string;
-
     if (spec.storageMode === "fromModel") {
       // Model API v2+: get initial storage and derive args from it. A caller that
       // already produced the storage — a template seeding a block from its params —
       // passes it in, precisely so the VM call that could reject those params happens
       // before the transaction is touched; see `initialStorage`.
-      storageToWrite = spec.initialStorage ?? this.projectHelper.getInitialStorageInVM(blockConfig);
-
-      // Derive prerunArgs first — always derived independently of args validation
-      prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
-
-      // Derive args from storage (VM extracts data internally)
-      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
-        blockConfig,
-        storageToWrite,
+      const storage = spec.initialStorage ?? this.projectHelper.getInitialStorageInVM(blockConfig);
+      this.setBlockFieldObj(
+        blockId,
+        "blockStorage",
+        this.createGzJsonFieldValueFromContent(storage),
       );
-      args = deriveArgsResult.error ? undefined : deriveArgsResult.value;
+      this.applyDerivedArgs(blockId, blockConfig, storage);
     } else if (spec.storageMode === "legacy") {
       // Model API v1: use legacyState from spec
       const parsedState = JSON.parse(spec.legacyState);
-      args = parsedState.args;
+      const args: unknown = parsedState.args;
       if (args === undefined) {
         throw new Error("args is undefined in legacyState");
       }
-      prerunArgs = args;
-      storageToWrite = spec.legacyState;
+      this.setBlockFieldObj(
+        blockId,
+        "blockStorage",
+        this.createGzJsonFieldValueFromContent(spec.legacyState),
+      );
+      this.writeLegacyArgs(blockId, args);
     } else {
       throw new Error(`Unknown storageMode: ${(spec as NewBlockSpec).storageMode}`);
     }
-
-    // currentArgs
-    if (args !== undefined) {
-      this.setBlockFieldObj(blockId, "currentArgs", this.createJsonFieldValue(args));
-    }
-
-    // currentPrerunArgs
-    if (prerunArgs !== undefined) {
-      this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
-    }
-
-    // blockStorage
-    this.setBlockFieldObj(
-      blockId,
-      "blockStorage",
-      this.createGzJsonFieldValueFromContent(storageToWrite),
-    );
 
     // checking structure
     info.check();
@@ -1551,27 +1632,7 @@ export class ProjectMutator {
     const applyStorageAndDeriveArgs = (storageJson: string) => {
       persistBlockPack();
       this.setBlockStorageRaw(blockId, storageJson);
-
-      // Derive prerunArgs first — always derived independently of args validation
-      const prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(newConfig, storageJson);
-      if (prerunArgs !== undefined) {
-        this.setBlockFieldObj(blockId, "currentPrerunArgs", this.createJsonFieldValue(prerunArgs));
-      } else {
-        this.deleteBlockFields(blockId, "currentPrerunArgs");
-      }
-
-      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(newConfig, storageJson);
-      // args() legitimately returns undefined when inputs are incomplete/invalid;
-      // treat that like a derivation failure and clear the field (never JSON-encode undefined).
-      if (!deriveArgsResult.error && deriveArgsResult.value !== undefined) {
-        this.setBlockFieldObj(
-          blockId,
-          "currentArgs",
-          this.createJsonFieldValue(deriveArgsResult.value),
-        );
-      } else {
-        this.deleteBlockFields(blockId, "currentArgs");
-      }
+      this.applyDerivedArgs(blockId, newConfig, storageJson);
     };
 
     if (newClearState !== undefined) {
@@ -1615,11 +1676,19 @@ export class ProjectMutator {
         );
         applyStorageAndDeriveArgs(migrationResult.newStorageJson);
       } else {
-        // Legacy blocks (modelAPIVersion 1): persist block pack, set prerunArgs = currentArgs
+        // Legacy blocks (modelAPIVersion 1): persist block pack, set prerunArgs = currentArgs.
+        // Their model reports no issues.
         persistBlockPack();
         if (info.fields.currentArgs !== undefined) {
           this.setBlockFieldObj(blockId, "currentPrerunArgs", info.fields.currentArgs);
         }
+        this.deleteBlockFields(
+          blockId,
+          "currentDraftArgs",
+          "currentArgsIssues",
+          "currentDraftPrerunArgs",
+          "currentPrerunArgsIssues",
+        );
       }
 
       this.blocksWithChangedInputs.add(blockId);
@@ -1859,6 +1928,9 @@ export class ProjectMutator {
   public save() {
     if (!this.wasModified) return;
 
+    for (const name of this.leftoverFields) this.tx.removeField(field(this.rid, name));
+    this.leftoverFields = [];
+
     if (this.lastModifiedChanged)
       this.tx.setKValue(this.rid, ProjectLastModifiedTimestamp, JSON.stringify(this.lastModified));
 
@@ -1938,6 +2010,8 @@ export class ProjectMutator {
     ][] = [];
     blockInfoStates.forEach((info) => {
       const fields = info.fields;
+      // Left by an older middle layer: dropped below, once the structure is known.
+      if (hasOnlyFieldsUnknownToOlderRuntimes(fields)) return;
       for (const [fName, state] of Object.entries(fields)) {
         if (state.ref === undefined) continue;
         if (!isResource(state.ref) || isResourceRef(state.ref))
@@ -2038,6 +2112,24 @@ export class ProjectMutator {
     const renderingState = { stagingRefreshTimestamp };
     const blocksInLimboSet = new Set(blocksInLimbo);
 
+    // A block absent from the structure whose every field is one an older middle layer does not
+    // know is what that middle layer leaves when it deletes the block: not a broken project.
+    const blocksInStructure = new Set([...allBlocks(structure)].map((b) => b.id));
+    blockInfoStates.forEach(({ id, fields }) => {
+      if (blocksInStructure.has(id)) return;
+      if (hasOnlyFieldsUnknownToOlderRuntimes(fields)) blockInfoStates.delete(id);
+    });
+    const leftoverFields = fullResourceState.fields
+      .map((f) => f.name)
+      .filter((name) => {
+        const projectField = parseProjectField(name);
+        return (
+          projectField !== undefined &&
+          !blocksInStructure.has(projectField.blockId) &&
+          !blockInfoStates.has(projectField.blockId)
+        );
+      });
+
     const blockInfos = new Map<string, BlockInfo>();
     blockInfoStates.forEach(({ id, fields, blockConfig, blockKind, blockPack }) =>
       blockInfos.set(
@@ -2078,6 +2170,7 @@ export class ProjectMutator {
       blockInfos,
       ctxExportTplHolder,
       projectHelper,
+      leftoverFields,
     );
 
     prj.fixProblemsAndMigrate();
@@ -2262,6 +2355,15 @@ export async function duplicateProject(
   tx.setKValue(newPrj, ProjectCreatedTimestamp, ts);
   tx.setKValue(newPrj, ProjectLastModifiedTimestamp, ts);
 
+  // Fields an older middle layer left behind for blocks it deleted are not copied.
+  const sourceStructureKV = sourceKVs.find((kv) => kv.key === ProjectStructureKey);
+  const sourceStructure: ProjectStructure | undefined =
+    sourceStructureKV === undefined ? undefined : JSON.parse(sourceStructureKV.value);
+  const sourceBlocks =
+    sourceStructure === undefined
+      ? undefined
+      : new Set([...allBlocks(sourceStructure)].map((b) => b.id));
+
   // Copy only persistent block fields (FieldsToDuplicate).
   // Transient fields (prodChainCtx, staging*, *Previous) are rebuilt on project open
   // by fixProblemsAndMigrate(). Copying them is both unnecessary and dangerous:
@@ -2271,6 +2373,13 @@ export async function duplicateProject(
     if (isNullSignedResourceId(f.value)) continue;
     const parsed = parseProjectField(f.name);
     if (parsed !== undefined && !FieldsToDuplicate.has(parsed.fieldName)) continue;
+    if (
+      parsed !== undefined &&
+      FieldsUnknownToOlderRuntimes.has(parsed.fieldName) &&
+      sourceBlocks !== undefined &&
+      !sourceBlocks.has(parsed.blockId)
+    )
+      continue;
     // Drop production for running blocks and their downstream closure (see above).
     if (
       parsed !== undefined &&

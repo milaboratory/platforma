@@ -2,6 +2,7 @@ import type { BlockApiV1 } from "./block_api_v1";
 import type { BlockApiV2 } from "./block_api_v2";
 import type { BlockApiV3 } from "./block_api_v3";
 import type {
+  ArgsIssue,
   BlockCodeKnownFeatureFlags,
   BlockOutputsBase,
   BlockStateV3,
@@ -98,6 +99,18 @@ export type BlockModelInfo = {
   pluginIds: PluginHandle[];
   featureFlags: BlockCodeKnownFeatureFlags;
   pluginPublicOutputs: Record<string, Record<string, PublicOutputFieldDef>>;
+  /**
+   * Issues of the args the block derives from `data`, as its args validation reports them; a
+   * throwing args function gives one error. Absent in blocks built with an SDK that cannot
+   * report them.
+   */
+  argsIssues?: (data: unknown) => ArgsIssue[];
+  /**
+   * Issues of the prerun args the block derives from `data`. Empty for a block without its own
+   * prerun args: its prerun runs on args, whose issues are in {@link argsIssues}. Absent in
+   * blocks built with an SDK that cannot report them.
+   */
+  prerunArgsIssues?: (data: unknown) => ArgsIssue[];
 };
 
 export type PlatformaApiVersion = Platforma["apiVersion"];

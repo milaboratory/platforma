@@ -2,6 +2,7 @@ import type { Optional } from "utility-types";
 import type {
   AccessorHandle,
   Branded,
+  OutputDependency,
   PObjectId,
   StringifiedJson,
   SUniversalPColumnId,
@@ -135,6 +136,12 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   // Blocks
   //
 
+  /**
+   * Id of the block this model code runs for. Available only when
+   * `featureFlags.blockIdSupport` is set.
+   */
+  getBlockId(): string;
+
   /** @deprecated at some point will stop working and will return dummy values */
   getBlockLabel(blockId: string): string;
 
@@ -167,6 +174,16 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
    * lives sandbox-side.
    */
   getUpstreamBlockCtx(): ReadonlyArray<UpstreamBlockCtx<AHandle>>;
+
+  //
+  // Output dependencies
+  //
+
+  /**
+   * References to this block's outputs held in the args of blocks below it in the project.
+   * Available only when `featureFlags.outputDependenciesSupport` is set.
+   */
+  getOutputDependencies(): OutputDependency[];
 
   //
   // PFrame / PTable
@@ -214,7 +231,29 @@ export const GlobalCfgRenderCtxFeatureFlags = {
   pTablePartitionFiltersSupport: true as const,
   pFrameInSetFilterSupport: true as const,
   lazyColumnStatusSupport: true as const,
+  outputDependenciesSupport: true as const,
+  blockIdSupport: true as const,
+  argsFieldsSupport: true as const,
 };
+
+/**
+ * Args of a block other than the ones `args` and `activeArgs` give, by name:
+ * - `currentDraftArgs` — the args the block's validation found errors in; present only while
+ *   `args` is absent for that reason;
+ * - `currentPrerunArgs` — the prerun args derived from the current data, ready for the prerun;
+ * - `currentDraftPrerunArgs` — the prerun args validation found errors in; present only while
+ *   `currentPrerunArgs` is absent for that reason;
+ * - `stagingArgs` — the prerun args of the prerun last run.
+ */
+export const ArgsFieldNames = [
+  "currentDraftArgs",
+  "currentPrerunArgs",
+  "currentDraftPrerunArgs",
+  "stagingArgs",
+] as const;
+
+/** A name of {@link ArgsFieldNames}. */
+export type ArgsFieldName = (typeof ArgsFieldNames)[number];
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods, ServiceDispatch {
   //
@@ -231,6 +270,11 @@ export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods, ServiceDi
   readonly uiState?: string | (() => string);
   readonly data: string | (() => string);
   readonly activeArgs: undefined | string | (() => string | undefined);
+  /**
+   * The args named by `name` as a JSON string, `undefined` when the block has none of them.
+   * Available only when `featureFlags.argsFieldsSupport` is set.
+   */
+  readonly argsField: (name: ArgsFieldName) => string | undefined;
 
   readonly blockStorage: () => StringifiedJson;
 

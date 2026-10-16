@@ -35,10 +35,14 @@ export * from "./components/PlAdvancedFilter";
 
 export * from "./components/PlDatasetSelector";
 
+export * from "./components/PlBlockDependencies";
+export * from "./components/PlBlockName";
+
 export * from "./defineApp";
 
 export { usePlugin } from "./composition/usePlugin";
 export type { PluginState } from "./composition/usePlugin";
+export { useOpenBlock } from "./composition/useOpenBlock";
 export type {
   PluginHandle,
   PluginFactoryLike,

@@ -1,4 +1,5 @@
 import type {
+  ArgsIssue,
   BlockRenderingMode,
   BlockSection,
   OutputWithStatus,
@@ -36,6 +37,9 @@ import {
   deriveArgsFromStorage,
   derivePrerunArgsFromStorage,
   deriveTemplateParamsFromStorage,
+  argsChannelIssues,
+  computeArgsChannel,
+  type ArgsChannel,
 } from "./block_storage_callbacks";
 import { type PluginName } from "./block_storage";
 import type {
@@ -45,7 +49,7 @@ import type {
   InferOutputsFromLambdas,
 } from "./bconfig";
 import { downgradeCfgOrLambda, isConfigLambda } from "./bconfig";
-import type { PlatformaExtended } from "./platforma";
+import type { BlockModelInfo, PlatformaExtended } from "./platforma";
 import {
   BLOCK_STORAGE_FACADE_VERSION,
   BlockStorageFacadeCallbacks,
@@ -127,7 +131,11 @@ interface BlockModelV3Config<
   enrichmentTargets: ConfigRenderLambda | undefined;
   featureFlags: BlockCodeKnownFeatureFlags;
   deriveArgs: ((data: unknown) => unknown) | undefined;
+  /** Lists the issues of the args `deriveArgs` returned. */
+  argsValidation: ((input: { args: unknown; data: unknown }) => unknown) | undefined;
   derivePrerunArgs: ((data: unknown) => unknown) | undefined;
+  /** Lists the issues of the prerun args `derivePrerunArgs` returned, received as `args`. */
+  prerunArgsValidation: ((input: { args: unknown; data: unknown }) => unknown) | undefined;
   /** Projects block data back to this kind's params for template export. */
   deriveTemplateParams: ((data: Data) => Params) | undefined;
   /**
@@ -152,6 +160,7 @@ export class BlockModelV3<
   Plugins extends Record<string, PluginRecord> = {},
   Transfers extends Record<string, unknown> = {},
   Params = unknown,
+  PrerunArgs = unknown,
 > {
   private constructor(
     private readonly config: BlockModelV3Config<OutputsCfg, Data, Plugins, Transfers, Params>,
@@ -228,7 +237,9 @@ export class BlockModelV3<
       enrichmentTargets: undefined,
       featureFlags: { ...BlockModelV3.FEATURE_FLAGS },
       deriveArgs: undefined,
+      argsValidation: undefined,
       derivePrerunArgs: undefined,
+      prerunArgsValidation: undefined,
       deriveTemplateParams: undefined,
       plugins: {},
     });
@@ -257,7 +268,8 @@ export class BlockModelV3<
     Href,
     Plugins,
     Transfers,
-    Params
+    Params,
+    PrerunArgs
   >;
   /**
    * Add output cell to the configuration
@@ -280,13 +292,14 @@ export class BlockModelV3<
     Href,
     Plugins,
     Transfers,
-    Params
+    Params,
+    PrerunArgs
   >;
   public output(
     key: string,
     cfgOrRf: RenderFunction<Args, Data, unknown>,
     flags: ConfigRenderLambdaFlags = {},
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
     return new BlockModelV3({
       ...this.config,
       outputs: {
@@ -316,7 +329,8 @@ export class BlockModelV3<
     Href,
     Plugins,
     Transfers,
-    Params
+    Params,
+    PrerunArgs
   > {
     return this.output(key, rf, { retentive: true });
   }
@@ -333,21 +347,59 @@ export class BlockModelV3<
    * Sets a function to derive block args from data.
    * This is called during setData to compute the args that will be used for block execution.
    *
-   * @example
-   * .args<BlockArgs>((data) => ({ numbers: data.numbers }))
+   * The function derives args from incomplete data too; whether the args are ready to run is
+   * decided by {@link argsValidation}. Throwing still marks the args as not ready, with the
+   * thrown message as the one error, and so does returning `undefined`, with no reason given.
+   *
+   * Replaces the validation set by an earlier {@link argsValidation}: that one checked args of
+   * another function.
    *
    * @example
-   * .args<BlockArgs>((data) => {
-   *   if (data.numbers.length === 0) throw new Error('Numbers required'); // block not ready
-   *   return { numbers: data.numbers };
-   * })
+   * .args<BlockArgs>((data) => ({ numbers: data.numbers }))
+   *   .argsValidation(({ data }) =>
+   *     data.numbers.length === 0 ? [{ severity: "error", message: "Numbers are required" }] : [],
+   *   )
    */
   public args<A>(
     lambda: (data: Data) => A,
-  ): BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
-    return new BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
+  ): BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
+    return new BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs>({
       ...this.config,
       deriveArgs: lambda as (data: unknown) => unknown,
+      argsValidation: undefined,
+    });
+  }
+
+  /**
+   * Sets a function listing the issues of the args {@link args} derived, given the data they
+   * were derived from. Called on every data change, only for args other than `undefined`.
+   *
+   * - An `error` keeps the block from running. A block that declares no {@link prerunArgs} also
+   *   skips its prerun.
+   * - A `warning` leaves the block runnable; the issue is only reported.
+   * - An empty list means the args are ready. So does declaring no validation.
+   * - Throwing counts as one error with the thrown message.
+   *
+   * The issues reach the block UI as `app.argsIssues` and the project overview as `argsIssues`.
+   * Must follow {@link args}.
+   *
+   * @example
+   * .argsValidation(({ data }) => {
+   *   const issues: ArgsIssue[] = [];
+   *   if (!data.abundanceRef) issues.push({ severity: "error", message: "Abundance is required" });
+   *   if (data.threshold < 0.6) issues.push({ severity: "warning", message: "Low threshold" });
+   *   return issues;
+   * })
+   */
+  public argsValidation(
+    fn: (input: { args: Exclude<Args, undefined>; data: Data }) => readonly ArgsIssue[],
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
+    if (this.config.deriveArgs === undefined) {
+      throw new Error("argsValidation() must follow args(): it validates what args() returns.");
+    }
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs>({
+      ...this.config,
+      argsValidation: fn as (input: { args: unknown; data: unknown }) => unknown,
     });
   }
 
@@ -355,11 +407,18 @@ export class BlockModelV3<
    * Sets a function to derive pre-run args from data (optional).
    * This is called during setData to compute the args that will be used for staging/pre-run phase.
    *
-   * If not defined, defaults to using the args() function result.
-   * If defined, uses its return value for the staging / prerun phase.
+   * If not defined, the prerun runs on the args() result, and only while {@link argsValidation}
+   * finds no errors in them.
+   * If defined, uses its return value for the staging / prerun phase; whether those args are
+   * ready is decided by {@link prerunArgsValidation} alone, never by {@link argsValidation}.
    *
    * The staging / prerun phase runs only if currentPrerunArgs differs from the executed
    * version of prerunArgs (same comparison logic as currentArgs vs prodArgs).
+   *
+   * Returning `undefined`, or throwing, skips the prerun. Prefer
+   * {@link prerunArgsValidation}: it says why.
+   *
+   * Replaces the validation set by an earlier {@link prerunArgsValidation}.
    *
    * @example
    * .prerunArgs((data) => ({ numbers: data.numbers }))
@@ -371,12 +430,45 @@ export class BlockModelV3<
    *   return { numbers: data.numbers };
    * })
    */
-  public prerunArgs(
-    fn: (data: Data) => unknown,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
+  public prerunArgs<PA>(
+    fn: (data: Data) => PA,
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PA> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PA>({
       ...this.config,
       derivePrerunArgs: fn as (data: unknown) => unknown,
+      prerunArgsValidation: undefined,
+    });
+  }
+
+  /**
+   * Sets a function listing the issues of the prerun args {@link prerunArgs} derived, given the
+   * data they were derived from. Same rules as {@link argsValidation}, for the prerun: an `error`
+   * skips the prerun, a `warning` does not. The issues reach the block UI as
+   * `app.prerunArgsIssues`.
+   *
+   * Must follow {@link prerunArgs}: a block without it runs its prerun on args, gated by
+   * {@link argsValidation}.
+   *
+   * @example
+   * .prerunArgs((data) => ({ dataset: data.datasetRef }))
+   * .prerunArgsValidation(({ prerunArgs }) =>
+   *   prerunArgs.dataset === undefined
+   *     ? [{ severity: "error", message: "Dataset is required" }]
+   *     : [],
+   * )
+   */
+  public prerunArgsValidation(
+    fn: (input: { prerunArgs: Exclude<PrerunArgs, undefined>; data: Data }) => readonly ArgsIssue[],
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
+    if (this.config.derivePrerunArgs === undefined) {
+      throw new Error(
+        "prerunArgsValidation() must follow prerunArgs(): it validates what prerunArgs() returns.",
+      );
+    }
+    const validate = fn as (input: { prerunArgs: unknown; data: unknown }) => unknown;
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs>({
+      ...this.config,
+      prerunArgsValidation: ({ args, data }) => validate({ prerunArgs: args, data }),
     });
   }
 
@@ -410,8 +502,8 @@ export class BlockModelV3<
    */
   public templateParams(
     fn: (data: Data) => Params,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs>({
       ...this.config,
       deriveTemplateParams: fn,
     });
@@ -423,7 +515,16 @@ export class BlockModelV3<
     const RF extends RenderFunction<Args, Data, Ret>,
   >(
     rf: RF,
-  ): BlockModelV3<Args, OutputsCfg, Data, DeriveHref<ReturnType<RF>>, Plugins, Transfers, Params> {
+  ): BlockModelV3<
+    Args,
+    OutputsCfg,
+    Data,
+    DeriveHref<ReturnType<RF>>,
+    Plugins,
+    Transfers,
+    Params,
+    PrerunArgs
+  > {
     return new BlockModelV3<
       Args,
       OutputsCfg,
@@ -431,7 +532,8 @@ export class BlockModelV3<
       DeriveHref<ReturnType<RF>>,
       Plugins,
       Transfers,
-      Params
+      Params,
+      PrerunArgs
     >({
       ...this.config,
       // Replace the default sections callback with the user-provided one
@@ -448,8 +550,8 @@ export class BlockModelV3<
   /** Sets a rendering function to derive block title, shown for the block in the left blocks-overview panel. */
   public title(
     rf: RenderFunction<Args, Data, string>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs>({
       ...this.config,
       title: createAndRegisterRenderLambda({
         handle: "title",
@@ -460,8 +562,8 @@ export class BlockModelV3<
 
   public subtitle(
     rf: RenderFunction<Args, Data, string>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs>({
       ...this.config,
       subtitle: createAndRegisterRenderLambda({
         handle: "subtitle",
@@ -472,8 +574,8 @@ export class BlockModelV3<
 
   public tags(
     rf: RenderFunction<Args, Data, string[]>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs>({
       ...this.config,
       tags: createAndRegisterRenderLambda({
         handle: "tags",
@@ -485,8 +587,8 @@ export class BlockModelV3<
   /** Sets or overrides feature flags for the block. */
   public withFeatureFlags(
     flags: Partial<BlockCodeKnownFeatureFlags>,
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs>({
       ...this.config,
       featureFlags: { ...this.config.featureFlags, ...flags },
     });
@@ -498,8 +600,8 @@ export class BlockModelV3<
    */
   public enriches(
     lambda: (args: Args) => PlRef[],
-  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params> {
-    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params>({
+  ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
+    return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs>({
       ...this.config,
       enrichmentTargets: createAndRegisterRenderLambda({
         handle: "enrichmentTargets",
@@ -571,7 +673,8 @@ export class BlockModelV3<
       >;
     },
     Omit<Transfers, PluginId>,
-    Params
+    Params,
+    PrerunArgs
   >;
   public plugin(
     instance: PluginInstanceClass,
@@ -583,7 +686,8 @@ export class BlockModelV3<
     Href,
     Record<string, PluginRecord>,
     Record<string, unknown>,
-    Params
+    Params,
+    PrerunArgs
   > {
     const pluginId = instance.id;
     const plugin = instance[CREATE_PLUGIN_MODEL]();
@@ -630,6 +734,15 @@ export class BlockModelV3<
     >
   > {
     if (this.config.deriveArgs === undefined) throw new Error("Args rendering function not set.");
+    if (
+      this.config.prerunArgsValidation !== undefined &&
+      this.config.derivePrerunArgs === undefined
+    ) {
+      throw new Error(
+        "prerunArgsValidation() is set without prerunArgs(). A block without prerunArgs() runs " +
+          "its prerun on args(), validated by argsValidation().",
+      );
+    }
     if (this.config.deriveTemplateParams === undefined)
       throw new Error(
         "templateParams() not set. Every block must project its state back to its kind's params, " +
@@ -650,10 +763,17 @@ export class BlockModelV3<
     const {
       dataModel,
       deriveArgs,
+      argsValidation,
       derivePrerunArgs,
+      prerunArgsValidation,
       deriveTemplateParams,
       parseInitializationParams,
     } = this.config;
+    const argsChannel: ArgsChannel = { derive: deriveArgs, validate: argsValidation };
+    const prerunChannel: ArgsChannel | undefined =
+      derivePrerunArgs === undefined
+        ? undefined
+        : { derive: derivePrerunArgs, validate: prerunArgsValidation };
 
     function getPlugin(handle: PluginHandle): PluginRecord {
       const plugin = plugins[handle];
@@ -682,9 +802,9 @@ export class BlockModelV3<
           createPluginData: (handle) => getPlugin(handle).model.getDefaultData(),
         }),
       [BlockStorageFacadeCallbacks.ArgsDerive]: (storageJson) =>
-        deriveArgsFromStorage(storageJson, deriveArgs),
+        deriveArgsFromStorage(storageJson, argsChannel),
       [BlockStorageFacadeCallbacks.PrerunArgsDerive]: (storageJson) =>
-        derivePrerunArgsFromStorage(storageJson, deriveArgs, derivePrerunArgs),
+        derivePrerunArgsFromStorage(storageJson, { args: argsChannel, prerun: prerunChannel }),
       [BlockStorageFacadeCallbacks.InitializationParamsDerive]: (storageJson) =>
         deriveTemplateParamsFromStorage(
           storageJson,
@@ -782,7 +902,12 @@ export class BlockModelV3<
           pluginPublicOutputs: Object.fromEntries(
             pluginHandles.map((handle) => [handle, plugins[handle].model.publicOutputDef]),
           ),
-        },
+          argsIssues: (data: unknown) => argsChannelIssues(computeArgsChannel(data, argsChannel)),
+          prerunArgsIssues: (data: unknown) =>
+            prerunChannel === undefined
+              ? []
+              : argsChannelIssues(computeArgsChannel(data, prerunChannel)),
+        } satisfies BlockModelInfo,
       } as any;
     }
   }
@@ -827,7 +952,9 @@ type _ConfigTest = Expect<
     {
       renderingMode: BlockRenderingMode;
       deriveArgs: ((data: unknown) => unknown) | undefined;
+      argsValidation: ((input: { args: unknown; data: unknown }) => unknown) | undefined;
       derivePrerunArgs: ((data: unknown) => unknown) | undefined;
+      prerunArgsValidation: ((input: { args: unknown; data: unknown }) => unknown) | undefined;
       deriveTemplateParams: ((data: _TestData) => unknown) | undefined;
       parseInitializationParams: (value: unknown) => unknown;
       dataModel: DataModel<_TestData, unknown, {}>;
