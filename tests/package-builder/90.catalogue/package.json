@@ -4,9 +4,9 @@
   "private": true,
   "description": "The software description example",
   "scripts": {
-    "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
-    "reset": "npm run cleanup && rm -rf ./node_modules/",
-    "test:check": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build --docker-no-autopush"
+    "cleanup": "shx rm -rf ./dist/ && shx rm -f ./pkg-*.tgz",
+    "reset": "npm run cleanup && shx rm -rf ./node_modules/",
+    "test:check": "shx rm -rf dist && no-env PL_PKG_DEV -- pl-pkg build --docker-no-autopush"
   },
   "block-software": {
     "entrypoints": {
@@ -48,9 +48,11 @@
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/no-env": "workspace:*",
     "@platforma-sdk/package-builder": "workspace:*",
     "@milaboratories/example-pl-package-asset-1": "workspace:*",
     "@milaboratories/example-pl-package-runenv-1": "workspace:*",
-    "@milaboratories/example-pl-package-integration-1": "workspace:*"
+    "@milaboratories/example-pl-package-integration-1": "workspace:*",
+    "shx": "catalog:"
   }
 }

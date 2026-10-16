@@ -4,9 +4,9 @@
   "private": true,
   "description": "Example of software to be used as runenv",
   "scripts": {
-    "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
-    "reset": "npm run cleanup && rm -rf ./node_modules/",
-    "test:check": "rm -rf dist && env -u PL_PKG_DEV pl-pkg build --entrypoint=1.2.3 --docker-no-autopush && node ./verify.mjs"
+    "cleanup": "shx rm -rf ./dist/ && shx rm -f ./pkg-*.tgz",
+    "reset": "npm run cleanup && shx rm -rf ./node_modules/",
+    "test:check": "shx rm -rf dist && no-env PL_PKG_DEV -- pl-pkg build --entrypoint=1.2.3 --docker-no-autopush && node ./verify.mjs"
   },
   "block-software": {
     "registries": {
@@ -32,6 +32,8 @@
   "license": "UNLICENSED",
   "dependencies": {},
   "devDependencies": {
-    "@platforma-sdk/package-builder": "workspace:*"
+    "@milaboratories/no-env": "workspace:*",
+    "@platforma-sdk/package-builder": "workspace:*",
+    "shx": "catalog:"
   }
 }

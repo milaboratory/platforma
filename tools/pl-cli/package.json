@@ -24,7 +24,7 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest run --passWithNoTests",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
@@ -42,6 +42,7 @@
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
+    "shx": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",
