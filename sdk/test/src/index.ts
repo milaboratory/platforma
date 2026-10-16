@@ -40,7 +40,7 @@ export {
 } from "./fixtures/peptide";
 export type { ModelRenderState } from "./model-harness";
 export { BlockModelHarness } from "./model-harness";
-export { expectRecording, recordedDataset } from "./recording";
+export { RECORDED_BLOCK_ID, expectRecording, recordColumns, recordedDataset } from "./recording";
 export type {
   ColumnSource,
   ExpectRecordingOptions,
