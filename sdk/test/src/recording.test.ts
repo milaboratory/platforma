@@ -270,9 +270,35 @@ describe("expectRecording", () => {
       opts,
     );
     expect(rec.columns).toHaveLength(2);
+    // Same name, domain and axes, another value type: a different column.
+    const retyped = {
+      spec: spec("pl7.app/vdj/sequence", [CLUSTER], "Int", {
+        "pl7.app/clustering/sequenceContent": "referenceCentroid",
+      }),
+      rows: [{ keys: ["A"], value: 1 }],
+    };
+    await expect(
+      expectRecording(
+        source({ a: retyped, b: { spec: seq("centroid"), rows: [{ keys: ["A"], value: "Y" }] } }),
+        opts,
+      ),
+    ).rejects.toThrow(/would drop columns/);
     await expect(
       expectRecording(source({ b: { spec: seq("centroid"), rows: [] } }), opts),
     ).rejects.toThrow(/would drop columns/);
+    await fsp.rm(dir, { recursive: true });
+  });
+});
+
+describe("writeRecording", () => {
+  test("a value TSV cannot hold leaves the saved recording untouched", async () => {
+    const dir = path.join(os.tmpdir(), `rec-${randomUUID()}`);
+    const rec = await recordColumns(SRC(), { scenario: "s", blockId: "b1" });
+    await writeRecording(dir, rec);
+    const before = await fsp.readFile(path.join(dir, "manifest.json"), "utf8");
+    const bad = { ...rec, scenario: "changed", rows: [{ ...rec.rows[0], label: "x\ty" }] };
+    await expect(writeRecording(dir, bad)).rejects.toThrow(/tab or line break/);
+    expect(await fsp.readFile(path.join(dir, "manifest.json"), "utf8")).toBe(before);
     await fsp.rm(dir, { recursive: true });
   });
 });
