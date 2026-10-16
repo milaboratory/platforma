@@ -1,6 +1,7 @@
 import type { ProjectMeta } from "./project";
 import type { BlockPackSpec } from "./block_registry/block_pack_spec";
 import type {
+  ArgsIssue,
   BlockCodeFeatureFlags,
   BlockRenderingMode,
   BlockSection,
@@ -134,6 +135,14 @@ export type BlockStateOverview = {
    * May be unavailable, if block-pack for this block is not yet materialized.
    */
   inputsValid: boolean | undefined;
+
+  /**
+   * Problems the block's validation found in the args it derived from its current data. Holds
+   * every error that keeps {@link inputsValid} false, and warnings, which leave the block
+   * runnable. Empty when the block reports none, including a block whose model cannot report
+   * issues, and when the issues on record were found for data the block no longer holds.
+   */
+  argsIssues: ArgsIssue[];
 
   /**
    * True if current block can be executed. This takes into account can run of

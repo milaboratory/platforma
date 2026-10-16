@@ -31,6 +31,7 @@ import {
   type ColumnOverriddenKey,
 } from "./overridden";
 import { canonicalizeJson, parseJsonSafely } from "../../../json";
+import { isColumnValueKey, type ColumnValueKey } from "./column_value";
 import { AxisSpec, PColumnSpec } from "./spec";
 import { isString } from "es-toolkit";
 
@@ -165,7 +166,8 @@ export function peelJsonLayers(s: string): PeeledJsonLayers | undefined {
 }
 
 /**
- * Rewrite every block id buried inside a column id.
+ * Rewrite every block id buried inside a column id, or inside the column of a column value
+ * id — a picked value names its producer through that column's leaf.
  *
  * A {@link GlobalPObjectKey} leaf names its upstream by block id, and the wrapper key forms
  * nest by *string* id rather than by object — so a block id can sit under several layers of
@@ -200,18 +202,51 @@ export function remapColumnIdBlockIds<T extends string | ColumnUniversalKey>(
  *
  * Escape padding is peeled and put back, so an id that reached params through an extra
  * `JSON.stringify` is rewritten in place and comes back wrapped as it was found. A string
- * that does not peel to a column key is left alone: params hold ordinary strings too.
+ * that peels to neither a column key nor a column value key is left alone: params hold
+ * ordinary strings too.
  */
 function remapIdString(id: string, remapBlockId: (blockId: string) => string): string | undefined {
   const peeled = peelJsonLayers(id);
-  if (peeled === undefined || !isColumnUniversalKey(peeled.value)) return undefined;
+  if (peeled === undefined) return undefined;
 
-  const remappedKey = remapKey(peeled.value, remapBlockId);
-  if (remappedKey === undefined) return undefined;
+  let rebuilt: string;
+  if (isColumnValueKey(peeled.value)) {
+    const remappedKey = remapValueKey(peeled.value, remapBlockId);
+    if (remappedKey === undefined) return undefined;
+    rebuilt = canonicalizeJson<ColumnValueKey>(remappedKey);
+  } else if (isColumnUniversalKey(peeled.value)) {
+    const remappedKey = remapKey(peeled.value, remapBlockId);
+    if (remappedKey === undefined) return undefined;
+    rebuilt = stringifyColumnId(remappedKey);
+  } else {
+    return undefined;
+  }
 
-  let rebuilt: string = stringifyColumnId(remappedKey);
   for (let layer = 0; layer < peeled.layers; layer++) rebuilt = JSON.stringify(rebuilt);
   return rebuilt;
+}
+
+/**
+ * {@link remapIdString} over a column id. Remapping keeps an id's shape, so a column id comes
+ * back a column id.
+ */
+function remapColumnIdString(
+  id: ColumnUniversalId,
+  remapBlockId: (blockId: string) => string,
+): ColumnUniversalId | undefined {
+  return remapIdString(id, remapBlockId) as ColumnUniversalId | undefined;
+}
+
+/**
+ * The value-id half of {@link remapIdString}. `undefined` means "nothing to change". Only the
+ * column carries block ids; the value is cell data and stays as it is.
+ */
+function remapValueKey(
+  key: ColumnValueKey,
+  remapBlockId: (blockId: string) => string,
+): ColumnValueKey | undefined {
+  const column = remapColumnIdString(key.column, remapBlockId);
+  return column === undefined ? undefined : { ...key, column };
 }
 
 /** The key half of {@link remapColumnIdBlockIds}. `undefined` means "nothing to change". */
@@ -228,8 +263,8 @@ function remapKey(
   if (isLocalPObjectKey(key)) return undefined;
 
   if (isColumnFilteredKey(key)) {
-    const source = remapIdString(key.source, remapBlockId);
-    return source === undefined ? undefined : { ...key, source: source as ColumnUniversalId };
+    const source = remapColumnIdString(key.source, remapBlockId);
+    return source === undefined ? undefined : { ...key, source };
   }
 
   if (isColumnOverriddenKey(key)) {
@@ -256,14 +291,14 @@ function remapDiscoveredKey(
   key: ColumnDiscoveredKey,
   remapBlockId: (blockId: string) => string,
 ): ColumnDiscoveredKey | undefined {
-  const column = remapIdString(key.column, remapBlockId);
+  const column = remapColumnIdString(key.column, remapBlockId);
 
   let pathChanged = false;
   const path = key.path?.map((item) => {
-    const itemColumn = remapIdString(item.column, remapBlockId);
+    const itemColumn = remapColumnIdString(item.column, remapBlockId);
     if (itemColumn === undefined) return item;
     pathChanged = true;
-    return { ...item, column: itemColumn as ColumnUniversalId };
+    return { ...item, column: itemColumn };
   });
 
   let queriesChanged = false;
@@ -281,7 +316,7 @@ function remapDiscoveredKey(
   if (column === undefined && !pathChanged && !queriesChanged) return undefined;
   return {
     ...key,
-    ...(column !== undefined ? { column: column as ColumnUniversalId } : {}),
+    ...(column !== undefined ? { column } : {}),
     ...(pathChanged ? { path } : {}),
     ...(queriesChanged ? { queriesQualifications } : {}),
   };

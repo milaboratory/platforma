@@ -1,5 +1,6 @@
 import type { ResultOrError, BlockConfig, BlockStorage, PlRef } from "@platforma-sdk/model";
-import type { StringifiedJson } from "@milaboratories/pl-model-common";
+import type { ColumnReference, StringifiedJson } from "@milaboratories/pl-model-common";
+import { collectColumnReferences } from "@milaboratories/pl-model-common";
 import {
   extractCodeWithInfo,
   ensureError,
@@ -12,6 +13,7 @@ import { executeSingleLambda } from "../js_render";
 import type { SignedResourceId } from "@milaboratories/pl-client";
 import { ConsoleLoggerAdapter, type MiLogger } from "@milaboratories/ts-helpers";
 import { getDebugFlags } from "../debug";
+import { parseDerivedArgs, type ArgsChannel, type DerivedArgs } from "./derived_args";
 
 type EnrichmentTargetsRequest = {
   blockConfig: () => BlockConfig;
@@ -34,8 +36,8 @@ export type MigrationResult =
   | { error?: undefined; newStorageJson: StringifiedJson<BlockStorage>; info: string };
 
 /**
- * Result of args derivation from storage.
- * Returned by __pl_args_derive and __pl_prerunArgs_derive VM callbacks.
+ * Result of template params derivation from storage.
+ * Returned by the __pl_initializationParams_derive VM callback.
  */
 type ArgsDeriveResult = { error: string } | { error?: undefined; value: unknown };
 
@@ -65,6 +67,12 @@ export class ProjectHelper {
     },
   });
 
+  // An args resource never changes, so its id alone identifies the columns found in it.
+  private readonly columnReferencesCache = new LRUCache<
+    SignedResourceId,
+    readonly ColumnReference[]
+  >({ max: 1024 });
+
   constructor(
     private readonly quickJs: QuickJSWASMModule,
     public readonly logger: MiLogger = new ConsoleLoggerAdapter(),
@@ -76,72 +84,30 @@ export class ProjectHelper {
 
   /**
    * Derives args directly from storage JSON using VM callback.
-   * The VM extracts data from storage and calls the block's args() function.
+   * The VM extracts data from storage, calls the block's args() function and validates the result.
    *
    * This allows the middle layer to work only with storage JSON,
    * without needing to know the underlying data structure.
    *
    * @param blockConfig The block configuration (provides the model code)
    * @param storageJson Storage as JSON string
-   * @returns The derived args object, or error if derivation fails
+   * @returns The derived args, see {@link DerivedArgs}
    */
-  public deriveArgsFromStorage(
-    blockConfig: BlockConfig,
-    storageJson: string,
-  ): ResultOrError<unknown> {
-    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
-      return {
-        error: new Error("deriveArgsFromStorage is only supported for model API version 2"),
-      };
-    }
-
-    try {
-      const result = executeSingleLambda(
-        this.quickJs,
-        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.ArgsDerive],
-        extractCodeWithInfo(blockConfig),
-        storageJson,
-      ) as ArgsDeriveResult;
-
-      if (result.error !== undefined) {
-        return { error: new Error(result.error) };
-      }
-      return { value: result.value };
-    } catch (e) {
-      return { error: new Error("Args derivation from storage failed", { cause: ensureError(e) }) };
-    }
+  public deriveArgsFromStorage(blockConfig: BlockConfig, storageJson: string): DerivedArgs {
+    return this.deriveArgsChannel(blockConfig, storageJson, "args");
   }
 
   /**
    * Derives prerunArgs directly from storage JSON using VM callback.
-   * Falls back to args() if prerunArgs is not defined in the block model.
+   * A block without prerun args of its own runs its prerun on its args, only while they are
+   * ready; its issues are then reported by {@link deriveArgsFromStorage} alone.
    *
    * @param blockConfig The block configuration (provides the model code)
    * @param storageJson Storage as JSON string
-   * @returns The derived prerunArgs, or undefined if derivation fails
+   * @returns The derived prerun args, see {@link DerivedArgs}
    */
-  public derivePrerunArgsFromStorage(blockConfig: BlockConfig, storageJson: string): unknown {
-    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
-      throw new Error("derivePrerunArgsFromStorage is only supported for model API version 2");
-    }
-
-    try {
-      const result = executeSingleLambda(
-        this.quickJs,
-        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.PrerunArgsDerive],
-        extractCodeWithInfo(blockConfig),
-        storageJson,
-      ) as ArgsDeriveResult;
-
-      if (result.error !== undefined) {
-        // Return undefined if derivation fails (skip block in staging)
-        return undefined;
-      }
-      return result.value;
-    } catch {
-      // Return undefined if derivation fails (skip block in staging)
-      return undefined;
-    }
+  public derivePrerunArgsFromStorage(blockConfig: BlockConfig, storageJson: string): DerivedArgs {
+    return this.deriveArgsChannel(blockConfig, storageJson, "prerun");
   }
 
   /**
@@ -160,7 +126,7 @@ export class ProjectHelper {
    * carries params.
    *
    * Unlike {@link derivePrerunArgsFromStorage}, a failure here is surfaced rather
-   * than swallowed — a prerun that cannot derive args just skips a block in
+   * than kept to the block — a prerun that cannot derive args just skips a block in
    * staging, whereas an export that silently drops a block produces a template
    * that does not describe the project.
    *
@@ -226,6 +192,38 @@ export class ProjectHelper {
     }
   }
 
+  private deriveArgsChannel(
+    blockConfig: BlockConfig,
+    storageJson: string,
+    channel: ArgsChannel,
+  ): DerivedArgs {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
+      return {
+        type: "failed",
+        error: new Error("Args derivation from storage is only supported for model API version 2"),
+      };
+    }
+
+    const callback =
+      channel === "args"
+        ? BlockStorageFacadeCallbacks.ArgsDerive
+        : BlockStorageFacadeCallbacks.PrerunArgsDerive;
+    try {
+      const result = executeSingleLambda(
+        this.quickJs,
+        blockConfig.blockLifecycleCallbacks[callback],
+        extractCodeWithInfo(blockConfig),
+        storageJson,
+      );
+      return parseDerivedArgs(result, channel);
+    } catch (e) {
+      return {
+        type: "failed",
+        error: new Error("Args derivation from storage failed", { cause: ensureError(e) }),
+      };
+    }
+  }
+
   private calculateEnrichmentTargets(req: EnrichmentTargetsRequest): PlRef[] | undefined {
     const blockConfig = req.blockConfig();
     if (blockConfig.enrichmentTargets === undefined) return undefined;
@@ -248,6 +246,24 @@ export class ProjectHelper {
     if (key === undefined) return this.calculateEnrichmentTargets(req);
     const cacheKey = `${key.argsRid}:${key.blockPackRid}`;
     return this.enrichmentTargetsCache.memo(cacheKey, { context: req }).value;
+  }
+
+  /**
+   * Columns referenced by a block's args, with the values of them the args picked, read from the
+   * args resource `argsRid`. `args` returns `undefined` while the resource data is not loaded yet;
+   * nothing is remembered for such a read, so the references are found once the data arrives.
+   */
+  public getColumnReferences(
+    argsRid: SignedResourceId,
+    args: () => unknown,
+  ): readonly ColumnReference[] {
+    const cached = this.columnReferencesCache.get(argsRid);
+    if (cached !== undefined) return cached;
+    const data = args();
+    if (data === undefined) return [];
+    const references = collectColumnReferences(data);
+    this.columnReferencesCache.set(argsRid, references);
+    return references;
   }
 
   // =============================================================================
