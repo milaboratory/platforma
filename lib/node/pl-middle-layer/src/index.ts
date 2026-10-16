@@ -11,6 +11,10 @@ export * from "./network_check/network_check";
 // explicitly override ProjectListEntry from SDK
 export { type ProjectId, type ProjectListEntry } from "./model";
 
+// pl-client names the wire enum of a status report the same; the two are the same set of names,
+// which block_status_fold asserts. Consumers get the surface contract.
+export { type BlockStatusState } from "@milaboratories/pl-model-middle-layer";
+
 // needed by users of middle-layer
 export * from "@milaboratories/pl-client";
 export type { FieldType, ResourceType } from "@milaboratories/pl-client";

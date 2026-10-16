@@ -142,6 +142,19 @@ const readers: Reader[] = [
   { name: "listInput", read: (t, w) => t.get(new W(), R).listInputFields(w).sort().join() },
   { name: "listOutput", read: (t, w) => t.get(new W(), R).listOutputFields(w).sort().join() },
   { name: "listDynamic", read: (t, w) => t.get(new W(), R).listDynamicFields(w).sort().join() },
+  { name: "listFields", read: (t, w) => t.get(new W(), R).listFields(w).sort().join() },
+  ...["", "k1"].map(
+    (prefix): Reader => ({
+      name: "listKv:" + (prefix === "" ? "*" : prefix),
+      read: (t, w) =>
+        t
+          .get(new W(), R)
+          .listKeyValuesString(w, prefix)
+          .map((e) => `${e.key}=${e.value}`)
+          .sort()
+          .join(),
+    }),
+  ),
   ...["k1", "k2"].map(
     (k): Reader => ({
       name: "kv:" + k,

@@ -151,6 +151,10 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   // kvChangedGlobal? = new ChangeSource();
   kvChangedPerKey? = new KeyedChangeSource();
+  /** Fires when the KV key SET changes: a key is added or removed. Value changes do not fire it,
+   * {@link kvChangedPerKey} covers those. A reader that lists keys it does not know in advance
+   * ({@link listKeyValues}) needs both. */
+  kvKeyListChanged? = new ChangeSource();
 
   readonly id: SignedResourceId;
   originalResourceId: OptionalSignedResourceId;
@@ -372,6 +376,47 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     return this.kv.get(key);
   }
 
+  /**
+   * Every KV entry whose key starts with `prefix`, in insertion order.
+   *
+   * For a reader that does not know the keys in advance. It watches the key set and every key it
+   * returns, so a key appearing, disappearing or changing value all re-run the reader. A key
+   * outside the prefix does not.
+   */
+  public listKeyValues(
+    watcher: Watcher,
+    prefix: string = "",
+  ): { key: string; value: Uint8Array }[] {
+    this.kvKeyListChanged?.attachWatcher(watcher);
+    const ret: { key: string; value: Uint8Array }[] = [];
+    this.kv.forEach((value, key) => {
+      if (!key.startsWith(prefix)) return;
+      this.kvChangedPerKey?.attachWatcher(key, watcher);
+      ret.push({ key, value });
+    });
+    return ret;
+  }
+
+  /** {@link listKeyValues} with the values decoded as UTF-8 text. */
+  public listKeyValuesString(
+    watcher: Watcher,
+    prefix: string = "",
+  ): { key: string; value: string }[] {
+    return this.listKeyValues(watcher, prefix).map(({ key, value }) => ({
+      key,
+      value: cachedDecode(value),
+    }));
+  }
+
+  /** Every field of the resource, whatever its type. Watches all three field-list sources, so a
+   * field of any type appearing or disappearing re-runs the reader. */
+  public listFields(watcher: Watcher): string[] {
+    if (!this.inputsLocked) this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
+    if (!this.outputsLocked) this.outputFieldListChanged?.attachWatcher(watcher);
+    this.dynamicFieldListChanged?.attachWatcher(watcher);
+    return Array.from(this.fieldsMap.keys());
+  }
+
   public getKeyValueString(watcher: Watcher, key: string): string | undefined {
     const bytes = this.getKeyValue(watcher, key);
     if (bytes === undefined) return undefined;
@@ -444,6 +489,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.outputFieldListChanged?.markChanged("marked final");
     this.dynamicFieldListChanged?.markChanged("marked final");
     this.kvChangedPerKey?.markAllChanged("marked final");
+    this.kvKeyListChanged?.markChanged("marked final");
     this.finalChanged = undefined;
     this.resourceStateChange = undefined;
     this.dynamicFieldListChanged = undefined;
@@ -452,6 +498,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.lockedChange = undefined;
     // this.kvChangedGlobal = undefined;
     this.kvChangedPerKey = undefined;
+    this.kvKeyListChanged = undefined;
   }
 
   /** Used for invalidation */
@@ -465,6 +512,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.dynamicFieldListChanged?.markChanged("marked all changed");
     // this.kvChangedGlobal?.markChanged('marked all changed');
     this.kvChangedPerKey?.markAllChanged("marked all changed");
+    this.kvKeyListChanged?.markChanged("marked all changed");
     this.resourceRemoved.markChanged("marked all changed");
   }
 }
@@ -900,6 +948,9 @@ export class PlTreeState {
               kv.key,
               `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
             );
+            notEmpty(resource.kvKeyListChanged).markChanged(
+              `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
+            );
             changed = true;
             if (stat) stat.kvChanged++;
           } else if (Buffer.compare(current, kv.value) !== 0) {
@@ -923,6 +974,9 @@ export class PlTreeState {
               map.delete(key);
               notEmpty(resource!.kvChangedPerKey).markChanged(
                 key,
+                `kv deleted for ${resourceIdToString(resource!.id)}: ${key}`,
+              );
+              notEmpty(resource!.kvKeyListChanged).markChanged(
                 `kv deleted for ${resourceIdToString(resource!.id)}: ${key}`,
               );
               changed = true;

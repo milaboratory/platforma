@@ -21,3 +21,10 @@ export type {
   BlockStatusNode,
   BlockStatusTransition,
 } from "./block_status";
+export {
+  backendSupportsBlockStatus,
+  BlockStatusWatch,
+  readBlockStatusRoot,
+} from "./block_status_tree";
+export type { StatusContextNode } from "./block_status_fold";
+export { foldBlockStatus } from "./block_status_fold";

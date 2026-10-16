@@ -147,6 +147,20 @@ export function projectFieldName(blockId: string, fieldName: ProjectField["field
 const projectFieldPattern =
   /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodChainCtx|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious|prodStatus|stagingStatus)$/;
 
+/**
+ * The project fields holding the root status context of a render, as a regular expression over a
+ * field name.
+ *
+ * The project tree prunes these: a status context holds the whole status subtree of its render,
+ * which fans out with the samples of the run, and every status report into it is a KV write. Left
+ * in, the project tree would carry thousands of resources and recompute the project overview on
+ * every report. The status tree reads them instead, seeded at the context itself.
+ */
+export const ProjectStatusFieldPattern = "-(prod|staging)Status$";
+
+/** {@link ProjectStatusFieldPattern} as a compiled expression, for readers outside the backend. */
+export const projectStatusFieldRegex = new RegExp(ProjectStatusFieldPattern);
+
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);
   if (match === null) return undefined;

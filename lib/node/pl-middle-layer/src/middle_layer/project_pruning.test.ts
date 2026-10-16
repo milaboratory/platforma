@@ -206,6 +206,12 @@ const projectPruningCases: Array<{
     expected: ["x"],
   },
   {
+    name: "UserProject — status context fields dropped, others kept",
+    typeName: "UserProject",
+    fields: ["block1-prodStatus", "block1-stagingStatus", "block1-prodOutput", "block1-blockPack"],
+    expected: ["block1-prodOutput", "block1-blockPack"],
+  },
+  {
     name: "Blob — all fields dropped",
     typeName: "Blob",
     fields: ["data"],
