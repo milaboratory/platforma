@@ -2,21 +2,23 @@
   Recorded outputs. A block's test records the columns one of its runs exported into a folder
   under its test package: `manifest.json` with every column's PColumnSpec, and `data.tsv`
   with the outer join of the columns on their axes. The folder is two things at once: the
-  producer's golden test (`expectRecording`) and a consumer's upstream fixture
-  (`recordedDataset`), publishable through xsv-import without running the producer.
+  producer's golden test (`expectRecording`, a file snapshot of both files) and a consumer's
+  upstream fixture (`recordedDataset`), publishable through xsv-import without running the
+  producer.
 
   One TSV over the union of the axes: every column of a block has to come from one publisher
   (a consumer's workflow resolves only the blocks its args reference), and xsv-import's
-  `parentAxes` grouping takes exactly this layout. Each axis carries `filterOutRegex: "^$"`,
-  so a column keyed on some axes skips the rows that lack them.
+  `parentAxes` grouping takes exactly this layout. Each axis and each column carries
+  `filterOutRegex: "^$"`, so a column keeps only the rows where its own cell is filled.
 
-  An empty TSV cell is NA, so an empty string is recorded as NA: TSV cannot tell them apart.
+  An empty cell is NA: TSV cannot tell an empty string from a missing value.
 */
 
 import type { AxisSpec, PColumnSpec, PObjectId } from "@platforma-sdk/model";
-import { getAxisId, getPColumnSpecId } from "@platforma-sdk/model";
+import { canonicalizeJson, getAxisId, getPColumnSpecId } from "@platforma-sdk/model";
 import * as fsp from "node:fs/promises";
 import path from "node:path";
+import type { ExpectStatic } from "vitest";
 import type { DatasetShape, PublishableDataset, ShapeColumn, ShapeRow } from "./fixtures/dataset";
 import { shapeSpec } from "./fixtures/dataset";
 import type { XsvAxis, XsvValueType } from "./fixtures/xsv-spec";
@@ -52,9 +54,21 @@ export type Recording = RecordingManifest & {
 
 export const MANIFEST_FILE = "manifest.json";
 export const DATA_FILE = "data.tsv";
+export const BLOCK_ID_TOKEN = "{{blockId}}";
+export const RECORDED_BLOCK_ID = "recorded-upstream";
+
+/** Code-unit order: the same on every machine, unlike `localeCompare`. */
+const byCodeUnit = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
 
 /** An axis's identity (name, type, domain, context domain), independent of key order. */
-const axisKey = (a: AxisSpec) => canonicalJson(getAxisId(a));
+const axisKey = (a: AxisSpec) => canonicalizeJson(getAxisId(a));
+
+/** A column's full identity, independent of key order. */
+const columnKey = (spec: PColumnSpec) => canonicalizeJson(getPColumnSpecId(spec));
+
+/** A total order on columns: by name, then by identity. */
+const columnOrder = (a: ListedColumn, b: ListedColumn) =>
+  byCodeUnit(a.spec.name, b.spec.name) || byCodeUnit(columnKey(a.spec), columnKey(b.spec));
 
 const sanitize = (s: string) => s.replace(/\W+/g, "_");
 
@@ -74,7 +88,7 @@ function fileColumnName(
   }
   const first = taken.get(base) ?? {};
   const own = Object.entries(domain ?? {})
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => byCodeUnit(a, b))
     .filter(([k, v]) => first[k] !== v)
     .map(([, v]) => sanitize(v));
   let candidate = own.length > 0 ? `${base}_${own.join("_")}` : base;
@@ -83,30 +97,61 @@ function fileColumnName(
   return candidate;
 }
 
-/** A stable order for columns: by name, then domain, then axes. */
-const columnOrder = (a: ListedColumn, b: ListedColumn) =>
-  a.spec.name.localeCompare(b.spec.name) ||
-  canonicalJson(a.spec.domain ?? {}).localeCompare(canonicalJson(b.spec.domain ?? {})) ||
-  canonicalJson(a.spec.axesSpec).localeCompare(canonicalJson(b.spec.axesSpec)) ||
-  columnKey(a.spec).localeCompare(columnKey(b.spec));
+type Strings = Record<string, string>;
 
-/** A column's full identity, independent of key order. */
-const columnKey = (spec: PColumnSpec) => canonicalJson(getPColumnSpecId(spec));
+const mapValues = (r: Strings | undefined, f: (v: string) => string): Strings | undefined =>
+  r === undefined ? undefined : Object.fromEntries(Object.entries(r).map(([k, v]) => [k, f(v)]));
+
+/**
+ * An annotation holding JSON (`pl7.app/trace`, for one) is re-serialized with sorted keys: a
+ * block that builds it from a map prints keys in varying order across runs.
+ */
+function canonicalAnnotation(v: string): string {
+  if (!/^[[{]/.test(v)) return v;
+  try {
+    return canonicalizeJson(JSON.parse(v));
+  } catch {
+    return v;
+  }
+}
+
+/** An axis with `domain` applied to its domain values and `annotation` to its annotations. */
+function mapAxis(a: AxisSpec, domain: (v: string) => string, annotation = domain): AxisSpec {
+  return {
+    ...a,
+    domain: mapValues(a.domain, domain),
+    contextDomain: mapValues(a.contextDomain, domain),
+    annotations: mapValues(a.annotations, annotation),
+  };
+}
+
+/** The same for a column and each of its axes. */
+function mapColumn(
+  c: PColumnSpec,
+  domain: (v: string) => string,
+  annotation = domain,
+): PColumnSpec {
+  return {
+    ...c,
+    domain: mapValues(c.domain, domain),
+    contextDomain: mapValues(c.contextDomain, domain),
+    annotations: mapValues(c.annotations, annotation),
+    axesSpec: c.axesSpec.map((a) => mapAxis(a, domain, annotation)),
+  };
+}
 
 export type RecordOptions = {
   scenario: string;
   producer?: RecordingManifest["producer"];
   /** Columns to record; the source's columns when omitted. */
   columns?: ListedColumn[];
-  /** Leave out columns the predicate matches (large per-row payloads, for instance). */
-  exclude?: (spec: PColumnSpec) => boolean;
   /**
    * The producing block's id, replaced by `{{blockId}}` wherever a domain or annotation
    * carries it, so two runs of one scenario record the same specs.
    */
   blockId?: string;
-  /** Other run-specific values to replace, value to token. */
-  redact?: Record<string, string>;
+  /** Significant digits numeric values are rounded to, so float noise does not fail a run. */
+  digits?: number;
 };
 
 /** What the recorder reads: a `PFrameReader`, or anything with the same members. */
@@ -115,114 +160,62 @@ export type ColumnSource = {
   readById(columnId: PObjectId): Promise<ColumnRow[]>;
 };
 
-export const BLOCK_ID_TOKEN = "{{blockId}}";
-
-function replaceValues<T>(value: T, replacements: [string, string][]): T {
-  if (typeof value === "string") {
-    let out: string = value;
-    for (const [from, to] of replacements) out = out.split(from).join(to);
-    return out as T;
-  }
-  if (Array.isArray(value)) return value.map((v) => replaceValues(v, replacements)) as T;
-  if (typeof value === "object" && value !== null)
-    return Object.fromEntries(
-      Object.entries(value).map(([k, v]) => [k, replaceValues(v, replacements)]),
-    ) as T;
-  return value;
-}
-
-/** JSON with object keys sorted at every depth, so equal values print equal. */
-export function canonicalJson(value: unknown): string {
-  const sort = (v: unknown): unknown =>
-    Array.isArray(v)
-      ? v.map(sort)
-      : typeof v === "object" && v !== null
-        ? Object.fromEntries(
-            Object.entries(v)
-              .sort(([a], [b]) => a.localeCompare(b))
-              .map(([k, x]) => [k, sort(x)]),
-          )
-        : v;
-  return JSON.stringify(sort(value));
-}
-
-/**
- * Annotations holding JSON (`pl7.app/trace`, for one) are re-serialized with sorted keys:
- * a block that builds them from a map prints keys in varying order across runs.
- */
-function canonicalizeAnnotations<T extends AxisSpec | PColumnSpec>(spec: T): T {
-  const annotations = Object.fromEntries(
-    Object.entries(spec.annotations ?? {}).map(([k, v]) => {
-      if (typeof v !== "string" || !/^[[{]/.test(v)) return [k, v];
-      try {
-        return [k, canonicalJson(JSON.parse(v))];
-      } catch {
-        return [k, v];
-      }
-    }),
-  );
-  const out = spec.annotations === undefined ? { ...spec } : { ...spec, annotations };
-  return (
-    "axesSpec" in out
-      ? { ...out, axesSpec: out.axesSpec.map((a: AxisSpec) => canonicalizeAnnotations(a)) }
-      : out
-  ) as T;
-}
-
-/** A spec with run-specific values replaced by tokens (or tokens by values). */
-export function tokenizeSpec<T extends AxisSpec | PColumnSpec>(
-  spec: T,
-  replacements: [string, string][],
-): T {
-  if (replacements.length === 0) return spec;
-  // Names and types never carry a run id; domains and annotations of the column and of
-  // its axes do, so the whole spec is walked.
-  return replaceValues(spec, replacements);
-}
-
 /**
  * Record the source's columns as one table: the union of their axes, and one row per
  * distinct axis tuple. A column keyed on some of the axes fills every row that carries its
  * key, and gets a row of its own only when none does.
  */
 export async function recordColumns(source: ColumnSource, opts: RecordOptions): Promise<Recording> {
-  const replacements: [string, string][] = [
-    ...(opts.blockId === undefined ? [] : [[opts.blockId, BLOCK_ID_TOKEN] as [string, string]]),
-    ...Object.entries(opts.redact ?? {}),
-  ];
+  const { blockId } = opts;
+  const tokenize = (v: string) =>
+    blockId === undefined ? v : v.split(blockId).join(BLOCK_ID_TOKEN);
   const columns = (opts.columns ?? source.columns)
-    .filter((c) => !opts.exclude?.(c.spec))
-    .map((c) => ({ ...c, spec: canonicalizeAnnotations(tokenizeSpec(c.spec, replacements)) }))
+    .map((c) => ({
+      ...c,
+      spec: mapColumn(c.spec, tokenize, (v) => canonicalAnnotation(tokenize(v))),
+    }))
     .sort(columnOrder);
   if (columns.length === 0) throw new Error(`Nothing to record for ${opts.scenario}`);
 
-  // Union of axes; the first column to mention an axis fixes its position.
+  // Union of axes; the first column to mention an axis fixes its position. Axes are named
+  // before columns, so an axis keeps its plain name.
   const axes: RecordingAxis[] = [];
   const axisIndex = new Map<string, number>();
   const taken = new Map<string, Record<string, string> | undefined>();
-  for (const { spec } of columns) {
-    for (const a of spec.axesSpec) {
-      const k = axisKey(a);
-      if (!axisIndex.has(k)) {
-        axisIndex.set(k, axes.length);
-        axes.push({ column: fileColumnName(a.name, a.domain, taken), spec: a });
-      }
+  const indexOf = (a: AxisSpec) => {
+    const k = axisKey(a);
+    let i = axisIndex.get(k);
+    if (i === undefined) {
+      i = axes.length;
+      axisIndex.set(k, i);
+      axes.push({ column: fileColumnName(a.name, a.domain, taken), spec: a });
     }
-  }
-  const plan = columns.map((col) => ({
+    return i;
+  };
+  const keyed = columns.map((col) => ({ col, parentAxes: col.spec.axesSpec.map(indexOf) }));
+  const plan = keyed.map(({ col, parentAxes }) => ({
     col,
-    column: fileColumnName(col.spec.name, col.spec.domain, taken),
-    parentAxes: col.spec.axesSpec.map((a) => axisIndex.get(axisKey(a))!),
+    recorded: {
+      column: fileColumnName(col.spec.name, col.spec.domain, taken),
+      spec: col.spec,
+      parentAxes,
+      rows: 0,
+    } satisfies RecordingColumn,
   }));
 
-  // Widest columns first, so narrower ones find rows to fill.
-  const order = [...plan].sort((a, b) => b.parentAxes.length - a.parentAxes.length);
-  const rows: ShapeRow[] = [];
+  const round = (v: string | number) =>
+    typeof v === "number" && opts.digits !== undefined ? Number(v.toPrecision(opts.digits)) : v;
   // JSON keeps axis tuples apart that a joined string would merge.
   const subKey = (row: ShapeRow, parentAxes: number[]) =>
     JSON.stringify(parentAxes.map((i) => String(row[axes[i].column] ?? "")));
-  const recorded = new Map<string, RecordingColumn>();
-  for (const { col, column, parentAxes } of order) {
+
+  // Widest columns first, so narrower ones find rows to fill.
+  const rows: ShapeRow[] = [];
+  const widestFirst = [...plan].sort(
+    (a, b) => b.recorded.parentAxes.length - a.recorded.parentAxes.length,
+  );
+  for (const { col, recorded } of widestFirst) {
+    const { column, parentAxes } = recorded;
     const index = new Map<string, ShapeRow[]>();
     for (const row of rows) {
       if (!parentAxes.every((i) => row[axes[i].column] !== undefined)) continue;
@@ -232,13 +225,13 @@ export async function recordColumns(source: ColumnSource, opts: RecordOptions): 
       else bucket.push(row);
     }
     const data = await source.readById(col.columnId);
-    recorded.set(column, { column, spec: col.spec, parentAxes, rows: data.length });
+    recorded.rows = data.length;
     for (const { keys, value } of data) {
       const cells: ShapeRow = {};
       parentAxes.forEach((axisIdx, i) => {
         cells[axes[axisIdx].column] = keys[i];
       });
-      const v = value === null || value === "" ? undefined : value;
+      const v = value === null ? undefined : round(value);
       const k = subKey(cells, parentAxes);
       const hits = index.get(k);
       if (hits !== undefined) for (const row of hits) row[column] = v;
@@ -251,163 +244,45 @@ export async function recordColumns(source: ColumnSource, opts: RecordOptions): 
   }
 
   const fullKey = (row: ShapeRow) => JSON.stringify(axes.map((a) => String(row[a.column] ?? "")));
-  rows.sort((a, b) => fullKey(a).localeCompare(fullKey(b)));
   return {
     version: RECORDING_VERSION,
     scenario: opts.scenario,
     producer: opts.producer,
     axes,
-    columns: plan.map((p) => recorded.get(p.column)!),
-    rows,
+    columns: plan.map((p) => p.recorded),
+    rows: rows
+      .map((row) => ({ row, key: fullKey(row) }))
+      .sort((a, b) => byCodeUnit(a.key, b.key))
+      .map(({ row }) => row),
   };
 }
 
-/**
- * Write both files of a recording. Both are rendered and staged before either replaces the
- * saved one, so a value TSV cannot hold leaves the saved recording as it was.
- */
-export async function writeRecording(dir: string, rec: Recording): Promise<void> {
+const header = (m: RecordingManifest) => [
+  ...m.axes.map((a) => a.column),
+  ...m.columns.map((c) => c.column),
+];
+
+/** The files of a recording, by file name. The manifest's keys are sorted at every depth. */
+export function renderRecording(rec: Recording): Record<string, string> {
   const { rows, ...manifest } = rec;
-  const header = [...rec.axes.map((a) => a.column), ...rec.columns.map((c) => c.column)];
-  const files: [string, string][] = [
-    [MANIFEST_FILE, JSON.stringify(manifest, null, 2) + "\n"],
-    [DATA_FILE, renderTsv(header, rows)],
-  ];
-  await fsp.mkdir(dir, { recursive: true });
-  for (const [name, content] of files) await fsp.writeFile(path.join(dir, `${name}.tmp`), content);
-  for (const [name] of files) await fsp.rename(path.join(dir, `${name}.tmp`), path.join(dir, name));
+  return {
+    [MANIFEST_FILE]: JSON.stringify(JSON.parse(canonicalizeJson(manifest)), null, 2) + "\n",
+    [DATA_FILE]: renderTsv(header(rec), rows),
+  };
 }
 
-export async function readRecording(dir: string): Promise<Recording> {
-  const manifest = JSON.parse(
-    await fsp.readFile(path.join(dir, MANIFEST_FILE), "utf8"),
-  ) as RecordingManifest;
-  if (manifest.version !== RECORDING_VERSION)
-    throw new Error(
-      `Recording ${dir} has version ${manifest.version}, expected ${RECORDING_VERSION}`,
-    );
-  const tsv = await fsp.readFile(path.join(dir, DATA_FILE), "utf8");
-  const [header, ...lines] = tsv.split("\n").filter((l) => l.length > 0);
-  const names = header.split("\t");
-  const numeric = new Set(
-    manifest.columns.filter((c) => c.spec.valueType !== "String").map((c) => c.column),
-  );
-  for (const a of manifest.axes) if (a.spec.type !== "String") numeric.add(a.column);
-  const rows: ShapeRow[] = lines.map((line) => {
-    const cells = line.split("\t");
-    const row: ShapeRow = {};
-    names.forEach((n, i) => {
-      const v = cells[i] ?? "";
-      if (v === "") return;
-      row[n] = numeric.has(n) ? Number(v) : v;
-    });
-    return row;
-  });
-  return { ...manifest, rows };
-}
-
-export type DiffOptions = {
-  /** Absolute tolerance per file column for numeric values. */
-  tolerance?: Record<string, number>;
-  /** Examples to list per kind of change. */
-  examples?: number;
+export type ExpectRecordingOptions = RecordOptions & {
+  /** The test's `expect`. A concurrent test must pass its own context's. */
+  expect: ExpectStatic;
+  /** Folder of the recording; `<recordingsRoot>/<scenario>` when omitted. */
+  dir?: string;
+  /** Root for recordings; `assets/recordings` under the current directory by default. */
+  recordingsRoot?: string;
 };
 
-/** Differences between two recordings, one line each; empty when they match. */
-export function diffRecordings(
-  expected: Recording,
-  actual: Recording,
-  opts: DiffOptions = {},
-): string[] {
-  const out: string[] = [];
-  const examples = opts.examples ?? 5;
-  const byName = (cs: RecordingColumn[]) => new Map(cs.map((c) => [c.column, c]));
-  const exp = byName(expected.columns);
-  const act = byName(actual.columns);
-  for (const name of exp.keys())
-    if (!act.has(name)) out.push(`column ${name}: missing from the run`);
-  for (const name of act.keys()) if (!exp.has(name)) out.push(`column ${name}: new in the run`);
-  const axesChanged =
-    canonicalJson(expected.axes.map((a) => a.spec)) !==
-    canonicalJson(actual.axes.map((a) => a.spec));
-  if (axesChanged) out.push("axes: changed");
-
-  // JSON keeps axis tuples apart that a joined string would merge (`a|b`,`c` vs `a`,`b|c`).
-  const keyOf = (row: ShapeRow, c: RecordingColumn, rec: Recording) =>
-    JSON.stringify(c.parentAxes.map((i) => String(row[rec.axes[i].column] ?? "")));
-  const shown = (k: string) => (JSON.parse(k) as string[]).join("|");
-  for (const [name, e] of exp) {
-    const a = act.get(name);
-    if (a === undefined) continue;
-    if (canonicalJson(e.spec) !== canonicalJson(a.spec)) {
-      out.push(
-        `column ${name}: spec changed\n  expected ${JSON.stringify(e.spec)}\n  actual   ${JSON.stringify(a.spec)}`,
-      );
-    }
-    // The joined table cannot tell a dropped row from an NA one where another column keeps
-    // the row; the column's own row count can.
-    if (e.rows !== a.rows) out.push(`column ${name}: ${e.rows} rows -> ${a.rows}`);
-    if (axesChanged) continue;
-    const values = (rec: Recording, c: RecordingColumn) => {
-      const m = new Map<string, string | number | undefined>();
-      for (const row of rec.rows) {
-        if (!c.parentAxes.every((i) => row[rec.axes[i].column] !== undefined)) continue;
-        const k = keyOf(row, c, rec);
-        if (!m.has(k) || m.get(k) === undefined) m.set(k, row[name]);
-      }
-      return m;
-    };
-    const ev = values(expected, e);
-    const av = values(actual, a);
-    const tol = opts.tolerance?.[name] ?? 0;
-    const missing: string[] = [];
-    const added: string[] = [];
-    const changed: string[] = [];
-    for (const [k, v] of ev) {
-      if (!av.has(k)) missing.push(shown(k));
-      else {
-        const w = av.get(k);
-        const same =
-          Object.is(v, w) ||
-          v === w ||
-          (typeof v === "number" &&
-            typeof w === "number" &&
-            Number.isFinite(v) &&
-            Number.isFinite(w) &&
-            Math.abs(v - w) <= tol);
-        if (!same) changed.push(`${shown(k)}: ${String(v)} -> ${String(w)}`);
-      }
-    }
-    for (const k of av.keys()) if (!ev.has(k)) added.push(shown(k));
-    const report = (what: string, items: string[]) => {
-      if (items.length === 0) return;
-      out.push(
-        `column ${name}: ${items.length} ${what}: ${items.slice(0, examples).join("; ")}${items.length > examples ? "; ..." : ""}`,
-      );
-    };
-    report("rows missing", missing);
-    report("rows added", added);
-    report("values changed", changed);
-  }
-  return out;
-}
-
-export type ExpectRecordingOptions = RecordOptions &
-  DiffOptions & {
-    /** Folder of the recording; `<recordingsRoot>/<scenario>` when omitted. */
-    dir?: string;
-    /** Root for recordings; `assets/recordings` under the current directory by default. */
-    recordingsRoot?: string;
-    /** Rewrite the recording instead of comparing; `UPDATE_RECORDINGS=1` sets it. */
-    update?: boolean;
-    /** Let an update drop columns the recording had. */
-    allowDroppedColumns?: boolean;
-  };
-
 /**
- * Compare the source's columns to the committed recording and throw with the differences.
- * With `UPDATE_RECORDINGS=1` (or `update`), write the recording instead; dropping a column
- * the recording had still throws unless `allowDroppedColumns` is set.
+ * Snapshot the source's columns into the recording folder: both files are file snapshots,
+ * so a run that differs fails with a line diff, and `vitest -u` rewrites them.
  */
 export async function expectRecording(
   source: ColumnSource,
@@ -415,47 +290,23 @@ export async function expectRecording(
 ): Promise<Recording> {
   const dir =
     opts.dir ?? path.join(opts.recordingsRoot ?? path.resolve("assets/recordings"), opts.scenario);
-  const update = opts.update ?? process.env.UPDATE_RECORDINGS === "1";
-  const actual = await recordColumns(source, opts);
-  let expected: Recording | undefined;
-  try {
-    expected = await readRecording(dir);
-  } catch (e) {
-    if (!(e instanceof Error && "code" in e && e.code === "ENOENT")) throw e;
-  }
-  if (update) {
-    if (expected !== undefined && !opts.allowDroppedColumns) {
-      // By identity, not file column: adding a same-name column renames the existing one.
-      const have = new Set(actual.columns.map((c) => columnKey(c.spec)));
-      const dropped = expected.columns
-        .filter((c) => !have.has(columnKey(c.spec)))
-        .map((c) => c.column);
-      if (dropped.length > 0)
-        throw new Error(
-          `Updating ${dir} would drop columns ${dropped.join(", ")}; pass allowDroppedColumns to confirm`,
-        );
-    }
-    await writeRecording(dir, actual);
-    return actual;
-  }
-  if (expected === undefined)
-    throw new Error(`No recording at ${dir}; run with UPDATE_RECORDINGS=1 to create it`);
-  const diff = diffRecordings(expected, actual, opts);
-  if (diff.length > 0)
-    throw new Error(
-      `Recording ${opts.scenario} differs from the run (UPDATE_RECORDINGS=1 to accept):\n${diff.join("\n")}`,
-    );
-  return actual;
+  const rec = await recordColumns(source, opts);
+  await Promise.all(
+    Object.entries(renderRecording(rec)).map(([name, text]) =>
+      opts.expect(text).toMatchFileSnapshot(path.join(dir, name)),
+    ),
+  );
+  return rec;
 }
 
-export type RecordedDatasetOptions = {
-  /** What `{{blockId}}` becomes in the published specs; a fixed id by default. */
-  blockId?: string;
-  /** Domain values to rewrite in every axis and column, old value to new. */
-  domainRewrites?: Record<string, string>;
-};
-
-export const RECORDED_BLOCK_ID = "recorded-upstream";
+function parseManifest(text: string, dir: string): RecordingManifest {
+  const manifest = JSON.parse(text) as RecordingManifest;
+  if (manifest.version !== RECORDING_VERSION)
+    throw new Error(
+      `Recording ${dir} has version ${manifest.version}, expected ${RECORDING_VERSION}`,
+    );
+  return manifest;
+}
 
 const XSV_VALUE_TYPES: readonly string[] = [
   "Int",
@@ -473,67 +324,66 @@ function xsvValueType(type: string): XsvValueType {
 }
 
 /** The shape a recording publishes as: its axes and columns, with the same identities. */
-export function recordingShape(
-  rec: RecordingManifest,
-  opts: RecordedDatasetOptions = {},
-): DatasetShape {
-  const fill: [string, string][] = [[BLOCK_ID_TOKEN, opts.blockId ?? RECORDED_BLOCK_ID]];
-  const rewrite = (d?: Record<string, string>) =>
-    d === undefined
-      ? undefined
-      : Object.fromEntries(
-          Object.entries(replaceValues(d, fill)).map(([k, v]) => [
-            k,
-            opts.domainRewrites?.[v] ?? v,
-          ]),
-        );
+export function recordingShape(rec: RecordingManifest): DatasetShape {
   const unsupported = [
     ...rec.axes
       .filter((a) => a.spec.contextDomain !== undefined || a.spec.parentAxes !== undefined)
       .map((a) => `axis ${a.column}`),
     ...rec.columns
-      .filter((c) => c.spec.contextDomain !== undefined)
+      .filter((c) => c.spec.contextDomain !== undefined || c.spec.parentAxes !== undefined)
       .map((c) => `column ${c.column}`),
   ];
-  // xsv-import has no context domain, and reads an axis's parentAxes against each column
-  // group's own axes; publishing without them would change the column identities.
+  // xsv-import has no context domain, reads an axis's parentAxes against each column group's
+  // own axes, and takes a column's parentAxes as its axis subset; publishing any of them
+  // would change the column identities.
   if (unsupported.length > 0)
     throw new Error(
-      `Recording carries contextDomain or axis parentAxes, which xsv-import cannot publish: ${unsupported.join(", ")}`,
+      `Recording carries contextDomain or parentAxes, which xsv-import cannot publish: ${unsupported.join(", ")}`,
     );
+  const fill = (r?: Strings) =>
+    mapValues(r, (v) => v.split(BLOCK_ID_TOKEN).join(RECORDED_BLOCK_ID));
   const axes: XsvAxis[] = rec.axes.map((a) => ({
     column: a.column,
     filterOutRegex: "^$",
     spec: {
       name: a.spec.name,
       type: xsvValueType(a.spec.type),
-      domain: rewrite(a.spec.domain),
-      annotations: replaceValues(a.spec.annotations, fill),
+      domain: fill(a.spec.domain),
+      annotations: fill(a.spec.annotations),
     },
   }));
+  // A column skips the rows where its cell is empty: those are rows of other columns, or NA,
+  // and xsv-import would otherwise reject them (numbers) or import an empty string (text).
   const columns: ShapeColumn[] = rec.columns.map((c) => ({
     column: c.column,
+    filterOutRegex: "^$",
     spec: {
       name: c.spec.name,
       valueType: xsvValueType(c.spec.valueType),
       parentAxes: c.parentAxes,
-      domain: rewrite(c.spec.domain),
-      annotations: replaceValues(c.spec.annotations, fill),
+      domain: fill(c.spec.domain),
+      annotations: fill(c.spec.annotations),
     },
   }));
   return { axes, columns, partitionKeyLength: 0 };
 }
 
 /**
- * A recording as a dataset `publishXsv` takes. Its columns are reachable afterwards as
- * `exportedRef(blockId, "outputPf", <file column>)`, file columns as the manifest lists them.
+ * A recording as a dataset `publishXsv` takes; `data.tsv` is published as it is. Its columns
+ * are reachable afterwards as `exportedRef(blockId, "outputPf", <file column>)`, file
+ * columns as the manifest lists them.
  */
 export async function recordedDataset(
   dir: string,
-  opts: RecordedDatasetOptions = {},
-): Promise<PublishableDataset & { recording: Recording; shape: DatasetShape }> {
-  const recording = await readRecording(dir);
-  const shape = recordingShape(recording, opts);
-  const header = [...shape.axes.map((a) => a.column), ...shape.columns.map((c) => c.column)];
-  return { spec: shapeSpec(shape), content: renderTsv(header, recording.rows), recording, shape };
+): Promise<PublishableDataset & { recording: RecordingManifest; shape: DatasetShape }> {
+  const recording = parseManifest(await fsp.readFile(path.join(dir, MANIFEST_FILE), "utf8"), dir);
+  const content = await fsp.readFile(path.join(dir, DATA_FILE), "utf8");
+  const expected = header(recording).join("\t");
+  const actual = content.slice(0, content.indexOf("\n"));
+  if (actual !== expected)
+    throw new Error(
+      `${path.join(dir, DATA_FILE)} has header ${JSON.stringify(actual)}, its manifest ${JSON.stringify(expected)}`,
+    );
+  const shape = recordingShape(recording);
+  return { spec: shapeSpec(shape), content, recording, shape };
 }
