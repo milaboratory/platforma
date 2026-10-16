@@ -5,15 +5,15 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, test } from "vitest";
 import type { ColumnRow, ListedColumn } from "./pframe-read";
-import type { ColumnSource } from "./recording";
+import type { ColumnSource, Recording } from "./recording";
 import {
-  diffRecordings,
+  DATA_FILE,
+  MANIFEST_FILE,
   expectRecording,
-  readRecording,
   recordColumns,
   recordedDataset,
   recordingShape,
-  writeRecording,
+  renderRecording,
 } from "./recording";
 
 const CLUSTER: AxisSpec = {
@@ -30,7 +30,7 @@ function source(cols: Record<string, Col>): ColumnSource {
     columnId: id as PObjectId,
     spec: c.spec,
   }));
-  return { columns, readById: async (id) => cols[id as string].rows };
+  return { columns, readById: async (id) => cols[id].rows };
 }
 
 const spec = (
@@ -77,6 +77,14 @@ const SRC = () =>
     },
   });
 
+const tmpDir = () => path.join(os.tmpdir(), `rec-${randomUUID()}`);
+
+async function write(dir: string, rec: Recording) {
+  await fsp.mkdir(dir, { recursive: true });
+  for (const [name, text] of Object.entries(renderRecording(rec)))
+    await fsp.writeFile(path.join(dir, name), text);
+}
+
 describe("recordColumns", () => {
   test("joins columns on the union of their axes, widest first", async () => {
     const rec = await recordColumns(SRC(), { scenario: "s", blockId: "b1" });
@@ -96,42 +104,6 @@ describe("recordColumns", () => {
     ]);
   });
 
-  test("round-trips through the folder", async () => {
-    const dir = path.join(os.tmpdir(), `rec-${randomUUID()}`);
-    const rec = await recordColumns(SRC(), { scenario: "s", blockId: "b1" });
-    await writeRecording(dir, rec);
-    const back = await readRecording(dir);
-    expect(back.axes).toEqual(rec.axes);
-    expect(back.columns).toEqual(rec.columns);
-    // An undefined cell is absent after the round trip, which is the same for the diff.
-    expect(back.rows).toEqual(rec.rows.map((r) => JSON.parse(JSON.stringify(r))));
-    expect(diffRecordings(rec, back)).toEqual([]);
-    await fsp.rm(dir, { recursive: true });
-  });
-});
-
-describe("empty strings", () => {
-  test("record as NA, so a recording matches its own round trip", async () => {
-    const dir = path.join(os.tmpdir(), `rec-${randomUUID()}`);
-    const rec = await recordColumns(
-      source({
-        x: {
-          spec: spec("pl7.app/label", [CLONE]),
-          rows: [
-            { keys: ["a"], value: "" },
-            { keys: ["b"], value: "v" },
-          ],
-        },
-      }),
-      { scenario: "s" },
-    );
-    await writeRecording(dir, rec);
-    expect(diffRecordings(await readRecording(dir), rec)).toEqual([]);
-    await fsp.rm(dir, { recursive: true });
-  });
-});
-
-describe("file column names", () => {
   test("two columns of one name are told apart by their domain", async () => {
     const seq = (content: string) =>
       spec("pl7.app/vdj/sequence", [CLUSTER], "String", {
@@ -145,60 +117,6 @@ describe("file column names", () => {
       { scenario: "s", blockId: "b1" },
     );
     expect(rec.columns.map((c) => c.column)).toEqual(["sequence", "sequence_referenceCentroid"]);
-  });
-});
-
-describe("diffRecordings", () => {
-  test("names changed values, missing rows and missing columns", async () => {
-    const expected = await recordColumns(SRC(), { scenario: "s", blockId: "b1" });
-    const changed = source({
-      link: {
-        spec: spec("pl7.app/link", [CLUSTER, CLONE], "Int"),
-        rows: [
-          { keys: ["A", "c1"], value: 1 },
-          { keys: ["B", "c3"], value: 2 },
-        ],
-      },
-      size: {
-        spec: spec("pl7.app/clustering/clusterSize", [CLUSTER], "Int"),
-        rows: [
-          { keys: ["A"], value: 2 },
-          { keys: ["B"], value: 1 },
-          { keys: ["C"], value: 0 },
-        ],
-      },
-    });
-    const actual = await recordColumns(changed, { scenario: "s", blockId: "b1" });
-    const diff = diffRecordings(expected, actual);
-    expect(diff).toEqual([
-      "column label: missing from the run",
-      "column link: 3 rows -> 2",
-      "column link: 1 rows missing: A|c2",
-      "column link: 1 values changed: B|c3: 1 -> 2",
-    ]);
-  });
-
-  test("a dropped row is reported where another column keeps the joined row", async () => {
-    const expected = await recordColumns(SRC(), { scenario: "s", blockId: "b1" });
-    const actual = JSON.parse(JSON.stringify(expected));
-    actual.columns.find((c: { column: string }) => c.column === "label").rows = 2;
-    expect(diffRecordings(expected, actual)).toEqual(["column label: 3 rows -> 2"]);
-  });
-
-  test("axis tuples a NUL-joined key would merge stay separate rows", async () => {
-    const rec = await recordColumns(
-      source({
-        v: {
-          spec: spec("pl7.app/v", [CLUSTER, CLONE], "Int"),
-          rows: [
-            { keys: ["a\u0000b", "c"], value: 1 },
-            { keys: ["a", "b\u0000c"], value: 2 },
-          ],
-        },
-      }),
-      { scenario: "s", blockId: "b1" },
-    );
-    expect(rec.rows.map((r) => r.v)).toEqual([2, 1]);
   });
 
   test("columns differing only in value type keep their file names in any input order", async () => {
@@ -215,37 +133,22 @@ describe("diffRecordings", () => {
     expect(await names(["s", "i"])).toEqual(await names(["i", "s"]));
   });
 
-  test("axis keys holding the join character stay apart", async () => {
-    const rec = (value: number) =>
-      recordColumns(
-        source({
-          v: {
-            spec: spec("pl7.app/v", [CLUSTER, CLONE], "Int"),
-            rows: [
-              { keys: ["a|b", "c"], value: 1 },
-              { keys: ["a", "b|c"], value },
-            ],
-          },
-        }),
-        { scenario: "s", blockId: "b1" },
-      );
-    expect(diffRecordings(await rec(1), await rec(2))).toEqual([
-      "column v: 1 values changed: a|b|c: 1 -> 2",
-    ]);
+  test("axis tuples a joined key would merge stay separate rows", async () => {
+    const rec = await recordColumns(
+      source({
+        v: {
+          spec: spec("pl7.app/v", [CLUSTER, CLONE], "Int"),
+          rows: [
+            { keys: ["a\u0000b", "c"], value: 1 },
+            { keys: ["a", "b\u0000c"], value: 2 },
+          ],
+        },
+      }),
+      { scenario: "s", blockId: "b1" },
+    );
+    expect(rec.rows.map((r) => r.v)).toEqual([2, 1]);
   });
 
-  test("equal NaN and infinite values match", async () => {
-    const expected = await recordColumns(SRC(), { scenario: "s", blockId: "b1" });
-    expected.rows[0].clusterSize = Number.NaN;
-    expected.rows[1].clusterSize = Number.POSITIVE_INFINITY;
-    const actual = JSON.parse(JSON.stringify(expected));
-    actual.rows[0].clusterSize = Number.NaN;
-    actual.rows[1].clusterSize = Number.POSITIVE_INFINITY;
-    expect(diffRecordings(expected, actual, { tolerance: { clusterSize: 0.1 } })).toEqual([]);
-  });
-});
-
-describe("axis identity", () => {
   test("axes differing only in contextDomain stay apart; key order does not split them", async () => {
     const left: AxisSpec = { ...CLONE, contextDomain: { side: "left" } };
     const right: AxisSpec = { ...CLONE, contextDomain: { side: "right" } };
@@ -263,90 +166,114 @@ describe("axis identity", () => {
       { scenario: "s" },
     );
     expect(rec.axes).toHaveLength(3);
-    expect(rec.columns.find((c) => c.column === "link")!.parentAxes).toEqual([0, 1]);
-    expect(rec.columns.find((c) => c.column === "u")!.parentAxes).toEqual([2]);
-    expect(rec.columns.find((c) => c.column === "w")!.parentAxes).toEqual([2]);
-    expect(() => recordingShape(rec)).toThrow(/axis clonotypeKey/);
+    expect(rec.columns.find((c) => c.column === "link")?.parentAxes).toEqual([0, 1]);
+    expect(rec.columns.find((c) => c.column === "u")?.parentAxes).toEqual([2]);
+    expect(rec.columns.find((c) => c.column === "w")?.parentAxes).toEqual([2]);
   });
 
-  test("a changed spec is reported even when the rows match", async () => {
-    const expected = await recordColumns(SRC(), { scenario: "s", blockId: "b1" });
-    const actual = JSON.parse(JSON.stringify(expected));
-    actual.columns[0].spec.annotations["pl7.app/label"] = "Size";
-    expect(diffRecordings(expected, actual)[0]).toMatch(/^column clusterSize: spec changed/);
+  test("digits rounds numeric values", async () => {
+    const rec = await recordColumns(
+      source({
+        v: {
+          spec: spec("pl7.app/v", [CLONE], "Double"),
+          rows: [{ keys: ["k"], value: 0.0833333358168602 }],
+        },
+      }),
+      { scenario: "s", digits: 6 },
+    );
+    expect(rec.rows[0].v).toBe(0.0833333);
+  });
+});
+
+describe("renderRecording", () => {
+  test("renders the same files whatever the key order of specs and JSON annotations", async () => {
+    const trace = (json: string): Col => ({
+      spec: { ...spec("pl7.app/v", [CLONE], "Int"), annotations: { "pl7.app/trace": json } },
+      rows: [{ keys: ["k"], value: 1 }],
+    });
+    const render = async (json: string) =>
+      renderRecording(await recordColumns(source({ v: trace(json) }), { scenario: "s" }));
+    expect(await render('{"a":1,"b":2}')).toEqual(await render('{"b":2,"a":1}'));
   });
 
-  test("a tolerance absorbs small numeric drift", async () => {
-    const expected = await recordColumns(SRC(), { scenario: "s", blockId: "b1" });
-    const actual = JSON.parse(JSON.stringify(expected));
-    actual.rows[0].clusterSize = 2.0004;
-    expect(diffRecordings(expected, actual)).toHaveLength(1);
-    expect(diffRecordings(expected, actual, { tolerance: { clusterSize: 0.001 } })).toEqual([]);
+  test("an NA and an empty string render alike", async () => {
+    const rec = (value: string | null) =>
+      recordColumns(
+        source({ x: { spec: spec("pl7.app/label", [CLONE]), rows: [{ keys: ["a"], value }] } }),
+        { scenario: "s" },
+      );
+    expect(renderRecording(await rec(""))).toEqual(renderRecording(await rec(null)));
   });
 });
 
 describe("expectRecording", () => {
-  test("adding a same-name column is not a dropped column", async () => {
-    const dir = path.join(os.tmpdir(), `rec-${randomUUID()}`);
-    const seq = (content: string) =>
-      spec("pl7.app/vdj/sequence", [CLUSTER], "String", {
-        "pl7.app/clustering/sequenceContent": content,
-      });
-    const ref = { spec: seq("referenceCentroid"), rows: [{ keys: ["A"], value: "X" }] };
-    const opts = { scenario: "s", blockId: "b1", dir, update: true };
-    await expectRecording(source({ a: ref }), opts);
-    const rec = await expectRecording(
-      source({ a: ref, b: { spec: seq("centroid"), rows: [{ keys: ["A"], value: "Y" }] } }),
-      opts,
-    );
-    expect(rec.columns).toHaveLength(2);
-    // Same name, domain and axes, another value type: a different column.
-    const retyped = {
-      spec: spec("pl7.app/vdj/sequence", [CLUSTER], "Int", {
-        "pl7.app/clustering/sequenceContent": "referenceCentroid",
-      }),
-      rows: [{ keys: ["A"], value: 1 }],
-    };
-    await expect(
-      expectRecording(
-        source({ a: retyped, b: { spec: seq("centroid"), rows: [{ keys: ["A"], value: "Y" }] } }),
-        opts,
-      ),
-    ).rejects.toThrow(/would drop columns/);
-    await expect(
-      expectRecording(source({ b: { spec: seq("centroid"), rows: [] } }), opts),
-    ).rejects.toThrow(/would drop columns/);
-    await fsp.rm(dir, { recursive: true });
-  });
-});
-
-describe("writeRecording", () => {
-  test("a value TSV cannot hold leaves the saved recording untouched", async () => {
-    const dir = path.join(os.tmpdir(), `rec-${randomUUID()}`);
-    const rec = await recordColumns(SRC(), { scenario: "s", blockId: "b1" });
-    await writeRecording(dir, rec);
-    const before = await fsp.readFile(path.join(dir, "manifest.json"), "utf8");
-    const bad = { ...rec, scenario: "changed", rows: [{ ...rec.rows[0], label: "x\ty" }] };
-    await expect(writeRecording(dir, bad)).rejects.toThrow(/tab or line break/);
-    expect(await fsp.readFile(path.join(dir, "manifest.json"), "utf8")).toBe(before);
+  test("passes against the files the same run renders", async () => {
+    const dir = tmpDir();
+    await write(dir, await recordColumns(SRC(), { scenario: "s", blockId: "b1" }));
+    await expectRecording(SRC(), { scenario: "s", blockId: "b1", dir, expect });
     await fsp.rm(dir, { recursive: true });
   });
 });
 
 describe("recordedDataset", () => {
-  test("publishes under the same identities, axes skipping rows they are absent from", async () => {
-    const dir = path.join(os.tmpdir(), `rec-${randomUUID()}`);
-    await writeRecording(dir, await recordColumns(SRC(), { scenario: "s", blockId: "b1" }));
-    const ds = await recordedDataset(dir, { blockId: "publisher" });
-    const shape = recordingShape(ds.recording, { blockId: "publisher" });
-    expect(shape.axes.map((a) => a.filterOutRegex)).toEqual(["^$", "^$"]);
-    expect(shape.axes[0].spec.domain).toEqual({ "pl7.app/clustering/blockId": "publisher" });
-    expect(ds.recording.axes[0].spec.domain).toEqual({
-      "pl7.app/clustering/blockId": "{{blockId}}",
+  test("publishes data.tsv as it is, each axis and column skipping its empty cells", async () => {
+    const dir = tmpDir();
+    await write(dir, await recordColumns(SRC(), { scenario: "s", blockId: "b1" }));
+    const ds = await recordedDataset(dir);
+    expect(ds.content).toBe(await fsp.readFile(path.join(dir, DATA_FILE), "utf8"));
+    expect(ds.shape.axes.map((a) => a.filterOutRegex)).toEqual(["^$", "^$"]);
+    expect(ds.shape.columns.map((c) => c.filterOutRegex)).toEqual(["^$", "^$", "^$"]);
+    expect(ds.shape.axes[0].spec.domain).toEqual({
+      "pl7.app/clustering/blockId": "recorded-upstream",
     });
     expect(ds.spec.columns.map((c) => c.payload.spec.parentAxes)).toEqual([[0], [1], [0, 1]]);
     expect(ds.content.split("\n")[0]).toBe("clusterId\tclonotypeKey\tclusterSize\tlabel\tlink");
     expect(ds.content.split("\n")[4]).toBe("C\t\t0\t\t");
     await fsp.rm(dir, { recursive: true });
+  });
+
+  test("rejects a data.tsv whose header does not match its manifest", async () => {
+    const dir = tmpDir();
+    await write(dir, await recordColumns(SRC(), { scenario: "s" }));
+    const file = path.join(dir, DATA_FILE);
+    const tsv = await fsp.readFile(file, "utf8");
+    await fsp.writeFile(file, tsv.replace("label", "renamed"));
+    await expect(recordedDataset(dir)).rejects.toThrow(/has header/);
+    await fsp.rm(dir, { recursive: true });
+  });
+
+  test("rejects a manifest of another version", async () => {
+    const dir = tmpDir();
+    await write(dir, await recordColumns(SRC(), { scenario: "s" }));
+    const file = path.join(dir, MANIFEST_FILE);
+    const manifest = JSON.parse(await fsp.readFile(file, "utf8"));
+    await fsp.writeFile(file, JSON.stringify({ ...manifest, version: 2 }));
+    await expect(recordedDataset(dir)).rejects.toThrow(/version 2/);
+    await fsp.rm(dir, { recursive: true });
+  });
+});
+
+describe("recordingShape", () => {
+  test("rejects what xsv-import cannot publish", async () => {
+    const withAxisContext = await recordColumns(
+      source({
+        v: {
+          spec: spec("pl7.app/v", [{ ...CLONE, contextDomain: { side: "left" } }], "Int"),
+          rows: [{ keys: ["k"], value: 1 }],
+        },
+      }),
+      { scenario: "s" },
+    );
+    expect(() => recordingShape(withAxisContext)).toThrow(/axis clonotypeKey/);
+    const withColumnParents = await recordColumns(
+      source({
+        v: {
+          spec: { ...spec("pl7.app/v", [CLUSTER, CLONE], "Int"), parentAxes: [0] },
+          rows: [{ keys: ["A", "k"], value: 1 }],
+        },
+      }),
+      { scenario: "s" },
+    );
+    expect(() => recordingShape(withColumnParents)).toThrow(/column v/);
   });
 });
