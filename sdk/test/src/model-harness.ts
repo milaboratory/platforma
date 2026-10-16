@@ -9,7 +9,7 @@
   project; those calls throw here and belong in `blockTest` or `suiteTest`.
 */
 
-import type { BlockConfigContainer } from "@platforma-sdk/model";
+import type { BlockConfigContainer, BlockStorage } from "@platforma-sdk/model";
 import {
   BlockStorageFacadeCallbacks,
   createBlockStorage,
@@ -22,6 +22,11 @@ type AnyFunction = (...args: any[]) => any;
 /** What a render lambda may read of the block's state without a project. */
 export type ModelRenderState<Data = unknown, Args = unknown> = {
   data?: Data;
+  /**
+   * The whole block storage, plugin data included; `initialStorage()` gives a fresh one.
+   * Plugin outputs read their data from here. Without it the storage wraps `data` alone.
+   */
+  storage?: BlockStorage<Data>;
   args?: Args;
   activeArgs?: Args;
 };
@@ -58,9 +63,16 @@ export class BlockModelHarness<Data = unknown, Args = unknown, Params = unknown>
     const target = {
       callbackRegistry: registry,
       args: () => json(stateRef.current.args),
-      data: () => json(stateRef.current.data),
+      data: () =>
+        json(
+          stateRef.current.data ??
+            (stateRef.current.storage && getStorageData<Data>(stateRef.current.storage)),
+        ),
       activeArgs: () => json(stateRef.current.activeArgs),
-      blockStorage: () => storageJson(stateRef.current.data),
+      blockStorage: () =>
+        stateRef.current.storage !== undefined
+          ? JSON.stringify(stateRef.current.storage)
+          : storageJson(stateRef.current.data),
     };
     g.cfgRenderCtx = new Proxy(target, {
       get(t, prop) {
@@ -121,10 +133,15 @@ export class BlockModelHarness<Data = unknown, Args = unknown, Params = unknown>
     );
   }
 
+  /** The storage a fresh block starts with, plugin data included. */
+  initialStorage(): BlockStorage<Data> {
+    const storage = this.callback(BlockStorageFacadeCallbacks.StorageInitial)();
+    return normalizeBlockStorage<Data>(JSON.parse(storage));
+  }
+
   /** The data a fresh block starts with. */
   initialData(): Data {
-    const storage = this.callback(BlockStorageFacadeCallbacks.StorageInitial)();
-    return getStorageData<Data>(normalizeBlockStorage(JSON.parse(storage)));
+    return getStorageData<Data>(this.initialStorage());
   }
 
   /** The data a block starts with when a template supplies `params`. */
