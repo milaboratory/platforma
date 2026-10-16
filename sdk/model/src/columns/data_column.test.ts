@@ -193,6 +193,17 @@ describe("DataColumnImpl resolution: fromId / fromAccessor / getStatus", () => {
   });
 });
 
+describe("DataColumnImpl resolution: spec field with an error", () => {
+  const specError = "ptabler ran out of memory";
+
+  test("a direct lookup throws the real error, also under unlocked inputs", () => {
+    installStubRegistry(mockCtx, { [baseLeaf]: { specError, accessorLocked: false } });
+    expect(() => DataColumnImpl.fromId(baseLeaf)).toThrow(specError);
+    expect(() => DataColumnImpl.fromAccessor(pluckLeafEntry(baseLeaf))).toThrow(specError);
+    expect(() => DataColumnImpl.getStatusById(baseLeaf)).toThrow(specError);
+  });
+});
+
 /** Pull the `LeafEntry` planted by the stub registry for a given id. */
 function pluckLeafEntry(id: PObjectId) {
   const entry = _ctxProvidersCache.get(mockCtx)?.[0]?.getPObjectEntries().get(id);

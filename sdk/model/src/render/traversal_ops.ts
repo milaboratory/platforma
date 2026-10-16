@@ -18,6 +18,9 @@ export type CommonFieldTraverseOps = {
 
   /** Will not mark current context as unstable, if field is not found. */
   stableIfNotFound?: true;
+
+  /** Return `undefined` instead of throwing when the field has an error and no value. */
+  pureFieldErrorToUndefined?: true;
 };
 
 export type FieldType = "Input" | "Output" | "Service" | "OTW" | "Dynamic" | "MTW";

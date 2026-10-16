@@ -15,7 +15,7 @@ import {
 import type { GlobalCfgRenderCtx, PColumnDataUniversal } from "../render/internal";
 import { getCtxProviders } from "./column_providers";
 import { isNil } from "es-toolkit";
-import { LRUCache } from "lru-cache";
+import { memoizeByEntry, readSpecAccessor } from "./leaf_readers";
 import { TreeNodeAccessor } from "../render";
 import type {
   ColumnFieldStatus,
@@ -147,7 +147,7 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
       if (registry.isFinal()) throw new ColumnAbsentError(id);
       return undefined;
     }
-    const spec = readSpecAccessor(leaf);
+    const spec = readSpecOrThrow(leaf);
     if (isNil(spec)) {
       if (leaf.accessor.getInputsLocked()) throw new ColumnAbsentError(id);
       return undefined;
@@ -171,7 +171,7 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
    * accessor is `inputsLocked`. Returns `undefined` while still resolving.
    */
   static fromAccessor(entry: LeafEntry<TreeNodeAccessor>): undefined | DataColumnRecipe<PObjectId> {
-    const spec = readSpecAccessor(entry);
+    const spec = readSpecOrThrow(entry);
     if (isNil(spec)) {
       if (entry.accessor.getInputsLocked()) throw new ColumnAbsentError(entry.id);
       return undefined;
@@ -301,10 +301,12 @@ export function isDataColumn(value: unknown): value is DataColumnRecipe<PObjectI
   return value instanceof DataColumnImpl;
 }
 
-const readSpecAccessor = memoizeByEntry(
-  ({ accessor, name }: LeafEntry<TreeNodeAccessor>): undefined | TreeNodeAccessor =>
-    accessor.traverse({ field: `${name}.spec`, assertFieldType: "Input", ignoreError: true }),
-);
+/** Spec node of a leaf; throws the error of the spec field. */
+function readSpecOrThrow(entry: LeafEntry<TreeNodeAccessor>): undefined | TreeNodeAccessor {
+  const read = readSpecAccessor(entry);
+  if ("error" in read) throw read.error;
+  return read.spec;
+}
 
 /**
  * Per-entry counterpart to {@link readDataStatus}: tells whether the leaf's
@@ -316,9 +318,10 @@ const readSpecAccessor = memoizeByEntry(
  *  - spec resource present but bytes not yet written → `resolving`
  *    (transient — the spec resource is connected, just unfilled)
  *  - spec resource present and `hasData()` → `present`
+ *  - spec field holds an error → throws that error
  */
 function getLeafEntryStatus(entry: LeafEntry<TreeNodeAccessor>): ColumnResolutionStatus {
-  const spec = readSpecAccessor(entry);
+  const spec = readSpecOrThrow(entry);
   if (isNil(spec)) return entry.accessor.getInputsLocked() ? "absent" : "resolving";
   if (!spec.hasData()) return "resolving";
   return "present";
@@ -335,15 +338,3 @@ const readDataStatus = memoizeByEntry(
     return accessor.getInputsLocked() ? "absent" : "resolving";
   },
 );
-
-function memoizeByEntry<R>(
-  fn: (entry: LeafEntry<TreeNodeAccessor>) => R,
-): (entry: LeafEntry<TreeNodeAccessor>) => R {
-  const cache = new LRUCache<string, { value: R }>({ max: 1000 });
-  return (entry) => {
-    const key = `${entry.accessor.handle}:${entry.name}`;
-    let hit = cache.get(key);
-    if (!hit) cache.set(key, (hit = { value: fn(entry) }));
-    return hit.value;
-  };
-}
