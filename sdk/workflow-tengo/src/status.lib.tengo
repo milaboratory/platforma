@@ -1,0 +1,245 @@
+/**
+ * Block status.
+ *
+ * The caller creates or passes on the status of what it creates; the callee reports.
+ *
+ * Every render can have a status context: a StatusContext resource that its "status" field points
+ * to. The field is one-time-writable: the creator sets it, and nothing can change it later.
+ * The middle layer creates the context of the root render of a block. render() creates the context
+ * of every render that template code creates: the data is a copy of the data of the current
+ * renderer's context with its own "name", and the parent context links it in a "child/..." field,
+ * so the contexts form a tree.
+ *
+ * A "status" field can also point to a sinkhole (StatusSinkhole): reports on that resource are
+ * dropped, and every render it creates gets the sinkhole too. render(tpl, inputs, { status: false })
+ * puts a rendered template and everything below it into the sinkhole.
+ * A render without a "status" field reports nowhere, and its children get no field.
+ *
+ * Reports (record, setAttr) go to the backend, which writes them into the context of the
+ * resource. They are no-ops when the backend does not support block status (feats.statusApi), or
+ * when the resource has no status context, so templates can report status unconditionally.
+ *
+ * Topics "core", "render", "workdir" and "exec" are reserved for the platform.
+ * Topics and attribute keys must not contain "/".
+ */
+
+ll := import(":ll")
+feats := import(":feats")
+constants := import(":constants")
+json := import("json")
+times := import("times")
+tx := import("tx")
+
+STATUS_FIELD := "status"
+CHILD_FIELD_PREFIX := "child/"
+CONTEXT_TYPE := { Name: "StatusContext", Version: "1" }
+SINKHOLE_TYPE := { Name: "StatusSinkhole", Version: "1" }
+
+// The status of the current renderer, its context data, the sinkhole of this execution and a counter
+// for child field names. Every import of this module is a new instance, so the state is kept in the
+// execution context.
+_vars := func() {
+	return ll.moduleVars("status")
+}
+
+/**
+ * @param rid: resource id
+ * @return what the "status" field of the resource points to:
+ *         { kind: "none" } without the field, { kind: "context", id } for a status context,
+ *         { kind: "sinkhole", id } for anything else.
+ */
+statusOf := func(rid) {
+	// OneTimeWritables is a strict map: a missing key is an error, so look the field up by iteration
+	for name, field in tx.getResource(rid).OneTimeWritables {
+		if name != STATUS_FIELD || field.Value == 0 {
+			continue
+		}
+		if tx.getResource(field.Value).Type.Name == CONTEXT_TYPE.Name {
+			return { kind: "context", id: field.Value }
+		}
+		return { kind: "sinkhole", id: field.Value }
+	}
+	return { kind: "none" }
+}
+
+/**
+ * @param rid: resource id
+ * @return id of the status context of the resource, or undefined.
+ */
+contextOf := func(rid) {
+	status := statusOf(rid)
+	return status.kind == "context" ? status.id : undefined
+}
+
+_own := func() {
+	vars := _vars()
+	own := vars.get("own")
+	if is_undefined(own) {
+		own = statusOf(ll.getCurrentTemplateRenderer().ID)
+		vars.set("own", own)
+	}
+	return own
+}
+
+_ownContextData := func() {
+	vars := _vars()
+	data := vars.get("ownContextData")
+	if is_undefined(data) {
+		data = {}
+		raw := tx.getResource(_own().id).Data
+		if !is_undefined(raw) && len(raw) > 0 {
+			data = json.decode(raw)
+		}
+		vars.set("ownContextData", data)
+	}
+	return copy(data)
+}
+
+_childFieldName := func() {
+	vars := _vars()
+	counter := vars.get("childCounter")
+	counter = is_undefined(counter) ? 0 : counter + 1
+	vars.set("childCounter", counter)
+	return CHILD_FIELD_PREFIX + string(times.time_unix_nano(times.now())) + "-" + string(counter)
+}
+
+_link := func(rid, target) {
+	field := ll.fieldId(rid, STATUS_FIELD)
+	tx.createField(field, constants.FTYPE_OTW)
+	tx.setFieldToResource(field, target)
+}
+
+_sinkhole := func() {
+	vars := _vars()
+	sinkhole := vars.get("sinkhole")
+	if is_undefined(sinkhole) {
+		sinkhole = tx.createEphemeral(SINKHOLE_TYPE.Name, SINKHOLE_TYPE.Version, "{}")
+		vars.set("sinkhole", sinkhole)
+	}
+	return sinkhole
+}
+
+_createContext := func(rid, data) {
+	contextId := tx.createEphemeral(CONTEXT_TYPE.Name, CONTEXT_TYPE.Version, json.encode(data))
+	_link(rid, contextId)
+	if feats.statusApi {
+		tx.statusRecordTransition(rid, "core", "WaitingForInputs", "")
+	}
+	return contextId
+}
+
+/**
+ * Points the "status" field of a resource the current template created to a sinkhole: reports on it
+ * are dropped, and the renders it creates get the sinkhole too. Call it in the transaction that
+ * created the resource.
+ *
+ * @param rid: resource id
+ */
+sinkhole := func(rid) {
+	_link(rid, _sinkhole())
+}
+
+/**
+ * Sets the status of a render that the current template created, from the status of the current
+ * renderer: a new context under the renderer's context, the sinkhole when the renderer is in the
+ * sinkhole, nothing when the renderer has no status.
+ *
+ * @param rid: id of the new render, in the transaction that created it
+ * @param name: (optional) display name of the render, e.g. the template name
+ * @return id of the new context, or undefined
+ */
+createChild := func(rid, name) {
+	own := _own()
+	if own.kind == "none" {
+		return undefined
+	}
+	if own.kind == "sinkhole" {
+		sinkhole(rid)
+		return undefined
+	}
+
+	data := _ownContextData()
+	if !is_undefined(name) {
+		data.name = name
+	}
+
+	contextId := _createContext(rid, data)
+
+	childField := ll.fieldId(own.id, _childFieldName())
+	tx.createField(childField, constants.FTYPE_DYNAMIC)
+	tx.setFieldToResource(childField, contextId)
+
+	return contextId
+}
+
+/**
+ * Returns the status handle of a resource.
+ *
+ * @param rid: resource id
+ * @return handle with:
+ *   - setAttr(topic, key, value): sets an attribute of the resource; the value is a string or bytes
+ *   - record(topic, state, ...detail): records a transition of the resource, state is a state name,
+ *                                      e.g. "Running"; detail is an optional string for the user
+ */
+of := func(rid) {
+	return ll.toStrict({
+		setAttr: func(topic, key, value) {
+			if feats.statusApi {
+				tx.statusSetAttr(rid, topic, key, value)
+			}
+		},
+
+		record: func(topic, state, ...detail) {
+			if feats.statusApi {
+				tx.statusRecordTransition(rid, topic, state, len(detail) > 0 ? detail[0] : "")
+			}
+		}
+	})
+}
+
+/**
+ * Returns the status handle of the current renderer: the handle of `of`, plus
+ *   - data(): returns a copy of the data of the current renderer's status context, e.g. "run-id",
+ *             "block-id", "block-pack" and "name"; undefined without a context or in the sinkhole.
+ *   - create(...data): creates the status context of the current renderer, for a template rendered
+ *                      without a status; data is an optional map of context data. Returns the id of
+ *                      the context. When the renderer already has a status, it creates nothing and
+ *                      returns its context, or undefined for a sinkhole.
+ */
+self := func() {
+	renderer := ll.getCurrentTemplateRenderer().ID
+	handle := of(renderer)
+	return ll.toStrict({
+		setAttr: handle.setAttr,
+		record: handle.record,
+
+		data: func() {
+			return _own().kind == "context" ? _ownContextData() : undefined
+		},
+
+		create: func(...data) {
+			own := _own()
+			if own.kind != "none" {
+				return own.kind == "context" ? own.id : undefined
+			}
+			contextData := len(data) > 0 ? data[0] : {}
+			contextId := _createContext(renderer, contextData)
+			vars := _vars()
+			vars.set("own", { kind: "context", id: contextId })
+			vars.set("ownContextData", copy(contextData))
+			return contextId
+		}
+	})
+}
+
+export ll.toStrict({
+	STATUS_FIELD: STATUS_FIELD,
+	CHILD_FIELD_PREFIX: CHILD_FIELD_PREFIX,
+
+	statusOf: statusOf,
+	contextOf: contextOf,
+	createChild: createChild,
+	sinkhole: sinkhole,
+	of: of,
+	self: self
+})

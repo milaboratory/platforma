@@ -1,0 +1,5 @@
+---
+"@platforma-sdk/workflow-tengo": minor
+---
+
+Block status in templates. `render()` sets the status of the rendered template from the status of the current renderer: a new `StatusContext` with a copy of the parent context data and its own `name` (the imported template name, or the new `name` option), linked from the parent context; the sinkhole when the current renderer is in the sinkhole; nothing when it has no status. The render's `status` field is one-time-writable, so the template cannot change it. `render(tpl, inputs, { status: false })` puts a template and everything below it into the sinkhole. `self.status()` and `smart.resource.status()` return a handle with `record(topic, state, ...detail)` and `setAttr(topic, key, value)`, which are no-ops unless the backend supports block status reports (`feats.statusApi`); `self.status().data()` returns the data of the current context (e.g. `run-id`, `block-id`), and `self.status().create(data)` creates the context of a template rendered without a status.

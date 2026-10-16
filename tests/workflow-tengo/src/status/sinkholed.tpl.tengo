@@ -1,0 +1,27 @@
+// sinkholed: a template rendered into the sinkhole. It cannot create its own context, its reports are
+// dropped, and the template it renders is in the sinkhole too.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+status := import("@platforma-sdk/workflow-tengo:status")
+
+self.defineOutputs(["info", "done"])
+
+self.body(func(inputs) {
+	created := self.status().create({ "name": "override" })
+	self.status().record("tpl", "Running", "dropped")
+	self.status().setAttr("exec", "progress", "99")
+
+	grandchild := render.createEphemeral(assets.importTemplate(":status.grandchild"), {})
+
+	return {
+		info: {
+			created: !is_undefined(created),
+			data: !is_undefined(self.status().data()),
+			own: status.statusOf(self.renderer().id).kind,
+			grandchild: status.statusOf(grandchild.id).kind
+		},
+		done: grandchild.output("done")
+	}
+})

@@ -1,6 +1,7 @@
 ll := import(":ll")
 render := import(":render")
 smart := import(":smart")
+status := import(":status")
 times := import("times")
 sets := import(":sets")
 maps := import(":maps")
@@ -147,6 +148,14 @@ tpl := func(ops) {
 		 */
 		renderer: func() {
 			return _renderer
+		},
+
+		/**
+		 * Block status handle of the current renderer: self.status().record("tpl", "Running", "aligning reads").
+		 * See status.self() in the status library: setAttr, record, data, create.
+		 */
+		status: func() {
+			return status.self()
 		},
 
 		/**
@@ -732,6 +741,7 @@ tpl := func(ops) {
 		api: func() {
 			return ll.toStrict({
 				renderer                : self.renderer,
+				status                  : self.status,
 				registerUnmarshaller    : self.registerUnmarshaller,
 				rawInputs               : self.rawInputs,
 				rawServiceInputs        : self.rawServiceInputs,

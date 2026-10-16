@@ -1,0 +1,24 @@
+// nocontext: a template rendered without a status context. Rendering a child creates no context,
+// and reports are no-ops, so a block from a middle layer without block status runs as before.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+status := import("@platforma-sdk/workflow-tengo:status")
+
+self.defineOutputs(["contexts", "child"])
+
+self.body(func(inputs) {
+	self.status().record("tpl", "Running", "no context")
+	self.status().setAttr("exec", "progress", "1")
+
+	child := render.createEphemeral(assets.importTemplate(":status.grandchild"), {})
+
+	return {
+		contexts: {
+			own: status.statusOf(self.renderer().id).kind,
+			child: status.statusOf(child.id).kind
+		},
+		child: child.output("done")
+	}
+})

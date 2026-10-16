@@ -12,6 +12,7 @@ json := import("json")
 times := import("times")
 constants := import(":constants")
 ffDefault := import(":ll.get-future-field-default")
+status := import(":status")
 
 //////////////// definitions ////////////////
 
@@ -751,6 +752,15 @@ resource = func(r) {
 		 */
 		kvSet: func(key, value) {
 			tx.resourceKeyValueSet(self.id, key, value)
+		},
+
+		/**
+		 * Returns the block status handle of the resource (see the status library):
+		 * setAttr(topic, key, value), record(topic, state, ...detail). All calls are no-ops on backends
+		 * without block status support, or when the resource has no status context.
+		 */
+		status: func() {
+			return status.of(self.id)
 		},
 
 		/**
