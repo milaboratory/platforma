@@ -472,6 +472,9 @@ message TxAPI {
       NotificationAPI.Ack.Request notification_ack = 155; // acknowledge notification handled by controller
       NotificationAPI.Discard.Request notification_discard = 156; // discard notification handled by controller
 
+      StatusAPI.RecordTransition.Request status_record_transition = 90; // record a status transition of a resource
+      StatusAPI.SetAttr.Request status_set_attr = 91; // set a status attribute of a resource
+
       ResourceKVAPI.Set.Request resource_key_value_set = 200; // set a value to a resource's key-value store.
       ResourceKVAPI.Get.Request resource_key_value_get = 201; // get a value from a resource's key-value store.
       ResourceKVAPI.GetIfExists.Request resource_key_value_get_if_exists = 202; // get a value from a KV if the value exists.
@@ -574,6 +577,9 @@ message TxAPI {
       NotificationAPI.Get.Response notification_get = 154;
       NotificationAPI.Ack.Response notification_ack = 155;
       NotificationAPI.Discard.Response notification_discard = 156;
+
+      StatusAPI.RecordTransition.Response status_record_transition = 90;
+      StatusAPI.SetAttr.Response status_set_attr = 91;
 
       ResourceKVAPI.Set.Response resource_key_value_set = 200;
       ResourceKVAPI.Get.Response resource_key_value_get = 201;
@@ -1556,6 +1562,43 @@ message ControllerAPI {
       string controller_type = 1;
     }
 
+    message Response {}
+  }
+}
+
+// StatusAPI reports the block status of a resource into its status context.
+// A request names a resource the caller holds. The server follows the "status" dynamic field
+// of that resource to its StatusContext. A resource without the field is a no-op.
+// Clients create status contexts and the "status" fields themselves, with the resource API.
+message StatusAPI {
+  message Transition {
+    uint32 state = 1;  // model.StatusState
+    string detail = 2; // for the user
+    string reason = 3; // only with the Terminated state
+  }
+
+  // Record a transition of the resource under a topic.
+  // Stored as transition/<topic>/<resource>/<ns> in the status context.
+  message RecordTransition {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+      string topic = 3;
+      Transition transition = 4;
+    }
+    message Response {}
+  }
+
+  // Set an attribute of the resource under a topic.
+  // Stored as attr/<topic>/<resource>/<key> in the status context.
+  message SetAttr {
+    message Request {
+      uint64 resource_id = 1;
+      bytes resource_signature = 2;
+      string topic = 3;
+      string key = 4;
+      bytes value = 5;
+    }
     message Response {}
   }
 }

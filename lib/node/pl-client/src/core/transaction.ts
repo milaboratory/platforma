@@ -81,6 +81,38 @@ export interface KeyValue {
 }
 
 /** Key-Value pair from resource-attached KV storage */
+/**
+ * Block status states. The numbers match plapi.StatusState on the backend.
+ * States are lossy by design: they are for the user, and no logic may depend on them.
+ */
+export const BlockStatusStates = {
+  WaitingForInputs: 1,
+  Running: 2,
+  WaitingWorkdirGate: 3,
+  WaitingSubmissionGate: 4,
+  PopulatingWorkdir: 5,
+  CollectingOutputs: 6,
+  WaitingForScheduler: 7,
+  WaitingForMachine: 8,
+  Terminated: 9,
+  Completed: 10,
+} as const;
+
+/** A block status state name, e.g. "Running". */
+export type BlockStatusState = keyof typeof BlockStatusStates;
+
+/**
+ * Status handle of one resource in a transaction. Reports go to the status context that the
+ * "status" field of the resource points to; a resource without it is a no-op on the backend.
+ * All calls are asynchronous: errors surface when the transaction commits.
+ */
+export interface StatusReportHandle {
+  /** Records a transition of the resource under topic: transition/<topic>/<resource>/<ns>. */
+  recordTransition(topic: string, state: BlockStatusState, detail?: string): void;
+  /** Sets an attribute of the resource under topic: attr/<topic>/<resource>/<key>. */
+  setAttr(topic: string, key: string, value: string | Uint8Array): void;
+}
+
 export interface KeyValueString {
   key: string;
   value: string;
@@ -282,6 +314,8 @@ export class PlTransaction {
     private readonly cachePredicate: FinalResourceDataPredicate,
     private readonly sharedResourceDataCache: LRUCache<SignedResourceId, ResourceDataCacheRecord>,
     private readonly enableFormattedErrors: boolean = false,
+    /** The backend advertises `statusApi:v1`. Without it, {@link status} sends nothing. */
+    public readonly statusApiEnabled: boolean = false,
   ) {
     // initiating transaction
     this.txOpen = this.sendSingleAndParse(
@@ -1074,6 +1108,37 @@ export class PlTransaction {
         value: toBytes(value),
       },
     });
+  }
+
+  /**
+   * Returns the status report handle of a resource.
+   * When the backend does not advertise `statusApi:v1`, the handle sends nothing: an older backend
+   * rejects the unknown messages and would fail the whole transaction.
+   */
+  public status(rId: AnyResourceRef): StatusReportHandle {
+    if (!this.statusApiEnabled) return { recordTransition: () => {}, setAttr: () => {} };
+
+    return {
+      recordTransition: (topic: string, state: BlockStatusState, detail?: string) =>
+        this.sendVoidAsync({
+          oneofKind: "statusRecordTransition",
+          statusRecordTransition: {
+            ...this.toSignedResourceId(rId),
+            topic,
+            transition: { state: BlockStatusStates[state], detail: detail ?? "", reason: "" },
+          },
+        }),
+      setAttr: (topic: string, key: string, value: string | Uint8Array) =>
+        this.sendVoidAsync({
+          oneofKind: "statusSetAttr",
+          statusSetAttr: {
+            ...this.toSignedResourceId(rId),
+            topic,
+            key,
+            value: typeof value === "string" ? Buffer.from(value) : value,
+          },
+        }),
+    };
   }
 
   public deleteKValue(rId: AnyResourceRef, key: string): void {
