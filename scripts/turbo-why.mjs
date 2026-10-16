@@ -120,8 +120,13 @@ function resolveScript(scriptName) {
   }
 }
 
-function runDryRun(turboArgs, env) {
-  const turboCmd = `npx turbo run ${turboArgs.join(" ")} --dry-run=json`;
+function runDryRun(turboArgs, env, passThroughArgs) {
+  const turboCmd = [
+    "npx turbo run",
+    ...turboArgs,
+    "--dry-run=json",
+    ...(passThroughArgs.length ? ["--", ...passThroughArgs] : []),
+  ].join(" ");
   let stdout;
   try {
     stdout = execSync(turboCmd, {
@@ -313,26 +318,39 @@ function analyse(data) {
 // ── main ─────────────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
 if (!args.length) {
-  console.log(`Usage: node scripts/turbo-why.mjs <script-name>
+  console.log(`Usage: node scripts/turbo-why.mjs <script-name> [turbo flags] [-- task args]
 
-The argument is a script name from package.json.
+The first argument is a script name from package.json. Extra turbo flags
+(e.g. --filter) and task args after "--" are added to the dry run.
 The script resolves pnpm→turbo chains and collects env vars.
 
 Examples:
   node scripts/turbo-why.mjs build        # "build" → turbo run build
   node scripts/turbo-why.mjs build:local   # "build:local" → PL_PKG_DEV=local → turbo run build
-  node scripts/turbo-why.mjs test:local    # "test:local" → PL_PKG_DEV=local → turbo run test`);
+  node scripts/turbo-why.mjs test:local    # "test:local" → PL_PKG_DEV=local → turbo run test
+  node scripts/turbo-why.mjs test:local --filter=@platforma-sdk/workflow-tengo-tests -- --shard=1/2`);
   process.exit(1);
 }
 
 const scriptName = args[0];
-const { turboArgs, env } = resolveScript(scriptName);
+const { turboArgs: scriptTurboArgs, env } = resolveScript(scriptName);
+const separator = args.indexOf("--", 1);
+const turboArgs = [...scriptTurboArgs, ...args.slice(1, separator === -1 ? undefined : separator)];
+const passThroughArgs = separator === -1 ? [] : args.slice(separator + 1);
 
 const envStr = Object.entries(env)
   .map(([k, v]) => `${k}=${v}`)
   .join(" ");
-const displayCmd = [envStr, "turbo run", ...turboArgs, "--dry-run=json"].filter(Boolean).join(" ");
+const displayCmd = [
+  envStr,
+  "turbo run",
+  ...turboArgs,
+  "--dry-run=json",
+  ...(passThroughArgs.length ? ["--", ...passThroughArgs] : []),
+]
+  .filter(Boolean)
+  .join(" ");
 console.log(dim(`${scriptName} → ${displayCmd}`));
 
-const data = runDryRun(turboArgs, env);
+const data = runDryRun(turboArgs, env, passThroughArgs);
 analyse(data);
