@@ -1,0 +1,206 @@
+test := import(":test")
+json := import("json")
+canonical := import(":canonical")
+ll := import(":ll")
+columnValue := import(":workflow.column-value")
+
+// Ids exactly as a block model produces them: canonical JSON with the column id nested as a string
+TREATED_ID := `{"__isColumnValue":true,"column":"{\"__isRef\":true,\"blockId\":\"samples\",\"name\":\"metadata.condition\"}","value":"treated"}`
+INT_ID := `{"__isColumnValue":true,"column":"{\"__isRef\":true,\"blockId\":\"samples\",\"name\":\"metadata.condition\"}","value":2}`
+FLOAT_ID := `{"__isColumnValue":true,"column":"{\"__isRef\":true,\"blockId\":\"samples\",\"name\":\"metadata.condition\"}","value":2.5}`
+FILTERED_COLUMN_ID := `{"__isColumnValue":true,"column":"{\"__isFiltered\":true,\"source\":\"{\\\"__isRef\\\":true,\\\"blockId\\\":\\\"samples\\\",\\\"name\\\":\\\"metadata.condition\\\"}\",\"axisFilters\":[[0,\"x\"]]}","value":"x"}`
+
+// One more JSON.stringify pass over a string, as when an id reaches args through extra encoding
+escape := func(s) {
+	return string(json.encode(s))
+}
+
+valueId := func(value) {
+	column := canonical.encode({ __isRef: true, blockId: "samples", name: "metadata.condition" })
+	return canonical.encode({ __isColumnValue: true, column: column, value: value })
+}
+
+//
+// isColumnValueId
+//
+
+TestIsColumnValueId_RecognizesModelIds := func() {
+	test.isTrue(columnValue.isColumnValueId(TREATED_ID))
+	test.isTrue(columnValue.isColumnValueId(INT_ID))
+	test.isTrue(columnValue.isColumnValueId(FILTERED_COLUMN_ID))
+	test.isTrue(columnValue.isColumnValueId(valueId("treated")))
+}
+
+TestIsColumnValueId_RecognizesExtraEscaping := func() {
+	once := escape(TREATED_ID)
+	twice := escape(once)
+	test.isTrue(columnValue.isColumnValueId(once))
+	test.isTrue(columnValue.isColumnValueId(twice))
+}
+
+TestIsColumnValueId_RejectsOtherValues := func() {
+	test.isFalse(columnValue.isColumnValueId("treated"))
+	test.isFalse(columnValue.isColumnValueId(""))
+	test.isFalse(columnValue.isColumnValueId("{not json"))
+	test.isFalse(columnValue.isColumnValueId("\"just a quoted string\""))
+	test.isFalse(columnValue.isColumnValueId(2))
+	test.isFalse(columnValue.isColumnValueId(undefined))
+	// a column id is not a value id
+	test.isFalse(columnValue.isColumnValueId(`{"__isRef":true,"blockId":"samples","name":"metadata.condition"}`))
+	// the marker must be boolean true
+	test.isFalse(columnValue.isColumnValueId(`{"__isColumnValue":"true","column":"c","value":"v"}`))
+	// a decoded key map is not an id: ids are strings
+	test.isFalse(columnValue.isColumnValueId(json.decode(TREATED_ID)))
+}
+
+//
+// valueOf / valuesOf
+//
+
+TestValueOf_ReturnsCarriedValue := func() {
+	test.isEqual("treated", columnValue.valueOf(TREATED_ID))
+	test.isEqual("x", columnValue.valueOf(FILTERED_COLUMN_ID))
+	test.isEqual("treated", columnValue.valueOf(escape(escape(TREATED_ID))))
+}
+
+TestValueOf_NumbersKeepJsonDecodedType := func() {
+	// An integral number decodes to int, a fractional one to float — the same types the
+	// workflow sees when the number sits in args directly.
+	two := columnValue.valueOf(INT_ID)
+	test.isTrue(is_int(two))
+	test.isEqual(2, two)
+	test.isTrue(is_int(json.decode("2")))
+
+	twoAndHalf := columnValue.valueOf(FLOAT_ID)
+	test.isTrue(is_float(twoAndHalf))
+	test.isEqual(2.5, twoAndHalf)
+
+	// A JavaScript number is never written as `2.0`, but if it were, it would decode to
+	// float, and float 2.0 is not equal to int 2.
+	test.isTrue(is_float(json.decode("2.0")))
+	test.isFalse(json.decode("2.0") == 2)
+}
+
+TestValueOf_PassesOtherValuesThrough := func() {
+	test.isEqual("treated", columnValue.valueOf("treated"))
+	test.isEqual(2, columnValue.valueOf(2))
+	test.isTrue(is_undefined(columnValue.valueOf(undefined)))
+	test.isEqual({ a: 1 }, columnValue.valueOf({ a: 1 }))
+}
+
+TestValuesOf_KeepsOrderAndPassesOthers := func() {
+	test.isEqual(
+		["treated", 2, "plain", 2.5],
+		columnValue.valuesOf([TREATED_ID, INT_ID, "plain", FLOAT_ID])
+	)
+	test.isEqual([], columnValue.valuesOf([]))
+}
+
+//
+// unwrapValues
+//
+// Two keys of one map that turn into the same key after unwrapping make unwrapValues
+// panic. ll.assert terminates execution, so that case is not unit-tested here.
+//
+
+TestUnwrapValues_ReplacesValuesDeep := func() {
+	args := {
+		conditionColumn: `{"__isRef":true,"blockId":"samples","name":"metadata.condition"}`,
+		conditionOrder: [TREATED_ID, INT_ID],
+		antigen: { target: FILTERED_COLUMN_ID, negative: [FLOAT_ID] },
+		count: 42,
+		flag: true
+	}
+
+	test.isEqual({
+		conditionColumn: `{"__isRef":true,"blockId":"samples","name":"metadata.condition"}`,
+		conditionOrder: ["treated", 2],
+		antigen: { target: "x", negative: [2.5] },
+		count: 42,
+		flag: true
+	}, columnValue.unwrapValues(args))
+}
+
+TestUnwrapValues_ReplacesMapKeys := func() {
+	ranks := {}
+	ranks[TREATED_ID] = 1
+	ranks[INT_ID] = 2
+	ranks[FLOAT_ID] = { nested: [TREATED_ID] }
+	ranks["plain"] = 3
+
+	// number values become their string form when used as keys
+	test.isEqual({
+		treated: 1,
+		"2": 2,
+		"2.5": { nested: ["treated"] },
+		plain: 3
+	}, columnValue.unwrapValues({ gateRanks: ranks }).gateRanks)
+}
+
+TestUnwrapValues_ReplacesEscapedIds := func() {
+	m := {}
+	m[escape(TREATED_ID)] = escape(escape(INT_ID))
+
+	test.isEqual({ treated: 2 }, columnValue.unwrapValues(m))
+}
+
+TestUnwrapValues_TopLevelId := func() {
+	test.isEqual("treated", columnValue.unwrapValues(TREATED_ID))
+}
+
+TestUnwrapValues_LeavesOtherValuesAsIs := func() {
+	test.isEqual("plain", columnValue.unwrapValues("plain"))
+	test.isEqual(7, columnValue.unwrapValues(7))
+	test.isTrue(is_undefined(columnValue.unwrapValues(undefined)))
+
+	input := { a: [1, "b", { c: "d" }], e: undefined }
+	test.isEqual({ a: [1, "b", { c: "d" }], e: undefined }, columnValue.unwrapValues(input))
+}
+
+TestUnwrapValues_DoesNotChangeInput := func() {
+	input := { order: [TREATED_ID] }
+	columnValue.unwrapValues(input)
+	test.isEqual(TREATED_ID, input.order[0])
+}
+
+TestUnwrapValues_WalksImmutableContainers := func() {
+	input := immutable({ order: [TREATED_ID, "plain"] })
+	test.isEqual({ order: ["treated", "plain"] }, columnValue.unwrapValues(input))
+}
+
+TestUnwrapValues_DoesNotWalkStrictMaps := func() {
+	// strict maps are runtime objects (resources, fields), not decoded args
+	resource := ll.toStrict({ id: TREATED_ID })
+	unwrapped := columnValue.unwrapValues({ value: TREATED_ID, resource: resource })
+	test.isEqual("treated", unwrapped.value)
+	test.isEqual(TREATED_ID, unwrapped.resource.id)
+}
+
+//
+// argsWithOptions
+//
+
+TestArgsWithOptions_NoOptionsKeepsArgs := func() {
+	args := { order: [TREATED_ID], count: 2 }
+	test.isEqual({ order: [TREATED_ID], count: 2 }, columnValue.argsWithOptions(args))
+}
+
+TestArgsWithOptions_UnwrapValuesTrueUnwraps := func() {
+	ranks := {}
+	ranks[INT_ID] = 1
+	args := { order: [TREATED_ID, "plain"], ranks: ranks }
+	test.isEqual(
+		{ order: ["treated", "plain"], ranks: { "2": 1 } },
+		columnValue.argsWithOptions(args, { unwrapValues: true })
+	)
+}
+
+TestArgsWithOptions_UnwrapValuesFalseKeepsArgs := func() {
+	args := { order: [TREATED_ID] }
+	test.isEqual({ order: [TREATED_ID] }, columnValue.argsWithOptions(args, { unwrapValues: false }))
+}
+
+TestArgsWithOptions_EmptyOptionsKeepArgs := func() {
+	args := { order: [TREATED_ID] }
+	test.isEqual({ order: [TREATED_ID] }, columnValue.argsWithOptions(args, {}))
+}

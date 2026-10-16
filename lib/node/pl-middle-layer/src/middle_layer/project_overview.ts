@@ -31,10 +31,13 @@ import { getBlockPackInfo } from "./util";
 import { resourceIdToString, type SignedResourceId } from "@milaboratories/pl-client";
 import { omitBy, isEqual } from "es-toolkit";
 import { getDebugFlags } from "../debug";
+import { readArgsIssues } from "../model/args_fields";
+import type { ArgsIssue } from "@milaboratories/pl-model-common";
 
 type BlockInfo = {
   argsRid?: SignedResourceId;
   currentArguments: unknown;
+  argsIssues: ArgsIssue[];
   prod?: ProdState;
 };
 
@@ -130,7 +133,13 @@ export function projectOverview(
           };
         }
 
-        infos.set(id, { currentArguments, prod, argsRid: cInputs?.resourceInfo.id });
+        infos.set(id, {
+          currentArguments,
+          // Issues are reported with or without current args: warnings leave the block runnable.
+          argsIssues: readArgsIssues(prj, id, "args"),
+          prod,
+          argsRid: cInputs?.resourceInfo.id,
+        });
       }
 
       const currentGraph = productionGraph(structure, (id) => {
@@ -317,6 +326,7 @@ export function projectOverview(
           settings,
           sections,
           inputsValid,
+          argsIssues: info.argsIssues,
           updateInfo: {},
           currentBlockPack: bp?.info?.source,
           updates,
