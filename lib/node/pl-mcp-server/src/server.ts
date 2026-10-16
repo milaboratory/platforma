@@ -10,6 +10,7 @@ import { registerConnectionTools } from "./tools/connection";
 import { registerProjectTools } from "./tools/projects";
 import { registerBlockTools } from "./tools/blocks";
 import { registerBlockStateTools } from "./tools/block-state";
+import { registerBlockStatusTools } from "./tools/block-status";
 import { registerAwaitTools } from "./tools/await";
 import { registerLogTools } from "./tools/logs";
 import { registerDataQueryTools } from "./tools/data-query";
@@ -247,6 +248,7 @@ export class PlMcpServer {
     registerProjectTools(server, ctx);
     registerBlockTools(server, ctx);
     registerBlockStateTools(server, ctx);
+    registerBlockStatusTools(server, ctx);
     registerAwaitTools(server, ctx);
     registerLogTools(server, ctx);
     registerDataQueryTools(server, ctx);

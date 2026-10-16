@@ -14,6 +14,7 @@ import { expect, test } from "vitest";
 import { ProjectHelper } from "../model/project_helper";
 import { projectFieldName } from "../model/project_model";
 import { BPSpecEnterV041NotPrepared, TestBPPreparer } from "../test/block_packs";
+import { readBlockStatusTree } from "../middle_layer/block_status";
 import { createProject, ProjectMutator } from "./project";
 
 type StatusContextData = Record<string, string>;
@@ -133,6 +134,18 @@ test("block status context outlives its render and is replaced on re-render", as
       expect(afterGc.contextId).toEqual(first.contextId);
       expect(afterGc.data).toEqual(first.data);
     }
+
+    // 4b. The read-back sees the same context with its data, and the core transition with statusApi.
+    const tree = (await readBlockStatusTree(pl, prj, "block1", "prod"))!;
+    expect(tree).toBeDefined();
+    expect(tree.contextId).toEqual(first.contextId);
+    expect(tree.data).toEqual(first.data);
+    if (statusApi)
+      expect(tree.transitions.map((t) => [t.topic, t.resource, t.state])).toContainEqual([
+        "core",
+        firstRender,
+        "WaitingForInputs",
+      ]);
 
     // 5. Re-render production: prodStatus must point at a new context with a new run-id.
     await renderBlock([4, 5, 6], false);
