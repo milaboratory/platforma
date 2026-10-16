@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   createColumnValueId,
   createGlobalPObjectId,
@@ -60,6 +60,45 @@ describe("deriveColumnValueOptions", () => {
       { value: createColumnValueId({ column: column.id, value: "R10" }), label: "R10" },
     ]);
   });
+
+  test("orders digit runs as numbers and text case-insensitively", () => {
+    const column = metadataColumn({
+      type: "PColumnData/Json",
+      ready: true,
+      content: {
+        keyLength: 1,
+        data: { '["s1"]': "r10", '["s2"]': "R009", '["s3"]': "b", '["s4"]': "A" },
+      },
+    });
+    const labels = deriveColumnValueOptions(readColumnValues(column) ?? []).map((o) => o.label);
+
+    expect(labels).toEqual(["A", "b", "R009", "r10"]);
+  });
+
+  test("works in a runtime without Intl", async () => {
+    vi.resetModules();
+    vi.stubGlobal("Intl", undefined);
+    try {
+      const fresh = await import("./column_values");
+      const { DataColumn: FreshDataColumn } = await import("./data_column");
+      const { TreeNodeAccessor: FreshAccessor } = await import("../render");
+      stubRenderCtx({
+        type: "PColumnData/Json",
+        ready: true,
+        content: { keyLength: 1, data: { '["s1"]': "R10", '["s2"]': "R2" } },
+      });
+      const column = FreshDataColumn.fromColumn({
+        id: COLUMN_ID,
+        spec: SPEC,
+        data: new FreshAccessor(HANDLE, []),
+      });
+      const options = fresh.deriveColumnValueOptions(fresh.readColumnValues(column) ?? []);
+
+      expect(options.map((o) => o.label)).toEqual(["R2", "R10"]);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
 });
 
 // Internals
@@ -73,8 +112,19 @@ const SPEC: PColumnSpec = {
   axesSpec: [{ name: "pl7.app/sampleId", type: "String" }],
 };
 
+const COLUMN_ID = createGlobalPObjectId("samples", "pf.metadata.round");
+
 /** A leaf metadata column whose data is the given resource, served by a stub render ctx. */
 function metadataColumn(resource: Resource) {
+  stubRenderCtx(resource);
+  return DataColumn.fromColumn({
+    id: COLUMN_ID,
+    spec: SPEC,
+    data: new TreeNodeAccessor(HANDLE, []),
+  });
+}
+
+function stubRenderCtx(resource: Resource) {
   (globalThis as { cfgRenderCtx?: unknown }).cfgRenderCtx = {
     getResourceType: () => ({ name: resource.type, version: "1" }),
     getIsReadyOrError: () => resource.ready,
@@ -82,9 +132,4 @@ function metadataColumn(resource: Resource) {
     getDataAsString: () =>
       resource.content === undefined ? undefined : JSON.stringify(resource.content),
   };
-  return DataColumn.fromColumn({
-    id: createGlobalPObjectId("samples", "pf.metadata.round"),
-    spec: SPEC,
-    data: new TreeNodeAccessor(HANDLE, []),
-  });
 }
