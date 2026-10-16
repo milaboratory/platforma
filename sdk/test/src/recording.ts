@@ -14,7 +14,7 @@
 */
 
 import type { AxisSpec, PColumnSpec, PObjectId } from "@platforma-sdk/model";
-import { getAxisId } from "@platforma-sdk/model";
+import { getAxisId, getPColumnSpecId } from "@platforma-sdk/model";
 import * as fsp from "node:fs/promises";
 import path from "node:path";
 import type { DatasetShape, PublishableDataset, ShapeColumn, ShapeRow } from "./fixtures/dataset";
@@ -89,9 +89,8 @@ const columnOrder = (a: ListedColumn, b: ListedColumn) =>
   canonicalJson(a.spec.domain ?? {}).localeCompare(canonicalJson(b.spec.domain ?? {})) ||
   canonicalJson(a.spec.axesSpec).localeCompare(canonicalJson(b.spec.axesSpec));
 
-/** A column's identity: name, domain and axis ids, independent of key order. */
-const columnKey = (spec: PColumnSpec) =>
-  canonicalJson({ name: spec.name, domain: spec.domain ?? {}, axes: spec.axesSpec.map(getAxisId) });
+/** A column's full identity, independent of key order. */
+const columnKey = (spec: PColumnSpec) => canonicalJson(getPColumnSpecId(spec));
 
 export type RecordOptions = {
   scenario: string;
@@ -261,12 +260,20 @@ export async function recordColumns(source: ColumnSource, opts: RecordOptions): 
   };
 }
 
+/**
+ * Write both files of a recording. Both are rendered and staged before either replaces the
+ * saved one, so a value TSV cannot hold leaves the saved recording as it was.
+ */
 export async function writeRecording(dir: string, rec: Recording): Promise<void> {
   const { rows, ...manifest } = rec;
-  await fsp.mkdir(dir, { recursive: true });
-  await fsp.writeFile(path.join(dir, MANIFEST_FILE), JSON.stringify(manifest, null, 2) + "\n");
   const header = [...rec.axes.map((a) => a.column), ...rec.columns.map((c) => c.column)];
-  await fsp.writeFile(path.join(dir, DATA_FILE), renderTsv(header, rows));
+  const files: [string, string][] = [
+    [MANIFEST_FILE, JSON.stringify(manifest, null, 2) + "\n"],
+    [DATA_FILE, renderTsv(header, rows)],
+  ];
+  await fsp.mkdir(dir, { recursive: true });
+  for (const [name, content] of files) await fsp.writeFile(path.join(dir, `${name}.tmp`), content);
+  for (const [name] of files) await fsp.rename(path.join(dir, `${name}.tmp`), path.join(dir, name));
 }
 
 export async function readRecording(dir: string): Promise<Recording> {
