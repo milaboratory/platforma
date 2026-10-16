@@ -14,6 +14,7 @@
 */
 
 import type { AxisSpec, PColumnSpec, PObjectId } from "@platforma-sdk/model";
+import { getAxisId } from "@platforma-sdk/model";
 import * as fsp from "node:fs/promises";
 import path from "node:path";
 import type { DatasetShape, PublishableDataset, ShapeColumn, ShapeRow } from "./fixtures/dataset";
@@ -52,8 +53,8 @@ export type Recording = RecordingManifest & {
 export const MANIFEST_FILE = "manifest.json";
 export const DATA_FILE = "data.tsv";
 
-const axisKey = (a: AxisSpec) =>
-  JSON.stringify({ name: a.name, type: a.type, domain: a.domain ?? {} });
+/** An axis's identity (name, type, domain, context domain), independent of key order. */
+const axisKey = (a: AxisSpec) => canonicalJson(getAxisId(a));
 
 const sanitize = (s: string) => s.replace(/\W+/g, "_");
 
@@ -73,6 +74,7 @@ function fileColumnName(
   }
   const first = taken.get(base) ?? {};
   const own = Object.entries(domain ?? {})
+    .sort(([a], [b]) => a.localeCompare(b))
     .filter(([k, v]) => first[k] !== v)
     .map(([, v]) => sanitize(v));
   let candidate = own.length > 0 ? `${base}_${own.join("_")}` : base;
@@ -84,8 +86,12 @@ function fileColumnName(
 /** A stable order for columns: by name, then domain, then axes. */
 const columnOrder = (a: ListedColumn, b: ListedColumn) =>
   a.spec.name.localeCompare(b.spec.name) ||
-  JSON.stringify(a.spec.domain ?? {}).localeCompare(JSON.stringify(b.spec.domain ?? {})) ||
-  JSON.stringify(a.spec.axesSpec).localeCompare(JSON.stringify(b.spec.axesSpec));
+  canonicalJson(a.spec.domain ?? {}).localeCompare(canonicalJson(b.spec.domain ?? {})) ||
+  canonicalJson(a.spec.axesSpec).localeCompare(canonicalJson(b.spec.axesSpec));
+
+/** A column's identity: name, domain and axis ids, independent of key order. */
+const columnKey = (spec: PColumnSpec) =>
+  canonicalJson({ name: spec.name, domain: spec.domain ?? {}, axes: spec.axesSpec.map(getAxisId) });
 
 export type RecordOptions = {
   scenario: string;
@@ -145,9 +151,8 @@ export function canonicalJson(value: unknown): string {
  * a block that builds them from a map prints keys in varying order across runs.
  */
 function canonicalizeAnnotations<T extends AxisSpec | PColumnSpec>(spec: T): T {
-  if (spec.annotations === undefined) return spec;
   const annotations = Object.fromEntries(
-    Object.entries(spec.annotations).map(([k, v]) => {
+    Object.entries(spec.annotations ?? {}).map(([k, v]) => {
       if (typeof v !== "string" || !/^[[{]/.test(v)) return [k, v];
       try {
         return [k, canonicalJson(JSON.parse(v))];
@@ -156,7 +161,7 @@ function canonicalizeAnnotations<T extends AxisSpec | PColumnSpec>(spec: T): T {
       }
     }),
   );
-  const out = { ...spec, annotations };
+  const out = spec.annotations === undefined ? { ...spec } : { ...spec, annotations };
   return (
     "axesSpec" in out
       ? { ...out, axesSpec: out.axesSpec.map((a: AxisSpec) => canonicalizeAnnotations(a)) }
@@ -318,8 +323,10 @@ export function diffRecordings(
     canonicalJson(actual.axes.map((a) => a.spec));
   if (axesChanged) out.push("axes: changed");
 
+  // JSON keeps axis tuples apart that a joined string would merge (`a|b`,`c` vs `a`,`b|c`).
   const keyOf = (row: ShapeRow, c: RecordingColumn, rec: Recording) =>
-    c.parentAxes.map((i) => String(row[rec.axes[i].column] ?? "")).join("|");
+    JSON.stringify(c.parentAxes.map((i) => String(row[rec.axes[i].column] ?? "")));
+  const shown = (k: string) => (JSON.parse(k) as string[]).join("|");
   for (const [name, e] of exp) {
     const a = act.get(name);
     if (a === undefined) continue;
@@ -328,6 +335,9 @@ export function diffRecordings(
         `column ${name}: spec changed\n  expected ${JSON.stringify(e.spec)}\n  actual   ${JSON.stringify(a.spec)}`,
       );
     }
+    // The joined table cannot tell a dropped row from an NA one where another column keeps
+    // the row; the column's own row count can.
+    if (e.rows !== a.rows) out.push(`column ${name}: ${e.rows} rows -> ${a.rows}`);
     if (axesChanged) continue;
     const values = (rec: Recording, c: RecordingColumn) => {
       const m = new Map<string, string | number | undefined>();
@@ -345,15 +355,21 @@ export function diffRecordings(
     const added: string[] = [];
     const changed: string[] = [];
     for (const [k, v] of ev) {
-      if (!av.has(k)) missing.push(k);
+      if (!av.has(k)) missing.push(shown(k));
       else {
         const w = av.get(k);
         const same =
-          typeof v === "number" && typeof w === "number" ? Math.abs(v - w) <= tol : v === w;
-        if (!same) changed.push(`${k}: ${String(v)} -> ${String(w)}`);
+          Object.is(v, w) ||
+          v === w ||
+          (typeof v === "number" &&
+            typeof w === "number" &&
+            Number.isFinite(v) &&
+            Number.isFinite(w) &&
+            Math.abs(v - w) <= tol);
+        if (!same) changed.push(`${shown(k)}: ${String(v)} -> ${String(w)}`);
       }
     }
-    for (const k of av.keys()) if (!ev.has(k)) added.push(k);
+    for (const k of av.keys()) if (!ev.has(k)) added.push(shown(k));
     const report = (what: string, items: string[]) => {
       if (items.length === 0) return;
       out.push(
@@ -400,8 +416,11 @@ export async function expectRecording(
   }
   if (update) {
     if (expected !== undefined && !opts.allowDroppedColumns) {
-      const have = new Set(actual.columns.map((c) => c.column));
-      const dropped = expected.columns.filter((c) => !have.has(c.column)).map((c) => c.column);
+      // By identity, not file column: adding a same-name column renames the existing one.
+      const have = new Set(actual.columns.map((c) => columnKey(c.spec)));
+      const dropped = expected.columns
+        .filter((c) => !have.has(columnKey(c.spec)))
+        .map((c) => c.column);
       if (dropped.length > 0)
         throw new Error(
           `Updating ${dir} would drop columns ${dropped.join(", ")}; pass allowDroppedColumns to confirm`,
@@ -459,6 +478,20 @@ export function recordingShape(
             opts.domainRewrites?.[v] ?? v,
           ]),
         );
+  const unsupported = [
+    ...rec.axes
+      .filter((a) => a.spec.contextDomain !== undefined || a.spec.parentAxes !== undefined)
+      .map((a) => `axis ${a.column}`),
+    ...rec.columns
+      .filter((c) => c.spec.contextDomain !== undefined)
+      .map((c) => `column ${c.column}`),
+  ];
+  // xsv-import has no context domain, and reads an axis's parentAxes against each column
+  // group's own axes; publishing without them would change the column identities.
+  if (unsupported.length > 0)
+    throw new Error(
+      `Recording carries contextDomain or axis parentAxes, which xsv-import cannot publish: ${unsupported.join(", ")}`,
+    );
   const axes: XsvAxis[] = rec.axes.map((a) => ({
     column: a.column,
     filterOutRegex: "^$",
