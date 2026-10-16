@@ -7,6 +7,7 @@ import type {
   ColumnEntriesProvider,
   ColumnUniversalId,
   ColumnsCollectionDriver,
+  ColumnsSourceError,
   ColumnsCollectionDriverHost,
   ColumnsDiscoverOptions,
   ColumnsFilterOptions,
@@ -32,7 +33,9 @@ import {
   dedupColumns,
   deriveNativeId,
   deriveSpecDelta,
+  columnFieldErrors,
   extractPObjectId,
+  hasErroredSpec,
   isPColumnSpec,
   isPlRef,
   isEmptySpecDelta,
@@ -54,7 +57,8 @@ type SourceContribution<A extends AccessorLike<A>> =
       readonly type: "ids";
       readonly ids: ReadonlyArray<ColumnUniversalId>;
       readonly isFinal: boolean;
-    };
+    }
+  | { readonly type: "errors"; readonly errors: ReadonlyArray<ColumnsSourceError> };
 
 interface CollectionState<A extends AccessorLike<A>> {
   readonly contributions: ReadonlyArray<SourceContribution<A>>;
@@ -83,7 +87,7 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     sources: ReadonlyArray<SerializedColumnsSource>,
     host: ColumnsCollectionDriverHost<A>,
   ): PoolEntry<CollectionHandle> {
-    const contributions = sources.map((src) => this.materialiseSource(src, host));
+    const contributions = sources.flatMap((src) => this.materialiseSource(src, host));
     return this.mint(contributions);
   }
 
@@ -96,6 +100,8 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
           break;
         case "ids":
           if (c.ids.length > 0) return false;
+          break;
+        case "errors":
           break;
       }
     }
@@ -112,6 +118,8 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
         case "ids":
           if (!c.isFinal) return false;
           break;
+        case "errors":
+          break;
       }
     }
     return true;
@@ -122,15 +130,22 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
    * shared with sandbox-side `extractColumns` via {@link dedupColumns} —
    * the same physical column reached via outputs vs. result_pool collapses
    * to one (provider order decides which id is canonical).
+   *
+   * A column whose spec field carries an error is left out: there is no spec
+   * to describe it. {@link getErrors} reports it.
    */
   getColumns(handle: CollectionHandle, host: ColumnsCollectionDriverHost<A>): ColumnUniversalId[] {
     const state = this.requireState(handle);
-    const all = state.contributions.flatMap((c) => {
+    const all = state.contributions.flatMap((c): ColumnUniversalId[] => {
       switch (c.type) {
         case "provider":
-          return Array.from(c.provider.getPObjectEntries().keys());
+          return Array.from(c.provider.getPObjectEntries().values())
+            .filter((entry) => !hasErroredSpec(entry))
+            .map((entry) => entry.id);
         case "ids":
           return [...c.ids];
+        case "errors":
+          return [];
       }
     });
     return dedupColumns(
@@ -143,6 +158,27 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     );
   }
 
+  /**
+   * Errors met in the collection's sources: errored block outputs and
+   * subtrees, and columns whose spec or data field carries an error.
+   */
+  getErrors(handle: CollectionHandle): ColumnsSourceError[] {
+    const state = this.requireState(handle);
+    return state.contributions.flatMap((c): ColumnsSourceError[] => {
+      switch (c.type) {
+        case "provider":
+          return [
+            ...c.provider.getSourceErrors(),
+            ...Array.from(c.provider.getPObjectEntries().values()).flatMap(columnFieldErrors),
+          ];
+        case "ids":
+          return [];
+        case "errors":
+          return [...c.errors];
+      }
+    });
+  }
+
   addSource(
     handle: CollectionHandle,
     sources: ReadonlyArray<SerializedColumnsSource>,
@@ -151,7 +187,7 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     const state = this.requireState(handle);
     const next = [
       ...state.contributions,
-      ...sources.map((src) => this.materialiseSource(src, host)),
+      ...sources.flatMap((src) => this.materialiseSource(src, host)),
     ];
     return this.mint(next);
   }
@@ -188,31 +224,41 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
   private materialiseSource(
     src: SerializedColumnsSource,
     host: ColumnsCollectionDriverHost<A>,
-  ): SourceContribution<A> {
+  ): SourceContribution<A>[] {
     switch (src.kind) {
       case "ids":
-        return { type: "ids", ids: src.ids, isFinal: src.isFinal };
+        return [{ type: "ids", ids: src.ids, isFinal: src.isFinal }];
 
       case "collection":
-        return {
-          type: "ids",
-          ids: this.getColumns(src.handle, host),
-          isFinal: this.isFinal(src.handle),
-        };
+        return [
+          {
+            type: "ids",
+            ids: this.getColumns(src.handle, host),
+            isFinal: this.isFinal(src.handle),
+          },
+          { type: "errors", errors: this.getErrors(src.handle) },
+        ];
 
       case "accessor": {
         const accessor = host.resolveAccessor(src.accessor as AccessorHandle);
-        return {
-          type: "provider",
-          provider: new AccessorEntriesProvider<A>(accessor, src.path),
-        };
+        return [
+          {
+            type: "provider",
+            provider: new AccessorEntriesProvider<A>(accessor, src.path),
+          },
+        ];
       }
 
       case "result_pool":
-        return {
-          type: "provider",
-          provider: new ResultPoolEntriesProvider<A>(host.getUpstreamBlockCtxes()),
-        };
+        return [
+          {
+            type: "provider",
+            provider: new ResultPoolEntriesProvider<A>(host.getUpstreamBlockCtxes()),
+          },
+        ];
+
+      case "errors":
+        return [{ type: "errors", errors: src.errors }];
     }
   }
 
@@ -253,9 +299,10 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     host: ColumnsCollectionDriverHost<A>,
   ): PoolEntry<CollectionHandle> {
     const sourceIsFinal = this.isFinal(handle);
+    const sourceErrors: SourceContribution<A> = { type: "errors", errors: this.getErrors(handle) };
     const ids = this.getColumns(handle, host);
     if (ids.length === 0) {
-      return this.mint([{ type: "ids", ids: [], isFinal: sourceIsFinal }]);
+      return this.mint([{ type: "ids", ids: [], isFinal: sourceIsFinal }, sourceErrors]);
     }
 
     const specDriver = host.getSpecDriver();
@@ -274,7 +321,7 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
 
     // Anchors requested but none resolved yet — return empty, preserving finality (as zero-ids does).
     if (hasAnchors && anchorsList.length === 0) {
-      return this.mint([{ type: "ids", ids: [], isFinal: sourceIsFinal }]);
+      return this.mint([{ type: "ids", ids: [], isFinal: sourceIsFinal }, sourceErrors]);
     }
 
     using specFrame = specDriver.createSpecFrame(Object.fromEntries(specMap.entries()));
@@ -300,7 +347,7 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
       ? mapHitsWithDiscovery(response, specMap, anchorsList)
       : mapHitsDirect(response, specMap);
 
-    return this.mint([{ type: "ids", ids: resultIds, isFinal: sourceIsFinal }]);
+    return this.mint([{ type: "ids", ids: resultIds, isFinal: sourceIsFinal }, sourceErrors]);
   }
 }
 

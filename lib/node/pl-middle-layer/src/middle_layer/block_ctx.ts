@@ -21,13 +21,17 @@ export type BlockContextArgsOnly = {
 export type BlockContextFull = BlockContextArgsOnly & {
   readonly prod: (cCtx: ComputableCtx) => PlTreeEntry | undefined;
   readonly staging: (cCtx: ComputableCtx) => PlTreeEntry | undefined;
+  /** Error resource on the block's prod output field, whether or not the field has a value. */
+  readonly prodError: (cCtx: ComputableCtx) => PlTreeEntry | undefined;
+  /** Error resource on the block's staging output field, whether or not the field has a value. */
+  readonly stagingError: (cCtx: ComputableCtx) => PlTreeEntry | undefined;
   readonly getResultsPool: (cCtx: ComputableCtx) => ResultPool;
   readonly projectEntry: PlTreeEntry;
 };
 
 export type BlockContextAny = Optional<
   BlockContextFull,
-  "prod" | "staging" | "getResultsPool" | "projectEntry"
+  "prod" | "staging" | "prodError" | "stagingError" | "getResultsPool" | "projectEntry"
 >;
 
 export function constructBlockContextArgsOnly(
@@ -162,7 +166,31 @@ export function constructBlockContext(
         ?.persist();
       return result;
     },
+    prodError: (cCtx: ComputableCtx) =>
+      outputFieldError(cCtx, projectEntry, projectFieldName(blockId, "prodOutput")),
+    stagingError: (cCtx: ComputableCtx) =>
+      outputFieldError(cCtx, projectEntry, projectFieldName(blockId, "stagingOutput")),
     getResultsPool: (cCtx: ComputableCtx) => ResultPool.create(cCtx, projectEntry, blockId),
     projectEntry,
   };
+}
+
+//
+// Internals
+//
+
+/**
+ * Error resource on output field `field` of the project. A missing field
+ * leaves the ctx stable: the output lookup itself decides stability.
+ */
+function outputFieldError(
+  cCtx: ComputableCtx,
+  projectEntry: PlTreeEntry,
+  field: string,
+): PlTreeEntry | undefined {
+  return cCtx
+    .accessor(projectEntry)
+    .node({ ignoreError: true })
+    .getField({ field, stableIfNotFound: true })
+    ?.error?.persist();
 }

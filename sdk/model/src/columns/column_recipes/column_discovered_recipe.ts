@@ -13,6 +13,7 @@ import {
 } from "@milaboratories/pl-model-common";
 import type { GlobalCfgRenderCtx } from "../../render/internal";
 import type { ColumnFieldStatus, ColumnResolutionStatus } from "./types";
+import { worseStatus } from "./types";
 import { ColumnRecipe } from "./index";
 import { ColumnOverriddenRecipe } from "./column_overrided_recipe";
 import { Column } from "../column";
@@ -70,9 +71,8 @@ export class ColumnDiscoveredRecipe implements ColumnRecipe<ColumnDiscoveredId> 
     const distilled = distillColumnDiscoveredKey(key);
     let worst: ColumnResolutionStatus = "present";
     for (const uniId of referencedUniIdsOf(distilled)) {
-      const s = ColumnRecipe.getStatus(uniId, opts);
-      if (s === "absent") return "absent";
-      if (s === "resolving") worst = "resolving";
+      worst = worseStatus(worst, ColumnRecipe.getStatus(uniId, opts));
+      if (worst === "errored") return worst;
     }
     return worst;
   }
@@ -153,12 +153,10 @@ export class ColumnDiscoveredRecipe implements ColumnRecipe<ColumnDiscoveredId> 
   getDataStatus(): ColumnFieldStatus {
     if (this.dataStatusCache === undefined) {
       this.dataStatusCache = {
-        value: Object.values(this.columns).reduce<ColumnFieldStatus>((worst, lazy) => {
-          const s = lazy.getDataStatus();
-          if (s === "absent" || worst === "absent") return "absent";
-          if (s === "resolving") return "resolving";
-          return worst;
-        }, "present"),
+        value: Object.values(this.columns).reduce<ColumnFieldStatus>(
+          (worst, lazy) => worseStatus(worst, lazy.getDataStatus()),
+          "present",
+        ),
       };
     }
     return this.dataStatusCache.value;
