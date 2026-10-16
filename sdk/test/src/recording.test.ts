@@ -8,6 +8,7 @@ import type { ColumnRow, ListedColumn } from "./pframe-read";
 import type { ColumnSource } from "./recording";
 import {
   diffRecordings,
+  expectRecording,
   readRecording,
   recordColumns,
   recordedDataset,
@@ -171,9 +172,71 @@ describe("diffRecordings", () => {
     const diff = diffRecordings(expected, actual);
     expect(diff).toEqual([
       "column label: missing from the run",
+      "column link: 3 rows -> 2",
       "column link: 1 rows missing: A|c2",
       "column link: 1 values changed: B|c3: 1 -> 2",
     ]);
+  });
+
+  test("a dropped row is reported where another column keeps the joined row", async () => {
+    const expected = await recordColumns(SRC(), { scenario: "s", blockId: "b1" });
+    const actual = JSON.parse(JSON.stringify(expected));
+    actual.columns.find((c: { column: string }) => c.column === "label").rows = 2;
+    expect(diffRecordings(expected, actual)).toEqual(["column label: 3 rows -> 2"]);
+  });
+
+  test("axis keys holding the join character stay apart", async () => {
+    const rec = (value: number) =>
+      recordColumns(
+        source({
+          v: {
+            spec: spec("pl7.app/v", [CLUSTER, CLONE], "Int"),
+            rows: [
+              { keys: ["a|b", "c"], value: 1 },
+              { keys: ["a", "b|c"], value },
+            ],
+          },
+        }),
+        { scenario: "s", blockId: "b1" },
+      );
+    expect(diffRecordings(await rec(1), await rec(2))).toEqual([
+      "column v: 1 values changed: a|b|c: 1 -> 2",
+    ]);
+  });
+
+  test("equal NaN and infinite values match", async () => {
+    const expected = await recordColumns(SRC(), { scenario: "s", blockId: "b1" });
+    expected.rows[0].clusterSize = Number.NaN;
+    expected.rows[1].clusterSize = Number.POSITIVE_INFINITY;
+    const actual = JSON.parse(JSON.stringify(expected));
+    actual.rows[0].clusterSize = Number.NaN;
+    actual.rows[1].clusterSize = Number.POSITIVE_INFINITY;
+    expect(diffRecordings(expected, actual, { tolerance: { clusterSize: 0.1 } })).toEqual([]);
+  });
+});
+
+describe("axis identity", () => {
+  test("axes differing only in contextDomain stay apart; key order does not split them", async () => {
+    const left: AxisSpec = { ...CLONE, contextDomain: { side: "left" } };
+    const right: AxisSpec = { ...CLONE, contextDomain: { side: "right" } };
+    const a: AxisSpec = { ...CLONE, domain: { x: "1", y: "2" } };
+    const b: AxisSpec = { ...CLONE, domain: { y: "2", x: "1" } };
+    const rec = await recordColumns(
+      source({
+        link: {
+          spec: spec("pl7.app/link", [left, right], "Int"),
+          rows: [{ keys: ["p", "q"], value: 1 }],
+        },
+        u: { spec: spec("pl7.app/u", [a], "Int"), rows: [{ keys: ["k"], value: 1 }] },
+        w: { spec: spec("pl7.app/w", [b], "Int"), rows: [{ keys: ["k"], value: 2 }] },
+      }),
+      { scenario: "s" },
+    );
+    expect(rec.axes).toHaveLength(3);
+    expect(rec.columns.find((c) => c.column === "link")!.parentAxes).toEqual([0, 1]);
+    expect(rec.columns.find((c) => c.column === "u")!.parentAxes).toEqual([2]);
+    expect(rec.columns.find((c) => c.column === "w")!.parentAxes).toEqual([2]);
+    expect(() => recordingShape(rec)).toThrow(/axis clonotypeKey/);
   });
 
   test("a changed spec is reported even when the rows match", async () => {
@@ -189,6 +252,28 @@ describe("diffRecordings", () => {
     actual.rows[0].clusterSize = 2.0004;
     expect(diffRecordings(expected, actual)).toHaveLength(1);
     expect(diffRecordings(expected, actual, { tolerance: { clusterSize: 0.001 } })).toEqual([]);
+  });
+});
+
+describe("expectRecording", () => {
+  test("adding a same-name column is not a dropped column", async () => {
+    const dir = path.join(os.tmpdir(), `rec-${randomUUID()}`);
+    const seq = (content: string) =>
+      spec("pl7.app/vdj/sequence", [CLUSTER], "String", {
+        "pl7.app/clustering/sequenceContent": content,
+      });
+    const ref = { spec: seq("referenceCentroid"), rows: [{ keys: ["A"], value: "X" }] };
+    const opts = { scenario: "s", blockId: "b1", dir, update: true };
+    await expectRecording(source({ a: ref }), opts);
+    const rec = await expectRecording(
+      source({ a: ref, b: { spec: seq("centroid"), rows: [{ keys: ["A"], value: "Y" }] } }),
+      opts,
+    );
+    expect(rec.columns).toHaveLength(2);
+    await expect(
+      expectRecording(source({ b: { spec: seq("centroid"), rows: [] } }), opts),
+    ).rejects.toThrow(/would drop columns/);
+    await fsp.rm(dir, { recursive: true });
   });
 });
 
