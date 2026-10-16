@@ -10,7 +10,13 @@
   project; those calls throw here and belong in `blockTest` or `suiteTest`.
 */
 
-import type { BlockConfigContainer, BlockConfigV4, BlockStorage } from "@platforma-sdk/model";
+import type {
+  BlockConfigContainer,
+  BlockConfigV4,
+  BlockStorage,
+  BlockStorageFacade,
+  StringifiedJson,
+} from "@platforma-sdk/model";
 import {
   BlockStorageFacadeCallbacks,
   createBlockStorage,
@@ -19,9 +25,21 @@ import {
   isConfigLambda,
   normalizeBlockStorage,
 } from "@platforma-sdk/model";
+import type { GlobalCfgRenderCtx } from "@platforma-sdk/model/render/internal";
 
-/** A registered callback; the middle layer passes it JSON strings. */
-type Callback = (...args: string[]) => unknown;
+/**
+ * The members of the render context the harness provides, typed by the model's own
+ * definition so a change to them fails this package's type check. `args` is checked by name
+ * only: the middle layer returns undefined when a block has no args, wider than its
+ * declared type.
+ */
+type RenderCtxFake = Pick<
+  GlobalCfgRenderCtx,
+  "data" | "activeArgs" | "blockStorage" | "callbackRegistry"
+> & { [K in Extract<keyof GlobalCfgRenderCtx, "args">]: () => string | undefined };
+
+type Registry = GlobalCfgRenderCtx["callbackRegistry"];
+type FacadeName = keyof BlockStorageFacade;
 
 /**
  * What a render lambda may read of the block's state without a project: the block data, or
@@ -40,16 +58,22 @@ const TOP_LEVEL_LAMBDAS = ["sections", "title", "subtitle", "tags", "enrichmentT
  * through `JSON.stringify` and `JSON.parse` (so `undefined` keys drop, `NaN` in an object
  * becomes `null`, a `Date` becomes a string).
  */
-function fromVm(v: unknown): unknown {
+function fromVm<T>(v: T): T {
   if (v === undefined || typeof v === "boolean" || typeof v === "number" || typeof v === "string")
     return v;
   const text = JSON.stringify(v);
-  return text === undefined ? undefined : JSON.parse(text);
+  return text === undefined ? (undefined as T) : (JSON.parse(text) as T);
 }
 
-/** Parse a facade callback's `{ error } | { value }` result; the model's error throws. */
-function derived<T>(what: string, result: unknown): T {
-  const r = fromVm(result) as { error?: string; value?: T };
+/** A value as JSON, in the branded form the facade callbacks take. */
+const toJson = (v: unknown) => JSON.stringify(v) as StringifiedJson;
+
+/** A derive callback's value as the caller's type; the model's error throws. */
+function derived<T>(
+  what: string,
+  result: { error: string } | { error?: undefined; value: unknown },
+) {
+  const r = fromVm(result);
   if (r.error !== undefined) throw new Error(`${what}: ${r.error}`);
   return r.value as T;
 }
@@ -65,13 +89,13 @@ function modelConfig(module: { platforma: unknown }): BlockConfigV4 {
   return config;
 }
 
-const storageJson = (data: unknown) => JSON.stringify(createBlockStorage(data));
+const storageJson = (data: unknown) => toJson(createBlockStorage(data));
 
 const renderGlobal = globalThis as { cfgRenderCtx?: unknown };
 
 export class BlockModelHarness<Data = unknown, Args = unknown, Params = unknown> {
   private constructor(
-    private readonly registry: Record<string, Callback>,
+    private readonly registry: Registry,
     private readonly config: BlockConfigV4,
     private readonly stateRef: { current: ModelRenderState<Data, Args> },
   ) {}
@@ -86,7 +110,7 @@ export class BlockModelHarness<Data = unknown, Args = unknown, Params = unknown>
   ): Promise<BlockModelHarness<Data, Args, Params>> {
     if (renderGlobal.cfgRenderCtx !== undefined)
       throw new Error("A cfgRenderCtx is already installed; unload the previous harness first");
-    const registry: Record<string, Callback> = {};
+    const registry: Registry = {};
     const stateRef: { current: ModelRenderState<Data, Args> } = { current: {} };
     const json = (v: unknown) => (v === undefined ? undefined : JSON.stringify(v));
     const state = () => stateRef.current;
@@ -94,15 +118,16 @@ export class BlockModelHarness<Data = unknown, Args = unknown, Params = unknown>
       callbackRegistry: registry,
       args: () => json(state().args),
       activeArgs: () => json(state().activeArgs),
+      // As the middle layer: absent data reads as "{}".
       data: () => {
         const { data, storage } = state();
-        return json(storage === undefined ? data : getStorageData<Data>(storage));
+        return json(storage === undefined ? data : getStorageData<Data>(storage)) ?? "{}";
       },
       blockStorage: () => {
         const { data, storage } = state();
-        return storage === undefined ? storageJson(data) : JSON.stringify(storage);
+        return storage === undefined ? storageJson(data) : toJson(storage);
       },
-    };
+    } satisfies RenderCtxFake;
     renderGlobal.cfgRenderCtx = new Proxy(target, {
       get(t, prop) {
         if (typeof prop === "string" && prop in t) return Reflect.get(t, prop);
@@ -133,16 +158,20 @@ export class BlockModelHarness<Data = unknown, Args = unknown, Params = unknown>
   }
 
   /** A facade callback, found through the block config as the middle layer finds it. */
-  private facade(name: string): Callback {
+  private facade<K extends FacadeName>(name: K): BlockStorageFacade[K] {
     const lambda = this.config.blockLifecycleCallbacks[name];
-    const cb = lambda === undefined ? undefined : this.registry[lambda.handle];
+    const cb: BlockStorageFacade[K] | undefined =
+      lambda === undefined ? undefined : this.registry[lambda.handle];
     if (cb === undefined) throw new Error(`Model registered no callback ${name}`);
     return cb;
   }
 
   /** The workflow args the model derives from `data`; throws the model's own error. */
   args(data: Data): Args {
-    return derived("args", this.facade(BlockStorageFacadeCallbacks.ArgsDerive)(storageJson(data)));
+    return derived<Args>(
+      "args",
+      this.facade(BlockStorageFacadeCallbacks.ArgsDerive)(storageJson(data)),
+    );
   }
 
   /** The staging args; the model's `prerunArgs` when declared, else its `args`. */
@@ -155,7 +184,7 @@ export class BlockModelHarness<Data = unknown, Args = unknown, Params = unknown>
 
   /** The kind params the model projects `data` back to for template export. */
   templateParams(data: Data): Params {
-    return derived(
+    return derived<Params>(
       "templateParams",
       this.facade(BlockStorageFacadeCallbacks.InitializationParamsDerive)(storageJson(data)),
     );
@@ -164,7 +193,6 @@ export class BlockModelHarness<Data = unknown, Args = unknown, Params = unknown>
   /** The storage a fresh block starts with, plugin data included. */
   initialStorage(): BlockStorage<Data> {
     const storage = fromVm(this.facade(BlockStorageFacadeCallbacks.StorageInitial)());
-    if (typeof storage !== "string") throw new Error("Initial storage is not a JSON string");
     return normalizeBlockStorage<Data>(JSON.parse(storage));
   }
 
@@ -180,23 +208,19 @@ export class BlockModelHarness<Data = unknown, Args = unknown, Params = unknown>
   dataFromParams(params: Params, blockIds: Record<string, string> = {}): Data {
     const result = fromVm(
       this.facade(BlockStorageFacadeCallbacks.StorageInitialFromParams)(
-        JSON.stringify(params ?? {}),
-        JSON.stringify(blockIds),
+        toJson(params ?? {}),
+        toJson(blockIds),
       ),
-    ) as { error?: string; storageJson?: string };
+    );
     if (result.error !== undefined) throw new Error(`dataFromParams: ${result.error}`);
-    if (result.storageJson === undefined) throw new Error("dataFromParams returned no storage");
     return getStorageData<Data>(normalizeBlockStorage(JSON.parse(result.storageJson)));
   }
 
   /** Why the kind rejects `params`, or undefined when it accepts them. */
   validateParams(params: unknown): string | undefined {
-    const result = fromVm(
-      this.facade(BlockStorageFacadeCallbacks.InitializationParamsValidate)(
-        JSON.stringify(params ?? {}),
-      ),
-    ) as { error?: string };
-    return result.error;
+    return fromVm(
+      this.facade(BlockStorageFacadeCallbacks.InitializationParamsValidate)(toJson(params ?? {})),
+    ).error;
   }
 
   /**
