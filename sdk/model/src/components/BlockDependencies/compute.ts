@@ -1,8 +1,8 @@
 import {
   Annotation,
   ColumnRegistry,
+  collectColumnReferences,
   createGlobalPObjectId,
-  mergeColumnReferences,
   readAnnotation,
   type ColumnValue,
   type UpstreamBlockCtx,
@@ -14,13 +14,10 @@ import {
   type AccessorHandle,
   type RenderCtxBase,
 } from "../../render";
-import type { ArgsFieldName } from "../../render/internal";
 import {
   checkExport,
   chooseArgs,
-  chosenReferences,
   collectOutgoingReferences,
-  combinedArgsSource,
   dependencyStatus,
   dependentStatus,
   isProducerFinal,
@@ -38,29 +35,18 @@ import type {
 } from "./types";
 
 /**
- * Outputs of other blocks this block's args or prerun args reference, each checked against what
- * the last run of its producer exports. The references of the args come first, then those only
- * the prerun args hold. Only the producers referenced are read.
+ * Outputs of other blocks this block's args reference, each checked against what the last run of
+ * its producer exports. Only the producers referenced are read.
  */
 export function computeDependencies(ctx: RenderCtxBase): BlockDependenciesOutput {
-  const { args, prerunArgs } = chooseArgs({
-    args: {
-      current: () => new BlockRenderCtx().args,
-      draft: () => readArgsField(ctx, "currentDraftArgs"),
-      lastRun: () => ctx.activeArgs,
-    },
-    prerunArgs: {
-      current: () => readArgsField(ctx, "currentPrerunArgs"),
-      draft: () => readArgsField(ctx, "currentDraftPrerunArgs"),
-      lastRun: () => readArgsField(ctx, "stagingArgs"),
-    },
+  const chosen = chooseArgs({
+    current: () => new BlockRenderCtx().args,
+    lastRun: () => ctx.activeArgs,
   });
-  const argsSource = combinedArgsSource([args, prerunArgs]);
-  if (argsSource === "none") return { argsSource, items: [], labels: {} };
+  const argsSource = chosen.source;
+  if (chosen.source === "none") return { argsSource, items: [], labels: {} };
 
-  const references = collectOutgoingReferences(
-    mergeColumnReferences(chosenReferences(args), chosenReferences(prerunArgs)),
-  );
+  const references = collectOutgoingReferences(collectColumnReferences(chosen.args));
   if (references.length === 0) return { argsSource, items: [], labels: {} };
 
   const selfBlockId = ctx.blockId;
@@ -114,13 +100,6 @@ export function computeDependents(ctx: RenderCtxBase): BlockDependentsOutput {
 }
 
 // Internals
-
-/** The block's args named `name`; `undefined` on a runtime that does not keep them. */
-function readArgsField(ctx: RenderCtxBase, name: ArgsFieldName): unknown {
-  if (!ctx.ctx.featureFlags?.argsFieldsSupport) return undefined;
-  const raw = ctx.ctx.argsField(name);
-  return raw === undefined ? undefined : JSON.parse(raw);
-}
 
 /**
  * Checks a reference to `output` of `producerBlockId`. A runtime that cannot list the runs of the

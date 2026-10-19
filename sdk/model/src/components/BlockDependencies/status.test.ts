@@ -14,17 +14,13 @@ import { describe, expect, test, vi } from "vitest";
 import {
   checkExport,
   chooseArgs,
-  chosenReferences,
   collectOutgoingReferences,
-  combinedArgsSource,
   dependencyStatus,
   dependentStatus,
   isProducerFinal,
   missingValues,
   readBlockLabels,
   readExportValues,
-  type ArgsStep,
-  type ChosenArgs,
   type ExportCheck,
   type ExportLookup,
   type ExportValues,
@@ -35,96 +31,26 @@ const condition = createGlobalPObjectId("samples", "metadata.condition");
 
 describe("chooseArgs", () => {
   const nothing = () => undefined;
-  const absent = { current: nothing, draft: nothing, lastRun: nothing };
 
-  test("current args win and nothing else is read", () => {
-    const draft = vi.fn(() => ({ draft: true }));
+  test("current args win and the last run's are not read", () => {
     const lastRun = vi.fn(() => ({ old: true }));
 
-    expect(
-      chooseArgs({ args: { current: () => ({ now: true }), draft, lastRun }, prerunArgs: absent }),
-    ).toEqual({ args: { step: "current", args: { now: true } }, prerunArgs: { step: "none" } });
-    expect(draft).not.toHaveBeenCalled();
+    expect(chooseArgs({ current: () => ({ now: true }), lastRun })).toEqual({
+      source: "current",
+      args: { now: true },
+    });
     expect(lastRun).not.toHaveBeenCalled();
   });
 
-  test("without current args the draft wins over the last run", () => {
-    const lastRun = vi.fn(() => ({ old: true }));
-
-    expect(
-      chooseArgs({
-        args: { current: nothing, draft: () => ({ draft: true }), lastRun },
-        prerunArgs: absent,
-      }).args,
-    ).toEqual({ step: "draft", args: { draft: true } });
-    expect(lastRun).not.toHaveBeenCalled();
-  });
-
-  test("without current args or a draft the last run's args are read", () => {
-    expect(
-      chooseArgs({
-        args: { current: nothing, draft: nothing, lastRun: () => ({ old: true }) },
-        prerunArgs: { current: nothing, draft: nothing, lastRun: () => ({ staged: true }) },
-      }),
-    ).toEqual({
-      args: { step: "lastRun", args: { old: true } },
-      prerunArgs: { step: "lastRun", args: { staged: true } },
+  test("without current args the last run's are read", () => {
+    expect(chooseArgs({ current: nothing, lastRun: () => ({ old: true }) })).toEqual({
+      source: "lastRun",
+      args: { old: true },
     });
   });
 
-  test("args derived from the current data keep the other kind off its last run", () => {
-    const stagingArgs = vi.fn(() => ({ staged: true }));
-    const prodArgs = vi.fn(() => ({ old: true }));
-
-    expect(
-      chooseArgs({
-        args: { current: nothing, draft: () => ({ draft: true }), lastRun: prodArgs },
-        prerunArgs: { current: nothing, draft: nothing, lastRun: stagingArgs },
-      }),
-    ).toEqual({ args: { step: "draft", args: { draft: true } }, prerunArgs: { step: "none" } });
-    expect(
-      chooseArgs({
-        args: { current: nothing, draft: nothing, lastRun: prodArgs },
-        prerunArgs: { current: () => ({ now: true }), draft: nothing, lastRun: stagingArgs },
-      }),
-    ).toEqual({ args: { step: "none" }, prerunArgs: { step: "current", args: { now: true } } });
-    expect(stagingArgs).not.toHaveBeenCalled();
-    expect(prodArgs).not.toHaveBeenCalled();
-  });
-
-  test("with none of them there are no args", () => {
-    expect(chooseArgs({ args: absent, prerunArgs: absent })).toEqual({
-      args: { step: "none" },
-      prerunArgs: { step: "none" },
-    });
-  });
-});
-
-describe("combinedArgsSource", () => {
-  const none: ChosenArgs = { step: "none" };
-  const of = (step: ArgsStep): ChosenArgs => ({ step, args: {} });
-
-  test("args derived from the current data make it current, ready or not", () => {
-    expect(combinedArgsSource([of("current"), none])).toBe("current");
-    expect(combinedArgsSource([of("lastRun"), of("draft")])).toBe("current");
-  });
-
-  test("only last-run args make it lastRun", () => {
-    expect(combinedArgsSource([none, of("lastRun")])).toBe("lastRun");
-  });
-
-  test("no args at all make it none", () => {
-    expect(combinedArgsSource([none, none])).toBe("none");
-    expect(combinedArgsSource([])).toBe("none");
-  });
-});
-
-describe("chosenReferences", () => {
-  test("lists the columns of the chosen args, and none without args", () => {
-    expect(chosenReferences({ step: "draft", args: { a: condition } })).toEqual([
-      { ref: condition, values: null },
-    ]);
-    expect(chosenReferences({ step: "none" })).toEqual([]);
+  test("with neither there are no args", () => {
+    expect(chooseArgs({ current: nothing, lastRun: nothing })).toEqual({ source: "none" });
   });
 });
 

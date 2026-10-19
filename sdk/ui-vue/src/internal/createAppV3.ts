@@ -1,7 +1,6 @@
 import { deepClone, delay, uniqueId } from "@milaboratories/helpers";
 import type { Mutable } from "@milaboratories/helpers";
 import type {
-  ArgsIssue,
   NavigationState,
   BlockOutputsBase,
   BlockStateV3,
@@ -429,22 +428,6 @@ export function createAppV3<
     snapshot,
     plugins,
     services: markRaw(services),
-    /**
-     * Issues the block's args validation finds in the args derived from the current data; a
-     * throwing args function gives one error. Computed here from the data being edited, so it can
-     * run ahead of what the project shows until the edit is saved. Empty for a block built with
-     * an SDK that cannot report issues.
-     */
-    argsIssues: computed(
-      (): ArgsIssue[] => platforma.blockModelInfo.argsIssues?.(appModel.model.data) ?? [],
-    ),
-    /**
-     * Issues of the prerun args derived from the current data. Empty for a block without its own
-     * prerun args: its prerun runs on args, whose issues are in `argsIssues`.
-     */
-    prerunArgsIssues: computed(
-      (): ArgsIssue[] => platforma.blockModelInfo.prerunArgsIssues?.(appModel.model.data) ?? [],
-    ),
     queryParams: computed(() => parseQuery<Href>(snapshot.value.navigationState.href as Href)),
     href: computed(() => snapshot.value.navigationState.href),
     hasErrors: computed(() =>

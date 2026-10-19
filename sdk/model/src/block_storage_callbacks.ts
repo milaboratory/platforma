@@ -28,14 +28,10 @@ import type { PluginHandle } from "./plugin_handle";
 import {
   stringifyJson,
   expandTemplateRefs,
-  hasArgsErrors,
-  parseArgsIssues,
   relocateBlockIds,
-  type ArgsIssue,
   type StringifiedJson,
 } from "@milaboratories/pl-model-common";
 import type { DataVersioned, TransferRecord } from "./block_migrations";
-import type { BlockStorageFacade, BlockStorageFacadeCallbacks } from "./block_storage_facade";
 import type { StorageDebugView } from "@milaboratories/pl-model-middle-layer";
 
 // =============================================================================
@@ -506,120 +502,73 @@ export function createInitialStorageFromParams(
 // Args Derivation from Storage
 // =============================================================================
 
-/** Result of a derivation from storage that either succeeds with a value or fails. */
+/**
+ * Result of args derivation from storage.
+ * Returned by __pl_args_derive and __pl_prerunArgs_derive callbacks.
+ */
 export type ArgsDeriveResult = { error: string } | { error?: undefined; value: unknown };
 
-/** Result of the `__pl_args_derive` callback. */
-export type ArgsDeriveCallbackResult = ReturnType<
-  BlockStorageFacade[typeof BlockStorageFacadeCallbacks.ArgsDerive]
->;
-
-/** Result of the `__pl_prerunArgs_derive` callback. */
-export type PrerunArgsDeriveCallbackResult = ReturnType<
-  BlockStorageFacade[typeof BlockStorageFacadeCallbacks.PrerunArgsDerive]
->;
-
 /**
- * One kind of args a block derives from its data — the args of a run, or of a prerun — with the
- * validation that decides whether they are ready.
- */
-export interface ArgsChannel {
-  /** Derives the args; `undefined` means not ready, for no reason given. */
-  derive: (data: unknown) => unknown;
-  /** Lists the issues of derived args; absent when the block declares no validation. */
-  validate: ((input: { args: unknown; data: unknown }) => unknown) | undefined;
-}
-
-/**
- * What an args channel yields for given block data:
- * - `skipped` — `derive` returned `undefined`; validation is not run;
- * - `threw` — `derive` threw;
- * - `derived` — the args, with the issues validation found in them. Validation that throws gives
- *   one error, and a result that is not a list gives one error saying so.
- */
-export type ArgsChannelOutcome =
-  | { type: "skipped" }
-  | { type: "threw"; message: string }
-  | { type: "derived"; value: unknown; issues: ArgsIssue[] };
-
-/** Derives and validates the args of one channel. Never throws. */
-export function computeArgsChannel(data: unknown, channel: ArgsChannel): ArgsChannelOutcome {
-  let value: unknown;
-  try {
-    value = channel.derive(data);
-  } catch (e) {
-    return { type: "threw", message: messageOf(e) };
-  }
-  if (value === undefined) return { type: "skipped" };
-  if (channel.validate === undefined) return { type: "derived", value, issues: [] };
-
-  let raw: unknown;
-  try {
-    raw = channel.validate({ args: value, data });
-  } catch (e) {
-    return { type: "derived", value, issues: [{ severity: "error", message: messageOf(e) }] };
-  }
-  const issues = parseArgsIssues(raw) ?? [
-    {
-      severity: "error",
-      message: `Args validation returned ${describeValue(raw)} instead of a list of issues`,
-    },
-  ];
-  return { type: "derived", value, issues };
-}
-
-/**
- * Issues of a channel outcome: a throw is one error, and args derived as `undefined` have none.
- */
-export function argsChannelIssues(outcome: ArgsChannelOutcome): ArgsIssue[] {
-  switch (outcome.type) {
-    case "skipped":
-      return [];
-    case "threw":
-      return [{ severity: "error", message: outcome.message }];
-    case "derived":
-      return outcome.issues;
-  }
-}
-
-/**
- * Derives args from storage, with the issues the block's validation finds in them.
+ * Derives args from storage using the provided args function.
+ * This extracts data from storage and passes it to the block's args() function.
  *
  * @param storageJson - Storage as JSON string
- * @param args - The block's args function and its validation
- * @returns The callback result, see {@link BlockStorageFacadeCallbacks.ArgsDerive}
+ * @param deriveArgs - The block's args derivation function
+ * @returns ArgsDeriveResult with derived args or error
  */
 export function deriveArgsFromStorage(
   storageJson: string,
-  args: ArgsChannel,
-): ArgsDeriveCallbackResult {
+  deriveArgs: (data: unknown) => unknown,
+): ArgsDeriveResult {
+  // Extract data from storage
   const { data } = normalizeStorage(storageJson);
-  return toDeriveResult(computeArgsChannel(data, args), "args() threw: ");
+
+  // Call the args function with extracted data
+  try {
+    const result = deriveArgs(data);
+    return { value: result };
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    return { error: `args() threw: ${errorMsg}` };
+  }
 }
 
 /**
- * Derives prerun args from storage. A block that declares a prerun channel gets it derived and
- * validated on its own. A block that does not runs prerun on its args, only when their
- * validation finds no errors; its issues are reported by {@link deriveArgsFromStorage} alone.
+ * Derives prerunArgs from storage.
+ * Uses derivePrerunArgs if provided, otherwise falls back to deriveArgs.
  *
  * @param storageJson - Storage as JSON string
- * @param channels - The block's args channel, and its prerun channel when the block declares one
- * @returns The callback result, see {@link BlockStorageFacadeCallbacks.PrerunArgsDerive}
+ * @param deriveArgs - The block's args derivation function (fallback)
+ * @param derivePrerunArgs - Optional prerun args derivation function
+ * @returns ArgsDeriveResult with derived prerunArgs or error
  */
 export function derivePrerunArgsFromStorage(
   storageJson: string,
-  channels: { args: ArgsChannel; prerun: ArgsChannel | undefined },
-): PrerunArgsDeriveCallbackResult {
+  deriveArgs: (data: unknown) => unknown,
+  derivePrerunArgs?: (data: unknown) => unknown,
+): ArgsDeriveResult {
+  // Extract data from storage
   const { data } = normalizeStorage(storageJson);
-  if (channels.prerun !== undefined) {
-    return toDeriveResult(computeArgsChannel(data, channels.prerun), "prerunArgs() threw: ");
+
+  // Try prerunArgs function first if available
+  if (derivePrerunArgs) {
+    try {
+      const result = derivePrerunArgs(data);
+      return { value: result };
+    } catch (e) {
+      const errorMsg = e instanceof Error ? e.message : String(e);
+      return { error: `prerunArgs() threw: ${errorMsg}` };
+    }
   }
 
-  const outcome = computeArgsChannel(data, channels.args);
-  if (outcome.type !== "derived" || hasArgsErrors(outcome.issues)) {
-    return { type: "notReady", value: undefined };
+  // Fall back to args function
+  try {
+    const result = deriveArgs(data);
+    return { value: result };
+  } catch (e) {
+    const errorMsg = e instanceof Error ? e.message : String(e);
+    return { error: `args() threw (fallback): ${errorMsg}` };
   }
-  return { type: "ready", value: outcome.value, issues: [] };
 }
 
 // =============================================================================
@@ -661,47 +610,3 @@ export function deriveTemplateParamsFromStorage<TP extends (data: unknown) => un
 
 // Export discriminator key and schema version for external checks
 export { BLOCK_STORAGE_KEY, BLOCK_STORAGE_SCHEMA_VERSION };
-
-// Internals
-
-function toDeriveResult(
-  outcome: ArgsChannelOutcome,
-  threwPrefix: string,
-): ArgsDeriveCallbackResult {
-  switch (outcome.type) {
-    case "skipped":
-      return { type: "notReady", value: undefined };
-    case "threw":
-      return {
-        type: "blocked",
-        error: `${threwPrefix}${outcome.message}`,
-        issues: [{ severity: "error", message: outcome.message }],
-        draft: undefined,
-      };
-    case "derived":
-      if (!hasArgsErrors(outcome.issues)) {
-        return { type: "ready", value: outcome.value, issues: outcome.issues };
-      }
-      return {
-        type: "blocked",
-        error: joinErrors(outcome.issues),
-        issues: outcome.issues,
-        draft: outcome.value,
-      };
-  }
-}
-
-/** Messages of the errors among `issues`, as one line that is never empty. */
-function joinErrors(issues: readonly ArgsIssue[]): string {
-  const line = issues
-    .filter((issue) => issue.severity === "error")
-    .map((issue) => issue.message)
-    .join("; ");
-  return line === "" ? "Args are invalid" : line;
-}
-
-function describeValue(value: unknown): string {
-  if (value === null) return "null";
-  if (Array.isArray(value)) return "an array";
-  return typeof value === "object" ? "an object" : typeof value;
-}

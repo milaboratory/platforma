@@ -12,8 +12,7 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
     "get_project_overview",
     {
       description:
-        "Get project overview with all blocks and their statuses (calculationStatus, canRun, stale, errors, upstreams/downstreams). " +
-        "`argsIssues` lists why a block's settings keep it from running (severity `error`) and what is worth a look before running it (severity `warning`).",
+        "Get project overview with all blocks and their statuses (calculationStatus, canRun, stale, errors, upstreams/downstreams)",
       inputSchema: {
         projectId: z.string().describe("Project ID (must be opened)"),
       },
@@ -31,7 +30,6 @@ export function registerBlockStateTools(server: McpServer, ctx: ToolContext): vo
           canRun: b.canRun,
           stale: b.stale,
           inputsValid: b.inputsValid,
-          argsIssues: b.argsIssues,
           outputErrors: b.outputErrors,
           upstreams: b.upstreams,
           downstreams: b.downstreams,

@@ -110,11 +110,6 @@ export interface ProjectField {
     | "prodArgs"
     | "currentArgs"
     | "currentPrerunArgs" // Derived args for staging/prerun rendering (from prerunArgs() or args())
-    | "currentDraftArgs" // Args derived from the current storage that validation found errors in; never together with currentArgs
-    | "currentArgsIssues" // Issues validation found in the args of the current storage, see ArgsIssuesRecord
-    | "currentDraftPrerunArgs" // Prerun args derived from the current storage that validation found errors in; never together with currentPrerunArgs
-    | "currentPrerunArgsIssues" // Issues validation found in the prerun args of the current storage, see ArgsIssuesRecord
-    | "stagingArgs" // The currentPrerunArgs the current staging was rendered with
     | "prodChainCtx" // Pre-built production context chain node (accumulated prodCtx from all blocks above)
     | "prodCtx"
     | "prodUiCtx"
@@ -137,36 +132,17 @@ export const FieldsToDuplicate: Set<ProjectField["fieldName"]> = new Set([
   "prodArgs",
   "currentArgs",
   "currentPrerunArgs",
-  "currentDraftArgs",
-  "currentArgsIssues",
-  "currentDraftPrerunArgs",
-  "currentPrerunArgsIssues",
   "prodCtx",
   "prodUiCtx",
   "prodOutput",
 ]);
-
-/**
- * Fields a middle layer from before args validation does not know: it neither reads them nor
- * removes them with their block, so a project it edited can hold them for a block that is no
- * longer there.
- */
-export const FieldsUnknownToOlderRuntimes: ReadonlySet<string> = new Set<ProjectField["fieldName"]>(
-  [
-    "currentDraftArgs",
-    "currentArgsIssues",
-    "currentDraftPrerunArgs",
-    "currentPrerunArgsIssues",
-    "stagingArgs",
-  ],
-);
 
 export function projectFieldName(blockId: string, fieldName: ProjectField["fieldName"]): string {
   return `${blockId}-${fieldName}`;
 }
 
 const projectFieldPattern =
-  /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|currentDraftArgs|currentArgsIssues|currentDraftPrerunArgs|currentPrerunArgsIssues|stagingArgs|prodChainCtx|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
+  /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodChainCtx|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);

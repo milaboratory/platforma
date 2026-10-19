@@ -4,9 +4,9 @@ import { computeDependencies, computeDependents } from "./compute";
 import type { BlockDependenciesOutput, BlockDependentsOutput } from "./types";
 
 /**
- * Reports how a block is tied to other blocks through column references in args and prerun args:
- * - `dependencies` — outputs of other blocks this block's args or prerun args reference;
- * - `dependents` — blocks whose args or prerun args reference outputs of this block.
+ * Reports how a block is tied to other blocks through column references in args:
+ * - `dependencies` — outputs of other blocks this block's args reference;
+ * - `dependents` — blocks whose args reference outputs of this block.
  *
  * Each reference is checked against what the last run of the producing block exports: whether
  * the column is there, and whether it holds the values picked from it. Runs that are only
