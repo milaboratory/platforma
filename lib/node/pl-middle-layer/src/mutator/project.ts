@@ -414,6 +414,12 @@ export class ProjectMutator {
 
   private globalModCount = 0;
   private fieldsChanged: boolean = false;
+  /**
+   * Values of the project fields this transaction creates, by field name. They are created by
+   * {@link save}, so a field created and then deleted within one transaction is never sent: the
+   * backend keeps such a field, pointing at a value it has deleted.
+   */
+  private readonly createdFields = new Map<string, AnyRef>();
 
   //
   // Change trackers
@@ -755,13 +761,13 @@ export class ProjectMutator {
     fieldName: keyof BlockFieldStates,
     state: BlockFieldStateValue,
   ) {
-    const fid = field(this.rid, projectFieldName(blockId, fieldName));
+    const name = projectFieldName(blockId, fieldName);
 
     if (state.ref === undefined) throw new Error("Can't set value with empty ref");
 
-    if (this.getBlockInfo(blockId).fields[fieldName] === undefined)
-      this.tx.createField(fid, "Dynamic", state.ref);
-    else this.tx.setField(fid, state.ref);
+    if (this.getBlockInfo(blockId).fields[fieldName] === undefined || this.createdFields.has(name))
+      this.createdFields.set(name, state.ref);
+    else this.tx.setField(field(this.rid, name), state.ref);
 
     this.getBlockInfo(blockId).fields[fieldName] = {
       modCount: this.globalModCount++,
@@ -787,7 +793,8 @@ export class ProjectMutator {
     for (const fieldName of fieldNames) {
       const fields = info.fields;
       if (!(fieldName in fields)) continue;
-      this.tx.removeField(field(this.rid, projectFieldName(blockId, fieldName)));
+      const name = projectFieldName(blockId, fieldName);
+      if (!this.createdFields.delete(name)) this.tx.removeField(field(this.rid, name));
       delete fields[fieldName];
       this.fieldsChanged = true;
       deleted = true;
@@ -1930,6 +1937,10 @@ export class ProjectMutator {
 
     for (const name of this.leftoverFields) this.tx.removeField(field(this.rid, name));
     this.leftoverFields = [];
+
+    for (const [name, ref] of this.createdFields)
+      this.tx.createField(field(this.rid, name), "Dynamic", ref);
+    this.createdFields.clear();
 
     if (this.lastModifiedChanged)
       this.tx.setKValue(this.rid, ProjectLastModifiedTimestamp, JSON.stringify(this.lastModified));
