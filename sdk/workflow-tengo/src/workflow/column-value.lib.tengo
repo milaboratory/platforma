@@ -7,8 +7,8 @@
  * The id names the column the value came from, so the project knows which block
  * produced it. The workflow itself needs only the value.
  *
- * A ColumnValueId can sit in args as a plain value or as a map key, and may be wrapped
- * in extra layers of JSON string escaping. All functions here accept every such form.
+ * A ColumnValueId may reach args wrapped in extra layers of JSON string escaping. All
+ * functions here accept every such form.
  *
  * Numbers keep the type JSON decoding gives them: an integral value (`2`) comes back as
  * int, a fractional one (`2.5`) as float — the same as if the value were written into
@@ -18,10 +18,8 @@
 ll := import(":ll")
 json := import("json")
 text := import("text")
-validation := import(":validation")
 
 _parseColumnValueId := undefined // Forward declaration
-_unwrap := undefined // Forward declaration
 
 /**
  * Whether the given object is a ColumnValueId.
@@ -71,57 +69,6 @@ valuesOf := func(xs) {
 	return result
 }
 
-/**
- * Deep-walks maps and arrays and replaces every ColumnValueId, whether it is a value or
- * a map key, with the value it carries. Everything else is kept as is.
- *
- * A number value used as a map key becomes its string form, since map keys are strings.
- * Panics when two keys of one map end up equal after the replacement.
- *
- * Strict maps (resources, fields, library objects) are runtime objects rather than
- * decoded args, so they are not walked. A container without ColumnValueIds inside is
- * returned as the same object.
- *
- * @param x: any
- * @return unwrapped: any
- */
-unwrapValues := func(x) {
-	unwrapped := _unwrap(x)
-	if is_undefined(unwrapped) {
-		return x
-	}
-	return unwrapped
-}
-
-// options scheme for argsWithOptions
-_ARGS_OPTIONS_SCHEME := {
-	"__options__,closed": "",
-	"unwrapValues,?": `bool`
-}
-
-/**
- * Block arguments as a workflow callback receives them.
- *
- * @param args: map - block arguments
- * @param options: optional {unwrapValues: bool}. With unwrapValues: true, every
- *                 ColumnValueId in args, as a value or as a map key, is replaced with the
- *                 value it carries (see unwrapValues). Without options, or with
- *                 unwrapValues: false, args are returned as they are.
- * @return args: map
- */
-argsWithOptions := func(args, ...options) {
-	if len(options) == 0 {
-		return args
-	}
-	ll.assert(len(options) == 1, "column-value.argsWithOptions: expected a single options map, got %v", options)
-	validation.assertType(options[0], _ARGS_OPTIONS_SCHEME, "column-value.argsWithOptions: invalid options")
-
-	if options[0].unwrapValues == true {
-		return unwrapValues(args)
-	}
-	return args
-}
-
 //
 // Internals
 //
@@ -168,77 +115,8 @@ _parseColumnValueId = func(s) {
 	}
 }
 
-/**
- * The walk behind unwrapValues.
- *
- * @param x: any
- * @return unwrapped: any | undefined - undefined when x holds no ColumnValueId, so an
- *                    untouched container is never rebuilt. A ColumnValueId never carries
- *                    undefined, so the two cases cannot be confused.
- */
-_unwrap = func(x) {
-	if is_string(x) {
-		if !isColumnValueId(x) {
-			return undefined
-		}
-		return valueOf(x)
-	}
-
-	if is_array(x) || is_immutable_array(x) {
-		changed := false
-		result := []
-		for item in x {
-			unwrapped := _unwrap(item)
-			if is_undefined(unwrapped) {
-				result = append(result, item)
-			} else {
-				result = append(result, unwrapped)
-				changed = true
-			}
-		}
-		if !changed {
-			return undefined
-		}
-		return result
-	}
-
-	if is_map(x) || is_immutable_map(x) {
-		changed := false
-		result := {}
-		seenKeys := {}
-		for k, v in x {
-			key := k
-			if isColumnValueId(k) {
-				key = string(valueOf(k))
-				changed = true
-			}
-			ll.assert(
-				is_undefined(seenKeys[key]),
-				"column-value.unwrapValues: two map keys turn into the same key '%v' after unwrapping", key
-			)
-			seenKeys[key] = true
-
-			unwrapped := _unwrap(v)
-			if is_undefined(unwrapped) {
-				result[key] = v
-			} else {
-				result[key] = unwrapped
-				changed = true
-			}
-		}
-		if !changed {
-			return undefined
-		}
-		return result
-	}
-
-	return undefined
-}
-
 export ll.toStrict({
 	isColumnValueId: isColumnValueId,
 	valueOf: valueOf,
-	valuesOf: valuesOf,
-	unwrapValues: unwrapValues,
-	argsWithOptions: argsWithOptions
+	valuesOf: valuesOf
 })

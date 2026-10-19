@@ -14,7 +14,6 @@ oop := import(":oop")
 bobject := import(":workflow.bobject")
 bquery := import(":workflow.bquery")
 resolveUtil := import(":workflow.resolve-util")
-columnValue := import(":workflow.column-value")
 pBundle := import(":pframes.bundle")
 pTableBuilder := import(":pframes.table-builder")
 
@@ -82,16 +81,6 @@ args := func() {
 		}
 	}
 	return _args
-}
-
-/**
- * Block arguments as handed to a body or prepare callback.
- *
- * @param options: []map - the options the callback was registered with, at most one
- *                 {unwrapValues: bool} (see workflow.column-value argsWithOptions).
- */
-_callbackArgs := func(options) {
-	return columnValue.argsWithOptions(args(), options...)
 }
 
 _blockId := undefined
@@ -312,9 +301,9 @@ anchoredQuery := func(anchors, queryMap) {
 // template for prerun
 _preRunTpl := undefined
 
-_prepare := func(cb, options) {
+_prepare := func(cb) {
 	self.prepare(func(_){
-		raw := cb(_callbackArgs(options))
+		raw := cb(args())
 		prefixed := {}
 		// mark prepared inputs
 		for k, v in raw {
@@ -329,13 +318,12 @@ _prepare := func(cb, options) {
  * returned by the prepare method will ve resolved into a ready resources. The resulting resources will be passed as an input to the body function.
  *
  * @param cb: a callback function returning a map of references to be resolved
- * @param options: optional {unwrapValues: bool} - see body()
  */
-prepare := func(cb, ...options) {
+prepare := func(cb) {
 	if !_isProduction() {
 		return
 	}
-	_prepare(cb, options)
+	_prepare(cb)
 }
 
 /**
@@ -343,13 +331,12 @@ prepare := func(cb, ...options) {
  * returned by the prepare method will ve resolved into a ready resources. The resulting resources will be passed as an input to the body function.
  *
  * @param cb: a callback function returning a map of references to be resolved
- * @param options: optional {unwrapValues: bool} - see body()
  */
-preparePreRun := func(cb, ...options) {
+preparePreRun := func(cb) {
 	if !_isStaging() {
 		return
 	}
-	_prepare(cb, options)
+	_prepare(cb)
 }
 
 /**
@@ -424,28 +411,14 @@ tableBuilder := func(format) {
 
 /**
  * Defines main entry point for current workflow
- *
- * @param bodyFn: func(args) -> {outputs, exports}
- * @param options: optional {unwrapValues: bool}. With unwrapValues: true, bodyFn gets
- *                 args with every column value id, as a value or as a map key, replaced
- *                 with the value it carries. A pre-run template is a workflow of its own
- *                 and passes the option to its own body() call.
- *
- * Example:
- * ```
- * wf.body(func(args) {
- *     // args.conditionOrder: ["treated", "control"] rather than column value ids
- *     ...
- * }, { unwrapValues: true })
- * ```
  */
-body := func(bodyFn, ...options) {
+body := func(bodyFn) {
 
 	if _isProduction() {
 
 		self.body(func(_) {
 
-			workflowInputArgs := _callbackArgs(options)
+			workflowInputArgs := args()
 			result := bodyFn(workflowInputArgs)
 
 			return _buildOutputs(result)
