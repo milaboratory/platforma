@@ -11,8 +11,6 @@ const props = defineProps<{
   blockId: string;
   /** The text shown for the block. */
   name: string;
-  /** Called as the app is asked to open the block, leaving the page this name is shown on. */
-  onOpen?: (blockId: string) => void;
 }>();
 
 const openBlock = useOpenBlock();
@@ -20,7 +18,6 @@ const openBlock = useOpenBlock();
 function open() {
   if (openBlock === undefined) return;
   const { blockId } = props;
-  props.onOpen?.(blockId);
   openBlock(blockId).catch((err: unknown) => logError("cannot open block " + blockId, err));
 }
 </script>

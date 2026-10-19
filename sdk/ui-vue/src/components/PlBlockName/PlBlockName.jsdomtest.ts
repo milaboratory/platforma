@@ -20,18 +20,10 @@ describe("PlBlockName", () => {
     expect(wrapper.text()).toBe("Samples");
   });
 
-  test("opens the block on click, telling the parent first", async () => {
-    const calls: string[] = [];
-    host.openBlock = vi.fn(async (blockId: string) => {
-      calls.push(`open ${blockId}`);
-    });
-    const wrapper = mount(PlBlockName, {
-      props: {
-        blockId: "b1",
-        name: "Samples",
-        onOpen: (blockId: string) => calls.push(`onOpen ${blockId}`),
-      },
-    });
+  test("opens the block on click", async () => {
+    const openBlock = vi.fn(async (_blockId: string) => {});
+    host.openBlock = openBlock;
+    const wrapper = mount(PlBlockName, { props: { blockId: "b1", name: "Samples" } });
 
     const button = wrapper.get("button");
     expect(button.attributes("type")).toBe("button");
@@ -41,7 +33,7 @@ describe("PlBlockName", () => {
     await button.trigger("click");
     await flushPromises();
 
-    expect(calls).toEqual(["onOpen b1", "open b1"]);
+    expect(openBlock).toHaveBeenCalledExactlyOnceWith("b1");
   });
 
   test("a block the app fails to open is logged", async () => {
