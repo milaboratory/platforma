@@ -616,20 +616,10 @@ export function derivePrerunArgsFromStorage(
   }
 
   const outcome = computeArgsChannel(data, channels.args);
-  switch (outcome.type) {
-    case "skipped":
-      return { type: "skipped", value: undefined };
-    case "threw":
-      return { type: "blockedByArgs", error: `args() threw (fallback): ${outcome.message}` };
-    case "derived":
-      if (hasArgsErrors(outcome.issues)) {
-        return {
-          type: "blockedByArgs",
-          error: `args() invalid (fallback): ${joinErrors(outcome.issues)}`,
-        };
-      }
-      return { type: "ready", value: outcome.value, issues: [] };
+  if (outcome.type !== "derived" || hasArgsErrors(outcome.issues)) {
+    return { type: "notReady", value: undefined };
   }
+  return { type: "ready", value: outcome.value, issues: [] };
 }
 
 // =============================================================================
@@ -680,19 +670,20 @@ function toDeriveResult(
 ): ArgsDeriveCallbackResult {
   switch (outcome.type) {
     case "skipped":
-      return { type: "skipped", value: undefined };
+      return { type: "notReady", value: undefined };
     case "threw":
       return {
-        type: "threw",
+        type: "blocked",
         error: `${threwPrefix}${outcome.message}`,
         issues: [{ severity: "error", message: outcome.message }],
+        draft: undefined,
       };
     case "derived":
       if (!hasArgsErrors(outcome.issues)) {
         return { type: "ready", value: outcome.value, issues: outcome.issues };
       }
       return {
-        type: "invalid",
+        type: "blocked",
         error: joinErrors(outcome.issues),
         issues: outcome.issues,
         draft: outcome.value,

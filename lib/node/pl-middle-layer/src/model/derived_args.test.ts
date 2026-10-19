@@ -46,17 +46,17 @@ describe("parseDerivedArgs: results of a model that validates its args", () => {
     });
   });
 
-  test("skipped args are not ready, with no reason", () => {
-    expect(parseDerivedArgs({ type: "skipped" }, "args")).toEqual({ type: "notReady" });
-    expect(parseDerivedArgs({ type: "skipped", value: undefined }, "prerun")).toEqual({
+  test("args that are not ready give no reason", () => {
+    expect(parseDerivedArgs({ type: "notReady" }, "args")).toEqual({ type: "notReady" });
+    expect(parseDerivedArgs({ type: "notReady", value: undefined }, "prerun")).toEqual({
       type: "notReady",
     });
   });
 
-  test("invalid args keep every issue and the draft", () => {
+  test("blocked args keep every issue and the draft", () => {
     const result = parseDerivedArgs(
       {
-        type: "invalid",
+        type: "blocked",
         error: "Abundance is required",
         issues: [error, warning],
         draft: { a: 1 },
@@ -67,9 +67,9 @@ describe("parseDerivedArgs: results of a model that validates its args", () => {
     expect(result).toEqual({ type: "blocked", issues: [error, warning], draft: { a: 1 } });
   });
 
-  test("invalid args with no error among their issues get the error text as one", () => {
+  test("blocked args with no error among their issues get the error text as one", () => {
     const result = parseDerivedArgs(
-      { type: "invalid", error: "Broken", issues: [warning], draft: { a: 1 } },
+      { type: "blocked", error: "Broken", issues: [warning], draft: { a: 1 } },
       "args",
     );
 
@@ -83,7 +83,7 @@ describe("parseDerivedArgs: results of a model that validates its args", () => {
   test("a throw is one error with no draft", () => {
     const result = parseDerivedArgs(
       {
-        type: "threw",
+        type: "blocked",
         error: "args() threw: boom",
         issues: [{ severity: "error", message: "boom" }],
       },
@@ -99,7 +99,7 @@ describe("parseDerivedArgs: results of a model that validates its args", () => {
 
   test("a throw with unreadable issues falls back to the error text, prefix cut", () => {
     const result = parseDerivedArgs(
-      { type: "threw", error: "prerunArgs() threw: boom", issues: "nope" },
+      { type: "blocked", error: "prerunArgs() threw: boom", issues: "nope" },
       "prerun",
     );
 
@@ -108,15 +108,6 @@ describe("parseDerivedArgs: results of a model that validates its args", () => {
       issues: [{ severity: "error", message: "boom" }],
       draft: undefined,
     });
-  });
-
-  test("a prerun held back by the block's args gives no reason of its own", () => {
-    const result = parseDerivedArgs(
-      { type: "blockedByArgs", error: "args() invalid (fallback): Abundance is required" },
-      "prerun",
-    );
-
-    expect(result).toEqual({ type: "notReady" });
   });
 });
 

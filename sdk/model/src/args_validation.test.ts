@@ -81,7 +81,7 @@ describe("deriveArgsFromStorage", () => {
     );
 
     expect(result).toEqual({
-      type: "invalid",
+      type: "blocked",
       error: "Numbers are required",
       issues: [warning("Label is empty"), error("Numbers are required")],
       draft: { numbers: [] },
@@ -97,7 +97,7 @@ describe("deriveArgsFromStorage", () => {
     expect(result.error).toBe("A; B");
   });
 
-  test("a throwing args function is one error, prefixed in the error text only", () => {
+  test("a throwing args function is one error with no draft, prefixed in the error text only", () => {
     const result = deriveArgsFromStorage(
       filled,
       channel(() => {
@@ -106,13 +106,14 @@ describe("deriveArgsFromStorage", () => {
     );
 
     expect(result).toEqual({
-      type: "threw",
+      type: "blocked",
       error: "args() threw: Numbers required",
       issues: [error("Numbers required")],
+      draft: undefined,
     });
   });
 
-  test("args derived as undefined are skipped without validation", () => {
+  test("args derived as undefined are not ready, without validation", () => {
     const result = deriveArgsFromStorage(
       filled,
       channel(
@@ -123,7 +124,7 @@ describe("deriveArgsFromStorage", () => {
       ),
     );
 
-    expect(result).toEqual({ type: "skipped", value: undefined });
+    expect(result).toEqual({ type: "notReady", value: undefined });
   });
 
   test("a throwing validation is one error, and the args are a draft", () => {
@@ -135,7 +136,7 @@ describe("deriveArgsFromStorage", () => {
     );
 
     expect(result).toMatchObject({
-      type: "invalid",
+      type: "blocked",
       issues: [error("validation failed")],
       draft: { numbers: [1] },
     });
@@ -148,7 +149,7 @@ describe("deriveArgsFromStorage", () => {
     );
 
     expect(result).toMatchObject({
-      type: "invalid",
+      type: "blocked",
       issues: [error("Args validation returned string instead of a list of issues")],
     });
   });
@@ -159,7 +160,7 @@ describe("deriveArgsFromStorage", () => {
       channel(numbersOf, () => [{ severity: "notice", message: "N" }]),
     );
 
-    expect(result).toMatchObject({ type: "invalid", issues: [error("N")] });
+    expect(result).toMatchObject({ type: "blocked", issues: [error("N")] });
   });
 });
 
@@ -185,7 +186,7 @@ describe("derivePrerunArgsFromStorage", () => {
       });
 
       expect(result).toEqual({
-        type: "invalid",
+        type: "blocked",
         error: "Label is too short",
         issues: [error("Label is too short")],
         draft: { label: "x" },
@@ -211,10 +212,10 @@ describe("derivePrerunArgsFromStorage", () => {
         prerun: channel(() => undefined, undefined),
       });
 
-      expect(result).toEqual({ type: "skipped", value: undefined });
+      expect(result).toEqual({ type: "notReady", value: undefined });
     });
 
-    test("a throwing prerun args function is one error", () => {
+    test("a throwing prerun args function is one error with no draft", () => {
       const result = derivePrerunArgsFromStorage(filled, {
         args: channel(numbersOf, undefined),
         prerun: channel(() => {
@@ -223,9 +224,10 @@ describe("derivePrerunArgsFromStorage", () => {
       });
 
       expect(result).toEqual({
-        type: "threw",
+        type: "blocked",
         error: "prerunArgs() threw: not ready",
         issues: [error("not ready")],
+        draft: undefined,
       });
     });
   });
@@ -246,10 +248,7 @@ describe("derivePrerunArgsFromStorage", () => {
         prerun: undefined,
       });
 
-      expect(result).toEqual({
-        type: "blockedByArgs",
-        error: "args() invalid (fallback): Numbers are required",
-      });
+      expect(result).toEqual({ type: "notReady", value: undefined });
     });
 
     test("skips prerun when the args function throws", () => {
@@ -260,10 +259,7 @@ describe("derivePrerunArgsFromStorage", () => {
         prerun: undefined,
       });
 
-      expect(result).toEqual({
-        type: "blockedByArgs",
-        error: "args() threw (fallback): broken",
-      });
+      expect(result).toEqual({ type: "notReady", value: undefined });
     });
 
     test("skips prerun when args are derived as undefined", () => {
@@ -272,7 +268,7 @@ describe("derivePrerunArgsFromStorage", () => {
         prerun: undefined,
       });
 
-      expect(result).toEqual({ type: "skipped", value: undefined });
+      expect(result).toEqual({ type: "notReady", value: undefined });
     });
   });
 });
@@ -322,11 +318,11 @@ describe("BlockModelV3 args validation", () => {
 
     const storage = storageOf({ numbers: [], label: "" });
     expect(registry[BlockStorageFacadeCallbacks.ArgsDerive](storage)).toMatchObject({
-      type: "invalid",
+      type: "blocked",
       issues: [error("Numbers are required")],
     });
     expect(registry[BlockStorageFacadeCallbacks.PrerunArgsDerive](storage)).toMatchObject({
-      type: "invalid",
+      type: "blocked",
       issues: [error("Label is required")],
     });
   });
