@@ -97,12 +97,15 @@ you cannot import them.
 
 ### Utilities
 
-| Export                                       | Kind     | One-liner                                                               |
-| -------------------------------------------- | -------- | ----------------------------------------------------------------------- |
-| `deriveColumnOptions(source, labelOptions?)` | function | `ColumnOption[]` — `{ id, label }` drop-down options over a collection. |
-| `ColumnOption`                               | type     | `{ id: ColumnUniversalId; label: string }`.                             |
-| `splitByAxes(inputs, splitAxes, opts?)`      | function | Fan a column out into one recipe per distinct value of the given axes.  |
-| `SplitAxis`, `SplitByAxesOpts`               | types    | `{ idx }` and `{ axisValuesLabels? }`.                                  |
+| Export                                       | Kind     | One-liner                                                                          |
+| -------------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| `deriveColumnOptions(source, labelOptions?)` | function | `ColumnOption[]` — `{ id, label }` drop-down options over a collection.            |
+| `ColumnOption`                               | type     | `{ id: ColumnUniversalId; label: string }`.                                        |
+| `readColumnValues(recipe)`                   | function | `ColumnValueEntry[] \| undefined` — every non-empty cell of an inline-JSON column. |
+| `deriveColumnValueOptions(entries)`          | function | `ColumnValueOption[]` — distinct values as `{ value, label }`, natural order.      |
+| `ColumnValueEntry`, `ColumnValueOption`      | types    | `{ key, value, id: ColumnValueId }` and `{ value: ColumnValueId; label }`.         |
+| `splitByAxes(inputs, splitAxes, opts?)`      | function | Fan a column out into one recipe per distinct value of the given axes.             |
+| `SplitAxis`, `SplitByAxesOpts`               | types    | `{ idx }` and `{ axisValuesLabels? }`.                                             |
 
 ### Exported but Not Part of the Surface
 
@@ -509,6 +512,45 @@ const options = deriveColumnOptions(
     mode: "enrichment",
   }),
 );
+```
+
+### `readColumnValues` and `deriveColumnValueOptions`
+
+```ts
+readColumnValues(recipe: ColumnRecipe): ColumnValueEntry[] | undefined;
+// { key: PColumnKey; value: string | number; id: ColumnValueId }[]
+
+deriveColumnValueOptions(entries: readonly ColumnValueEntry[]): ColumnValueOption[];
+// { value: ColumnValueId; label: string }[]
+```
+
+The value-level sibling of `deriveColumnOptions`: options for picking values
+of one column rather than columns. `readColumnValues` reads every non-empty
+cell of a column stored inline as JSON (`PColumnData/Json` /
+`PColumnData/JsonPartitioned`) — the small columns users pick values of, such
+as sample metadata. Each entry's `id` is a `ColumnValueId` naming `recipe.id`
+as its column (see [`column-identity.md`](./column-identity.md)). It returns
+`undefined` while the data is not ready, and for a column whose data cannot
+be read in the model: one without reachable data (`hasReachableData` is
+false) or not stored as inline JSON.
+
+`deriveColumnValueOptions` keeps one option per distinct value, labelled by
+the value itself and sorted naturally by label ("R2" before "R10"). Entries
+can be filtered by `key` first, e.g. to the samples of an input.
+
+A block arg holding a pick is typed `ColumnValueId` (or `ColumnValueId[]`).
+The id is opaque: compare it with `===` against option values, never build or
+parse the string by hand — `createColumnValueId` / `parseColumnValueId`
+exist for code that must. The workflow reads plain values back with
+`workflow.column-value` (`valueOf`, `valuesOf`).
+
+```ts
+const column = ColumnsCollection(["result_pool"])
+  .filter({ include: { name: [{ type: "exact", value: "pl7.app/metadata" }] } })
+  .getColumns()
+  .find((c) => c.id === data.groupColumn);
+const entries = column && readColumnValues(column);
+return entries && deriveColumnValueOptions(entries);
 ```
 
 ### `splitByAxes`
