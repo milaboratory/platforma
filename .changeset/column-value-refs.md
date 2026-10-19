@@ -7,7 +7,7 @@
 ---
 
 Column value references: `ColumnValueId` names one value of a column a block picked, and template relocation repoints the producer block inside it.
-A model builds value pickers over a column with `readColumnValues(recipe)` — every non-empty cell of a column stored inline as JSON (`PColumnData/Json` / `PColumnData/JsonPartitioned`), with its key, value and `ColumnValueId`; `undefined` while the data is not ready or when the column's data cannot be read in the model — and `deriveColumnValueOptions(entries)`, the distinct values as `{ value: ColumnValueId, label }` options in natural order of labels.
+A model builds value pickers over a column with `readColumnValues(recipe)` — every non-empty cell of a column stored inline as JSON (`PColumnData/Json`), with its key, value and `ColumnValueId`; `undefined` while the data is not ready or when the column's data cannot be read in the model — and `deriveColumnValueOptions(entries)`, the distinct values as `{ value: ColumnValueId, label }` options in natural order of labels.
 In workflows, `workflow.column-value` reads such ids back into plain values: `valueOf` for one id, `valuesOf` for an array of them.
 A block reads which blocks below it reference its outputs with `ctx.getOutputDependencies()`: one entry per dependent block and referenced column, read from that block's current args, else those of its last run (plain output, or a filtered, discovered or overridden column over it), with the values of that column the dependent block picked, or `null` when it uses the column as a whole; recomputed whenever any block's args or the project structure change; `undefined` on a runtime that does not provide it.
 A block reads its own id with `ctx.blockId`; `undefined` on a runtime that does not provide it.

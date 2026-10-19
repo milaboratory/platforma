@@ -526,9 +526,9 @@ deriveColumnValueOptions(entries: readonly ColumnValueEntry[]): ColumnValueOptio
 
 The value-level sibling of `deriveColumnOptions`: options for picking values
 of one column rather than columns. `readColumnValues` reads every non-empty
-cell of a column stored inline as JSON (`PColumnData/Json` /
-`PColumnData/JsonPartitioned`) — the small columns users pick values of, such
-as sample metadata. Each entry's `id` is a `ColumnValueId` naming `recipe.id`
+cell of a column stored inline as JSON (`PColumnData/Json`) — the small
+columns users pick values of, such as sample metadata. Partitioned JSON keeps
+its parts in files and is not read. Each entry's `id` is a `ColumnValueId` naming `recipe.id`
 as its column (see [`column-identity.md`](./column-identity.md)). It returns
 `undefined` while the data is not ready, and for a column whose data cannot
 be read in the model: one without reachable data (`hasReachableData` is
