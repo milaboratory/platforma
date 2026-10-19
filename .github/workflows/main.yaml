@@ -107,10 +107,14 @@ jobs:
       # npm trusted publishing (OIDC) is accepted only from GitHub-hosted
       # runners: everything but the upload happens here, the `npm-publish` job
       # uploads. Each package needs a trusted publisher on npmjs.com naming
-      # this repository and main.yaml.
+      # this repository and main.yaml. A package new to npm has no trusted
+      # publisher yet and pack refuses it: publish its first version by hand
+      # (npm publish with 2FA), add its trusted publisher, re-run the job.
       - name: Pack unpublished packages
         id: npm-pack
         uses: milaboratory/github-ci/actions/node/pack-unpublished@v4
+        with:
+          output-dir: ${{ runner.temp }}/npm-tarballs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
