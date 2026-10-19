@@ -4,6 +4,7 @@
 
 Block test kit: the pieces a block test needs beyond `blockTest`.
 
+- `renderWorkflow` passes `blockId` as `json/string` and `isProduction` as `json/bool`, the types the middle layer uses. A `json/object` input is unmarshalled to a plain value before the workflow body runs, so `wf.blockId().getDataAsJson()` failed with "invalid index type: string" in every block workflow that reads it.
 - `awaitBlockDone` takes `observeState`; a block that uploads a local file only finishes while its state is observed, since the `fileUploader` output is what schedules the upload. `awaitBlockDone` is exported.
 - `suiteTest` / `BlockTestSession`: one backend client and middle layer per test file, a fresh project per call to `session.project(label)`, with creations serialized; like `plTest`, the backend root is kept when a test failed.
 - `patchBlockData`, `stableOutput` (deadline poll of one block output), `exportedRef`, and `addBlock` (retries a stale template reference under concurrent additions).
