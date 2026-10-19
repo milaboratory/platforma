@@ -1,7 +1,7 @@
 import type { ComputableCtx } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
 import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
-import { checkBlockFlag, JsRenderInternal } from "@platforma-sdk/model";
+import { checkBlockFlag } from "@platforma-sdk/model";
 import type {
   ArchiveFormat,
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
@@ -21,6 +21,7 @@ import type {
   ValueOrError,
   RangeBytes,
   BlockCodeKnownFeatureFlags,
+  JsRenderInternal,
 } from "@platforma-sdk/model";
 import {
   isDataInfo,
@@ -338,10 +339,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
   public getBlockId(): string {
     return this.blockCtx.blockId;
-  }
-
-  public argsField(name: string): string | undefined {
-    return this.blockCtx.argsField(this.requireComputableCtx, parseArgsFieldName(name));
   }
 
   public getBlockLabel(blockId: string): string {
@@ -697,11 +694,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
         }
       }
 
-      exportCtxFunction("argsField", (name) => {
-        const res = this.argsField(vm.getString(name));
-        return res === undefined ? vm.undefined : vm.newString(res);
-      });
-
       //
       // Methods for injected ctx object
       //
@@ -1051,12 +1043,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       });
     });
   }
-}
-
-function parseArgsFieldName(name: string): JsRenderInternal.ArgsFieldName {
-  const known = JsRenderInternal.ArgsFieldNames.find((candidate) => candidate === name);
-  if (known === undefined) throw new Error(`Unknown args field: ${name}`);
-  return known;
 }
 
 function bytesToBase64(data: Uint8Array | undefined): string | undefined {

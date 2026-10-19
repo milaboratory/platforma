@@ -50,7 +50,7 @@
 import type { MutateStoragePayload } from "./block_storage";
 import type { ConfigRenderLambda } from "./bconfig";
 import { createRenderLambda, tryRegisterCallback } from "./internal";
-import type { ArgsIssue, StringifiedJson } from "@milaboratories/pl-model-common";
+import type { StringifiedJson } from "@milaboratories/pl-model-common";
 
 // =============================================================================
 // Facade Version
@@ -169,48 +169,22 @@ export interface BlockStorageFacade {
   /**
    * Derive args from storage.
    * Called to get block configuration args from storage.
-   *
-   * Every result carries `error` exactly when the args are held back by errors, and `value`
-   * exactly when they are ready, so a caller that reads only those two fields keeps working.
-   * `type` and `issues` come from blocks whose model validates its args; a result without them
-   * is from an older block, where `error` is the only reason given:
-   * - `ready` — `value` goes to the workflow; `issues` are warnings, empty when there are none;
-   * - `notReady` — `args()` returned `undefined`: the block is not ready and gives no reason;
-   * - `blocked` — `issues` name at least one error; `draft` is the args `args()` returned,
-   *   `undefined` when it threw; `error` joins the error messages, or is the thrown message
-   *   prefixed with `args() threw: `.
    * @param storageJson - Storage as JSON string
-   * @returns Args derivation result
+   * @returns Args derivation result - either error or derived value
    */
   [BlockStorageFacadeCallbacks.ArgsDerive]: (
     storageJson: StringifiedJson,
-  ) =>
-    | { type: "ready"; error?: undefined; value: unknown; issues: ArgsIssue[] }
-    | { type: "notReady"; error?: undefined; value: undefined }
-    | { type: "blocked"; error: string; issues: ArgsIssue[]; draft: unknown };
+  ) => { error: string } | { error?: undefined; value: unknown };
 
   /**
    * Derive prerunArgs from storage.
-   * Called to get the args of the prerun.
-   *
-   * A block that declares `.prerunArgs()` gets results shaped and read like those of
-   * {@link BlockStorageFacadeCallbacks.ArgsDerive}, from its prerun args and their validation;
-   * `prerunArgs() threw: ` prefixes the message of a throw.
-   *
-   * A block that does not declare it runs prerun on its args, only when their validation finds
-   * no errors, and reports their issues once, through the args: `ready` carries no issues, and
-   * args that are not ready or are blocked give `notReady`.
-   *
-   * An older block returns `{ error }` or `{ value }` only.
+   * Called to get prerun args; falls back to args callback if not registered.
    * @param storageJson - Storage as JSON string
-   * @returns Prerun args derivation result
+   * @returns Args derivation result - either error or derived value
    */
   [BlockStorageFacadeCallbacks.PrerunArgsDerive]: (
     storageJson: StringifiedJson,
-  ) =>
-    | { type: "ready"; error?: undefined; value: unknown; issues: ArgsIssue[] }
-    | { type: "notReady"; error?: undefined; value: undefined }
-    | { type: "blocked"; error: string; issues: ArgsIssue[]; draft: unknown };
+  ) => { error: string } | { error?: undefined; value: unknown };
 
   /**
    * Get initial storage JSON for new blocks.

@@ -6,8 +6,7 @@ import type { Block, ProjectStructure } from "../model/project_model";
 import { ProjectStructureKey, projectFieldName } from "../model/project_model";
 import { allBlocks } from "../model/project_model_util";
 import { ResultPool } from "../pool/result_pool";
-import { deriveDataFromStorage, type JsRenderInternal } from "@platforma-sdk/model";
-import { readArgsField } from "../model/args_fields";
+import { deriveDataFromStorage } from "@platforma-sdk/model";
 
 export type BlockContextArgsOnly = {
   readonly blockId: string;
@@ -17,15 +16,6 @@ export type BlockContextArgsOnly = {
   readonly data: (cCtx: ComputableCtx) => string | undefined;
   readonly blockStorage: (cCtx: ComputableCtx) => string | undefined;
   readonly prerunArgs: (cCtx: ComputableCtx) => string | undefined;
-  /**
-   * Args of the block other than `args` and `activeArgs`, by name, as a JSON string; `undefined`
-   * when the block has none of them. A draft is given only while the block has no ready args of
-   * its kind and holds the storage the draft was derived from.
-   */
-  readonly argsField: (
-    cCtx: ComputableCtx,
-    name: JsRenderInternal.ArgsFieldName,
-  ) => string | undefined;
 };
 
 export type BlockContextFull = BlockContextArgsOnly & {
@@ -113,10 +103,6 @@ export function constructBlockContextArgsOnly(
       ?.getData();
     return data ? cachedDecode(data) : undefined;
   };
-  const argsField = (cCtx: ComputableCtx, name: JsRenderInternal.ArgsFieldName) => {
-    const data = readArgsField(cCtx.accessor(projectEntry).node(), blockId, name)?.getData();
-    return data ? cachedDecode(data) : undefined;
-  };
   return {
     blockId,
     args,
@@ -124,7 +110,6 @@ export function constructBlockContextArgsOnly(
     data,
     blockStorage,
     prerunArgs,
-    argsField,
     blockMeta: (cCtx: ComputableCtx) => {
       const prj = cCtx.accessor(projectEntry).node();
       const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));

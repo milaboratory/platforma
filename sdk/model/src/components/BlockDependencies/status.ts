@@ -1,6 +1,5 @@
 import {
   Annotation,
-  collectColumnReferences,
   columnProducer,
   readAnnotationJson,
   type ColumnReference,
@@ -10,12 +9,7 @@ import {
   type UpstreamBlockCtx,
 } from "@milaboratories/pl-model-common";
 import { isPlainObject, isString } from "es-toolkit";
-import type {
-  BlockDependenciesOutput,
-  DependencyStatus,
-  DependentStatus,
-  UncheckedReason,
-} from "./types";
+import type { DependencyStatus, DependentStatus, UncheckedReason } from "./types";
 
 /** What the last run of a block exports under one output name. */
 export type ExportLookup =
@@ -48,65 +42,19 @@ export interface OutgoingReference {
   values: null | ColumnValue[];
 }
 
-/**
- * Where args of one kind — a block's args, or its prerun args — were read from:
- * - `current` — derived from the current data and ready;
- * - `draft` — derived from the current data, with errors its validation found;
- * - `lastRun` — the ones the last run, or the last prerun, ran on.
- */
-export type ArgsStep = "current" | "draft" | "lastRun";
-
-/** Args of one kind a block's references are read from. */
-export type ChosenArgs = { step: ArgsStep; args: unknown } | { step: "none" };
-
-/** Reads of args of one kind at each step; `undefined` when there are none at that step. */
-export interface ArgsReads {
-  current: () => unknown;
-  draft: () => unknown;
-  lastRun: () => unknown;
-}
-
-/** A block's args and its prerun args, as chosen by {@link chooseArgs}. */
-export interface ChosenBlockArgs {
-  args: ChosenArgs;
-  prerunArgs: ChosenArgs;
-}
+/** Args a block's references are read from, and where they come from. */
+export type ChosenArgs = { source: "current" | "lastRun"; args: unknown } | { source: "none" };
 
 /**
- * A block's args and its prerun args: for each, the current ones when the block can build them,
- * else the ones validation found errors in. Only when neither has either are the args of the last
- * run and of the last prerun read, for both: they were derived from earlier data, and their
- * references are not added to those of args derived from the current data. Each step is read
- * only when the ones before it give no args.
+ * A block's current args, else the args of its last run; the last run's are read only when the
+ * block has no current args.
  */
-export function chooseArgs(reads: { args: ArgsReads; prerunArgs: ArgsReads }): ChosenBlockArgs {
-  const current = {
-    args: firstArgs(reads.args, CURRENT_STEPS),
-    prerunArgs: firstArgs(reads.prerunArgs, CURRENT_STEPS),
-  };
-  if (current.args.step !== "none" || current.prerunArgs.step !== "none") return current;
-  return {
-    args: firstArgs(reads.args, ["lastRun"]),
-    prerunArgs: firstArgs(reads.prerunArgs, ["lastRun"]),
-  };
-}
-
-/**
- * Which args the references of a block come from, over its args and its prerun args: `current`
- * when any of them is derived from the current data, ready or not; `lastRun` when all that was
- * read is of the last run; `none` when nothing was.
- */
-export function combinedArgsSource(
-  chosen: readonly ChosenArgs[],
-): BlockDependenciesOutput["argsSource"] {
-  if (chosen.some(({ step }) => step === "current" || step === "draft")) return "current";
-  if (chosen.some(({ step }) => step === "lastRun")) return "lastRun";
-  return "none";
-}
-
-/** Columns the chosen args reference; none when no args were chosen. */
-export function chosenReferences(chosen: ChosenArgs): ColumnReference[] {
-  return chosen.step === "none" ? [] : collectColumnReferences(chosen.args);
+export function chooseArgs(reads: { current: () => unknown; lastRun: () => unknown }): ChosenArgs {
+  const current = reads.current();
+  if (current !== undefined) return { source: "current", args: current };
+  const lastRun = reads.lastRun();
+  if (lastRun !== undefined) return { source: "lastRun", args: lastRun };
+  return { source: "none" };
 }
 
 /**
@@ -286,17 +234,6 @@ export function readBlockLabels(
 }
 
 // Internals
-
-/** Steps of args derived from the current data, in the order they are read. */
-const CURRENT_STEPS: readonly ArgsStep[] = ["current", "draft"];
-
-function firstArgs(read: ArgsReads, steps: readonly ArgsStep[]): ChosenArgs {
-  for (const step of steps) {
-    const args = read[step]();
-    if (args !== undefined) return { step, args };
-  }
-  return { step: "none" };
-}
 
 const RT_JSON = "PColumnData/Json";
 const RT_JSON_PARTITIONED = "PColumnData/JsonPartitioned";

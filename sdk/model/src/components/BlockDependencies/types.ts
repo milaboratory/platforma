@@ -90,10 +90,9 @@ export type BlockDependentsOutput =
   | { type: "ok"; items: DependentEntry[]; labels: Record<string, string> };
 
 /**
- * Outputs of other blocks this block's args or prerun args reference. `argsSource` says which
- * args were read, over both: `current` when any of them is derived from the current state —
- * ready, or held back by errors its validation found — and then only those are read; `lastRun`
- * when only the ones of the last run or prerun were there; `none` when the block has neither. `labels` maps a producer block id
+ * Outputs of other blocks this block's args reference. `argsSource` says which args were read:
+ * `current` — derived from the current data; `lastRun` — those of the last run, read when the
+ * block cannot derive current ones; `none` when it has neither. `labels` maps a producer block id
  * to its label, for the blocks that have one.
  */
 export interface BlockDependenciesOutput {

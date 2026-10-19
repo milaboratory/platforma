@@ -63,25 +63,6 @@ export function collectColumnReferences(args: unknown): ColumnReference[] {
 }
 
 /**
- * The columns of several reference lists, each once, in the order first met across the lists
- * taken in turn. A column's picked values are the distinct values of all lists, in the order
- * first met; they are `null` only when no list picked any. Merging the references of several
- * args gives what {@link collectColumnReferences} gives for a list holding those args.
- */
-export function mergeColumnReferences(
-  ...lists: readonly (readonly ColumnReference[])[]
-): ColumnReference[] {
-  const found = new Map<ColumnUniversalId, PickedValues | null>();
-  for (const list of lists) {
-    for (const { ref, values } of list) {
-      if (values === null) addColumn(found, ref);
-      else for (const value of values) addValue(found, ref, value);
-    }
-  }
-  return toReferences(found);
-}
-
-/**
  * The block output a column is computed from: the leaf of its id, since none of the wrapper
  * forms change which block produced the data. `undefined` for a local or unresolvable column: a
  * local column belongs to the block that holds the id, not to another block; an unresolvable one

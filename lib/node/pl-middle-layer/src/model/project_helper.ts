@@ -13,7 +13,6 @@ import { executeSingleLambda } from "../js_render";
 import type { SignedResourceId } from "@milaboratories/pl-client";
 import { ConsoleLoggerAdapter, type MiLogger } from "@milaboratories/ts-helpers";
 import { getDebugFlags } from "../debug";
-import { parseDerivedArgs, type ArgsChannel, type DerivedArgs } from "./derived_args";
 
 type EnrichmentTargetsRequest = {
   blockConfig: () => BlockConfig;
@@ -36,8 +35,8 @@ export type MigrationResult =
   | { error?: undefined; newStorageJson: StringifiedJson<BlockStorage>; info: string };
 
 /**
- * Result of template params derivation from storage.
- * Returned by the __pl_initializationParams_derive VM callback.
+ * Result of args derivation from storage.
+ * Returned by __pl_args_derive and __pl_prerunArgs_derive VM callbacks.
  */
 type ArgsDeriveResult = { error: string } | { error?: undefined; value: unknown };
 
@@ -84,30 +83,72 @@ export class ProjectHelper {
 
   /**
    * Derives args directly from storage JSON using VM callback.
-   * The VM extracts data from storage, calls the block's args() function and validates the result.
+   * The VM extracts data from storage and calls the block's args() function.
    *
    * This allows the middle layer to work only with storage JSON,
    * without needing to know the underlying data structure.
    *
    * @param blockConfig The block configuration (provides the model code)
    * @param storageJson Storage as JSON string
-   * @returns The derived args, see {@link DerivedArgs}
+   * @returns The derived args object, or error if derivation fails
    */
-  public deriveArgsFromStorage(blockConfig: BlockConfig, storageJson: string): DerivedArgs {
-    return this.deriveArgsChannel(blockConfig, storageJson, "args");
+  public deriveArgsFromStorage(
+    blockConfig: BlockConfig,
+    storageJson: string,
+  ): ResultOrError<unknown> {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
+      return {
+        error: new Error("deriveArgsFromStorage is only supported for model API version 2"),
+      };
+    }
+
+    try {
+      const result = executeSingleLambda(
+        this.quickJs,
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.ArgsDerive],
+        extractCodeWithInfo(blockConfig),
+        storageJson,
+      ) as ArgsDeriveResult;
+
+      if (result.error !== undefined) {
+        return { error: new Error(result.error) };
+      }
+      return { value: result.value };
+    } catch (e) {
+      return { error: new Error("Args derivation from storage failed", { cause: ensureError(e) }) };
+    }
   }
 
   /**
    * Derives prerunArgs directly from storage JSON using VM callback.
-   * A block without prerun args of its own runs its prerun on its args, only while they are
-   * ready; its issues are then reported by {@link deriveArgsFromStorage} alone.
+   * Falls back to args() if prerunArgs is not defined in the block model.
    *
    * @param blockConfig The block configuration (provides the model code)
    * @param storageJson Storage as JSON string
-   * @returns The derived prerun args, see {@link DerivedArgs}
+   * @returns The derived prerunArgs, or undefined if derivation fails
    */
-  public derivePrerunArgsFromStorage(blockConfig: BlockConfig, storageJson: string): DerivedArgs {
-    return this.deriveArgsChannel(blockConfig, storageJson, "prerun");
+  public derivePrerunArgsFromStorage(blockConfig: BlockConfig, storageJson: string): unknown {
+    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
+      throw new Error("derivePrerunArgsFromStorage is only supported for model API version 2");
+    }
+
+    try {
+      const result = executeSingleLambda(
+        this.quickJs,
+        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.PrerunArgsDerive],
+        extractCodeWithInfo(blockConfig),
+        storageJson,
+      ) as ArgsDeriveResult;
+
+      if (result.error !== undefined) {
+        // Return undefined if derivation fails (skip block in staging)
+        return undefined;
+      }
+      return result.value;
+    } catch {
+      // Return undefined if derivation fails (skip block in staging)
+      return undefined;
+    }
   }
 
   /**
@@ -126,7 +167,7 @@ export class ProjectHelper {
    * carries params.
    *
    * Unlike {@link derivePrerunArgsFromStorage}, a failure here is surfaced rather
-   * than kept to the block — a prerun that cannot derive args just skips a block in
+   * than swallowed — a prerun that cannot derive args just skips a block in
    * staging, whereas an export that silently drops a block produces a template
    * that does not describe the project.
    *
@@ -188,38 +229,6 @@ export class ProjectHelper {
         error: new Error(`Template params derivation from storage failed: ${cause.message}`, {
           cause,
         }),
-      };
-    }
-  }
-
-  private deriveArgsChannel(
-    blockConfig: BlockConfig,
-    storageJson: string,
-    channel: ArgsChannel,
-  ): DerivedArgs {
-    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
-      return {
-        type: "failed",
-        error: new Error("Args derivation from storage is only supported for model API version 2"),
-      };
-    }
-
-    const callback =
-      channel === "args"
-        ? BlockStorageFacadeCallbacks.ArgsDerive
-        : BlockStorageFacadeCallbacks.PrerunArgsDerive;
-    try {
-      const result = executeSingleLambda(
-        this.quickJs,
-        blockConfig.blockLifecycleCallbacks[callback],
-        extractCodeWithInfo(blockConfig),
-        storageJson,
-      );
-      return parseDerivedArgs(result, channel);
-    } catch (e) {
-      return {
-        type: "failed",
-        error: new Error("Args derivation from storage failed", { cause: ensureError(e) }),
       };
     }
   }

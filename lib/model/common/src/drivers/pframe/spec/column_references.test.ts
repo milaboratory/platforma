@@ -2,11 +2,7 @@ import { describe, expect, test } from "vitest";
 import { canonicalizeJson } from "../../../json";
 import { createGlobalPObjectId, createLocalPObjectId } from "../../../pool";
 import { createPlRef } from "../../../ref";
-import {
-  collectColumnReferences,
-  columnProducer,
-  mergeColumnReferences,
-} from "./column_references";
+import { collectColumnReferences, columnProducer } from "./column_references";
 import { createColumnValueId, parseColumnValueId } from "./column_value";
 import { createColumnDiscoveredId } from "./discovered_column";
 import { createColumnFilteredId } from "./filtered_column";
@@ -174,49 +170,6 @@ describe("collectColumnReferences", () => {
 
   test("ordinary values reference nothing", () => {
     expect(collectColumnReferences({ values: ["treated", 1, true, null], blob: "{}" })).toEqual([]);
-  });
-});
-
-describe("mergeColumnReferences", () => {
-  test("columns of later lists that earlier lists lack follow the earlier ones", () => {
-    const first = collectColumnReferences({ a: condition });
-    const second = collectColumnReferences({ b: donor, c: condition });
-
-    expect(mergeColumnReferences(first, second)).toEqual([
-      { ref: condition, values: null },
-      { ref: donor, values: null },
-    ]);
-  });
-
-  test("picked values of one column join in the order first met", () => {
-    const first = collectColumnReferences([conditionValue("A"), conditionValue("B")]);
-    const second = collectColumnReferences([conditionValue("C"), conditionValue("A")]);
-
-    expect(mergeColumnReferences(first, second)).toEqual([
-      { ref: condition, values: ["A", "B", "C"] },
-    ]);
-  });
-
-  test("a column picked as a whole in one list keeps the values another list picked", () => {
-    const whole = collectColumnReferences({ a: condition });
-    const picked = collectColumnReferences({ b: conditionValue("A") });
-
-    expect(mergeColumnReferences(whole, picked)).toEqual([{ ref: condition, values: ["A"] }]);
-    expect(mergeColumnReferences(picked, whole)).toEqual([{ ref: condition, values: ["A"] }]);
-  });
-
-  test("merging the references of several args equals collecting them together", () => {
-    const a = { x: conditionValue("A"), y: donor };
-    const b = { z: condition, w: [conditionValue("B")] };
-
-    expect(mergeColumnReferences(collectColumnReferences(a), collectColumnReferences(b))).toEqual(
-      collectColumnReferences([a, b]),
-    );
-  });
-
-  test("no lists, or only empty ones, merge into none", () => {
-    expect(mergeColumnReferences()).toEqual([]);
-    expect(mergeColumnReferences([], [])).toEqual([]);
   });
 });
 

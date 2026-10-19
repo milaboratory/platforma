@@ -92,7 +92,6 @@ export function registerAwaitTools(server: McpServer, ctx: ToolContext): void {
             calculationStatus: block.calculationStatus,
             canRun: block.canRun,
             stale: block.stale,
-            argsIssues: block.argsIssues,
             outputErrors: block.outputErrors,
           };
 

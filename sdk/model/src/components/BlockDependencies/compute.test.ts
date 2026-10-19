@@ -12,7 +12,6 @@ import {
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { computeDependencies, computeDependents } from "./compute";
 import { BlockRenderCtx } from "../../render";
-import type { ArgsFieldName } from "../../render/internal";
 
 afterEach(() => {
   Reflect.deleteProperty(globalThis, "cfgRenderCtx");
@@ -55,114 +54,6 @@ describe("computeDependencies", () => {
       labels: {},
     });
     expect(runtime.getUpstreamBlockCtx).not.toHaveBeenCalled();
-  });
-
-  test("a runtime that keeps no other args is asked for none", () => {
-    const runtime = installRuntime({});
-
-    computeDependencies(new BlockRenderCtx());
-    expect(runtime.argsField).not.toHaveBeenCalled();
-  });
-
-  test("args held back by validation are read in place of the last run's", () => {
-    const tree = new FakeTree();
-    installRuntime({
-      lastRunArgs: { old: createPlRef("samples", "donor") },
-      argsFields: { currentDraftArgs: { condition: createPlRef("samples", "condition") } },
-      upstream: [{ blockId: "samples", prodCtx: tree.frame({ condition: tree.column() }) }],
-    });
-
-    expect(computeDependencies(new BlockRenderCtx())).toMatchObject({
-      argsSource: "current",
-      items: [{ producerBlockId: "samples", output: "condition", status: { type: "ok" } }],
-    });
-  });
-
-  test("args held back by validation are not mixed with the args the last prerun ran on", () => {
-    // The prerun is skipped while the args have errors, so the staging still holds the args the
-    // last prerun ran on, with a column the current args no longer reference.
-    const tree = new FakeTree();
-    const runtime = installRuntime({
-      lastRunArgs: { abundance: createPlRef("samples", "donor") },
-      argsFields: {
-        currentDraftArgs: { abundance: createPlRef("samples", "condition") },
-        stagingArgs: { abundance: createPlRef("samples", "donor") },
-      },
-      upstream: [{ blockId: "samples", prodCtx: tree.frame({ condition: tree.column() }) }],
-    });
-
-    expect(computeDependencies(new BlockRenderCtx())).toMatchObject({
-      argsSource: "current",
-      items: [{ producerBlockId: "samples", output: "condition", status: { type: "ok" } }],
-    });
-    expect(runtime.argsField).not.toHaveBeenCalledWith("stagingArgs");
-  });
-
-  test("references only the prerun args hold follow those of the args", () => {
-    const tree = new FakeTree();
-    installRuntime({
-      args: { dataset: createPlRef("mixcr", "clones") },
-      argsFields: { currentPrerunArgs: { condition: createPlRef("samples", "condition") } },
-      upstream: [
-        { blockId: "mixcr", prodCtx: tree.frame({ clones: tree.column() }) },
-        { blockId: "samples", prodCtx: tree.frame({ condition: tree.column() }) },
-      ],
-    });
-
-    expect(
-      computeDependencies(new BlockRenderCtx()).items.map(({ producerBlockId, output }) => [
-        producerBlockId,
-        output,
-      ]),
-    ).toEqual([
-      ["mixcr", "clones"],
-      ["samples", "condition"],
-    ]);
-  });
-
-  test("a column both args and prerun args pick from carries the values of both", () => {
-    const tree = new FakeTree();
-    const pick = (value: string) => createColumnValueId({ column: condition, value });
-    installRuntime({
-      args: { levels: [pick("treated")] },
-      argsFields: { currentPrerunArgs: { levels: [pick("control"), pick("treated")] } },
-      upstream: [
-        {
-          blockId: "samples",
-          prodCtx: tree.frame({ condition: tree.column({ cells: ["treated", "control"] }) }),
-        },
-      ],
-    });
-
-    expect(computeDependencies(new BlockRenderCtx()).items).toMatchObject([
-      { values: ["treated", "control"], status: { type: "ok" } },
-    ]);
-  });
-
-  test("the prerun args of the last prerun count as the last run", () => {
-    const tree = new FakeTree();
-    installRuntime({
-      argsFields: { stagingArgs: { condition: createPlRef("samples", "condition") } },
-      upstream: [{ blockId: "samples", prodCtx: tree.frame({ condition: tree.column() }) }],
-    });
-
-    expect(computeDependencies(new BlockRenderCtx())).toMatchObject({
-      argsSource: "lastRun",
-      items: [{ producerBlockId: "samples", output: "condition" }],
-    });
-  });
-
-  test("current prerun args make the source current while the args are of the last run", () => {
-    installRuntime({
-      lastRunArgs: {},
-      argsFields: { currentPrerunArgs: {}, stagingArgs: { stale: createPlRef("x", "y") } },
-    });
-
-    expect(computeDependencies(new BlockRenderCtx())).toEqual({
-      argsSource: "current",
-      items: [],
-      labels: {},
-    });
   });
 
   test("a producer below this block, or deleted, is unavailable", () => {
@@ -587,7 +478,6 @@ function installRuntime(options: {
   lastRunArgs?: unknown;
   upstream?: UpstreamBlockCtx<string>[];
   outputDependencies?: OutputDependency[];
-  argsFields?: Partial<Record<ArgsFieldName, unknown>>;
   labels?: Record<string, string>;
   lazyColumnStatus?: boolean;
 }) {
@@ -598,19 +488,14 @@ function installRuntime(options: {
     return found;
   };
   const getUpstreamBlockCtx = vi.fn(() => options.upstream ?? []);
-  const argsField = vi.fn((name: ArgsFieldName) =>
-    ifDefined(options.argsFields?.[name], (args) => JSON.stringify(args)),
-  );
   const runtime = {
     featureFlags: {
       blockIdSupport: options.blockId !== undefined,
       outputDependenciesSupport: options.outputDependencies !== undefined,
       lazyColumnStatusSupport: options.lazyColumnStatus ?? true,
-      argsFieldsSupport: options.argsFields !== undefined,
     },
     args: ifDefined(options.args, (args) => JSON.stringify(args)),
     activeArgs: ifDefined(options.lastRunArgs, (args) => JSON.stringify(args)),
-    argsField,
     getBlockId: () => options.blockId,
     getBlockLabel: (blockId: string) => {
       const label = options.labels?.[blockId];
@@ -644,7 +529,7 @@ function installRuntime(options: {
     },
   };
   Object.assign(globalThis, { cfgRenderCtx: runtime });
-  return { getUpstreamBlockCtx, argsField, dataReads: () => dataReads };
+  return { getUpstreamBlockCtx, dataReads: () => dataReads };
 }
 
 function statusesOf(output: { items: { status: unknown }[] } | { type: "unsupported" }) {

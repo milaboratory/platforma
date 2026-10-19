@@ -707,14 +707,11 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
 
   /**
    * References to this block's outputs held in the args of other blocks, in project order of
-   * those blocks and, within one block, first the references of its args, then those only its
-   * prerun args hold, each in the order the args hold them. Only blocks below this
+   * those blocks and, within one block, in the order its args hold them. Only blocks below this
    * one are listed: a block above cannot run against this block's outputs, and its reference is
-   * reported on that block as a missing one. Of a block's args and of its prerun args, the
-   * current ones are read; else the ones its validation found errors in; else the ones of its
-   * last run, or last prerun. A runtime that keeps neither invalid nor prerun args reads current
-   * args, else the last run's. Follows every block's args, so it changes as soon as a dependent
-   * block is edited, added, removed or moved. `undefined` when the runtime does not provide this
+   * reported on that block as a missing one. A block's current args are read, else the args of
+   * its last run. Follows every block's args, so it changes as soon as a dependent block is
+   * edited, added, removed or moved. `undefined` when the runtime does not provide this
    * information.
    */
   public getOutputDependencies(): OutputDependency[] | undefined {
