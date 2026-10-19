@@ -75,20 +75,13 @@ export function parseDerivedArgs(raw: unknown, channel: ArgsChannel): DerivedArg
       if (hasArgsErrors(found)) return { type: "blocked", issues: found, draft: value };
       return { type: "ready", value, warnings: found };
     }
-    case "skipped":
-    case "blockedByArgs":
+    case "notReady":
       return { type: "notReady" };
-    case "invalid":
+    case "blocked":
       return {
         type: "blocked",
         issues: withError(parseArgsIssues(issues) ?? [], errorText(error, channel)),
         draft,
-      };
-    case "threw":
-      return {
-        type: "blocked",
-        issues: withError(parseArgsIssues(issues) ?? [], errorText(error, channel)),
-        draft: undefined,
       };
   }
 

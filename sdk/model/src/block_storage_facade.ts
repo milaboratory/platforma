@@ -170,15 +170,14 @@ export interface BlockStorageFacade {
    * Derive args from storage.
    * Called to get block configuration args from storage.
    *
-   * Every result carries `error` exactly when the args are not ready, and `value` exactly when
-   * they are, so a caller that reads only those two fields keeps working. `type` and `issues`
-   * come from blocks whose model validates its args; a result without them is from an older
-   * block, where `error` is the only reason given:
+   * Every result carries `error` exactly when the args are held back by errors, and `value`
+   * exactly when they are ready, so a caller that reads only those two fields keeps working.
+   * `type` and `issues` come from blocks whose model validates its args; a result without them
+   * is from an older block, where `error` is the only reason given:
    * - `ready` — `value` goes to the workflow; `issues` are warnings, empty when there are none;
-   * - `skipped` — `args()` returned `undefined`: the block is not ready and gives no reason;
-   * - `invalid` — validation found errors in `draft`, the args `args()` returned; `issues` holds
-   *   every error and warning found, `error` joins the error messages;
-   * - `threw` — `args()` threw; `issues` holds its message as the one error, `error` the message
+   * - `notReady` — `args()` returned `undefined`: the block is not ready and gives no reason;
+   * - `blocked` — `issues` name at least one error; `draft` is the args `args()` returned,
+   *   `undefined` when it threw; `error` joins the error messages, or is the thrown message
    *   prefixed with `args() threw: `.
    * @param storageJson - Storage as JSON string
    * @returns Args derivation result
@@ -187,9 +186,8 @@ export interface BlockStorageFacade {
     storageJson: StringifiedJson,
   ) =>
     | { type: "ready"; error?: undefined; value: unknown; issues: ArgsIssue[] }
-    | { type: "skipped"; error?: undefined; value: undefined }
-    | { type: "invalid"; error: string; issues: ArgsIssue[]; draft: unknown }
-    | { type: "threw"; error: string; issues: ArgsIssue[] };
+    | { type: "notReady"; error?: undefined; value: undefined }
+    | { type: "blocked"; error: string; issues: ArgsIssue[]; draft: unknown };
 
   /**
    * Derive prerunArgs from storage.
@@ -199,10 +197,9 @@ export interface BlockStorageFacade {
    * {@link BlockStorageFacadeCallbacks.ArgsDerive}, from its prerun args and their validation;
    * `prerunArgs() threw: ` prefixes the message of a throw.
    *
-   * A block that does not declare it runs prerun on its args, gated by their validation, and
-   * reports its issues once, through the args: `ready` carries no issues, and the args being
-   * invalid, or `args()` throwing, give `blockedByArgs`, whose `error` is for callers that read
-   * only that field.
+   * A block that does not declare it runs prerun on its args, only when their validation finds
+   * no errors, and reports their issues once, through the args: `ready` carries no issues, and
+   * args that are not ready or are blocked give `notReady`.
    *
    * An older block returns `{ error }` or `{ value }` only.
    * @param storageJson - Storage as JSON string
@@ -212,10 +209,8 @@ export interface BlockStorageFacade {
     storageJson: StringifiedJson,
   ) =>
     | { type: "ready"; error?: undefined; value: unknown; issues: ArgsIssue[] }
-    | { type: "skipped"; error?: undefined; value: undefined }
-    | { type: "invalid"; error: string; issues: ArgsIssue[]; draft: unknown }
-    | { type: "threw"; error: string; issues: ArgsIssue[] }
-    | { type: "blockedByArgs"; error: string };
+    | { type: "notReady"; error?: undefined; value: undefined }
+    | { type: "blocked"; error: string; issues: ArgsIssue[]; draft: unknown };
 
   /**
    * Get initial storage JSON for new blocks.

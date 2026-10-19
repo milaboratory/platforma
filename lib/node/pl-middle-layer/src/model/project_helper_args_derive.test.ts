@@ -35,19 +35,19 @@ describe("deriveArgsFromStorage", () => {
     });
   });
 
-  test("a skipped result whose value is undefined crosses as not ready", () => {
+  test("a not-ready result whose value is undefined crosses as not ready", () => {
     const result = helper.deriveArgsFromStorage(
-      configReturningCode(ARGS, `({ type: "skipped", value: undefined })`),
+      configReturningCode(ARGS, `({ type: "notReady", value: undefined })`),
       "{}",
     );
 
     expect(result).toEqual({ type: "notReady" });
   });
 
-  test("invalid args cross with their draft and issues", () => {
+  test("blocked args cross with their draft and issues", () => {
     const result = helper.deriveArgsFromStorage(
       configReturning(ARGS, {
-        type: "invalid",
+        type: "blocked",
         error: "Abundance is required",
         issues: [{ severity: "error", message: "Abundance is required" }],
         draft: { n: 1 },
@@ -106,7 +106,7 @@ describe("deriveArgsFromStorage", () => {
 describe("derivePrerunArgsFromStorage", () => {
   test("a prerun held back by the block's args crosses as not ready", () => {
     const result = helper.derivePrerunArgsFromStorage(
-      configReturning(PRERUN, { type: "blockedByArgs", error: "args() invalid (fallback): x" }),
+      configReturningCode(PRERUN, `({ type: "notReady", value: undefined })`),
       "{}",
     );
 
