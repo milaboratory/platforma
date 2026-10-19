@@ -1,10 +1,9 @@
 import { isString } from "es-toolkit";
 import { parseJsonSafely } from "../../../json";
 import {
-  createGlobalPObjectId,
-  createLocalPObjectId,
+  createPObjectId,
   isGlobalPObjectKey,
-  isLocalPObjectKey,
+  isPObjectKey,
   type GlobalPObjectKey,
 } from "../../../pool";
 import { isColumnValueKey, type ColumnValue } from "./column_value";
@@ -176,7 +175,5 @@ function addValue(
  * name the column — `requireEnrichments` asks for more data from the same output and is dropped.
  */
 function canonicalColumnId(key: ColumnUniversalKey): ColumnUniversalId {
-  if (isGlobalPObjectKey(key)) return createGlobalPObjectId(key.blockId, key.name);
-  if (isLocalPObjectKey(key)) return createLocalPObjectId(key.resolvePath, key.name);
-  return stringifyColumnId(key);
+  return isPObjectKey(key) ? createPObjectId(key) : stringifyColumnId(key);
 }
