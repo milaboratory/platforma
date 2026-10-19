@@ -37,8 +37,10 @@ describe("readColumnValues", () => {
   });
 
   test("is undefined for data that is not stored inline", () => {
-    const column = metadataColumn({ type: "PColumnData/ParquetPartitioned", ready: true });
-    expect(readColumnValues(column)).toBeUndefined();
+    for (const type of ["PColumnData/JsonPartitioned", "PColumnData/ParquetPartitioned"]) {
+      const column = metadataColumn({ type, ready: true });
+      expect(readColumnValues(column)).toBeUndefined();
+    }
   });
 });
 

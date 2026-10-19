@@ -28,8 +28,8 @@ export type ColumnValueOption = {
  * the value came from.
  *
  * `undefined` while the data is not ready, and for a column whose data cannot be read here: one
- * that is not a leaf (see `hasReachableData`) or not stored as `PColumnData/Json` /
- * `PColumnData/JsonPartitioned`.
+ * that is not a leaf (see `hasReachableData`) or not stored inline as `PColumnData/Json` —
+ * partitioned JSON keeps its parts in files.
  */
 export function readColumnValues(recipe: ColumnRecipe): ColumnValueEntry[] | undefined {
   if (!hasReachableData(recipe)) return undefined;
@@ -67,38 +67,16 @@ export function deriveColumnValueOptions(
 // Internals
 
 const RT_JSON = "PColumnData/Json";
-const RT_JSON_PARTITIONED = "PColumnData/JsonPartitioned";
 
 const CHUNKS = /\d+|\D+/g;
 
 type JsonColumnData = { data?: Record<string, unknown> };
 
 function readJsonCells(acc: TreeNodeAccessor): [PColumnKey, unknown][] | undefined {
-  const rt = acc.resourceType.name;
-
-  if (rt === RT_JSON) {
-    const data = acc.getDataAsJsonOrUndefined<JsonColumnData>()?.data;
-    if (data === undefined) return undefined;
-    return Object.entries(data).map(([key, value]) => [parseKey(key), value]);
-  }
-
-  if (rt === RT_JSON_PARTITIONED) {
-    if (!acc.getIsReadyOrError()) return undefined;
-    const cells: [PColumnKey, unknown][] = [];
-    for (const partKey of acc.listInputFields()) {
-      const part = acc.resolve({ field: partKey, assertFieldType: "Input" });
-      const data = part?.getDataAsJsonOrUndefined<JsonColumnData>()?.data;
-      if (data === undefined) return undefined;
-      // A partitioned key holds the partition axes; each part's own keys hold the rest.
-      const partitionKey = parseKey(partKey);
-      for (const [key, value] of Object.entries(data)) {
-        cells.push([[...partitionKey, ...parseKey(key)], value]);
-      }
-    }
-    return cells;
-  }
-
-  return undefined;
+  if (acc.resourceType.name !== RT_JSON) return undefined;
+  const data = acc.getDataAsJsonOrUndefined<JsonColumnData>()?.data;
+  if (data === undefined) return undefined;
+  return Object.entries(data).map(([key, value]) => [parseKey(key), value]);
 }
 
 /**

@@ -176,15 +176,13 @@ export interface JsonDataNode {
   readonly resourceType: { readonly name: string };
   /** `undefined` while the resource is not ready; throws when it failed. */
   getDataAsJsonOrUndefined(): unknown;
-  getInputsLocked(): boolean;
-  listInputFields(): string[];
-  resolve(field: string): JsonDataNode | undefined;
 }
 
 /**
  * Cell values of an exported column. The `pl7.app/discreteValues` annotation, when the spec has
- * it, lists them without touching the data. Otherwise only JSON data — whole or partitioned — is
- * read; binary and parquet data cannot be read in the model.
+ * it, lists them without touching the data. Otherwise only data stored inline as JSON
+ * (`PColumnData/Json`) is read. Partitioned JSON keeps its parts in files, and binary and parquet
+ * data cannot be read in the model either.
  */
 export function readExportValues(
   spec: Pick<PColumnSpec, "annotations">,
@@ -194,24 +192,7 @@ export function readExportValues(
   if (discrete !== undefined) return { type: "known", cells: discrete };
   if (data === undefined) return { type: "pending" };
 
-  switch (data.resourceType.name) {
-    case RT_JSON:
-      return readJsonPart(data);
-    case RT_JSON_PARTITIONED: {
-      if (!data.getInputsLocked()) return { type: "pending" };
-      const cells: unknown[] = [];
-      for (const field of data.listInputFields()) {
-        const part = data.resolve(field);
-        if (part === undefined) return { type: "pending" };
-        const values = readJsonPart(part);
-        if (values.type !== "known") return values;
-        cells.push(...values.cells);
-      }
-      return { type: "known", cells };
-    }
-    default:
-      return { type: "unreadable" };
-  }
+  return data.resourceType.name === RT_JSON ? readJsonData(data) : { type: "unreadable" };
 }
 
 /**
@@ -236,7 +217,6 @@ export function readBlockLabels(
 // Internals
 
 const RT_JSON = "PColumnData/Json";
-const RT_JSON_PARTITIONED = "PColumnData/JsonPartitioned";
 
 function valueKey(cell: unknown): string | undefined {
   if (isString(cell)) return cell;
@@ -245,7 +225,7 @@ function valueKey(cell: unknown): string | undefined {
 }
 
 /** A JSON data resource holds its cells under `data`, keyed by the serialized axis values. */
-function readJsonPart(node: JsonDataNode): ExportValues {
+function readJsonData(node: JsonDataNode): ExportValues {
   const content = node.getDataAsJsonOrUndefined();
   if (content === undefined) return { type: "pending" };
   if (!isPlainObject(content) || !isPlainObject(content.data)) return { type: "unreadable" };

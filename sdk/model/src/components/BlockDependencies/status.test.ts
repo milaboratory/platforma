@@ -289,39 +289,14 @@ describe("readExportValues", () => {
     expect(readExportValues(specWith({}), data)).toEqual({ type: "unreadable" });
   });
 
-  test("partitioned JSON data yields the cells of every part", () => {
-    const data = jsonNode({
-      resourceType: "PColumnData/JsonPartitioned",
-      parts: {
-        '["p1"]': jsonNode({ resourceType: "PColumnData/Json", content: { data: { k: "a" } } }),
-        '["p2"]': jsonNode({ resourceType: "PColumnData/Json", content: { data: { k: "b" } } }),
-      },
-    });
+  test("partitioned JSON data is unreadable: its parts are files", () => {
+    const data = jsonNode({ resourceType: "PColumnData/JsonPartitioned", content: undefined });
 
-    expect(readExportValues(specWith({}), data)).toEqual({ type: "known", cells: ["a", "b"] });
-  });
-
-  test("partitioned JSON data with parts still arriving is pending", () => {
-    const data = jsonNode({
-      resourceType: "PColumnData/JsonPartitioned",
-      parts: {},
-      locked: false,
-    });
-
-    expect(readExportValues(specWith({}), data)).toEqual({ type: "pending" });
-  });
-
-  test("partitioned JSON data with a part not yet computed is pending", () => {
-    const data = jsonNode({
-      resourceType: "PColumnData/JsonPartitioned",
-      parts: { '["p1"]': jsonNode({ resourceType: "PColumnData/Json", content: undefined }) },
-    });
-
-    expect(readExportValues(specWith({}), data)).toEqual({ type: "pending" });
+    expect(readExportValues(specWith({}), data)).toEqual({ type: "unreadable" });
   });
 
   test("binary data is unreadable", () => {
-    const data = jsonNode({ resourceType: "PColumnData/BinaryPartitioned", parts: {} });
+    const data = jsonNode({ resourceType: "PColumnData/BinaryPartitioned", content: undefined });
 
     expect(readExportValues(specWith({}), data)).toEqual({ type: "unreadable" });
   });
@@ -380,18 +355,9 @@ function specWith(props: { discreteValues?: ColumnValue[] }): Pick<PColumnSpec, 
   return { annotations };
 }
 
-function jsonNode(props: {
-  resourceType: string;
-  content?: unknown;
-  parts?: Record<string, JsonDataNode>;
-  locked?: boolean;
-}): JsonDataNode {
-  const parts = props.parts ?? {};
+function jsonNode(props: { resourceType: string; content: unknown }): JsonDataNode {
   return {
     resourceType: { name: props.resourceType },
     getDataAsJsonOrUndefined: () => props.content,
-    getInputsLocked: () => props.locked ?? true,
-    listInputFields: () => Object.keys(parts),
-    resolve: (field) => parts[field],
   };
 }
