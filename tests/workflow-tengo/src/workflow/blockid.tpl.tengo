@@ -1,0 +1,13 @@
+// Reads the block id the way block workflows do: as a resource, then its JSON data.
+// The middle layer passes `blockId` as `json/string`; a `json/object` input is unmarshalled
+// to a plain string before the body runs, and `.getDataAsJson()` on it fails.
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+
+wf.body(func(args) {
+	return {
+		outputs: {
+			blockId: wf.blockId().getDataAsJson()
+		},
+		exports: {}
+	}
+})
