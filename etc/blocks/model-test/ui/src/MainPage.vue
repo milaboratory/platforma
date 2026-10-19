@@ -31,7 +31,7 @@ async function optionsSearch(s: string | string[], type: "label" | "value") {
 </script>
 
 <template>
-  <PlBlockPage title="Model test">
+  <PlBlockPage>
     <PlBlockDependencies :handle="app.plugins.dependencies.handle" />
     <PlTextField v-model="app.model.data.titleArg" label="Title" />
     <PlTextField v-model="app.model.data.subtitleArg" label="Subtitle" />

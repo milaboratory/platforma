@@ -14,7 +14,7 @@ import type {
 export type LinkSide = "usedBy" | "uses";
 
 /**
- * State of a link as the panel shows it. An output that is not exported is `unavailable` on the
+ * State of a link. An output that is not exported is `unavailable` on the
  * `uses` side — the other block does not export it — and `notExported` on the `usedBy` side —
  * this block does not export it.
  */
@@ -25,12 +25,6 @@ export type LinkStatus =
   | { type: "unavailable" }
   | { type: "notExported" }
   | { type: "missingValues"; values: string[] };
-
-/**
- * Status tag of a link: `HOLD` for states that are not a problem yet. `hint` explains the tag in
- * one sentence when its text alone does not.
- */
-export type LinkTag = { type: "OK" | "WARN" | "ALERT" | "HOLD"; text: string; hint: null | string };
 
 /**
  * What one other block uses of one output, or what this block uses of one output of another
@@ -49,15 +43,11 @@ export type LinkRow = {
   /** Distinct picked values as strings; `null` when the block uses the column as a whole. */
   values: null | string[];
   status: LinkStatus;
-  tag: LinkTag;
 };
 
-/** One side of the links, for the panel. `note` explains where the links were read from. */
+/** The links of one side. */
 export type LinkSection = {
   side: LinkSide;
-  title: string;
-  note: null | string;
-  emptyText: string;
   rows: LinkRow[];
 };
 
@@ -77,18 +67,20 @@ export type LinkIssue = {
 };
 
 /**
- * The links of one side that need attention. `error` when any of them breaks a block — its tag
- * is an alert — `warn` otherwise.
+ * The links of one side that need attention. `error` on the `uses` side: this block cannot run
+ * against them. `warn` on the `usedBy` side: the other blocks are the ones to fix, by getting
+ * the data back here or by being reconfigured; `hint` says so.
  */
 export type LinkAlert = {
   side: LinkSide;
   type: "error" | "warn";
   label: string;
+  hint: null | string;
   issues: LinkIssue[];
 };
 
 /**
- * The panel sections for the outputs that are available. `usedBy` is left out when the output is
+ * The links of the outputs that are available. `usedBy` is left out when the output is
  * not computed yet or the runtime cannot list dependent blocks.
  */
 export function linkSections(outputs: {
@@ -100,11 +92,7 @@ export function linkSections(outputs: {
   if (dependents !== undefined && dependents.type === "ok") {
     sections.push({
       side: "usedBy",
-      title: "Used by",
-      note: null,
-      emptyText: "No block uses outputs of this block",
       rows: groupLinks(
-        "usedBy",
         dependents.labels,
         dependents.items.map((item) => ({
           blockId: item.dependentBlockId,
@@ -119,17 +107,7 @@ export function linkSections(outputs: {
   if (dependencies !== undefined) {
     sections.push({
       side: "uses",
-      title: "Uses",
-      note:
-        dependencies.argsSource === "lastRun"
-          ? "As of the last run: the current settings of this block are incomplete"
-          : null,
-      emptyText:
-        dependencies.argsSource === "none"
-          ? "Not known yet: the settings of this block are incomplete"
-          : "This block uses no outputs of other blocks",
       rows: groupLinks(
-        "uses",
         dependencies.labels,
         dependencies.items.map((item) => ({
           blockId: item.producerBlockId,
@@ -155,24 +133,8 @@ export function linkAlerts(sections: LinkSection[]): LinkAlert[] {
     const links = section.rows.flatMap((row) => attentionLink(row) ?? []);
     if (links.length === 0) return [];
     const issues = groupIssues(links).map((group) => toIssue(section.side, group));
-    const type = links.some((link) => link.row.tag.type === "ALERT") ? "error" : "warn";
-    return [{ side: section.side, type, label: ALERT_LABELS[section.side], issues }];
+    return [{ side: section.side, ...ALERTS[section.side], issues }];
   });
-}
-
-/**
- * The column of a link as the panel names it: its label, else what is known about it. An output
- * name is not meant for reading, so it is never the column's name.
- */
-export function describeColumn(row: Pick<LinkRow, "columnLabel" | "status">): string {
-  if (row.columnLabel !== null) return row.columnLabel;
-  return isNotExported(row.status) ? "Unavailable output" : "Unnamed output";
-}
-
-/** The picked values for display, or a note that the whole column is used. */
-export function describeValues(values: null | string[]): string {
-  if (values === null) return "Whole column";
-  return values.map((value) => `"${value}"`).join(", ");
 }
 
 /** The label of a block, or a short form of its id when it has no label. */
@@ -180,44 +142,7 @@ export function blockName(labels: Record<string, string>, blockId: string): stri
   return labels[blockId] ?? `Block ${blockId.slice(0, 8)}`;
 }
 
-/**
- * The tag of a link. A problem with an output this block uses breaks this block, so it is an
- * alert, and so is an output another block uses that this block does not export; values another
- * block picked and this block's output lacks break the other block, so here it is a warning.
- */
-export function linkTag(side: LinkSide, status: LinkStatus): LinkTag {
-  switch (status.type) {
-    case "ok":
-      return { type: "OK", text: "OK", hint: null };
-    case "pending":
-      return { type: "HOLD", text: "Pending", hint: null };
-    case "unchecked":
-      return { type: "HOLD", ...UNCHECKED_TAGS[status.reason] };
-    case "unavailable":
-      return { type: side === "uses" ? "ALERT" : "WARN", text: "Unavailable", hint: null };
-    case "notExported":
-      return {
-        type: "ALERT",
-        text: "Not exported",
-        hint: "This block does not export this output: it has not run, or the column was removed.",
-      };
-    case "missingValues":
-      return { type: side === "uses" ? "ALERT" : "WARN", text: "Missing values", hint: null };
-  }
-}
-
 // Internals
-
-const UNCHECKED_TAGS: Record<UncheckedReason, { text: string; hint: string }> = {
-  unreadable: {
-    text: "Values not readable",
-    hint: "The column's values cannot be read here, so the picked values were not checked.",
-  },
-  unsupported: {
-    text: "Needs a newer app",
-    hint: "This version of the app cannot check links.",
-  },
-};
 
 type LinkSource = {
   blockId: string;
@@ -247,11 +172,7 @@ function fromDependencyStatus(status: DependencyStatus): LinkStatus {
     : { type: "missingValues", values: status.values.map(String) };
 }
 
-function groupLinks(
-  side: LinkSide,
-  labels: Record<string, string>,
-  sources: LinkSource[],
-): LinkRow[] {
+function groupLinks(labels: Record<string, string>, sources: LinkSource[]): LinkRow[] {
   const rows = new Map<string, LinkRow>();
   for (const source of sources) {
     const key = JSON.stringify([source.blockId, source.output, source.values === null]);
@@ -266,14 +187,12 @@ function groupLinks(
         columnLabel: source.columnLabel,
         values,
         status: source.status,
-        tag: linkTag(side, source.status),
       });
       continue;
     }
     if (row.columnLabel === null) row.columnLabel = source.columnLabel;
     if (row.values !== null && values !== null) row.values = distinct([...row.values, ...values]);
     row.status = mergeStatus(row.status, source.status);
-    row.tag = linkTag(side, row.status);
   }
   return [...rows.values()];
 }
@@ -295,9 +214,17 @@ const STATUS_RANK: Record<LinkStatus["type"], number> = {
   notExported: 4,
 };
 
-const ALERT_LABELS: Record<LinkSide, string> = {
-  uses: "Links to blocks this block takes data from are broken",
-  usedBy: "Blocks that use data of this block are affected",
+const ALERTS: Record<LinkSide, Pick<LinkAlert, "type" | "label" | "hint">> = {
+  uses: {
+    type: "error",
+    label: "Links to blocks this block takes data from are broken",
+    hint: null,
+  },
+  usedBy: {
+    type: "warn",
+    label: "Some blocks are missing data from this block",
+    hint: "Add the missing data to this block, or reconfigure those blocks.",
+  },
 };
 
 /** A link whose status needs attention: it breaks a block or lacks picked values. */
@@ -401,7 +328,7 @@ function describeIssue(side: LinkSide, { row, status }: AttentionLink): string {
         ? `does not provide ${column}`
         : `uses ${column}, which this block does not export`;
     case "missingValues": {
-      const values = describeValues(status.values);
+      const values = quoteValues(status.values);
       if (side === "uses") return `has no ${values} in ${column ?? "data this block uses"}`;
       return column === null
         ? `uses ${values}, which this block's data no longer has`
@@ -410,9 +337,9 @@ function describeIssue(side: LinkSide, { row, status }: AttentionLink): string {
   }
 }
 
-/** Whether the output of a link is not exported, seen from either side. */
-function isNotExported(status: LinkStatus): boolean {
-  return status.type === "unavailable" || status.type === "notExported";
+/** Picked values for display: quoted, comma-separated. */
+function quoteValues(values: string[]): string {
+  return values.map((value) => `"${value}"`).join(", ");
 }
 
 function distinct(values: string[]): string[] {
