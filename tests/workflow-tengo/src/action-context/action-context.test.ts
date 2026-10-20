@@ -112,9 +112,7 @@ tplTest.concurrent("block action context tree from templates", async ({ helper, 
 
   const attrs = childNode.kv.filter((e) => e.key.startsWith("reading/"));
   expect(attrs.map((e) => e.value)).toEqual(["40"]);
-  expect(attrs[0].key).toMatch(
-    new RegExp(`^reading/exec/${childNode.coreResource}/progress/[0-9a-f]{16}$`),
-  );
+  expect(attrs[0].key).toEqual(`reading/exec/${childNode.coreResource}/progress`);
 });
 
 tplTest.concurrent(
