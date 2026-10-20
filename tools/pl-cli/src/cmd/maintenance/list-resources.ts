@@ -18,7 +18,7 @@ import { parseResourceId } from "../../resource_id";
 export default function maintenanceListResourcesCommand(): Command {
   const cmd = new Command("list-resources").description(
     "List resources of one type as JSON lines, in ascending order of resource ID. " +
-      "Resource data and metadata values are printed as JSON when they are valid JSON, " +
+      "Resource data and key-value values are printed as JSON when they are valid JSON, " +
       'as text when they are valid UTF-8, and as {"base64": ...} in other cases. ' +
       "Requires admin/controller credentials.",
   );
@@ -46,11 +46,7 @@ export default function maintenanceListResourcesCommand(): Command {
     "Load the fields and the error of each resource ('fields' and 'error' keys)",
     false,
   );
-  cmd.option(
-    "--load-metadata",
-    "Load the key-value metadata of each resource ('metadata' key)",
-    false,
-  );
+  cmd.option("--load-kv", "Load the key-value entries of each resource ('kv' key)", false);
 
   cmd.action(async (flags) => {
     const pl = await connectClient(flags);
@@ -64,13 +60,13 @@ export default function maintenanceListResourcesCommand(): Command {
         return await Promise.all(
           list.map(async (resource) => ({
             resource,
-            metadata: flags.loadMetadata ? await tx.listKeyValues(resource.id) : undefined,
+            kv: flags.loadKv ? await tx.listKeyValues(resource.id) : undefined,
           })),
         );
       });
 
-      for (const { resource, metadata } of resources) {
-        const line = JSON.stringify(toJson(resource, flags.loadFields, metadata)) + "\n";
+      for (const { resource, kv } of resources) {
+        const line = JSON.stringify(toJson(resource, flags.loadFields, kv)) + "\n";
         // Wait for a slow reader: else the output collects in memory a second time.
         if (!process.stdout.write(line)) await once(process.stdout, "drain");
       }
@@ -85,7 +81,7 @@ export default function maintenanceListResourcesCommand(): Command {
 function toJson(
   r: ResourceData,
   withFields: boolean,
-  metadata: KeyValue[] | undefined,
+  kv: KeyValue[] | undefined,
 ): Record<string, unknown> {
   return {
     id: resourceIdToString(r.id),
@@ -101,9 +97,9 @@ function toJson(
     ...(withFields
       ? { error: optionalIdToString(r.error), fields: r.fields.map(fieldToJson) }
       : {}),
-    ...(metadata === undefined
+    ...(kv === undefined
       ? {}
-      : { metadata: Object.fromEntries(metadata.map((kv) => [kv.key, decodeBytes(kv.value)])) }),
+      : { kv: Object.fromEntries(kv.map((e) => [e.key, decodeBytes(e.value)])) }),
   };
 }
 
