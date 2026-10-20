@@ -321,7 +321,7 @@ const XSV_VALUE_TYPES: readonly string[] = [
 /** A recorded value type as xsv-import takes it; throws on one it cannot import. */
 function xsvValueType(type: string): XsvValueType {
   if (!XSV_VALUE_TYPES.includes(type))
-    throw new Error(`xsv-import cannot publish a ${type} column or axis`);
+    throw new Error(`xsv-import cannot publish a ${type} column`);
   return type as XsvValueType;
 }
 
@@ -349,7 +349,7 @@ export function recordingShape(rec: RecordingManifest): DatasetShape {
     filterOutRegex: "^$",
     spec: {
       name: a.spec.name,
-      type: xsvValueType(a.spec.type),
+      type: a.spec.type,
       domain: fill(a.spec.domain),
       annotations: fill(a.spec.annotations),
     },
