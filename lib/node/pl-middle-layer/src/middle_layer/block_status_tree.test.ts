@@ -139,7 +139,9 @@ test("the status tree of a block render folds into the summary, and follows its 
     });
 
     try {
-      const summary = blockStatusSummary(tree.entry());
+      const summary = blockStatusSummary(tree.entry(), true, (err) => {
+        throw err;
+      });
 
       // Before any report: the context is there, with its data, and nothing holds the run.
       const initial = await summary.getValue();
@@ -167,7 +169,7 @@ test("the status tree of a block render folds into the summary, and follows its 
 
       expect(populating.line).toMatchObject({
         state: "PopulatingWorkdir",
-        phrase: "moving data into place",
+        phrase: "staging input files",
         detail: "staging 12 files",
         nodes: 1,
         ofNodes: 1,
@@ -236,9 +238,73 @@ test("a watch follows the block across runs, and closing it releases the tree", 
     });
     expect(reseeded.runId).not.toEqual(firstRunId);
 
-    // Closing the watch stops the tree; the project closes cleanly afterwards.
+    // This test took two holds (the sharing assertion above), so the first release keeps the
+    // tree, and only the second lets it go.
     await prj.unwatchBlockStatus(blockId);
-    await prj.unwatchBlockStatus(blockId); // idempotent
+    expect((await summary.getValue()).runId).toBeDefined();
+    await prj.unwatchBlockStatus(blockId);
+    expect((await summary.getValue()).runId).toBeUndefined();
+    await prj.unwatchBlockStatus(blockId); // idempotent once nothing holds it
     await ml.closeProject(projectId);
+  });
+}, 90_000);
+
+test("a second holder keeps the watch alive until it lets go too", async () => {
+  await withMl(async (ml) => {
+    const projectId = await ml.createProject({ label: "Block status holders" });
+    await ml.openProject(projectId);
+    const prj = ml.getOpenedProject(projectId);
+
+    const blockId = await prj.addBlock("Block 1", {
+      type: "from-registry-v1",
+      registryUrl: "https://block.registry.platforma.bio/releases",
+      id: { organization: "milaboratory", name: "enter-numbers", version: "1.1.1" },
+    });
+    await prj.setBlockArgs(blockId, { numbers: [1, 2, 3] });
+    await prj.runBlock(blockId);
+    await awaitBlockDone(prj, blockId, 20_000);
+
+    const first = await prj.watchBlockStatus(blockId);
+    const second = await prj.watchBlockStatus(blockId);
+    expect(second).toBe(first);
+
+    const runId = (await first.getValue()).runId;
+    expect(runId).toBeDefined();
+
+    // One holder letting go must not cut the other off.
+    await prj.unwatchBlockStatus(blockId);
+    expect((await second.getValue()).runId).toBe(runId);
+
+    // The last one does release it.
+    await prj.unwatchBlockStatus(blockId);
+    expect((await second.getValue()).runId).toBeUndefined();
+
+    await ml.closeProject(projectId);
+  });
+}, 90_000);
+
+test("watching a closed project is refused rather than leaking a tree", async () => {
+  await withMl(async (ml) => {
+    const projectId = await ml.createProject({ label: "Block status after close" });
+    await ml.openProject(projectId);
+    const prj = ml.getOpenedProject(projectId);
+
+    const blockId = await prj.addBlock("Block 1", {
+      type: "from-registry-v1",
+      registryUrl: "https://block.registry.platforma.bio/releases",
+      id: { organization: "milaboratory", name: "enter-numbers", version: "1.1.1" },
+    });
+    await prj.setBlockArgs(blockId, { numbers: [1, 2, 3] });
+    await prj.runBlock(blockId);
+    await awaitBlockDone(prj, blockId, 20_000);
+
+    // A watch open at close time is terminated with the project.
+    const summary = await prj.watchBlockStatus(blockId);
+    expect((await summary.getValue()).runId).toBeDefined();
+    await ml.closeProject(projectId);
+    expect((await summary.getValue()).runId).toBeUndefined();
+
+    // And the stale handle cannot open a new one behind the project's back.
+    await expect(prj.watchBlockStatus(blockId)).rejects.toThrow(/project is closed/);
   });
 }, 90_000);

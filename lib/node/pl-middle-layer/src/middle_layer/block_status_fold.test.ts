@@ -44,6 +44,7 @@ function context(fixture: ContextFixture): StatusContextNode {
   return {
     id: fixture.id,
     getData: () => fixture.data,
+    getValue: (key: string) => kv.get(key),
     listKeyValuesAsString: (prefix = "") =>
       [...kv.entries()]
         .filter(([key]) => key.startsWith(prefix))
@@ -93,7 +94,7 @@ describe("foldBlockStatus", () => {
     expect(summary.byState).toEqual([
       {
         state: "WaitingForInputs",
-        phrase: "waiting for earlier steps to finish",
+        phrase: "waiting for inputs",
         nodes: 1,
         since: ms(0),
         detail: undefined,
@@ -113,6 +114,27 @@ describe("foldBlockStatus", () => {
 // ── Which state holds a node ─────────────────────────────────────────────────
 
 describe("the state holding a node", () => {
+  it("lets a wait outrank the render's Running heartbeat, however old the wait is", () => {
+    // The workflow controller records Running again on every re-evaluation, so it routinely
+    // carries a newer timestamp than the wait that actually holds the node.
+    const summary = foldBlockStatus(
+      context({
+        id: "r1",
+        transitions: [
+          { topic: "render", atMs: ms(0), state: "Running" },
+          { topic: "exec", reporter: "cmd1", atMs: ms(100), state: "WaitingForMachine" },
+          { topic: "render", atMs: ms(500), state: "Running" },
+        ],
+      }),
+    );
+
+    expect(summary.line).toMatchObject({
+      state: "WaitingForMachine",
+      phrase: "waiting for a machine",
+      heldSince: ms(100),
+    });
+  });
+
   it("is the most recent state a reporter has not left", () => {
     // The render is evaluating template code, and a command it created is waiting for quota.
     // The wait is what holds the node, and it is also the more recent report.
@@ -134,7 +156,7 @@ describe("the state holding a node", () => {
 
     expect(summary.line).toMatchObject({
       state: "WaitingSubmissionGate",
-      phrase: "waiting for compute quota",
+      phrase: "held against a compute quota",
       detail: "queue heavy",
       heldSince: ms(100),
     });
@@ -175,7 +197,7 @@ describe("the state holding a node", () => {
     expect(summary.byState).toHaveLength(1);
     expect(summary.line).toMatchObject({
       state: "PopulatingWorkdir",
-      phrase: "moving data into place",
+      phrase: "staging input files",
       detail: "staging 12 files",
     });
   });
@@ -212,18 +234,21 @@ describe("a node that has ended", () => {
     expect(summary).toMatchObject({ liveNodes: 0, done: true });
   });
 
-  it("ends when every reporter has reached a terminal state", () => {
+  it("stays live while only its reporters have finished", () => {
+    // A render whose first command completed is not finished: it is about to create the next one.
+    // Only the backend's own write (core, or the done key) ends a node.
     const summary = foldBlockStatus(
       context({
         id: "r1",
         transitions: [
-          { topic: "render", atMs: ms(0), state: "Completed" },
+          { topic: "render", atMs: ms(0), state: "Running" },
           { topic: "exec", reporter: "cmd1", atMs: ms(100), state: "Completed" },
         ],
       }),
     );
 
-    expect(summary).toMatchObject({ liveNodes: 0, done: true });
+    expect(summary).toMatchObject({ liveNodes: 1, done: false });
+    expect(summary.line).toMatchObject({ state: "Running" });
   });
 
   it("does not mistake a key merely starting with done for the marker", () => {
@@ -241,8 +266,66 @@ describe("a node that has ended", () => {
 
 // ── Failure ──────────────────────────────────────────────────────────────────
 
-describe("a failed run", () => {
-  it("reports the failure as the line, with the engine's reason", () => {
+describe("a run that ended in a failure", () => {
+  it("reports the failure as the line once the root render has ended", () => {
+    const summary = foldBlockStatus(
+      context({
+        id: "r1",
+        transitions: [
+          { topic: "render", atMs: ms(0), state: "Running" },
+          { topic: "core", atMs: ms(300), state: "Terminated", reason: "OOM killed" },
+        ],
+      }),
+    );
+
+    expect(summary.failure).toBe("OOM killed");
+    expect(summary.done).toBe(true);
+    expect(summary.line).toMatchObject({
+      state: "Terminated",
+      phrase: "failed",
+      reason: "OOM killed",
+    });
+  });
+
+  it("takes the reason from a child when the root's own ending carries none", () => {
+    // The backend marks the render done without a reason of its own; the reason the user needs
+    // is the one the engine gave the command that died.
+    const summary = foldBlockStatus(
+      context({
+        id: "r1",
+        kv: { done: "1" },
+        transitions: [
+          {
+            topic: "exec",
+            reporter: "cmd1",
+            atMs: ms(100),
+            state: "Terminated",
+            reason: "OOM killed",
+          },
+        ],
+      }),
+    );
+
+    expect(summary).toMatchObject({ done: true, failure: "OOM killed" });
+    expect(summary.line).toMatchObject({ state: "Terminated", reason: "OOM killed" });
+  });
+
+  it("leaves the reason out when the engine reported none", () => {
+    const summary = foldBlockStatus(
+      context({
+        id: "r1",
+        transitions: [{ topic: "core", atMs: ms(100), state: "Terminated" }],
+      }),
+    );
+
+    expect(summary.line).toMatchObject({ state: "Terminated" });
+    expect(summary.line?.reason).toBeUndefined();
+    expect(summary.failure).toBeUndefined();
+  });
+
+  it("does NOT take the line for a termination the run recovered from", () => {
+    // A command is OOM-killed and retried. While the root render is live, what holds the block is
+    // what its live nodes are doing, not the failure it already recovered from.
     const summary = foldBlockStatus(
       context({
         id: "r1",
@@ -258,62 +341,73 @@ describe("a failed run", () => {
                 state: "Terminated",
                 reason: "OOM killed",
               },
+              { topic: "exec", reporter: "cmd2", atMs: ms(200), state: "WaitingForMachine" },
             ],
           },
         ],
       }),
     );
 
-    expect(summary.failure).toBe("OOM killed");
-    expect(summary.line).toMatchObject({
-      state: "Terminated",
-      phrase: "failed",
-      reason: "OOM killed",
-      nodes: 1,
-      ofNodes: 2,
-      heldSince: ms(100),
-    });
+    expect(summary.done).toBe(false);
+    expect(summary.failure).toBeUndefined();
+    expect(summary.line).toMatchObject({ state: "WaitingForMachine" });
   });
 
-  it("reports the earliest termination when several nodes fail", () => {
+  it("does NOT report a failure on a run that completed after an earlier termination", () => {
     const summary = foldBlockStatus(
       context({
         id: "r1",
+        transitions: [{ topic: "core", atMs: ms(500), state: "Completed" }],
         children: [
           {
             id: "r2",
+            kv: { done: "1" },
             transitions: [
-              { topic: "exec", atMs: ms(200), state: "Terminated", reason: "cancelled" },
-            ],
-          },
-          {
-            id: "r3",
-            transitions: [
-              { topic: "exec", atMs: ms(100), state: "Terminated", reason: "OOM killed" },
+              {
+                topic: "exec",
+                reporter: "cmd1",
+                atMs: ms(100),
+                state: "Terminated",
+                reason: "OOM killed",
+              },
+              { topic: "exec", reporter: "cmd1", atMs: ms(200), state: "Completed" },
             ],
           },
         ],
       }),
     );
 
-    expect(summary.failure).toBe("OOM killed");
-    expect(summary.line).toMatchObject({ nodes: 2, heldSince: ms(100) });
+    expect(summary).toMatchObject({ done: true, liveNodes: 0 });
+    expect(summary.failure).toBeUndefined();
+    expect(summary.line).toBeUndefined();
   });
 
-  it("leaves the reason out when the engine reported none", () => {
+  it("keeps the line consistent with the counters it ships with", () => {
+    // The line and byState must never contradict each other: whatever the line names is a group
+    // in byState, with the same count.
     const summary = foldBlockStatus(
       context({
         id: "r1",
-        transitions: [{ topic: "exec", atMs: ms(100), state: "Terminated" }],
+        transitions: [{ topic: "render", atMs: ms(0), state: "Running" }],
+        children: [
+          {
+            id: "a",
+            transitions: [{ topic: "exec", atMs: ms(100), state: "WaitingForMachine" }],
+          },
+          {
+            id: "b",
+            transitions: [{ topic: "exec", atMs: ms(150), state: "WaitingForMachine" }],
+          },
+        ],
       }),
     );
 
-    expect(summary.line).toMatchObject({ state: "Terminated" });
-    expect(summary.line?.reason).toBeUndefined();
+    const named = summary.byState.find((g) => g.state === summary.line?.state);
+    expect(named).toBeDefined();
+    expect(summary.line?.nodes).toBe(named?.nodes);
+    expect(summary.line?.ofNodes).toBe(summary.liveNodes);
   });
 });
-
-// ── Aggregation over a tree ──────────────────────────────────────────────────
 
 describe("aggregation over a tree", () => {
   /** `count` sibling contexts, each held by `state` from `from` on. Ids carry the state, since a
@@ -501,6 +595,7 @@ describe("malformed input", () => {
     const root: StatusContextNode = {
       id: "r1",
       getData: () => undefined,
+      getValue: () => undefined,
       listKeyValuesAsString: () => [],
       listFields: () => ["child/shared", "child/shared-again"],
       traverse: () => shared,

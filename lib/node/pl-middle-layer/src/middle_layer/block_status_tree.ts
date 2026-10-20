@@ -4,27 +4,30 @@
  * A status tree is its own {@link SynchronizedTreeState}, seeded at the root status context of the
  * render rather than at the project. It has to be separate: the project tree prunes the status
  * fields (see `ProjectStatusFieldPattern`), because a status context holds the whole status
- * subtree of its render and every report into it is a KV write, which would otherwise recompute
- * the project overview and churn its snapshot on every step of every sample.
+ * subtree of its render and every report into it is a KV write.
  *
- * One tree per watched block, terminated when the block stops being watched. Nothing else shares
- * it, and it touches no resource the project tree reads.
+ * One tree per watched block, held while anyone watches, terminated when the last holder lets go.
  *
- * See docs/text/work/projects/sdk/block-status/README_teo.md.
+ * Source: docs/text/work/projects/sdk/block-status/README_teo.md, "Backend <-> Middle layer".
  */
 
 import type { PlClient, SignedResourceId } from "@milaboratories/pl-client";
 import {
   hasCapability,
-  isNotNullSignedResourceId,
   isNullSignedResourceId,
+  ResourceTypeName,
+  treeFilter,
 } from "@milaboratories/pl-client";
 import type { ComputableCtx } from "@milaboratories/computable";
 import { Computable, WatchableValue } from "@milaboratories/computable";
 import type { PlTreeEntry, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import type { BlockStatusSummary } from "@milaboratories/pl-model-middle-layer";
-import { EmptyBlockStatusSummary } from "@milaboratories/pl-model-middle-layer";
+import {
+  EmptyBlockStatusSummary,
+  UnreadableBlockStatusSummary,
+  UnsupportedBlockStatusSummary,
+} from "@milaboratories/pl-model-middle-layer";
 import { setTimeout } from "node:timers/promises";
 import type { StatusContextNode } from "./block_status_fold";
 import { foldBlockStatus } from "./block_status_fold";
@@ -38,20 +41,28 @@ const StatusApiCapability = "statusApi:v1";
 /**
  * How long the refetch loop waits between looks at the project's change generation.
  *
- * The loop reads an in-memory counter, so a tick costs nothing; it opens a transaction only when
- * the project has actually changed. This is the debounce the spec asks for on the project-change
- * trigger.
+ * The tick itself reads an in-memory counter. It opens a read transaction only when the project
+ * has changed since the last look, which while a block runs is most ticks: one read transaction
+ * per second per watched block, which is the cost of noticing a re-run promptly.
  */
 const RefetchDebounceMs = 1_000;
 
+/** The poll floor of a status tree, as the spec sets it. */
+const StatusTreePollingIntervalMs = 5_000;
+
 /**
- * True when the connected backend accepts status reports at all.
+ * Deadline for the first load of a status tree.
  *
- * Not a gate on reading: the middle layer creates the context itself, so its data (the block, the
- * run) is there whatever the backend does, and a tree seeded at it is readable either way. Without
- * the capability no transition is ever written, so the summary simply names no state. A surface
- * that wants to say why it is empty asks this.
+ * Deliberately NOT the project tree's, which disables the timeout outright: a status tree is
+ * opened and closed while the app runs, and {@link BlockStatusWatch.terminate} awaits the loop, so
+ * an init that never returns would hang a project close and with it the app's shutdown.
  */
+const StatusTreeInitialLoadTimeoutMs = 30_000;
+
+/** The status tree walks status contexts and nothing else. */
+const statusTreeFieldFilter = treeFilter.resourceTypeEq(ResourceTypeName.StatusContext);
+
+/** True when the connected backend accepts status reports at all. */
 export function backendSupportsBlockStatus(pl: PlClient): boolean {
   return hasCapability(pl.serverInfo.capabilities ?? [], StatusApiCapability);
 }
@@ -77,20 +88,17 @@ export async function readBlockStatusRoot(
   });
 }
 
-/**
- * Adapts a tree node accessor to what {@link foldBlockStatus} reads.
- *
- * A child context that carries an error is skipped rather than thrown: the status surface is
- * diagnostic, and one broken branch must not take the whole line down with it.
- */
+/** Adapts a tree node accessor to what {@link foldBlockStatus} reads. */
 export function statusContextNode(acc: PlTreeNodeAccessor): StatusContextNode {
   return {
     id: String(acc.id),
-    originalId: isNotNullSignedResourceId(acc.originalId) ? String(acc.originalId) : undefined,
     getData: () => acc.getDataAsJson<Record<string, unknown>>(),
-    listKeyValuesAsString: (prefix?: string) => acc.listKeyValuesAsString(prefix),
+    getValue: (key: string) => acc.getKeyValueAsString(key),
+    listKeyValuesAsString: (prefix: string) => acc.listKeyValuesAsString(prefix),
     listFields: () => acc.listFields(),
     traverse: (field: string) => {
+      // A child that carries an error is skipped rather than thrown: the status surface is
+      // diagnostic, and one broken branch must not take the whole line down with it.
       const child = acc.traverse({ field, ignoreError: true });
       return child === undefined ? undefined : statusContextNode(child);
     },
@@ -100,48 +108,72 @@ export function statusContextNode(acc: PlTreeNodeAccessor): StatusContextNode {
 /**
  * The folded summary of the status tree rooted at `entry`.
  *
- * Always defined: a root that cannot be read yet folds to {@link EmptyBlockStatusSummary} rather
- * than to undefined, so the surface has something to show from the first poll.
+ * `reportsSupported` only labels an empty result: without the capability no transition will ever
+ * be written, and the surface should say so rather than imply the run is silent.
  */
-export function blockStatusSummary(entry: PlTreeEntry): Computable<BlockStatusSummary> {
-  return Computable.make((ctx) => foldEntry(ctx, entry));
+export function blockStatusSummary(
+  entry: PlTreeEntry,
+  reportsSupported: boolean,
+  onError: (err: unknown) => void,
+): Computable<BlockStatusSummary> {
+  return Computable.make((ctx) => foldEntry(ctx, entry, reportsSupported, onError));
 }
 
 /**
- * Folds the context an entry points at, or reports nothing when it cannot be read.
+ * Folds the context an entry points at, or reports that it could not be read.
  *
  * A context that is gone is the ordinary case, not a fault: an ephemeral context is dropped as
  * soon as the project stops holding it, which happens the moment the block is run again, and the
- * watch is briefly pointed at it until the next look for a new render. A status surface that broke
- * the panel over that would be worse than one that says nothing, so every failure to read the
- * context folds to an empty summary.
+ * watch is briefly pointed at it until the next look for a new render. Breaking the panel over
+ * that would be worse than saying nothing. The result is still distinguishable from a run that has
+ * reported nothing, and the cause is logged, so a genuine fault here is not silent.
  */
-function foldEntry(ctx: ComputableCtx, entry: PlTreeEntry): BlockStatusSummary {
+function foldEntry(
+  ctx: ComputableCtx,
+  entry: PlTreeEntry,
+  reportsSupported: boolean,
+  onError: (err: unknown) => void,
+): BlockStatusSummary {
+  let summary: BlockStatusSummary;
   try {
     const node = ctx.accessor(entry).node({ ignoreError: true });
-    if (node === undefined) return EmptyBlockStatusSummary;
-    return foldBlockStatus(statusContextNode(node));
-  } catch {
-    return EmptyBlockStatusSummary;
+    if (node === undefined) return UnreadableBlockStatusSummary;
+    summary = foldBlockStatus(statusContextNode(node));
+  } catch (err: unknown) {
+    onError(err);
+    return UnreadableBlockStatusSummary;
   }
+
+  if (reportsSupported || summary.totalNodes === 0) return summary;
+  // The context exists and carries its data, but no transition can ever arrive.
+  return { ...summary, availability: "unsupported" };
 }
 
 /**
  * The live status of one block render.
  *
- * {@link summary} is stable across runs of the block: clicking Run creates a new render with a new
+ * The summary is stable across runs of the block: clicking Run creates a new render with a new
  * status context, and the watch re-seeds itself onto it rather than handing the caller a new
- * computable. The caller holds one handle for as long as it shows the status, and calls
- * {@link terminate} when it stops.
+ * computable. The watch is shared between callers and reference counted; the tree lives until the
+ * last holder releases it.
  */
 export class BlockStatusWatch {
   /** The entry of the tree currently seeded, swapped when the block is run again. */
   private readonly source = new WatchableValue<PlTreeEntry | undefined>(undefined);
   private current?: { readonly root: SignedResourceId; readonly tree: SynchronizedTreeState };
   private readonly abortController = new AbortController();
-  private readonly loop: Promise<void>;
+  private loop?: Promise<void>;
 
-  /** The folded status of whichever render the watch is currently seeded at. */
+  /**
+   * Orders the seeds. A reseed that started before the one that last installed a root is stale by
+   * the time it finishes, however long its tree took to open, and must not displace it.
+   */
+  private seedSequence = 0;
+  private installedSeed = -1;
+
+  /** How many callers hold this watch. The tree is terminated when it reaches zero. */
+  private holders = 0;
+
   public readonly summary: Computable<BlockStatusSummary>;
 
   private constructor(
@@ -152,16 +184,16 @@ export class BlockStatusWatch {
     /** The project tree's change generation, the trigger for looking for a new render. */
     private readonly projectGeneration: () => number,
   ) {
+    const reportsSupported = backendSupportsBlockStatus(env.pl);
     // One computable for the life of the watch, reading whichever tree is seeded now, so a caller
     // keeps its handle across a re-run of the block.
     this.summary = Computable.make((ctx) => {
       const entry = this.source.getValue(ctx);
-      return entry === undefined ? EmptyBlockStatusSummary : foldEntry(ctx, entry);
-    });
-
-    this.loop = this.refetchLoop();
-    this.loop.catch((err: unknown) => {
-      this.env.logger.warn(new Error("block status refetch loop failed", { cause: err }));
+      if (entry === undefined)
+        return reportsSupported ? EmptyBlockStatusSummary : UnsupportedBlockStatusSummary;
+      return foldEntry(ctx, entry, reportsSupported, (err) =>
+        this.env.logger.warn(new Error("block status fold failed", { cause: err })),
+      );
     });
   }
 
@@ -171,6 +203,9 @@ export class BlockStatusWatch {
    * The first seed is awaited, so the caller gets a handle that already reports whatever the
    * current render has reported. A block with no status context yet still gets a handle: it
    * reports an empty summary and seeds itself when a render that has one appears.
+   *
+   * The refetch loop is started only once that first seed has settled. Starting it in the
+   * constructor would leave it running with nobody holding a reference to stop it if this throws.
    */
   public static async start(
     env: MiddleLayerEnvironment,
@@ -180,12 +215,47 @@ export class BlockStatusWatch {
     projectGeneration: () => number,
   ): Promise<BlockStatusWatch> {
     const watch = new BlockStatusWatch(env, projectRid, blockId, mode, projectGeneration);
-    await watch.reseed();
+    try {
+      await watch.reseed();
+    } catch (err: unknown) {
+      await watch.terminateNow();
+      throw err;
+    }
+    watch.holders = 1;
+    watch.loop = watch.refetchLoop();
+    watch.loop.catch((loopErr: unknown) => {
+      env.logger.warn(new Error("block status refetch loop failed", { cause: loopErr }));
+    });
     return watch;
   }
 
-  /** Stops the loop, terminates the tree and releases the computable's holders. */
+  /** Records one more caller holding this watch. */
+  public retain(): void {
+    this.holders++;
+  }
+
+  /**
+   * Releases one caller's hold. The tree is terminated, and the watch is finished, only when the
+   * last holder lets go; returns true when that happened.
+   */
+  public async release(): Promise<boolean> {
+    if (this.holders > 0) this.holders--;
+    if (this.holders > 0) return false;
+    await this.terminateNow();
+    return true;
+  }
+
+  /**
+   * Stops the watch whatever the holder count, for a project being torn down. An ordinary caller
+   * uses {@link release}.
+   */
   public async terminate(): Promise<void> {
+    this.holders = 0;
+    await this.terminateNow();
+  }
+
+  /** Stops the loop, terminates the tree and releases the computable's holders. */
+  private async terminateNow(): Promise<void> {
     this.abortController.abort();
     try {
       await this.loop;
@@ -203,9 +273,8 @@ export class BlockStatusWatch {
    * Looks for a new render while the caller watches.
    *
    * The project field holding the root context is pruned from the project tree, so the re-point is
-   * not visible there; what is visible is that the project changed at all, which is the trigger
-   * the spec names. A tick that finds the same root does nothing and costs no transaction beyond
-   * the one read.
+   * not visible there; what is visible is that the project changed at all. A tick that finds the
+   * same root installs nothing.
    */
   private async refetchLoop(): Promise<void> {
     let seen = this.projectGeneration();
@@ -218,14 +287,16 @@ export class BlockStatusWatch {
 
       const generation = this.projectGeneration();
       if (generation === seen) continue;
-      seen = generation;
 
       try {
         await this.reseed();
+        // Only once the look succeeded, so a failed one is retried on the next tick rather than
+        // waiting for the project to change again.
+        seen = generation;
       } catch (err: unknown) {
         if (this.abortController.signal.aborted) return;
-        // A failed look leaves the current tree in place: the surface keeps showing what it has
-        // rather than going blank, and the next change of the project tries again.
+        // The current tree stays in place: the surface keeps showing what it has rather than
+        // going blank, and the next tick tries again.
         this.env.logger.warn(new Error("block status reseed failed", { cause: err }));
       }
     }
@@ -233,9 +304,12 @@ export class BlockStatusWatch {
 
   /** Points the summary at the current render's context, replacing any earlier one. */
   private async reseed(): Promise<void> {
+    const seed = ++this.seedSequence;
+
     const root = await readBlockStatusRoot(this.env.pl, this.projectRid, this.blockId, this.mode);
-    if (root === this.current?.root) return;
     if (this.abortController.signal.aborted) return;
+    if (seed < this.installedSeed) return;
+    if (root === this.current?.root) return;
 
     const tree =
       root === undefined
@@ -245,20 +319,29 @@ export class BlockStatusWatch {
             root,
             {
               ...this.env.ops.defaultTreeOptions,
+              pollingInterval: StatusTreePollingIntervalMs,
+              initialTreeLoadingTimeout: StatusTreeInitialLoadTimeoutMs,
+              fieldFilter: statusTreeFieldFilter,
               // A context never becomes final: the backend keeps reporting into it for as long as
-              // its render lives, so every poll has to seed it again. Reading stops when this
-              // watch is terminated, not through finality.
+              // its render lives, so every poll has to seed it again.
               rootsNeverFinal: true,
             },
             this.env.logger,
           );
 
+    // Opening the tree took time, and a later reseed may have installed a newer root meanwhile.
+    // Terminating the tree just opened is the whole cost of losing that race.
+    if (this.abortController.signal.aborted || seed < this.installedSeed) {
+      await this.terminateTree(tree);
+      return;
+    }
+
     const previous = this.current;
+    this.installedSeed = seed;
     this.current = root !== undefined && tree !== undefined ? { root, tree } : undefined;
 
     // Swapped before the old tree is terminated. A computable body runs to completion
-    // synchronously, so after this returns no reader can still be inside the old tree, and
-    // terminating it cannot invalidate a read in flight.
+    // synchronously, so after this returns no reader is inside the old tree.
     this.source.setValue(tree?.entry(), "block status root changed");
     await this.terminateTree(previous?.tree);
   }

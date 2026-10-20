@@ -830,26 +830,51 @@ export class Project {
     blockId: string,
     mode: BlockStatusMode = "prod",
   ): Promise<Computable<BlockStatusSummary>> {
+    if (this.destroyed)
+      throw new Error(`cannot watch the status of ${blockId}: the project is closed`);
+
     const key = blockStatusKey(blockId, mode);
-    let watch = this.blockStatusWatches.get(key);
-    if (watch === undefined) {
-      watch = BlockStatusWatch.start(this.env, this.rid, blockId, mode, () =>
-        this.destroyed ? -1 : this.projectTree.changeGeneration,
-      );
-      this.blockStatusWatches.set(key, watch);
-      // A failed start must not leave a rejected promise in the map for every later caller.
-      watch.catch(() => this.blockStatusWatches.delete(key));
+    const existing = this.blockStatusWatches.get(key);
+    if (existing !== undefined) {
+      const watch = await existing;
+      watch.retain();
+      return watch.summary;
     }
-    return (await watch).summary;
+
+    const started = BlockStatusWatch.start(this.env, this.rid, blockId, mode, () =>
+      this.destroyed ? -1 : this.projectTree.changeGeneration,
+    );
+    this.blockStatusWatches.set(key, started);
+    // A failed start must not leave a rejected promise in the map for every later caller. Only
+    // this start's own entry is dropped: by the time a late rejection lands, the key may already
+    // hold a newer, live watch.
+    started.catch(() => {
+      if (this.blockStatusWatches.get(key) === started) this.blockStatusWatches.delete(key);
+    });
+    return (await started).summary;
   }
 
-  /** Stops the watch {@link watchBlockStatus} started, and terminates its tree. */
+  /**
+   * Releases one hold taken by {@link watchBlockStatus}. The tree is terminated when the last
+   * holder lets go, so two callers watching one block do not cut each other off.
+   */
   public async unwatchBlockStatus(blockId: string, mode: BlockStatusMode = "prod"): Promise<void> {
     const key = blockStatusKey(blockId, mode);
-    const watch = this.blockStatusWatches.get(key);
-    if (watch === undefined) return;
-    this.blockStatusWatches.delete(key);
-    await (await watch).terminate();
+    const pending = this.blockStatusWatches.get(key);
+    if (pending === undefined) return;
+
+    let watch: BlockStatusWatch;
+    try {
+      watch = await pending;
+    } catch {
+      // The start failed; its own catch handler drops the entry. Nothing to release, and a
+      // panel-close handler must not see that failure again.
+      return;
+    }
+
+    if (await watch.release()) {
+      if (this.blockStatusWatches.get(key) === pending) this.blockStatusWatches.delete(key);
+    }
   }
 
   private async terminateBlockStatusWatches(): Promise<void> {
@@ -860,6 +885,7 @@ export class Project {
         try {
           await (await watch).terminate();
         } catch (e: unknown) {
+          // A watch whose start rejected has nothing to terminate; anything else is logged.
           this.env.logger.warn(new Error("block status watch termination failed", { cause: e }));
         }
       }),

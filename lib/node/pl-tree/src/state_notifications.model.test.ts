@@ -120,9 +120,14 @@ function mutate(st: St, r: () => number): void {
     case 5:
       if (st.il) st.ready = true;
       break;
-    case 6:
-      st.kv.set(pick(["k1", "k2"]), String(Math.floor(r() * 3)));
+    case 6: {
+      // Keys chosen so one is a proper prefix of another (k1 / k11), which is where a
+      // prefix-keyed notification can go wrong, and deletes are exercised as well as writes.
+      const k = pick(["k1", "k11", "k2"]);
+      if (r() < 0.3) st.kv.delete(k);
+      else st.kv.set(k, String(Math.floor(r() * 3)));
       break;
+    }
     case 7:
       if (r() < 0.3) st.err = true;
       break;
@@ -143,7 +148,8 @@ const readers: Reader[] = [
   { name: "listOutput", read: (t, w) => t.get(new W(), R).listOutputFields(w).sort().join() },
   { name: "listDynamic", read: (t, w) => t.get(new W(), R).listDynamicFields(w).sort().join() },
   { name: "listFields", read: (t, w) => t.get(new W(), R).listFields(w).sort().join() },
-  ...["", "k1"].map(
+  // "" sees every key, "k1" straddles the k1/k11 boundary, "z" never matches anything.
+  ...["", "k1", "k11", "z"].map(
     (prefix): Reader => ({
       name: "listKv:" + (prefix === "" ? "*" : prefix),
       read: (t, w) =>
@@ -155,7 +161,7 @@ const readers: Reader[] = [
           .join(),
     }),
   ),
-  ...["k1", "k2"].map(
+  ...["k1", "k11", "k2"].map(
     (k): Reader => ({
       name: "kv:" + k,
       read: (t, w) => String(t.get(new W(), R).getKeyValueString(w, k)),
@@ -202,76 +208,84 @@ function safeRead(rd: Reader, t: PlTreeState, w: W): string {
   }
 }
 
-test("every modeled reader whose answer changes is notified", () => {
-  const violations = new Map<string, number>();
-  const example = new Map<string, string>();
-  let invalidations = 0;
-  for (let run = 0; run < RUNS; run++) {
-    const seed = run + 1;
-    const r = rng(seed);
-    const t = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
-    const st: St = {
-      typeName: r() < 0.5 ? "StdMap" : "UserProject",
-      il: false,
-      ol: false,
-      ready: false,
-      err: false,
-      final: false,
-      fields: new Map(),
-      kv: new Map(),
-      removed: new Set(),
-    };
-    const rootB = {
-      ...TestDynamicRootState1,
-      fields: [dField("r", R), dField("v0", V[0]), dField("v1", V[1]), dField("e", E)],
-    };
-    const vals = [...V, E].map((id) => ({
-      ...TestValueResourceState1,
-      id,
-      data: Buffer.from("x"),
-    }));
-    t.updateFromResourceData([rootB, ...vals, body(st)]);
-    for (let step = 0; step < STEPS; step++) {
-      const res = t.get(new W(), R);
-      if (res.finalState) break;
-      const before = readers.map((rd) => {
-        const w = new W();
-        return { rd, w, v: safeRead(rd, t, w) };
-      });
-      const prev = JSON.stringify(body(st));
-      mutate(st, r);
-      if (JSON.stringify(body(st)) === prev) continue;
-      try {
-        t.updateFromResourceData([body(st)]);
-      } catch (e) {
-        invalidations++;
-        if (!example.has("INVALIDATED"))
-          example.set("INVALIDATED", `seed ${seed} step ${step}: ${String(e).slice(0, 200)}`);
-        break;
-      }
-      for (const b of before) {
-        const after = safeRead(b.rd, t, new W());
-        // Oracle exclusion, per the contract at getField's locked branch ("stable absence of
-        // field"): an asserted-type read (in practice Input/Output, whose lists lock) that
-        // answered an absence stays right when a field of another type takes the name.
-        const stableAbsence =
-          b.rd.name.startsWith("assert") &&
-          String(b.v) === "undefined" &&
-          String(after).startsWith("THROW:Unexpected field type");
-        if (String(after) !== String(b.v) && !b.w.isChanged && !stableAbsence) {
-          const key = b.rd.name.replace(/:[a-d]$/, ":*");
-          violations.set(key, (violations.get(key) ?? 0) + 1);
-          if (!example.has(key)) example.set(key, `seed ${seed} step ${step}: ${b.v} -> ${after}`);
+// Scaled to RUNS so raising MODEL_RUNS to hunt does not fail on the default 5s budget instead.
+const MODEL_TIMEOUT_MS = Math.max(10_000, RUNS * 15);
+
+test(
+  "every modeled reader whose answer changes is notified",
+  () => {
+    const violations = new Map<string, number>();
+    const example = new Map<string, string>();
+    let invalidations = 0;
+    for (let run = 0; run < RUNS; run++) {
+      const seed = run + 1;
+      const r = rng(seed);
+      const t = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
+      const st: St = {
+        typeName: r() < 0.5 ? "StdMap" : "UserProject",
+        il: false,
+        ol: false,
+        ready: false,
+        err: false,
+        final: false,
+        fields: new Map(),
+        kv: new Map(),
+        removed: new Set(),
+      };
+      const rootB = {
+        ...TestDynamicRootState1,
+        fields: [dField("r", R), dField("v0", V[0]), dField("v1", V[1]), dField("e", E)],
+      };
+      const vals = [...V, E].map((id) => ({
+        ...TestValueResourceState1,
+        id,
+        data: Buffer.from("x"),
+      }));
+      t.updateFromResourceData([rootB, ...vals, body(st)]);
+      for (let step = 0; step < STEPS; step++) {
+        const res = t.get(new W(), R);
+        if (res.finalState) break;
+        const before = readers.map((rd) => {
+          const w = new W();
+          return { rd, w, v: safeRead(rd, t, w) };
+        });
+        const prev = JSON.stringify(body(st));
+        mutate(st, r);
+        if (JSON.stringify(body(st)) === prev) continue;
+        try {
+          t.updateFromResourceData([body(st)]);
+        } catch (e) {
+          invalidations++;
+          if (!example.has("INVALIDATED"))
+            example.set("INVALIDATED", `seed ${seed} step ${step}: ${String(e).slice(0, 200)}`);
+          break;
+        }
+        for (const b of before) {
+          const after = safeRead(b.rd, t, new W());
+          // Oracle exclusion, per the contract at getField's locked branch ("stable absence of
+          // field"): an asserted-type read (in practice Input/Output, whose lists lock) that
+          // answered an absence stays right when a field of another type takes the name.
+          const stableAbsence =
+            b.rd.name.startsWith("assert") &&
+            String(b.v) === "undefined" &&
+            String(after).startsWith("THROW:Unexpected field type");
+          if (String(after) !== String(b.v) && !b.w.isChanged && !stableAbsence) {
+            const key = b.rd.name.replace(/:[a-d]$/, ":*");
+            violations.set(key, (violations.get(key) ?? 0) + 1);
+            if (!example.has(key))
+              example.set(key, `seed ${seed} step ${step}: ${b.v} -> ${after}`);
+          }
         }
       }
     }
-  }
-  expect(
-    { invalidations, violations: [...violations], example: [...example] },
-    `first failure per reader (seed, step): ${[...example.values()].join("; ")}`,
-  ).toEqual({
-    invalidations: 0,
-    violations: [],
-    example: [],
-  });
-});
+    expect(
+      { invalidations, violations: [...violations], example: [...example] },
+      `first failure per reader (seed, step): ${[...example.values()].join("; ")}`,
+    ).toEqual({
+      invalidations: 0,
+      violations: [],
+      example: [],
+    });
+  },
+  MODEL_TIMEOUT_MS,
+);

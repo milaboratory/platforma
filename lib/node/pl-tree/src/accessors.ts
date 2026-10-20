@@ -400,10 +400,17 @@ export class PlTreeNodeAccessor {
     return this.resource.listDynamicFields(this.instanceData.ctx.watcher);
   }
 
-  /** Every field of the resource, whatever its type, for a reader that does not know which type
-   * the backend gave them. Watches the field list of all three types. */
+  /**
+   * Every field of the resource, whatever its type, for a reader that does not know which type the
+   * backend gave them. Watches the field list of all three types.
+   *
+   * Marks the computable unstable while the lists can still grow, as {@link listInputFields} and
+   * {@link listOutputFields} do, so `awaitStableValue` does not settle on a partial list.
+   */
   public listFields(): string[] {
     this.instanceData.guard();
+    this.getInputsLocked(); // will set unstable if not locked
+    this.getOutputsLocked(); // will set unstable if not locked
     return this.resource.listFields(this.instanceData.ctx.watcher);
   }
 
@@ -430,8 +437,9 @@ export class PlTreeNodeAccessor {
 
   /**
    * Every KV entry whose key starts with `prefix`, for a reader that does not know the keys in
-   * advance. Watches the key set and every entry returned, so an entry appearing, disappearing or
-   * changing value re-runs the reader.
+   * advance. Watches the key set under `prefix` and every entry returned, so an entry under the
+   * prefix appearing, disappearing or changing value re-runs the reader, and one outside it does
+   * not. See {@link PlTreeResource.listKeyValues} on ordering and on stability.
    */
   public listKeyValues(prefix: string = ""): { key: string; value: Uint8Array }[] {
     this.instanceData.guard();

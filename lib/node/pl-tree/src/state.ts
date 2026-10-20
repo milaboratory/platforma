@@ -151,10 +151,11 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   // kvChangedGlobal? = new ChangeSource();
   kvChangedPerKey? = new KeyedChangeSource();
-  /** Fires when the KV key SET changes: a key is added or removed. Value changes do not fire it,
-   * {@link kvChangedPerKey} covers those. A reader that lists keys it does not know in advance
-   * ({@link listKeyValues}) needs both. */
-  kvKeyListChanged? = new ChangeSource();
+  /** Fires when the KV key SET changes, keyed by PREFIX: adding or removing a key fires every
+   * prefix of that key and nothing else, so a reader of `transition/` is not woken by a write
+   * under `attr/`. Value changes do not fire it, {@link kvChangedPerKey} covers those. A reader
+   * that lists keys it does not know in advance ({@link listKeyValues}) needs both. */
+  kvKeyListChanged? = new KeyedChangeSource();
 
   readonly id: SignedResourceId;
   originalResourceId: OptionalSignedResourceId;
@@ -379,15 +380,22 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   /**
    * Every KV entry whose key starts with `prefix`, in insertion order.
    *
-   * For a reader that does not know the keys in advance. It watches the key set and every key it
-   * returns, so a key appearing, disappearing or changing value all re-run the reader. A key
-   * outside the prefix does not.
+   * For a reader that does not know the keys in advance. It watches the key set under `prefix`
+   * and every key it returns, so a key under the prefix appearing, disappearing or changing value
+   * all re-run the reader, and a key outside it does not.
+   *
+   * The order is the mirror's own insertion history, a function of the order this tree happened
+   * to learn the keys rather than of the backend's state: two trees over identical state can
+   * disagree, and so can one tree across a restart. Sort if the order matters.
+   *
+   * There is no `unstableIfNotFound`: an empty result on a non-final resource reports stable, so
+   * a caller that must tell "nothing yet" from "nothing ever" checks the resource itself.
    */
   public listKeyValues(
     watcher: Watcher,
     prefix: string = "",
   ): { key: string; value: Uint8Array }[] {
-    this.kvKeyListChanged?.attachWatcher(watcher);
+    this.kvKeyListChanged?.attachWatcher(prefix, watcher);
     const ret: { key: string; value: Uint8Array }[] = [];
     this.kv.forEach((value, key) => {
       if (!key.startsWith(prefix)) return;
@@ -395,6 +403,14 @@ export class PlTreeResource implements ResourceDataWithFinalState {
       ret.push({ key, value });
     });
     return ret;
+  }
+
+  /** Fires the key-set source for every prefix of `key`, which is exactly the set of prefix
+   * readers whose answer the key's appearance or removal can change. */
+  markKeyListChanged(key: string, marker: string): void {
+    const source = this.kvKeyListChanged;
+    if (source === undefined) return;
+    for (let i = 0; i <= key.length; i++) source.markChanged(key.slice(0, i), marker);
   }
 
   /** {@link listKeyValues} with the values decoded as UTF-8 text. */
@@ -489,7 +505,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.outputFieldListChanged?.markChanged("marked final");
     this.dynamicFieldListChanged?.markChanged("marked final");
     this.kvChangedPerKey?.markAllChanged("marked final");
-    this.kvKeyListChanged?.markChanged("marked final");
+    this.kvKeyListChanged?.markAllChanged("marked final");
     this.finalChanged = undefined;
     this.resourceStateChange = undefined;
     this.dynamicFieldListChanged = undefined;
@@ -512,7 +528,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.dynamicFieldListChanged?.markChanged("marked all changed");
     // this.kvChangedGlobal?.markChanged('marked all changed');
     this.kvChangedPerKey?.markAllChanged("marked all changed");
-    this.kvKeyListChanged?.markChanged("marked all changed");
+    this.kvKeyListChanged?.markAllChanged("marked all changed");
     this.resourceRemoved.markChanged("marked all changed");
   }
 }
@@ -948,7 +964,8 @@ export class PlTreeState {
               kv.key,
               `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
             );
-            notEmpty(resource.kvKeyListChanged).markChanged(
+            resource.markKeyListChanged(
+              kv.key,
               `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
             );
             changed = true;
@@ -976,7 +993,8 @@ export class PlTreeState {
                 key,
                 `kv deleted for ${resourceIdToString(resource!.id)}: ${key}`,
               );
-              notEmpty(resource!.kvKeyListChanged).markChanged(
+              resource!.markKeyListChanged(
+                key,
                 `kv deleted for ${resourceIdToString(resource!.id)}: ${key}`,
               );
               changed = true;

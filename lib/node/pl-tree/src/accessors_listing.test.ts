@@ -136,6 +136,101 @@ describe("listKeyValues", () => {
     expect(await c.getValue()).toEqual(["transition/core/1/100"]);
   });
 
+  test("is NOT re-run when a key outside the prefix is added", async () => {
+    // The whole point of the prefix: a status reader of `transition/` must not be woken by the
+    // `attr/` writes a running command makes.
+    const t = rootWith([kv("transition/core/1/100", "first")]);
+    const entry = t.entry();
+    let runs = 0;
+    const c = Computable.make((ctx) => {
+      runs++;
+      return ctx.accessor(entry).node().listKeyValuesAsString("transition/").length;
+    });
+
+    expect(await c.getValue()).toBe(1);
+    const runsAfterFirst = runs;
+
+    t.updateFromResourceData([
+      {
+        ...TestDynamicRootState1,
+        inputsLocked: false,
+        outputsLocked: false,
+        resourceReady: false,
+        fields: [dField("a")],
+        kv: [kv("transition/core/1/100", "first"), kv("attr/exec/2/progress/42", "40")],
+      },
+    ]);
+
+    expect(await c.getValue()).toBe(1);
+    expect(runs).toBe(runsAfterFirst);
+  });
+
+  test("is NOT re-run when a key outside the prefix is removed", async () => {
+    const t = rootWith([kv("transition/core/1/100", "first"), kv("attr/exec/2/progress/42", "40")]);
+    const entry = t.entry();
+    let runs = 0;
+    const c = Computable.make((ctx) => {
+      runs++;
+      return ctx.accessor(entry).node().listKeyValuesAsString("transition/").length;
+    });
+
+    expect(await c.getValue()).toBe(1);
+    const runsAfterFirst = runs;
+
+    t.updateFromResourceData([
+      {
+        ...TestDynamicRootState1,
+        inputsLocked: false,
+        outputsLocked: false,
+        resourceReady: false,
+        fields: [dField("a")],
+        kv: [kv("transition/core/1/100", "first")],
+      },
+    ]);
+
+    expect(await c.getValue()).toBe(1);
+    expect(runs).toBe(runsAfterFirst);
+  });
+
+  test("treats a prefix as a prefix, not as a path segment", async () => {
+    // `k1` matches `k11`: callers wanting a whole key use getKeyValue, and callers wanting a
+    // segment put the separator in the prefix.
+    const t = rootWith([kv("k1", "a"), kv("k11", "b"), kv("k2", "c")]);
+    const c = Computable.make((ctx) =>
+      ctx
+        .accessor(t.entry())
+        .node()
+        .listKeyValuesAsString("k1")
+        .map((e) => e.key)
+        .sort(),
+    );
+
+    expect(await c.getValue()).toEqual(["k1", "k11"]);
+  });
+
+  test("a reader whose prefix matches nothing still sees a key appear under it", async () => {
+    const t = rootWith([kv("other", "x")]);
+    const entry = t.entry();
+    const c = Computable.make(
+      (ctx) => ctx.accessor(entry).node().listKeyValuesAsString("transition/").length,
+    );
+
+    expect(await c.getValue()).toBe(0);
+
+    t.updateFromResourceData([
+      {
+        ...TestDynamicRootState1,
+        inputsLocked: false,
+        outputsLocked: false,
+        resourceReady: false,
+        fields: [dField("a")],
+        kv: [kv("other", "x"), kv("transition/core/1/100", "first")],
+      },
+    ]);
+
+    expect(await c.getValue()).toBe(1);
+  });
+
   test("throws outside its computable run, like the other KV getters", async () => {
     const t = rootWith([kv("k", "v")]);
     const entry = t.entry();
@@ -158,6 +253,22 @@ describe("listFields", () => {
     const c = Computable.make((ctx) => ctx.accessor(t.entry()).node().listFields().sort());
 
     expect(await c.getValue()).toEqual(["dyn", "in", "out"]);
+  });
+
+  test("is unstable while the field lists can still grow", async () => {
+    // Matches listInputFields/listOutputFields: awaitStableValue must not settle on a partial list.
+    const t = rootWith([], [iField("in")]);
+    const c = Computable.make((ctx) => ctx.accessor(t.entry()).node().listFields());
+
+    expect((await c.getFullValue()).stable).toBe(false);
+  });
+
+  test("is stable once both field lists are locked", async () => {
+    const t = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
+    t.updateFromResourceData([{ ...TestDynamicRootState1, fields: [iField("in")], kv: [] }]);
+    const c = Computable.make((ctx) => ctx.accessor(t.entry()).node().listFields());
+
+    expect((await c.getFullValue()).stable).toBe(true);
   });
 
   test("re-runs its reader when a field appears", async () => {
