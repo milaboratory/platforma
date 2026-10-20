@@ -830,6 +830,43 @@ export class PlTransaction {
   }
 
   /**
+   * Lists resources of the given type, in ascending order of resource ID.
+   * The backend allows this request only for admin and controller roles.
+   *
+   * Use `after` and `limit` to read a long list page by page: give the ID of the
+   * last resource of the previous page as `after` for the next page.
+   */
+  public async listResourcesByType(
+    type: ResourceType,
+    opts: {
+      /** Maximum number of resources to return. 0 (the default) returns all resources. */
+      limit?: number;
+      /** Return only resources with IDs greater than this ID. */
+      after?: AnyResourceRef;
+      /** Load the fields of each resource. Resource error is reported only when true. */
+      loadFields?: boolean;
+    } = {},
+  ): Promise<ResourceData[]> {
+    return this.track(async () => {
+      const after = opts.after === undefined ? 0n : this.toSignedResourceId(opts.after).resourceId;
+      return await this.sendMultiAndParse(
+        {
+          oneofKind: "resourceListByType",
+          resourceListByType: {
+            resourceType: type,
+            limit: opts.limit ?? 0,
+            after,
+            resolveDuplicates: false,
+            loadFields: opts.loadFields ?? false,
+            showSoftDeletes: false,
+          },
+        },
+        (r) => r.map((e) => protoToResource(notEmpty(e.resourceListByType.resource))),
+      );
+    });
+  }
+
+  /**
    * Inform platform that resource will not get any new input fields.
    * This is required, when client creates resource without schema and wants
    * controller to start calculations.
