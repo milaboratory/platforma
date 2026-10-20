@@ -1,10 +1,17 @@
 import type {
   BlockDependenciesOutput,
   BlockDependentsOutput,
+  ColumnUniversalId,
   ColumnValue,
   DependencyStatus,
   DependentStatus,
   UncheckedReason,
+} from "@platforma-sdk/model";
+import {
+  collectColumnReferences,
+  isColumnUniversalId,
+  isColumnUniversalKey,
+  isColumnValueId,
 } from "@platforma-sdk/model";
 
 /**
@@ -149,7 +156,71 @@ export function blockName(labels: Record<string, string>, blockId: string): stri
   return labels[blockId] ?? `Block ${blockId.slice(0, 8)}`;
 }
 
+/** Why a selected column or column value is missing: the block meant to provide it, and what went wrong. */
+export interface MissingValueCause {
+  blockId: string;
+  blockName: string;
+  /** What went wrong, as a sentence that follows the block name. */
+  text: string;
+}
+
+/**
+ * Why `value` is missing from its options, by the dependencies of the block: a column value id,
+ * or a column — as an id or a ref. `undefined` for any other value, and for one whose column has
+ * nothing wrong with it.
+ */
+export function describeMissingValue(
+  dependencies: BlockDependenciesOutput,
+  value: unknown,
+): MissingValueCause | undefined {
+  const reference = selectedReference(value);
+  if (reference === undefined) return undefined;
+  const entry = dependencies.items.find((item) => item.ref === reference.ref);
+  if (entry === undefined) return undefined;
+
+  const column = entry.columnLabel === null ? "the column" : `“${entry.columnLabel}”`;
+  const text = missingValueCauseText(entry.status, column, reference.picked);
+  if (text === undefined) return undefined;
+  return {
+    blockId: entry.producerBlockId,
+    blockName: blockName(dependencies.labels, entry.producerBlockId),
+    text,
+  };
+}
+
 // Internals
+
+/** The column `value` selects, with the value of it a column value id picks. */
+function selectedReference(
+  value: unknown,
+): { ref: ColumnUniversalId; picked: ColumnValue | undefined } | undefined {
+  const isColumn = isColumnUniversalId(value) || isColumnUniversalKey(value);
+  if (!isColumnValueId(value) && !isColumn) return undefined;
+  const [reference] = collectColumnReferences(value);
+  if (reference === undefined) return undefined;
+  if (reference.values === null)
+    return isColumn ? { ref: reference.ref, picked: undefined } : undefined;
+  return { ref: reference.ref, picked: reference.values[0] };
+}
+
+function missingValueCauseText(
+  status: DependencyStatus,
+  column: string,
+  picked: ColumnValue | undefined,
+): string | undefined {
+  switch (status.type) {
+    case "ok":
+    case "unchecked":
+      return undefined;
+    case "pending":
+      return `is still computing ${column}.`;
+    case "broken":
+      if (status.reason === "unavailable") return `does not provide ${column}.`;
+      return picked !== undefined && status.values.some((v) => String(v) === String(picked))
+        ? `has no “${picked}” in ${column}.`
+        : undefined;
+  }
+}
 
 type LinkSource = {
   blockId: string;

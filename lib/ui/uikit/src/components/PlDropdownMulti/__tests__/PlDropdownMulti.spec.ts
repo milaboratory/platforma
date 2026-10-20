@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import { mount, flushPromises } from "@vue/test-utils";
 import { createColumnValueId, createGlobalPObjectId } from "@platforma-sdk/model";
+import type { MissingValueHint } from "../../../helpers/columnValue";
 import PlDropdownMulti from "../PlDropdownMulti.vue";
 
 describe("PlDropdownMulti", () => {
@@ -194,6 +195,23 @@ describe("PlDropdownMulti", () => {
       await flushPromises();
       const missingChips = wrapper.findAll(".pl-dropdown-multi__chip--missing");
       expect(missingChips.map((chip) => chip.text())).toEqual(["Plastic — not available"]);
+    });
+
+    it("explains each missing value by the hint of the app", async () => {
+      const hint: MissingValueHint = (value) =>
+        value === plastic ? () => "Samples has no Plastic" : undefined;
+      const wrapper = mount(PlDropdownMulti, {
+        props: { modelValue: [bsa, plastic], options: [], missingValueHint: hint },
+        attachTo: document.body,
+      });
+      await flushPromises();
+      const hinted = wrapper.findAll("[data-testid='pl-dropdown-multi-chip-hint']");
+      expect(hinted.map((chip) => chip.text())).toEqual(["Plastic — not available"]);
+
+      await hinted[0].trigger("mouseover");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      expect(document.body.textContent).toContain("Samples has no Plastic");
+      wrapper.unmount();
     });
   });
 });

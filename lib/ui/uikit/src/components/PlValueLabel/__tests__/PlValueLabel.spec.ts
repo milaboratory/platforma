@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 
-import { mount } from "@vue/test-utils";
+import { flushPromises, mount } from "@vue/test-utils";
 import { createColumnValueId, createGlobalPObjectId } from "@platforma-sdk/model";
+import type { MissingValueHint } from "../../../helpers/columnValue";
 import PlValueLabel from "../PlValueLabel.vue";
 
 const treated = createColumnValueId({
@@ -38,6 +39,22 @@ describe("PlValueLabel", () => {
       props: { value: treated, options: [], missingValueLabel: "Gone" },
     });
     expect(wrapper.text()).toBe("Gone");
+  });
+
+  it("explains a missing value by the hint of the app in a tooltip", async () => {
+    const hint: MissingValueHint = () => () => "Samples does not provide it";
+    const wrapper = mount(PlValueLabel, {
+      props: { value: treated, options: [], missingValueHint: hint },
+      attachTo: document.body,
+    });
+    expect(wrapper.text()).toBe("treated — not available");
+    expect(isMarkedMissing(wrapper)).toBe(true);
+
+    await wrapper.find("[data-testid='pl-value-label']").trigger("mouseover");
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    await flushPromises();
+    expect(document.body.textContent).toContain("Samples does not provide it");
+    wrapper.unmount();
   });
 
   it("shows a plain value as is", () => {

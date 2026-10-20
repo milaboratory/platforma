@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import { mount, flushPromises } from "@vue/test-utils";
 import { createColumnValueId, createGlobalPObjectId } from "@platforma-sdk/model";
+import type { MissingValueHint } from "../../../helpers/columnValue";
 import PlDropdown from "../PlDropdown.vue";
 
 describe("PlDropdown", () => {
@@ -176,6 +177,42 @@ describe("PlDropdown", () => {
       });
       await flushPromises();
       expect(wrapper.find(".input-value--missing").text()).toBe("Gone");
+    });
+
+    it("explains a missing value by the hint of the app in a tooltip", async () => {
+      const hint: MissingValueHint = (value) =>
+        value === treated ? () => "Samples does not provide it" : undefined;
+      const wrapper = mount(PlDropdown, {
+        props: { modelValue: treated, options: [], missingValueHint: hint },
+        attachTo: document.body,
+      });
+      await flushPromises();
+      expect(
+        wrapper.find("[data-testid='pl-dropdown-control'] .pl-dropdown__field").attributes("title"),
+      ).toBeUndefined();
+
+      await wrapper.find("[data-testid='pl-dropdown-value-hint']").trigger("mouseover");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      expect(document.body.textContent).toContain("Samples does not provide it");
+      wrapper.unmount();
+    });
+
+    it("asks for no hint while the value is among the options", async () => {
+      const asked: unknown[] = [];
+      const hint: MissingValueHint = (value) => {
+        asked.push(value);
+        return undefined;
+      };
+      const wrapper = mount(PlDropdown, {
+        props: {
+          modelValue: treated,
+          options: [{ label: "Treated", value: treated }],
+          missingValueHint: hint,
+        },
+      });
+      await flushPromises();
+      expect(asked).toEqual([]);
+      expect(wrapper.find("[data-testid='pl-dropdown-value-hint']").exists()).toBe(false);
     });
   });
 });

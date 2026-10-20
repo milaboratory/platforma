@@ -1,4 +1,5 @@
 import {
+  createColumnValueId,
   createGlobalPObjectId,
   type BlockDependenciesOutput,
   type BlockDependentsOutput,
@@ -9,7 +10,13 @@ import {
   type DependentStatus,
 } from "@platforma-sdk/model";
 import { describe, expect, test } from "vitest";
-import { blockName, linkAlerts, linkSections, type LinkSection } from "./utils";
+import {
+  blockName,
+  describeMissingValue,
+  linkAlerts,
+  linkSections,
+  type LinkSection,
+} from "./utils";
 
 const REF = createGlobalPObjectId("producer", "out");
 
@@ -356,6 +363,92 @@ function dependents(
   return { type: "ok", items, labels: { b1: "Enrichment" }, ...options };
 }
 
+const PATH = createGlobalPObjectId("samples", "metadata.path");
+const ty1 = createColumnValueId({ column: PATH, value: "Ty1" });
+
+describe("describeMissingValue", () => {
+  test("names the block that does not provide the column", () => {
+    const cause = describeMissingValue(
+      pathDependencies([pathEntry({ type: "broken", reason: "unavailable" })]),
+      ty1,
+    );
+    expect(cause).toEqual({
+      blockId: "samples",
+      blockName: "Samples",
+      text: "does not provide “Path”.",
+    });
+  });
+
+  test("names the block whose column lacks the value", () => {
+    const cause = describeMissingValue(
+      pathDependencies([pathEntry({ type: "broken", reason: "missingValues", values: ["Ty1"] })]),
+      ty1,
+    );
+    expect(cause?.text).toBe("has no “Ty1” in “Path”.");
+  });
+
+  test("tells nothing of a value the column still has", () => {
+    const cause = describeMissingValue(
+      pathDependencies([pathEntry({ type: "broken", reason: "missingValues", values: ["Ty2"] })]),
+      ty1,
+    );
+    expect(cause).toBeUndefined();
+  });
+
+  test("names the block still computing the column", () => {
+    const cause = describeMissingValue(pathDependencies([pathEntry({ type: "pending" })]), ty1);
+    expect(cause?.text).toBe("is still computing “Path”.");
+  });
+
+  test("tells nothing of a column that is fine or was not checked", () => {
+    for (const status of [
+      { type: "ok" },
+      { type: "unchecked", reason: "unreadable" },
+    ] satisfies DependencyStatus[]) {
+      expect(describeMissingValue(pathDependencies([pathEntry(status)]), ty1)).toBeUndefined();
+    }
+  });
+
+  test("falls back to generic names without labels", () => {
+    const cause = describeMissingValue(
+      { argsSource: "current", items: [pathEntry({ type: "pending" }, null)], labels: {} },
+      ty1,
+    );
+    expect(cause).toEqual({
+      blockId: "samples",
+      blockName: "Block samples",
+      text: "is still computing the column.",
+    });
+  });
+
+  test("names the block that does not provide a column selected as a whole, by id or ref", () => {
+    const deps = pathDependencies([pathEntry({ type: "broken", reason: "unavailable" })]);
+    expect(describeMissingValue(deps, PATH)?.text).toBe("does not provide “Path”.");
+    expect(
+      describeMissingValue(deps, { __isRef: true, blockId: "samples", name: "metadata.path" })
+        ?.text,
+    ).toBe("does not provide “Path”.");
+  });
+
+  test("tells nothing of a column selected as a whole that lacks values picked elsewhere", () => {
+    const deps = pathDependencies([
+      pathEntry({ type: "broken", reason: "missingValues", values: ["Ty1"] }),
+    ]);
+    expect(describeMissingValue(deps, PATH)).toBeUndefined();
+  });
+
+  test("tells nothing of a value that is not a column value id, or of another column", () => {
+    const deps = pathDependencies([pathEntry({ type: "broken", reason: "unavailable" })]);
+    expect(describeMissingValue(deps, "Ty1")).toBeUndefined();
+    expect(describeMissingValue(deps, { ref: PATH })).toBeUndefined();
+    const other = createColumnValueId({
+      column: createGlobalPObjectId("samples", "metadata.round"),
+      value: "Ty1",
+    });
+    expect(describeMissingValue(deps, other)).toBeUndefined();
+  });
+});
+
 function dependencies(
   items: DependencyEntry[],
   argsSource: BlockDependenciesOutput["argsSource"] = "current",
@@ -389,4 +482,19 @@ function missingValues(values: ColumnValue[]): DependencyStatus {
 
 function notExported(): DependentStatus {
   return { type: "broken", reason: "notExported" };
+}
+
+function pathDependencies(items: DependencyEntry[]): BlockDependenciesOutput {
+  return { argsSource: "current", items, labels: { samples: "Samples" } };
+}
+
+function pathEntry(status: DependencyStatus, columnLabel: null | string = "Path"): DependencyEntry {
+  return {
+    producerBlockId: "samples",
+    output: "metadata.path",
+    ref: PATH,
+    values: ["Ty1"],
+    columnLabel,
+    status,
+  };
 }

@@ -11,6 +11,7 @@ export default {
 import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
 import { missingValueText, pickedValueText } from "../../helpers/columnValue";
+import type { MissingValueHint } from "../../helpers/columnValue";
 import { getErrorMessage } from "../../helpers/error.ts";
 import { tap } from "../../helpers/functions";
 import { deepEqual } from "../../helpers/objects";
@@ -77,6 +78,10 @@ const props = withDefaults(
      */
     missingValueLabel?: string;
     /**
+     * Explains a selected value missing from the options in a tooltip over it.
+     */
+    missingValueHint?: MissingValueHint;
+    /**
      * Enables a button to clear the selected value (default: false)
      */
     clearable?: boolean;
@@ -122,6 +127,7 @@ const props = withDefaults(
     showErrorMessage: true,
     placeholder: "...",
     missingValueLabel: undefined,
+    missingValueHint: undefined,
     clearable: false,
     required: false,
     disabled: false,
@@ -221,12 +227,16 @@ const textValue = computed(() => {
 
 const missingText = computed(() => missingValueText(props.modelValue, props.missingValueLabel));
 
+const missingHint = computed(() =>
+  isMissing.value ? props.missingValueHint?.(props.modelValue) : undefined,
+);
+
 // Native tooltip with the full selected value and its link hint. The `.input-value` layer has
 // `pointer-events: none`, so the title must sit on the field wrapper, which is
-// what actually receives the hover.
+// what actually receives the hover. A missing value with a hint has its own tooltip.
 const fieldTitle = computed(() => {
   if (data.open) return undefined;
-  if (isMissing.value) return missingText.value;
+  if (isMissing.value) return missingHint.value === undefined ? missingText.value : undefined;
   if (textValue.value === undefined) return undefined;
   const hint = selectedOption.value?.linkHint;
   return hint ? `${textValue.value}\n${hint}` : String(textValue.value);
@@ -394,8 +404,21 @@ watchPostEffect(() => {
           />
 
           <div v-if="!data.open" class="input-value" data-testid="pl-dropdown-value">
+            <PlTooltip
+              v-if="isMissing && missingHint !== undefined"
+              :class="$style.hint"
+              position="top"
+              data-testid="pl-dropdown-value-hint"
+            >
+              <LongText class="input-value--missing" data-testid="pl-dropdown-value-missing">
+                {{ missingText }}
+              </LongText>
+              <template #tooltip>
+                <component :is="missingHint" />
+              </template>
+            </PlTooltip>
             <LongText
-              v-if="isMissing"
+              v-else-if="isMissing"
               class="input-value--missing"
               data-testid="pl-dropdown-value-missing"
             >
@@ -468,3 +491,10 @@ watchPostEffect(() => {
     </div>
   </div>
 </template>
+
+<style module>
+.hint {
+  min-width: 0;
+  pointer-events: auto;
+}
+</style>

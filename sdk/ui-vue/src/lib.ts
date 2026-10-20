@@ -69,4 +69,13 @@ export * from "./composition/fileContent";
 
 export * from "@milaboratories/uikit";
 
+// Value pickers of uikit, with the hint of the block for missing columns and column values.
+export {
+  PlDropdown,
+  PlDropdownMulti,
+  PlDropdownMultiRef,
+  PlDropdownRef,
+  PlValueLabel,
+} from "./components/ValuePickers";
+
 export type * from "@milaboratories/uikit";
