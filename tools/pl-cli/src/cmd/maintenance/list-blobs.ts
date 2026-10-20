@@ -1,3 +1,4 @@
+import { once } from "node:events";
 import { Command, InvalidArgumentError, Option } from "commander";
 import {
   isNotNullSignedResourceId,
@@ -58,15 +59,16 @@ export default function maintenanceListBlobsCommand(): Command {
         });
 
         for (const { blob, blobInfo } of page) {
-          process.stdout.write(
+          const line =
             JSON.stringify({
               id: resourceIdToString(blob.id),
               type: `${blob.type.name}:${blob.type.version}`,
               ...parseData(blob),
               ...blobInfo,
               error: isNotNullSignedResourceId(blob.error) ? resourceIdToString(blob.error) : null,
-            }) + "\n",
-          );
+            }) + "\n";
+          // Wait for a slow reader: else the output of all pages collects in memory.
+          if (!process.stdout.write(line)) await once(process.stdout, "drain");
         }
 
         if (page.length < flags.pageSize) break;
