@@ -2,7 +2,7 @@
 /**
  * A selected value shown as text, the way a dropdown shows it: by the label of its option, or,
  * for a column value id, by the value it picks. A value the options lack is marked as not
- * available, in error color.
+ * available, in error color, with the reason in a tooltip when there is a hint for it.
  */
 export default {
   name: "PlValueLabel",
@@ -12,9 +12,11 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import { computed } from "vue";
 import { missingValueText, pickedValueText } from "../../helpers/columnValue";
+import type { MissingValueHint } from "../../helpers/columnValue";
 import { deepEqual } from "../../helpers/objects";
 import { normalizeListOptions } from "../../helpers/utils";
 import type { ListOption } from "../../types";
+import { PlTooltip } from "../PlTooltip";
 
 const props = defineProps<{
   /** The value to show. */
@@ -29,6 +31,8 @@ const props = defineProps<{
    * picks, marked as not available, or "Value not available".
    */
   missingValueLabel?: string;
+  /** Explains the value in a tooltip over it while the options lack it. */
+  missingValueHint?: MissingValueHint;
 }>();
 
 const option = computed(() =>
@@ -39,6 +43,8 @@ const option = computed(() =>
 
 const isMissing = computed(() => props.options !== undefined && option.value === undefined);
 
+const hint = computed(() => (isMissing.value ? props.missingValueHint?.(props.value) : undefined));
+
 const text = computed(() => {
   if (option.value !== undefined) return option.value.label;
   if (isMissing.value) return missingValueText(props.value, props.missingValueLabel);
@@ -47,7 +53,15 @@ const text = computed(() => {
 </script>
 
 <template>
-  <span :class="{ [$style.missing]: isMissing }" data-testid="pl-value-label">{{ text }}</span>
+  <PlTooltip v-if="hint !== undefined" element="span" position="top">
+    <span :class="$style.missing" data-testid="pl-value-label">{{ text }}</span>
+    <template #tooltip>
+      <component :is="hint" />
+    </template>
+  </PlTooltip>
+  <span v-else :class="{ [$style.missing]: isMissing }" data-testid="pl-value-label">{{
+    text
+  }}</span>
 </template>
 
 <style module>

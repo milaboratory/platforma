@@ -20,6 +20,7 @@ import {
 } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
 import { missingValueText, pickedValueText } from "../../helpers/columnValue";
+import type { MissingValueHint } from "../../helpers/columnValue";
 import { getErrorMessage } from "../../helpers/error.ts";
 import { deepEqual, deepIncludes } from "../../helpers/objects";
 import { normalizeListOptions } from "../../helpers/utils";
@@ -75,6 +76,10 @@ const props = withDefaults(
      */
     missingValueLabel?: string;
     /**
+     * Explains a selected value missing from the options in a tooltip over it.
+     */
+    missingValueHint?: MissingValueHint;
+    /**
      * If `true`, the dropdown component is marked as required.
      */
     required?: boolean;
@@ -103,6 +108,7 @@ const props = withDefaults(
     error: undefined,
     placeholder: "...",
     missingValueLabel: undefined,
+    missingValueHint: undefined,
     required: false,
     disabled: false,
     options: undefined,
@@ -146,17 +152,20 @@ const selectedOptionsRef = computed(() => {
         // Found: render the option's own (normalized) label verbatim — matches
         // PlDropdown. `opt.label` is always a string (possibly ""), never an object,
         // so there is no raw-value leak to guard against.
-        return { ...opt, isMissing: false };
+        return { ...opt, isMissing: false, hint: undefined };
       }
       if (!optionsLoaded) {
         const label = pickedValueText(v);
-        return label === undefined ? undefined : { value: v, label, isMissing: false };
+        return label === undefined
+          ? undefined
+          : { value: v, label, isMissing: false, hint: undefined };
       }
       // Honor empty `missingValueLabel` verbatim — caller's explicit "render nothing".
       return {
         value: v,
         label: missingValueText(v, props.missingValueLabel),
         isMissing: true,
+        hint: props.missingValueHint?.(v),
       };
     })
     .filter((v): v is NonNullable<typeof v> => v !== undefined);
@@ -331,7 +340,20 @@ watchPostEffect(() => {
               @click.stop="data.open = true"
               @close="unselectOption(opt.value)"
             >
-              {{ opt.label }}
+              <!-- The hover stops here: the tooltip of the chip itself would close this one. -->
+              <PlTooltip
+                v-if="opt.hint !== undefined"
+                element="span"
+                position="top"
+                data-testid="pl-dropdown-multi-chip-hint"
+                @mouseover.stop
+              >
+                <span>{{ opt.label }}</span>
+                <template #tooltip>
+                  <component :is="opt.hint" />
+                </template>
+              </PlTooltip>
+              <template v-else>{{ opt.label }}</template>
             </PlChip>
           </div>
 
@@ -388,7 +410,20 @@ watchPostEffect(() => {
               small
               @close="unselectOption(opt.value)"
             >
-              {{ opt.label }}
+              <!-- The hover stops here: the tooltip of the chip itself would close this one. -->
+              <PlTooltip
+                v-if="opt.hint !== undefined"
+                element="span"
+                position="top"
+                data-testid="pl-dropdown-multi-chip-hint"
+                @mouseover.stop
+              >
+                <span>{{ opt.label }}</span>
+                <template #tooltip>
+                  <component :is="opt.hint" />
+                </template>
+              </PlTooltip>
+              <template v-else>{{ opt.label }}</template>
             </PlChip>
           </div>
           <DropdownListItem
