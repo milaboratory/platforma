@@ -8,6 +8,7 @@ import {
 } from "@milaboratories/pl-client";
 import { connectClient } from "../../base_command";
 import { addOptions, AddressOptions, AdminAuthOptions } from "../../cmd-opts";
+import { parseResourceId } from "../../resource_id";
 
 // Keep in sync with controllers/shared/resources/blob_storage_v1.go in the backend.
 const StorageBlobTypePrefix = "Blob/";
@@ -16,8 +17,9 @@ const StorageBlobMetadataBlobInfo = "ctl/file/blobInfo";
 
 export default function maintenanceListBlobsCommand(): Command {
   const cmd = new Command("list-blobs").description(
-    "List all blobs of one storage as JSON lines: one blob per line, with its hash and " +
-      "the location of its file inside the storage. Requires admin/controller credentials.",
+    "List blobs of one storage as JSON lines, in ascending order of resource ID: " +
+      "one blob per line, with its hash and the location of its file inside the storage. " +
+      "Requires admin/controller credentials.",
   );
 
   addOptions(cmd, AddressOptions(), AdminAuthOptions());
@@ -27,9 +29,16 @@ export default function maintenanceListBlobsCommand(): Command {
       .makeOptionMandatory(),
   );
   cmd.addOption(
-    new Option("--page-size <n>", "Number of blobs to read in one transaction")
-      .argParser(parsePositiveInt)
-      .default(1000),
+    new Option("--limit <n>", "Maximum number of blobs to list. 0 lists all blobs")
+      .argParser(parseNonNegativeInt)
+      .default(0),
+  );
+  cmd.addOption(
+    new Option(
+      "--after <resource-id>",
+      "List only blobs with IDs greater than this ID. " +
+        "To get the next page, give the ID of the last blob of the previous page",
+    ).argParser(parseResourceId),
   );
 
   cmd.action(async (flags) => {
@@ -37,42 +46,36 @@ export default function maintenanceListBlobsCommand(): Command {
 
     const pl = await connectClient(flags);
     try {
-      let after: ResourceData["id"] | undefined;
-      for (;;) {
-        const page = await pl.withReadTx("listBlobs", async (tx) => {
-          // Fields are loaded to see the resource error.
-          const blobs = await tx.listResourcesByType(type, {
-            limit: flags.pageSize,
-            after,
-            loadFields: true,
-          });
-          return await Promise.all(
-            blobs.map(async (blob) => ({
-              blob,
-              // Location of the blob file inside the storage: {"path": ..., "sizeBytes": ..., ...}
-              blobInfo: await tx.getKValueJsonIfExists<Record<string, unknown>>(
-                blob.id,
-                StorageBlobMetadataBlobInfo,
-              ),
-            })),
-          );
+      const blobs = await pl.withReadTx("listBlobs", async (tx) => {
+        // Fields are loaded to see the resource error.
+        const resources = await tx.listResourcesByType(type, {
+          limit: flags.limit,
+          after: flags.after,
+          loadFields: true,
         });
+        return await Promise.all(
+          resources.map(async (blob) => ({
+            blob,
+            // Location of the blob file inside the storage: {"path": ..., "sizeBytes": ..., ...}
+            blobInfo: await tx.getKValueJsonIfExists<Record<string, unknown>>(
+              blob.id,
+              StorageBlobMetadataBlobInfo,
+            ),
+          })),
+        );
+      });
 
-        for (const { blob, blobInfo } of page) {
-          const line =
-            JSON.stringify({
-              id: resourceIdToString(blob.id),
-              type: `${blob.type.name}:${blob.type.version}`,
-              ...parseData(blob),
-              ...blobInfo,
-              error: isNotNullSignedResourceId(blob.error) ? resourceIdToString(blob.error) : null,
-            }) + "\n";
-          // Wait for a slow reader: else the output of all pages collects in memory.
-          if (!process.stdout.write(line)) await once(process.stdout, "drain");
-        }
-
-        if (page.length < flags.pageSize) break;
-        after = page[page.length - 1].blob.id;
+      for (const { blob, blobInfo } of blobs) {
+        const line =
+          JSON.stringify({
+            id: resourceIdToString(blob.id),
+            type: `${blob.type.name}:${blob.type.version}`,
+            ...parseData(blob),
+            ...blobInfo,
+            error: isNotNullSignedResourceId(blob.error) ? resourceIdToString(blob.error) : null,
+          }) + "\n";
+        // Wait for a slow reader: else the output collects in memory a second time.
+        if (!process.stdout.write(line)) await once(process.stdout, "drain");
       }
     } finally {
       await pl.close();
@@ -93,9 +96,9 @@ function parseData(blob: ResourceData): Record<string, unknown> {
   }
 }
 
-function parsePositiveInt(value: string): number {
+function parseNonNegativeInt(value: string): number {
   const n = Number(value);
-  if (!Number.isInteger(n) || n <= 0)
-    throw new InvalidArgumentError(`not a positive integer: ${value}`);
+  if (!Number.isInteger(n) || n < 0)
+    throw new InvalidArgumentError(`not a non-negative integer: ${value}`);
   return n;
 }
