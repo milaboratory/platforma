@@ -10,6 +10,7 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
+import { missingValueText, pickedValueText } from "../../helpers/columnValue";
 import { getErrorMessage } from "../../helpers/error.ts";
 import { tap } from "../../helpers/functions";
 import { deepEqual } from "../../helpers/objects";
@@ -70,7 +71,8 @@ const props = withDefaults(
     placeholder?: string;
     /**
      * Text shown in the field when `modelValue` has no matching option — e.g. its
-     * upstream block was deleted. Rendered italic in error color.
+     * upstream block was deleted. Rendered italic in error color. By default, the value
+     * a column value id picks, marked as not available, or "Value not available".
      */
     missingValueLabel?: string;
     /**
@@ -118,7 +120,7 @@ const props = withDefaults(
     error: undefined,
     showErrorMessage: true,
     placeholder: "...",
-    missingValueLabel: "Value not available",
+    missingValueLabel: undefined,
     clearable: false,
     required: false,
     disabled: false,
@@ -208,15 +210,19 @@ const optionsRef = computed<LOption<M>[]>(() =>
 const textValue = computed(() => {
   const options = unref(optionsRef);
   const item: ListOption | undefined = options.find((o) => deepEqual(o.value, props.modelValue));
-  return item?.label;
+  if (item !== undefined) return item.label;
+  // A picked column value is shown by its own label while the options load.
+  return isLoadingOptions.value ? pickedValueText(props.modelValue) : undefined;
 });
+
+const missingText = computed(() => missingValueText(props.modelValue, props.missingValueLabel));
 
 // Native tooltip with the full selected value. The `.input-value` layer has
 // `pointer-events: none`, so the title must sit on the field wrapper, which is
 // what actually receives the hover.
 const fieldTitle = computed(() => {
   if (data.open) return undefined;
-  if (isMissing.value) return props.missingValueLabel;
+  if (isMissing.value) return missingText.value;
   return textValue.value !== undefined ? String(textValue.value) : undefined;
 });
 
@@ -387,7 +393,7 @@ watchPostEffect(() => {
               class="input-value--missing"
               data-testid="pl-dropdown-value-missing"
             >
-              {{ missingValueLabel }}
+              {{ missingText }}
             </LongText>
             <LongText v-else-if="textValue !== undefined">
               {{ textValue }}

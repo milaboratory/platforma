@@ -3,6 +3,7 @@ import { canonicalizeJson } from "../../../json";
 import { createGlobalPObjectId } from "../../../pool";
 import { relocateBlockIds } from "../../../template/template_relocate";
 import {
+  columnValueLabel,
   createColumnValueId,
   createColumnValueIds,
   isColumnValueId,
@@ -83,6 +84,17 @@ describe("createColumnValueId / parseColumnValueId", () => {
     expect(() =>
       parseColumnValueId(leafId("samples", "metadata.condition") as ColumnValueId),
     ).toThrow();
+  });
+});
+
+describe("columnValueLabel", () => {
+  test("names a column value id by the value it picks", () => {
+    expect(columnValueLabel(valueId("samples", "treated"))).toBe("treated");
+    expect(columnValueLabel(valueId("samples", 10))).toBe("10");
+  });
+
+  test("returns any other string as is", () => {
+    expect(columnValueLabel("treated")).toBe("treated");
   });
 });
 

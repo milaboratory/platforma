@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import { mount, flushPromises } from "@vue/test-utils";
+import { createColumnValueId, createGlobalPObjectId } from "@platforma-sdk/model";
 import PlDropdownMulti from "../PlDropdownMulti.vue";
 
 describe("PlDropdownMulti", () => {
@@ -166,5 +167,33 @@ describe("PlDropdownMulti", () => {
     await flushPromises();
     expect(wrapper.findAll(".pl-dropdown-multi__chip--missing").length).toBe(0);
     expect(wrapper.findAll(".pl-chip").length).toBe(1);
+  });
+
+  describe("with column value ids", () => {
+    const valueOf = (value: string) =>
+      createColumnValueId({
+        column: createGlobalPObjectId("samples", "metadata.antigen"),
+        value,
+      });
+    const bsa = valueOf("BSA");
+    const plastic = valueOf("Plastic");
+
+    it("shows picked values while options are loading", async () => {
+      const wrapper = mount(PlDropdownMulti, {
+        props: { modelValue: [bsa, plastic], options: undefined },
+      });
+      await flushPromises();
+      expect(wrapper.findAll(".pl-chip").map((chip) => chip.text())).toEqual(["BSA", "Plastic"]);
+      expect(wrapper.findAll(".pl-dropdown-multi__chip--missing").length).toBe(0);
+    });
+
+    it("marks each picked value the options lack as not available", async () => {
+      const wrapper = mount(PlDropdownMulti, {
+        props: { modelValue: [bsa, plastic], options: [{ label: "BSA", value: bsa }] },
+      });
+      await flushPromises();
+      const missingChips = wrapper.findAll(".pl-dropdown-multi__chip--missing");
+      expect(missingChips.map((chip) => chip.text())).toEqual(["Plastic — not available"]);
+    });
   });
 });

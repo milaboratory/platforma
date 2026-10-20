@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import { mount, flushPromises } from "@vue/test-utils";
+import { createColumnValueId, createGlobalPObjectId } from "@platforma-sdk/model";
 import PlDropdown from "../PlDropdown.vue";
 
 describe("PlDropdown", () => {
@@ -147,5 +148,34 @@ describe("PlDropdown", () => {
     await clearBtn.trigger("click");
     await flushPromises();
     expect(wrapper.props("modelValue")).toBeUndefined();
+  });
+
+  describe("with a column value id", () => {
+    const treated = createColumnValueId({
+      column: createGlobalPObjectId("samples", "metadata.condition"),
+      value: "treated",
+    });
+
+    it("shows the picked value while options are loading", async () => {
+      const wrapper = mount(PlDropdown, { props: { modelValue: treated, options: undefined } });
+      await flushPromises();
+      expect(wrapper.find(".input-value--missing").exists()).toBe(false);
+      expect(wrapper.find("[data-testid='pl-dropdown-value']").text()).toBe("treated");
+      expect(wrapper.find("[data-testid='pl-dropdown-loading']").exists()).toBe(true);
+    });
+
+    it("marks the picked value as not available when options lack it", async () => {
+      const wrapper = mount(PlDropdown, { props: { modelValue: treated, options: [] } });
+      await flushPromises();
+      expect(wrapper.find(".input-value--missing").text()).toBe("treated — not available");
+    });
+
+    it("keeps the caller's missingValueLabel", async () => {
+      const wrapper = mount(PlDropdown, {
+        props: { modelValue: treated, options: [], missingValueLabel: "Gone" },
+      });
+      await flushPromises();
+      expect(wrapper.find(".input-value--missing").text()).toBe("Gone");
+    });
   });
 });
