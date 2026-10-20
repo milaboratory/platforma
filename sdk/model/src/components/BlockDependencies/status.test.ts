@@ -20,14 +20,39 @@ import {
   isProducerFinal,
   missingValues,
   readBlockLabels,
+  hasUnrunChanges,
   readExportValues,
   type ExportCheck,
   type ExportLookup,
+  type ExportData,
   type ExportValues,
   type JsonDataNode,
 } from "./status";
 
 const condition = createGlobalPObjectId("samples", "metadata.condition");
+
+describe("hasUnrunChanges", () => {
+  const reads = (current: unknown, lastRun: unknown) => ({
+    current: () => current,
+    lastRun: () => lastRun,
+  });
+
+  test("args equal to the last run's, in any key order, are run", () => {
+    expect(hasUnrunChanges(reads({ a: 1, b: [2] }, { b: [2], a: 1 }))).toBe(false);
+  });
+
+  test("args that differ from the last run's are not run", () => {
+    expect(hasUnrunChanges(reads({ a: 1 }, { a: 2 }))).toBe(true);
+  });
+
+  test("a block never run has its args unrun", () => {
+    expect(hasUnrunChanges(reads({ a: 1 }, undefined))).toBe(true);
+  });
+
+  test("a block without current args has nothing to run", () => {
+    expect(hasUnrunChanges(reads(undefined, { a: 1 }))).toBe(false);
+  });
+});
 
 describe("chooseArgs", () => {
   const nothing = () => undefined;
@@ -258,14 +283,13 @@ describe("missingValues", () => {
 
 describe("readExportValues", () => {
   test("discrete values in the spec are used without touching the data", () => {
-    const data = jsonNode({ resourceType: "PColumnData/Json", content: { data: {} } });
-    const read = vi.spyOn(data, "getDataAsJsonOrUndefined");
+    const readData = vi.fn((): ExportData => ({ type: "absent" }));
 
-    expect(readExportValues(specWith({ discreteValues: ["a", "b"] }), data)).toEqual({
+    expect(readExportValues(specWith({ discreteValues: ["a", "b"] }), readData)).toEqual({
       type: "known",
       cells: ["a", "b"],
     });
-    expect(read).not.toHaveBeenCalled();
+    expect(readData).not.toHaveBeenCalled();
   });
 
   test("JSON data yields its cells", () => {
@@ -274,35 +298,54 @@ describe("readExportValues", () => {
       content: { keyLength: 1, data: { '["s1"]': "a", '["s2"]': 2, '["s3"]': null } },
     });
 
-    expect(readExportValues(specWith({}), data)).toEqual({ type: "known", cells: ["a", 2, null] });
+    expect(readExportValues(specWith({}), () => ({ type: "present", node: data }))).toEqual({
+      type: "known",
+      cells: ["a", 2, null],
+    });
   });
 
   test("JSON data not yet computed is pending", () => {
     const data = jsonNode({ resourceType: "PColumnData/Json", content: undefined });
 
-    expect(readExportValues(specWith({}), data)).toEqual({ type: "pending" });
+    expect(readExportValues(specWith({}), () => ({ type: "present", node: data }))).toEqual({
+      type: "pending",
+    });
   });
 
   test("JSON data of an unexpected shape is unreadable", () => {
     const data = jsonNode({ resourceType: "PColumnData/Json", content: [1, 2] });
 
-    expect(readExportValues(specWith({}), data)).toEqual({ type: "unreadable" });
+    expect(readExportValues(specWith({}), () => ({ type: "present", node: data }))).toEqual({
+      type: "unreadable",
+    });
   });
 
   test("partitioned JSON data is unreadable: its parts are files", () => {
     const data = jsonNode({ resourceType: "PColumnData/JsonPartitioned", content: undefined });
 
-    expect(readExportValues(specWith({}), data)).toEqual({ type: "unreadable" });
+    expect(readExportValues(specWith({}), () => ({ type: "present", node: data }))).toEqual({
+      type: "unreadable",
+    });
   });
 
   test("binary data is unreadable", () => {
     const data = jsonNode({ resourceType: "PColumnData/BinaryPartitioned", content: undefined });
 
-    expect(readExportValues(specWith({}), data)).toEqual({ type: "unreadable" });
+    expect(readExportValues(specWith({}), () => ({ type: "present", node: data }))).toEqual({
+      type: "unreadable",
+    });
   });
 
   test("data not yet attached is pending", () => {
-    expect(readExportValues(specWith({}), undefined)).toEqual({ type: "pending" });
+    expect(readExportValues(specWith({}), () => ({ type: "pending" }))).toEqual({
+      type: "pending",
+    });
+  });
+
+  test("data the run left out of the results block UIs read is unreadable", () => {
+    expect(readExportValues(specWith({}), () => ({ type: "absent" }))).toEqual({
+      type: "unreadable",
+    });
   });
 });
 

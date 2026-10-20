@@ -8,7 +8,7 @@ import {
   type PColumnSpec,
   type UpstreamBlockCtx,
 } from "@milaboratories/pl-model-common";
-import { isPlainObject, isString } from "es-toolkit";
+import { isEqual, isPlainObject, isString } from "es-toolkit";
 import type { DependencyStatus, DependentStatus, UncheckedReason } from "./types";
 
 /** What the last run of a block exports under one output name. */
@@ -55,6 +55,21 @@ export function chooseArgs(reads: { current: () => unknown; lastRun: () => unkno
   const lastRun = reads.lastRun();
   if (lastRun !== undefined) return { source: "lastRun", args: lastRun };
   return { source: "none" };
+}
+
+/**
+ * Whether a block has changes its last run does not include: its current args differ from those
+ * of the last run, or it was never run. A block without current args cannot be run as it is, so
+ * it has none.
+ */
+export function hasUnrunChanges(reads: {
+  current: () => unknown;
+  lastRun: () => unknown;
+}): boolean {
+  const current = reads.current();
+  if (current === undefined) return false;
+  const lastRun = reads.lastRun();
+  return lastRun === undefined || !isEqual(current, lastRun);
 }
 
 /**
@@ -179,20 +194,38 @@ export interface JsonDataNode {
 }
 
 /**
- * Cell values of an exported column. The `pl7.app/discreteValues` annotation, when the spec has
- * it, lists them without touching the data. Otherwise only data stored inline as JSON
+ * The data of an exported column as a run holds it: still to arrive, left out of the results
+ * block UIs read, or there.
+ */
+export type ExportData =
+  | { type: "pending" }
+  | { type: "absent" }
+  | { type: "present"; node: JsonDataNode };
+
+/**
+ * Cell values of an exported column: those the `pl7.app/discreteValues` annotation lists, when
+ * the spec has it, else those read from the data. Only data stored inline as JSON
  * (`PColumnData/Json`) is read. Partitioned JSON keeps its parts in files, and binary and parquet
  * data cannot be read in the model either.
  */
 export function readExportValues(
   spec: Pick<PColumnSpec, "annotations">,
-  data: undefined | JsonDataNode,
+  readData: () => ExportData,
 ): ExportValues {
   const discrete = readAnnotationJson(spec, Annotation.DiscreteValues);
   if (discrete !== undefined) return { type: "known", cells: discrete };
-  if (data === undefined) return { type: "pending" };
 
-  return data.resourceType.name === RT_JSON ? readJsonData(data) : { type: "unreadable" };
+  const data = readData();
+  switch (data.type) {
+    case "pending":
+      return { type: "pending" };
+    case "absent":
+      return { type: "unreadable" };
+    case "present":
+      return data.node.resourceType.name === RT_JSON
+        ? readJsonData(data.node)
+        : { type: "unreadable" };
+  }
 }
 
 /**

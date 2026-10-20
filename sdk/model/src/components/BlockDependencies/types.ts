@@ -87,7 +87,16 @@ export interface DependencyEntry {
  */
 export type BlockDependentsOutput =
   | { type: "unsupported" }
-  | { type: "ok"; items: DependentEntry[]; labels: Record<string, string> };
+  | {
+      type: "ok";
+      items: DependentEntry[];
+      labels: Record<string, string>;
+      /**
+       * Whether this block has changes its last run does not include. The references are checked
+       * against the last run, so such changes show up only once the block is run.
+       */
+      hasUnrunChanges: boolean;
+    };
 
 /**
  * Outputs of other blocks this block's args reference. `argsSource` says which args were read:

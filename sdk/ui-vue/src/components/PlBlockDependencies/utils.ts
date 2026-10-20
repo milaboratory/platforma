@@ -45,11 +45,13 @@ export type LinkRow = {
   status: LinkStatus;
 };
 
-/** The links of one side. */
-export type LinkSection = {
-  side: LinkSide;
-  rows: LinkRow[];
-};
+/**
+ * The links of one side. On the `usedBy` side, `hasUnrunChanges` tells whether this block has
+ * changes its last run does not include: the links are checked against that run.
+ */
+export type LinkSection =
+  | { side: "usedBy"; rows: LinkRow[]; hasUnrunChanges: boolean }
+  | { side: "uses"; rows: LinkRow[] };
 
 /**
  * A line about links that need attention: the other block's name, then a space and `text`. The
@@ -92,6 +94,7 @@ export function linkSections(outputs: {
   if (dependents !== undefined && dependents.type === "ok") {
     sections.push({
       side: "usedBy",
+      hasUnrunChanges: dependents.hasUnrunChanges,
       rows: groupLinks(
         dependents.labels,
         dependents.items.map((item) => ({
@@ -126,14 +129,18 @@ export function linkSections(outputs: {
  * One alert per side whose links need attention, in the order of the sections:
  * - `uses` — an output this block uses is not available or lacks picked values;
  * - `usedBy` — another block uses an output this block does not export, or picked values this
- *   block's output lacks.
+ *   block's output lacks. While this block has changes not run yet, the hint says that the links
+ *   are checked against its last run.
  */
 export function linkAlerts(sections: LinkSection[]): LinkAlert[] {
   return sections.flatMap((section): LinkAlert[] => {
     const links = section.rows.flatMap((row) => attentionLink(row) ?? []);
     if (links.length === 0) return [];
     const issues = groupIssues(links).map((group) => toIssue(section.side, group));
-    return [{ side: section.side, ...ALERTS[section.side], issues }];
+    const alert = ALERTS[section.side];
+    const hint =
+      section.side === "usedBy" && section.hasUnrunChanges ? UNRUN_CHANGES_HINT : alert.hint;
+    return [{ side: section.side, ...alert, hint, issues }];
   });
 }
 
@@ -226,6 +233,14 @@ const ALERTS: Record<LinkSide, Pick<LinkAlert, "type" | "label" | "hint">> = {
     hint: "Add the missing data to this block, or reconfigure those blocks.",
   },
 };
+
+/**
+ * The `usedBy` hint while this block has changes its last run does not include: the links are
+ * checked against that run, so the changes may fix them once the block is run.
+ */
+const UNRUN_CHANGES_HINT =
+  "This block has changes that have not been run yet, and the check uses its last run. " +
+  "Run the block to see whether they fix these links.";
 
 /** A link whose status needs attention: it breaks a block or lacks picked values. */
 type AttentionLink = { row: LinkRow; status: AttentionStatus };

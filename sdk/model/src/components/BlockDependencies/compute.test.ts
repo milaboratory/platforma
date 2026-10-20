@@ -187,25 +187,41 @@ describe("computeDependencies", () => {
     ]);
   });
 
-  test("a column whose data is not there is pending while the run is open, else unavailable", () => {
+  test("a column is exported by its spec; values it does not list are read from the data", () => {
     const tree = new FakeTree();
-    const args = { condition: createPlRef("samples", "condition") };
-    const noData = { spec: SPEC, data: undefined };
+    const listed = {
+      ...SPEC,
+      annotations: { ...SPEC.annotations, [Annotation.DiscreteValues]: '["treated"]' },
+    };
+    const run = (args: unknown, spec: PColumnSpec, options?: { locked: boolean }) =>
+      installRuntime({
+        args: { condition: args },
+        upstream: [
+          {
+            blockId: "samples",
+            prodCtx: tree.frame({ condition: { spec, data: undefined } }, options),
+          },
+        ],
+      });
+    const whole = createPlRef("samples", "condition");
+    const picked = (value: string) => createColumnValueId({ column: condition, value });
 
-    installRuntime({
-      args,
-      upstream: [
-        { blockId: "samples", prodCtx: tree.frame({ condition: noData }, { locked: false }) },
-      ],
-    });
+    run(whole, SPEC);
+    expect(computeDependencies(new BlockRenderCtx()).items).toMatchObject([
+      { columnLabel: "Condition", status: { type: "ok" } },
+    ]);
+
+    run(picked("treated"), SPEC, { locked: false });
     expect(statusesOf(computeDependencies(new BlockRenderCtx()))).toEqual([{ type: "pending" }]);
 
-    installRuntime({
-      args,
-      upstream: [{ blockId: "samples", prodCtx: tree.frame({ condition: noData }) }],
-    });
+    run(picked("treated"), SPEC);
     expect(statusesOf(computeDependencies(new BlockRenderCtx()))).toEqual([
-      { type: "broken", reason: "unavailable" },
+      { type: "unchecked", reason: "unreadable" },
+    ]);
+
+    run(picked("control"), listed);
+    expect(statusesOf(computeDependencies(new BlockRenderCtx()))).toEqual([
+      { type: "broken", reason: "missingValues", values: ["control"] },
     ]);
   });
 
@@ -307,8 +323,24 @@ describe("computeDependents", () => {
   test("no dependents read no block", () => {
     const runtime = installRuntime({ blockId: "self", outputDependencies: [] });
 
-    expect(computeDependents(new BlockRenderCtx())).toEqual({ type: "ok", items: [], labels: {} });
+    expect(computeDependents(new BlockRenderCtx())).toEqual({
+      type: "ok",
+      items: [],
+      labels: {},
+      hasUnrunChanges: false,
+    });
     expect(runtime.getUpstreamBlockCtx).not.toHaveBeenCalled();
+  });
+
+  test("changes of this block its last run does not include are reported", () => {
+    const run = (args: unknown, lastRunArgs: unknown) => {
+      installRuntime({ blockId: "self", outputDependencies: [], args, lastRunArgs });
+      const output = computeDependents(new BlockRenderCtx());
+      return output.type === "ok" && output.hasUnrunChanges;
+    };
+
+    expect(run({ metadata: ["treated"] }, { metadata: ["treated"] })).toBe(false);
+    expect(run({ metadata: ["treated", "control"] }, { metadata: ["treated"] })).toBe(true);
   });
 
   test("a reference to an output this block does not export is broken as notExported", () => {
@@ -398,6 +430,7 @@ describe("computeDependents", () => {
         { ...dependency("other", null), columnLabel: "Condition", status: { type: "ok" } },
       ],
       labels: { below: "Below" },
+      hasUnrunChanges: false,
     });
   });
 });
