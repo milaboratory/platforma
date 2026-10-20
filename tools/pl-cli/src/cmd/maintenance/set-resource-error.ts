@@ -34,6 +34,11 @@ export default function maintenanceSetResourceErrorCommand(): Command {
       DefaultErrorMessage,
     ),
   );
+  cmd.option(
+    "--skip-missing",
+    "Skip resources that do not exist instead of failing the whole transaction",
+    false,
+  );
 
   cmd.action(async (rawIds: string[], flags) => {
     // Parse all IDs before the connection, so that a typo does not leave a half-done job.
@@ -42,8 +47,17 @@ export default function maintenanceSetResourceErrorCommand(): Command {
     const pl = await connectClient(flags);
     try {
       const result = await pl.withWriteTx("setResourceError", async (tx) => {
-        const resources = await Promise.all(ids.map((id) => tx.getResourceData(id, true, true)));
+        const found = await Promise.all(
+          ids.map(async (id) => ({
+            id,
+            data: flags.skipMissing
+              ? await tx.getResourceDataIfExists(id, true)
+              : await tx.getResourceData(id, true, true),
+          })),
+        );
 
+        const missing = found.filter((r) => r.data === undefined).map((r) => r.id);
+        const resources = found.flatMap((r) => (r.data === undefined ? [] : [r.data]));
         const targets = resources.filter((r) => !isNotNullSignedResourceId(r.error));
         const skipped = resources.filter((r) => isNotNullSignedResourceId(r.error));
 
@@ -54,9 +68,11 @@ export default function maintenanceSetResourceErrorCommand(): Command {
           await tx.commit();
         }
 
-        return { targets, skipped };
+        return { targets, skipped, missing };
       });
 
+      for (const id of result.missing)
+        outputText(`skipped ${resourceIdToString(id)}: resource does not exist`);
       for (const r of result.skipped)
         outputText(`skipped ${resourceIdToString(r.id)}: resource already has an error`);
       for (const r of result.targets) outputText(`error set ${resourceIdToString(r.id)}`);
