@@ -7,7 +7,7 @@ import projectDeleteCommand from "./cmd/project/delete";
 import adminCopyProjectCommand from "./cmd/admin/copy-project";
 import adminUserListCommand from "./cmd/admin/user-list";
 import adminDeleteUserCommand from "./cmd/admin/delete-user";
-import maintenanceListBlobsCommand from "./cmd/maintenance/list-blobs";
+import maintenanceListResourcesCommand from "./cmd/maintenance/list-resources";
 import maintenanceSetResourceErrorCommand from "./cmd/maintenance/set-resource-error";
 
 export function buildProgram(): Command {
@@ -33,7 +33,7 @@ export function buildProgram(): Command {
   const maintenance = new Command("maintenance").description(
     "Low-level server state repair (requires admin/controller credentials)",
   );
-  maintenance.addCommand(maintenanceListBlobsCommand());
+  maintenance.addCommand(maintenanceListResourcesCommand());
   maintenance.addCommand(maintenanceSetResourceErrorCommand());
   program.addCommand(maintenance);
 
