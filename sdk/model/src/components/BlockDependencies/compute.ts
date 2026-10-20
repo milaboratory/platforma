@@ -5,9 +5,10 @@ import {
   createGlobalPObjectId,
   readAnnotation,
   type ColumnValue,
+  type PObjectId,
   type UpstreamBlockCtx,
 } from "@milaboratories/pl-model-common";
-import { DataColumn, ResultPoolColumnsProvider } from "../../columns";
+import { DataColumn, ResultPoolColumnsProvider, type DataColumnRecipe } from "../../columns";
 import {
   BlockRenderCtx,
   TreeNodeAccessor,
@@ -20,12 +21,13 @@ import {
   collectOutgoingReferences,
   dependencyStatus,
   dependentStatus,
+  hasUnrunChanges,
   isProducerFinal,
   readBlockLabels,
   readExportValues,
   type ExportCheck,
+  type ExportData,
   type ExportLookup,
-  type ExportValues,
 } from "./status";
 import type {
   BlockDependenciesOutput,
@@ -80,7 +82,12 @@ export function computeDependents(ctx: RenderCtxBase): BlockDependentsOutput {
   const dependencies = ctx.getOutputDependencies();
   const selfBlockId = ctx.blockId;
   if (dependencies === undefined || selfBlockId === undefined) return { type: "unsupported" };
-  if (dependencies.length === 0) return { type: "ok", items: [], labels: {} };
+  const unrun = hasUnrunChanges({
+    current: () => new BlockRenderCtx().args,
+    lastRun: () => ctx.activeArgs,
+  });
+  if (dependencies.length === 0)
+    return { type: "ok", items: [], labels: {}, hasUnrunChanges: unrun };
 
   const pool = ProdPool.create(ctx, [selfBlockId]);
   const items = dependencies.map((dependency): DependentEntry => {
@@ -96,7 +103,7 @@ export function computeDependents(ctx: RenderCtxBase): BlockDependentsOutput {
     items.map((item) => item.dependentBlockId),
     (blockId) => ctx.ctx.getBlockLabel(blockId),
   );
-  return { type: "ok", items, labels };
+  return { type: "ok", items, labels, hasUnrunChanges: unrun };
 }
 
 // Internals
@@ -126,8 +133,9 @@ function checkAgainst(
  * Exports of the last runs of the given blocks, among this block and the blocks above it. Results
  * a block prepares before it is run are left out: they would count an output of a block that
  * never ran as exported, and would turn every reference to a block `pending` while its args are
- * being edited. Each export is looked up, and its values read, once. Prepared results are read
- * only for the label of a column the last run does not export.
+ * being edited. A column is exported once its spec is in the run. Each export is looked up, and
+ * its values read, once. Prepared results are read only for the label of a column the last run
+ * does not export.
  */
 class ProdPool {
   private readonly blocks: ReadonlyMap<string, UpstreamBlockCtx<AccessorHandle>>;
@@ -221,19 +229,26 @@ class ProdPool {
     const column = DataColumn.fromAccessor(leaf);
     if (column === undefined) return { type: "pending" };
 
-    const dataStatus = column.getDataStatus();
-    if (dataStatus === "absent") return { type: "unavailable" };
-    if (dataStatus === "resolving") return { type: "pending" };
-
     const spec = column.getSpec();
     return {
       type: "present",
       columnLabel: readAnnotation(spec, Annotation.Label) ?? null,
-      readValues: memoize((): ExportValues => {
-        const data = column.getData();
-        return readExportValues(spec, data instanceof TreeNodeAccessor ? data : undefined);
-      }),
+      readValues: memoize(() => readExportValues(spec, () => readExportData(column))),
     };
+  }
+}
+
+/** The data of an exported column, read only when its values are not listed in its spec. */
+function readExportData(column: DataColumnRecipe<PObjectId>): ExportData {
+  switch (column.getDataStatus()) {
+    case "resolving":
+      return { type: "pending" };
+    case "absent":
+      return { type: "absent" };
+    case "present": {
+      const node = column.getData();
+      return node instanceof TreeNodeAccessor ? { type: "present", node } : { type: "absent" };
+    }
   }
 }
 

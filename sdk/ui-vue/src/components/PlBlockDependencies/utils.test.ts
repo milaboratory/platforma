@@ -201,6 +201,26 @@ describe("linkAlerts", () => {
     ]);
   });
 
+  test("says the links are checked against the last run while this block has changes not run", () => {
+    const hints = (hasUnrunChanges: boolean) =>
+      linkAlerts(
+        linkSections({
+          dependents: dependents([dependent("b1", "out", ["a"], notExported())], {
+            hasUnrunChanges,
+          }),
+          dependencies: undefined,
+        }),
+      ).map((alert) => alert.hint);
+
+    expect(hints(false)).toEqual([
+      "Add the missing data to this block, or reconfigure those blocks.",
+    ]);
+    expect(hints(true)).toEqual([
+      "This block has changes that have not been run yet, and the check uses its last run. " +
+        "Run the block to see whether they fix these links.",
+    ]);
+  });
+
   test("never names an output by its name, which is kept for a hint", () => {
     const [usedBy, uses] = linkAlerts(
       linkSections({
@@ -329,8 +349,11 @@ describe("blockName", () => {
 
 // Internals
 
-function dependents(items: DependentEntry[]): BlockDependentsOutput {
-  return { type: "ok", items, labels: { b1: "Enrichment" } };
+function dependents(
+  items: DependentEntry[],
+  options: { hasUnrunChanges: boolean } = { hasUnrunChanges: false },
+): BlockDependentsOutput {
+  return { type: "ok", items, labels: { b1: "Enrichment" }, ...options };
 }
 
 function dependencies(
