@@ -74,6 +74,7 @@ export * from "./components/PlTextField";
 export * from "./components/PlToggleSwitch";
 export * from "./components/PlTooltip";
 export * from "./components/PlColumnLabel";
+export * from "./components/PlValueLabel";
 
 export * from "./components/PlFileDialog";
 export * from "./components/PlFileInput";

@@ -19,6 +19,7 @@ import {
   watchPostEffect,
 } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
+import { missingValueText, pickedValueText } from "../../helpers/columnValue";
 import { getErrorMessage } from "../../helpers/error.ts";
 import { deepEqual, deepIncludes } from "../../helpers/objects";
 import { normalizeListOptions } from "../../helpers/utils";
@@ -69,7 +70,8 @@ const props = withDefaults(
     placeholder?: string;
     /**
      * Text shown in a chip when a `modelValue` entry is missing from `options` —
-     * e.g. its upstream source was deleted. Rendered italic in error color.
+     * e.g. its upstream source was deleted. Rendered italic in error color. By default, the
+     * value a column value id picks, marked as not available, or "Value not available".
      */
     missingValueLabel?: string;
     /**
@@ -100,7 +102,7 @@ const props = withDefaults(
     helper: undefined,
     error: undefined,
     placeholder: "...",
-    missingValueLabel: "Value not available",
+    missingValueLabel: undefined,
     required: false,
     disabled: false,
     options: undefined,
@@ -134,7 +136,8 @@ const normalizedOptionsRef = computed(() => normalizeListOptions(props.options ?
 
 const selectedOptionsRef = computed(() => {
   // While options load (`options === undefined`), hide chips for unresolved values
-  // to avoid a "missing" flash that resolves once options arrive.
+  // to avoid a "missing" flash that resolves once options arrive. A picked column value
+  // is shown by its own label meanwhile.
   const optionsLoaded = props.options !== undefined;
   return selectedValuesRef.value
     .map((v) => {
@@ -146,12 +149,13 @@ const selectedOptionsRef = computed(() => {
         return { ...opt, isMissing: false };
       }
       if (!optionsLoaded) {
-        return undefined;
+        const label = pickedValueText(v);
+        return label === undefined ? undefined : { value: v, label, isMissing: false };
       }
       // Honor empty `missingValueLabel` verbatim — caller's explicit "render nothing".
       return {
         value: v,
-        label: props.missingValueLabel,
+        label: missingValueText(v, props.missingValueLabel),
         isMissing: true,
       };
     })

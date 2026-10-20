@@ -85,6 +85,14 @@ export function parseColumnValueId(id: ColumnValueId): ColumnValueKey {
   return parsed;
 }
 
+/**
+ * Text naming a picked value to the user: the value a column value id picks, or `picked` as is
+ * when it is not such an id — a plain value picked before the block used column value ids.
+ */
+export function columnValueLabel(picked: string): string {
+  return isColumnValueId(picked) ? String(parseColumnValueId(picked).value) : picked;
+}
+
 // Internals
 
 function isColumnValue(value: unknown): value is ColumnValue {

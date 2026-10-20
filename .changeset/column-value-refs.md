@@ -4,10 +4,12 @@
 "@platforma-sdk/model": minor
 "@milaboratories/pl-middle-layer": minor
 "@platforma-sdk/ui-vue": minor
+"@milaboratories/uikit": minor
 ---
 
 Column value references: `ColumnValueId` names one value of a column a block picked, and template relocation repoints the producer block inside it.
 A model builds value pickers over a column with `readColumnValues(recipe)` — every non-empty cell of a column stored inline as JSON (`PColumnData/Json`), with its key, value and `ColumnValueId`; `undefined` while the data is not ready or when the column's data cannot be read in the model — and `deriveColumnValueOptions(entries)`, the distinct values as `{ value: ColumnValueId, label }` options in natural order of labels.
+`columnValueLabel(picked)` names a picked value to the user: the value a column value id picks, or the string as is when it is not such an id.
 In workflows, `workflow.column-value` reads such ids back into plain values: `valueOf` for one id, `valuesOf` for an array of them.
 A block reads which blocks below it reference its outputs with `ctx.getOutputDependencies()`: one entry per dependent block and referenced column, read from that block's current args, else those of its last run (plain output, or a filtered, discovered or overridden column over it), with the values of that column the dependent block picked, or `null` when it uses the column as a whole; recomputed whenever any block's args or the project structure change; `undefined` on a runtime that does not provide it.
 A block reads its own id with `ctx.blockId`; `undefined` on a runtime that does not provide it.
@@ -15,3 +17,5 @@ The `blockDependencies` plugin (plugin id `dependencies`) adds two outputs to a 
 `PlBlockDependencies` (`<PlBlockDependencies :handle="app.plugins.dependencies.handle" />`) shows one alert per side for the links that need attention: an error when an output this block uses is unavailable or lacks picked values; a warning, with advice to add the missing data to this block or reconfigure those blocks, when blocks using this block's outputs use an output it does not export or pick values it lacks. Columns are named by their label; output names are shown only as hints. Outputs of one block that are not exported and have no known label share one alert line ("uses 2 outputs this block does not export"). Block names in the alerts open that block, when the app can open blocks.
 `PlBlockName` (`<PlBlockName :block-id="id" :name="label" />`) shows the name of another block of the project: a link opening that block when the app can open blocks, and plain text otherwise.
 Block UIs can ask the app to open another block of the same project: `PlatformaV3` has an optional `openBlock(blockId)`, absent in app versions that cannot do it; in Vue, `useOpenBlock()` returns a function opening a block by id, or `undefined` when the app cannot.
+`PlDropdown` and `PlDropdownMulti` show a selected column value id by the value it picks: as is while the options load, and as "<value> — not available" when the options lack it, unless `missingValueLabel` is given.
+`PlValueLabel` (`<PlValueLabel :value="item" :options="options" />`) shows a selected value as text the way a dropdown does: by its option's label, a column value id by the value it picks, and a value the options lack as not available, in error color.
