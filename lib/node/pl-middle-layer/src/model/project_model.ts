@@ -147,6 +147,36 @@ export function projectFieldName(blockId: string, fieldName: ProjectField["field
 const projectFieldPattern =
   /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodChainCtx|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious|prodStatus|stagingStatus)$/;
 
+/**
+ * The field names holding the root status context of a render.
+ *
+ * One list, from which both the backend pattern and the local predicate below are derived, so the
+ * two cannot drift and a misspelling is a type error.
+ */
+export const ProjectStatusFieldNames = [
+  "prodStatus",
+  "stagingStatus",
+] as const satisfies readonly ProjectField["fieldName"][];
+
+/**
+ * {@link ProjectStatusFieldNames} as a regular expression over a field name, for the backend's
+ * tree filter.
+ *
+ * The project tree prunes these. A status context holds the whole status subtree of its render,
+ * which fans out with the samples of the run, and every status report into it is a KV write; left
+ * in, the project tree would mirror thousands of resources and its change generation would move on
+ * every report, which is what drives the snapshot writer and the project's own generation waits.
+ * (It would not by itself recompute the project overview: that reads named fields and specific KV
+ * keys, and pl-tree notifies per read.) The status tree reads them instead, seeded at the context.
+ *
+ * Kept inside the subset RE2 and JavaScript agree on, because the backend evaluates this one and
+ * `projectTreePruning` evaluates the local copy. See the parity test.
+ */
+export const ProjectStatusFieldPattern = `-(${ProjectStatusFieldNames.join("|")})$`;
+
+/** {@link ProjectStatusFieldPattern} as a compiled expression, for readers outside the backend. */
+export const projectStatusFieldRegex = new RegExp(ProjectStatusFieldPattern);
+
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);
   if (match === null) return undefined;

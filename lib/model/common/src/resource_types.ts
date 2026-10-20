@@ -44,6 +44,7 @@ export const ResourceTypeName = {
   SharingOutbox: "SharingOutbox",
   SharingState: "SharingState",
   SharedEnvelope: "SharedEnvelope",
+  StatusContext: "StatusContext",
 } as const;
 
 /** Resource type name prefix constants. */
