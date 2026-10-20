@@ -179,6 +179,14 @@ export const Annotation = {
   IsSubset: "pl7.app/isSubset",
   Label: "pl7.app/label",
   LinkLabel: "pl7.app/linkLabel",
+  Linker: {
+    /**
+     * On a linker column: name it ("via <link label>") on every column reached through it, even
+     * unique ones. Only the JSON value `"true"` opts in. Needs a link label (`LinkLabel`/`Label`)
+     * to show; an unlabelled linker adds nothing.
+     */
+    AlwaysLabel: "pl7.app/linker/alwaysLabel",
+  },
   Max: "pl7.app/max",
   Min: "pl7.app/min",
   MultipliesBy: "pl7.app/multipliesBy",
@@ -245,6 +253,7 @@ export type Annotation = Metadata &
     [Annotation.HideDataFromUi]: StringifiedJson<boolean>;
     [Annotation.IsDiscreteFilter]: StringifiedJson<boolean>;
     [Annotation.IsLinkerColumn]: StringifiedJson<boolean>;
+    [Annotation.Linker.AlwaysLabel]: StringifiedJson<boolean>;
     [Annotation.IsSubset]: StringifiedJson<boolean>;
     [Annotation.Label]: string;
     [Annotation.Max]: StringifiedJson<number>;
@@ -323,6 +332,7 @@ export const AnnotationJson: AnnotationJson = {
   [Annotation.HideDataFromGraphs]: z.boolean(),
   [Annotation.IsDiscreteFilter]: z.boolean(),
   [Annotation.IsLinkerColumn]: z.boolean(),
+  [Annotation.Linker.AlwaysLabel]: z.boolean(),
   [Annotation.IsSubset]: z.boolean(),
   [Annotation.Max]: z.number(),
   [Annotation.Min]: z.number(),
@@ -366,6 +376,11 @@ export function readAnnotationJson<T extends keyof AnnotationJson>(
 
 export function isLinkerColumn(column: PColumnSpec): boolean {
   return !!readAnnotationJson(column, Annotation.IsLinkerColumn);
+}
+
+/** Whether a linker opted in to naming every column reached through it (see {@link Annotation.Linker.AlwaysLabel}). */
+export function isLinkerAlwaysLabeled(linker: PColumnSpec): boolean {
+  return !!readAnnotationJson(linker, Annotation.Linker.AlwaysLabel);
 }
 
 /**

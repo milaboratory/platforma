@@ -793,6 +793,30 @@ describe("deriveDistinctLabels v2 — linker path & qualifications", () => {
     ]);
   });
 
+  test("opted-in linker (Linker.AlwaysLabel) names a unique column, through formatters.linker", () => {
+    const anchor: PColumnSpec = {
+      ...linkerSpec("Nearest Anchor"),
+      annotations: {
+        [Annotation.LinkLabel]: "Nearest Anchor",
+        [Annotation.Linker.AlwaysLabel]: "true",
+      },
+    };
+    const entries: Entry[] = [
+      { spec: labeledSpec("Read counts") },
+      { spec: labeledSpec("IC50"), linkerPath: [{ spec: anchor }] },
+      { spec: labeledSpec("Cluster Id"), linkerPath: [{ spec: linkerSpec("Clone to cluster") }] },
+    ];
+    expect(deriveDistinctLabels(entries)).toEqual([
+      "Read counts",
+      "IC50 via Nearest Anchor",
+      "Cluster Id",
+    ]);
+    const custom = deriveDistinctLabels(entries, {
+      formatters: { linker: ({ linkers }) => `[${linkers.map((l) => l.text).join(", ")}]` },
+    });
+    expect(custom).toEqual(["Read counts", "IC50 [Nearest Anchor]", "Cluster Id"]);
+  });
+
   test("two linker paths → both get distinguishing via-suffix", () => {
     const s = labeledSpec("Counts");
     const entries: Entry[] = [
