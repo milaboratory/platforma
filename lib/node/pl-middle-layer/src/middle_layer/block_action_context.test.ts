@@ -68,7 +68,7 @@ function resources(): Map<string, FakeResource> {
           // timestamps of different lengths: string order differs from time order
           { key: "transition/core/NG:0x10/1000", value: '{"state":"Running"}' },
           { key: "transition/core/NG:0x10/999", value: '{"state":"WaitingForInputs"}' },
-          { key: "reading/exec/NG:0x10/progress/00000000000000ff", value: "40" },
+          { key: "reading/exec/NG:0x10/progress", value: "40" },
           { key: "reading/exec/NG:0x10/stage", value: "align" },
           { key: "unrelated", value: "x" },
         ],
