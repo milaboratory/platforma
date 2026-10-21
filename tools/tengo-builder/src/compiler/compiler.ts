@@ -114,9 +114,10 @@ export class TengoTemplateCompiler {
           };
           data.hashToSource[wasm.sourceHash] = wasm.src;
           // Embedding a wasm artifact means this template requires the
-          // backend's wasm runtime to run. The token is propagated upward
-          // when this template is in turn embedded as a sub-template.
-          addRequiredCapability(data.template, "wasm:v1");
+          // backend's wasm runtime to run. wasm:v2 loads components built with
+          // Rust >= 1.100. The token is propagated upward when this template
+          // is in turn embedded as a sub-template.
+          addRequiredCapability(data.template, "wasm:v2");
           break;
         }
         case "template": {

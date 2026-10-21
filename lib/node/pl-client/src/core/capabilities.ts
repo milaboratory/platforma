@@ -26,6 +26,10 @@ export type BackendCapability =
   // marker, so delta tree sync is gated on v2.
   | "treeChangedSince:v2"
   | "wasm:v1"
+  // wasm:v1 plus the WASI 0.2.12 CLI world (wasi:cli/exit exit-with-code) and the call deadline
+  // during instantiation. Components built with Rust >= 1.100 need it. Backends that advertise
+  // it also advertise wasm:v1.
+  | "wasm:v2"
   // Advertised only where the deployment actually has scratch storage, not merely where the
   // build understands a 'scratchFreeSpace' request: a client that sees this stops arranging
   // its own temporary storage. Off unless pl was started with --has-scratch-space.
