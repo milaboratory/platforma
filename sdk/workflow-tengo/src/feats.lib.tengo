@@ -96,7 +96,10 @@ export ll.toStrict({
 	// same map shape locally (single entry "01" → handle).
 	multiStepProgress:        _isEnabled("multiStepProgress"),
 
-	// true when backend supports block action context reports: tx.actionContextRecordTransition and tx.actionContextSetReading.
-	// Use the action context library, not the tx functions directly.
-	actionContextApi:                _isEnabled("actionContextApi")
+	// true when tx.resourceKeyValueSetAsync is available: a resource metadata set applied after the commit.
+	kvAsync:                  _isEnabled("kvAsync"),
+
+	// true when a resource schema can declare a service field optional, so templates can create and set
+	// it after the inputs are locked (e.g. the "actionContext" link of block action context).
+	optionalServiceField:     _isEnabled("optionalServiceField")
 })

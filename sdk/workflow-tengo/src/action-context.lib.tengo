@@ -4,7 +4,8 @@
  * The caller creates or passes on the action context of what it creates; the callee reports.
  *
  * Every render can have an action context: an ActionContext resource that its "actionContext" field points
- * to. The field is one-time-writable: the creator sets it, and nothing can change it later.
+ * to. The field is an optional service field of the render schema: the creator sets it once, and
+ * nothing can change it later.
  * The middle layer creates the context of the root render of a block. render() creates the context
  * of every render that template code creates: the baggage is a copy of the baggage of the current
  * renderer's context with its own "name", and the parent context links it in a "child/..." field,
@@ -15,9 +16,11 @@
  * puts a rendered template and everything below it into the sinkhole.
  * A render without an "actionContext" field reports nowhere, and its children get no field.
  *
- * Reports (record, setReading) go to the backend, which writes them into the context of the
- * resource. They are no-ops when the backend does not support block action context (feats.actionContextApi), or
- * when the resource has no action context, so templates can report unconditionally.
+ * Reports (record, setReading) are asynchronous key-value sets on the context of the resource
+ * (tx.resourceKeyValueSetAsync): transition/<namespace>/<resource>/<ns> and reading/<namespace>/<resource>/<key>,
+ * where <resource> is the decimal resource ID. They are no-ops when the backend lacks the primitives
+ * (feats.kvAsync, feats.optionalServiceField), or when the resource has no action context, so templates
+ * can report unconditionally.
  *
  * Namespaces "core", "render", "workdir" and "exec" are reserved for the platform.
  * Namespaces and reading keys must not contain "/".
@@ -27,10 +30,14 @@ ll := import(":ll")
 feats := import(":feats")
 constants := import(":constants")
 json := import("json")
+slices := import(":slices")
+text := import("text")
 times := import("times")
 tx := import("tx")
 
 LINK_FIELD := "actionContext"
+STATES := ["WaitingForInputs", "Running", "WaitingWorkdirGate", "WaitingSubmissionGate", "PopulatingWorkdir",
+	"CollectingOutputs", "WaitingForScheduler", "WaitingForMachine", "Terminated", "Completed"]
 CHILD_FIELD_PREFIX := "child/"
 CONTEXT_TYPE := { Name: "ActionContext", Version: "1" }
 SINKHOLE_TYPE := { Name: "ActionSinkhole", Version: "1" }
@@ -49,8 +56,8 @@ _vars := func() {
  *         { kind: "sinkhole", id } for anything else.
  */
 linkOf := func(rid) {
-	// OneTimeWritables is a strict map: a missing key is an error, so look the field up by iteration
-	for name, field in tx.getResource(rid).OneTimeWritables {
+	// ServiceFields is a strict map: a missing key is an error, so look the field up by iteration
+	for name, field in tx.getResource(rid).ServiceFields {
 		if name != LINK_FIELD || field.Value == 0 {
 			continue
 		}
@@ -103,10 +110,24 @@ _childFieldName := func() {
 	return CHILD_FIELD_PREFIX + string(times.time_unix_nano(times.now())) + "-" + string(counter)
 }
 
+// _enabled is true when the backend has the primitives of block action context: optional service
+// fields for the link and asynchronous key-value sets for the reports.
+_enabled := func() {
+	return feats.kvAsync && feats.optionalServiceField
+}
+
 _link := func(rid, target) {
+	if !_enabled() {
+		return
+	}
 	field := ll.fieldId(rid, LINK_FIELD)
-	tx.createField(field, constants.FTYPE_OTW)
+	tx.createField(field, constants.FTYPE_SERVICE)
 	tx.setFieldToResource(field, target)
+}
+
+_validateKeyPart := func(name, part) {
+	ll.assert(is_string(part) && len(part) > 0, "action context: %s must be a non-empty string", name)
+	ll.assert(!text.contains(part, "/"), "action context: %s %q contains \"/\"", name, part)
 }
 
 _sinkhole := func() {
@@ -122,9 +143,6 @@ _sinkhole := func() {
 _createContext := func(rid, baggage) {
 	contextId := tx.createEphemeral(CONTEXT_TYPE.Name, CONTEXT_TYPE.Version, json.encode(baggage))
 	_link(rid, contextId)
-	if feats.actionContextApi {
-		tx.actionContextRecordTransition(rid, "core", "WaitingForInputs", "")
-	}
 	return contextId
 }
 
@@ -149,6 +167,9 @@ sinkhole := func(rid) {
  * @return id of the new context, or undefined
  */
 createChild := func(rid, name) {
+	if !_enabled() {
+		return undefined
+	}
 	own := _own()
 	if own.kind == "none" {
 		return undefined
@@ -182,16 +203,28 @@ createChild := func(rid, name) {
  *                                      e.g. "Running"; detail is an optional string for the user
  */
 of := func(rid) {
+	contextId := func() {
+		return _enabled() ? contextOf(rid) : undefined
+	}
+
 	return ll.toStrict({
 		setReading: func(namespace, key, value) {
-			if feats.actionContextApi {
-				tx.actionContextSetReading(rid, namespace, key, value)
+			_validateKeyPart("namespace", namespace)
+			_validateKeyPart("reading key", key)
+			ctx := contextId()
+			if !is_undefined(ctx) {
+				tx.resourceKeyValueSetAsync(ctx, "reading/" + namespace + "/" + string(rid) + "/" + key, value)
 			}
 		},
 
 		record: func(namespace, state, ...detail) {
-			if feats.actionContextApi {
-				tx.actionContextRecordTransition(rid, namespace, state, len(detail) > 0 ? detail[0] : "")
+			_validateKeyPart("namespace", namespace)
+			ll.assert(slices.hasElement(STATES, state), "action context: unknown state %q", state)
+			ctx := contextId()
+			if !is_undefined(ctx) {
+				key := "transition/" + namespace + "/" + string(rid) + "/" + string(times.time_unix_nano(times.now()))
+				value := json.encode({ state: state, detail: len(detail) > 0 ? detail[0] : "", reason: "" })
+				tx.resourceKeyValueSetAsync(ctx, key, value)
 			}
 		}
 	})
@@ -204,7 +237,8 @@ of := func(rid) {
  *   - create(...baggage): creates the action context of the current renderer, for a template rendered
  *                      without an action context; baggage is an optional map of context baggage. Returns the id of
  *                      the context. When the renderer already has an action context, it creates nothing and
- *                      returns its context, or undefined for a sinkhole.
+ *                      returns its context, or undefined for a sinkhole. Returns undefined when the backend
+ *                      lacks the primitives (see the module description).
  */
 self := func() {
 	renderer := ll.getCurrentTemplateRenderer().ID
@@ -218,6 +252,9 @@ self := func() {
 		},
 
 		create: func(...baggage) {
+			if !_enabled() {
+				return undefined
+			}
 			own := _own()
 			if own.kind != "none" {
 				return own.kind == "context" ? own.id : undefined
