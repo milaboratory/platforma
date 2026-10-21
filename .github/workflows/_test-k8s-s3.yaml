@@ -102,12 +102,13 @@ jobs:
           exit 1
 
       # The API server keeps events for about an hour, less than a test run. The loop restarts
-      # the watch when the server closes it.
+      # the watch when the server closes it; each start lists the current events again, so the
+      # gap is covered and the file can repeat lines.
       - name: Record namespace events
         run: |
           D="${RUNNER_TEMP}/k8s-diagnostics"; mkdir -p "$D"
           COLS="LAST:.lastTimestamp,EVENT:.eventTime,FIRST:.metadata.creationTimestamp,COUNT:.count,TYPE:.type,REASON:.reason,OBJECT:.involvedObject.name,MESSAGE:.message"
-          nohup bash -c "while :; do kubectl get events -n '${NAMESPACE}' --watch-only -o custom-columns='${COLS}'; sleep 1; done" \
+          nohup bash -c "while :; do kubectl get events -n '${NAMESPACE}' --watch -o custom-columns='${COLS}'; sleep 5; done" \
             >> "$D/events-watch.txt" 2>&1 < /dev/null &
 
       - name: Run tests
