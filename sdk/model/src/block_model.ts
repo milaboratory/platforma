@@ -160,6 +160,7 @@ export class BlockModelV3<
   public static readonly FEATURE_FLAGS = {
     supportsLazyState: true,
     supportsPframeQueryRanking: true,
+    supportsColumnLinks: true,
     requiresUIAPIVersion: 3,
     requiresModelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
     requiresCreatePTable: 2,

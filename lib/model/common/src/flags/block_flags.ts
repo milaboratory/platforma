@@ -18,6 +18,8 @@ export type BlockCodeFeatureFlags = Record<`supports${string}`, boolean | number
 export type BlockCodeKnownFeatureFlags = {
   readonly supportsLazyState?: boolean;
   readonly supportsPframeQueryRanking?: boolean;
+  /** The block UI reads `columnLinks` from the block state, so the app computes them for it. */
+  readonly supportsColumnLinks?: boolean;
   readonly requiresModelAPIVersion?: number;
   readonly requiresUIAPIVersion?: number;
   readonly requiresCreatePTable?: number;
@@ -31,7 +33,11 @@ export type BlockCodeKnownFeatureFlags = {
  */
 export const REQUIRES_PFRAMES_VERSION = 1_001_031;
 
-export const AllSupportsFeatureFlags = ["supportsLazyState", "supportsPframeQueryRanking"] as const;
+export const AllSupportsFeatureFlags = [
+  "supportsLazyState",
+  "supportsPframeQueryRanking",
+  "supportsColumnLinks",
+] as const;
 
 export const AllRequiresFeatureFlags = [
   "requiresUIAPIVersion",
