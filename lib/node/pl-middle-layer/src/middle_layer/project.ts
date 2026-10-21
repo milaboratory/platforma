@@ -28,7 +28,11 @@ import { blockDependencies, blockDependents, labelBlockColumnLinks } from "./col
 import type { BlockPackSpecAny } from "../model";
 import { randomUUID } from "node:crypto";
 import { withProject, withProjectAuthored } from "../mutator/project";
-import type { ExtendedResourceData, PruningFunction } from "@milaboratories/pl-tree";
+import type {
+  ExtendedResourceData,
+  PlTreeNodeAccessor,
+  PruningFunction,
+} from "@milaboratories/pl-tree";
 import {
   SynchronizedTreeState,
   treeDumpStats,
@@ -39,6 +43,7 @@ import { setTimeout } from "node:timers/promises";
 import { frontendData } from "./frontend_path";
 import type { NavigationState } from "@milaboratories/pl-model-common";
 import { getBlockParameters, blockOutputs } from "./block";
+import { getBlockPackInfo } from "./util";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectId, ProjectStructure } from "../model/project_model";
 import { projectFieldName } from "../model/project_model";
@@ -60,7 +65,7 @@ import type {
 import type { UnlabeledDependencies, UnlabeledDependents } from "@milaboratories/pl-model-common";
 import { activeConfigs } from "./active_cfg";
 import { NavigationStates } from "./navigation_states";
-import { extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
+import { checkBlockFlag, extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
 import fs from "node:fs/promises";
 import canonicalize from "canonicalize";
 import type { ProjectOverviewLight } from "./project_overview_light";
@@ -765,13 +770,15 @@ export class Project {
       const dependents = blockDependents(this.projectTree.entry(), blockId, this.env);
       const fullState = Computable.make(
         (ctx) => {
+          // Links are computed only for a block whose UI reads them.
+          const linked = readsColumnLinks(ctx.accessor(this.projectTree.entry()).node(), blockId);
           return {
             parameters: getBlockParameters(this.projectTree.entry(), blockId, ctx),
             outputs,
             navigationState: this.navigationStates.getState(blockId),
             overview: this.overview,
-            dependencies,
-            dependents,
+            dependencies: linked ? dependencies : undefined,
+            dependents: linked ? dependents : undefined,
           };
         },
         {
@@ -1041,6 +1048,12 @@ export function projectTreeFieldFilter(): Filter {
  * which may stop before the predicate calls a resource final where an entry declares so. */
 export function projectTreeTraverseStopRules(): Filter {
   return finalityStopRules(TreeFinality);
+}
+
+/** Whether the block's model declares that its UI reads the column links of the block state. */
+function readsColumnLinks(prj: PlTreeNodeAccessor, blockId: string): boolean {
+  const info = getBlockPackInfo(prj, blockId);
+  return info !== undefined && checkBlockFlag(info.cfg.featureFlags, "supportsColumnLinks");
 }
 
 /** Returns true if sdk version of the block is old and we need to convert
