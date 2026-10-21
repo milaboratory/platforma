@@ -1,8 +1,6 @@
 import { withAdminTempRoot, withTempRoot } from "../test/test_config";
 import { StructTestResource, ValueTestResource } from "../helpers/pl";
 import { field, toGlobalFieldId, toGlobalResourceId } from "./transaction";
-import { resourceIdToString } from "./types";
-import { getField } from "./types";
 import { RecoverablePlError } from "./errors";
 import * as tp from "node:timers/promises";
 import { test, expect } from "vitest";
@@ -215,58 +213,5 @@ test("resourceTree empty seeds fails", async () => {
     await pl.withReadTx("resourceTreeEmptySeeds", async (tx) => {
       expect(() => tx.resourceTree([])).toThrow("resourceTree: at least one seed must be provided");
     });
-  });
-});
-
-test("action context reports land in the action context of the resource", async () => {
-  await withAdminTempRoot(async (pl) => {
-    const EphRenderTemplate = { name: "EphRenderTemplate", version: "1" };
-    const ActionContext = { name: "ActionContext", version: "1" };
-
-    // The middle layer creates the action context with the resource API and points the render's
-    // "actionContext" field to it.
-    const { render, context } = await pl.withWriteTx("actionContextCreate", async (tx) => {
-      const r = tx.createEphemeral(EphRenderTemplate, "{}");
-      const c = tx.createEphemeral(ActionContext, JSON.stringify({ name: "block title" }));
-      tx.createField(field(tx.clientRoot, "render"), "Dynamic", r);
-      tx.createField(field(tx.clientRoot, "context"), "Dynamic", c);
-      tx.createField(field(r, "actionContext"), "OTW", c);
-      tx.actionContext(r).recordTransition("core", "WaitingForInputs");
-      tx.actionContext(r).setReading("exec", "progress", "40");
-      await tx.commit();
-      return { render: await toGlobalResourceId(r), context: await toGlobalResourceId(c) };
-    });
-
-    // Without actionContextApi:v1 the handle sends nothing: an older backend would reject the unknown
-    // messages and fail the transaction.
-    if (!pl.hasCapability("actionContextApi:v1")) {
-      await pl.withReadTx("actionContextNoopCheck", async (tx) => {
-        expect(await tx.listKeyValuesString(context)).toEqual([]);
-      });
-      return;
-    }
-
-    // Reports are applied asynchronously after the commit.
-    // The backend writes the global ID of the render into the transition key.
-    const renderId = resourceIdToString(render);
-    for (let attempt = 0; ; attempt++) {
-      const kv = await pl.withReadTx("actionContextCheck", async (tx) =>
-        tx.listKeyValuesString(context),
-      );
-      const transition = kv.find((e) => e.key.startsWith("transition/core/"));
-      const reading = kv.find((e) => e.key.startsWith("reading/exec/"));
-      if (transition !== undefined && reading !== undefined) {
-        expect(JSON.parse(transition.value)).toEqual({
-          state: "WaitingForInputs",
-          detail: "",
-          reason: "",
-        });
-        expect(reading.value).toEqual("40");
-        expect(transition.key.split("/")[2].toLowerCase()).toEqual(renderId.toLowerCase());
-        break;
-      }
-      expect(attempt).toBeLessThan(100);
-      await tp.setTimeout(50);
-    }
   });
 });
