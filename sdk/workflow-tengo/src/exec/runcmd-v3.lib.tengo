@@ -1,0 +1,50 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+workdir := import("@platforma-sdk/workflow-tengo:workdir")
+feats := import("@platforma-sdk/workflow-tengo:feats")
+delayedCompAlloc := import("@platforma-sdk/workflow-tengo:exec.delayed-compute-allocation")
+json := import("json")
+
+self.defineOutputs(["outcome", "workdirOut"])
+
+self.body(func(inputs) {
+	queue := "light"
+	types := feats.getResourceTypes(queue)
+
+	wd := workdir.builder().build()
+	alloc := delayedCompAlloc.create(wd, { queue: queue, cpu: 1, ram: "50Mi" })
+
+	run := smart.ephemeralBuilder(types.runCommandV3)
+	run.getField("workdirIn").set(wd)
+	run.getField("allocation").set(alloc)
+	run.getField("refs").set(smart.createMapResourceWithType(
+		{ Name: "RunCommandRefs", Version: "1" }, {}
+	))
+	run.getField("cmd").set(smart.createValueResource(
+		{ Name: "RunCommandCmd", Version: "1" },
+		json.encode({ type: "string", value: "sh" })
+	))
+	run.getField("args").set(smart.createValueResource(
+		{ Name: "RunCommandArgs", Version: "1" },
+		json.encode([
+			{ type: "string", value: "-c" },
+			{ type: "string", value: inputs.script }
+		])
+	))
+	run.getField("options").set(smart.createValueResource(
+		{ Name: "run-command/options", Version: "1" },
+		json.encode({
+			name: "v3-outcome-test",
+			queueName: queue,
+			errorLines: 10,
+			dockerImageTag: inputs.image,
+			attempt: inputs.attempt
+		})
+	))
+
+built := run.lockAndBuild()
+return {
+	outcome: built.outputs()["outcome"],
+	workdirOut: built.outputs()["workdirOut"]
+}
+})
