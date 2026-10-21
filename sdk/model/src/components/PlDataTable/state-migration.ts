@@ -672,23 +672,24 @@ function upgradeParamsColumnIds(params: PTableParamsV2): PTableParamsV2 {
       ? null
       : params.hiddenColIds.flatMap((ref) => upgradeColumnRef(ref) ?? []);
 
-  // A sorting left empty by dropped entries falls back to the default, rather
-  // than reading as "the user cleared it".
-  const sorting =
-    params.sorting === null
-      ? null
-      : params.sorting.flatMap((entry): PTableSorting[] => {
-          const column = upgradeColumnRef(entry.column);
-          return column === undefined ? [] : [{ ...entry, column }];
-        });
-
   return {
     ...params,
     hiddenColIds,
-    sorting: sorting !== null && sorting.length === 0 ? null : sorting,
+    sorting: params.sorting === null ? null : upgradeSorting(params.sorting),
     filters: upgradeFilterColumnIds(params.filters),
     defaultFilters: upgradeFilterColumnIds(params.defaultFilters),
   };
+}
+
+/** `[]` is the user's cleared sorting and stays. A sorting emptied by dropped
+ *  entries falls back to the default (`null`) instead of reading as cleared. */
+function upgradeSorting(sorting: PTableSorting[]): null | PTableSorting[] {
+  if (sorting.length === 0) return sorting;
+  const kept = sorting.flatMap((entry): PTableSorting[] => {
+    const column = upgradeColumnRef(entry.column);
+    return column === undefined ? [] : [{ ...entry, column }];
+  });
+  return kept.length === 0 ? null : kept;
 }
 
 function upgradeGridColId(colId: PlTableColumnIdJsonV8): PlTableColumnIdJsonV8 | undefined {
