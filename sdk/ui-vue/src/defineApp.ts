@@ -1,5 +1,6 @@
 import { notEmpty } from "@milaboratories/helpers";
 import type {
+  BlockColumnLinks,
   PlatformaV3,
   BlockCodeKnownFeatureFlags,
   UiServices as AllUiServices,
@@ -10,13 +11,16 @@ import {
   type BlockOutputsBase,
   type BlockModelInfo,
 } from "@platforma-sdk/model";
-import type { App as VueApp, Component, Reactive } from "vue";
+import type { App as VueApp, Component, ComputedRef, InjectionKey, Reactive } from "vue";
 import { inject, markRaw, reactive } from "vue";
 import { createAppV3, type BaseAppV3 } from "./internal/createAppV3";
 import type { AppSettings, ExtendSettings, Routes } from "./types";
 
 const pluginKey = Symbol("sdk-vue");
 export const pluginDataKey = Symbol("plugin-data-access");
+/** Column links of the block, as the app computes them; `undefined` in apps that do not. */
+export const columnLinksKey: InjectionKey<ComputedRef<BlockColumnLinks | undefined>> =
+  Symbol("column-links");
 
 export function useSdkPlugin(): SdkPlugin {
   return inject(pluginKey)!;
@@ -59,14 +63,11 @@ export function defineAppV3<
     await platforma.loadBlockState().then((stateOrError) => {
       const state = unwrapResult(stateOrError);
       plugin.loaded = true;
-      const { app: baseApp, pluginAccess } = createAppV3<
-        Data,
-        Args,
-        Outputs,
-        Href,
-        Plugins,
-        UiServices
-      >(state, platforma, settings);
+      const {
+        app: baseApp,
+        pluginAccess,
+        columnLinks,
+      } = createAppV3<Data, Args, Outputs, Href, Plugins, UiServices>(state, platforma, settings);
 
       if (!vueAppInstance) {
         throw new Error(
@@ -74,6 +75,7 @@ export function defineAppV3<
         );
       }
       vueAppInstance.provide(pluginDataKey, pluginAccess);
+      vueAppInstance.provide(columnLinksKey, columnLinks);
 
       const localState = extendApp(baseApp);
 

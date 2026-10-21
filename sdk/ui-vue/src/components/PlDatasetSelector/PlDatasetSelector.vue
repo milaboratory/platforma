@@ -19,10 +19,16 @@ import type {
   LabeledEnrichmentRefs,
   PlRef,
 } from "@platforma-sdk/model";
-import { createDatasetSelection, createPrimaryRef, plRefsEqual } from "@platforma-sdk/model";
-import type { ListOption } from "@milaboratories/uikit";
+import {
+  createDatasetSelection,
+  createGlobalPObjectId,
+  createPrimaryRef,
+  plRefsEqual,
+} from "@platforma-sdk/model";
+import type { ListOption, MissingValueHint } from "@milaboratories/uikit";
 import { PlDropdown } from "@milaboratories/uikit";
 import { computed } from "vue";
+import { useColumnLinksHint } from "../ValuePickers/missingValueHint";
 
 const slots = defineSlots<{
   tooltip?: () => unknown;
@@ -115,6 +121,27 @@ const dropdownOptions = computed<ListOption<Selection>[] | undefined>(() => {
   return out;
 });
 
+const columnLinksHint = useColumnLinksHint();
+
+/**
+ * Explains a selection the options lack by the column it selects: the dataset first, as the
+ * filter of a missing dataset is missing with it, then the filter.
+ */
+const missingValueHint: MissingValueHint | undefined =
+  columnLinksHint === undefined
+    ? undefined
+    : () => {
+        const primary = model.value?.primary;
+        if (primary === undefined) return undefined;
+        const refs =
+          primary.filter === undefined ? [primary.column] : [primary.column, primary.filter];
+        for (const ref of refs) {
+          const hint = columnLinksHint(createGlobalPObjectId(ref.blockId, ref.name));
+          if (hint !== undefined) return hint;
+        }
+        return undefined;
+      };
+
 function onChange(selection: Selection | undefined) {
   if (selection === undefined) {
     model.value = undefined;
@@ -140,6 +167,7 @@ function onChange(selection: Selection | undefined) {
     :clearable="clearable"
     :required="required"
     :disabled="disabled"
+    :missing-value-hint="missingValueHint"
     @update:model-value="onChange"
   >
     <template v-if="slots.tooltip" #tooltip>

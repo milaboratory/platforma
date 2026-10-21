@@ -55,8 +55,7 @@ import {
 import { getServiceInjectors } from "./service_injectors";
 import { MainAccessorName, StagingAccessorName } from "@platforma-sdk/model";
 import { buildColumnRegistry, resolvePColumnById } from "./column_registry";
-import type { ColumnRegistry, OutputDependency, PObjectId } from "@milaboratories/pl-model-common";
-import { readOutputDependencyIndex } from "../model/output_dependencies";
+import type { ColumnRegistry, PObjectId } from "@milaboratories/pl-model-common";
 import { collapseSpecOverrideNode } from "./spec_override_collapse";
 
 export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRenderCtxMethods<
@@ -337,10 +336,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
   // Blocks
   //
 
-  public getBlockId(): string {
-    return this.blockCtx.blockId;
-  }
-
   public getBlockLabel(blockId: string): string {
     const b = this.meta.get(blockId);
     if (b === undefined) throw new Error(`Block ${blockId} not found.`);
@@ -453,16 +448,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       }));
     }
     return this._upstreamBlockCtx;
-  }
-
-  //
-  // Output dependencies
-  //
-
-  public getOutputDependencies(): OutputDependency[] {
-    const prjEntry = notEmpty(this.blockCtx.projectEntry, "projectEntry");
-    const prj = this.requireComputableCtx.accessor(prjEntry).node();
-    return readOutputDependencyIndex(prj, this.env.projectHelper).get(this.blockCtx.blockId) ?? [];
   }
 
   //
@@ -893,10 +878,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
       // Blocks
       //
 
-      exportCtxFunction("getBlockId", () => {
-        return parent.exportSingleValue(this.getBlockId(), undefined);
-      });
-
       exportCtxFunction("getBlockLabel", (blockId) => {
         return parent.exportSingleValue(this.getBlockLabel(vm.getString(blockId)), undefined);
       });
@@ -933,14 +914,6 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
       exportCtxFunction("getUpstreamBlockCtx", () => {
         return parent.exportObjectUniversal(this.getUpstreamBlockCtx(), undefined);
-      });
-
-      //
-      // Output dependencies
-      //
-
-      exportCtxFunction("getOutputDependencies", () => {
-        return parent.exportObjectViaJson(this.getOutputDependencies(), undefined);
       });
 
       exportCtxFunction("createPFrame", (def) => {

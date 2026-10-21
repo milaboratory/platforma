@@ -2,7 +2,6 @@ import type { Optional } from "utility-types";
 import type {
   AccessorHandle,
   Branded,
-  OutputDependency,
   PObjectId,
   StringifiedJson,
   SUniversalPColumnId,
@@ -136,12 +135,6 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   // Blocks
   //
 
-  /**
-   * Id of the block this model code runs for. Available only when
-   * `featureFlags.blockIdSupport` is set.
-   */
-  getBlockId(): string;
-
   /** @deprecated at some point will stop working and will return dummy values */
   getBlockLabel(blockId: string): string;
 
@@ -174,16 +167,6 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
    * lives sandbox-side.
    */
   getUpstreamBlockCtx(): ReadonlyArray<UpstreamBlockCtx<AHandle>>;
-
-  //
-  // Output dependencies
-  //
-
-  /**
-   * References to this block's outputs held in the args of blocks below it in the project.
-   * Available only when `featureFlags.outputDependenciesSupport` is set.
-   */
-  getOutputDependencies(): OutputDependency[];
 
   //
   // PFrame / PTable
@@ -231,8 +214,6 @@ export const GlobalCfgRenderCtxFeatureFlags = {
   pTablePartitionFiltersSupport: true as const,
   pFrameInSetFilterSupport: true as const,
   lazyColumnStatusSupport: true as const,
-  outputDependenciesSupport: true as const,
-  blockIdSupport: true as const,
 };
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods, ServiceDispatch {

@@ -5,7 +5,6 @@ import type {
   DataInfo,
   ModelServices,
   Option,
-  OutputDependency,
   PColumn,
   PColumnSelector,
   PColumnSpec,
@@ -600,12 +599,6 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return this.activeArgsCache.v;
   }
 
-  /** Id of the block this model code runs for; `undefined` when the runtime does not provide it. */
-  public get blockId(): string | undefined {
-    if (!this.ctx.featureFlags?.blockIdSupport) return undefined;
-    return this.ctx.getBlockId();
-  }
-
   public getService<T extends keyof ModelServices>(name: T): ModelServices[T] {
     return getService(name);
   }
@@ -703,20 +696,6 @@ export abstract class RenderCtxBase<Args = unknown, Data = unknown> {
     return this.ctx.createPTableV2(
       mapPTableDefV2(def, { column: (v) => (isString(v) ? v : finalizePColumnData(v)) }),
     );
-  }
-
-  /**
-   * References to this block's outputs held in the args of other blocks, in project order of
-   * those blocks and, within one block, in the order its args hold them. Only blocks below this
-   * one are listed: a block above cannot run against this block's outputs, and its reference is
-   * reported on that block as a missing one. A block's current args are read, else the args of
-   * its last run. Follows every block's args, so it changes as soon as a dependent block is
-   * edited, added, removed or moved. `undefined` when the runtime does not provide this
-   * information.
-   */
-  public getOutputDependencies(): OutputDependency[] | undefined {
-    if (!this.ctx.featureFlags?.outputDependenciesSupport) return undefined;
-    return this.ctx.getOutputDependencies();
   }
 
   public getCurrentUnstableMarker(): string | undefined {

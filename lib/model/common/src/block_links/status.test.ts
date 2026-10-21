@@ -1,23 +1,21 @@
+import { describe, expect, test, vi } from "vitest";
 import {
   Annotation,
   collectColumnReferences,
   createColumnFilteredId,
   createColumnValueId,
-  createGlobalPObjectId,
-  createLocalPObjectId,
-  createPlRef,
   type ColumnValue,
   type PColumnSpec,
-  type UpstreamBlockCtx,
-} from "@milaboratories/pl-model-common";
-import { describe, expect, test, vi } from "vitest";
+} from "../drivers";
+import { createGlobalPObjectId, createLocalPObjectId } from "../pool";
+import { createPlRef } from "../ref";
 import {
   checkExport,
   chooseArgs,
   collectOutgoingReferences,
   dependencyStatus,
   dependentStatus,
-  isProducerFinal,
+  producerRunState,
   missingValues,
   readBlockLabels,
   hasUnrunChanges,
@@ -121,23 +119,27 @@ describe("collectOutgoingReferences", () => {
   });
 });
 
-describe("isProducerFinal", () => {
+describe("producerRunState", () => {
   const locked = (ctx: string) => ctx === "locked";
 
-  test("a block that never ran has nothing more to export", () => {
-    expect(isProducerFinal(producer({}), locked)).toBe(true);
+  test("a block with no last run has not run", () => {
+    expect(producerRunState({ type: "notRun" }, locked)).toBe("notRun");
   });
 
   test("a run whose results are still rendering may export more", () => {
-    expect(isProducerFinal(producer({ prodIncomplete: true }), locked)).toBe(false);
+    expect(producerRunState({ type: "rendering" }, locked)).toBe("open");
+  });
+
+  test("a run whose results failed to render exports nothing more", () => {
+    expect(producerRunState({ type: "failed" }, locked)).toBe("final");
   });
 
   test("a run whose result list is open may export more", () => {
-    expect(isProducerFinal(producer({ prodCtx: "open" }), locked)).toBe(false);
+    expect(producerRunState({ type: "rendered", ctx: "open" }, locked)).toBe("open");
   });
 
   test("a run whose result list is locked is settled", () => {
-    expect(isProducerFinal(producer({ prodCtx: "locked" }), locked)).toBe(true);
+    expect(producerRunState({ type: "rendered", ctx: "locked" }, locked)).toBe("final");
   });
 });
 
@@ -145,6 +147,13 @@ describe("checkExport", () => {
   test("a missing export is unavailable", () => {
     expect(checkExport(() => ({ type: "unavailable" }), ["a"])).toEqual({
       check: { type: "unavailable" },
+      columnLabel: null,
+    });
+  });
+
+  test("an export of a block with no last run is not run", () => {
+    expect(checkExport(() => ({ type: "notRun" }), ["a"])).toEqual({
+      check: { type: "notRun" },
       columnLabel: null,
     });
   });
@@ -312,6 +321,37 @@ describe("readExportValues", () => {
     });
   });
 
+  test("JSON data whose resource is not ready is pending, without reading it", () => {
+    const getDataAsJson = vi.fn(() => ({ data: {} }));
+    const data: JsonDataNode = {
+      resourceType: { name: "PColumnData/Json" },
+      getIsReadyOrError: () => false,
+      getError: () => undefined,
+      getDataAsJson,
+    };
+
+    expect(readExportValues(specWith({}), () => ({ type: "present", node: data }))).toEqual({
+      type: "pending",
+    });
+    expect(getDataAsJson).not.toHaveBeenCalled();
+  });
+
+  test("JSON data that failed to compute leaves picked values unchecked as unreadable", () => {
+    const data: JsonDataNode = {
+      resourceType: { name: "PColumnData/Json" },
+      getIsReadyOrError: () => true,
+      getError: () => ({ message: "failed" }),
+      getDataAsJson: () => undefined,
+    };
+    const readValues = () =>
+      readExportValues(specWith({}), () => ({ type: "present", node: data }));
+
+    expect(checkExport(() => present({ readValues }), ["a"]).check).toEqual({
+      type: "unchecked",
+      reason: "unreadable",
+    });
+  });
+
   test("JSON data of an unexpected shape is unreadable", () => {
     const data = jsonNode({ resourceType: "PColumnData/Json", content: [1, 2] });
 
@@ -366,10 +406,6 @@ describe("readBlockLabels", () => {
 
 // Internals
 
-function producer(props: { prodCtx?: string; prodIncomplete?: boolean }): UpstreamBlockCtx<string> {
-  return { blockId: "producer", ...props };
-}
-
 function present(
   props:
     | { cells: readonly unknown[]; columnLabel?: string }
@@ -386,8 +422,8 @@ function present(
 const NEUTRAL_CHECKS: ExportCheck[] = [
   { type: "ok" },
   { type: "pending" },
+  { type: "notRun" },
   { type: "unchecked", reason: "unreadable" },
-  { type: "unchecked", reason: "unsupported" },
 ];
 
 function specWith(props: { discreteValues?: ColumnValue[] }): Pick<PColumnSpec, "annotations"> {
@@ -401,6 +437,8 @@ function specWith(props: { discreteValues?: ColumnValue[] }): Pick<PColumnSpec, 
 function jsonNode(props: { resourceType: string; content: unknown }): JsonDataNode {
   return {
     resourceType: { name: props.resourceType },
-    getDataAsJsonOrUndefined: () => props.content,
+    getIsReadyOrError: () => true,
+    getError: () => undefined,
+    getDataAsJson: () => props.content,
   };
 }

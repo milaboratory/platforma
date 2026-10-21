@@ -1,3 +1,4 @@
+import { isEqual, isPlainObject, isString, uniq } from "es-toolkit";
 import {
   Annotation,
   columnProducer,
@@ -6,15 +7,14 @@ import {
   type ColumnUniversalId,
   type ColumnValue,
   type PColumnSpec,
-  type UpstreamBlockCtx,
-} from "@milaboratories/pl-model-common";
-import { isEqual, isPlainObject, isString } from "es-toolkit";
+} from "../drivers";
 import type { DependencyStatus, DependentStatus, UncheckedReason } from "./types";
 
 /** What the last run of a block exports under one output name. */
 export type ExportLookup =
   | { type: "unavailable" }
   | { type: "pending" }
+  | { type: "notRun" }
   | { type: "present"; columnLabel: null | string; readValues: () => ExportValues };
 
 /** Cell values of an exported column, as far as they can be read. */
@@ -30,6 +30,7 @@ export type ExportValues =
 export type ExportCheck =
   | { type: "ok" }
   | { type: "pending" }
+  | { type: "notRun" }
   | { type: "unchecked"; reason: UncheckedReason }
   | { type: "unavailable" }
   | { type: "missingValues"; values: ColumnValue[] };
@@ -89,16 +90,37 @@ export function collectOutgoingReferences(
 }
 
 /**
- * Whether a block's last run has listed everything it exports. A block that never ran exports
- * nothing and never will without a new run; a block whose run results are still being rendered,
- * or whose result list is still open, may export more.
+ * The last run of a block, as far as what it exports goes:
+ * - `notRun` — the block has no last run;
+ * - `rendering` — the block has a last run whose results are not there yet;
+ * - `failed` — the results of the last run failed to render, so the run exports nothing;
+ * - `rendered` — `ctx` holds the results of the last run.
  */
-export function isProducerFinal<A>(
-  producer: UpstreamBlockCtx<A>,
+export type ProducerRun<A> =
+  | { type: "notRun" }
+  | { type: "rendering" }
+  | { type: "failed" }
+  | { type: "rendered"; ctx: A };
+
+/**
+ * How far the last run of a block has listed its exports: `notRun` — the block has no last run,
+ * so it exports nothing until it runs; `open` — its results are still being rendered, or their
+ * list is still open, so it may export more; `final` — it has listed everything it exports.
+ */
+export function producerRunState<A>(
+  run: ProducerRun<A>,
   inputsLocked: (ctx: A) => boolean,
-): boolean {
-  if (producer.prodIncomplete) return false;
-  return producer.prodCtx === undefined || inputsLocked(producer.prodCtx);
+): "notRun" | "open" | "final" {
+  switch (run.type) {
+    case "notRun":
+      return "notRun";
+    case "rendering":
+      return "open";
+    case "failed":
+      return "final";
+    case "rendered":
+      return inputsLocked(run.ctx) ? "final" : "open";
+  }
 }
 
 /**
@@ -114,8 +136,7 @@ export function checkExport(
   let columnLabel: null | string = null;
   try {
     const found = lookup();
-    if (found.type === "unavailable") return { check: { type: "unavailable" }, columnLabel };
-    if (found.type === "pending") return { check: { type: "pending" }, columnLabel };
+    if (found.type !== "present") return { check: { type: found.type }, columnLabel };
     columnLabel = found.columnLabel;
     if (picked === null) return { check: { type: "ok" }, columnLabel };
 
@@ -133,7 +154,7 @@ export function checkExport(
   }
 }
 
-/** A reference this block holds: a column its producer does not export is broken. */
+/** A reference a block holds: a column its producer does not export is broken. */
 export function dependencyStatus(check: ExportCheck): DependencyStatus {
   switch (check.type) {
     case "unavailable":
@@ -144,13 +165,14 @@ export function dependencyStatus(check: ExportCheck): DependencyStatus {
       return { type: "unchecked", reason: check.reason };
     case "ok":
     case "pending":
+    case "notRun":
       return { type: check.type };
   }
 }
 
 /**
- * A reference to this block's output: an output this block does not export breaks the block
- * holding the reference.
+ * A reference to a block's output: an output the block does not export breaks the block holding
+ * the reference.
  */
 export function dependentStatus(check: ExportCheck): DependentStatus {
   switch (check.type) {
@@ -162,6 +184,7 @@ export function dependentStatus(check: ExportCheck): DependentStatus {
       return { type: "unchecked", reason: check.reason };
     case "ok":
     case "pending":
+    case "notRun":
       return { type: check.type };
   }
 }
@@ -189,8 +212,12 @@ export function missingValues(
 /** The data node surface {@link readExportValues} reads. */
 export interface JsonDataNode {
   readonly resourceType: { readonly name: string };
-  /** `undefined` while the resource is not ready; throws when it failed. */
-  getDataAsJsonOrUndefined(): unknown;
+  /** Whether the resource is ready or failed; a computation that reads it re-runs when this changes. */
+  getIsReadyOrError(): boolean;
+  /** The error of a failed resource; `undefined` when it has none. */
+  getError(): unknown;
+  /** `undefined` while the resource holds no data. */
+  getDataAsJson(): unknown;
 }
 
 /**
@@ -206,7 +233,7 @@ export type ExportData =
  * Cell values of an exported column: those the `pl7.app/discreteValues` annotation lists, when
  * the spec has it, else those read from the data. Only data stored inline as JSON
  * (`PColumnData/Json`) is read. Partitioned JSON keeps its parts in files, and binary and parquet
- * data cannot be read in the model either.
+ * data cannot be read here either.
  */
 export function readExportValues(
   spec: Pick<PColumnSpec, "annotations">,
@@ -229,15 +256,14 @@ export function readExportValues(
 }
 
 /**
- * Labels of the given blocks, by block id. A block the runtime does not know, or cannot label, is
- * left out.
+ * Labels of the given blocks, by block id. A block that cannot be labelled is left out.
  */
 export function readBlockLabels(
   blockIds: readonly string[],
   labelOf: (blockId: string) => string,
 ): Record<string, string> {
   const labels: Record<string, string> = {};
-  for (const blockId of new Set(blockIds)) {
+  for (const blockId of uniq(blockIds)) {
     try {
       labels[blockId] = labelOf(blockId);
     } catch {
@@ -257,9 +283,14 @@ function valueKey(cell: unknown): string | undefined {
   return undefined;
 }
 
-/** A JSON data resource holds its cells under `data`, keyed by the serialized axis values. */
+/**
+ * A JSON data resource holds its cells under `data`, keyed by the serialized axis values. Its
+ * data is there once the resource is ready; a failed resource has none to read.
+ */
 function readJsonData(node: JsonDataNode): ExportValues {
-  const content = node.getDataAsJsonOrUndefined();
+  if (!node.getIsReadyOrError()) return { type: "pending" };
+  if (node.getError() !== undefined) throw new Error("The column data failed to compute");
+  const content = node.getDataAsJson();
   if (content === undefined) return { type: "pending" };
   if (!isPlainObject(content) || !isPlainObject(content.data)) return { type: "unreadable" };
   return { type: "known", cells: Object.values(content.data) };

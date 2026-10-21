@@ -16,18 +16,6 @@ import {
   type ColumnUniversalKey,
 } from "./ids";
 
-/** Another block's args reference an output of this block. */
-export interface OutputDependency {
-  /** The block whose args hold the reference. */
-  dependentBlockId: string;
-  /** Name of this block's output. */
-  output: string;
-  /** The output as the dependent block referenced it: the plain output, or a filtered, discovered or overridden column over it. */
-  ref: ColumnUniversalId;
-  /** Values of that column the dependent block picked, in args order; `null` when it picked none and uses the output as a whole. */
-  values: null | ColumnValue[];
-}
-
 /** A column a block's args reference, with the values of it they picked. */
 export interface ColumnReference {
   /**
