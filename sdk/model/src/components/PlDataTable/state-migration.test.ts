@@ -157,6 +157,10 @@ describe("v8 -> v9", () => {
     expect(sortingOf(state)).toBeNull();
   });
 
+  test("a sorting the user cleared stays cleared", () => {
+    expect(sortingOf(v8(params({ sorting: [] })))).toEqual([]);
+  });
+
   test("hidden columns are rewritten and unconvertible ones dropped", () => {
     const state = v8(params({ hiddenColIds: [col(legacyLinked), col(legacyFiltered)] }));
     const p = upgradePlDataTableStateV2(state).pTableParams;
