@@ -2,6 +2,7 @@ import type { BlockOutputsBase } from "./common_types";
 import type { NavigationState } from "./navigation";
 import type { AuthorMarker } from "./author_marker";
 import { StringifiedJson } from "./json";
+import type { BlockColumnLinks } from "./block_links";
 
 /**
  * @template Args    sets type of block arguments passed to the workflow
@@ -48,4 +49,10 @@ export type BlockStateV3<
   navigationState: NavigationState<Href>;
 
   readonly author: AuthorMarker | undefined;
+
+  /**
+   * Column links of the block: outputs of other blocks its args reference, and blocks whose args
+   * reference its outputs. `undefined` in app versions that do not compute them.
+   */
+  readonly columnLinks: BlockColumnLinks | undefined;
 };

@@ -2,7 +2,6 @@ import {
   BlockModelV3,
   DataModelBuilder,
   PluginModel,
-  blockDependencies,
   createPlDataTable,
   createPlDataTableStateV2,
   getNumberOfRows,
@@ -118,8 +117,6 @@ export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind }
   .plugin(counter, {
     title: (ctx) => ctx.data.titleArg || "Test Counter",
   })
-
-  .plugin(blockDependencies)
 
   .sections((ctx) => {
     return [

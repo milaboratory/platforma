@@ -1,25 +1,15 @@
 <script lang="ts" setup>
-import type { blockDependenciesPlugin, InferPluginHandle } from "@platforma-sdk/model";
+import { linkAlerts, linkSections } from "@platforma-sdk/model";
 import { PlAlert } from "@milaboratories/uikit";
-import { computed } from "vue";
-import { usePlugin } from "../../composition/usePlugin";
+import { computed, inject } from "vue";
+import { columnLinksKey } from "../../defineApp";
 import { PlBlockName } from "../PlBlockName";
-import { linkAlerts, linkSections } from "./utils";
 
-const props = defineProps<{
-  handle: InferPluginHandle<typeof blockDependenciesPlugin>;
-}>();
-
-const plugin = usePlugin(props.handle);
+const links = inject(columnLinksKey, undefined);
 
 const alerts = computed(() => {
-  const { dependents, dependencies } = plugin.model.outputs;
-  return linkAlerts(
-    linkSections({
-      dependents: dependents?.ok ? dependents.value : undefined,
-      dependencies: dependencies?.ok ? dependencies.value : undefined,
-    }),
-  );
+  const value = links?.value;
+  return value === undefined ? [] : linkAlerts(linkSections(value));
 });
 </script>
 

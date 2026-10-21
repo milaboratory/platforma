@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { PlBlockDependencies, PlBlockPage, PlTextField } from "@platforma-sdk/ui-vue";
+import { PlBlockPage, PlTextField } from "@platforma-sdk/ui-vue";
 import { PlAutocompleteMulti } from "@platforma-sdk/ui-vue";
 import { useApp } from "./app";
 import Counter from "./Counter.vue";
@@ -32,7 +32,6 @@ async function optionsSearch(s: string | string[], type: "label" | "value") {
 
 <template>
   <PlBlockPage>
-    <PlBlockDependencies :handle="app.plugins.dependencies.handle" />
     <PlTextField v-model="app.model.data.titleArg" label="Title" />
     <PlTextField v-model="app.model.data.subtitleArg" label="Subtitle" />
     <PlTextField v-model="app.model.data.badgeArg" label="Badge" />
