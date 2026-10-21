@@ -472,9 +472,6 @@ message TxAPI {
       NotificationAPI.Ack.Request notification_ack = 155; // acknowledge notification handled by controller
       NotificationAPI.Discard.Request notification_discard = 156; // discard notification handled by controller
 
-      ActionContextAPI.RecordTransition.Request action_context_record_transition = 90; // record an action transition of a resource
-      ActionContextAPI.SetReading.Request action_context_set_reading = 91; // set a reading of a resource
-
       ResourceKVAPI.Set.Request resource_key_value_set = 200; // set a value to a resource's key-value store.
       ResourceKVAPI.Get.Request resource_key_value_get = 201; // get a value from a resource's key-value store.
       ResourceKVAPI.GetIfExists.Request resource_key_value_get_if_exists = 202; // get a value from a KV if the value exists.
@@ -577,9 +574,6 @@ message TxAPI {
       NotificationAPI.Get.Response notification_get = 154;
       NotificationAPI.Ack.Response notification_ack = 155;
       NotificationAPI.Discard.Response notification_discard = 156;
-
-      ActionContextAPI.RecordTransition.Response action_context_record_transition = 90;
-      ActionContextAPI.SetReading.Response action_context_set_reading = 91;
 
       ResourceKVAPI.Set.Response resource_key_value_set = 200;
       ResourceKVAPI.Get.Response resource_key_value_get = 201;
@@ -1562,43 +1556,6 @@ message ControllerAPI {
       string controller_type = 1;
     }
 
-    message Response {}
-  }
-}
-
-// ActionContextAPI reports the block action context of a resource into its action context.
-// A request names a resource the caller holds. The server follows the "actionContext" one-time-writable field
-// of that resource to its ActionContext. A resource without the field is a no-op.
-// Clients create action contexts and the "actionContext" fields themselves, with the resource API.
-message ActionContextAPI {
-  message Transition {
-    uint32 state = 1;  // model.ActionState
-    string detail = 2; // for the user
-    string reason = 3; // only with the Terminated state
-  }
-
-  // Record a transition of the resource under a namespace.
-  // Stored as transition/<namespace>/<resource>/<ns> in the action context.
-  message RecordTransition {
-    message Request {
-      uint64 resource_id = 1;
-      bytes resource_signature = 2;
-      string namespace = 3;
-      Transition transition = 4;
-    }
-    message Response {}
-  }
-
-  // Set an reading of the resource under a namespace.
-  // Stored as reading/<namespace>/<resource>/<key> in the action context.
-  message SetReading {
-    message Request {
-      uint64 resource_id = 1;
-      bytes resource_signature = 2;
-      string namespace = 3;
-      string key = 4;
-      bytes value = 5;
-    }
     message Response {}
   }
 }

@@ -35,9 +35,9 @@ export type BackendCapability =
   | "userListing:v1" // list users for the recipient picker
   | "publicGrants:v1" // public (everyone) grants allowed for any role
   | "txListGrants:v1" // list grants inside a transaction (batched recipient reads)
-  // Block action context reports: TX messages action_context_record_transition and action_context_set_reading.
-  // Without it, PlTransaction.actionContext() sends nothing.
-  | "actionContextApi:v1";
+  // A schema can declare a service field optional: a client can create and set it after the inputs
+  // are locked. Without it, such a field fails the transaction with "inputs are locked".
+  | "optionalServiceField:v1";
 
 /** True iff `capabilities` advertises the requested token. */
 export function hasCapability(
