@@ -1,4 +1,4 @@
-import { createVitestConfig } from "@milaboratories/build-configs";
+import { createVitestConfig, testTimeoutMs } from "@milaboratories/build-configs";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig(
@@ -6,7 +6,7 @@ export default defineConfig(
     test: {
       pool: "forks",
       setupFiles: ["./vitest/setup.worker-jitter.ts"],
-      testTimeout: 15000,
+      testTimeout: testTimeoutMs(15_000),
       maxConcurrency: 1,
       maxWorkers: 2,
       retry: 2,
