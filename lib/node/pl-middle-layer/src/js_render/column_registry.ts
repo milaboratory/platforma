@@ -48,6 +48,23 @@ export function buildColumnRegistry(
   return new ColumnRegistry<PlTreeNodeAccessor>(providers);
 }
 
+/** Spec of a column id, or `undefined` when the id is unknown or its spec is unset or has an error. */
+export function resolveColumnSpec(
+  registry: ColumnRegistry<PlTreeNodeAccessor>,
+  id: PObjectId,
+): PColumnSpec | undefined {
+  const leaf = registry.resolve(id);
+  if (leaf === undefined) return undefined;
+  return leaf.accessor
+    .traverse({
+      field: `${leaf.name}.spec`,
+      assertFieldType: "Input",
+      ignoreError: true,
+      pureFieldErrorToUndefined: true,
+    })
+    ?.getDataAsJson<PColumnSpec>();
+}
+
 /**
  * Resolve a column id to a materialised {@link PColumn} backed by the
  * underlying {@link PlTreeNodeAccessor} for the `.data` resource. Returns the
@@ -71,6 +88,7 @@ export function resolvePColumnById(
   if (leaf === undefined) {
     throw new Error(`column id ${String(pid)} not found in host column registry`);
   }
+  // A direct lookup: throw the real spec error, do not reuse the skipping `resolveColumnSpec`.
   const specNode = leaf.accessor.traverse({
     field: `${leaf.name}.spec`,
     assertFieldType: "Input",
