@@ -1,6 +1,5 @@
 import { notEmpty } from "@milaboratories/helpers";
 import type {
-  BlockColumnLinks,
   PlatformaV3,
   BlockCodeKnownFeatureFlags,
   UiServices as AllUiServices,
@@ -11,16 +10,15 @@ import {
   type BlockOutputsBase,
   type BlockModelInfo,
 } from "@platforma-sdk/model";
-import type { App as VueApp, Component, ComputedRef, InjectionKey, Reactive } from "vue";
+import type { App as VueApp, Component, Reactive } from "vue";
 import { inject, markRaw, reactive } from "vue";
+import { columnLinksKey } from "./columnLinks";
 import { createAppV3, type BaseAppV3 } from "./internal/createAppV3";
 import type { AppSettings, ExtendSettings, Routes } from "./types";
 
 const pluginKey = Symbol("sdk-vue");
 export const pluginDataKey = Symbol("plugin-data-access");
-/** Column links of the block, as the app computes them; `undefined` in apps that do not. */
-export const columnLinksKey: InjectionKey<ComputedRef<BlockColumnLinks | undefined>> =
-  Symbol("column-links");
+export { columnLinksKey };
 
 export function useSdkPlugin(): SdkPlugin {
   return inject(pluginKey)!;

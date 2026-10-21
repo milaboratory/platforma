@@ -13,11 +13,10 @@ vi.hoisted(() => {
   });
 });
 
-vi.mock("../../defineApp", () => ({ columnLinksKey: Symbol("column-links") }));
 vi.mock("../../composition/useOpenBlock", () => ({ useOpenBlock: () => undefined }));
 
 const { PlBlockDependencies } = await import("./index");
-const { columnLinksKey } = await import("../../defineApp");
+const { columnLinksKey } = await import("../../columnLinks");
 
 const PATH = createGlobalPObjectId("samples", "metadata.path");
 

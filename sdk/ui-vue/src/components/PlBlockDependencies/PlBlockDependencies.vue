@@ -2,7 +2,7 @@
 import { linkAlerts, linkSections } from "@platforma-sdk/model";
 import { PlAlert } from "@milaboratories/uikit";
 import { computed, inject } from "vue";
-import { columnLinksKey } from "../../defineApp";
+import { columnLinksKey } from "../../columnLinks";
 import { PlBlockName } from "../PlBlockName";
 
 const links = inject(columnLinksKey, undefined);

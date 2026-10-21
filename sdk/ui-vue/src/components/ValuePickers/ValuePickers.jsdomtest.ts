@@ -17,11 +17,10 @@ vi.hoisted(() => {
   });
 });
 
-vi.mock("../../defineApp", () => ({ columnLinksKey: Symbol("column-links") }));
 vi.mock("../../composition/useOpenBlock", () => ({ useOpenBlock: () => undefined }));
 
 const { PlValueLabel } = await import("./index");
-const { columnLinksKey } = await import("../../defineApp");
+const { columnLinksKey } = await import("../../columnLinks");
 
 const PATH = createGlobalPObjectId("samples", "metadata.path");
 const ty1 = createColumnValueId({ column: PATH, value: "Ty1" });

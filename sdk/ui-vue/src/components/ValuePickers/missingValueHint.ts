@@ -2,7 +2,7 @@ import type { MissingValueHint } from "@milaboratories/uikit";
 import type { BlockDependencies } from "@platforma-sdk/model";
 import { describeMissingValue } from "@platforma-sdk/model";
 import { h, inject } from "vue";
-import { columnLinksKey } from "../../defineApp";
+import { columnLinksKey } from "../../columnLinks";
 import { PlBlockName } from "../PlBlockName";
 
 /**

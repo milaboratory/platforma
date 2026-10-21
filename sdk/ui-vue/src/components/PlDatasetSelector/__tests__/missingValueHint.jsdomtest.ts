@@ -20,11 +20,10 @@ vi.hoisted(() => {
   });
 });
 
-vi.mock("../../../defineApp", () => ({ columnLinksKey: Symbol("column-links") }));
 vi.mock("../../../composition/useOpenBlock", () => ({ useOpenBlock: () => undefined }));
 
 const { default: PlDatasetSelector } = await import("../PlDatasetSelector.vue");
-const { columnLinksKey } = await import("../../../defineApp");
+const { columnLinksKey } = await import("../../../columnLinks");
 
 const abundance = createPlRef("mixcr", "clonotypes.abundance", true);
 const filter = createPlRef("labeling", "labels.top");

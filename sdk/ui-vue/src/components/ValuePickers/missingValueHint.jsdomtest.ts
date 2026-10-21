@@ -8,7 +8,6 @@ import { mount } from "@vue/test-utils";
 import { describe, expect, test, vi } from "vitest";
 import { missingValueHint } from "./missingValueHint";
 
-vi.mock("../../defineApp", () => ({ columnLinksKey: Symbol("column-links") }));
 vi.mock("../../composition/useOpenBlock", () => ({ useOpenBlock: () => async () => {} }));
 
 const PATH = createGlobalPObjectId("samples", "metadata.path");
