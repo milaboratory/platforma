@@ -45,9 +45,10 @@ export const ActionContextType: ResourceType = { name: "ActionContext", version:
 /**
  * Creates the heavy block render. With `baggage`, it also creates the root action context of the
  * render in the same transaction: an ActionContext resource with the baggage, which the render's
- * one-time-writable "actionContext" field points to. The baggage gets a new random `run-id`: each render is one run of the
- * block, and the contexts the templates create copy it. With `actionContextApi:v1` on the backend, the
- * context also gets the WaitingForInputs transition of the render under namespace "core".
+ * optional "actionContext" service field points to. The baggage gets a new random `run-id`: each render
+ * is one run of the block, and the contexts the templates create copy it. A backend without
+ * `optionalServiceField:v1` cannot take the field after the inputs are locked, so there the render
+ * gets no action context.
  * Returns `actionContext`: the context. The render is garbage collected after its outputs resolve, so the
  * caller must hold the context to keep it.
  */
@@ -65,7 +66,7 @@ export function createRenderHeavyBlock(
     HeavyBlockOutputNames,
   );
 
-  if (baggage === undefined) return outputs;
+  if (baggage === undefined || !tx.hasCapability("optionalServiceField:v1")) return outputs;
 
   const context = tx.createEphemeral(
     ActionContextType,
@@ -76,8 +77,7 @@ export function createRenderHeavyBlock(
       "run-id": randomUUID(),
     }),
   );
-  tx.createField(field(render, "actionContext"), "OTW", context);
-  tx.actionContext(render).recordTransition("core", "WaitingForInputs");
+  tx.createField(field(render, "actionContext"), "Service", context);
 
   return { ...outputs, actionContext: context };
 }
