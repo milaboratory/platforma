@@ -1,0 +1,52 @@
+---
+"@milaboratories/columns-collection-driver": patch
+"@platforma-sdk/package-builder-lib": patch
+"@milaboratories/ts-helpers-winston": patch
+"@milaboratories/pl-crash-recorder": patch
+"@platforma-sdk/blocks-deps-updater": patch
+"@milaboratories/pf-spec-driver": patch
+"@milaboratories/pl-middle-layer": patch
+"@milaboratories/pl-error-like": patch
+"@milaboratories/pl-deployments": patch
+"@milaboratories/pl-healthcheck": patch
+"@milaboratories/biowasm-tools": patch
+"@milaboratories/pl-model-middle-layer": patch
+"@milaboratories/pl-mcp-server": patch
+"@milaboratories/node-streams": patch
+"@milaboratories/test-helpers": patch
+"@platforma-sdk/package-builder": patch
+"@platforma-open/milaboratories.software-ptabler": patch
+"@milaboratories/computable": patch
+"@milaboratories/pl-drivers": patch
+"@milaboratories/ts-helpers": patch
+"@milaboratories/build-configs": patch
+"@platforma-sdk/tengo-builder": patch
+"@milaboratories/pf-driver": patch
+"@milaboratories/pl-client": patch
+"@milaboratories/pl-config": patch
+"@milaboratories/pl-errors": patch
+"@platforma-open/milaboratories.software-ptabler.schema": patch
+"@milaboratories/sequences": patch
+"@platforma-sdk/workflow-tengo": patch
+"@platforma-sdk/bootstrap": patch
+"@milaboratories/pl-model-backend": patch
+"@milaboratories/pf-spec": patch
+"@platforma-sdk/block-tools": patch
+"@milaboratories/pl-model-common": patch
+"@milaboratories/pl-http": patch
+"@milaboratories/pl-tree": patch
+"@milaboratories/helpers": patch
+"@milaboratories/ts-builder": patch
+"@milaboratories/ts-configs": patch
+"@milaboratories/ptabler-expression-js": patch
+"@platforma-sdk/block-kind": patch
+"@milaboratories/uikit": patch
+"@platforma-sdk/pl-cli": patch
+"@platforma-open/milaboratories.software-ptexter": patch
+"@milaboratories/strings": patch
+"@platforma-sdk/ui-vue": patch
+"@platforma-sdk/model": patch
+"@platforma-sdk/test": patch
+---
+
+Build on windows, iter 1. Technical release

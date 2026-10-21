@@ -4,13 +4,14 @@
   "version": "1.0.0",
   "description": "The software dependency test",
   "scripts": {
-    "cleanup": "rm -rf ./dist/",
-    "test:check": "rm -rf dist && pl-tengo build"
+    "cleanup": "shx rm -rf ./dist/",
+    "test:check": "shx rm -rf dist && pl-tengo build"
   },
   "license": "UNLICENSED",
   "devDependencies": {
     "@mi-tests/tengo-integration-2": "workspace:*",
     "@platforma-sdk/workflow-tengo": "workspace:*",
-    "@platforma-sdk/tengo-builder": "workspace:*"
+    "@platforma-sdk/tengo-builder": "workspace:*",
+    "shx": "catalog:"
   }
 }
