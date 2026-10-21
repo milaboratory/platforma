@@ -33,7 +33,8 @@ export type BlockActionReading = {
 export type BlockActionContextNode = {
   contextId: string;
   /**
-   * The render the context belongs to: the resource of its first transition under namespace "core".
+   * The render the context belongs to: the resource of its first transition under namespace "render",
+   * which the workflow controller records when it evaluates the render.
    * Undefined until that transition is applied, or on a backend without block action context reports.
    */
   resource?: string;
@@ -118,7 +119,7 @@ async function readActionContextNode(
 
   return {
     contextId: String(parseSignedResourceId(contextRef).globalId),
-    resource: transitions.find((t) => t.namespace === "core")?.resource,
+    resource: transitions.find((t) => t.namespace === "render")?.resource,
     baggage,
     transitions,
     readings,

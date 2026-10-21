@@ -61,15 +61,15 @@ function resources(): Map<string, FakeResource> {
       {
         data: { name: "prod render" },
         fields: [
-          { name: "child/NG:0x20", value: child },
+          { name: "child/32", value: child },
           { name: "other", value: signedId(99) },
         ],
         kvs: [
           // timestamps of different lengths: string order differs from time order
-          { key: "transition/core/NG:0x10/1000", value: '{"state":"Running"}' },
-          { key: "transition/core/NG:0x10/999", value: '{"state":"WaitingForInputs"}' },
-          { key: "reading/exec/NG:0x10/progress", value: "40" },
-          { key: "reading/exec/NG:0x10/stage", value: "align" },
+          { key: "transition/render/16/1000", value: '{"state":"Running"}' },
+          { key: "transition/render/16/999", value: '{"state":"WaitingForInputs"}' },
+          { key: "reading/exec/16/progress", value: "40" },
+          { key: "reading/exec/16/stage", value: "align" },
           { key: "unrelated", value: "x" },
         ],
       },
@@ -79,8 +79,8 @@ function resources(): Map<string, FakeResource> {
       "20",
       {
         data: { name: "child render" },
-        fields: [{ name: "child/NG:0x30", value: grandchild }],
-        kvs: [{ key: "transition/core/NG:0x20/5", value: '{"state":"Completed","detail":"ok"}' }],
+        fields: [{ name: "child/48", value: grandchild }],
+        kvs: [{ key: "transition/render/32/5", value: '{"state":"Completed","detail":"ok"}' }],
       },
     ],
     ["30", { data: { name: "grandchild render" }, fields: [], kvs: [] }],
@@ -97,30 +97,30 @@ describe("readBlockActionContextTree", () => {
     ))!;
 
     expect(tree.contextId).toEqual("10");
-    expect(tree.resource).toEqual("NG:0x10");
+    expect(tree.resource).toEqual("16");
     expect(tree.baggage).toEqual({ name: "prod render" });
     expect(tree.transitions.map((t) => [t.timestampNs, t.state])).toEqual([
       ["999", "WaitingForInputs"],
       ["1000", "Running"],
     ]);
     expect(tree.readings).toEqual([
-      { namespace: "exec", resource: "NG:0x10", key: "progress", value: "40" },
-      { namespace: "exec", resource: "NG:0x10", key: "stage", value: "align" },
+      { namespace: "exec", resource: "16", key: "progress", value: "40" },
+      { namespace: "exec", resource: "16", key: "stage", value: "align" },
     ]);
 
     expect(tree.children.map((c) => c.baggage["name"])).toEqual(["child render"]);
     const childNode = tree.children[0];
     expect(childNode.transitions).toEqual([
       {
-        namespace: "core",
-        resource: "NG:0x20",
+        namespace: "render",
+        resource: "32",
         timestampNs: "5",
         state: "Completed",
         detail: "ok",
         reason: "",
       },
     ]);
-    expect(childNode.resource).toEqual("NG:0x20");
+    expect(childNode.resource).toEqual("32");
     expect(childNode.children.map((c) => c.contextId)).toEqual(["30"]);
     expect(childNode.children[0].resource).toBeUndefined();
     expect(childNode.children[0].children).toEqual([]);
