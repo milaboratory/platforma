@@ -1,13 +1,19 @@
-import type { PlTransaction, SignedResourceId } from "@milaboratories/pl-client";
+import type { PlClient, PlTransaction, SignedResourceId } from "@milaboratories/pl-client";
 import { tplTest } from "@platforma-sdk/test";
 
 type ActionContextNode = {
   baggage: Record<string, string>;
   kv: { key: string; value: string }[];
-  /** The resource of the core transition: the render the context belongs to. */
-  coreResource?: string;
+  /** The resource of the render/Running transition the workflow controller records: the render. */
+  renderResource?: string;
   children: ActionContextNode[];
 };
+
+/** Block action context needs the backend primitives: optional service fields and async KV sets. */
+function hasActionContextPrimitives(pl: PlClient): boolean {
+  const capabilities = (pl.serverInfo.capabilities ?? []) as readonly string[];
+  return capabilities.includes("optionalServiceField:v1") && capabilities.includes("kvAsync:v1");
+}
 
 async function readActionContextNode(
   tx: PlTransaction,
@@ -20,11 +26,11 @@ async function readActionContextNode(
     if (field.name.startsWith("child/"))
       children.push(await readActionContextNode(tx, field.value));
   }
-  const core = kv.find((e) => e.key.startsWith("transition/core/"));
+  const render = kv.find((e) => e.key.startsWith("transition/render/"));
   return {
     baggage: JSON.parse(Buffer.from(context.data!).toString()) as Record<string, string>,
     kv,
-    coreResource: core?.key.split("/")[2],
+    renderResource: render?.key.split("/")[2],
     children,
   };
 }
@@ -43,9 +49,12 @@ tplTest.concurrent("block action context tree from templates", async ({ helper, 
   //     with a custom name. The grandchild records "Completed". All three finish.
   //  2. The tree: root -> child -> grandchild, linked by child/ fields. Each child copies the baggage
   //     of its parent (block-id, run-id) and has its own name: the template name by default.
-  //  3. With actionContextApi on the backend: every context has the core WaitingForInputs transition of its
-  //     own render, and the reports of its template. Without it, the contexts have no reports.
+  //  3. The contexts of the child and the grandchild have the render/Running transition of their
+  //     render, which the workflow controller records. Every context has the reports of its template.
+  //  Without the backend primitives the templates create no contexts, so the test has nothing to check.
   //
+
+  if (!hasActionContextPrimitives(pl)) return;
 
   const result = await helper.renderTemplate(
     true,
@@ -89,18 +98,16 @@ tplTest.concurrent("block action context tree from templates", async ({ helper, 
     await result.computeOutput("childBaggage", (a) => a?.getDataAsJson()).awaitStableValue(),
   ).toEqual(childNode.baggage);
 
-  // 3. Reports need actionContextApi on the backend.
-  if (!pl.hasCapability("actionContextApi:v1")) {
-    for (const node of [root, childNode, grandchildNode]) expect(node.kv).toEqual([]);
-    return;
-  }
-
-  for (const node of [root, childNode, grandchildNode])
-    expect(transitions(node, "core")).toEqual([
-      { state: "WaitingForInputs", detail: "", reason: "" },
-    ]);
-  const renders = [root, childNode, grandchildNode].map((n) => n.coreResource);
-  expect(new Set(renders).size).toBe(3);
+  // 3. The controller transitions name the renders; the reports of the templates.
+  for (const node of [childNode, grandchildNode])
+    expect(transitions(node, "render")).toContainEqual({
+      state: "Running",
+      detail: "init",
+      reason: "",
+    });
+  expect(childNode.renderResource).toBeDefined();
+  expect(grandchildNode.renderResource).toBeDefined();
+  expect(childNode.renderResource).not.toEqual(grandchildNode.renderResource);
 
   expect(transitions(root, "tpl")).toEqual([{ state: "Running", detail: "root body", reason: "" }]);
   expect(transitions(childNode, "tpl")).toEqual([
@@ -112,7 +119,7 @@ tplTest.concurrent("block action context tree from templates", async ({ helper, 
 
   const attrs = childNode.kv.filter((e) => e.key.startsWith("reading/"));
   expect(attrs.map((e) => e.value)).toEqual(["40"]);
-  expect(attrs[0].key).toEqual(`reading/exec/${childNode.coreResource}/progress`);
+  expect(attrs[0].key).toEqual(`reading/exec/${childNode.renderResource}/progress`);
 });
 
 tplTest.concurrent(
@@ -149,7 +156,10 @@ tplTest.concurrent(
     //  2. The child is in the sinkhole: it cannot create its own context, and the template it renders
     //     is in the sinkhole too. Both finish.
     //  3. The root context has no child context, and none of the child's reports.
+    //  Without the backend primitives nothing has a context, so the test has nothing to check.
     //
+
+    if (!hasActionContextPrimitives(pl)) return;
 
     const result = await helper.renderTemplate(
       true,
@@ -173,10 +183,7 @@ tplTest.concurrent(
     );
     expect(root.baggage).toEqual({ name: "root", "run-id": "run-2" });
     expect(root.children).toEqual([]);
-    if (pl.hasCapability("actionContextApi:v1"))
-      expect(root.kv.map((e) => e.key.split("/").slice(0, 2).join("/")).sort()).toEqual([
-        "transition/core",
-        "transition/tpl",
-      ]);
+    expect(transitions(root, "tpl")).toEqual([{ state: "Running", detail: "root body", reason: "" }]);
+    expect(root.kv.filter((e) => e.key.startsWith("reading/"))).toEqual([]);
   },
 );
