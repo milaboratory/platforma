@@ -544,11 +544,12 @@ parse the string by hand — `createColumnValueId` / `parseColumnValueId`
 exist for code that must. The workflow reads plain values back with
 `workflow.column-value` (`valueOf`, `valuesOf`).
 
+The picked column is looked up by its id, not found among enumerated columns:
+
 ```ts
-const column = ColumnsCollection(["result_pool"])
-  .filter({ include: { name: [{ type: "exact", value: "pl7.app/metadata" }] } })
-  .getColumns()
-  .find((c) => c.id === data.groupColumn);
+const id = data.groupColumn;
+const column =
+  id !== undefined && ColumnRecipe.getStatus(id) === "present" ? Column(id) : undefined;
 const entries = column && readColumnValues(column);
 return entries && deriveColumnValueOptions(entries);
 ```
