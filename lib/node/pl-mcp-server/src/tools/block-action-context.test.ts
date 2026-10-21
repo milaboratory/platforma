@@ -11,8 +11,8 @@ function node(
     contextId,
     baggage: {},
     transitions: Array.from({ length: transitions }, (_, i) => ({
-      namespace: "core",
-      resource: "NG:0x1",
+      namespace: "render",
+      resource: "1",
       timestampNs: String(i),
       state: "Running",
       detail: "",
