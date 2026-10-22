@@ -664,7 +664,7 @@ test("v3 blocks: every args derivation records the errors found in the args, non
   });
 });
 
-test("v3 blocks: args with a missing or foreign args errors record are derived again on load, then run", async () => {
+test("v3 blocks: args without an args errors record of their own are kept and run, as before the record", async () => {
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
@@ -713,14 +713,9 @@ test("v3 blocks: args with a missing or foreign args errors record are derived a
     await poll(pl, async (tx) => {
       const prjR = await tx.get(prj);
       const currentArgs = await prjR.get(projectFieldName("enter1", "currentArgs"));
-      expect(jsonOf(currentArgs.data.data)).toStrictEqual({ numbers: [1, 2, 3] });
+      expect(jsonOf(currentArgs.data.data)).toStrictEqual({ numbers: [9] });
       const prodArgs = await prjR.get(projectFieldName("enter1", "prodArgs"));
-      expect(jsonOf(prodArgs.data.data)).toStrictEqual({ numbers: [1, 2, 3] });
-      const record = await prjR.get(projectFieldName("enter1", "inputsValid"));
-      expect(jsonOf(record.data.data)).toStrictEqual({
-        argsFingerprint: argsFingerprint({ numbers: [1, 2, 3] }),
-        errors: [],
-      });
+      expect(jsonOf(prodArgs.data.data)).toStrictEqual({ numbers: [9] });
     });
   });
 });

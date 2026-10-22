@@ -24,8 +24,7 @@ export type DerivedArgs =
  *
  * A middle layer that predates args issues never writes or deletes the field, so after it edits
  * the block, the field can be missing or outlive the args it was computed for. The fingerprint
- * tells such a stale field apart: it no longer matches the current args, so whether they let the
- * block run is unknown until they are derived again.
+ * tells such a stale field apart: it no longer matches the current args, and says nothing of them.
  */
 export type ArgsErrorsRecord = {
   /** {@link argsFingerprint} of the current args the errors were found in. */
@@ -33,28 +32,6 @@ export type ArgsErrorsRecord = {
   /** The errors; empty when the block may run with the args. */
   readonly errors: readonly ArgsIssue[];
 };
-
-/**
- * What is known of the errors found in a block's current args:
- *
- * - `known`: `errors` are the errors found in the current args; the block may run with them when
- *   there are none.
- * - `unknown`: the block has current args, but its `inputsValid` field is missing, cannot be
- *   read, or was written for other args. The block must not run until its args are derived
- *   again.
- */
-export type ArgsErrorsState =
-  | { readonly type: "known"; readonly errors: readonly ArgsIssue[] }
-  | { readonly type: "unknown" };
-
-/**
- * How a block's `currentArgs` field must change to hold the args a derivation produced: `write`
- * carries them as canonical JSON.
- */
-export type CurrentArgsChange =
-  | { readonly type: "keep" }
-  | { readonly type: "write"; readonly data: Uint8Array }
-  | { readonly type: "delete" };
 
 /** How a block's `inputsValid` field must change to hold what an args derivation found. */
 export type ArgsErrorsFieldChange =
@@ -131,30 +108,14 @@ export function argsErrorsFieldChange(
 }
 
 /**
- * What a block's `currentArgs` field must become after its args are derived again, given the
- * args it holds now. Args equal to the current ones, whatever their key order, are kept as they
- * are, so that readers of the project are not woken by a write that changes nothing.
+ * The errors a block's `inputsValid` field, as {@link argsErrorsFieldChange} writes it, records
+ * for the block's current args.
  *
- * @param currentArgs - The block's current args as decoded from its `currentArgs` field;
- *   `undefined` when it has none
- */
-export function currentArgsChange(currentArgs: unknown, derived: DerivedArgs): CurrentArgsChange {
-  const args = derivedArgsValue(derived);
-  if (args === undefined) return currentArgs === undefined ? { type: "keep" } : { type: "delete" };
-  if (currentArgs !== undefined && argsFingerprint(args) === argsFingerprint(currentArgs)) {
-    return { type: "keep" };
-  }
-  return { type: "write", data: canonicalJsonBytes(args) };
-}
-
-/**
- * What a block's `inputsValid` field, as {@link argsErrorsFieldChange} writes it, tells of the run
- * errors of the block's current args.
- *
- * This middle layer writes the field with every args it derives, so a field that is missing,
- * cannot be read, or was written for other args means the args were written by a middle layer
- * that does not know the field: the errors are `unknown`. No current args hold no errors: without
- * args the block may not run anyway.
+ * A field that is missing, cannot be read, or was written for other args records none: the args
+ * were written by a middle layer that does not know the field. Such a middle layer refuses every
+ * block whose `argsIssues()` could find errors, so it wrote args only for blocks whose `args()`
+ * throws instead, and those args may run, as they always could. No current args hold no errors:
+ * without args the block may not run anyway.
  *
  * @param data - Content of the field; `undefined` when there is none, or while it is not loaded
  * @param currentArgs - The block's current args as decoded from its `currentArgs` field;
@@ -163,17 +124,15 @@ export function currentArgsChange(currentArgs: unknown, derived: DerivedArgs): C
 export function readArgsErrorsField(
   data: Uint8Array | undefined,
   currentArgs: unknown,
-): ArgsErrorsState {
-  if (currentArgs === undefined) return { type: "known", errors: [] };
-  if (data === undefined) return { type: "unknown" };
+): readonly ArgsIssue[] {
+  if (currentArgs === undefined || data === undefined) return [];
   let record: ArgsErrorsRecord;
   try {
     record = parseArgsErrorsRecord(cachedDeserialize(data));
   } catch {
-    return { type: "unknown" };
+    return [];
   }
-  if (record.argsFingerprint !== argsFingerprint(currentArgs)) return { type: "unknown" };
-  return { type: "known", errors: record.errors };
+  return record.argsFingerprint === argsFingerprint(currentArgs) ? record.errors : [];
 }
 
 /**
@@ -191,59 +150,10 @@ export function argsErrorsOfBlock(block: {
   readonly inputsValid: { readonly value?: Uint8Array } | undefined;
   /** The block's current args; `undefined` when it has none. */
   readonly currentArgs: unknown;
-}): ArgsErrorsState {
+}): readonly ArgsIssue[] {
   const { modelAPIVersion, inputsValid, currentArgs } = block;
-  if (modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) return { type: "known", errors: [] };
+  if (modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) return [];
   return readArgsErrorsField(inputsValid?.value, currentArgs);
-}
-
-/** Whether the block may run as far as its args errors go: they are known, and there are none. */
-export function argsErrorsAllowRun(state: ArgsErrorsState): boolean {
-  return state.type === "known" && state.errors.length === 0;
-}
-
-/**
- * How a block's fields must change so that the errors found in its current args are known again.
- *
- * - `none`: they are known already, or the block has no storage to derive args from.
- * - `rederived`: the args were derived again from the block's storage; how its `currentArgs` and
- *   `inputsValid` fields must change to hold them and their args errors.
- */
-export type ArgsRepair =
-  | { readonly type: "none" }
-  | {
-      readonly type: "rederived";
-      readonly currentArgs: CurrentArgsChange;
-      readonly inputsValid: ArgsErrorsFieldChange;
-    };
-
-/**
- * Derives the args of a block again from its storage when the errors found in its current args are
- * unknown: a middle layer that does not record them with every args wrote the args, or the
- * project was saved before the record existed. The same storage always derives the same args, and
- * fields that already hold what the derivation gives are kept, so a repaired block is repaired
- * once and a block in order is never touched.
- */
-export function argsRepair(
-  block: {
-    readonly argsErrors: ArgsErrorsState;
-    /** The block's current args; `undefined` when it has none. */
-    readonly currentArgs: unknown;
-    /** The block's `inputsValid` field; `undefined` when there is none. */
-    readonly inputsValid: { readonly value?: Uint8Array } | undefined;
-    /** The block's storage as JSON; `undefined` when it has none. */
-    readonly storageJson: string | undefined;
-  },
-  deriveArgs: (storageJson: string) => DerivedArgs,
-): ArgsRepair {
-  const { argsErrors, currentArgs, inputsValid, storageJson } = block;
-  if (argsErrors.type === "known" || storageJson === undefined) return { type: "none" };
-  const derived = deriveArgs(storageJson);
-  return {
-    type: "rederived",
-    currentArgs: currentArgsChange(currentArgs, derived),
-    inputsValid: argsErrorsFieldChange(inputsValid, derived),
-  };
 }
 
 // Internals
