@@ -38,7 +38,7 @@ describe("missingValueHint", () => {
     expect(wrapper.get("button").attributes("title")).toBe("Open Samples");
   });
 
-  test("says the block has not been run yet", () => {
+  test("says a block that has not been run does not provide the column", () => {
     const hint = missingValueHint(() => ({
       ...dependencies,
       items: dependencies.items.map(
@@ -47,7 +47,7 @@ describe("missingValueHint", () => {
     }))(ty1);
     if (hint === undefined) throw new Error("expected a hint");
 
-    expect(mount(hint).text()).toBe("Samples has not been run yet.");
+    expect(mount(hint).text()).toBe("Samples does not provide “Path”.");
   });
 
   test("gives no hint while the dependencies are not known", () => {

@@ -112,36 +112,27 @@ describe("linkSections", () => {
     expect(usedBy.rows.map((row) => row.status)).toEqual([{ type: "notExported" }]);
   });
 
-  test("keeps the reason a link was not checked, and that a block has not run, on both sides", () => {
+  test("keeps the reason a link was not checked on both sides", () => {
     const [usedBy, uses] = linkSections({
       dependents: dependents([
         dependent("b1", "out", ["a"], { type: "unchecked", reason: "unreadable" }),
-        dependent("b1", "other", ["a"], { type: "notRun" }),
       ]),
       dependencies: dependencies([
         dependency("p1", "out", ["a"], { type: "unchecked", reason: "unreadable" }),
-        dependency("p1", "other", ["a"], { type: "notRun" }),
       ]),
     });
-    const statuses = [{ type: "unchecked", reason: "unreadable" }, { type: "notRun" }];
+    const statuses = [{ type: "unchecked", reason: "unreadable" }];
     expect(usedBy.rows.map((row) => row.status)).toEqual(statuses);
     expect(uses.rows.map((row) => row.status)).toEqual(statuses);
   });
 
-  test("a link to a block not run ranks above ok and below every other status", () => {
-    const [, uses] = linkSections({
-      dependents: dependents([]),
-      dependencies: dependencies([
-        dependency("p1", "out", ["a"], { type: "ok" }),
-        dependency("p1", "out", ["b"], { type: "notRun" }),
-        dependency("p2", "out", ["a"], { type: "notRun" }),
-        dependency("p2", "out", ["b"], { type: "unchecked", reason: "unreadable" }),
-      ]),
+  test("an output of a block not run is not provided, as one it does not export", () => {
+    const [usedBy, uses] = linkSections({
+      dependents: dependents([dependent("b1", "out", ["a"], { type: "notRun" })]),
+      dependencies: dependencies([dependency("p1", "out", ["a"], { type: "notRun" })]),
     });
-    expect(uses.rows.map((row) => row.status)).toEqual([
-      { type: "notRun" },
-      { type: "unchecked", reason: "unreadable" },
-    ]);
+    expect(usedBy.rows.map((row) => row.status)).toEqual([{ type: "notExported" }]);
+    expect(uses.rows.map((row) => row.status)).toEqual([{ type: "unavailable" }]);
   });
 });
 
@@ -299,60 +290,22 @@ describe("linkAlerts", () => {
     expect(alerts).toEqual([]);
   });
 
-  test("links to a block that has not run ask to run it", () => {
+  test("links to a block that has not run say it does not provide the data", () => {
     const [usedBy, uses] = linkAlerts(
-      linkSections({
-        dependents: dependents([dependent("b1", "out", ["a"], { type: "notRun" })], {
-          hasUnrunChanges: true,
-        }),
-        dependencies: dependencies([dependency("p1", "out", null, { type: "notRun" })]),
-      }),
-    );
-    expect([usedBy.side, usedBy.type, usedBy.hint]).toEqual([
-      "usedBy",
-      "warn",
-      "Run this block to provide the data those blocks use.",
-    ]);
-    expect(usedBy.issues.map((issue) => issue.text)).toEqual([
-      "uses data this block has not produced yet",
-    ]);
-    expect([uses.side, uses.type]).toEqual(["uses", "error"]);
-    expect(uses.issues.map((issue) => issue.text)).toEqual(["has not been run yet"]);
-  });
-
-  test("links to one block that has not run share one line per side", () => {
-    const [usedBy, uses] = linkAlerts(
-      linkSections({
-        dependents: dependents([
-          dependent("b1", "out", ["a"], { type: "notRun" }),
-          dependent("b1", "other", null, { type: "notRun" }, "Path"),
-          dependent("b2", "out", null, { type: "notRun" }),
-        ]),
-        dependencies: dependencies([
-          dependency("p1", "out", null, { type: "notRun" }),
-          dependency("p1", "other", ["a"], { type: "notRun" }),
-        ]),
-      }),
-    );
-    expect(usedBy.issues.map((issue) => [issue.blockId, issue.text, issue.outputs])).toEqual([
-      ["b1", 'uses "Path" and other data, which this block has not produced yet', ["out", "other"]],
-      ["b2", "uses data this block has not produced yet", ["out"]],
-    ]);
-    expect(uses.issues.map((issue) => [issue.blockId, issue.text])).toEqual([
-      ["p1", "has not been run yet"],
-    ]);
-  });
-
-  test("a labelled column of a block that has not run is named", () => {
-    const [usedBy] = linkAlerts(
       linkSections({
         dependents: dependents([dependent("b1", "out", ["a"], { type: "notRun" }, "Path")]),
-        dependencies: dependencies([]),
+        dependencies: dependencies([dependency("p1", "out", null, { type: "notRun" }, "Path")]),
       }),
     );
-    expect(usedBy.issues.map((issue) => issue.text)).toEqual([
-      'uses "Path", which this block has not produced yet',
+    expect([usedBy.type, usedBy.hint]).toEqual([
+      "warn",
+      "Add the missing data to this block, or reconfigure those blocks.",
     ]);
+    expect(usedBy.issues.map((issue) => issue.text)).toEqual([
+      'uses "Path", which this block does not export',
+    ]);
+    expect([uses.type, uses.hint]).toEqual(["error", null]);
+    expect(uses.issues.map((issue) => issue.text)).toEqual(['does not provide "Path"']);
   });
 
   test("broken links this block uses are an error", () => {
@@ -451,9 +404,9 @@ describe("describeMissingValue", () => {
     expect(cause).toBeUndefined();
   });
 
-  test("names the block that has not been run yet", () => {
+  test("names a block that has not been run as not providing the column", () => {
     const cause = describeMissingValue(pathDependencies([pathEntry({ type: "notRun" })]), ty1);
-    expect(cause?.text).toBe("has not been run yet.");
+    expect(cause?.text).toBe("does not provide “Path”.");
   });
 
   test("names the block still computing the column", () => {

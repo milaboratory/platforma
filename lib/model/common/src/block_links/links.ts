@@ -24,12 +24,12 @@ export type LinkSide = "usedBy" | "uses";
 /**
  * State of a link. An output that is not exported is `unavailable` on the
  * `uses` side — the other block does not export it — and `notExported` on the `usedBy` side —
- * this block does not export it. `notRun`: the block exporting the output has no last run yet.
+ * this block does not export it. An output of a block that has no last run yet is not exported
+ * either: whether the block provides it is known only once it is run.
  */
 export type LinkStatus =
   | { type: "ok" }
   | { type: "pending" }
-  | { type: "notRun" }
   | { type: "unchecked"; reason: UncheckedReason }
   | { type: "unavailable" }
   | { type: "notExported" }
@@ -138,8 +138,7 @@ export function linkAlerts(sections: LinkSection[]): LinkAlert[] {
     if (links.length === 0) return [];
     const issues = groupIssues(links).map((group) => toIssue(section.side, group));
     const alert = ALERTS[section.side];
-    const hint =
-      section.side === "usedBy" ? usedByHint(section.hasUnrunChanges, links) : alert.hint;
+    const hint = section.side === "usedBy" ? usedByHint(section.hasUnrunChanges) : alert.hint;
     return [{ side: section.side, ...alert, hint, issues }];
   });
 }
@@ -208,7 +207,7 @@ function missingValueCauseText(
     case "pending":
       return `is still computing ${column}.`;
     case "notRun":
-      return "has not been run yet.";
+      return `does not provide ${column}.`;
     case "broken":
       if (status.reason === "unavailable") return `does not provide ${column}.`;
       return picked !== undefined && status.values.includes(picked)
@@ -228,18 +227,19 @@ type LinkSource = {
 function fromDependentStatus(status: DependentStatus): LinkStatus {
   switch (status.type) {
     case "broken":
+    case "notRun":
       return { type: "notExported" };
     case "missingValues":
       return { type: "missingValues", values: status.values };
     case "ok":
     case "pending":
-    case "notRun":
     case "unchecked":
       return status;
   }
 }
 
 function fromDependencyStatus(status: DependencyStatus): LinkStatus {
+  if (status.type === "notRun") return { type: "unavailable" };
   if (status.type !== "broken") return status;
   return status.reason === "unavailable"
     ? { type: "unavailable" }
@@ -282,12 +282,11 @@ function mergeStatus(a: LinkStatus, b: LinkStatus): LinkStatus {
 
 const STATUS_RANK: Record<LinkStatus["type"], number> = {
   ok: 0,
-  notRun: 1,
-  unchecked: 2,
-  pending: 3,
-  missingValues: 4,
-  unavailable: 5,
-  notExported: 5,
+  unchecked: 1,
+  pending: 2,
+  missingValues: 3,
+  unavailable: 4,
+  notExported: 4,
 };
 
 const ALERTS: Record<LinkSide, Pick<LinkAlert, "type" | "label" | "hint">> = {
@@ -304,30 +303,23 @@ const ALERTS: Record<LinkSide, Pick<LinkAlert, "type" | "label" | "hint">> = {
 };
 
 /**
- * The `usedBy` hint: to run this block when it has never been run, so every link waits for its
- * first run; that the links are checked against the last run while this block has changes that
- * run does not include, so the changes may fix them once the block is run.
+ * The `usedBy` hint: that the links are checked against the last run while this block has changes
+ * that run does not include, so the changes may fix them once the block is run.
  */
-function usedByHint(hasUnrunChanges: boolean, links: AttentionLink[]): null | string {
-  if (links.every((link) => link.status.type === "notRun")) return NOT_RUN_HINT;
+function usedByHint(hasUnrunChanges: boolean): null | string {
   return hasUnrunChanges ? UNRUN_CHANGES_HINT : ALERTS.usedBy.hint;
 }
-
-const NOT_RUN_HINT = "Run this block to provide the data those blocks use.";
 
 const UNRUN_CHANGES_HINT =
   "This block has changes that have not been run yet, and the check uses its last run. " +
   "Run the block to see whether they fix these links.";
 
-/**
- * A link whose status needs attention: it breaks a block, lacks picked values, or waits for a
- * block that has not been run yet.
- */
+/** A link whose status needs attention: it breaks a block, or lacks picked values. */
 type AttentionLink = { row: LinkRow; status: AttentionStatus };
 
 type AttentionStatus = Extract<
   LinkStatus,
-  { type: "unavailable" | "notExported" | "missingValues" | "notRun" }
+  { type: "unavailable" | "notExported" | "missingValues" }
 >;
 
 /** The row as a link needing attention; `undefined` when it does not. */
@@ -337,7 +329,6 @@ function attentionLink(row: LinkRow): undefined | AttentionLink {
     case "unavailable":
     case "notExported":
     case "missingValues":
-    case "notRun":
       return { row, status };
     case "ok":
     case "pending":
@@ -352,10 +343,7 @@ type SingleIssue = { type: "single"; link: AttentionLink };
 /** Every link to one block whose output is not exported and has no known label. */
 type UnlabeledIssue = { type: "unlabeled"; blockId: string; blockName: string; outputs: string[] };
 
-/** Every link to one block that has not been run yet: they all wait for the same run. */
-type NotRunIssue = { type: "notRun"; blockId: string; blockName: string; rows: LinkRow[] };
-
-type Issue = SingleIssue | UnlabeledIssue | NotRunIssue;
+type Issue = SingleIssue | UnlabeledIssue;
 
 /** Groups links into alert lines, each line in the place of its first link. */
 function groupIssues(links: AttentionLink[]): Issue[] {
@@ -363,9 +351,6 @@ function groupIssues(links: AttentionLink[]): Issue[] {
   return Object.values(groupBy(keyed, ({ key }) => key)).map((group): Issue => {
     const [{ link }] = group;
     const { blockId, blockName } = link.row;
-    if (link.status.type === "notRun") {
-      return { type: "notRun", blockId, blockName, rows: group.map((item) => item.link.row) };
-    }
     if (!isUnlabeled(link)) return { type: "single", link };
     const outputs = uniq(group.map((item) => item.link.row.output));
     return { type: "unlabeled", blockId, blockName, outputs };
@@ -374,7 +359,6 @@ function groupIssues(links: AttentionLink[]): Issue[] {
 
 function issueKey(link: AttentionLink, index: number): string {
   const blockId = JSON.stringify(link.row.blockId);
-  if (link.status.type === "notRun") return `notRun/${blockId}`;
   return isUnlabeled(link) ? `unlabeled/${blockId}` : `single/${index}`;
 }
 
@@ -385,15 +369,6 @@ function isUnlabeled(link: AttentionLink): boolean {
 }
 
 function toIssue(side: LinkSide, group: Issue): LinkIssue {
-  if (group.type === "notRun") {
-    return {
-      key: `${side}/notRun/${JSON.stringify([group.blockId])}`,
-      blockId: group.blockId,
-      blockName: group.blockName,
-      text: describeNotRun(side, group.rows),
-      outputs: uniq(group.rows.map((row) => row.output)),
-    };
-  }
   if (group.type === "unlabeled") {
     return {
       key: `${side}/${JSON.stringify([group.blockId])}`,
@@ -444,22 +419,7 @@ function describeIssue(side: LinkSide, { row, status }: AttentionLink): string {
         ? `uses ${values}, which this block's data no longer has`
         : `uses ${values} of ${column}, which this block no longer has`;
     }
-    case "notRun":
-      return describeNotRun(side, [row]);
   }
-}
-
-/**
- * Links to one block that has not been run yet, as words that follow the other block's name and
- * a space. The columns are named by their labels; columns with no known label are other data.
- */
-function describeNotRun(side: LinkSide, rows: LinkRow[]): string {
-  if (side === "uses") return "has not been run yet";
-  const labels = uniq(rows.flatMap((row) => (row.columnLabel === null ? [] : [row.columnLabel])));
-  if (labels.length === 0) return "uses data this block has not produced yet";
-  const named = labels.map((label) => `"${label}"`).join(", ");
-  const other = rows.some((row) => row.columnLabel === null) ? " and other data" : "";
-  return `uses ${named}${other}, which this block has not produced yet`;
 }
 
 /** Picked values for display: quoted, comma-separated. */
