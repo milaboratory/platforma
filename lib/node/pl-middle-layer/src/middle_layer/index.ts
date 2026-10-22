@@ -21,3 +21,9 @@ export type {
   BlockActionContextNode,
   BlockActionTransition,
 } from "./block_action_context";
+export type {
+  BlockActionPhase,
+  BlockActionResourceState,
+  BlockActionSummary,
+} from "./block_action_summary";
+export { summarizeBlockActionContext } from "./block_action_summary";
