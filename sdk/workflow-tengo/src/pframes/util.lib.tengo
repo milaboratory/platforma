@@ -184,6 +184,12 @@ PFCONV_IMPORT_CFG_SCHEMA := {
 	// Columns would be stored using specified format;
 	// default: Binary
 	`storageFormat,?` : `string,regex=Binary|Json|Parquet`,
+	// Engine for a Parquet-storage import. "polars" (default) runs the usual pt step
+	// chain; "duckdb" fuses it into one DuckDB pass with no 2^32 row ceiling, for
+	// columns too large for Polars to import at all. "duckdb" is ignored when the
+	// spec needs preProcess, naRegex, filterOutRegex or an index axis, none of which
+	// the fused step implements.
+	`importEngine,?` : `string,regex=polars|duckdb`,
 	// Partitioning key length;
 	// default: 0
 	`partitionKeyLength,?` : `number`
