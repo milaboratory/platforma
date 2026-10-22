@@ -110,6 +110,11 @@ jobs:
       # this repository and main.yaml. A package new to npm has no trusted
       # publisher yet and pack refuses it: publish its first version by hand
       # (npm publish with 2FA), add its trusted publisher, re-run the job.
+      # pnpm/setup installs Node without npm, and pack-unpublished calls npm.
+      # 11.19.1 is the npm that Node 24.22.0 bundles.
+      - name: Install npm
+        run: pnpm add -g npm@11.19.1
+
       - name: Pack unpublished packages
         id: npm-pack
         uses: milaboratory/github-ci/actions/node/pack-unpublished@v4
@@ -119,6 +124,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+          # The action runs npm in the repo root; devEngines names pnpm, so npm fails there without --force.
+          npm_config_force: "true"
           PL_REGISTRY_PLATFORMA_OPEN_UPLOAD_URL: ${{ secrets.PL_REGISTRY_PLOPEN_UPLOAD_URL }}
 
       # The version bump is committed only after the upload succeeds (as

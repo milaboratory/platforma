@@ -2,10 +2,6 @@ name: 'Setup platforma environment'
 description: 'Node.js + pnpm + Turbo S3 cache + Docker logins + pnpm install'
 
 inputs:
-  node-version:
-    description: 'Node.js version'
-    required: false
-    default: '22'
   npmjs-token:
     description: 'NPM registry auth token'
     required: true
@@ -67,14 +63,23 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Setup Node.js ${{ inputs.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ inputs.node-version }}
-
-    - name: Enable pnpm via corepack
+    # pnpm 11.5.3+ does not expand ${VAR} in credentials from the project .npmrc.
+    - name: Write user-level .npmrc
       shell: bash
-      run: corepack enable pnpm
+      run: |
+        npmrc="$RUNNER_TEMP/.npmrc"
+        cat > "$npmrc" <<'EOF'
+        //registry.npmjs.org/:_authToken=${NPMJS_TOKEN}
+        //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+        @milaboratory:registry=https://npm.pkg.github.com/
+        EOF
+        echo "NPM_CONFIG_USERCONFIG=$npmrc" >> "$GITHUB_ENV"
+
+    - name: Install pnpm and Node from devEngines
+      uses: pnpm/setup@a0881977cd8ea73b1ed212236c99ca10dcc80cf4 # v3.1.1
+      with:
+        dest: ${{ runner.temp }}/setup-pnpm
+        install: false
 
     - name: Get pnpm store directory
       id: pnpm-cache
