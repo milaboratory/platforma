@@ -530,7 +530,9 @@ createColumnValueOptions(
 
 // UI
 readColumnValueOptions(model: PresentColumnValueOptionsModel): Promise<ColumnValueOption[]>;
-// <PlColumnValueDropdown> / <PlColumnValueDropdownMulti> :source :value-column :exclude v-model
+usePlColumnValueSettings({ source, valueColumn }): ComputedRef<PlColumnValueSettings>;
+// { type: "none" | "pending" | "absent" } | { type: "present"; model }
+// <PlColumnValueDropdown> / <PlColumnValueDropdownMulti> :settings :exclude v-model
 
 deriveColumnValueOptions(column: ColumnUniversalId, values: readonly string[]): ColumnValueOption[];
 deriveLabelledColumnValueOptions(column, rows: readonly { value: string; label: string }[]): ColumnValueOption[];
@@ -555,14 +557,18 @@ labels itself, and a number value becomes its decimal string. It rejects a
 column with more distinct values, or with a label column more rows, than a
 picker reads.
 
-In Vue, `PlColumnValueDropdown` and `PlColumnValueDropdownMulti` from
-`@platforma-sdk/ui-vue` are `PlDropdown` and `PlDropdownMulti` over such an
-output: loading until the values are read, no options and the reason as the
-error once the column is gone or cannot be read, so its picks stay picked and
-are shown as not available. `value-column`, the column picked now, keeps the
-values of an earlier pick from being offered for it; `exclude` leaves out
-values, such as those another picker holds. Other attributes and the slots go
-to the dropdown.
+In Vue the output reaches the dropdown the way a table model reaches a table,
+through settings. `usePlColumnValueSettings` from `@platforma-sdk/ui-vue`
+makes them out of the output and the column picked now: `none` while nothing
+is picked, `pending` until the output is computed for the picked column — so
+the values of an earlier pick are never offered for a new one — `absent` once
+the column is gone, and `present` with the output to read. The settings read
+no values. `PlColumnValueDropdown` and `PlColumnValueDropdownMulti` take them
+as `settings` and are `PlDropdown` and `PlDropdownMulti` over the values: loading
+until the values are read, no options and the reason as the error once the
+column is gone or cannot be read, so its picks stay picked and are shown as not
+available. `exclude` leaves out values, such as those another picker holds.
+Other attributes and the slots go to the dropdown.
 
 The pair has one purpose: a dropdown over the values of a column. A block that
 needs the values for anything else — to order them, check them, or keep them
@@ -574,8 +580,7 @@ model gives the same frame, and only the UI reads it differently. Its reader
 asks the frame for a page of options matching the typed text — a
 `StringIContains` filter on the value column, or on the label column when
 there is one, with `getUniqueValues` or the join — and its component takes the
-same `source`, `value-column` and `v-model`, so a block switches by the tag
-alone. It still has to look up the labels of the picked values (an `InSet`
+same `settings` and `v-model`, so a block switches by the tag alone. It still has to look up the labels of the picked values (an `InSet`
 filter on the value column, the values as numbers for a number column), and
 uikit's `PlAutocomplete` / `PlAutocompleteMulti` still lack the
 `missingValueLabel` and `missingValueHint` that show a picked value the column
@@ -604,12 +609,19 @@ exist for code that must. The workflow reads plain values back with
 )
 ```
 
+```ts
+// UI, setup
+const groupValues = usePlColumnValueSettings({
+  source: () => app.model.outputs.groupValues,
+  valueColumn: () => app.model.data.groupColumn,
+});
+```
+
 ```vue
-<!-- UI -->
+<!-- UI, template -->
 <PlColumnValueDropdownMulti
   v-model="app.model.data.groups"
-  :source="app.model.outputs.groupValues"
-  :value-column="app.model.data.groupColumn"
+  :settings="groupValues"
   label="Groups"
 />
 ```

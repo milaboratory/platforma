@@ -1,26 +1,21 @@
 <script lang="ts" setup>
-import type {
-  ColumnUniversalId,
-  ColumnValueId,
-  ColumnValueOptionsModel,
-} from "@platforma-sdk/model";
+import type { ColumnValueId } from "@platforma-sdk/model";
 import { computed } from "vue";
-import { usePlColumnValueOptions } from "../../composition/usePlColumnValueOptions";
 import { PlDropdown } from "../ValuePickers";
+import type { PlColumnValueSettings } from "./settings";
+import { useColumnValueOptions } from "./useColumnValueOptions";
 
 /**
- * `PlDropdown` over the values of a column, read through the model a block output gives
- * (`createColumnValueOptions`). Loading until the values are read; a column that is gone or cannot
+ * `PlDropdown` over the values of a column, as its settings (`usePlColumnValueSettings`) give
+ * them. Loading until the values are read; a column that is gone or cannot
  * be read offers none and tells why, and its pick stays picked and is shown as not available.
  * Other attributes and the slots go to `PlDropdown`.
  */
 defineOptions({ inheritAttrs: false });
 
 const props = defineProps<{
-  /** The block output made by `createColumnValueOptions`. */
-  source: ColumnValueOptionsModel | undefined;
-  /** The column picked now, so that the values of an earlier pick are not offered for it. */
-  valueColumn?: ColumnUniversalId;
+  /** What to offer, made by `usePlColumnValueSettings`. */
+  settings: PlColumnValueSettings;
   modelValue?: ColumnValueId;
   "onUpdate:modelValue"?: (value: ColumnValueId | undefined) => void;
   /** Values not offered, such as those another picker holds. */
@@ -29,10 +24,7 @@ const props = defineProps<{
   error?: string;
 }>();
 
-const values = usePlColumnValueOptions({
-  source: () => props.source,
-  valueColumn: () => props.valueColumn ?? props.source?.valueColumn,
-});
+const values = useColumnValueOptions(() => props.settings);
 
 const options = computed(() =>
   values.options.value?.filter((option) => !props.exclude?.includes(option.value)),
