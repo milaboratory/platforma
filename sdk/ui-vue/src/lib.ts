@@ -44,11 +44,6 @@ export * from "./defineApp";
 export { usePlugin } from "./composition/usePlugin";
 export type { PluginState } from "./composition/usePlugin";
 export { useOpenBlock } from "./composition/useOpenBlock";
-export { usePlColumnValueOptions } from "./composition/usePlColumnValueOptions";
-export type {
-  ColumnValueOptionsState,
-  PlColumnValueOptions,
-} from "./composition/usePlColumnValueOptions";
 export type {
   PluginHandle,
   PluginFactoryLike,

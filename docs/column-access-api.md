@@ -516,7 +516,7 @@ const options = deriveColumnOptions(
 );
 ```
 
-### Value Pickers: `createColumnValueOptions`, `usePlColumnValueOptions`, `PlColumnValueDropdown`
+### Value Pickers: `createColumnValueOptions`, `PlColumnValueDropdown`
 
 ```ts
 // model
@@ -530,8 +530,7 @@ createColumnValueOptions(
 
 // UI
 readColumnValueOptions(model: PresentColumnValueOptionsModel): Promise<ColumnValueOption[]>;
-usePlColumnValueOptions({ source, valueColumn? }): { state; options; error };
-// <PlColumnValueDropdown> / <PlColumnValueDropdownMulti> :source :value-column v-model
+// <PlColumnValueDropdown> / <PlColumnValueDropdownMulti> :source :value-column :exclude v-model
 
 deriveColumnValueOptions(column: ColumnUniversalId, values: readonly string[]): ColumnValueOption[];
 deriveLabelledColumnValueOptions(column, rows: readonly { value: string; label: string }[]): ColumnValueOption[];
@@ -560,12 +559,15 @@ In Vue, `PlColumnValueDropdown` and `PlColumnValueDropdownMulti` from
 `@platforma-sdk/ui-vue` are `PlDropdown` and `PlDropdownMulti` over such an
 output: loading until the values are read, no options and the reason as the
 error once the column is gone or cannot be read, so its picks stay picked and
-are shown as not available. Other attributes go to the dropdown. Where the
-options are needed otherwise — a list of picked values, a check of the values —
-`usePlColumnValueOptions` gives the same as `state`
-(`loading | absent | read | failed`), `options` and `error`. With
-`valueColumn`, the column picked now, an output that still describes an
-earlier pick reads as loading.
+are shown as not available. `value-column`, the column picked now, keeps the
+values of an earlier pick from being offered for it; `exclude` leaves out
+values, such as those another picker holds. Other attributes and the slots go
+to the dropdown.
+
+The pair has one purpose: a dropdown over the values of a column. A block that
+needs the values for anything else — to order them, check them, or keep them
+in its data — makes its own frame and reads it itself, so that a change to the
+pickers never reaches it.
 
 An autocomplete over a column too large to list fits the same output: the
 model gives the same frame, and only the UI reads it differently. Its reader
