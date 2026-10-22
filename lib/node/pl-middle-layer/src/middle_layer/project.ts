@@ -40,6 +40,8 @@ import type { NavigationState } from "@milaboratories/pl-model-common";
 import { getBlockParameters, blockOutputs } from "./block";
 import type { BlockActionContextMode, BlockActionContextNode } from "./block_action_context";
 import { readBlockActionContextTree } from "./block_action_context";
+import type { BlockActionSummary } from "./block_action_summary";
+import { summarizeBlockActionContext } from "./block_action_summary";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectId, ProjectStructure } from "../model/project_model";
 import { projectFieldName } from "../model/project_model";
@@ -801,6 +803,15 @@ export class Project {
     mode: BlockActionContextMode = "prod",
   ): Promise<BlockActionContextNode | undefined> {
     return await readBlockActionContextTree(this.env.pl, this.rid, blockId, mode);
+  }
+
+  /** Returns what a block run is doing (summarizeBlockActionContext); undefined without an action context. */
+  public async getBlockActionSummary(
+    blockId: string,
+    mode: BlockActionContextMode = "prod",
+  ): Promise<BlockActionSummary | undefined> {
+    const tree = await this.getBlockActionContext(blockId, mode);
+    return tree === undefined ? undefined : summarizeBlockActionContext(tree, Date.now());
   }
 
   public getBlockState(blockId: string): Computable<BlockStateInternalV3> {
