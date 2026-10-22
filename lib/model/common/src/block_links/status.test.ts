@@ -4,7 +4,6 @@ import {
   collectColumnReferences,
   createColumnFilteredId,
   createColumnValueId,
-  type ColumnValue,
   type PColumnSpec,
 } from "../drivers";
 import { createGlobalPObjectId, createLocalPObjectId } from "../pool";
@@ -83,7 +82,7 @@ describe("collectOutgoingReferences", () => {
       condition: createPlRef("samples", "metadata.condition", true),
       levels: [
         createColumnValueId({ column: condition, value: "treated" }),
-        createColumnValueId({ column: condition, value: 1 }),
+        createColumnValueId({ column: condition, value: "1" }),
       ],
       dataset: createPlRef("mixcr", "clones"),
     };
@@ -93,7 +92,7 @@ describe("collectOutgoingReferences", () => {
         producerBlockId: "samples",
         output: "metadata.condition",
         ref: condition,
-        values: ["treated", 1],
+        values: ["treated", "1"],
       },
       {
         producerBlockId: "mixcr",
@@ -181,8 +180,8 @@ describe("checkExport", () => {
     });
   });
 
-  test("a number picked as a string matches a number cell, and the other way round", () => {
-    expect(checkExport(() => present({ cells: [1, "2"] }), ["1", 2]).check).toEqual({
+  test("a value picked from a number cell matches the cell", () => {
+    expect(checkExport(() => present({ cells: [1, "2"] }), ["1", "2"]).check).toEqual({
       type: "ok",
     });
   });
@@ -273,9 +272,9 @@ describe("dependentStatus", () => {
   });
 
   test("missing values are reported as they are", () => {
-    expect(dependentStatus({ type: "missingValues", values: [1] })).toEqual({
+    expect(dependentStatus({ type: "missingValues", values: ["1"] })).toEqual({
       type: "missingValues",
-      values: [1],
+      values: ["1"],
     });
   });
 
@@ -426,7 +425,9 @@ const NEUTRAL_CHECKS: ExportCheck[] = [
   { type: "unchecked", reason: "unreadable" },
 ];
 
-function specWith(props: { discreteValues?: ColumnValue[] }): Pick<PColumnSpec, "annotations"> {
+function specWith(props: {
+  discreteValues?: (string | number)[];
+}): Pick<PColumnSpec, "annotations"> {
   const annotations: Record<string, string> = {};
   if (props.discreteValues !== undefined) {
     annotations[Annotation.DiscreteValues] = JSON.stringify(props.discreteValues);

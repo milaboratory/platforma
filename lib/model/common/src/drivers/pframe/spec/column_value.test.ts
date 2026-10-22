@@ -18,7 +18,7 @@ import { isColumnUniversalId, remapColumnIdBlockIds, type ColumnUniversalId } fr
 const leafId = (blockId: string, name: string) =>
   createGlobalPObjectId(blockId, name) as ColumnUniversalId;
 
-const valueId = (blockId: string, value: string | number) =>
+const valueId = (blockId: string, value: string) =>
   createColumnValueId({ column: leafId(blockId, "metadata.condition"), value });
 
 const to = (from: string, into: string) => new Map([[from, into]]);
@@ -34,9 +34,24 @@ describe("createColumnValueId / parseColumnValueId", () => {
     });
   });
 
-  test("a number stays a number, distinct from its string form", () => {
-    expect(parseColumnValueId(valueId("samples", 2)).value).toBe(2);
-    expect(valueId("samples", 2)).not.toBe(valueId("samples", "2"));
+  test("a value that is not a string is refused", () => {
+    const column = leafId("samples", "metadata.condition");
+
+    // @ts-expect-error a number is not a column value
+    expect(() => createColumnValueId({ column, value: 2 })).toThrow();
+    // @ts-expect-error null is not a column value
+    expect(() => createColumnValueId({ column, value: null })).toThrow();
+  });
+
+  test("a key whose value is a number is not a key", () => {
+    const key = {
+      __isColumnValue: true,
+      column: leafId("samples", "metadata.condition"),
+      value: 2,
+    };
+
+    expect(isColumnValueKey(key)).toBe(false);
+    expect(isColumnValueId(canonicalizeJson(key))).toBe(false);
   });
 
   test("the same value of the same column is the same string", () => {
@@ -49,14 +64,6 @@ describe("createColumnValueId / parseColumnValueId", () => {
     expect(id).toBe(canonicalizeJson(JSON.parse(id)));
   });
 
-  test("a value that is not a string or a finite number is refused", () => {
-    const column = leafId("samples", "metadata.condition");
-
-    for (const value of [Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(() => createColumnValueId({ column, value })).toThrow();
-    }
-  });
-
   test("a column that is not a column id is refused", () => {
     expect(() =>
       createColumnValueId({ column: "condition" as ColumnUniversalId, value: "treated" }),
@@ -66,9 +73,9 @@ describe("createColumnValueId / parseColumnValueId", () => {
   test("many values of one column become ids in the order given", () => {
     const column = leafId("samples", "metadata.condition");
 
-    expect(createColumnValueIds({ column, values: ["treated", 2, "control"] })).toEqual([
+    expect(createColumnValueIds({ column, values: ["treated", "2", "control"] })).toEqual([
       createColumnValueId({ column, value: "treated" }),
-      createColumnValueId({ column, value: 2 }),
+      createColumnValueId({ column, value: "2" }),
       createColumnValueId({ column, value: "control" }),
     ]);
     expect(createColumnValueIds({ column, values: [] })).toEqual([]);
@@ -77,7 +84,8 @@ describe("createColumnValueId / parseColumnValueId", () => {
   test("many values are refused as a whole when one of them is not a usable value", () => {
     const column = leafId("samples", "metadata.condition");
 
-    expect(() => createColumnValueIds({ column, values: ["treated", Number.NaN] })).toThrow();
+    // @ts-expect-error a number is not a column value
+    expect(() => createColumnValueIds({ column, values: ["treated", 2] })).toThrow();
   });
 
   test("parsing a column id as a value id throws", () => {
@@ -90,7 +98,7 @@ describe("createColumnValueId / parseColumnValueId", () => {
 describe("columnValueLabel", () => {
   test("names a column value id by the value it picks", () => {
     expect(columnValueLabel(valueId("samples", "treated"))).toBe("treated");
-    expect(columnValueLabel(valueId("samples", 10))).toBe("10");
+    expect(columnValueLabel(valueId("samples", "10"))).toBe("10");
   });
 
   test("returns any other string as is", () => {

@@ -5,8 +5,7 @@ columnValue := import(":workflow.column-value")
 
 // Ids exactly as a block model produces them: canonical JSON with the column id nested as a string
 TREATED_ID := `{"__isColumnValue":true,"column":"{\"__isRef\":true,\"blockId\":\"samples\",\"name\":\"metadata.condition\"}","value":"treated"}`
-INT_ID := `{"__isColumnValue":true,"column":"{\"__isRef\":true,\"blockId\":\"samples\",\"name\":\"metadata.condition\"}","value":2}`
-FLOAT_ID := `{"__isColumnValue":true,"column":"{\"__isRef\":true,\"blockId\":\"samples\",\"name\":\"metadata.condition\"}","value":2.5}`
+NUMBER_TEXT_ID := `{"__isColumnValue":true,"column":"{\"__isRef\":true,\"blockId\":\"samples\",\"name\":\"metadata.condition\"}","value":"2.5"}`
 FILTERED_COLUMN_ID := `{"__isColumnValue":true,"column":"{\"__isFiltered\":true,\"source\":\"{\\\"__isRef\\\":true,\\\"blockId\\\":\\\"samples\\\",\\\"name\\\":\\\"metadata.condition\\\"}\",\"axisFilters\":[[0,\"x\"]]}","value":"x"}`
 
 // One more JSON.stringify pass over a string, as when an id reaches args through extra encoding
@@ -25,7 +24,7 @@ valueId := func(value) {
 
 TestIsColumnValueId_RecognizesModelIds := func() {
 	test.isTrue(columnValue.isColumnValueId(TREATED_ID))
-	test.isTrue(columnValue.isColumnValueId(INT_ID))
+	test.isTrue(columnValue.isColumnValueId(NUMBER_TEXT_ID))
 	test.isTrue(columnValue.isColumnValueId(FILTERED_COLUMN_ID))
 	test.isTrue(columnValue.isColumnValueId(valueId("treated")))
 }
@@ -62,22 +61,10 @@ TestValueOf_ReturnsCarriedValue := func() {
 	test.isEqual("treated", columnValue.valueOf(escape(escape(TREATED_ID))))
 }
 
-TestValueOf_NumbersKeepJsonDecodedType := func() {
-	// An integral number decodes to int, a fractional one to float — the same types the
-	// workflow sees when the number sits in args directly.
-	two := columnValue.valueOf(INT_ID)
-	test.isTrue(is_int(two))
-	test.isEqual(2, two)
-	test.isTrue(is_int(json.decode("2")))
-
-	twoAndHalf := columnValue.valueOf(FLOAT_ID)
-	test.isTrue(is_float(twoAndHalf))
-	test.isEqual(2.5, twoAndHalf)
-
-	// A JavaScript number is never written as `2.0`, but if it were, it would decode to
-	// float, and float 2.0 is not equal to int 2.
-	test.isTrue(is_float(json.decode("2.0")))
-	test.isFalse(json.decode("2.0") == 2)
+TestValueOf_ValueOfNumberColumnIsItsText := func() {
+	value := columnValue.valueOf(NUMBER_TEXT_ID)
+	test.isTrue(is_string(value))
+	test.isEqual("2.5", value)
 }
 
 TestValueOf_PassesOtherValuesThrough := func() {
@@ -89,8 +76,8 @@ TestValueOf_PassesOtherValuesThrough := func() {
 
 TestValuesOf_KeepsOrderAndPassesOthers := func() {
 	test.isEqual(
-		["treated", 2, "plain", 2.5],
-		columnValue.valuesOf([TREATED_ID, INT_ID, "plain", FLOAT_ID])
+		["treated", 2, "plain", "2.5"],
+		columnValue.valuesOf([TREATED_ID, 2, "plain", NUMBER_TEXT_ID])
 	)
 	test.isEqual([], columnValue.valuesOf([]))
 }

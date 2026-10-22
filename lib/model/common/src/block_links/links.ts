@@ -211,7 +211,7 @@ function missingValueCauseText(
       return "has not been run yet.";
     case "broken":
       if (status.reason === "unavailable") return `does not provide ${column}.`;
-      return picked !== undefined && status.values.some((v) => String(v) === String(picked))
+      return picked !== undefined && status.values.includes(picked)
         ? `has no “${picked}” in ${column}.`
         : undefined;
   }
@@ -230,7 +230,7 @@ function fromDependentStatus(status: DependentStatus): LinkStatus {
     case "broken":
       return { type: "notExported" };
     case "missingValues":
-      return { type: "missingValues", values: status.values.map(String) };
+      return { type: "missingValues", values: status.values };
     case "ok":
     case "pending":
     case "notRun":

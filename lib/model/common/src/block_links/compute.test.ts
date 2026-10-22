@@ -27,7 +27,7 @@ beforeEach(() => {
 
 const condition = createGlobalPObjectId("samples", "condition");
 const donor = createGlobalPObjectId("samples", "donor");
-const pick = (value: string | number, column: ColumnUniversalId = condition) =>
+const pick = (value: string, column: ColumnUniversalId = condition) =>
   createColumnValueId({ column, value });
 
 describe("computeDependencies", () => {

@@ -3,8 +3,12 @@ import { isString } from "es-toolkit";
 import { type CanonicalizedJson, canonicalizeJson, parseJsonSafely } from "../../../json";
 import { isColumnUniversalId, type ColumnUniversalId } from "./ids";
 
-/** A single cell value of a column, as a block passes it to its workflow. */
-export type ColumnValue = string | number;
+/**
+ * A picked value of a column, as a block passes it to its workflow: always text. A number cell
+ * is picked as its decimal string (`String(cell)`), so a value picked from a number column and
+ * the same value picked as text are one value.
+ */
+export type ColumnValue = string;
 
 /**
  * One value of one column, picked by a block — a sample group, a condition level, an antigen.
@@ -35,7 +39,7 @@ export function isColumnValueKey(obj: unknown): obj is ColumnValueKey {
     "column" in obj &&
     isColumnUniversalId(obj.column) &&
     "value" in obj &&
-    isColumnValue(obj.value)
+    isString(obj.value)
   );
 }
 
@@ -45,18 +49,16 @@ export function isColumnValueId(id: unknown): id is ColumnValueId {
 }
 
 /**
- * Throws when `value` is not a string or a finite number, or `column` is not a column id: such
- * an id could not be read back as a {@link ColumnValueKey}.
+ * Throws when `value` is not a string, or `column` is not a column id: such an id could not be
+ * read back as a {@link ColumnValueKey}.
  */
 export function createColumnValueId(props: {
   column: ColumnUniversalId;
   value: ColumnValue;
 }): ColumnValueId {
   const { column, value } = props;
-  if (!isColumnValue(value)) {
-    throw new Error(
-      `createColumnValueId: value must be a string or a finite number, got ${String(value)}`,
-    );
+  if (!isString(value)) {
+    throw new Error(`createColumnValueId: value must be a string, got ${String(value)}`);
   }
   if (!isColumnUniversalId(column)) {
     throw new Error(`createColumnValueId: "${column}" is not a column id`);
@@ -90,11 +92,5 @@ export function parseColumnValueId(id: ColumnValueId): ColumnValueKey {
  * when it is not such an id — a plain value picked before the block used column value ids.
  */
 export function columnValueLabel(picked: string): string {
-  return isColumnValueId(picked) ? String(parseColumnValueId(picked).value) : picked;
-}
-
-// Internals
-
-function isColumnValue(value: unknown): value is ColumnValue {
-  return isString(value) || (typeof value === "number" && Number.isFinite(value));
+  return isColumnValueId(picked) ? parseColumnValueId(picked).value : picked;
 }

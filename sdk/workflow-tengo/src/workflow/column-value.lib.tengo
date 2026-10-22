@@ -3,16 +3,15 @@
  *
  * A block that lets the user pick values of another block's column passes each picked
  * value to its workflow as a ColumnValueId: the canonical JSON string of
- * `{ __isColumnValue: true, column: <column id>, value: <string | number> }`.
+ * `{ __isColumnValue: true, column: <column id>, value: <string> }`.
  * The id names the column the value came from, so the project knows which block
  * produced it. The workflow itself needs only the value.
  *
  * A ColumnValueId may reach args wrapped in extra layers of JSON string escaping. All
  * functions here accept every such form.
  *
- * Numbers keep the type JSON decoding gives them: an integral value (`2`) comes back as
- * int, a fractional one (`2.5`) as float — the same as if the value were written into
- * args directly.
+ * The value is always a string: a value picked from a number column is its decimal
+ * string (`"2"`, `"2.5"`).
  */
 
 ll := import(":ll")
@@ -36,8 +35,8 @@ isColumnValueId := func(s) {
  * Value carried by a ColumnValueId.
  *
  * @param x: any
- * @return value: string | int | float - the picked value when x is a ColumnValueId;
- *                x itself otherwise
+ * @return value: string | any - the picked value when x is a ColumnValueId; x itself
+ *                otherwise. Fails on an id whose value is not a string.
  */
 valueOf := func(x) {
 	key := _parseColumnValueId(x)
@@ -46,10 +45,7 @@ valueOf := func(x) {
 	}
 
 	value := key.value
-	ll.assert(
-		is_string(value) || is_int(value) || is_float(value),
-		"column-value: value of a column value id must be a string or a number, got %v", value
-	)
+	ll.assert(is_string(value), "column-value: value of a column value id must be a string, got %v", value)
 	return value
 }
 

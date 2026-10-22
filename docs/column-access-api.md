@@ -525,7 +525,7 @@ const options = deriveColumnOptions(
 
 ```ts
 readColumnValues(recipe: ColumnRecipe): ColumnValueEntry[] | undefined;
-// { key: PColumnKey; value: string | number; id: ColumnValueId }[]
+// { key: PColumnKey; value: string; id: ColumnValueId }[] — a number cell as String(cell)
 
 deriveColumnValueOptions(entries: readonly ColumnValueEntry[]): ColumnValueOption[];
 // { value: ColumnValueId; label: string }[]
