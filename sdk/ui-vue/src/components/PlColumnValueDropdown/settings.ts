@@ -40,7 +40,12 @@ export function usePlColumnValueSettings(options: {
       case "absent":
         return ABSENT;
       case "present":
-        return { type: "present", model: source };
+        // An output recomputed after its producer reruns keeps its object and changes the frame
+        // inside it, so the settings copy the frame to change with it.
+        return {
+          type: "present",
+          model: { ...source, frameColumns: { ...source.frameColumns } },
+        };
     }
   });
 }
