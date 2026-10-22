@@ -6,9 +6,9 @@ import {
   type FieldType,
   type SignedResourceId,
 } from "@milaboratories/pl-client";
-import type { PColumnSpec, RunIssue } from "@milaboratories/pl-model-common";
+import type { PColumnSpec, ArgsIssue } from "@milaboratories/pl-model-common";
 import { PlTreeState, type ExtendedResourceData } from "@milaboratories/pl-tree";
-import { argsFingerprint, type RunErrorsRecord } from "../model/args_derivation";
+import { argsFingerprint, type ArgsErrorsRecord } from "../model/args_derivation";
 import {
   projectFieldName,
   ProjectStructureKey,
@@ -57,9 +57,9 @@ export class FakeProject {
     return this.value("json/object", args);
   }
 
-  /** Run errors of a block found in the args `forArgs`, as its `inputsValid` field holds them. */
-  runErrors(errors: readonly RunIssue[], forArgs: unknown): SignedResourceId {
-    const record: RunErrorsRecord = { argsFingerprint: argsFingerprint(forArgs), errors };
+  /** Args errors of a block found in the args `forArgs`, as its `inputsValid` field holds them. */
+  argsErrors(errors: readonly ArgsIssue[], forArgs: unknown): SignedResourceId {
+    const record: ArgsErrorsRecord = { argsFingerprint: argsFingerprint(forArgs), errors };
     return this.value("json/object", record);
   }
 

@@ -178,7 +178,7 @@ describe("blockDependencies and blockDependents", () => {
     });
   });
 
-  test("a block whose runIssues found errors keeps its links, read from its current args", async () => {
+  test("a block whose argsIssues found errors keeps its links, read from its current args", async () => {
     const prj = new FakeProject();
     const args = { target: pick("treated"), threshold: undefined };
     prj.block("samples", {
@@ -188,7 +188,7 @@ describe("blockDependencies and blockDependents", () => {
     });
     prj.block("x", {
       currentArgs: prj.args(args),
-      inputsValid: prj.runErrors([{ severity: "error", message: "Set a threshold" }], args),
+      inputsValid: prj.argsErrors([{ severity: "error", message: "Set a threshold" }], args),
     });
     const tree = prj.tree();
 

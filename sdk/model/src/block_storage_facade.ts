@@ -50,7 +50,7 @@
 import type { MutateStoragePayload } from "./block_storage";
 import type { ConfigRenderLambda } from "./bconfig";
 import { createRenderLambda, tryRegisterCallback } from "./internal";
-import type { RunIssue, StringifiedJson } from "@milaboratories/pl-model-common";
+import type { ArgsIssue, StringifiedJson } from "@milaboratories/pl-model-common";
 
 // =============================================================================
 // Facade Version
@@ -170,14 +170,14 @@ export interface BlockStorageFacade {
    * Derive args from storage.
    * Called to get block configuration args from storage, and whether the block may run them.
    *
-   * A middle layer that predates run issues reads only `error` and `value`, and each variant
+   * A middle layer that predates args issues reads only `error` and `value`, and each variant
    * means the same to it as before: `value` is runnable args, `error` is no args. A block built
-   * with an SDK that predates run issues returns `{ error }` or `{ value }` with no `issues`.
+   * with an SDK that predates args issues returns `{ error }` or `{ value }` with no `issues`.
    *
    * @param storageJson - Storage as JSON string
    * @returns One of:
    *   - `{ error }`: `args()` threw, so there are no args;
-   *   - `{ error, args, issues }`: args were built, but the block's `runIssues()` found errors in
+   *   - `{ error, args, issues }`: args were built, but the block's `argsIssues()` found errors in
    *     them, so the block must not run; `error` joins the error messages, `issues` lists every
    *     issue;
    *   - `{ value, issues }`: args the block may run; `issues` holds the warnings.
@@ -186,19 +186,19 @@ export interface BlockStorageFacade {
     storageJson: StringifiedJson,
   ) =>
     | { error: string }
-    | { error: string; args: unknown; issues: RunIssue[] }
-    | { error?: undefined; value: unknown; issues: RunIssue[] };
+    | { error: string; args: unknown; issues: ArgsIssue[] }
+    | { error?: undefined; value: unknown; issues: ArgsIssue[] };
 
   /**
    * Derive prerunArgs from storage.
    * Called to get prerun args; falls back to args callback if not registered.
    *
-   * A block with its own prerunArgs is staged with them unless its `prerunIssues()` finds errors
-   * in them. A block without its own prerunArgs is staged with its args unless its `runIssues()`
+   * A block with its own prerunArgs is staged with them unless its `prerunArgsIssues()` finds errors
+   * in them. A block without its own prerunArgs is staged with its args unless its `argsIssues()`
    * finds errors in them.
    *
-   * A middle layer that predates run issues reads only `error` and `value`: `value` is args to
-   * stage, `error` skips staging. A block built with an SDK that predates run issues returns
+   * A middle layer that predates args issues reads only `error` and `value`: `value` is args to
+   * stage, `error` skips staging. A block built with an SDK that predates args issues returns
    * `{ error }` or `{ value }` with no `issues`.
    *
    * @param storageJson - Storage as JSON string
@@ -213,8 +213,8 @@ export interface BlockStorageFacade {
     storageJson: StringifiedJson,
   ) =>
     | { error: string }
-    | { error: string; issues: RunIssue[] }
-    | { error?: undefined; value: unknown; issues: RunIssue[] };
+    | { error: string; issues: ArgsIssue[] }
+    | { error?: undefined; value: unknown; issues: ArgsIssue[] };
 
   /**
    * Get initial storage JSON for new blocks.

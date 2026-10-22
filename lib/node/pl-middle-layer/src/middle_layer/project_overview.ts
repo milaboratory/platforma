@@ -31,7 +31,7 @@ import { getBlockPackInfo } from "./util";
 import { resourceIdToString, type SignedResourceId } from "@milaboratories/pl-client";
 import { omitBy, isEqual } from "es-toolkit";
 import { getDebugFlags } from "../debug";
-import { readRunErrorsField, runErrorsAllowRun } from "../model/args_derivation";
+import { readArgsErrorsField, argsErrorsAllowRun } from "../model/args_derivation";
 
 type BlockInfo = {
   argsRid?: SignedResourceId;
@@ -261,7 +261,7 @@ export function projectOverview(
                   }) as ComputableStableDefined<string[]>,
               ),
               // inputsValid: for modelAPIVersion 2, it's true if currentArgs exists (args derivation succeeded)
-              // and the block's runIssues() is known to have found no errors in them.
+              // and the block's argsIssues() is known to have found no errors in them.
               // For older blocks, use the inputsValid callback from config
               inputsValid:
                 cfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION
@@ -357,7 +357,7 @@ export function projectOverview(
 
 /**
  * Whether the args of a block with model API version 2 let it run: the block has current args,
- * and its `inputsValid` field, written for those args, holds no errors that its `runIssues()`
+ * and its `inputsValid` field, written for those args, holds no errors that its `argsIssues()`
  * found in them. A block whose field is missing, cannot be read, or was written for other args
  * may not run: whether its args have errors is not known until the middle layer derives them
  * again, as it does whenever it opens or changes the project.
@@ -371,12 +371,12 @@ export function argsAllowRun(
   currentArgs: unknown,
 ): boolean {
   if (currentArgs === undefined) return false;
-  const runErrors = prj.getField({
+  const argsErrors = prj.getField({
     field: projectFieldName(blockId, "inputsValid"),
     assertFieldType: "Dynamic",
     stableIfNotFound: true,
   });
-  return runErrorsAllowRun(readRunErrorsField(runErrors?.value?.getData(), currentArgs));
+  return argsErrorsAllowRun(readArgsErrorsField(argsErrors?.value?.getData(), currentArgs));
 }
 
 /** What the run state of a block is derived from. */

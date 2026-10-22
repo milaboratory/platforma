@@ -625,7 +625,7 @@ test("v3 blocks: migrateBlockPack does not crash when args() returns undefined",
   });
 });
 
-test("v3 blocks: every args derivation records the run errors of the args, none when there are none", async () => {
+test("v3 blocks: every args derivation records the errors found in the args, none when there are none", async () => {
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
@@ -664,7 +664,7 @@ test("v3 blocks: every args derivation records the run errors of the args, none 
   });
 });
 
-test("v3 blocks: args with a missing or foreign run errors record are derived again on load, then run", async () => {
+test("v3 blocks: args with a missing or foreign args errors record are derived again on load, then run", async () => {
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
@@ -692,8 +692,8 @@ test("v3 blocks: args with a missing or foreign run errors record are derived ag
       await tx.commit();
     });
 
-    // What a middle layer that does not record run errors leaves behind: current args it wrote
-    // itself, and no record of their run errors.
+    // What a middle layer that does not record args errors leaves behind: current args it wrote
+    // itself, and no record of their args errors.
     await pl.withWriteTx("WriteArgsWithoutRecord", async (tx) => {
       tx.removeField(field(prj, projectFieldName("enter1", "inputsValid")));
       tx.setField(

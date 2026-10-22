@@ -1,4 +1,4 @@
-import type { RunIssue } from "@milaboratories/pl-model-common";
+import type { ArgsIssue } from "@milaboratories/pl-model-common";
 import type { BlockConfig } from "@platforma-sdk/model";
 import { BlockStorageFacadeCallbacks } from "@platforma-sdk/model";
 import { canonicalJsonBytes } from "@milaboratories/ts-helpers";
@@ -10,13 +10,13 @@ import {
   currentArgsChange,
   derivedArgsValue,
   parseArgsDeriveResult,
-  readRunErrorsField,
-  runErrorsAllowRun,
-  runErrorsFieldChange,
-  runErrorsOfBlock,
+  readArgsErrorsField,
+  argsErrorsAllowRun,
+  argsErrorsFieldChange,
+  argsErrorsOfBlock,
   type DerivedArgs,
-  type RunErrorsRecord,
-  type RunErrorsState,
+  type ArgsErrorsRecord,
+  type ArgsErrorsState,
 } from "./args_derivation";
 import { ProjectHelper } from "./project_helper";
 
@@ -26,11 +26,11 @@ beforeAll(async () => {
   helper = new ProjectHelper(await getQuickJS());
 });
 
-const missingThreshold: RunIssue = { severity: "error", message: "Set a threshold" };
-const fewSamples: RunIssue = { severity: "warning", message: "Only two samples" };
+const missingThreshold: ArgsIssue = { severity: "error", message: "Set a threshold" };
+const fewSamples: ArgsIssue = { severity: "warning", message: "Only two samples" };
 
 describe("parseArgsDeriveResult", () => {
-  test("reads the results of a model without run issues as before", () => {
+  test("reads the results of a model without args issues as before", () => {
     expect(parseArgsDeriveResult({ value: { n: 1 } })).toEqual({
       type: "runnable",
       args: { n: 1 },
@@ -56,7 +56,7 @@ describe("parseArgsDeriveResult", () => {
     });
   });
 
-  test("errors of runIssues block the args, warnings are left out", () => {
+  test("errors of argsIssues block the args, warnings are left out", () => {
     expect(
       parseArgsDeriveResult({
         error: "Set a threshold",
@@ -77,7 +77,7 @@ describe("parseArgsDeriveResult", () => {
   });
 
   test("issues that cannot be read, or hold no error, give way to the reported error", () => {
-    const reported: RunIssue = { severity: "error", message: "Set a threshold; Pick a column" };
+    const reported: ArgsIssue = { severity: "error", message: "Set a threshold; Pick a column" };
     expect(
       parseArgsDeriveResult({ error: reported.message, args: {}, issues: "not a list" }),
     ).toEqual({ type: "blocked", args: {}, errors: [reported] });
@@ -120,21 +120,21 @@ describe("argsFingerprint", () => {
   });
 });
 
-describe("runErrorsFieldChange", () => {
+describe("argsErrorsFieldChange", () => {
   test("writes the errors of blocked args, with the fingerprint of the args, into a field not there yet", () => {
-    expect(runErrorsFieldChange(undefined, blocked({ n: 1 }, [missingThreshold]))).toEqual({
+    expect(argsErrorsFieldChange(undefined, blocked({ n: 1 }, [missingThreshold]))).toEqual({
       type: "write",
       data: recordBytes({ n: 1 }, [missingThreshold]),
     });
   });
 
   test("writes a record with no errors for args that may run", () => {
-    expect(runErrorsFieldChange(undefined, runnable({ n: 1 }))).toEqual({
+    expect(argsErrorsFieldChange(undefined, runnable({ n: 1 }))).toEqual({
       type: "write",
       data: recordBytes({ n: 1 }, []),
     });
     const current = { value: recordBytes({ n: 1 }, [missingThreshold]) };
-    expect(runErrorsFieldChange(current, runnable({ n: 1 }))).toEqual({
+    expect(argsErrorsFieldChange(current, runnable({ n: 1 }))).toEqual({
       type: "write",
       data: recordBytes({ n: 1 }, []),
     });
@@ -142,17 +142,17 @@ describe("runErrorsFieldChange", () => {
 
   test("keeps a field that already holds the same errors for the same args", () => {
     const current = { value: recordBytes({ n: 3 }, [missingThreshold]) };
-    expect(runErrorsFieldChange(current, blocked({ n: 3 }, [missingThreshold]))).toEqual({
+    expect(argsErrorsFieldChange(current, blocked({ n: 3 }, [missingThreshold]))).toEqual({
       type: "keep",
     });
     const noErrors = { value: recordBytes({ n: 3 }, []) };
-    expect(runErrorsFieldChange(noErrors, runnable({ n: 3 }))).toEqual({ type: "keep" });
+    expect(argsErrorsFieldChange(noErrors, runnable({ n: 3 }))).toEqual({ type: "keep" });
   });
 
   test("rewrites a field holding other errors", () => {
-    const pickColumn: RunIssue = { severity: "error", message: "Pick a column" };
+    const pickColumn: ArgsIssue = { severity: "error", message: "Pick a column" };
     const current = { value: recordBytes({}, [missingThreshold]) };
-    expect(runErrorsFieldChange(current, blocked({}, [pickColumn]))).toEqual({
+    expect(argsErrorsFieldChange(current, blocked({}, [pickColumn]))).toEqual({
       type: "write",
       data: recordBytes({}, [pickColumn]),
     });
@@ -160,7 +160,7 @@ describe("runErrorsFieldChange", () => {
 
   test("rewrites a field holding the same errors found in other args", () => {
     const current = { value: recordBytes({ n: 1 }, [missingThreshold]) };
-    expect(runErrorsFieldChange(current, blocked({ n: 2 }, [missingThreshold]))).toEqual({
+    expect(argsErrorsFieldChange(current, blocked({ n: 2 }, [missingThreshold]))).toEqual({
       type: "write",
       data: recordBytes({ n: 2 }, [missingThreshold]),
     });
@@ -168,44 +168,44 @@ describe("runErrorsFieldChange", () => {
 
   test("deletes the field once there are no args, and never creates it for none", () => {
     const current = { value: recordBytes({}, [missingThreshold]) };
-    expect(runErrorsFieldChange(current, absent())).toEqual({ type: "delete" });
-    expect(runErrorsFieldChange(undefined, absent())).toEqual({ type: "keep" });
+    expect(argsErrorsFieldChange(current, absent())).toEqual({ type: "delete" });
+    expect(argsErrorsFieldChange(undefined, absent())).toEqual({ type: "keep" });
   });
 });
 
-describe("readRunErrorsField", () => {
+describe("readArgsErrorsField", () => {
   test("reads the errors the field was written with, for the args they were found in", () => {
-    const change = runErrorsFieldChange(undefined, blocked({ n: 1 }, [missingThreshold]));
+    const change = argsErrorsFieldChange(undefined, blocked({ n: 1 }, [missingThreshold]));
     if (change.type !== "write") throw new Error(`expected a write, got ${change.type}`);
-    expect(readRunErrorsField(change.data, { n: 1 })).toEqual(known([missingThreshold]));
+    expect(readArgsErrorsField(change.data, { n: 1 })).toEqual(known([missingThreshold]));
     // Current args are read back from their field, which need not be canonical JSON.
-    expect(readRunErrorsField(change.data, JSON.parse('{ "n": 1 }'))).toEqual(
+    expect(readArgsErrorsField(change.data, JSON.parse('{ "n": 1 }'))).toEqual(
       known([missingThreshold]),
     );
   });
 
   test("reads a record with no errors as known to have none", () => {
-    expect(readRunErrorsField(recordBytes({ n: 1 }, []), { n: 1 })).toEqual(known([]));
+    expect(readArgsErrorsField(recordBytes({ n: 1 }, []), { n: 1 })).toEqual(known([]));
     // Warnings are not errors.
-    expect(readRunErrorsField(recordBytes({ n: 1 }, [fewSamples]), { n: 1 })).toEqual(known([]));
+    expect(readArgsErrorsField(recordBytes({ n: 1 }, [fewSamples]), { n: 1 })).toEqual(known([]));
   });
 
   test("errors of other current args, which a middle layer unaware of the field wrote, are unknown", () => {
-    expect(readRunErrorsField(recordBytes({ n: 1 }, [missingThreshold]), { n: 2 })).toEqual(
+    expect(readArgsErrorsField(recordBytes({ n: 1 }, [missingThreshold]), { n: 2 })).toEqual(
       UNKNOWN,
     );
-    expect(readRunErrorsField(recordBytes({ n: 1 }, []), { n: 2 })).toEqual(UNKNOWN);
+    expect(readArgsErrorsField(recordBytes({ n: 1 }, []), { n: 2 })).toEqual(UNKNOWN);
   });
 
   test("errors are unknown without the record", () => {
-    expect(readRunErrorsField(undefined, { n: 1 })).toEqual(UNKNOWN);
+    expect(readArgsErrorsField(undefined, { n: 1 })).toEqual(UNKNOWN);
   });
 
   test("holds no errors while the block has no current args", () => {
-    expect(readRunErrorsField(recordBytes({ n: 1 }, [missingThreshold]), undefined)).toEqual(
+    expect(readArgsErrorsField(recordBytes({ n: 1 }, [missingThreshold]), undefined)).toEqual(
       known([]),
     );
-    expect(readRunErrorsField(undefined, undefined)).toEqual(known([]));
+    expect(readArgsErrorsField(undefined, undefined)).toEqual(known([]));
   });
 
   test("errors in a field that cannot be read are unknown", () => {
@@ -217,47 +217,47 @@ describe("readRunErrorsField", () => {
       canonicalJsonBytes({ argsFingerprint: argsFingerprint({ n: 1 }) }),
     ];
     for (const data of unreadable) {
-      expect(readRunErrorsField(data, { n: 1 })).toEqual(UNKNOWN);
+      expect(readArgsErrorsField(data, { n: 1 })).toEqual(UNKNOWN);
     }
   });
 });
 
-describe("runErrorsOfBlock", () => {
+describe("argsErrorsOfBlock", () => {
   const inputsValid = { value: recordBytes({ n: 1 }, [missingThreshold]) };
 
   test("gives the errors of a block with model API version 2 for its current args", () => {
-    expect(runErrorsOfBlock({ modelAPIVersion: 2, inputsValid, currentArgs: { n: 1 } })).toEqual(
+    expect(argsErrorsOfBlock({ modelAPIVersion: 2, inputsValid, currentArgs: { n: 1 } })).toEqual(
       known([missingThreshold]),
     );
   });
 
   test("errors of a block with a foreign fingerprint are unknown", () => {
-    expect(runErrorsOfBlock({ modelAPIVersion: 2, inputsValid, currentArgs: { n: 2 } })).toEqual(
+    expect(argsErrorsOfBlock({ modelAPIVersion: 2, inputsValid, currentArgs: { n: 2 } })).toEqual(
       UNKNOWN,
     );
   });
 
   test("errors of a block with current args and no field are unknown", () => {
     expect(
-      runErrorsOfBlock({ modelAPIVersion: 2, inputsValid: undefined, currentArgs: { n: 1 } }),
+      argsErrorsOfBlock({ modelAPIVersion: 2, inputsValid: undefined, currentArgs: { n: 1 } }),
     ).toEqual(UNKNOWN);
   });
 
   test("a block without current args has none", () => {
     expect(
-      runErrorsOfBlock({ modelAPIVersion: 2, inputsValid: undefined, currentArgs: undefined }),
+      argsErrorsOfBlock({ modelAPIVersion: 2, inputsValid: undefined, currentArgs: undefined }),
     ).toEqual(known([]));
   });
 
   test("ignores a field left over for a block whose model is not on model API version 2", () => {
-    expect(runErrorsOfBlock({ modelAPIVersion: 1, inputsValid, currentArgs: { n: 1 } })).toEqual(
+    expect(argsErrorsOfBlock({ modelAPIVersion: 1, inputsValid, currentArgs: { n: 1 } })).toEqual(
       known([]),
     );
     expect(
-      runErrorsOfBlock({ modelAPIVersion: undefined, inputsValid, currentArgs: { n: 1 } }),
+      argsErrorsOfBlock({ modelAPIVersion: undefined, inputsValid, currentArgs: { n: 1 } }),
     ).toEqual(known([]));
     expect(
-      runErrorsOfBlock({ modelAPIVersion: 1, inputsValid: undefined, currentArgs: { n: 1 } }),
+      argsErrorsOfBlock({ modelAPIVersion: 1, inputsValid: undefined, currentArgs: { n: 1 } }),
     ).toEqual(known([]));
   });
 });
@@ -289,21 +289,21 @@ describe("currentArgsChange", () => {
   });
 });
 
-describe("runErrorsAllowRun", () => {
-  test("only known run errors with no error let a block run", () => {
-    expect(runErrorsAllowRun(known([]))).toBe(true);
-    expect(runErrorsAllowRun(known([missingThreshold]))).toBe(false);
-    expect(runErrorsAllowRun(UNKNOWN)).toBe(false);
+describe("argsErrorsAllowRun", () => {
+  test("only known args errors with no error let a block run", () => {
+    expect(argsErrorsAllowRun(known([]))).toBe(true);
+    expect(argsErrorsAllowRun(known([missingThreshold]))).toBe(false);
+    expect(argsErrorsAllowRun(UNKNOWN)).toBe(false);
   });
 });
 
 describe("argsRepair", () => {
   const STORAGE = '{"n":1}';
 
-  test("leaves a block whose run errors are known as it is, without deriving", () => {
+  test("leaves a block whose args errors are known as it is, without deriving", () => {
     const repair = argsRepair(
       {
-        runErrors: known([]),
+        argsErrors: known([]),
         currentArgs: { n: 1 },
         inputsValid: { value: recordBytes({ n: 1 }, []) },
         storageJson: STORAGE,
@@ -322,7 +322,7 @@ describe("argsRepair", () => {
     const repair = argsRepair(
       {
         ...block,
-        runErrors: readRunErrorsField(undefined, block.currentArgs),
+        argsErrors: readArgsErrorsField(undefined, block.currentArgs),
         storageJson: STORAGE,
       },
       () => runnable({ a: 1, b: 2 }),
@@ -339,7 +339,7 @@ describe("argsRepair", () => {
     const inputsValid = { value: recordBytes({ n: 1 }, []) };
     const repair = argsRepair(
       {
-        runErrors: readRunErrorsField(inputsValid.value, { n: 2 }),
+        argsErrors: readArgsErrorsField(inputsValid.value, { n: 2 }),
         currentArgs: { n: 2 },
         inputsValid,
         storageJson: STORAGE,
@@ -360,7 +360,7 @@ describe("argsRepair", () => {
   test("a block whose storage derives no args loses its current args and record", () => {
     const inputsValid = { value: recordBytes({ n: 1 }, []) };
     const repair = argsRepair(
-      { runErrors: UNKNOWN, currentArgs: { n: 2 }, inputsValid, storageJson: STORAGE },
+      { argsErrors: UNKNOWN, currentArgs: { n: 2 }, inputsValid, storageJson: STORAGE },
       () => absent(),
     );
 
@@ -375,7 +375,7 @@ describe("argsRepair", () => {
     expect(
       argsRepair(
         {
-          runErrors: UNKNOWN,
+          argsErrors: UNKNOWN,
           currentArgs: { n: 1 },
           inputsValid: undefined,
           storageJson: undefined,
@@ -387,19 +387,19 @@ describe("argsRepair", () => {
 
   test("a repaired block reads as known, so the next load leaves it as it is", () => {
     const repair = argsRepair(
-      { runErrors: UNKNOWN, currentArgs: { n: 2 }, inputsValid: undefined, storageJson: STORAGE },
+      { argsErrors: UNKNOWN, currentArgs: { n: 2 }, inputsValid: undefined, storageJson: STORAGE },
       () => runnable({ n: 1 }),
     );
     if (repair.type !== "rederived" || repair.inputsValid.type !== "write") {
       throw new Error("expected the record to be written");
     }
 
-    const runErrors = readRunErrorsField(repair.inputsValid.data, { n: 1 });
-    expect(runErrors).toEqual(known([]));
+    const argsErrors = readArgsErrorsField(repair.inputsValid.data, { n: 1 });
+    expect(argsErrors).toEqual(known([]));
     expect(
       argsRepair(
         {
-          runErrors,
+          argsErrors,
           currentArgs: { n: 1 },
           inputsValid: { value: repair.inputsValid.data },
           storageJson: STORAGE,
@@ -411,29 +411,29 @@ describe("argsRepair", () => {
 });
 
 describe("ProjectHelper.deriveArgsFromStorage", () => {
-  test("a model without run issues whose args() throws has no args and no run errors", () => {
-    // What the SDK's __pl_args_derive returned before run issues, and still returns for a
-    // block that declares no runIssues.
+  test("a model without args issues whose args() throws has no args and no args errors", () => {
+    // What the SDK's __pl_args_derive returned before args issues, and still returns for a
+    // block that declares no argsIssues.
     const derived = helper.deriveArgsFromStorage(
       configWith('() => ({ error: "args() threw: Select a dataset" })'),
       "{}",
     );
 
     expect(derived).toEqual({ type: "absent", error: new Error("args() threw: Select a dataset") });
-    expect(runErrorsFieldChange(undefined, derived)).toEqual({ type: "keep" });
+    expect(argsErrorsFieldChange(undefined, derived)).toEqual({ type: "keep" });
   });
 
-  test("a model without run issues whose args() succeeds has runnable args", () => {
+  test("a model without args issues whose args() succeeds has runnable args", () => {
     const derived = helper.deriveArgsFromStorage(configWith("() => ({ value: { n: 1 } })"), "{}");
 
     expect(derived).toEqual({ type: "runnable", args: { n: 1 } });
-    expect(runErrorsFieldChange(undefined, derived)).toEqual({
+    expect(argsErrorsFieldChange(undefined, derived)).toEqual({
       type: "write",
       data: recordBytes({ n: 1 }, []),
     });
   });
 
-  test("runIssues that found errors block the args they were given", () => {
+  test("argsIssues that found errors block the args they were given", () => {
     const derived = helper.deriveArgsFromStorage(
       configWith(
         "(storageJson) => ({ error: 'Set a threshold', args: JSON.parse(storageJson), " +
@@ -458,9 +458,9 @@ describe("ProjectHelper.deriveArgsFromStorage", () => {
 
 // Internals
 
-const UNKNOWN: RunErrorsState = { type: "unknown" };
+const UNKNOWN: ArgsErrorsState = { type: "unknown" };
 
-function known(errors: RunIssue[]): RunErrorsState {
+function known(errors: ArgsIssue[]): ArgsErrorsState {
   return { type: "known", errors };
 }
 
@@ -468,12 +468,12 @@ function runnable(args: unknown): DerivedArgs {
   return { type: "runnable", args };
 }
 
-function blocked(args: unknown, errors: RunIssue[]): DerivedArgs {
+function blocked(args: unknown, errors: ArgsIssue[]): DerivedArgs {
   return { type: "blocked", args, errors };
 }
 
-function recordBytes(args: unknown, errors: RunIssue[]): Uint8Array {
-  const record: RunErrorsRecord = { argsFingerprint: argsFingerprint(args), errors };
+function recordBytes(args: unknown, errors: ArgsIssue[]): Uint8Array {
+  const record: ArgsErrorsRecord = { argsFingerprint: argsFingerprint(args), errors };
   return canonicalJsonBytes(record);
 }
 
