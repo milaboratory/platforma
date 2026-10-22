@@ -95,6 +95,23 @@ class DataInfo(Struct, tag="ParquetPartitioned", rename="camel"):
 # Row-group size shared by the DuckDB sort output and convert's read batch size
 ROW_GROUP_SIZE = 122_880
 
+# Parquet stores a row group's ordinal as an i16, so a file holds at most 32767 of
+# them. At the default size that caps one part at ~4.03e9 rows, which a long-format
+# column reaches (MILAB-7195). Keep a margin and grow the group instead.
+MAX_ROW_GROUPS = 32_000
+
+
+def row_group_size_for(rows: int | None) -> int:
+    """Row group size that keeps `rows` under the per-file row group limit.
+
+    Returns the default for anything that fits, so ordinary frames are untouched; only
+    a frame too large for the default gets larger groups. `rows` may overestimate (the
+    filters below drop rows), which only makes the groups slightly bigger than needed.
+    """
+    if rows is None or rows <= ROW_GROUP_SIZE * MAX_ROW_GROUPS:
+        return ROW_GROUP_SIZE
+    return -(-rows // MAX_ROW_GROUPS)
+
 
 def _escape(name: str) -> str:
     """Quote a SQL identifier, doubling any embedded double-quotes."""
@@ -200,6 +217,10 @@ class WriteFrame(PStep, tag="write_frame"):
             memory_log = set_duckdb_memory_limit(conn)
             if memory_log is not None:
                 print(f"write_frame: {memory_log}", flush=True)
+            # Deliberately not tune_duckdb_for_sort(): this sort has the same per-thread
+            # exposure as the one in import_parquet_frame, but only at a row count no
+            # caller has reached, and capping threads here would slow every PFrame the
+            # platform writes. Revisit if a write_frame sort is ever seen to die.
             conn.execute(
                 f"""
                 COPY (SELECT * FROM read_parquet(?) ORDER BY {order_by})
