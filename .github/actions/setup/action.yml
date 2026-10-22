@@ -5,7 +5,7 @@ inputs:
   node-version:
     description: 'Node.js version'
     required: false
-    default: '22'
+    default: '24.22.1'
   npmjs-token:
     description: 'NPM registry auth token'
     required: true

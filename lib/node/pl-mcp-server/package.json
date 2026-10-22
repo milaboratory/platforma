@@ -52,6 +52,6 @@
     "@platforma-sdk/model": ">=1.86.0"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=24"
   }
 }
