@@ -28,7 +28,9 @@ import type { PluginHandle } from "./plugin_handle";
 import {
   stringifyJson,
   expandTemplateRefs,
+  parseRunIssues,
   relocateBlockIds,
+  type RunIssue,
   type StringifiedJson,
 } from "@milaboratories/pl-model-common";
 import type { DataVersioned, TransferRecord } from "./block_migrations";
@@ -503,72 +505,138 @@ export function createInitialStorageFromParams(
 // =============================================================================
 
 /**
- * Result of args derivation from storage.
- * Returned by __pl_args_derive and __pl_prerunArgs_derive callbacks.
+ * Result of a derivation that either produced a value or failed.
+ * Returned by the __pl_initializationParams_derive callback.
  */
-export type ArgsDeriveResult = { error: string } | { error?: undefined; value: unknown };
+export type DeriveResult = { error: string } | { error?: undefined; value: unknown };
 
 /**
- * Derives args from storage using the provided args function.
- * This extracts data from storage and passes it to the block's args() function.
+ * Result of args derivation from storage, returned by the __pl_args_derive callback.
+ *
+ * A middle layer that predates run issues reads only `error` and `value`, and each variant
+ * means the same to it as before: `value` is runnable args, `error` is no args.
+ *
+ * - `{ error }`: `args()` threw, so there are no args.
+ * - `{ error, args, issues }`: args were built, but `runIssues()` found errors in them, so the
+ *   block must not run. `error` joins the error messages; `issues` lists every issue found.
+ * - `{ value, issues }`: args were built and nothing blocks the run; `issues` holds the warnings.
+ */
+export type ArgsDeriveResult =
+  | { error: string }
+  | { error: string; args: unknown; issues: RunIssue[] }
+  | { error?: undefined; value: unknown; issues: RunIssue[] };
+
+/**
+ * Result of prerun args derivation from storage, returned by the __pl_prerunArgs_derive
+ * callback.
+ *
+ * A middle layer that predates run issues reads only `error` and `value`, and each variant
+ * means the same to it as before: `value` is args to stage, `error` skips staging.
+ *
+ * - `{ error }`: the lambda that builds the prerun args threw.
+ * - `{ error, issues }`: prerun args were built, but the issues found in them include errors, so
+ *   the block is not staged. `error` joins the error messages; `issues` lists every issue found.
+ * - `{ value, issues }`: args to stage; `issues` holds the warnings. A `value` of `undefined`
+ *   comes from a `prerunArgs()` that returned nothing, and skips staging.
+ */
+export type PrerunArgsDeriveResult =
+  | { error: string }
+  | { error: string; issues: RunIssue[] }
+  | { error?: undefined; value: unknown; issues: RunIssue[] };
+
+/** The block's lambdas that turn its data into args and find what keeps those args from running. */
+export interface ArgsDerivation {
+  /** The block's `args()` lambda. */
+  deriveArgs: (data: unknown) => unknown;
+  /** The block's `runIssues()` lambda; `undefined` when the block declares none. */
+  runIssues: ((input: { args: unknown; data: unknown }) => RunIssue[]) | undefined;
+}
+
+/** The block's own lambdas for staging: its `prerunArgs()` and the `prerunIssues()` set after it. */
+export interface OwnPrerunArgsDerivation {
+  /** The block's `prerunArgs()` lambda. */
+  derivePrerunArgs: (data: unknown) => unknown;
+  /** The block's `prerunIssues()` lambda; `undefined` when the block declares none. */
+  prerunIssues: ((input: { prerunArgs: unknown; data: unknown }) => RunIssue[]) | undefined;
+}
+
+/** {@link ArgsDerivation} plus the block's own lambdas for staging args. */
+export interface PrerunArgsDerivation extends ArgsDerivation {
+  /** The block's own staging lambdas; `undefined` when the block stages its args. */
+  ownPrerunArgs: OwnPrerunArgsDerivation | undefined;
+}
+
+/**
+ * Derives args from storage using the block's args function, then finds the issues in them
+ * with the block's `runIssues()`.
+ *
+ * A throw from `runIssues()`, or a result that is not a list of issues, is one error carrying
+ * the thrown or parser message, so a broken check keeps the block from running instead of
+ * letting it run unchecked.
  *
  * @param storageJson - Storage as JSON string
- * @param deriveArgs - The block's args derivation function
- * @returns ArgsDeriveResult with derived args or error
+ * @param derivation - The block's args and run issues lambdas
+ * @returns ArgsDeriveResult with derived args and run issues, or error
  */
 export function deriveArgsFromStorage(
   storageJson: string,
-  deriveArgs: (data: unknown) => unknown,
+  derivation: ArgsDerivation,
 ): ArgsDeriveResult {
-  // Extract data from storage
   const { data } = normalizeStorage(storageJson);
 
-  // Call the args function with extracted data
-  try {
-    const result = deriveArgs(data);
-    return { value: result };
-  } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    return { error: `args() threw: ${errorMsg}` };
-  }
+  const run = deriveArgsWithIssues(data, derivation);
+  if (run.type === "threw") return { error: `args() threw: ${run.message}` };
+
+  const { args, issues } = run;
+  const errors = errorMessages(issues);
+  if (errors.length > 0) return { error: errors.join("; "), args, issues };
+  return { value: args, issues };
 }
 
 /**
  * Derives prerunArgs from storage.
- * Uses derivePrerunArgs if provided, otherwise falls back to deriveArgs.
+ *
+ * A block with its own `prerunArgs()` is staged with what it returns, unless its
+ * `prerunIssues()` finds errors in it; `runIssues()` is not consulted then. A `prerunArgs()`
+ * that returns `undefined` skips staging, and `prerunIssues()` is not called for it.
+ *
+ * A block without its own `prerunArgs()` is staged with its args, unless `runIssues()` finds
+ * errors in them: args that may not run are not staged either.
+ *
+ * A throw from either issues lambda, or a result that is not a list of issues, is one error
+ * carrying the thrown or parser message.
  *
  * @param storageJson - Storage as JSON string
- * @param deriveArgs - The block's args derivation function (fallback)
- * @param derivePrerunArgs - Optional prerun args derivation function
- * @returns ArgsDeriveResult with derived prerunArgs or error
+ * @param derivation - The block's args, run issues and own staging lambdas
+ * @returns PrerunArgsDeriveResult with derived prerunArgs and their issues, or error
  */
 export function derivePrerunArgsFromStorage(
   storageJson: string,
-  deriveArgs: (data: unknown) => unknown,
-  derivePrerunArgs?: (data: unknown) => unknown,
-): ArgsDeriveResult {
-  // Extract data from storage
+  derivation: PrerunArgsDerivation,
+): PrerunArgsDeriveResult {
   const { data } = normalizeStorage(storageJson);
+  const { ownPrerunArgs } = derivation;
 
-  // Try prerunArgs function first if available
-  if (derivePrerunArgs) {
-    try {
-      const result = derivePrerunArgs(data);
-      return { value: result };
-    } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : String(e);
-      return { error: `prerunArgs() threw: ${errorMsg}` };
-    }
+  if (ownPrerunArgs !== undefined) {
+    const run = derivePrerunArgsWithIssues(data, ownPrerunArgs);
+    if (run.type === "threw") return { error: `prerunArgs() threw: ${run.message}` };
+
+    const errors = errorMessages(run.issues);
+    if (errors.length > 0) return { error: errors.join("; "), issues: run.issues };
+    return { value: run.args, issues: run.issues };
   }
 
-  // Fall back to args function
-  try {
-    const result = deriveArgs(data);
-    return { value: result };
-  } catch (e) {
-    const errorMsg = e instanceof Error ? e.message : String(e);
-    return { error: `args() threw (fallback): ${errorMsg}` };
+  const run = deriveArgsWithIssues(data, derivation);
+  if (run.type === "threw") return { error: `args() threw (fallback): ${run.message}` };
+
+  const errors = errorMessages(run.issues);
+  if (errors.length > 0) {
+    return {
+      error: `runIssues() found errors (fallback): ${errors.join("; ")}`,
+      issues: run.issues,
+    };
   }
+  return { value: run.args, issues: run.issues };
 }
 
 // =============================================================================
@@ -592,12 +660,12 @@ export function derivePrerunArgsFromStorage(
  *
  * @param storageJson - Storage as JSON string
  * @param deriveTemplateParams - The block's templateParams lambda
- * @returns ArgsDeriveResult holding the params exactly as the block projected them
+ * @returns DeriveResult holding the params exactly as the block projected them
  */
 export function deriveTemplateParamsFromStorage<TP extends (data: unknown) => unknown>(
   storageJson: string,
   deriveTemplateParams: TP,
-): ArgsDeriveResult {
+): DeriveResult {
   const { data } = normalizeStorage(storageJson);
 
   try {
@@ -610,3 +678,66 @@ export function deriveTemplateParamsFromStorage<TP extends (data: unknown) => un
 
 // Export discriminator key and schema version for external checks
 export { BLOCK_STORAGE_KEY, BLOCK_STORAGE_SCHEMA_VERSION };
+
+// =============================================================================
+// Internals
+// =============================================================================
+
+/** What a lambda building args, and the issues lambda checking them, made of a block's data. */
+type ArgsWithIssues =
+  | { type: "threw"; message: string }
+  | { type: "derived"; args: unknown; issues: RunIssue[] };
+
+function deriveArgsWithIssues(data: unknown, derivation: ArgsDerivation): ArgsWithIssues {
+  const { deriveArgs, runIssues } = derivation;
+
+  let args: unknown;
+  try {
+    args = deriveArgs(data);
+  } catch (e) {
+    return { type: "threw", message: messageOf(e) };
+  }
+
+  if (runIssues === undefined) return { type: "derived", args, issues: [] };
+  return { type: "derived", args, issues: collectIssues(() => runIssues({ args, data })) };
+}
+
+function derivePrerunArgsWithIssues(
+  data: unknown,
+  derivation: OwnPrerunArgsDerivation,
+): ArgsWithIssues {
+  const { derivePrerunArgs, prerunIssues } = derivation;
+
+  let prerunArgs: unknown;
+  try {
+    prerunArgs = derivePrerunArgs(data);
+  } catch (e) {
+    return { type: "threw", message: messageOf(e) };
+  }
+
+  if (prerunIssues === undefined || prerunArgs === undefined) {
+    return { type: "derived", args: prerunArgs, issues: [] };
+  }
+  return {
+    type: "derived",
+    args: prerunArgs,
+    issues: collectIssues(() => prerunIssues({ prerunArgs, data })),
+  };
+}
+
+/**
+ * Calls an issues lambda of the block. Its result is parsed rather than trusted: a block's types
+ * do not hold at run time, and an entry that cannot be read must count as an error, not slip
+ * past. A throw, or a result that cannot be read, is one error carrying its message.
+ */
+function collectIssues(issuesOf: () => unknown): RunIssue[] {
+  try {
+    return parseRunIssues(issuesOf());
+  } catch (e) {
+    return [{ severity: "error", message: messageOf(e) }];
+  }
+}
+
+function errorMessages(issues: RunIssue[]): string[] {
+  return issues.filter((issue) => issue.severity !== "warning").map((issue) => issue.message);
+}

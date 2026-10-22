@@ -50,7 +50,7 @@
 import type { MutateStoragePayload } from "./block_storage";
 import type { ConfigRenderLambda } from "./bconfig";
 import { createRenderLambda, tryRegisterCallback } from "./internal";
-import type { StringifiedJson } from "@milaboratories/pl-model-common";
+import type { RunIssue, StringifiedJson } from "@milaboratories/pl-model-common";
 
 // =============================================================================
 // Facade Version
@@ -168,23 +168,53 @@ export interface BlockStorageFacade {
 
   /**
    * Derive args from storage.
-   * Called to get block configuration args from storage.
+   * Called to get block configuration args from storage, and whether the block may run them.
+   *
+   * A middle layer that predates run issues reads only `error` and `value`, and each variant
+   * means the same to it as before: `value` is runnable args, `error` is no args. A block built
+   * with an SDK that predates run issues returns `{ error }` or `{ value }` with no `issues`.
+   *
    * @param storageJson - Storage as JSON string
-   * @returns Args derivation result - either error or derived value
+   * @returns One of:
+   *   - `{ error }`: `args()` threw, so there are no args;
+   *   - `{ error, args, issues }`: args were built, but the block's `runIssues()` found errors in
+   *     them, so the block must not run; `error` joins the error messages, `issues` lists every
+   *     issue;
+   *   - `{ value, issues }`: args the block may run; `issues` holds the warnings.
    */
   [BlockStorageFacadeCallbacks.ArgsDerive]: (
     storageJson: StringifiedJson,
-  ) => { error: string } | { error?: undefined; value: unknown };
+  ) =>
+    | { error: string }
+    | { error: string; args: unknown; issues: RunIssue[] }
+    | { error?: undefined; value: unknown; issues: RunIssue[] };
 
   /**
    * Derive prerunArgs from storage.
    * Called to get prerun args; falls back to args callback if not registered.
+   *
+   * A block with its own prerunArgs is staged with them unless its `prerunIssues()` finds errors
+   * in them. A block without its own prerunArgs is staged with its args unless its `runIssues()`
+   * finds errors in them.
+   *
+   * A middle layer that predates run issues reads only `error` and `value`: `value` is args to
+   * stage, `error` skips staging. A block built with an SDK that predates run issues returns
+   * `{ error }` or `{ value }` with no `issues`.
+   *
    * @param storageJson - Storage as JSON string
-   * @returns Args derivation result - either error or derived value
+   * @returns One of:
+   *   - `{ error }`: the lambda building the prerun args threw;
+   *   - `{ error, issues }`: prerun args were built, but errors were found in them, so the block
+   *     is not staged; `error` joins the error messages, `issues` lists every issue;
+   *   - `{ value, issues }`: args to stage, `undefined` to skip staging; `issues` holds the
+   *     warnings.
    */
   [BlockStorageFacadeCallbacks.PrerunArgsDerive]: (
     storageJson: StringifiedJson,
-  ) => { error: string } | { error?: undefined; value: unknown };
+  ) =>
+    | { error: string }
+    | { error: string; issues: RunIssue[] }
+    | { error?: undefined; value: unknown; issues: RunIssue[] };
 
   /**
    * Get initial storage JSON for new blocks.
