@@ -15,7 +15,7 @@ afterEach(() => {
 });
 
 describe("readColumnValues", () => {
-  test("reads every non-empty cell of inline JSON data, keyed and id-valued", () => {
+  test("reads every non-empty cell of inline JSON data as text, keyed and id-valued", () => {
     const column = metadataColumn({
       type: "PColumnData/Json",
       ready: true,
@@ -27,7 +27,7 @@ describe("readColumnValues", () => {
 
     expect(readColumnValues(column)).toEqual([
       { key: ["s1"], value: "R1", id: createColumnValueId({ column: column.id, value: "R1" }) },
-      { key: ["s3"], value: 2, id: createColumnValueId({ column: column.id, value: 2 }) },
+      { key: ["s3"], value: "2", id: createColumnValueId({ column: column.id, value: "2" }) },
     ]);
   });
 
@@ -60,6 +60,18 @@ describe("deriveColumnValueOptions", () => {
       { value: createColumnValueId({ column: column.id, value: "Library" }), label: "Library" },
       { value: createColumnValueId({ column: column.id, value: "R2" }), label: "R2" },
       { value: createColumnValueId({ column: column.id, value: "R10" }), label: "R10" },
+    ]);
+  });
+
+  test("a number cell and a text cell spelling the same value are one option", () => {
+    const column = metadataColumn({
+      type: "PColumnData/Json",
+      ready: true,
+      content: { keyLength: 1, data: { '["s1"]': 2, '["s2"]': "2" } },
+    });
+
+    expect(deriveColumnValueOptions(readColumnValues(column) ?? [])).toEqual([
+      { value: createColumnValueId({ column: column.id, value: "2" }), label: "2" },
     ]);
   });
 

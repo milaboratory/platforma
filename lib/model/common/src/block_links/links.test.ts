@@ -34,7 +34,7 @@ describe("linkSections", () => {
   test("merges picks of one block from one output, keeping a whole-column use apart", () => {
     const [usedBy] = linkSections({
       dependents: dependents([
-        dependent("b1", "out", [1, "a"]),
+        dependent("b1", "out", ["1", "a"]),
         dependent("b1", "out", ["1", "b"]),
         dependent("b1", "out", null),
         dependent("b2", "out", ["a"]),
@@ -80,7 +80,7 @@ describe("linkSections", () => {
         dependency("p1", "out", ["a"], { type: "ok" }),
         dependency("p1", "out", ["b"], { type: "unchecked", reason: "unreadable" }),
         dependency("p1", "out", ["c"], { type: "pending" }),
-        dependency("p2", "out", ["a"], missingValues([1])),
+        dependency("p2", "out", ["a"], missingValues(["1"])),
         dependency("p2", "out", ["b"], missingValues(["1", "b"])),
         dependency("p2", "out", ["c"], { type: "ok" }),
         dependency("p3", "out", ["a"], missingValues(["a"])),
@@ -94,10 +94,10 @@ describe("linkSections", () => {
     ]);
   });
 
-  test("missing values of a dependent block are listed as strings", () => {
+  test("missing values of a dependent block are listed as they are", () => {
     const [usedBy] = linkSections({
       dependents: dependents([
-        dependent("b1", "out", ["a"], { type: "missingValues", values: [2] }),
+        dependent("b1", "out", ["a"], { type: "missingValues", values: ["2"] }),
       ]),
       dependencies: dependencies([]),
     });

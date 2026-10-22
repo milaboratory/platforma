@@ -190,9 +190,9 @@ export function dependentStatus(check: ExportCheck): DependentStatus {
 }
 
 /**
- * Picked values the cells do not hold, in picked order. A number and its decimal string are the
- * same value: one block stores a column's raw numbers while another picks them as strings. Null
- * cells, and cells other than strings and finite numbers, hold no value that can be picked.
+ * Picked values the cells do not hold, in picked order. A number cell holds its decimal string,
+ * the form a value is picked in. Null cells, and cells other than strings and finite numbers,
+ * hold no value that can be picked.
  */
 export function missingValues(
   picked: readonly ColumnValue[],
@@ -203,10 +203,7 @@ export function missingValues(
     const key = valueKey(cell);
     if (key !== undefined) present.add(key);
   }
-  return picked.filter((value) => {
-    const key = valueKey(value);
-    return key === undefined || !present.has(key);
-  });
+  return picked.filter((value) => !present.has(value));
 }
 
 /** The data node surface {@link readExportValues} reads. */

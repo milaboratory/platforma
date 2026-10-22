@@ -1,7 +1,6 @@
 import {
   createColumnValueId,
   parseJsonSafely,
-  type ColumnValue,
   type ColumnValueId,
   type PColumnKey,
 } from "@milaboratories/pl-model-common";
@@ -9,10 +8,13 @@ import { TreeNodeAccessor } from "../render";
 import type { ColumnRecipe } from "./column_recipes/types";
 import { hasReachableData } from "./utils";
 
-/** One cell of a column: its key, its value, and the id a value picker stores for the value. */
+/**
+ * One cell of a column: its key, its value as text — a number cell as its decimal string — and
+ * the id a value picker stores for the value.
+ */
 export type ColumnValueEntry = {
   readonly key: PColumnKey;
-  readonly value: ColumnValue;
+  readonly value: string;
   readonly id: ColumnValueId;
 };
 
@@ -39,8 +41,9 @@ export function readColumnValues(recipe: ColumnRecipe): ColumnValueEntry[] | und
   if (cells === undefined) return undefined;
 
   const entries: ColumnValueEntry[] = [];
-  for (const [key, value] of cells) {
-    if (!isColumnValue(value)) continue;
+  for (const [key, cell] of cells) {
+    if (!isPickableCell(cell)) continue;
+    const value = String(cell);
     entries.push({
       key,
       value,
@@ -59,7 +62,7 @@ export function deriveColumnValueOptions(
 ): ColumnValueOption[] {
   const options = new Map<ColumnValueId, ColumnValueOption>();
   for (const { id, value } of entries) {
-    if (!options.has(id)) options.set(id, { value: id, label: String(value) });
+    if (!options.has(id)) options.set(id, { value: id, label: value });
   }
   return [...options.values()].sort((a, b) => compareNatural(a.label, b.label));
 }
@@ -122,7 +125,7 @@ function isKeyElement(value: unknown): value is string | number {
   return typeof value === "string" || typeof value === "number";
 }
 
-/** A value a picker can store: a string other than the empty one, or a finite number. */
-function isColumnValue(value: unknown): value is ColumnValue {
-  return (typeof value === "string" && value !== "") || Number.isFinite(value);
+/** A cell holding a value a picker can store: a string other than the empty one, or a finite number. */
+function isPickableCell(cell: unknown): cell is string | number {
+  return (typeof cell === "string" && cell !== "") || Number.isFinite(cell);
 }

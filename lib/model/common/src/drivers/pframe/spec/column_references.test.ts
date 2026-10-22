@@ -15,8 +15,7 @@ const leafId = (blockId: string, name: string): ColumnUniversalId =>
 const condition = leafId("samples", "metadata.condition");
 const donor = leafId("samples", "metadata.donor");
 
-const conditionValue = (value: string | number) =>
-  createColumnValueId({ column: condition, value });
+const conditionValue = (value: string) => createColumnValueId({ column: condition, value });
 
 describe("collectColumnReferences", () => {
   test("a ref object is its output's plain id, with or without enrichments", () => {
@@ -105,19 +104,24 @@ describe("collectColumnReferences", () => {
     ]);
   });
 
-  test("the same value met twice is listed once, and a number stays apart from its string", () => {
+  test("the same value met twice is listed once", () => {
     const id = conditionValue("treated");
     const args = {
       a: id,
       b: [id],
       c: { [id]: true },
-      d: conditionValue(2),
-      e: conditionValue("2"),
+      d: conditionValue("2"),
     };
 
-    expect(collectColumnReferences(args)).toEqual([
-      { ref: condition, values: ["treated", 2, "2"] },
-    ]);
+    expect(collectColumnReferences(args)).toEqual([{ ref: condition, values: ["treated", "2"] }]);
+  });
+
+  test("a value id shape with a number value picks no value, only the column inside it", () => {
+    const args = {
+      d: canonicalizeJson({ __isColumnValue: true, column: condition, value: 2 }),
+    };
+
+    expect(collectColumnReferences(args)).toEqual([{ ref: condition, values: null }]);
   });
 
   test("columns come in the order first met, by a value or on their own", () => {

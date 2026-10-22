@@ -60,7 +60,9 @@ Use it (and only it) everywhere else:
 `{__isColumnValue: true, column, value}`: one value of one column, picked
 by a block — a sample group, a condition level, an antigen. `column` is a
 `ColumnUniversalId` exactly as the block picked it (leaf, filtered,
-discovered or overridden); `value` is a string or a finite number.
+discovered or overridden); `value` is always a string — a value of a
+number column is its decimal string (`String(cell)`), so the same value
+picked from a number cell and from a text cell is the same id.
 
 It wraps a logical id but is not one: it is not a `ColumnUniversalId`
 form, and nothing that resolves columns accepts it.
