@@ -76,6 +76,29 @@ describe("PlColumnValueDropdown", () => {
 });
 
 describe("PlColumnValueDropdownMulti", () => {
+  test("does not offer the values it is told to leave out", async () => {
+    read.mockResolvedValue([R1, R2]);
+    const wrapper = mount(PlColumnValueDropdownMulti, {
+      props: { source: PRESENT, modelValue: [], exclude: [R1.value] },
+    });
+    await flushPromises();
+
+    expect(
+      innermost(wrapper.findAllComponents({ name: "PlDropdownMulti" })).props("options"),
+    ).toEqual([R2]);
+  });
+
+  test("passes its slots to the dropdown", () => {
+    read.mockResolvedValue([]);
+    const wrapper = mount(PlColumnValueDropdownMulti, {
+      props: { source: PRESENT, modelValue: [], label: "Rounds" },
+      slots: { tooltip: "Pick the rounds to compare" },
+    });
+
+    const dropdown = innermost(wrapper.findAllComponents({ name: "PlDropdownMulti" }));
+    expect(Object.keys(dropdown.vm.$slots)).toEqual(["tooltip"]);
+  });
+
   test("keeps the error the caller gives over the reason of the column", async () => {
     read.mockRejectedValue(new Error("no driver"));
     const wrapper = mount(PlColumnValueDropdownMulti, {

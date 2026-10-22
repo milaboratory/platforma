@@ -83,9 +83,8 @@ form, and nothing that resolves columns accepts it.
 
 Definitions: `lib/model/common/src/drivers/pframe/spec/column_value.ts`,
 `lib/model/common/src/drivers/pframe/spec/column_references.ts`. Value
-pickers (`createColumnValueOptions`, `usePlColumnValueOptions`,
-`PlColumnValueDropdown`) are in
-[`column-access-api.md`](./column-access-api.md#value-pickers-createcolumnvalueoptions-useplcolumnvalueoptions-plcolumnvaluedropdown).
+pickers (`createColumnValueOptions`, `PlColumnValueDropdown`) are in
+[`column-access-api.md`](./column-access-api.md#value-pickers-createcolumnvalueoptions-plcolumnvaluedropdown).
 
 ### Crossing the boundary: `extractPObjectId`
 
