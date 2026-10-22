@@ -166,7 +166,6 @@ the leaves is what makes that lookup succeed.
   references in args: `lib/model/common/src/drivers/pframe/spec/column_references.ts`,
   value pickers: `sdk/model/src/columns/column_values.ts`,
   `sdk/model/src/pframe_utils/column_value_options.ts`,
-  `sdk/ui-vue/src/composition/usePlColumnValueOptions.ts`,
   `sdk/ui-vue/src/components/PlColumnValueDropdown/`,
   workflow-side reader: `sdk/workflow-tengo/src/workflow/column-value.lib.tengo`.
 - Recipe implementations:

@@ -1,6 +1,6 @@
 import type {
   ColumnValueOption,
-  ColumnValueOptionsModel,
+  PresentColumnValueOptionsModel,
   PFrameHandle,
 } from "@platforma-sdk/model";
 import {
@@ -40,7 +40,7 @@ describe("PlColumnValueDropdown", () => {
   test("offers the values of the column once they are read", async () => {
     read.mockResolvedValue([R1, R2]);
     const wrapper = mount(PlColumnValueDropdown, {
-      props: { source: PRESENT, valueColumn: ROUND, label: "Round" },
+      props: { settings: PRESENT, label: "Round" },
     });
 
     const dropdown = innermost(wrapper.findAllComponents({ name: "PlDropdown" }));
@@ -52,7 +52,7 @@ describe("PlColumnValueDropdown", () => {
 
   test("tells why a column that is gone offers no values", () => {
     const wrapper = mount(PlColumnValueDropdown, {
-      props: { source: { type: "absent", valueColumn: ROUND }, valueColumn: ROUND },
+      props: { settings: { type: "absent" } },
     });
 
     const dropdown = innermost(wrapper.findAllComponents({ name: "PlDropdown" }));
@@ -64,7 +64,7 @@ describe("PlColumnValueDropdown", () => {
     read.mockResolvedValue([R1, R2]);
     const onUpdate = vi.fn();
     const wrapper = mount(PlColumnValueDropdown, {
-      props: { source: PRESENT, modelValue: R1.value, "onUpdate:modelValue": onUpdate },
+      props: { settings: PRESENT, modelValue: R1.value, "onUpdate:modelValue": onUpdate },
     });
     await flushPromises();
 
@@ -79,7 +79,7 @@ describe("PlColumnValueDropdownMulti", () => {
   test("does not offer the values it is told to leave out", async () => {
     read.mockResolvedValue([R1, R2]);
     const wrapper = mount(PlColumnValueDropdownMulti, {
-      props: { source: PRESENT, modelValue: [], exclude: [R1.value] },
+      props: { settings: PRESENT, modelValue: [], exclude: [R1.value] },
     });
     await flushPromises();
 
@@ -91,7 +91,7 @@ describe("PlColumnValueDropdownMulti", () => {
   test("passes its slots to the dropdown", () => {
     read.mockResolvedValue([]);
     const wrapper = mount(PlColumnValueDropdownMulti, {
-      props: { source: PRESENT, modelValue: [], label: "Rounds" },
+      props: { settings: PRESENT, modelValue: [], label: "Rounds" },
       slots: { tooltip: "Pick the rounds to compare" },
     });
 
@@ -102,7 +102,7 @@ describe("PlColumnValueDropdownMulti", () => {
   test("keeps the error the caller gives over the reason of the column", async () => {
     read.mockRejectedValue(new Error("no driver"));
     const wrapper = mount(PlColumnValueDropdownMulti, {
-      props: { source: PRESENT, modelValue: [R1.value], error: "Pick a round" },
+      props: { settings: PRESENT, modelValue: [R1.value], error: "Pick a round" },
     });
     await flushPromises();
 
@@ -117,12 +117,14 @@ describe("PlColumnValueDropdownMulti", () => {
 
 const ROUND = createGlobalPObjectId("samples", "pf.metadata.round");
 
-const PRESENT: ColumnValueOptionsModel = {
+const MODEL: PresentColumnValueOptionsModel = {
   type: "present",
   valueColumn: ROUND,
   frame: "frame-of-round" as PFrameHandle,
   frameColumns: { value: ROUND, label: null },
 };
+
+const PRESENT = { type: "present", model: MODEL } as const;
 
 const R1: ColumnValueOption = {
   value: createColumnValueId({ column: ROUND, value: "R1" }),
