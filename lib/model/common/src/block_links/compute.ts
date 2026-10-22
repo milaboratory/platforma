@@ -105,8 +105,9 @@ export function labelColumnLinks(
   links: UnlabeledColumnLinks,
   labelOf: (blockId: string) => string,
 ): BlockColumnLinks {
-  const { dependencies, dependents } = links;
+  const { blockId, dependencies, dependents } = links;
   return {
+    blockId,
     dependencies: {
       ...dependencies,
       labels: readBlockLabels(

@@ -795,7 +795,7 @@ export class Project {
               navigationState: v.navigationState,
               // The block state already nests the overview, so labelling by its titles adds
               // nothing to watch.
-              columnLinks: labelBlockColumnLinks(v, v.overview?.blocks ?? []),
+              columnLinks: labelBlockColumnLinks({ ...v, blockId }, v.overview?.blocks ?? []),
             } as BlockStateInternalV3;
           },
         },

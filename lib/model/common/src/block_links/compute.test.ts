@@ -36,10 +36,12 @@ describe("computeDependencies", () => {
 
     expect(links).toEqual({
       samples: {
+        blockId: "samples",
         dependencies: { argsSource: "current", items: [] },
         dependents: { items: [], hasUnrunChanges: true },
       },
       empty: {
+        blockId: "empty",
         dependencies: { argsSource: "none", items: [] },
         dependents: { items: [], hasUnrunChanges: false },
       },
@@ -767,7 +769,11 @@ function run(blocks: FakeBlock[]): {
   const links = Object.fromEntries(
     blocks.map(({ id }): [string, UnlabeledColumnLinks] => [
       id,
-      { dependencies: computeDependencies(source, id), dependents: computeDependents(source, id) },
+      {
+        blockId: id,
+        dependencies: computeDependencies(source, id),
+        dependents: computeDependents(source, id),
+      },
     ]),
   );
   return { links, source, reads };

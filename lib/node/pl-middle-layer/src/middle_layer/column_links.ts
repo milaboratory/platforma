@@ -64,16 +64,17 @@ export function blockDependents(
  */
 export function labelBlockColumnLinks(
   links: {
+    blockId: string;
     dependencies: UnlabeledDependencies | undefined;
     dependents: UnlabeledDependents | undefined;
   },
   blocks: readonly Pick<BlockStateOverview, "id" | "title">[],
 ): BlockColumnLinks | undefined {
-  const { dependencies, dependents } = links;
+  const { blockId, dependencies, dependents } = links;
   if (dependencies === undefined || dependents === undefined) return undefined;
-  return labelColumnLinks({ dependencies, dependents }, (blockId) => {
-    const title = blocks.find((block) => block.id === blockId)?.title;
-    if (title === undefined) throw new Error(`No title for block ${blockId}`);
+  return labelColumnLinks({ blockId, dependencies, dependents }, (namedId) => {
+    const title = blocks.find((block) => block.id === namedId)?.title;
+    if (title === undefined) throw new Error(`No title for block ${namedId}`);
     return title;
   });
 }

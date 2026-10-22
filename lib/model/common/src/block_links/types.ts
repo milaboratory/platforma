@@ -104,8 +104,9 @@ export interface UnlabeledDependents {
   hasUnrunChanges: boolean;
 }
 
-/** Column links of one block before the blocks they name are labelled. */
+/** Column links of block `blockId` before the blocks they name are labelled. */
 export interface UnlabeledColumnLinks {
+  blockId: string;
   dependencies: UnlabeledDependencies;
   dependents: UnlabeledDependents;
 }
@@ -121,11 +122,12 @@ export interface BlockDependents extends UnlabeledDependents {
 }
 
 /**
- * Column links of one block: outputs of other blocks its args reference, and blocks whose args
- * reference its outputs, each reference checked against the last run of the block exporting the
- * column.
+ * Column links of block `blockId`: outputs of other blocks its args reference, and blocks whose
+ * args reference its outputs, each reference checked against the last run of the block exporting
+ * the column.
  */
 export interface BlockColumnLinks {
+  blockId: string;
   dependencies: BlockDependencies;
   dependents: BlockDependents;
 }
