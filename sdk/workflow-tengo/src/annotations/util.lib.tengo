@@ -27,7 +27,7 @@ createFilterColumnSpec := func(columnSpec, colName, label) {
 		}
 	})
 	// Subset pickers build labels from the trace, so each subset needs a step with its own label
-	return pSpec.makeTrace(spec, { type: "milaboratories.annotation/label", label: label, importance: 30 }).inject(spec)
+	return pSpec.makeTrace(spec, { type: "milaboratories.annotation.rule", label: label, importance: 30 }).inject(spec)
 }
 
 ENCODE_SEPARATOR := "_encoded_"
