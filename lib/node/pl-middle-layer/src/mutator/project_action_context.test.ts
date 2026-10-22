@@ -13,7 +13,9 @@ import { expect, test } from "vitest";
 import { ProjectHelper } from "../model/project_helper";
 import { projectFieldName } from "../model/project_model";
 import { BPSpecEnterV041NotPrepared, TestBPPreparer } from "../test/block_packs";
-import { readBlockActionContextTree } from "../middle_layer/block_action_context";
+import { Computable } from "@milaboratories/computable";
+import { SynchronizedTreeState } from "@milaboratories/pl-tree";
+import { blockActionContextTree } from "../middle_layer/block_action_context";
 import { createProject, ProjectMutator } from "./project";
 
 type ActionContextBaggage = Record<string, string>;
@@ -136,7 +138,14 @@ test("block action context outlives its render and is replaced on re-render", as
     expect(afterGc.baggage).toEqual(first.baggage);
 
     // 4b. The read-back sees the same context with its baggage, and names the render.
-    const tree = (await readBlockActionContextTree(pl, prj, "block1", "prod"))!;
+    const prjTree = await SynchronizedTreeState.init(pl, prj, {
+      pollingInterval: 250,
+      stopPollingDelay: 500,
+    });
+    const tree = (await Computable.make((ctx) =>
+      blockActionContextTree(ctx.accessor(prjTree.entry()).node(), "block1", "prod"),
+    ).getValue())!;
+    await prjTree.terminate();
     expect(tree).toBeDefined();
     expect(tree.contextId).toEqual(first.contextId);
     expect(tree.baggage).toEqual(first.baggage);
