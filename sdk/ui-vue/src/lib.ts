@@ -36,6 +36,7 @@ export * from "./components/PlAdvancedFilter";
 export * from "./components/PlDatasetSelector";
 
 export * from "./components/PlBlockDependencies";
+export * from "./components/PlColumnValueDropdown";
 export * from "./components/PlBlockName";
 
 export * from "./defineApp";
@@ -43,8 +44,11 @@ export * from "./defineApp";
 export { usePlugin } from "./composition/usePlugin";
 export type { PluginState } from "./composition/usePlugin";
 export { useOpenBlock } from "./composition/useOpenBlock";
-export { useColumnValueOptions } from "./composition/useColumnValueOptions";
-export type { ColumnValueOptionsState } from "./composition/useColumnValueOptions";
+export { usePlColumnValueOptions } from "./composition/usePlColumnValueOptions";
+export type {
+  ColumnValueOptionsState,
+  PlColumnValueOptions,
+} from "./composition/usePlColumnValueOptions";
 export type {
   PluginHandle,
   PluginFactoryLike,

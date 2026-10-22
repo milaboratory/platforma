@@ -2,11 +2,17 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   createColumnValueId,
   createGlobalPObjectId,
+  type PColumn,
+  type PColumnValues,
   type PFrameHandle,
 } from "@milaboratories/pl-model-common";
+import type { GlobalCfgRenderCtx } from "../render/internal";
 import { ColumnRecipe } from "./column_recipes";
-import type { ColumnValuesCtx } from "./column_values";
-import { createColumnValuesSource, deriveColumnValueOptions } from "./column_values";
+import {
+  createColumnValueOptions,
+  deriveColumnValueOptions,
+  deriveLabelledColumnValueOptions,
+} from "./column_values";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -45,39 +51,116 @@ describe("deriveColumnValueOptions", () => {
   });
 });
 
-describe("createColumnValuesSource", () => {
-  test("holds a frame of the column while it is there", () => {
-    vi.spyOn(ColumnRecipe, "getStatus").mockReturnValue("present");
-    const ctx = renderCtx(FRAME);
+describe("deriveLabelledColumnValueOptions", () => {
+  test("labels each value by the label of its first row, in natural order of labels", () => {
+    const rows = [
+      { value: "s2", label: "Donor 10" },
+      { value: "s1", label: "Donor 2" },
+      { value: "s2", label: "Donor 11" },
+    ];
+    expect(deriveLabelledColumnValueOptions(COLUMN_ID, rows)).toEqual([
+      option("s1", "Donor 2"),
+      option("s2", "Donor 10"),
+    ]);
+  });
 
-    expect(createColumnValuesSource(ctx, COLUMN_ID)).toEqual({
+  test("leaves a value with an empty label to label itself, and offers no empty value", () => {
+    const rows = [
+      { value: "s1", label: "" },
+      { value: "", label: "Nobody" },
+    ];
+    expect(deriveLabelledColumnValueOptions(COLUMN_ID, rows)).toEqual([option("s1")]);
+  });
+});
+
+describe("createColumnValueOptions", () => {
+  test("holds a frame of the value column while it is there", () => {
+    vi.spyOn(ColumnRecipe, "getStatus").mockReturnValue("present");
+    const ctx = renderCtx();
+
+    expect(createColumnValueOptions({ valueColumn: COLUMN_ID }, { ctx })).toEqual({
       type: "present",
-      column: COLUMN_ID,
+      valueColumn: COLUMN_ID,
       frame: FRAME,
+      frameColumns: { value: COLUMN_ID, label: null },
     });
     expect(ctx.createPFrame).toHaveBeenCalledWith([COLUMN_ID]);
   });
 
-  test("is resolving while the column or its frame is", () => {
-    vi.spyOn(ColumnRecipe, "getStatus").mockReturnValue("resolving");
-    expect(createColumnValuesSource(renderCtx(FRAME), COLUMN_ID)).toEqual({
-      type: "resolving",
-      column: COLUMN_ID,
-    });
-
+  test("puts the label column into the frame beside the value column", () => {
     vi.spyOn(ColumnRecipe, "getStatus").mockReturnValue("present");
-    expect(createColumnValuesSource(renderCtx(undefined), COLUMN_ID)).toEqual({
-      type: "resolving",
-      column: COLUMN_ID,
+    const ctx = renderCtx();
+
+    expect(
+      createColumnValueOptions({ valueColumn: COLUMN_ID, labelColumn: LABEL_ID }, { ctx }),
+    ).toEqual({
+      type: "present",
+      valueColumn: COLUMN_ID,
+      frame: FRAME,
+      frameColumns: { value: COLUMN_ID, label: LABEL_ID },
     });
+    expect(ctx.createPFrame).toHaveBeenCalledWith([COLUMN_ID, LABEL_ID]);
   });
 
-  test("is absent once the column is gone", () => {
-    vi.spyOn(ColumnRecipe, "getStatus").mockReturnValue("absent");
-    const ctx = renderCtx(FRAME);
+  test("takes a materialised column as it is", () => {
+    const ctx = renderCtx();
+    const column: PColumn<PColumnValues> = {
+      id: COLUMN_ID,
+      spec: {
+        kind: "PColumn",
+        name: "pl7.app/metadata",
+        valueType: "String",
+        axesSpec: [{ name: "pl7.app/sampleId", type: "String" }],
+      },
+      data: [{ key: ["s1"], val: "R1" }],
+    };
 
-    expect(createColumnValuesSource(ctx, COLUMN_ID)).toEqual({ type: "absent", column: COLUMN_ID });
+    expect(createColumnValueOptions({ valueColumn: column }, { ctx })).toMatchObject({
+      type: "present",
+      valueColumn: COLUMN_ID,
+      frameColumns: { value: COLUMN_ID, label: null },
+    });
+    expect(ctx.createPFrame).toHaveBeenCalledWith([column]);
+  });
+
+  test("is resolving while the value column or the label column is", () => {
+    vi.spyOn(ColumnRecipe, "getStatus").mockReturnValue("resolving");
+    expect(createColumnValueOptions({ valueColumn: COLUMN_ID }, { ctx: renderCtx() })).toEqual({
+      type: "resolving",
+      valueColumn: COLUMN_ID,
+    });
+
+    vi.spyOn(ColumnRecipe, "getStatus").mockImplementation((id) =>
+      id === LABEL_ID ? "resolving" : "present",
+    );
+    const ctx = renderCtx();
+    expect(
+      createColumnValueOptions({ valueColumn: COLUMN_ID, labelColumn: LABEL_ID }, { ctx }),
+    ).toEqual({ type: "resolving", valueColumn: COLUMN_ID });
     expect(ctx.createPFrame).not.toHaveBeenCalled();
+  });
+
+  test("is absent once the value column is gone", () => {
+    vi.spyOn(ColumnRecipe, "getStatus").mockReturnValue("absent");
+    const ctx = renderCtx();
+
+    expect(createColumnValueOptions({ valueColumn: COLUMN_ID }, { ctx })).toEqual({
+      type: "absent",
+      valueColumn: COLUMN_ID,
+    });
+    expect(ctx.createPFrame).not.toHaveBeenCalled();
+  });
+
+  test("leaves the values to label themselves once the label column is gone", () => {
+    vi.spyOn(ColumnRecipe, "getStatus").mockImplementation((id) =>
+      id === LABEL_ID ? "absent" : "present",
+    );
+    const ctx = renderCtx();
+
+    expect(
+      createColumnValueOptions({ valueColumn: COLUMN_ID, labelColumn: LABEL_ID }, { ctx }),
+    ).toMatchObject({ type: "present", frameColumns: { value: COLUMN_ID, label: null } });
+    expect(ctx.createPFrame).toHaveBeenCalledWith([COLUMN_ID]);
   });
 });
 
@@ -85,13 +168,16 @@ describe("createColumnValuesSource", () => {
 
 const COLUMN_ID = createGlobalPObjectId("samples", "pf.metadata.round");
 
+const LABEL_ID = createGlobalPObjectId("samples", "pf.metadata.roundName");
+
 const FRAME = "frame-of-round" as PFrameHandle;
 
-function option(value: string) {
-  return { value: createColumnValueId({ column: COLUMN_ID, value }), label: value };
+function option(value: string, label = value) {
+  return { value: createColumnValueId({ column: COLUMN_ID, value }), label };
 }
 
-/** A render ctx that creates `frame` for any columns. */
-function renderCtx(frame: PFrameHandle | undefined) {
-  return { createPFrame: vi.fn(() => frame) } satisfies ColumnValuesCtx;
+/** A render ctx that creates {@link FRAME} for any columns; only `createPFrame` is called. */
+function renderCtx() {
+  const createPFrame = vi.fn(() => FRAME);
+  return Object.assign({ createPFrame } as GlobalCfgRenderCtx, { createPFrame });
 }
