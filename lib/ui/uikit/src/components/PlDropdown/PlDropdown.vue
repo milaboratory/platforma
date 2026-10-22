@@ -212,13 +212,15 @@ const selectedOption = computed(() =>
 
 const textValue = computed(() => selectedOption.value?.label);
 
-// Native tooltip with the full selected value. The `.input-value` layer has
+// Native tooltip with the full selected value and its link hint. The `.input-value` layer has
 // `pointer-events: none`, so the title must sit on the field wrapper, which is
 // what actually receives the hover.
 const fieldTitle = computed(() => {
   if (data.open) return undefined;
   if (isMissing.value) return props.missingValueLabel;
-  return textValue.value !== undefined ? String(textValue.value) : undefined;
+  if (textValue.value === undefined) return undefined;
+  const hint = selectedOption.value?.linkHint;
+  return hint ? `${textValue.value}\n${hint}` : String(textValue.value);
 });
 
 const computedPlaceholder = computed(() => {

@@ -115,13 +115,16 @@ export function createPlDataTableV3<A, U>(
   const { direct, linked } = splitByTopology(secondary);
 
   const allColumns = [...primary, ...secondary];
-  // Skip hidden columns when deriving labels — they don't appear in the
-  // table, so they shouldn't influence label disambiguation (#1623).
-  const labelable = allColumns.filter((c) => !isColumnHidden(c.getSpec())).map(toLabelableColumn);
+  const labelable = allColumns.map(toLabelableColumn);
+  // From all columns: a hidden one still shows when sorted, filtered or made visible by a rule.
   const peerLinks = collectPeerLinks(labelable);
   const derivedLabels = deriveAllLabels({
+    // Skip hidden columns when deriving labels — they don't appear in the
+    // table, so they shouldn't influence label disambiguation (#1623).
     // The link icon tells a peer-linked column from a plain one with the same label.
-    columns: labelable.map((c) => ({ ...c, marker: peerLinks.has(c.id) ? "peerLink" : undefined })),
+    columns: labelable
+      .filter((c) => !isColumnHidden(c.spec))
+      .map((c) => ({ ...c, marker: peerLinks.has(c.id) ? "peerLink" : undefined })),
     deriveLabelsOptions: {
       includeNativeLabel: true,
       ...options.labelsOptions,
