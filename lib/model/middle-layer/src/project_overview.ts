@@ -11,6 +11,7 @@ import type {
 import type { StorageDebugView } from "./storage_debug_view";
 import type { UpdateSuggestions } from "./update_info";
 import type { BlockSettings } from "./block_settings";
+import type { BlockActionSummary } from "./block_action_summary";
 
 /** Generalized block status, to be used in block item "styling". */
 export type BlockCalculationStatus = "NotCalculated" | "Running" | "Done" | "Limbo";
@@ -184,4 +185,7 @@ export type BlockStateOverview = {
    * every block on each overview update. Read `blockStorage` from the block state instead.
    */
   storageDebugView?: StringifiedJson<StorageDebugView>;
+
+  /** What the production run of the block is doing. Undefined without a block action context. */
+  actionSummary?: BlockActionSummary;
 };

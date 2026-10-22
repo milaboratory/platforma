@@ -1,41 +1,8 @@
+import type {
+  BlockActionResourceState,
+  BlockActionSummary,
+} from "@milaboratories/pl-model-middle-layer";
 import type { BlockActionContextNode } from "./block_action_context";
-
-/**
- * What a block run is doing:
- * - Failed: some resource terminated.
- * - Running: some resource works (Running, PopulatingWorkdir, CollectingOutputs).
- * - Waiting: some resource waits (for inputs, a gate, the scheduler, a machine).
- * - Done: every reporting resource completed.
- * - NotStarted: nothing reported yet.
- */
-export type BlockActionPhase = "Failed" | "Running" | "Waiting" | "Done" | "NotStarted";
-
-/** The current state of a reporting resource: its latest transition outside namespace "render". */
-export type BlockActionResourceState = {
-  /** Decimal resource ID, as in the report keys. */
-  resource: string;
-  /** Name of the action context the resource reports into: the template name. */
-  context: string;
-  namespace: string;
-  state: string;
-  detail: string;
-  reason: string;
-  /** Time in the state at the moment of the summary. */
-  inStateMs: number;
-  /** Readings of the resource by "<namespace>/<key>". */
-  readings: Record<string, string>;
-};
-
-/** The block-level rollup of an action context tree. */
-export type BlockActionSummary = {
-  phase: BlockActionPhase;
-  /** Resources that work or wait, the one in its state longest first. */
-  active: BlockActionResourceState[];
-  /** Resources that terminated, with the reason. */
-  failed: BlockActionResourceState[];
-  /** Resources per current state. */
-  states: Record<string, number>;
-};
 
 const workingStates = new Set(["Running", "PopulatingWorkdir", "CollectingOutputs"]);
 
@@ -43,10 +10,7 @@ const workingStates = new Set(["Running", "PopulatingWorkdir", "CollectingOutput
  * Rolls an action context tree up into what the block run is doing. Transitions under namespace
  * "render" mark evaluations, not work, so they do not keep a run active.
  */
-export function summarizeBlockActionContext(
-  tree: BlockActionContextNode,
-  nowMs: number,
-): BlockActionSummary {
+export function summarizeBlockActionContext(tree: BlockActionContextNode): BlockActionSummary {
   const latest = new Map<string, BlockActionResourceState & { sinceNs: bigint }>();
   const readings = new Map<string, Record<string, string>>();
 
@@ -61,7 +25,7 @@ export function summarizeBlockActionContext(
         state: t.state,
         detail: t.detail,
         reason: t.reason,
-        inStateMs: Math.max(0, nowMs - Number(sinceNs / 1_000_000n)),
+        sinceMs: Number(sinceNs / 1_000_000n),
         readings: {},
         sinceNs,
       });

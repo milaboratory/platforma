@@ -31,6 +31,8 @@ import { getBlockPackInfo } from "./util";
 import { resourceIdToString, type SignedResourceId } from "@milaboratories/pl-client";
 import { omitBy, isEqual } from "es-toolkit";
 import { getDebugFlags } from "../debug";
+import { blockActionContextTree } from "./block_action_context";
+import { summarizeBlockActionContext } from "./block_action_summary";
 
 type BlockInfo = {
   argsRid?: SignedResourceId;
@@ -324,6 +326,12 @@ export function projectOverview(
           featureFlags,
           isIncompatibleWithRuntime,
           navigationState: navigationStates.getState(id),
+          actionSummary: Computable.make((ctx) =>
+            ifNotUndef(
+              blockActionContextTree(ctx.accessor(prjEntry).node(), id, "prod"),
+              summarizeBlockActionContext,
+            ),
+          ),
         };
       });
 

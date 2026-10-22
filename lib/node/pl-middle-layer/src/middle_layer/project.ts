@@ -39,8 +39,8 @@ import { frontendData } from "./frontend_path";
 import type { NavigationState } from "@milaboratories/pl-model-common";
 import { getBlockParameters, blockOutputs } from "./block";
 import type { BlockActionContextMode, BlockActionContextNode } from "./block_action_context";
-import { readBlockActionContextTree } from "./block_action_context";
-import type { BlockActionSummary } from "./block_action_summary";
+import { blockActionContextTree } from "./block_action_context";
+import type { BlockActionSummary } from "@milaboratories/pl-model-middle-layer";
 import { summarizeBlockActionContext } from "./block_action_summary";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectId, ProjectStructure } from "../model/project_model";
@@ -794,15 +794,14 @@ export class Project {
    * Returns a computable, that can be used to retrieve and watch full block state,
    * including outputs, arguments, ui state.
    * */
-  /**
-   * Reads the block action context tree of a block render (see readBlockActionContextTree): current state, not
-   * watched. Undefined when the block has no action context.
-   */
+  /** Reads the block action context tree of a block render (see blockActionContextTree); undefined without one. */
   public async getBlockActionContext(
     blockId: string,
     mode: BlockActionContextMode = "prod",
   ): Promise<BlockActionContextNode | undefined> {
-    return await readBlockActionContextTree(this.env.pl, this.rid, blockId, mode);
+    return await Computable.make((ctx) =>
+      blockActionContextTree(ctx.accessor(this.projectTree.entry()).node(), blockId, mode),
+    ).getValue();
   }
 
   /** Returns what a block run is doing (summarizeBlockActionContext); undefined without an action context. */
@@ -811,7 +810,7 @@ export class Project {
     mode: BlockActionContextMode = "prod",
   ): Promise<BlockActionSummary | undefined> {
     const tree = await this.getBlockActionContext(blockId, mode);
-    return tree === undefined ? undefined : summarizeBlockActionContext(tree, Date.now());
+    return tree === undefined ? undefined : summarizeBlockActionContext(tree);
   }
 
   public getBlockState(blockId: string): Computable<BlockStateInternalV3> {
