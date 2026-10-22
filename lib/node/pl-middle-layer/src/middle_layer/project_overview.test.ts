@@ -1,22 +1,22 @@
 import { Computable } from "@milaboratories/computable";
-import type { RunIssue } from "@milaboratories/pl-model-common";
+import type { ArgsIssue } from "@milaboratories/pl-model-common";
 import type { PlTreeState } from "@milaboratories/pl-tree";
 import { describe, expect, test } from "vitest";
 import { projectFieldName } from "../model/project_model";
 import { FakeProject } from "../test/fake_project";
 import { argsAllowRun, type RunStateSource, withRunState } from "./project_overview";
 
-const setThreshold: RunIssue = { severity: "error", message: "Set a threshold" };
+const setThreshold: ArgsIssue = { severity: "error", message: "Set a threshold" };
 
 describe("argsAllowRun", () => {
-  test("a block whose runIssues found no errors in its current args may run", async () => {
+  test("a block whose argsIssues found no errors in its current args may run", async () => {
     const prj = new FakeProject();
-    prj.block("x", { currentArgs: prj.args({ n: 1 }), inputsValid: prj.runErrors([], { n: 1 }) });
+    prj.block("x", { currentArgs: prj.args({ n: 1 }), inputsValid: prj.argsErrors([], { n: 1 }) });
 
     expect(await allowRun(prj.tree(), "x")).toBe(true);
   });
 
-  test("a block with current args and no run errors record may not run", async () => {
+  test("a block with current args and no args errors record may not run", async () => {
     // What a project saved by an older middle layer holds: current args and no `inputsValid`.
     const prj = new FakeProject();
     prj.block("x", { currentArgs: prj.args({ n: 1 }) });
@@ -31,11 +31,11 @@ describe("argsAllowRun", () => {
     expect(await allowRun(prj.tree(), "x")).toBe(false);
   });
 
-  test("a block whose runIssues found errors in its current args may not run", async () => {
+  test("a block whose argsIssues found errors in its current args may not run", async () => {
     const prj = new FakeProject();
     prj.block("x", {
       currentArgs: prj.args({ n: 1 }),
-      inputsValid: prj.runErrors([setThreshold], { n: 1 }),
+      inputsValid: prj.argsErrors([setThreshold], { n: 1 }),
     });
 
     expect(await allowRun(prj.tree(), "x")).toBe(false);
@@ -45,7 +45,7 @@ describe("argsAllowRun", () => {
     const prj = new FakeProject();
     prj.block("x", {
       currentArgs: prj.args({ a: 1, b: { c: 2, d: 3 } }),
-      inputsValid: prj.runErrors([setThreshold], { b: { d: 3, c: 2 }, a: 1 }),
+      inputsValid: prj.argsErrors([setThreshold], { b: { d: 3, c: 2 }, a: 1 }),
     });
 
     expect(await allowRun(prj.tree(), "x")).toBe(false);
@@ -57,7 +57,7 @@ describe("argsAllowRun", () => {
     const prj = new FakeProject();
     prj.block("x", {
       currentArgs: prj.args({ n: 2 }),
-      inputsValid: prj.runErrors([], { n: 1 }),
+      inputsValid: prj.argsErrors([], { n: 1 }),
     });
 
     expect(await allowRun(prj.tree(), "x")).toBe(false);
@@ -77,13 +77,13 @@ describe("argsAllowRun", () => {
     const prj = new FakeProject();
     prj.block("x", {
       currentArgs: prj.args({ n: 1 }),
-      inputsValid: prj.runErrors([setThreshold], { n: 1 }),
+      inputsValid: prj.argsErrors([setThreshold], { n: 1 }),
     });
     const tree = prj.tree();
     const computable = allowRunComputable(tree, "x");
     expect(await computable.getValue()).toBe(false);
 
-    prj.block("x", { currentArgs: prj.args({ n: 2 }), inputsValid: prj.runErrors([], { n: 2 }) });
+    prj.block("x", { currentArgs: prj.args({ n: 2 }), inputsValid: prj.argsErrors([], { n: 2 }) });
     tree.updateFromResourceData(prj.changes());
 
     expect(await computable.getValue()).toBe(true);
@@ -91,13 +91,13 @@ describe("argsAllowRun", () => {
 
   test("current args changed without their record stop the block from running", async () => {
     const prj = new FakeProject();
-    const runErrors = prj.runErrors([], { n: 1 });
-    prj.block("x", { currentArgs: prj.args({ n: 1 }), inputsValid: runErrors });
+    const argsErrors = prj.argsErrors([], { n: 1 });
+    prj.block("x", { currentArgs: prj.args({ n: 1 }), inputsValid: argsErrors });
     const tree = prj.tree();
     const computable = allowRunComputable(tree, "x");
     expect(await computable.getValue()).toBe(true);
 
-    prj.block("x", { currentArgs: prj.args({ n: 2 }), inputsValid: runErrors });
+    prj.block("x", { currentArgs: prj.args({ n: 2 }), inputsValid: argsErrors });
     tree.updateFromResourceData(prj.changes());
 
     expect(await computable.getValue()).toBe(false);
@@ -105,7 +105,7 @@ describe("argsAllowRun", () => {
 });
 
 describe("withRunState", () => {
-  test("a block whose results are up to date lets a changed dependent run despite its own run errors", () => {
+  test("a block whose results are up to date lets a changed dependent run despite its own args errors", () => {
     const [upstream, dependent] = withRunState([
       block({ id: "a", inputsValid: false }),
       block({ id: "b", stale: true, upstreams: ["a"] }),
@@ -114,7 +114,7 @@ describe("withRunState", () => {
     expect(dependent.canRun).toBe(true);
   });
 
-  test("a changed block with run errors keeps its dependents from running", () => {
+  test("a changed block with args errors keeps its dependents from running", () => {
     const [upstream, dependent, further] = withRunState([
       block({ id: "a", stale: true, inputsValid: false }),
       block({ id: "b", stale: true, upstreams: ["a"] }),
@@ -125,7 +125,7 @@ describe("withRunState", () => {
     expect(further).toMatchObject({ stale: true, canRun: false });
   });
 
-  test("a block with failed outputs and run errors keeps its dependents from running", () => {
+  test("a block with failed outputs and args errors keeps its dependents from running", () => {
     const [, dependent] = withRunState([
       block({ id: "a", outputErrors: true, inputsValid: false }),
       block({ id: "b", stale: true, upstreams: ["a"] }),

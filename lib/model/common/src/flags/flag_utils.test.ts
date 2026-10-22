@@ -182,33 +182,33 @@ describe("RuntimeCapabilities", () => {
   });
 });
 
-describe("requiresRunIssues", () => {
+describe("requiresArgsIssues", () => {
   it("is a known requirement", () => {
-    expect(AllRequiresFeatureFlags).toContain("requiresRunIssues");
+    expect(AllRequiresFeatureFlags).toContain("requiresArgsIssues");
   });
 
-  it("refuses a block that gates Run with runIssues in a runtime that does not", () => {
+  it("refuses a block that gates Run with argsIssues in a runtime that does not", () => {
     const capabilities = new RuntimeCapabilities().addSupportedRequirement(
       "requiresModelAPIVersion",
       2,
     );
     const blockFlags: BlockCodeFeatureFlags = {
       requiresModelAPIVersion: 2,
-      requiresRunIssues: true,
+      requiresArgsIssues: true,
     };
 
     expect(capabilities.getIncompatibleFlags(blockFlags)).toEqual(
-      new Map([["requiresRunIssues", true]]),
+      new Map([["requiresArgsIssues", true]]),
     );
   });
 
-  it("accepts it in a runtime that gates Run with runIssues", () => {
+  it("accepts it in a runtime that gates Run with argsIssues", () => {
     const capabilities = new RuntimeCapabilities()
       .addSupportedRequirement("requiresModelAPIVersion", 2)
-      .addSupportedRequirement("requiresRunIssues");
+      .addSupportedRequirement("requiresArgsIssues");
 
     expect(
-      capabilities.checkCompatibility({ requiresModelAPIVersion: 2, requiresRunIssues: true }),
+      capabilities.checkCompatibility({ requiresModelAPIVersion: 2, requiresArgsIssues: true }),
     ).toBe(true);
   });
 });

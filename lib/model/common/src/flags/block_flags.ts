@@ -26,10 +26,10 @@ export type BlockCodeKnownFeatureFlags = {
   readonly requiresPFramesVersion?: number;
   /**
    * The block may derive args while they are incomplete and keep them from running with
-   * `runIssues`. Set for every block the SDK builds. A runtime that does not know this flag
+   * `argsIssues`. Set for every block the SDK builds. A runtime that does not know this flag
    * would run such incomplete args, so it must refuse the block.
    */
-  readonly requiresRunIssues?: boolean;
+  readonly requiresArgsIssues?: boolean;
 } & ServiceRequireFlags;
 
 /**
@@ -50,7 +50,7 @@ export const AllRequiresFeatureFlags = [
   "requiresCreatePTable",
   "requiresPFramesVersion",
   "requiresModelAPIVersion",
-  "requiresRunIssues",
+  "requiresArgsIssues",
 ] as const;
 
 //

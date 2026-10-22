@@ -85,7 +85,7 @@ export class ProjectHelper {
 
   /**
    * Derives args directly from storage JSON using VM callback.
-   * The VM extracts data from storage, calls the block's args() function and then its runIssues().
+   * The VM extracts data from storage, calls the block's args() function and then its argsIssues().
    *
    * This allows the middle layer to work only with storage JSON,
    * without needing to know the underlying data structure.
@@ -123,8 +123,8 @@ export class ProjectHelper {
    * Derives prerunArgs directly from storage JSON using VM callback.
    * Falls back to args() if prerunArgs is not defined in the block model.
    *
-   * Errors the block's `prerunIssues()` finds in its prerun args, or for a block without its
-   * own prerunArgs, the errors its `runIssues()` finds in its args, come back as an `error` and
+   * Errors the block's `prerunArgsIssues()` finds in its prerun args, or for a block without its
+   * own prerunArgs, the errors its `argsIssues()` finds in its args, come back as an `error` and
    * skip staging the same way.
    *
    * @param blockConfig The block configuration (provides the model code)

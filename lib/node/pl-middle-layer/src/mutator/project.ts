@@ -80,11 +80,11 @@ import type { ProjectHelper } from "../model/project_helper";
 import {
   argsRepair,
   derivedArgsValue,
-  runErrorsFieldChange,
-  runErrorsOfBlock,
+  argsErrorsFieldChange,
+  argsErrorsOfBlock,
   type DerivedArgs,
-  type RunErrorsFieldChange,
-  type RunErrorsState,
+  type ArgsErrorsFieldChange,
+  type ArgsErrorsState,
 } from "../model/args_derivation";
 import {
   extractConfig,
@@ -282,10 +282,10 @@ class BlockInfo {
     return this.currentPrerunArgsC();
   }
 
-  private readonly runErrorsC = cached(
+  private readonly argsErrorsC = cached(
     () => `${this.fields.inputsValid?.modCount}:${this.fields.currentArgs?.modCount}`,
     () =>
-      runErrorsOfBlock({
+      argsErrorsOfBlock({
         modelAPIVersion: this.config.modelAPIVersion,
         inputsValid: this.fields.inputsValid,
         currentArgs: this.currentArgs,
@@ -293,11 +293,11 @@ class BlockInfo {
   );
 
   /**
-   * What is known of the errors the block's `runIssues()` found in its current args. A block
-   * whose model API version has no run issues, or that has no current args, has none.
+   * What is known of the errors the block's `argsIssues()` found in its current args. A block
+   * whose model API version has no args issues, or that has no current args, has none.
    */
-  get runErrors(): RunErrorsState {
-    return this.runErrorsC();
+  get argsErrors(): ArgsErrorsState {
+    return this.argsErrorsC();
   }
 
   get stagingRendered(): boolean {
@@ -520,9 +520,9 @@ export class ProjectMutator {
     // Validate after fixes
     this.blockInfos.forEach((info) => info.check());
 
-    // Run errors of model API v2 blocks whose args were written by a middle layer that does not
+    // Args errors of model API v2 blocks whose args were written by a middle layer that does not
     // record them with every args: such blocks get their args derived again from their storage.
-    this.blockInfos.forEach((info) => this.rederiveArgsOfUnknownRunErrors(info.id));
+    this.blockInfos.forEach((info) => this.rederiveArgsOfUnknownErrors(info.id));
   }
 
   get wasModified(): boolean {
@@ -791,14 +791,14 @@ export class ProjectMutator {
    * Brings the block's `inputsValid` field in line with what its args derivation found: the run
    * errors of its args, none when it may run with them, and no field when it has no args.
    */
-  private setRunErrors(blockId: string, derivedArgs: DerivedArgs): void {
-    this.applyRunErrorsChange(
+  private setArgsErrors(blockId: string, derivedArgs: DerivedArgs): void {
+    this.applyArgsErrorsChange(
       blockId,
-      runErrorsFieldChange(this.getBlockInfo(blockId).fields.inputsValid, derivedArgs),
+      argsErrorsFieldChange(this.getBlockInfo(blockId).fields.inputsValid, derivedArgs),
     );
   }
 
-  private applyRunErrorsChange(blockId: string, change: RunErrorsFieldChange): void {
+  private applyArgsErrorsChange(blockId: string, change: ArgsErrorsFieldChange): void {
     switch (change.type) {
       case "keep":
         return;
@@ -814,16 +814,16 @@ export class ProjectMutator {
   }
 
   /**
-   * Derives the args of a model API v2 block again from its storage when the run errors of its
-   * current args are unknown, and writes the args that come out and their run errors. A block
-   * whose run errors are known is left as it is, and fields that already hold what the
+   * Derives the args of a model API v2 block again from its storage when the errors found in its
+   * current args are unknown, and writes the args that come out and their args errors. A block
+   * whose args errors are known is left as it is, and fields that already hold what the
    * derivation gives are not rewritten, so a project in order is not touched.
    */
-  private rederiveArgsOfUnknownRunErrors(blockId: string): void {
+  private rederiveArgsOfUnknownErrors(blockId: string): void {
     const info = this.getBlockInfo(blockId);
     const repair = argsRepair(
       {
-        runErrors: info.runErrors,
+        argsErrors: info.argsErrors,
         currentArgs: info.currentArgs,
         inputsValid: info.fields.inputsValid,
         storageJson: info.blockStorageJson,
@@ -853,7 +853,7 @@ export class ProjectMutator {
         break;
       }
     }
-    this.applyRunErrorsChange(blockId, repair.inputsValid);
+    this.applyArgsErrorsChange(blockId, repair.inputsValid);
   }
 
   private updateLastModified() {
@@ -1017,7 +1017,7 @@ export class ProjectMutator {
     } else {
       this.deleteBlockFields(blockId, "currentArgs");
     }
-    this.setRunErrors(blockId, derivedArgs);
+    this.setArgsErrors(blockId, derivedArgs);
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
@@ -1074,7 +1074,7 @@ export class ProjectMutator {
           updatedStorageJson,
         );
         args = derivedArgsValue(derivedArgs);
-        this.setRunErrors(req.blockId, derivedArgs);
+        this.setArgsErrors(req.blockId, derivedArgs);
       } else {
         this.setBlockFieldObj(req.blockId, "blockStorage", this.createGzJsonFieldValue(req.state));
         if (req.state !== null && typeof req.state === "object" && "args" in req.state) {
@@ -1290,15 +1290,15 @@ export class ProjectMutator {
       throw new Error(`Can't render production for block ${blockId}: currentArgs not set`);
     }
 
-    // Nor if its runIssues() found errors in them, or it is not known whether it did
-    const runErrors = info.runErrors;
-    if (runErrors.type === "unknown") {
+    // Nor if its argsIssues() found errors in them, or it is not known whether it did
+    const argsErrors = info.argsErrors;
+    if (argsErrors.type === "unknown") {
       throw new Error(
-        `Can't render production for block ${blockId}: the run issues of its args are not known`,
+        `Can't render production for block ${blockId}: the issues of its args are not known`,
       );
     }
-    if (runErrors.errors.length > 0) {
-      const messages = runErrors.errors.map(({ message }) => message).join("; ");
+    if (argsErrors.errors.length > 0) {
+      const messages = argsErrors.errors.map(({ message }) => message).join("; ");
       throw new Error(`Can't render production for block ${blockId}: ${messages}`);
     }
 
@@ -1376,7 +1376,7 @@ export class ProjectMutator {
       // Derive args from storage (VM extracts data internally)
       const derivedArgs = this.projectHelper.deriveArgsFromStorage(blockConfig, storageToWrite);
       args = derivedArgsValue(derivedArgs);
-      this.setRunErrors(blockId, derivedArgs);
+      this.setArgsErrors(blockId, derivedArgs);
     } else if (spec.storageMode === "legacy") {
       // Model API v1: use legacyState from spec
       const parsedState = JSON.parse(spec.legacyState);
@@ -1675,7 +1675,7 @@ export class ProjectMutator {
       } else {
         this.deleteBlockFields(blockId, "currentArgs");
       }
-      this.setRunErrors(blockId, derivedArgs);
+      this.setArgsErrors(blockId, derivedArgs);
     };
 
     if (newClearState !== undefined) {
@@ -1691,7 +1691,7 @@ export class ProjectMutator {
       } else {
         // V1: Use setStates with legacy state format
         persistBlockPack();
-        // A V1 model tells whether the block may run by itself; run errors of an earlier V2 model
+        // A V1 model tells whether the block may run by itself; args errors of an earlier V2 model
         // no longer apply.
         this.deleteBlockFields(blockId, "inputsValid");
         this.setStates([{ modelAPIVersion: 1, blockId, state: newClearState.state }]);
@@ -1724,7 +1724,7 @@ export class ProjectMutator {
       } else {
         // Legacy blocks (modelAPIVersion 1): persist block pack, set prerunArgs = currentArgs
         persistBlockPack();
-        // A V1 model tells whether the block may run by itself; run errors of an earlier V2 model
+        // A V1 model tells whether the block may run by itself; args errors of an earlier V2 model
         // no longer apply.
         this.deleteBlockFields(blockId, "inputsValid");
         if (info.fields.currentArgs !== undefined) {
@@ -1760,8 +1760,8 @@ export class ProjectMutator {
   //
 
   public renderProduction(blockIds: string[], addUpstreams: boolean = false): Set<string> {
-    // Args whose run errors are unknown are derived again before anything is built from them
-    this.blockInfos.forEach((info) => this.rederiveArgsOfUnknownRunErrors(info.id));
+    // Args whose errors are unknown are derived again before anything is built from them
+    this.blockInfos.forEach((info) => this.rederiveArgsOfUnknownErrors(info.id));
 
     const blockIdsSet = new Set(blockIds);
 

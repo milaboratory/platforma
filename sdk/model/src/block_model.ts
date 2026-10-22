@@ -6,7 +6,7 @@ import type {
   BlockCodeKnownFeatureFlags,
   BlockConfigContainer,
   BlockKindReference,
-  RunIssue,
+  ArgsIssue,
 } from "@milaboratories/pl-model-common";
 import { REQUIRES_PFRAMES_VERSION, formatKindRef } from "@milaboratories/pl-model-common";
 import { getPlatformaInstance, isInUI, createAndRegisterRenderLambda } from "./internal";
@@ -129,10 +129,10 @@ interface BlockModelV3Config<
   featureFlags: BlockCodeKnownFeatureFlags;
   deriveArgs: ((data: unknown) => unknown) | undefined;
   /** Finds what keeps the derived args from running; set only together with `deriveArgs`. */
-  runIssues: ((input: { args: unknown; data: unknown }) => RunIssue[]) | undefined;
+  argsIssues: ((input: { args: unknown; data: unknown }) => ArgsIssue[]) | undefined;
   derivePrerunArgs: ((data: unknown) => unknown) | undefined;
   /** Finds what keeps the prerun args from staging; set only together with `derivePrerunArgs`. */
-  prerunIssues: ((input: { prerunArgs: unknown; data: unknown }) => RunIssue[]) | undefined;
+  prerunArgsIssues: ((input: { prerunArgs: unknown; data: unknown }) => ArgsIssue[]) | undefined;
   /** Projects block data back to this kind's params for template export. */
   deriveTemplateParams: ((data: Data) => Params) | undefined;
   /**
@@ -171,7 +171,7 @@ export class BlockModelV3<
     requiresModelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
     requiresCreatePTable: 2,
     requiresPFramesVersion: REQUIRES_PFRAMES_VERSION,
-    requiresRunIssues: true,
+    requiresArgsIssues: true,
     ...BLOCK_SERVICE_FLAGS,
   } satisfies BlockCodeKnownFeatureFlags;
 
@@ -236,9 +236,9 @@ export class BlockModelV3<
       enrichmentTargets: undefined,
       featureFlags: { ...BlockModelV3.FEATURE_FLAGS },
       deriveArgs: undefined,
-      runIssues: undefined,
+      argsIssues: undefined,
       derivePrerunArgs: undefined,
-      prerunIssues: undefined,
+      prerunArgsIssues: undefined,
       deriveTemplateParams: undefined,
       plugins: {},
     });
@@ -347,17 +347,17 @@ export class BlockModelV3<
    * This is called during setData to compute the args that will be used for block execution.
    *
    * Build args even from incomplete data, and say what keeps the block from running in
-   * {@link runIssues}: args that exist let the platform see what the block references
+   * {@link argsIssues}: args that exist let the platform see what the block references
    * before it is ready to run. Throwing here still works, and means there are no args at all.
    *
-   * Setting args again drops a {@link runIssues} set before, since it checked other args.
+   * Setting args again drops a {@link argsIssues} set before, since it checked other args.
    *
    * @example
    * .args<BlockArgs>((data) => ({ numbers: data.numbers }))
    *
    * @example
    * .args<BlockArgs>((data) => ({ numbers: data.numbers }))
-   * .runIssues(({ args }) =>
+   * .argsIssues(({ args }) =>
    *   args.numbers.length === 0 ? [{ severity: 'error', message: 'Numbers required' }] : [],
    * )
    */
@@ -367,7 +367,7 @@ export class BlockModelV3<
     return new BlockModelV3<A, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs>({
       ...this.config,
       deriveArgs: lambda as (data: unknown) => unknown,
-      runIssues: undefined,
+      argsIssues: undefined,
     });
   }
 
@@ -387,22 +387,22 @@ export class BlockModelV3<
    *
    * @example
    * .args((data) => ({ dataset: data.dataset, threshold: data.threshold }))
-   * .runIssues(({ args }) => {
-   *   const issues: RunIssue[] = [];
+   * .argsIssues(({ args }) => {
+   *   const issues: ArgsIssue[] = [];
    *   if (args.dataset === undefined) issues.push({ severity: 'error', message: 'Select a dataset' });
    *   if (args.threshold > 0.5) issues.push({ severity: 'warning', message: 'Threshold is high' });
    *   return issues;
    * })
    */
-  public runIssues(
-    fn: (input: { args: Args; data: Data }) => RunIssue[],
+  public argsIssues(
+    fn: (input: { args: Args; data: Data }) => ArgsIssue[],
   ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
     if (this.config.deriveArgs === undefined) {
-      throw new Error("runIssues() must be set after args(): it checks the args they derive.");
+      throw new Error("argsIssues() must be set after args(): it checks the args they derive.");
     }
     return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs>({
       ...this.config,
-      runIssues: fn as (input: { args: unknown; data: unknown }) => RunIssue[],
+      argsIssues: fn as (input: { args: unknown; data: unknown }) => ArgsIssue[],
     });
   }
 
@@ -416,7 +416,7 @@ export class BlockModelV3<
    * The staging / prerun phase runs only if currentPrerunArgs differs from the executed
    * version of prerunArgs (same comparison logic as currentArgs vs prodArgs).
    *
-   * Setting prerun args again drops a {@link prerunIssues} set before, since it checked other
+   * Setting prerun args again drops a {@link prerunArgsIssues} set before, since it checked other
    * args.
    *
    * @example
@@ -435,7 +435,7 @@ export class BlockModelV3<
     return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, P>({
       ...this.config,
       derivePrerunArgs: fn as (data: unknown) => unknown,
-      prerunIssues: undefined,
+      prerunArgsIssues: undefined,
     });
   }
 
@@ -447,27 +447,27 @@ export class BlockModelV3<
    *
    * An issue of severity `"error"` keeps the block from being staged; a `"warning"` does not. A
    * throw, or a result that is not a list of issues, counts as one error carrying the thrown or
-   * parser message. {@link runIssues} is not consulted for a block with its own prerun args.
+   * parser message. {@link argsIssues} is not consulted for a block with its own prerun args.
    *
    * Must be set after `.prerunArgs()`, and is dropped when `.prerunArgs()` is set again.
    *
    * @example
    * .prerunArgs((data) => ({ dataset: data.dataset }))
-   * .prerunIssues(({ prerunArgs }) =>
+   * .prerunArgsIssues(({ prerunArgs }) =>
    *   prerunArgs.dataset === undefined ? [{ severity: 'error', message: 'Select a dataset' }] : [],
    * )
    */
-  public prerunIssues(
-    fn: (input: { prerunArgs: Exclude<PrerunArgs, undefined>; data: Data }) => RunIssue[],
+  public prerunArgsIssues(
+    fn: (input: { prerunArgs: Exclude<PrerunArgs, undefined>; data: Data }) => ArgsIssue[],
   ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
     if (this.config.derivePrerunArgs === undefined) {
       throw new Error(
-        "prerunIssues() must be set after prerunArgs(): it checks the prerun args they derive.",
+        "prerunArgsIssues() must be set after prerunArgs(): it checks the prerun args they derive.",
       );
     }
     return new BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs>({
       ...this.config,
-      prerunIssues: fn as (input: { prerunArgs: unknown; data: unknown }) => RunIssue[],
+      prerunArgsIssues: fn as (input: { prerunArgs: unknown; data: unknown }) => ArgsIssue[],
     });
   }
 
@@ -753,9 +753,9 @@ export class BlockModelV3<
     const {
       dataModel,
       deriveArgs,
-      runIssues,
+      argsIssues,
       derivePrerunArgs,
-      prerunIssues,
+      prerunArgsIssues,
       deriveTemplateParams,
       parseInitializationParams,
     } = this.config;
@@ -787,13 +787,13 @@ export class BlockModelV3<
           createPluginData: (handle) => getPlugin(handle).model.getDefaultData(),
         }),
       [BlockStorageFacadeCallbacks.ArgsDerive]: (storageJson) =>
-        deriveArgsFromStorage(storageJson, { deriveArgs, runIssues }),
+        deriveArgsFromStorage(storageJson, { deriveArgs, argsIssues }),
       [BlockStorageFacadeCallbacks.PrerunArgsDerive]: (storageJson) =>
         derivePrerunArgsFromStorage(storageJson, {
           deriveArgs,
-          runIssues,
+          argsIssues,
           ownPrerunArgs:
-            derivePrerunArgs === undefined ? undefined : { derivePrerunArgs, prerunIssues },
+            derivePrerunArgs === undefined ? undefined : { derivePrerunArgs, prerunArgsIssues },
         }),
       [BlockStorageFacadeCallbacks.InitializationParamsDerive]: (storageJson) =>
         deriveTemplateParamsFromStorage(
@@ -937,9 +937,11 @@ type _ConfigTest = Expect<
     {
       renderingMode: BlockRenderingMode;
       deriveArgs: ((data: unknown) => unknown) | undefined;
-      runIssues: ((input: { args: unknown; data: unknown }) => RunIssue[]) | undefined;
+      argsIssues: ((input: { args: unknown; data: unknown }) => ArgsIssue[]) | undefined;
       derivePrerunArgs: ((data: unknown) => unknown) | undefined;
-      prerunIssues: ((input: { prerunArgs: unknown; data: unknown }) => RunIssue[]) | undefined;
+      prerunArgsIssues:
+        | ((input: { prerunArgs: unknown; data: unknown }) => ArgsIssue[])
+        | undefined;
       deriveTemplateParams: ((data: _TestData) => unknown) | undefined;
       parseInitializationParams: (value: unknown) => unknown;
       dataModel: DataModel<_TestData, unknown, {}>;
