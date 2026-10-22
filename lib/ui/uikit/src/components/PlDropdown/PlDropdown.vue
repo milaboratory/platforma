@@ -10,8 +10,8 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
-import { missingValueText, pickedValueText } from "../../helpers/columnValue";
-import type { MissingValueHint } from "../../helpers/columnValue";
+import { missingValueText, missingValueTooltip, pickedValueText } from "../../helpers/columnValue";
+import type { MissingValueLabel, MissingValueTooltip } from "../../helpers/columnValue";
 import { getErrorMessage } from "../../helpers/error.ts";
 import { tap } from "../../helpers/functions";
 import { deepEqual } from "../../helpers/objects";
@@ -72,14 +72,16 @@ const props = withDefaults(
     placeholder?: string;
     /**
      * Text shown in the field when `modelValue` has no matching option — e.g. its
-     * upstream block was deleted. Rendered italic in error color. By default, the value
-     * a column value id picks, marked as not available, or "Value not available".
+     * upstream block was deleted. Rendered italic in error color. One text for every such value,
+     * or a function giving it per value. By default, the value a column value id picks, marked
+     * as not available, or "Value not available".
      */
-    missingValueLabel?: string;
+    missingValueLabel?: MissingValueLabel;
     /**
-     * Explains a selected value missing from the options in a tooltip over it.
+     * Explains a selected value missing from the options in a tooltip over it: one text for every
+     * such value, or a function giving the content per value.
      */
-    missingValueHint?: MissingValueHint;
+    missingValueTooltip?: MissingValueTooltip;
     /**
      * Enables a button to clear the selected value (default: false)
      */
@@ -126,7 +128,7 @@ const props = withDefaults(
     showErrorMessage: true,
     placeholder: "...",
     missingValueLabel: undefined,
-    missingValueHint: undefined,
+    missingValueTooltip: undefined,
     clearable: false,
     required: false,
     disabled: false,
@@ -224,7 +226,7 @@ const textValue = computed(() => {
 const missingText = computed(() => missingValueText(props.modelValue, props.missingValueLabel));
 
 const missingHint = computed(() =>
-  isMissing.value ? props.missingValueHint?.(props.modelValue) : undefined,
+  isMissing.value ? missingValueTooltip(props.modelValue, props.missingValueTooltip) : undefined,
 );
 
 // Native tooltip with the full selected value. The `.input-value` layer has

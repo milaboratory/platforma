@@ -583,7 +583,7 @@ there is one, with `getUniqueValues` or the join — and its component takes the
 same `settings` and `v-model`, so a block switches by the tag alone. It still has to look up the labels of the picked values (an `InSet`
 filter on the value column, the values as numbers for a number column), and
 uikit's `PlAutocomplete` / `PlAutocompleteMulti` still lack the
-`missingValueLabel` and `missingValueHint` that show a picked value the column
+`missingValueLabel` and `missingValueTooltip` that show a picked value the column
 no longer holds. A page of the join holds rows, not distinct values, so it may
 offer fewer options than it reads.
 

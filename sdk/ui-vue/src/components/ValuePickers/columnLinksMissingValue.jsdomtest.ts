@@ -6,7 +6,7 @@ import {
 } from "@platforma-sdk/model";
 import { mount } from "@vue/test-utils";
 import { describe, expect, test, vi } from "vitest";
-import { missingValueHint } from "./missingValueHint";
+import { columnLinksMissingValue } from "./columnLinksMissingValue";
 
 vi.mock("../../composition/useOpenBlock", () => ({ useOpenBlock: () => async () => {} }));
 
@@ -30,30 +30,33 @@ const dependencies: BlockDependencies = {
   labels: { samples: "Samples" },
 };
 
-describe("missingValueHint", () => {
+describe("columnLinksMissingValue", () => {
   test("links the block that does not provide the column", () => {
-    const hint = missingValueHint(() => dependencies)(ty1);
-    if (hint === undefined) throw new Error("expected a hint");
-    const wrapper = mount(hint);
+    const missing = columnLinksMissingValue(() => dependencies);
+    const tooltip = missing.tooltip(ty1);
+    if (tooltip === undefined) throw new Error("expected a tooltip");
+    const wrapper = mount(tooltip);
+
+    expect(missing.label(ty1)).toBe("Ty1 — not available");
 
     expect(wrapper.text()).toBe("Samples does not provide “Path”.");
     expect(wrapper.get("button").attributes("title")).toBe("Open Samples");
   });
 
   test("says a block that has not been run does not provide the column", () => {
-    const hint = missingValueHint(() => ({
+    const tooltip = columnLinksMissingValue(() => ({
       ...dependencies,
       items: dependencies.items.map(
         (item): DependencyEntry => ({ ...item, status: { type: "notRun" } }),
       ),
-    }))(ty1);
-    if (hint === undefined) throw new Error("expected a hint");
+    })).tooltip(ty1);
+    if (tooltip === undefined) throw new Error("expected a tooltip");
 
-    expect(mount(hint).text()).toBe("Samples does not provide “Path”.");
+    expect(mount(tooltip).text()).toBe("Samples does not provide “Path”.");
   });
 
   test("says a provided column waits for the other inputs of the block", () => {
-    const hint = missingValueHint(() => ({
+    const missing = columnLinksMissingValue(() => ({
       ...dependencies,
       items: [
         ...dependencies.items.map((item): DependencyEntry => ({ ...item, status: { type: "ok" } })),
@@ -61,13 +64,17 @@ describe("missingValueHint", () => {
           (item): DependencyEntry => ({ ...item, ref: OTHER, status: { type: "notRun" } }),
         ),
       ],
-    }))(ty1);
-    if (hint === undefined) throw new Error("expected a hint");
+    }));
+    const tooltip = missing.tooltip(ty1);
+    if (tooltip === undefined) throw new Error("expected a tooltip");
 
-    expect(mount(hint).text()).toBe("Waiting for the other inputs of this block.");
+    expect(missing.label(ty1)).toBe("Ty1");
+    expect(mount(tooltip).text()).toBe("Waiting for the other inputs of this block.");
   });
 
-  test("gives no hint while the dependencies are not known", () => {
-    expect(missingValueHint(() => undefined)(ty1)).toBeUndefined();
+  test("tells nothing while the dependencies are not known", () => {
+    const missing = columnLinksMissingValue(() => undefined);
+    expect(missing.label(ty1)).toBeUndefined();
+    expect(missing.tooltip(ty1)).toBeUndefined();
   });
 });

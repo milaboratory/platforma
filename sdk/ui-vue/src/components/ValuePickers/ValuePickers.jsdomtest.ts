@@ -66,9 +66,13 @@ describe("value pickers", () => {
     expect(wrapper.find("[data-testid='pl-tooltip']").exists()).toBe(false);
   });
 
-  test("keep the hint the caller gives", () => {
+  test("keep the tooltip the caller gives", () => {
     const wrapper = mount(PlValueLabel, {
-      props: { value: ty1, options: [], missingValueHint: () => () => "Gone" },
+      props: {
+        value: ty1,
+        options: [],
+        missingValueTooltip: "Gone",
+      },
     });
     expect(wrapper.find("[data-testid='pl-tooltip']").exists()).toBe(true);
   });

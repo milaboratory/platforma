@@ -17,6 +17,7 @@ import type {
   DatasetOption,
   DatasetSelection,
   LabeledEnrichmentRefs,
+  PObjectId,
   PlRef,
 } from "@platforma-sdk/model";
 import {
@@ -25,10 +26,10 @@ import {
   createPrimaryRef,
   plRefsEqual,
 } from "@platforma-sdk/model";
-import type { ListOption, MissingValueHint } from "@milaboratories/uikit";
+import type { ListOption } from "@milaboratories/uikit";
 import { PlDropdown } from "@milaboratories/uikit";
 import { computed } from "vue";
-import { useColumnLinksHint } from "../ValuePickers/missingValueHint";
+import { useColumnLinksMissingValue } from "../ValuePickers/columnLinksMissingValue";
 
 const slots = defineSlots<{
   tooltip?: () => unknown;
@@ -121,26 +122,31 @@ const dropdownOptions = computed<ListOption<Selection>[] | undefined>(() => {
   return out;
 });
 
-const columnLinksHint = useColumnLinksHint();
+const columnLinks = useColumnLinksMissingValue();
 
 /**
- * Explains a selection the options lack by the column it selects: the dataset first, as the
- * filter of a missing dataset is missing with it, then the filter.
+ * The column a selection the options lack is shown and explained by: the dataset first, as the
+ * filter of a missing dataset is missing with it, then the filter; `undefined` when the column
+ * links tell nothing about either.
  */
-const missingValueHint: MissingValueHint | undefined =
-  columnLinksHint === undefined
-    ? undefined
-    : () => {
-        const primary = model.value?.primary;
-        if (primary === undefined) return undefined;
-        const refs =
-          primary.filter === undefined ? [primary.column] : [primary.column, primary.filter];
-        for (const ref of refs) {
-          const hint = columnLinksHint(createGlobalPObjectId(ref.blockId, ref.name));
-          if (hint !== undefined) return hint;
-        }
-        return undefined;
-      };
+function explainedColumn(): PObjectId | undefined {
+  const primary = model.value?.primary;
+  if (columnLinks === undefined || primary === undefined) return undefined;
+  const refs = primary.filter === undefined ? [primary.column] : [primary.column, primary.filter];
+  return refs
+    .map((ref) => createGlobalPObjectId(ref.blockId, ref.name))
+    .find((column) => columnLinks.tooltip(column) !== undefined);
+}
+
+const missingValueLabel = () => {
+  const column = explainedColumn();
+  return column === undefined ? undefined : columnLinks?.label(column);
+};
+
+const missingValueTooltip = () => {
+  const column = explainedColumn();
+  return column === undefined ? undefined : columnLinks?.tooltip(column);
+};
 
 function onChange(selection: Selection | undefined) {
   if (selection === undefined) {
@@ -167,7 +173,8 @@ function onChange(selection: Selection | undefined) {
     :clearable="clearable"
     :required="required"
     :disabled="disabled"
-    :missing-value-hint="missingValueHint"
+    :missing-value-label="missingValueLabel"
+    :missing-value-tooltip="missingValueTooltip"
     @update:model-value="onChange"
   >
     <template v-if="slots.tooltip" #tooltip>

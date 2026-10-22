@@ -74,7 +74,7 @@ export * from "./components/PlTextField";
 export * from "./components/PlToggleSwitch";
 export * from "./components/PlTooltip";
 export * from "./components/PlValueLabel";
-export type { MissingValueHint } from "./helpers/columnValue";
+export type { MissingValueLabel, MissingValueTooltip } from "./helpers/columnValue";
 
 export * from "./components/PlFileDialog";
 export * from "./components/PlFileInput";

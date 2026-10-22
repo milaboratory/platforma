@@ -153,10 +153,12 @@ export function blockName(labels: Record<string, string>, blockId: string): stri
  * Why a selected column or column value is missing. `source`: the block meant to provide it, and
  * what went wrong, as a sentence that follows the block name. `waiting`: its column is provided,
  * while other inputs of the block are not, and the options of one input may be made from another.
+ * `name`: what the selection is called — the picked value, or the label of a column selected as a
+ * whole; `null` when the column has no known label.
  */
 export type MissingValueCause =
-  | { type: "source"; blockId: string; blockName: string; text: string }
-  | { type: "waiting"; text: string };
+  | { type: "source"; name: string | null; blockId: string; blockName: string; text: string }
+  | { type: "waiting"; name: string | null; text: string };
 
 /**
  * Why `value` is missing from its options, by the dependencies of the block: a column value id,
@@ -176,16 +178,18 @@ export function describeMissingValue(
 
   const column = entry.columnLabel === null ? "the column" : `“${entry.columnLabel}”`;
   const text = missingValueCauseText(entry.status, column, reference.picked);
+  const name = reference.picked ?? entry.columnLabel;
   if (text !== undefined) {
     return {
       type: "source",
+      name,
       blockId: entry.producerBlockId,
       blockName: blockName(dependencies.labels, entry.producerBlockId),
       text,
     };
   }
   return waitsForOtherInputs(dependencies, entry, reference.picked)
-    ? { type: "waiting", text: "Waiting for the other inputs of this block." }
+    ? { type: "waiting", name, text: "Waiting for the other inputs of this block." }
     : undefined;
 }
 

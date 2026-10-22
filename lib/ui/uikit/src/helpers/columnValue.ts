@@ -2,10 +2,16 @@ import { columnValueLabel, isColumnValueId } from "@platforma-sdk/model";
 import type { FunctionalComponent } from "vue";
 
 /**
- * Why a selected value is missing from its options, as the content of a tooltip over the value;
- * `undefined` when there is nothing to tell about it.
+ * Text shown in place of a selected value missing from its options: one for every such value,
+ * or one per value, `undefined` leaving the usual text.
  */
-export type MissingValueHint = (value: unknown) => FunctionalComponent | undefined;
+export type MissingValueLabel = string | ((value: unknown) => string | undefined);
+
+/**
+ * Tooltip over a selected value missing from its options: one text for every such value, or
+ * content per value, `undefined` when there is nothing to tell about it.
+ */
+export type MissingValueTooltip = string | ((value: unknown) => FunctionalComponent | undefined);
 
 /**
  * The value a column value id picks, as text; `undefined` for any other value. A picked value
@@ -17,11 +23,21 @@ export function pickedValueText(value: unknown): string | undefined {
 }
 
 /**
- * Text shown for a selected value missing from the options: the caller's label, else the
- * picked value of a column value id marked as not available, else a generic one.
+ * Text shown for a selected value missing from the options: the one `label` gives for it, else
+ * the picked value of a column value id marked as not available, else a generic one.
  */
-export function missingValueText(value: unknown, label: string | undefined): string {
-  if (label !== undefined) return label;
+export function missingValueText(value: unknown, label: MissingValueLabel | undefined): string {
+  const given = typeof label === "function" ? label(value) : label;
+  if (given !== undefined) return given;
   const picked = pickedValueText(value);
   return picked === undefined ? "Value not available" : `${picked} — not available`;
+}
+
+/** Content of the tooltip `tooltip` gives over a selected value missing from the options. */
+export function missingValueTooltip(
+  value: unknown,
+  tooltip: MissingValueTooltip | undefined,
+): FunctionalComponent | undefined {
+  if (typeof tooltip === "string") return () => tooltip;
+  return tooltip?.(value);
 }

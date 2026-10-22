@@ -383,6 +383,7 @@ describe("describeMissingValue", () => {
     );
     expect(cause).toEqual({
       type: "source",
+      name: "Ty1",
       blockId: "samples",
       blockName: "Samples",
       text: "does not provide “Path”.",
@@ -431,9 +432,17 @@ describe("describeMissingValue", () => {
       { type: "broken", reason: "unavailable" },
     ] satisfies DependencyStatus[]) {
       const dependencies = pathDependencies([pathEntry({ type: "ok" }), abundanceEntry(status)]);
-      const waiting = { type: "waiting", text: "Waiting for the other inputs of this block." };
-      expect(describeMissingValue(dependencies, PATH)).toEqual(waiting);
-      expect(describeMissingValue(dependencies, ty1)).toEqual(waiting);
+      const text = "Waiting for the other inputs of this block.";
+      expect(describeMissingValue(dependencies, PATH)).toEqual({
+        type: "waiting",
+        name: "Path",
+        text,
+      });
+      expect(describeMissingValue(dependencies, ty1)).toEqual({
+        type: "waiting",
+        name: "Ty1",
+        text,
+      });
     }
   });
 
@@ -462,6 +471,7 @@ describe("describeMissingValue", () => {
     );
     expect(cause).toEqual({
       type: "source",
+      name: "Ty1",
       blockId: "samples",
       blockName: "Block samples",
       text: "is still computing the column.",
@@ -471,6 +481,7 @@ describe("describeMissingValue", () => {
   test("names the block that does not provide a column selected as a whole, by id or ref", () => {
     const deps = pathDependencies([pathEntry({ type: "broken", reason: "unavailable" })]);
     expect(describeMissingValue(deps, PATH)?.text).toBe("does not provide “Path”.");
+    expect(describeMissingValue(deps, PATH)?.name).toBe("Path");
     expect(
       describeMissingValue(deps, { __isRef: true, blockId: "samples", name: "metadata.path" })
         ?.text,

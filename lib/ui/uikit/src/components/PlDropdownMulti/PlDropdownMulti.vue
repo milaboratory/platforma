@@ -19,8 +19,8 @@ import {
   watchPostEffect,
 } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
-import { missingValueText, pickedValueText } from "../../helpers/columnValue";
-import type { MissingValueHint } from "../../helpers/columnValue";
+import { missingValueText, missingValueTooltip, pickedValueText } from "../../helpers/columnValue";
+import type { MissingValueLabel, MissingValueTooltip } from "../../helpers/columnValue";
 import { getErrorMessage } from "../../helpers/error.ts";
 import { deepEqual, deepIncludes } from "../../helpers/objects";
 import { normalizeListOptions } from "../../helpers/utils";
@@ -71,14 +71,16 @@ const props = withDefaults(
     placeholder?: string;
     /**
      * Text shown in a chip when a `modelValue` entry is missing from `options` —
-     * e.g. its upstream source was deleted. Rendered italic in error color. By default, the
-     * value a column value id picks, marked as not available, or "Value not available".
+     * e.g. its upstream source was deleted. Rendered italic in error color. One text for every
+     * such value, or a function giving it per value. By default, the value a column value id
+     * picks, marked as not available, or "Value not available".
      */
-    missingValueLabel?: string;
+    missingValueLabel?: MissingValueLabel;
     /**
-     * Explains a selected value missing from the options in a tooltip over it.
+     * Explains a selected value missing from the options in a tooltip over it: one text for every
+     * such value, or a function giving the content per value.
      */
-    missingValueHint?: MissingValueHint;
+    missingValueTooltip?: MissingValueTooltip;
     /**
      * If `true`, the dropdown component is marked as required.
      */
@@ -108,7 +110,7 @@ const props = withDefaults(
     error: undefined,
     placeholder: "...",
     missingValueLabel: undefined,
-    missingValueHint: undefined,
+    missingValueTooltip: undefined,
     required: false,
     disabled: false,
     options: undefined,
@@ -165,7 +167,7 @@ const selectedOptionsRef = computed(() => {
         value: v,
         label: missingValueText(v, props.missingValueLabel),
         isMissing: true,
-        hint: props.missingValueHint?.(v),
+        hint: missingValueTooltip(v, props.missingValueTooltip),
       };
     })
     .filter((v): v is NonNullable<typeof v> => v !== undefined);
