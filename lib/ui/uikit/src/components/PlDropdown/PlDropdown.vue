@@ -20,6 +20,7 @@ import { useLabelNotch } from "../../utils/useLabelNotch";
 import LongText from "../LongText.vue";
 import { PlIcon16 } from "../PlIcon16";
 import { PlIcon24 } from "../PlIcon24";
+import { PlMaskIcon16 } from "../PlMaskIcon16";
 import { PlSvg } from "../PlSvg";
 import { PlTooltip } from "../PlTooltip";
 import OptionList from "./OptionList.vue";
@@ -205,11 +206,11 @@ const optionsRef = computed<LOption<M>[]>(() =>
   })),
 );
 
-const textValue = computed(() => {
-  const options = unref(optionsRef);
-  const item: ListOption | undefined = options.find((o) => deepEqual(o.value, props.modelValue));
-  return item?.label;
-});
+const selectedOption = computed(() =>
+  unref(optionsRef).find((o) => deepEqual(o.value, props.modelValue)),
+);
+
+const textValue = computed(() => selectedOption.value?.label);
 
 // Native tooltip with the full selected value. The `.input-value` layer has
 // `pointer-events: none`, so the title must sit on the field wrapper, which is
@@ -389,9 +390,14 @@ watchPostEffect(() => {
             >
               {{ missingValueLabel }}
             </LongText>
-            <LongText v-else-if="textValue !== undefined">
-              {{ textValue }}
-            </LongText>
+            <template v-else-if="textValue !== undefined">
+              <PlMaskIcon16
+                v-if="selectedOption?.linkHint"
+                name="link"
+                class="input-value__link-icon"
+              />
+              <LongText>{{ textValue }}</LongText>
+            </template>
           </div>
 
           <div class="pl-dropdown__controls">

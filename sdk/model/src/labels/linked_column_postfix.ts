@@ -27,9 +27,15 @@ import { isNil } from "es-toolkit";
 
 /**
  * One entry to label: its stem plus the linker path that reached it (`linkers[0]` source-most) and
- * the hit spec used to orient the chain. Plain columns pass neither.
+ * the hit spec used to orient the chain. Plain columns pass neither. Entries with different markers
+ * (something the UI shows beside the label) never collide.
  */
-export type PostfixEntry = { stem: string; hit?: PColumnSpec; linkers?: PColumnSpec[] };
+export type PostfixEntry = {
+  stem: string;
+  hit?: PColumnSpec;
+  linkers?: PColumnSpec[];
+  marker?: string;
+};
 
 /**
  * One distinguishing piece of the postfix: the full source spec (axis or linker column — no info
@@ -290,13 +296,13 @@ export function derivePostfixes(
   entries: PostfixEntry[],
   format: LinkerFormatter = defaultLinkerFormatter,
 ): string[] {
-  const groups = entries.reduce<Map<string, number[]>>(
-    (acc, e, idx) => acc.set(e.stem, [...(acc.get(e.stem) ?? []), idx]),
-    new Map(),
-  );
+  const groups = entries.reduce<Map<string, number[]>>((acc, e, idx) => {
+    const key = `${e.stem}\u0000${e.marker ?? ""}`;
+    return acc.set(key, [...(acc.get(key) ?? []), idx]);
+  }, new Map());
 
   const postfix = [...groups.values()].reduce<Map<number, string>>((acc, idxs) => {
-    if (idxs.length < 2) return acc; // stem already unique — no postfix
+    if (idxs.length < 2) return acc; // no other entry shares this stem and marker — no postfix
     const resolved = resolveGroup(
       idxs.map((i) => entries[i]),
       idxs,

@@ -4,13 +4,17 @@ import {
   PlBtnSecondary,
   PlElementList,
   PlIcon24,
+  PlMaskIcon16,
   PlSearchField,
   PlSlideModal,
+  PlTooltip,
   usePlBlockPageTitleTeleportTarget,
 } from "@milaboratories/uikit";
 import { type GridApi } from "ag-grid-enterprise";
 import { computed, ref } from "vue";
 import { PlAgDataTableRowNumberColId } from "../PlAgDataTable/sources/row-number";
+import { describePeerLinks } from "@platforma-sdk/model";
+import type { PlAgHeaderComponentParams } from "../PlAgColumnHeader/types";
 import { useFilteredItems } from "./useFilteredItems";
 import { useGridColumns } from "./useGridColumns";
 
@@ -35,11 +39,15 @@ const teleportTarget = usePlBlockPageTitleTeleportTarget("PlAgGridColumnManager"
 const columns = useGridColumns(props);
 
 const items = computed(() => {
-  return columns.value.map((col, i) => ({
-    column: col,
-    id: col.getId(),
-    label: col.getColDef().headerName ?? `Unnamed Column (${i + 1})`,
-  }));
+  return columns.value.map((col, i) => {
+    const header: PlAgHeaderComponentParams | undefined = col.getColDef().headerComponentParams;
+    return {
+      column: col,
+      id: col.getId(),
+      label: col.getColDef().headerName ?? `Unnamed Column (${i + 1})`,
+      peerLinks: header?.peerLinks,
+    };
+  });
 });
 
 const { filteredItems, segments } = useFilteredItems({
@@ -126,6 +134,10 @@ const toggleAllFiltered = () => {
       disable-removing
     >
       <template #item-title="{ item }">
+        <PlTooltip v-if="item.peerLinks?.length" :class="$style.link">
+          <template #tooltip>{{ describePeerLinks(item.peerLinks) }}</template>
+          <PlMaskIcon16 name="link" />
+        </PlTooltip>
         <span data-testid="pl-ag-grid-column-manager-item">
           <span
             v-for="(segment, i) of segments.get(item.label)"
@@ -140,6 +152,13 @@ const toggleAllFiltered = () => {
 </template>
 
 <style module>
+/* `div` outranks PlTooltip's own wrapper style, which would lift the icon above the text. */
+div.link {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
 .match {
   background-color: var(--color-active-select);
   border-radius: 2px;
