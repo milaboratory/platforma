@@ -62,7 +62,7 @@ export function registerBlockActionContextTools(server: McpServer, ctx: ToolCont
     {
       description:
         "Get what a block run is doing: the phase (Failed, Running, Waiting, Done, NotStarted), the resources " +
-        "that work or wait with their state, detail, readings and time in the state (longest first), the failed " +
+        "that work or wait with their state, detail, readings and since when they are in the state (longest first), the failed " +
         "resources with the reason, and counts per state. Use it first to answer 'what is this block doing'; use " +
         "get_block_action_context for the full tree. Call again to refresh.",
       inputSchema: {

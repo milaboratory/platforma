@@ -26,7 +26,7 @@ function context(
 }
 
 test("the phase follows the current states of the reporting resources", () => {
-  const phase = (tree: BlockActionContextNode) => summarizeBlockActionContext(tree, 1000).phase;
+  const phase = (tree: BlockActionContextNode) => summarizeBlockActionContext(tree).phase;
 
   expect(phase(context("root", []))).toBe("NotStarted");
   expect(phase(context("root", [["render", "1", 1, "Running"]]))).toBe("NotStarted");
@@ -75,11 +75,11 @@ test("active resources come from the whole tree, longest in the state first", ()
     value: "1/4",
   });
 
-  const summary = summarizeBlockActionContext(tree, 1000);
+  const summary = summarizeBlockActionContext(tree);
 
-  expect(summary.active.map((s) => [s.resource, s.context, s.state, s.inStateMs])).toEqual([
-    ["3", "align", "PopulatingWorkdir", 800],
-    ["2", "root", "WaitingForScheduler", 700],
+  expect(summary.active.map((s) => [s.resource, s.context, s.state, s.sinceMs])).toEqual([
+    ["3", "align", "PopulatingWorkdir", 200],
+    ["2", "root", "WaitingForScheduler", 300],
   ]);
   expect(summary.active[0].readings).toEqual({ "workdir/progress": "1/4" });
   expect(summary.states).toEqual({ PopulatingWorkdir: 1, WaitingForScheduler: 1 });

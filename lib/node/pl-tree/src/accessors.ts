@@ -408,6 +408,12 @@ export class PlTreeNodeAccessor {
     return result;
   }
 
+  /** Lists all key-values of the resource, values decoded as UTF-8; watches every key. */
+  public listKeyValuesAsString(): { key: string; value: string }[] {
+    this.instanceData.guard();
+    return this.resource.listKeyValuesString(this.instanceData.ctx.watcher);
+  }
+
   /** @deprecated */
   public getKeyValueString(key: string): string | undefined {
     return this.getKeyValueAsString(key);
