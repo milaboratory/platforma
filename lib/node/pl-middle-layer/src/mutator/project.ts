@@ -78,6 +78,15 @@ import {
 import { gzipSync } from "node:zlib";
 import type { ProjectHelper } from "../model/project_helper";
 import {
+  argsRepair,
+  derivedArgsValue,
+  runErrorsFieldChange,
+  runErrorsOfBlock,
+  type DerivedArgs,
+  type RunErrorsFieldChange,
+  type RunErrorsState,
+} from "../model/args_derivation";
+import {
   extractConfig,
   UiError,
   BLOCK_STORAGE_FACADE_VERSION,
@@ -271,6 +280,24 @@ class BlockInfo {
 
   get currentPrerunArgs(): unknown {
     return this.currentPrerunArgsC();
+  }
+
+  private readonly runErrorsC = cached(
+    () => `${this.fields.inputsValid?.modCount}:${this.fields.currentArgs?.modCount}`,
+    () =>
+      runErrorsOfBlock({
+        modelAPIVersion: this.config.modelAPIVersion,
+        inputsValid: this.fields.inputsValid,
+        currentArgs: this.currentArgs,
+      }),
+  );
+
+  /**
+   * What is known of the errors the block's `runIssues()` found in its current args. A block
+   * whose model API version has no run issues, or that has no current args, has none.
+   */
+  get runErrors(): RunErrorsState {
+    return this.runErrorsC();
   }
 
   get stagingRendered(): boolean {
@@ -492,6 +519,10 @@ export class ProjectMutator {
 
     // Validate after fixes
     this.blockInfos.forEach((info) => info.check());
+
+    // Run errors of model API v2 blocks whose args were written by a middle layer that does not
+    // record them with every args: such blocks get their args derived again from their storage.
+    this.blockInfos.forEach((info) => this.rederiveArgsOfUnknownRunErrors(info.id));
   }
 
   get wasModified(): boolean {
@@ -756,6 +787,75 @@ export class ProjectMutator {
     return deleted;
   }
 
+  /**
+   * Brings the block's `inputsValid` field in line with what its args derivation found: the run
+   * errors of its args, none when it may run with them, and no field when it has no args.
+   */
+  private setRunErrors(blockId: string, derivedArgs: DerivedArgs): void {
+    this.applyRunErrorsChange(
+      blockId,
+      runErrorsFieldChange(this.getBlockInfo(blockId).fields.inputsValid, derivedArgs),
+    );
+  }
+
+  private applyRunErrorsChange(blockId: string, change: RunErrorsFieldChange): void {
+    switch (change.type) {
+      case "keep":
+        return;
+      case "delete":
+        this.deleteBlockFields(blockId, "inputsValid");
+        return;
+      case "write": {
+        const ref = this.tx.createValue(Pl.JsonObject, change.data);
+        this.setBlockField(blockId, "inputsValid", ref, "Ready", change.data);
+        return;
+      }
+    }
+  }
+
+  /**
+   * Derives the args of a model API v2 block again from its storage when the run errors of its
+   * current args are unknown, and writes the args that come out and their run errors. A block
+   * whose run errors are known is left as it is, and fields that already hold what the
+   * derivation gives are not rewritten, so a project in order is not touched.
+   */
+  private rederiveArgsOfUnknownRunErrors(blockId: string): void {
+    const info = this.getBlockInfo(blockId);
+    const repair = argsRepair(
+      {
+        runErrors: info.runErrors,
+        currentArgs: info.currentArgs,
+        inputsValid: info.fields.inputsValid,
+        storageJson: info.blockStorageJson,
+      },
+      (storageJson) => this.projectHelper.deriveArgsFromStorage(info.config, storageJson),
+    );
+    if (repair.type === "none") return;
+
+    switch (repair.currentArgs.type) {
+      case "keep":
+        break;
+      case "delete":
+        this.deleteBlockFields(blockId, "currentArgs");
+        this.pendingProductionGraph = undefined;
+        break;
+      case "write": {
+        // NB: currentArgs must NOT be gzipped — they are read by Tengo workflows which can't decompress
+        const { data } = repair.currentArgs;
+        this.setBlockField(
+          blockId,
+          "currentArgs",
+          this.tx.createValue(Pl.JsonObject, data),
+          "Ready",
+          data,
+        );
+        this.pendingProductionGraph = undefined;
+        break;
+      }
+    }
+    this.applyRunErrorsChange(blockId, repair.inputsValid);
+  }
+
   private updateLastModified() {
     this.lastModified = Date.now();
     this.lastModifiedChanged = true;
@@ -908,21 +1008,16 @@ export class ProjectMutator {
     }
 
     // Derive args from storage - set or clear currentArgs based on derivation result
-    const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
-      blockConfig,
-      initialStorageJson,
-    );
+    const derivedArgs = this.projectHelper.deriveArgsFromStorage(blockConfig, initialStorageJson);
     // args() legitimately returns undefined when inputs are incomplete/invalid;
     // treat that like a derivation failure and clear the field (never JSON-encode undefined).
-    if (!deriveArgsResult.error && deriveArgsResult.value !== undefined) {
-      this.setBlockFieldObj(
-        blockId,
-        "currentArgs",
-        this.createJsonFieldValue(deriveArgsResult.value),
-      );
+    const args = derivedArgsValue(derivedArgs);
+    if (args !== undefined) {
+      this.setBlockFieldObj(blockId, "currentArgs", this.createJsonFieldValue(args));
     } else {
       this.deleteBlockFields(blockId, "currentArgs");
     }
+    this.setRunErrors(blockId, derivedArgs);
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
@@ -974,11 +1069,12 @@ export class ProjectMutator {
         );
 
         // Derive args from storage (VM extracts data internally)
-        const derivedArgsResult = this.projectHelper.deriveArgsFromStorage(
+        const derivedArgs = this.projectHelper.deriveArgsFromStorage(
           blockConfig,
           updatedStorageJson,
         );
-        args = derivedArgsResult.error ? undefined : derivedArgsResult.value;
+        args = derivedArgsValue(derivedArgs);
+        this.setRunErrors(req.blockId, derivedArgs);
       } else {
         this.setBlockFieldObj(req.blockId, "blockStorage", this.createGzJsonFieldValue(req.state));
         if (req.state !== null && typeof req.state === "object" && "args" in req.state) {
@@ -1194,6 +1290,18 @@ export class ProjectMutator {
       throw new Error(`Can't render production for block ${blockId}: currentArgs not set`);
     }
 
+    // Nor if its runIssues() found errors in them, or it is not known whether it did
+    const runErrors = info.runErrors;
+    if (runErrors.type === "unknown") {
+      throw new Error(
+        `Can't render production for block ${blockId}: the run issues of its args are not known`,
+      );
+    }
+    if (runErrors.errors.length > 0) {
+      const messages = runErrors.errors.map(({ message }) => message).join("; ");
+      throw new Error(`Can't render production for block ${blockId}: ${messages}`);
+    }
+
     const ctx = this.createProdCtx(this.getPendingProductionGraph().nodes.get(blockId)!.upstream);
 
     if (this.getBlock(blockId).renderingMode === "Light")
@@ -1266,11 +1374,9 @@ export class ProjectMutator {
       prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
 
       // Derive args from storage (VM extracts data internally)
-      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
-        blockConfig,
-        storageToWrite,
-      );
-      args = deriveArgsResult.error ? undefined : deriveArgsResult.value;
+      const derivedArgs = this.projectHelper.deriveArgsFromStorage(blockConfig, storageToWrite);
+      args = derivedArgsValue(derivedArgs);
+      this.setRunErrors(blockId, derivedArgs);
     } else if (spec.storageMode === "legacy") {
       // Model API v1: use legacyState from spec
       const parsedState = JSON.parse(spec.legacyState);
@@ -1560,18 +1666,16 @@ export class ProjectMutator {
         this.deleteBlockFields(blockId, "currentPrerunArgs");
       }
 
-      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(newConfig, storageJson);
+      const derivedArgs = this.projectHelper.deriveArgsFromStorage(newConfig, storageJson);
       // args() legitimately returns undefined when inputs are incomplete/invalid;
       // treat that like a derivation failure and clear the field (never JSON-encode undefined).
-      if (!deriveArgsResult.error && deriveArgsResult.value !== undefined) {
-        this.setBlockFieldObj(
-          blockId,
-          "currentArgs",
-          this.createJsonFieldValue(deriveArgsResult.value),
-        );
+      const args = derivedArgsValue(derivedArgs);
+      if (args !== undefined) {
+        this.setBlockFieldObj(blockId, "currentArgs", this.createJsonFieldValue(args));
       } else {
         this.deleteBlockFields(blockId, "currentArgs");
       }
+      this.setRunErrors(blockId, derivedArgs);
     };
 
     if (newClearState !== undefined) {
@@ -1587,6 +1691,9 @@ export class ProjectMutator {
       } else {
         // V1: Use setStates with legacy state format
         persistBlockPack();
+        // A V1 model tells whether the block may run by itself; run errors of an earlier V2 model
+        // no longer apply.
+        this.deleteBlockFields(blockId, "inputsValid");
         this.setStates([{ modelAPIVersion: 1, blockId, state: newClearState.state }]);
       }
     } else {
@@ -1617,6 +1724,9 @@ export class ProjectMutator {
       } else {
         // Legacy blocks (modelAPIVersion 1): persist block pack, set prerunArgs = currentArgs
         persistBlockPack();
+        // A V1 model tells whether the block may run by itself; run errors of an earlier V2 model
+        // no longer apply.
+        this.deleteBlockFields(blockId, "inputsValid");
         if (info.fields.currentArgs !== undefined) {
           this.setBlockFieldObj(blockId, "currentPrerunArgs", info.fields.currentArgs);
         }
@@ -1650,6 +1760,9 @@ export class ProjectMutator {
   //
 
   public renderProduction(blockIds: string[], addUpstreams: boolean = false): Set<string> {
+    // Args whose run errors are unknown are derived again before anything is built from them
+    this.blockInfos.forEach((info) => this.rederiveArgsOfUnknownRunErrors(info.id));
+
     const blockIdsSet = new Set(blockIds);
 
     const prodGraph = this.getPendingProductionGraph();

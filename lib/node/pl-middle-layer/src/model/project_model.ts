@@ -110,6 +110,7 @@ export interface ProjectField {
     | "prodArgs"
     | "currentArgs"
     | "currentPrerunArgs" // Derived args for staging/prerun rendering (from prerunArgs() or args())
+    | "inputsValid" // Model API v2: run errors of currentArgs, none when the block may run, with the fingerprint of those args; present while currentArgs are
     | "prodChainCtx" // Pre-built production context chain node (accumulated prodCtx from all blocks above)
     | "prodCtx"
     | "prodUiCtx"
@@ -132,6 +133,7 @@ export const FieldsToDuplicate: Set<ProjectField["fieldName"]> = new Set([
   "prodArgs",
   "currentArgs",
   "currentPrerunArgs",
+  "inputsValid",
   "prodCtx",
   "prodUiCtx",
   "prodOutput",
