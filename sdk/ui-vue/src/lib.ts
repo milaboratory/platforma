@@ -35,10 +35,15 @@ export * from "./components/PlAdvancedFilter";
 
 export * from "./components/PlDatasetSelector";
 
+export * from "./components/PlBlockDependencies";
+export * from "./components/PlColumnValueDropdown";
+export * from "./components/PlBlockName";
+
 export * from "./defineApp";
 
 export { usePlugin } from "./composition/usePlugin";
 export type { PluginState } from "./composition/usePlugin";
+export { useOpenBlock } from "./composition/useOpenBlock";
 export type {
   PluginHandle,
   PluginFactoryLike,
@@ -64,5 +69,14 @@ export * from "./computedResult";
 export * from "./composition/fileContent";
 
 export * from "@milaboratories/uikit";
+
+// Value pickers of uikit, with the hint of the block for missing columns and column values.
+export {
+  PlDropdown,
+  PlDropdownMulti,
+  PlDropdownMultiRef,
+  PlDropdownRef,
+  PlValueLabel,
+} from "./components/ValuePickers";
 
 export type * from "@milaboratories/uikit";

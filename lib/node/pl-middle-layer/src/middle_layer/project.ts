@@ -24,10 +24,15 @@ import { finalityStopRules } from "./finality_stop_rules";
 import type { ComputableStableDefined, ComputableValueOrErrors } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
 import { projectOverview } from "./project_overview";
+import { blockDependencies, blockDependents, labelBlockColumnLinks } from "./column_links";
 import type { BlockPackSpecAny } from "../model";
 import { randomUUID } from "node:crypto";
 import { withProject, withProjectAuthored } from "../mutator/project";
-import type { ExtendedResourceData, PruningFunction } from "@milaboratories/pl-tree";
+import type {
+  ExtendedResourceData,
+  PlTreeNodeAccessor,
+  PruningFunction,
+} from "@milaboratories/pl-tree";
 import {
   SynchronizedTreeState,
   treeDumpStats,
@@ -38,6 +43,7 @@ import { setTimeout } from "node:timers/promises";
 import { frontendData } from "./frontend_path";
 import type { NavigationState } from "@milaboratories/pl-model-common";
 import { getBlockParameters, blockOutputs } from "./block";
+import { getBlockPackInfo } from "./util";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectId, ProjectStructure } from "../model/project_model";
 import { projectFieldName } from "../model/project_model";
@@ -56,9 +62,10 @@ import type {
   BlockSettings,
   BlockStateInternalV3,
 } from "@milaboratories/pl-model-middle-layer";
+import type { UnlabeledDependencies, UnlabeledDependents } from "@milaboratories/pl-model-common";
 import { activeConfigs } from "./active_cfg";
 import { NavigationStates } from "./navigation_states";
-import { extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
+import { checkBlockFlag, extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
 import fs from "node:fs/promises";
 import canonicalize from "canonicalize";
 import type { ProjectOverviewLight } from "./project_overview_light";
@@ -68,6 +75,9 @@ import { cacheBlockPackTemplate } from "../mutator/template/template_cache";
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternalV3>;
+  /** Column links of the block, nested into its full state. */
+  readonly dependencies: Computable<UnlabeledDependencies | undefined>;
+  readonly dependents: Computable<UnlabeledDependents | undefined>;
 };
 
 function stringifyForDump(object: unknown): string {
@@ -92,6 +102,13 @@ function stringifyForDump(object: unknown): string {
 
     return value;
   });
+}
+
+/** Releases what the computables of a block hold. */
+function resetBlockState(computables: BlockStateComputables): void {
+  computables.fullState.resetState();
+  computables.dependencies.resetState();
+  computables.dependents.resetState();
 }
 
 /** Data access object, to manipulate and read single opened (!) project data. */
@@ -292,8 +309,8 @@ export class Project {
         // Doing cleanup for deleted blocks
         for (const blockId of this.blockComputables.keys()) {
           if (!existingBlocks.has(blockId)) {
-            const computable = this.blockComputables.get(blockId);
-            if (computable !== undefined && computable !== null) computable.fullState.resetState();
+            const computables = this.blockComputables.get(blockId);
+            if (computables !== undefined && computables !== null) resetBlockState(computables);
             this.blockComputables.set(blockId, null);
           }
         }
@@ -749,13 +766,19 @@ export class Project {
     if (cached === undefined) {
       // state consists of inputs (args + ui state) and outputs
       const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
+      const dependencies = blockDependencies(this.projectTree.entry(), blockId, this.env);
+      const dependents = blockDependents(this.projectTree.entry(), blockId, this.env);
       const fullState = Computable.make(
         (ctx) => {
+          // Links are computed only for a block whose UI reads them.
+          const linked = readsColumnLinks(ctx.accessor(this.projectTree.entry()).node(), blockId);
           return {
             parameters: getBlockParameters(this.projectTree.entry(), blockId, ctx),
             outputs,
             navigationState: this.navigationStates.getState(blockId),
             overview: this.overview,
+            dependencies: linked ? dependencies : undefined,
+            dependents: linked ? dependents : undefined,
           };
         },
         {
@@ -770,6 +793,9 @@ export class Project {
               ...v.parameters,
               outputs: newOutputs,
               navigationState: v.navigationState,
+              // The block state already nests the overview, so labelling by its titles adds
+              // nothing to watch.
+              columnLinks: labelBlockColumnLinks({ ...v, blockId }, v.overview?.blocks ?? []),
             } as BlockStateInternalV3;
           },
         },
@@ -777,6 +803,8 @@ export class Project {
 
       const computables: BlockStateComputables = {
         fullState: fullState.withPreCalculatedValueTree(),
+        dependencies,
+        dependents,
       };
 
       this.blockComputables.set(blockId, computables);
@@ -839,7 +867,7 @@ export class Project {
     this.overview.resetState();
     this.blockFrontends.forEach((c) => c.resetState());
     this.blockComputables.forEach((c) => {
-      if (c !== null) c.fullState.resetState();
+      if (c !== null) resetBlockState(c);
     });
     this.activeConfigs.resetState();
   }
@@ -1020,6 +1048,12 @@ export function projectTreeFieldFilter(): Filter {
  * which may stop before the predicate calls a resource final where an entry declares so. */
 export function projectTreeTraverseStopRules(): Filter {
   return finalityStopRules(TreeFinality);
+}
+
+/** Whether the block's model declares that its UI reads the column links of the block state. */
+function readsColumnLinks(prj: PlTreeNodeAccessor, blockId: string): boolean {
+  const info = getBlockPackInfo(prj, blockId);
+  return info !== undefined && checkBlockFlag(info.cfg.featureFlags, "supportsColumnLinks");
 }
 
 /** Returns true if sdk version of the block is old and we need to convert

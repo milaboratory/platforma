@@ -17,12 +17,19 @@ import type {
   DatasetOption,
   DatasetSelection,
   LabeledEnrichmentRefs,
+  PObjectId,
   PlRef,
 } from "@platforma-sdk/model";
-import { createDatasetSelection, createPrimaryRef, plRefsEqual } from "@platforma-sdk/model";
+import {
+  createDatasetSelection,
+  createGlobalPObjectId,
+  createPrimaryRef,
+  plRefsEqual,
+} from "@platforma-sdk/model";
 import type { ListOption } from "@milaboratories/uikit";
 import { PlDropdown } from "@milaboratories/uikit";
 import { computed } from "vue";
+import { useColumnLinksMissingValue } from "../ValuePickers/columnLinksMissingValue";
 
 const slots = defineSlots<{
   tooltip?: () => unknown;
@@ -115,6 +122,32 @@ const dropdownOptions = computed<ListOption<Selection>[] | undefined>(() => {
   return out;
 });
 
+const columnLinks = useColumnLinksMissingValue();
+
+/**
+ * The column a selection the options lack is shown and explained by: the dataset first, as the
+ * filter of a missing dataset is missing with it, then the filter; `undefined` when the column
+ * links tell nothing about either.
+ */
+function explainedColumn(): PObjectId | undefined {
+  const primary = model.value?.primary;
+  if (columnLinks === undefined || primary === undefined) return undefined;
+  const refs = primary.filter === undefined ? [primary.column] : [primary.column, primary.filter];
+  return refs
+    .map((ref) => createGlobalPObjectId(ref.blockId, ref.name))
+    .find((column) => columnLinks.tooltip(column) !== undefined);
+}
+
+const missingValueLabel = () => {
+  const column = explainedColumn();
+  return column === undefined ? undefined : columnLinks?.label(column);
+};
+
+const missingValueTooltip = () => {
+  const column = explainedColumn();
+  return column === undefined ? undefined : columnLinks?.tooltip(column);
+};
+
 function onChange(selection: Selection | undefined) {
   if (selection === undefined) {
     model.value = undefined;
@@ -140,6 +173,8 @@ function onChange(selection: Selection | undefined) {
     :clearable="clearable"
     :required="required"
     :disabled="disabled"
+    :missing-value-label="missingValueLabel"
+    :missing-value-tooltip="missingValueTooltip"
     @update:model-value="onChange"
   >
     <template v-if="slots.tooltip" #tooltip>

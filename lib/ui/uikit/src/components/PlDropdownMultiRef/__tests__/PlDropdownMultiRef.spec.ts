@@ -84,10 +84,10 @@ describe("PlDropdownMultiRef", () => {
 
     const missing = wrapper.findAll(".pl-dropdown-multi__chip--missing");
     expect(missing.length).toBe(1);
-    expect(missing[0].text()).toContain("Upstream value removed");
+    expect(missing[0].text()).toContain("Value not available");
   });
 
-  it("forwards a caller-supplied missingValueLabel that overrides the Ref default", async () => {
+  it("forwards a caller-supplied missingValueLabel that overrides the default", async () => {
     const wrapper = mount(PlDropdownMultiRef, {
       props: {
         modelValue: [{ __isRef: true as const, blockId: "deleted", name: "Ref to deleted block" }],

@@ -1968,6 +1968,8 @@ export class MiddleLayer {
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 2);
     runtimeCapabilities.addSupportedRequirement("requiresCreatePTable", 2);
     runtimeCapabilities.addSupportedRequirement("requiresPFramesVersion", REQUIRES_PFRAMES_VERSION);
+    // The project overview and production rendering refuse to run args argsIssues found errors in
+    runtimeCapabilities.addSupportedRequirement("requiresArgsIssues");
     registerServiceCapabilities((flag, value) =>
       runtimeCapabilities.addSupportedRequirement(flag, value),
     );

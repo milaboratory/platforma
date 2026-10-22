@@ -17,7 +17,10 @@ import { deepFreeze } from "@milaboratories/ts-helpers";
 import { extractCodeWithInfo } from "@platforma-sdk/model";
 import { getDebugFlags } from "../debug";
 
-export type BlockParameters = Omit<BlockStateInternalV3, "outputs" | "navigationState">;
+export type BlockParameters = Omit<
+  BlockStateInternalV3,
+  "outputs" | "navigationState" | "columnLinks"
+>;
 
 export function getBlockParameters(
   projectEntry: PlTreeEntry,
