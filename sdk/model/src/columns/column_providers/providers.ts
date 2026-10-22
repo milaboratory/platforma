@@ -1,6 +1,10 @@
 import {
   AccessorEntriesProvider,
+  columnFieldErrors,
+  hasErroredSpec,
   ResultPoolEntriesProvider,
+  type ColumnsSourceError,
+  type LeafEntry,
   type PColumn,
   type PObjectId,
   type UpstreamBlockCtx,
@@ -20,10 +24,15 @@ import { LRUCache } from "lru-cache";
  * declaration: `ColumnsProvider` is callable AND the interface type.
  */
 export interface ColumnsProvider {
-  /** Returns all currently known PColumn columns as lazy views. */
+  /**
+   * Returns all currently known PColumn columns as lazy views. A column whose
+   * spec field carries an error is left out; {@link getErrors} reports it.
+   */
   getColumns(): DataColumnRecipe<PObjectId>[];
   /** Whether the provider has finished enumerating all its columns. */
   isFinal(): boolean;
+  /** Errors met in this provider's source: errored subtrees and errored column fields. */
+  getErrors(): ReadonlyArray<ColumnsSourceError>;
 }
 
 /**
@@ -109,6 +118,10 @@ export class ArrayColumnsProvider implements ColumnsProvider {
   isFinal(): boolean {
     return this._isFinal;
   }
+
+  getErrors(): ReadonlyArray<ColumnsSourceError> {
+    return [];
+  }
 }
 
 /**
@@ -129,9 +142,14 @@ export class AccessorColumnsProviderImpl
 
   getColumns(): DataColumnRecipe<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
-    return (this.cachedColumns = Array.from(this.entries.values())
-      .map((e) => DataColumn.fromAccessor(e))
-      .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v)));
+    return (this.cachedColumns = readableColumns(this.entries.values()));
+  }
+
+  getErrors(): ReadonlyArray<ColumnsSourceError> {
+    return [
+      ...this.getSourceErrors(),
+      ...Array.from(this.entries.values()).flatMap(columnFieldErrors),
+    ];
   }
 }
 
@@ -173,14 +191,26 @@ export class ResultPoolColumnsProviderImpl
 
   getColumns(): DataColumnRecipe<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
-    return (this.cachedColumns = Array.from(this.getPObjectEntries().values())
-      .map((e) => DataColumn.fromAccessor(e))
-      .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v)));
+    return (this.cachedColumns = readableColumns(this.getPObjectEntries().values()));
+  }
+
+  getErrors(): ReadonlyArray<ColumnsSourceError> {
+    return Array.from(this.getPObjectEntries().values()).flatMap(columnFieldErrors);
   }
 }
 
 /** Public type alias — value of the same name is the memoised factory above. */
 export type ResultPoolColumnsProvider = ResultPoolColumnsProviderImpl;
+
+/** Lazy views over `entries`, leaving out a column whose spec field carries an error. */
+function readableColumns(
+  entries: Iterable<LeafEntry<TreeNodeAccessor>>,
+): DataColumnRecipe<PObjectId>[] {
+  return Array.from(entries)
+    .filter((e) => !hasErroredSpec(e))
+    .map((e) => DataColumn.fromAccessor(e))
+    .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v));
+}
 
 function hashRawPool(rawPool: ReadonlyArray<UpstreamBlockCtx<AccessorHandle>>): string {
   return rawPool

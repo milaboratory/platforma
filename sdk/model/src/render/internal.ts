@@ -49,6 +49,14 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
 
   getAccessorHandleByName(name: string): AHandle | undefined;
 
+  /**
+   * Error resource on the block output behind accessor `name`, whether or not
+   * the output also has a value. Lets a caller learn the error without the
+   * throw {@link getAccessorHandleByName} raises for an errored output that
+   * has no value. Absent on a host older than this method.
+   */
+  getAccessorErrorByName?(name: string): AHandle | undefined;
+
   //
   // Basic resource accessor actions
   //
@@ -70,6 +78,12 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
   getIsFinal(handle: AHandle): boolean;
 
   getError(handle: AHandle): AHandle | undefined;
+
+  /**
+   * Error resource attached to field `field` of `handle`, whether or not the
+   * field also has a value. Absent on a host older than this method.
+   */
+  getFieldError?(handle: AHandle, field: string): AHandle | undefined;
 
   listInputFields(handle: AHandle): string[];
 
@@ -214,6 +228,13 @@ export const GlobalCfgRenderCtxFeatureFlags = {
   pTablePartitionFiltersSupport: true as const,
   pFrameInSetFilterSupport: true as const,
   lazyColumnStatusSupport: true as const,
+  /**
+   * The host reads column errors: `getFieldError`, `getAccessorErrorByName`,
+   * the `errors` columns source and the `getErrors` method of the
+   * `ColumnsCollection` driver. An older host's driver fails on an `errors`
+   * source, so the sandbox sends one only under this flag.
+   */
+  columnErrorsSupport: true as const,
 };
 
 export interface GlobalCfgRenderCtx extends GlobalCfgRenderCtxMethods, ServiceDispatch {
