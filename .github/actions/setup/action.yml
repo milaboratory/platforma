@@ -2,10 +2,6 @@ name: 'Setup platforma environment'
 description: 'Node.js + pnpm + Turbo S3 cache + Docker logins + pnpm install'
 
 inputs:
-  node-version:
-    description: 'Node.js version'
-    required: false
-    default: '22'
   npmjs-token:
     description: 'NPM registry auth token'
     required: true
@@ -67,34 +63,15 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Setup Node.js ${{ inputs.node-version }}
-      uses: actions/setup-node@v4
+    - name: Install pnpm and Node from devEngines
+      uses: milaboratory/github-ci/actions/node/setup-pnpm@v4
       with:
-        node-version: ${{ inputs.node-version }}
-
-    - name: Enable pnpm via corepack
-      shell: bash
-      run: corepack enable pnpm
-
-    - name: Get pnpm store directory
-      id: pnpm-cache
-      shell: bash
-      run: echo "store-path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
-
-    - name: Cache pnpm store (GitHub)
-      if: inputs.cache-s3-access-key == ''
-      uses: actions/cache@v4
-      with:
-        path: ${{ steps.pnpm-cache.outputs.store-path }}
-        key: pnpm-store-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
-        restore-keys: pnpm-store-${{ runner.os }}-
-
-    - name: Cache pnpm store (S3/RGW)
-      if: inputs.cache-s3-access-key != ''
-      uses: milaboratory/github-ci/actions/node/cache-pnpm-s3@v4
-      with:
-        access-key: ${{ inputs.cache-s3-access-key }}
-        secret-key: ${{ inputs.cache-s3-secret-key }}
+        npmrc: |
+          //registry.npmjs.org/:_authToken=${NPMJS_TOKEN}
+          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+          @milaboratory:registry=https://npm.pkg.github.com/
+        cache-s3-access-key: ${{ inputs.cache-s3-access-key }}
+        cache-s3-secret-key: ${{ inputs.cache-s3-secret-key }}
 
     - name: Configure AWS credentials
       if: inputs.aws-iam-role != ''
