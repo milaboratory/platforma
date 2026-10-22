@@ -4,6 +4,7 @@ import type { MaskIconName16 } from "@milaboratories/uikit";
 import { PlMaskIcon16, PlTooltip } from "@milaboratories/uikit";
 import { computed, onMounted, ref } from "vue";
 import "./pl-ag-column-header.scss";
+import { describePeerLinks } from "@platforma-sdk/model";
 import type { PlAgHeaderComponentParams } from "./types";
 
 const { params } = defineProps<{ params: IHeaderParams & PlAgHeaderComponentParams }>();
@@ -77,6 +78,14 @@ function showMenu() {
         :name="icon"
         class="pl-ag-column-header__type-icon"
       />
+      <PlTooltip
+        v-if="params.peerLinks?.length"
+        data-testid="pl-ag-column-header-link"
+        class="pl-ag-column-header__link-icon"
+      >
+        <template #tooltip>{{ describePeerLinks(params.peerLinks) }}</template>
+        <PlMaskIcon16 name="link" />
+      </PlTooltip>
       <PlTooltip>
         <template v-if="params.tooltip" #tooltip>{{ params.tooltip }}</template>
         <span data-testid="pl-ag-column-header-name">{{ params.displayName }}</span>
