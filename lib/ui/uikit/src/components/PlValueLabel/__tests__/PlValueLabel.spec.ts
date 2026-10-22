@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import { flushPromises, mount } from "@vue/test-utils";
 import { createColumnValueId, createGlobalPObjectId } from "@platforma-sdk/model";
-import type { MissingValueHint } from "../../../helpers/columnValue";
+import type { MissingValueTooltip } from "../../../helpers/columnValue";
 import PlValueLabel from "../PlValueLabel.vue";
 
 const treated = createColumnValueId({
@@ -42,9 +42,9 @@ describe("PlValueLabel", () => {
   });
 
   it("explains a missing value by the hint of the app in a tooltip", async () => {
-    const hint: MissingValueHint = () => () => "Samples does not provide it";
+    const hint: MissingValueTooltip = () => () => "Samples does not provide it";
     const wrapper = mount(PlValueLabel, {
-      props: { value: treated, options: [], missingValueHint: hint },
+      props: { value: treated, options: [], missingValueTooltip: hint },
       attachTo: document.body,
     });
     expect(wrapper.text()).toBe("treated — not available");

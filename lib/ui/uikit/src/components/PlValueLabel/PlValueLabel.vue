@@ -11,8 +11,8 @@ export default {
 
 <script lang="ts" setup generic="M = unknown">
 import { computed } from "vue";
-import { missingValueText, pickedValueText } from "../../helpers/columnValue";
-import type { MissingValueHint } from "../../helpers/columnValue";
+import { missingValueText, missingValueTooltip, pickedValueText } from "../../helpers/columnValue";
+import type { MissingValueLabel, MissingValueTooltip } from "../../helpers/columnValue";
 import { deepEqual } from "../../helpers/objects";
 import { normalizeListOptions } from "../../helpers/utils";
 import type { ListOption } from "../../types";
@@ -27,12 +27,16 @@ const props = defineProps<{
    */
   options?: Readonly<ListOption<M>[]>;
   /**
-   * Text shown when the options lack the value. By default, the value a column value id
-   * picks, marked as not available, or "Value not available".
+   * Text shown when the options lack the value: one text, or a function giving it per value. By
+   * default, the value a column value id picks, marked as not available, or "Value not
+   * available".
    */
-  missingValueLabel?: string;
-  /** Explains the value in a tooltip over it while the options lack it. */
-  missingValueHint?: MissingValueHint;
+  missingValueLabel?: MissingValueLabel;
+  /**
+   * Explains the value in a tooltip over it while the options lack it: one text, or a function
+   * giving the content per value.
+   */
+  missingValueTooltip?: MissingValueTooltip;
 }>();
 
 const option = computed(() =>
@@ -43,11 +47,15 @@ const option = computed(() =>
 
 const isMissing = computed(() => props.options !== undefined && option.value === undefined);
 
-const hint = computed(() => (isMissing.value ? props.missingValueHint?.(props.value) : undefined));
+const hint = computed(() =>
+  isMissing.value ? missingValueTooltip(props.value, props.missingValueTooltip) : undefined,
+);
 
 const text = computed(() => {
   if (option.value !== undefined) return option.value.label;
-  if (isMissing.value) return missingValueText(props.value, props.missingValueLabel);
+  if (isMissing.value) {
+    return missingValueText(props.value, props.missingValueLabel);
+  }
   return pickedValueText(props.value) ?? String(props.value);
 });
 </script>

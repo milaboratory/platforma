@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import { mount, flushPromises } from "@vue/test-utils";
 import { createColumnValueId, createGlobalPObjectId } from "@platforma-sdk/model";
-import type { MissingValueHint } from "../../../helpers/columnValue";
+import type { MissingValueLabel, MissingValueTooltip } from "../../../helpers/columnValue";
 import PlDropdown from "../PlDropdown.vue";
 
 describe("PlDropdown", () => {
@@ -180,10 +180,10 @@ describe("PlDropdown", () => {
     });
 
     it("explains a missing value by the hint of the app in a tooltip", async () => {
-      const hint: MissingValueHint = (value) =>
+      const hint: MissingValueTooltip = (value) =>
         value === treated ? () => "Samples does not provide it" : undefined;
       const wrapper = mount(PlDropdown, {
-        props: { modelValue: treated, options: [], missingValueHint: hint },
+        props: { modelValue: treated, options: [], missingValueTooltip: hint },
         attachTo: document.body,
       });
       await flushPromises();
@@ -197,9 +197,37 @@ describe("PlDropdown", () => {
       wrapper.unmount();
     });
 
+    it("shows a missing value by the label given for it, as one text or per value", async () => {
+      const round = createGlobalPObjectId("samples", "metadata.round");
+      const field = async (missingValueLabel: MissingValueLabel) => {
+        const wrapper = mount(PlDropdown, {
+          props: { modelValue: round, options: [], missingValueLabel },
+        });
+        await flushPromises();
+        return wrapper.find(".input-value--missing").text();
+      };
+      expect(await field("Gone")).toBe("Gone");
+      expect(await field((value) => (value === round ? "Panning Round" : undefined))).toBe(
+        "Panning Round",
+      );
+      expect(await field(() => undefined)).toBe("Value not available");
+    });
+
+    it("shows one tooltip text over a missing value", async () => {
+      const wrapper = mount(PlDropdown, {
+        props: { modelValue: treated, options: [], missingValueTooltip: "Gone upstream" },
+        attachTo: document.body,
+      });
+      await flushPromises();
+      await wrapper.find("[data-testid='pl-dropdown-value-hint']").trigger("mouseover");
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      expect(document.body.textContent).toContain("Gone upstream");
+      wrapper.unmount();
+    });
+
     it("asks for no hint while the value is among the options", async () => {
       const asked: unknown[] = [];
-      const hint: MissingValueHint = (value) => {
+      const hint: MissingValueTooltip = (value) => {
         asked.push(value);
         return undefined;
       };
@@ -207,7 +235,7 @@ describe("PlDropdown", () => {
         props: {
           modelValue: treated,
           options: [{ label: "Treated", value: treated }],
-          missingValueHint: hint,
+          missingValueTooltip: hint,
         },
       });
       await flushPromises();

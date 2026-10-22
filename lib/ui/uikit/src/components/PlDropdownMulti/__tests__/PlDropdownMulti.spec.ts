@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import { mount, flushPromises } from "@vue/test-utils";
 import { createColumnValueId, createGlobalPObjectId } from "@platforma-sdk/model";
-import type { MissingValueHint } from "../../../helpers/columnValue";
+import type { MissingValueTooltip } from "../../../helpers/columnValue";
 import PlDropdownMulti from "../PlDropdownMulti.vue";
 
 describe("PlDropdownMulti", () => {
@@ -198,10 +198,10 @@ describe("PlDropdownMulti", () => {
     });
 
     it("explains each missing value by the hint of the app", async () => {
-      const hint: MissingValueHint = (value) =>
+      const hint: MissingValueTooltip = (value) =>
         value === plastic ? () => "Samples has no Plastic" : undefined;
       const wrapper = mount(PlDropdownMulti, {
-        props: { modelValue: [bsa, plastic], options: [], missingValueHint: hint },
+        props: { modelValue: [bsa, plastic], options: [], missingValueTooltip: hint },
         attachTo: document.body,
       });
       await flushPromises();
