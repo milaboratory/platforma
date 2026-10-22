@@ -10,6 +10,7 @@ import {
 import type {
   BlockColumnLinks,
   BlockDependencies,
+  DependencyEntry,
   DependencyStatus,
   DependentStatus,
   UncheckedReason,
@@ -148,18 +149,21 @@ export function blockName(labels: Record<string, string>, blockId: string): stri
   return labels[blockId] ?? `Block ${blockId.slice(0, 8)}`;
 }
 
-/** Why a selected column or column value is missing: the block meant to provide it, and what went wrong. */
-export interface MissingValueCause {
-  blockId: string;
-  blockName: string;
-  /** What went wrong, as a sentence that follows the block name. */
-  text: string;
-}
+/**
+ * Why a selected column or column value is missing. `source`: the block meant to provide it, and
+ * what went wrong, as a sentence that follows the block name. `waiting`: its column is provided,
+ * while other inputs of the block are not, and the options of one input may be made from another.
+ */
+export type MissingValueCause =
+  | { type: "source"; blockId: string; blockName: string; text: string }
+  | { type: "waiting"; text: string };
 
 /**
  * Why `value` is missing from its options, by the dependencies of the block: a column value id,
- * or a column — as an id or a ref. `undefined` for any other value, and for one whose column has
- * nothing wrong with it.
+ * or a column — as an id or a ref. When its column is provided, with the value, while other
+ * inputs of the block are not, the block offers it once they are: the options of one input may
+ * be made from another. `undefined` for any other value, and for one whose column has nothing
+ * wrong with it while every other input is provided too.
  */
 export function describeMissingValue(
   dependencies: BlockDependencies,
@@ -172,12 +176,17 @@ export function describeMissingValue(
 
   const column = entry.columnLabel === null ? "the column" : `“${entry.columnLabel}”`;
   const text = missingValueCauseText(entry.status, column, reference.picked);
-  if (text === undefined) return undefined;
-  return {
-    blockId: entry.producerBlockId,
-    blockName: blockName(dependencies.labels, entry.producerBlockId),
-    text,
-  };
+  if (text !== undefined) {
+    return {
+      type: "source",
+      blockId: entry.producerBlockId,
+      blockName: blockName(dependencies.labels, entry.producerBlockId),
+      text,
+    };
+  }
+  return waitsForOtherInputs(dependencies, entry, reference.picked)
+    ? { type: "waiting", text: "Waiting for the other inputs of this block." }
+    : undefined;
 }
 
 // Internals
@@ -213,6 +222,36 @@ function missingValueCauseText(
       return picked !== undefined && status.values.includes(picked)
         ? `has no “${picked}” in ${column}.`
         : undefined;
+  }
+}
+
+/** Whether a selected column is provided, with the picked value, while another input is not. */
+function waitsForOtherInputs(
+  dependencies: BlockDependencies,
+  entry: DependencyEntry,
+  picked: ColumnValue | undefined,
+): boolean {
+  if (!providesPick(entry.status, picked)) return false;
+  return dependencies.items.some(
+    (item) =>
+      item.ref !== entry.ref && item.status.type !== "ok" && item.status.type !== "unchecked",
+  );
+}
+
+/** Whether a column is provided with the picked value, as far as it was checked. */
+function providesPick(status: DependencyStatus, picked: ColumnValue | undefined): boolean {
+  switch (status.type) {
+    case "ok":
+      return true;
+    case "broken":
+      return (
+        status.reason === "missingValues" &&
+        (picked === undefined || !status.values.includes(picked))
+      );
+    case "unchecked":
+    case "pending":
+    case "notRun":
+      return false;
   }
 }
 
