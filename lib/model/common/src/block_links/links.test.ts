@@ -382,6 +382,7 @@ describe("describeMissingValue", () => {
       ty1,
     );
     expect(cause).toEqual({
+      type: "source",
       blockId: "samples",
       blockName: "Samples",
       text: "does not provide “Path”.",
@@ -423,12 +424,44 @@ describe("describeMissingValue", () => {
     }
   });
 
+  test("tells a provided column waits for the other inputs of the block", () => {
+    for (const status of [
+      { type: "notRun" },
+      { type: "pending" },
+      { type: "broken", reason: "unavailable" },
+    ] satisfies DependencyStatus[]) {
+      const dependencies = pathDependencies([pathEntry({ type: "ok" }), abundanceEntry(status)]);
+      const waiting = { type: "waiting", text: "Waiting for the other inputs of this block." };
+      expect(describeMissingValue(dependencies, PATH)).toEqual(waiting);
+      expect(describeMissingValue(dependencies, ty1)).toEqual(waiting);
+    }
+  });
+
+  test("does not tell a column waits while it lacks the value or was not checked", () => {
+    const abundance = abundanceEntry({ type: "notRun" });
+    const lacking = pathEntry({ type: "broken", reason: "missingValues", values: ["Ty1"] });
+    expect(describeMissingValue(pathDependencies([lacking, abundance]), ty1)?.text).toBe(
+      "has no “Ty1” in “Path”.",
+    );
+    const unchecked = pathEntry({ type: "unchecked", reason: "unreadable" });
+    expect(describeMissingValue(pathDependencies([unchecked, abundance]), ty1)).toBeUndefined();
+  });
+
+  test("does not tell a column waits while every other input is fine", () => {
+    const dependencies = pathDependencies([
+      pathEntry({ type: "ok" }),
+      abundanceEntry({ type: "unchecked", reason: "unreadable" }),
+    ]);
+    expect(describeMissingValue(dependencies, ty1)).toBeUndefined();
+  });
+
   test("falls back to generic names without labels", () => {
     const cause = describeMissingValue(
       { argsSource: "current", items: [pathEntry({ type: "pending" }, null)], labels: {} },
       ty1,
     );
     expect(cause).toEqual({
+      type: "source",
       blockId: "samples",
       blockName: "Block samples",
       text: "is still computing the column.",
@@ -500,6 +533,17 @@ function notExported(): DependentStatus {
 
 function pathDependencies(items: DependencyEntry[]): BlockDependencies {
   return { argsSource: "current", items, labels: { samples: "Samples" } };
+}
+
+function abundanceEntry(status: DependencyStatus): DependencyEntry {
+  return {
+    producerBlockId: "mixcr",
+    output: "abundance",
+    ref: REF,
+    values: null,
+    columnLabel: "Abundance",
+    status,
+  };
 }
 
 function pathEntry(status: DependencyStatus, columnLabel: null | string = "Path"): DependencyEntry {

@@ -13,6 +13,8 @@ vi.mock("../../composition/useOpenBlock", () => ({ useOpenBlock: () => async () 
 const PATH = createGlobalPObjectId("samples", "metadata.path");
 const ty1 = createColumnValueId({ column: PATH, value: "Ty1" });
 
+const OTHER = createGlobalPObjectId("mixcr", "abundance");
+
 const dependencies: BlockDependencies = {
   argsSource: "current",
   items: [
@@ -48,6 +50,21 @@ describe("missingValueHint", () => {
     if (hint === undefined) throw new Error("expected a hint");
 
     expect(mount(hint).text()).toBe("Samples does not provide “Path”.");
+  });
+
+  test("says a provided column waits for the other inputs of the block", () => {
+    const hint = missingValueHint(() => ({
+      ...dependencies,
+      items: [
+        ...dependencies.items.map((item): DependencyEntry => ({ ...item, status: { type: "ok" } })),
+        ...dependencies.items.map(
+          (item): DependencyEntry => ({ ...item, ref: OTHER, status: { type: "notRun" } }),
+        ),
+      ],
+    }))(ty1);
+    if (hint === undefined) throw new Error("expected a hint");
+
+    expect(mount(hint).text()).toBe("Waiting for the other inputs of this block.");
   });
 
   test("gives no hint while the dependencies are not known", () => {

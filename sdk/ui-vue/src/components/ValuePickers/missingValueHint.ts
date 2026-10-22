@@ -17,7 +17,8 @@ export function useColumnLinksHint(): MissingValueHint | undefined {
 
 /**
  * Explains a missing column value by the dependencies `readDependencies` gives: the block meant
- * to provide it, as a link to that block, and what went wrong.
+ * to provide it, as a link to that block, and what went wrong; or that it waits for the other
+ * inputs of the block.
  */
 export function missingValueHint(
   readDependencies: () => BlockDependencies | undefined,
@@ -27,6 +28,7 @@ export function missingValueHint(
     if (dependencies === undefined) return undefined;
     const cause = describeMissingValue(dependencies, value);
     if (cause === undefined) return undefined;
+    if (cause.type === "waiting") return () => cause.text;
     return () =>
       h("span", [
         h(PlBlockName, { blockId: cause.blockId, name: cause.blockName }),
