@@ -1,6 +1,7 @@
+// Never import :workflow here, even through a library: modules are evaluated once per run,
+// so its defineOutputs lands on this template's :tpl and the outputs check fails.
 pt := import(":pt")
 units := import(":units")
-wf := import(":workflow")
 self := import(":tpl")
 util := import(":annotations.util")
 pSpec := import(":pframes.spec")

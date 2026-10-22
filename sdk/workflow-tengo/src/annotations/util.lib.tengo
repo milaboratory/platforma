@@ -2,7 +2,6 @@ hex := import("hex")
 text := import("text")
 
 ll := import(":ll")
-wf := import(":workflow")
 sets := import(":sets")
 maps := import(":maps")
 slices := import(":slices")
@@ -81,9 +80,7 @@ extractColumnsFromExpressions := func(expressions) {
 	return sets.toSlice(columnsSet)
 }
 
-prepareResultColumnSpec := func(args) {
-	blockId := wf.getBlockId()
-	
+prepareResultColumnSpec := func(args, blockId) {
 	steps := slices.filter([args.trace, {
 		id: blockId,
 		type: "milaboratories.annotation",
