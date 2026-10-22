@@ -78,14 +78,13 @@ import {
 import { gzipSync } from "node:zlib";
 import type { ProjectHelper } from "../model/project_helper";
 import {
-  argsRepair,
   derivedArgsValue,
   argsErrorsFieldChange,
   argsErrorsOfBlock,
   type DerivedArgs,
   type ArgsErrorsFieldChange,
-  type ArgsErrorsState,
 } from "../model/args_derivation";
+import type { ArgsIssue } from "@milaboratories/pl-model-common";
 import {
   extractConfig,
   UiError,
@@ -293,10 +292,10 @@ class BlockInfo {
   );
 
   /**
-   * What is known of the errors the block's `argsIssues()` found in its current args. A block
-   * whose model API version has no args issues, or that has no current args, has none.
+   * The errors the block's `argsIssues()` found in its current args. A block whose model API
+   * version has no args issues, or that has no current args, has none.
    */
-  get argsErrors(): ArgsErrorsState {
+  get argsErrors(): readonly ArgsIssue[] {
     return this.argsErrorsC();
   }
 
@@ -519,10 +518,6 @@ export class ProjectMutator {
 
     // Validate after fixes
     this.blockInfos.forEach((info) => info.check());
-
-    // Args errors of model API v2 blocks whose args were written by a middle layer that does not
-    // record them with every args: such blocks get their args derived again from their storage.
-    this.blockInfos.forEach((info) => this.rederiveArgsOfUnknownErrors(info.id));
   }
 
   get wasModified(): boolean {
@@ -811,49 +806,6 @@ export class ProjectMutator {
         return;
       }
     }
-  }
-
-  /**
-   * Derives the args of a model API v2 block again from its storage when the errors found in its
-   * current args are unknown, and writes the args that come out and their args errors. A block
-   * whose args errors are known is left as it is, and fields that already hold what the
-   * derivation gives are not rewritten, so a project in order is not touched.
-   */
-  private rederiveArgsOfUnknownErrors(blockId: string): void {
-    const info = this.getBlockInfo(blockId);
-    const repair = argsRepair(
-      {
-        argsErrors: info.argsErrors,
-        currentArgs: info.currentArgs,
-        inputsValid: info.fields.inputsValid,
-        storageJson: info.blockStorageJson,
-      },
-      (storageJson) => this.projectHelper.deriveArgsFromStorage(info.config, storageJson),
-    );
-    if (repair.type === "none") return;
-
-    switch (repair.currentArgs.type) {
-      case "keep":
-        break;
-      case "delete":
-        this.deleteBlockFields(blockId, "currentArgs");
-        this.pendingProductionGraph = undefined;
-        break;
-      case "write": {
-        // NB: currentArgs must NOT be gzipped — they are read by Tengo workflows which can't decompress
-        const { data } = repair.currentArgs;
-        this.setBlockField(
-          blockId,
-          "currentArgs",
-          this.tx.createValue(Pl.JsonObject, data),
-          "Ready",
-          data,
-        );
-        this.pendingProductionGraph = undefined;
-        break;
-      }
-    }
-    this.applyArgsErrorsChange(blockId, repair.inputsValid);
   }
 
   private updateLastModified() {
@@ -1290,15 +1242,10 @@ export class ProjectMutator {
       throw new Error(`Can't render production for block ${blockId}: currentArgs not set`);
     }
 
-    // Nor if its argsIssues() found errors in them, or it is not known whether it did
+    // Nor if its argsIssues() found errors in them
     const argsErrors = info.argsErrors;
-    if (argsErrors.type === "unknown") {
-      throw new Error(
-        `Can't render production for block ${blockId}: the issues of its args are not known`,
-      );
-    }
-    if (argsErrors.errors.length > 0) {
-      const messages = argsErrors.errors.map(({ message }) => message).join("; ");
+    if (argsErrors.length > 0) {
+      const messages = argsErrors.map(({ message }) => message).join("; ");
       throw new Error(`Can't render production for block ${blockId}: ${messages}`);
     }
 
@@ -1760,9 +1707,6 @@ export class ProjectMutator {
   //
 
   public renderProduction(blockIds: string[], addUpstreams: boolean = false): Set<string> {
-    // Args whose errors are unknown are derived again before anything is built from them
-    this.blockInfos.forEach((info) => this.rederiveArgsOfUnknownErrors(info.id));
-
     const blockIdsSet = new Set(blockIds);
 
     const prodGraph = this.getPendingProductionGraph();

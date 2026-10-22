@@ -16,12 +16,12 @@ describe("argsAllowRun", () => {
     expect(await allowRun(prj.tree(), "x")).toBe(true);
   });
 
-  test("a block with current args and no args errors record may not run", async () => {
+  test("a block with current args and no args errors record may run, as before the record", async () => {
     // What a project saved by an older middle layer holds: current args and no `inputsValid`.
     const prj = new FakeProject();
     prj.block("x", { currentArgs: prj.args({ n: 1 }) });
 
-    expect(await allowRun(prj.tree(), "x")).toBe(false);
+    expect(await allowRun(prj.tree(), "x")).toBe(true);
   });
 
   test("a block without current args may not run", async () => {
@@ -51,26 +51,26 @@ describe("argsAllowRun", () => {
     expect(await allowRun(prj.tree(), "x")).toBe(false);
   });
 
-  test("a record written for other args keeps the block from running", async () => {
+  test("errors recorded for other args do not keep the block from running", async () => {
     // What an older middle layer leaves behind: it writes new current args and never touches
     // the `inputsValid` field.
     const prj = new FakeProject();
     prj.block("x", {
       currentArgs: prj.args({ n: 2 }),
-      inputsValid: prj.argsErrors([], { n: 1 }),
+      inputsValid: prj.argsErrors([setThreshold], { n: 1 }),
     });
 
-    expect(await allowRun(prj.tree(), "x")).toBe(false);
+    expect(await allowRun(prj.tree(), "x")).toBe(true);
   });
 
-  test("a field that cannot be read keeps the block from running", async () => {
+  test("a field that cannot be read does not keep the block from running", async () => {
     const prj = new FakeProject();
     prj.block("x", {
       currentArgs: prj.args({ n: 1 }),
       inputsValid: prj.value("json/object", [setThreshold]),
     });
 
-    expect(await allowRun(prj.tree(), "x")).toBe(false);
+    expect(await allowRun(prj.tree(), "x")).toBe(true);
   });
 
   test("may run again once the args and their record have no errors", async () => {
@@ -89,18 +89,18 @@ describe("argsAllowRun", () => {
     expect(await computable.getValue()).toBe(true);
   });
 
-  test("current args changed without their record stop the block from running", async () => {
+  test("current args changed without their record leave the old errors behind", async () => {
     const prj = new FakeProject();
-    const argsErrors = prj.argsErrors([], { n: 1 });
+    const argsErrors = prj.argsErrors([setThreshold], { n: 1 });
     prj.block("x", { currentArgs: prj.args({ n: 1 }), inputsValid: argsErrors });
     const tree = prj.tree();
     const computable = allowRunComputable(tree, "x");
-    expect(await computable.getValue()).toBe(true);
+    expect(await computable.getValue()).toBe(false);
 
     prj.block("x", { currentArgs: prj.args({ n: 2 }), inputsValid: argsErrors });
     tree.updateFromResourceData(prj.changes());
 
-    expect(await computable.getValue()).toBe(false);
+    expect(await computable.getValue()).toBe(true);
   });
 });
 
@@ -147,6 +147,17 @@ describe("withRunState", () => {
     expect(b).toMatchObject({ stale: false, canRun: false });
   });
 
+  test("an up-to-date block whose validity is not about its args keeps its dependents from running", () => {
+    // A block whose code cannot run here, or whose model predates args issues and checks more
+    // than its args, as before args issues.
+    const [upstream, dependent] = withRunState([
+      block({ id: "a", inputsValid: undefined, inputsValidFromArgs: false }),
+      block({ id: "b", stale: true, upstreams: ["a"] }),
+    ]);
+    expect(upstream.canRun).toBe(false);
+    expect(dependent.canRun).toBe(false);
+  });
+
   test("a changed block that references a missing block cannot run", () => {
     const [b] = withRunState([block({ id: "a", stale: true, missingReference: true })]);
     expect(b.canRun).toBe(false);
@@ -175,12 +186,13 @@ function allowRun(tree: PlTreeState, blockId: string): Promise<boolean> {
   return allowRunComputable(tree, blockId).getValue();
 }
 
-/** A block that ran with its current args, without errors, with no upstream blocks. */
+/** A block with model API version 2 that ran with its current args, without errors, with no upstream blocks. */
 function block(overrides: Partial<RunStateSource> & Pick<RunStateSource, "id">): RunStateSource {
   return {
     stale: false,
     outputErrors: false,
     inputsValid: true,
+    inputsValidFromArgs: true,
     missingReference: false,
     upstreams: [],
     ...overrides,
