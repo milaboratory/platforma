@@ -97,15 +97,16 @@ you cannot import them.
 
 ### Utilities
 
-| Export                                       | Kind     | One-liner                                                                          |
-| -------------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
-| `deriveColumnOptions(source, labelOptions?)` | function | `ColumnOption[]` — `{ id, label }` drop-down options over a collection.            |
-| `ColumnOption`                               | type     | `{ id: ColumnUniversalId; label: string }`.                                        |
-| `readColumnValues(recipe)`                   | function | `ColumnValueEntry[] \| undefined` — every non-empty cell of an inline-JSON column. |
-| `deriveColumnValueOptions(entries)`          | function | `ColumnValueOption[]` — distinct values as `{ value, label }`, natural order.      |
-| `ColumnValueEntry`, `ColumnValueOption`      | types    | `{ key, value, id: ColumnValueId }` and `{ value: ColumnValueId; label }`.         |
-| `splitByAxes(inputs, splitAxes, opts?)`      | function | Fan a column out into one recipe per distinct value of the given axes.             |
-| `SplitAxis`, `SplitByAxesOpts`               | types    | `{ idx }` and `{ axisValuesLabels? }`.                                             |
+| Export                                       | Kind     | One-liner                                                                              |
+| -------------------------------------------- | -------- | -------------------------------------------------------------------------------------- |
+| `deriveColumnOptions(source, labelOptions?)` | function | `ColumnOption[]` — `{ id, label }` drop-down options over a collection.                |
+| `ColumnOption`                               | type     | `{ id: ColumnUniversalId; label: string }`.                                            |
+| `createColumnValuesSource(ctx, column)`      | function | `ColumnValuesSource` — a frame of the picked column, for the UI to read values.        |
+| `readColumnValueOptions(source)`             | function | UI side: `Promise<ColumnValueOption[]>` — the column's distinct values as options.     |
+| `deriveColumnValueOptions(column, values)`   | function | `ColumnValueOption[]` — distinct values as `{ value, label }`, natural order.          |
+| `ColumnValuesSource`, `ColumnValueOption`    | types    | `resolving \| absent \| present` with `column`, and `{ value: ColumnValueId; label }`. |
+| `splitByAxes(inputs, splitAxes, opts?)`      | function | Fan a column out into one recipe per distinct value of the given axes.                 |
+| `SplitAxis`, `SplitByAxesOpts`               | types    | `{ idx }` and `{ axisValuesLabels? }`.                                                 |
 
 ### Exported but Not Part of the Surface
 
@@ -514,29 +515,37 @@ const options = deriveColumnOptions(
 );
 ```
 
-### `readColumnValues` and `deriveColumnValueOptions`
+### Value pickers: `createColumnValuesSource`, `readColumnValueOptions`, `deriveColumnValueOptions`
 
 ```ts
-readColumnValues(recipe: ColumnRecipe): ColumnValueEntry[] | undefined;
-// { key: PColumnKey; value: string; id: ColumnValueId }[] — a number cell as String(cell)
+createColumnValuesSource(ctx: ColumnValuesCtx, column: ColumnUniversalId): ColumnValuesSource;
+// { type: "resolving" | "absent"; column } | { type: "present"; column; frame: PFrameHandle }
 
-deriveColumnValueOptions(entries: readonly ColumnValueEntry[]): ColumnValueOption[];
+readColumnValueOptions(source: PresentColumnValuesSource): Promise<ColumnValueOption[]>; // UI
+deriveColumnValueOptions(column: ColumnUniversalId, values: readonly string[]): ColumnValueOption[];
 // { value: ColumnValueId; label: string }[]
 ```
 
 The value-level sibling of `deriveColumnOptions`: options for picking values
-of one column rather than columns. `readColumnValues` reads every non-empty
-cell of a column stored inline as JSON (`PColumnData/Json`) — the small
-columns users pick values of, such as sample metadata. Partitioned JSON keeps
-its parts in files and is not read. Each entry's `id` is a `ColumnValueId` naming `recipe.id`
-as its column (see [`column-identity.md`](./column-identity.md)). It returns
-`undefined` while the data is not ready, and for a column whose data cannot
-be read in the model: one without reachable data (`hasReachableData` is
-false) or not stored as inline JSON.
+of one column rather than columns. The values are read in the UI, through a
+frame, so a column of any storage format can be picked from. The model gives
+the source as an output: `createColumnValuesSource` makes a frame holding the
+picked column alone, `resolving` while the column or its frame is, `absent`
+once the column is gone. `column` is the pick the source was made for, so the
+UI can tell a source that still describes an earlier pick.
 
-`deriveColumnValueOptions` keeps one option per distinct value, labelled by
-the value itself and sorted naturally by label ("R2" before "R10"). Entries
-can be filtered by `key` first, e.g. to the samples of an input.
+`readColumnValueOptions` reads the column's distinct values with
+`getUniqueValues`, skips missing ones, and turns them into options with
+`deriveColumnValueOptions`; a number value becomes its decimal string. It
+rejects a frame that does not hold exactly one column and a column with more
+distinct values than a picker can offer. In Vue, `useColumnValueOptions` from
+`@platforma-sdk/ui-vue` follows the pick and gives the state as
+`loading | absent | read | failed`.
+
+`deriveColumnValueOptions` keeps one option per distinct non-empty value,
+each a `ColumnValueId` naming `column` (see
+[`column-identity.md`](./column-identity.md)), labelled by the value itself
+and sorted naturally by label ("R2" before "R10").
 
 A block arg holding a pick is typed `ColumnValueId` (or `ColumnValueId[]`).
 The id is opaque: compare it with `===` against option values, never build or
@@ -544,14 +553,19 @@ parse the string by hand — `createColumnValueId` / `parseColumnValueId`
 exist for code that must. The workflow reads plain values back with
 `workflow.column-value` (`valueOf`, `valuesOf`).
 
-The picked column is looked up by its id, not found among enumerated columns:
-
 ```ts
-const id = data.groupColumn;
-const column =
-  id !== undefined && ColumnRecipe.getStatus(id) === "present" ? Column(id) : undefined;
-const entries = column && readColumnValues(column);
-return entries && deriveColumnValueOptions(entries);
+// model
+.output("groupValues", (ctx) =>
+  ctx.data.groupColumn === undefined
+    ? undefined
+    : createColumnValuesSource(ctx, ctx.data.groupColumn),
+)
+
+// UI
+const groupValues = useColumnValueOptions({
+  source: () => app.model.outputs.groupValues,
+  column: () => app.model.data.groupColumn,
+});
 ```
 
 ### `splitByAxes`

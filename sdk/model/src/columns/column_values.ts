@@ -1,22 +1,12 @@
 import {
   createColumnValueId,
-  parseJsonSafely,
+  type ColumnUniversalId,
   type ColumnValueId,
-  type PColumnKey,
+  type PFrameHandle,
 } from "@milaboratories/pl-model-common";
-import { TreeNodeAccessor } from "../render";
-import type { ColumnRecipe } from "./column_recipes/types";
-import { hasReachableData } from "./utils";
-
-/**
- * One cell of a column: its key, its value as text — a number cell as its decimal string — and
- * the id a value picker stores for the value.
- */
-export type ColumnValueEntry = {
-  readonly key: PColumnKey;
-  readonly value: string;
-  readonly id: ColumnValueId;
-};
+import type { RenderCtxBase } from "../render";
+import type { GlobalCfgRenderCtx } from "../render/internal";
+import { ColumnRecipe } from "./column_recipes";
 
 /** Drop-down option for a value of a column — column-value-id valued. */
 export type ColumnValueOption = {
@@ -25,62 +15,56 @@ export type ColumnValueOption = {
 };
 
 /**
- * Every non-empty cell of a column whose values are stored inline as JSON — the small columns
- * users pick values of, such as sample metadata. Each entry's id names `recipe` as the column
- * the value came from.
- *
- * `undefined` while the data is not ready, and for a column whose data cannot be read here: one
- * that is not a leaf (see `hasReachableData`) or not stored inline as `PColumnData/Json` —
- * partitioned JSON keeps its parts in files.
+ * Where a UI reads the values of a picked column from: a frame holding that column alone, while
+ * the column is there. `column` is the pick the source was made for, so the UI can tell a source
+ * that still describes an earlier pick.
  */
-export function readColumnValues(recipe: ColumnRecipe): ColumnValueEntry[] | undefined {
-  if (!hasReachableData(recipe)) return undefined;
-  const data = recipe.getData();
-  if (!(data instanceof TreeNodeAccessor)) return undefined;
-  const cells = readJsonCells(data);
-  if (cells === undefined) return undefined;
+export type ColumnValuesSource =
+  | { readonly type: "resolving"; readonly column: ColumnUniversalId }
+  | { readonly type: "absent"; readonly column: ColumnUniversalId }
+  | { readonly type: "present"; readonly column: ColumnUniversalId; readonly frame: PFrameHandle };
 
-  const entries: ColumnValueEntry[] = [];
-  for (const [key, cell] of cells) {
-    if (!isPickableCell(cell)) continue;
-    const value = String(cell);
-    entries.push({
-      key,
-      value,
-      id: createColumnValueId({ column: recipe.id, value }),
-    });
-  }
-  return entries;
+/** What `createColumnValuesSource` needs of a render ctx; any `RenderCtxBase` is one. */
+export type ColumnValuesCtx = Pick<RenderCtxBase, "createPFrame"> & {
+  /** The render ctx the column is resolved in; the global one when not given. */
+  readonly ctx?: GlobalCfgRenderCtx;
+};
+
+/**
+ * The source a UI reads the values of `column` from, for a model output. The values are read in
+ * the UI, through the frame, so a column of any storage format can be picked from. `absent` once
+ * the column is gone: a stored id may name a column its upstream block no longer produces.
+ */
+export function createColumnValuesSource(
+  ctx: ColumnValuesCtx,
+  column: ColumnUniversalId,
+): ColumnValuesSource {
+  const status = ColumnRecipe.getStatus(column, { ctx: ctx.ctx });
+  if (status !== "present") return { type: status, column };
+  const frame = ctx.createPFrame([column]);
+  return frame === undefined ? { type: "resolving", column } : { type: "present", column, frame };
 }
 
 /**
- * Distinct values among `entries` as options, labelled by the value itself and ordered
- * naturally by label ("R2" before "R10").
+ * Distinct `values` of `column` as options, each a column value id naming the column, labelled
+ * by the value itself and ordered naturally by label ("R2" before "R10"). Empty values are not
+ * offered.
  */
 export function deriveColumnValueOptions(
-  entries: readonly ColumnValueEntry[],
+  column: ColumnUniversalId,
+  values: readonly string[],
 ): ColumnValueOption[] {
-  const options = new Map<ColumnValueId, ColumnValueOption>();
-  for (const { id, value } of entries) {
-    if (!options.has(id)) options.set(id, { value: id, label: value });
+  const options = new Map<string, ColumnValueOption>();
+  for (const value of values) {
+    if (value === "" || options.has(value)) continue;
+    options.set(value, { value: createColumnValueId({ column, value }), label: value });
   }
   return [...options.values()].sort((a, b) => compareNatural(a.label, b.label));
 }
 
 // Internals
 
-const RT_JSON = "PColumnData/Json";
-
 const CHUNKS = /\d+|\D+/g;
-
-type JsonColumnData = { data?: Record<string, unknown> };
-
-function readJsonCells(acc: TreeNodeAccessor): [PColumnKey, unknown][] | undefined {
-  if (acc.resourceType.name !== RT_JSON) return undefined;
-  const data = acc.getDataAsJsonOrUndefined<JsonColumnData>()?.data;
-  if (data === undefined) return undefined;
-  return Object.entries(data).map(([key, value]) => [parseKey(key), value]);
-}
 
 /**
  * Natural order: runs of digits compare as numbers, other text case-insensitively, so "R2"
@@ -112,20 +96,4 @@ function isDigits(chunk: string): boolean {
 
 function compareStrings(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0;
-}
-
-/** A JSON-serialized key tuple; anything else is taken as a one-element key. */
-function parseKey(keyJson: string): PColumnKey {
-  const parsed = parseJsonSafely(keyJson);
-  if (Array.isArray(parsed) && parsed.every(isKeyElement)) return parsed;
-  return [keyJson];
-}
-
-function isKeyElement(value: unknown): value is string | number {
-  return typeof value === "string" || typeof value === "number";
-}
-
-/** A cell holding a value a picker can store: a string other than the empty one, or a finite number. */
-function isPickableCell(cell: unknown): cell is string | number {
-  return (typeof cell === "string" && cell !== "") || Number.isFinite(cell);
 }
