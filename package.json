@@ -9,10 +9,10 @@
     "build:dev-binary-existing": "PL_BUILD_CHANNEL=dev PL_BUILD_USE_PUBLISHED=true pnpm build",
     "build:release": "PL_BUILD_CHANNEL=release PL_BUILD_VARIANT=all PL_BUILD_LOCATION=remote pnpm build",
     "test": "turbo run test --concurrency 1 --summarize",
-    "test:no-cache": "pnpm test -- --force",
+    "test:no-cache": "pnpm test --force",
     "test:local": "PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local pnpm test",
-    "test:local+dry-run": "pnpm test:local -- --dry-run=json",
-    "test:local+no-cache": "pnpm test:local -- --force",
+    "test:local+dry-run": "pnpm test:local --dry-run=json",
+    "test:local+no-cache": "pnpm test:local --force",
     "do-pack": "PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=remote turbo run do-pack",
     "do-pack:local": "PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=local turbo run do-pack",
     "changeset": "changeset",
@@ -29,9 +29,9 @@
     "ci:prepare": "pnpm --filter \"@milaboratories/ts-builder...\" run build && pnpm formatter:check --output-logs=errors-only && pnpm linter:check --output-logs=errors-only",
     "ci:build:local": "pnpm ci:prepare && pnpm turbo-why build:dev-local && pnpm build:dev-local --output-logs=errors-only",
     "ci:build:release": "pnpm ci:prepare && pnpm turbo-why build:release && pnpm build:release --output-logs=errors-only",
-    "ci:test": "pnpm turbo-why test && pnpm test -- --output-logs=errors-only",
-    "ci:test:no-cache": "pnpm test:no-cache -- --output-logs=errors-only",
-    "ci:test:local": "pnpm turbo-why test:local && pnpm test:local -- --output-logs=errors-only",
+    "ci:test": "pnpm turbo-why test && pnpm test --output-logs=errors-only",
+    "ci:test:no-cache": "pnpm test:no-cache --output-logs=errors-only",
+    "ci:test:local": "pnpm turbo-why test:local && pnpm test:local --output-logs=errors-only",
     "ci:test:local+no-cache": "pnpm test:local+no-cache --output-logs=errors-only",
     "reset": "pnpm reset:dist && pnpm reset:node_modules && pnpm reset:turbo-cache",
     "reset:dist": "find . -type d -name 'dist' | grep -v 'node_modules' | xargs rm -rf",
@@ -57,17 +57,17 @@
     "oxfmt": "*",
     "oxlint": "*"
   },
-  "engines": {
-    "node": ">=22"
-  },
-  "packageManager": "pnpm@9.14.4+sha512.c8180b3fbe4e4bca02c94234717896b5529740a6cbadf19fa78254270403ea2f27d4e1d46a08a0f56c89b63dc8ebfd3ee53326da720273794e6200fcf0d184ab",
-  "pnpm": {
-    "overrides": {
-      "@microsoft/api-extractor>typescript": "npm:@typescript/typescript6@6.0.2"
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": "24.22.0",
+      "onFail": "download"
     },
-    "neverBuiltDependencies": [
-      "better-sqlite3"
-    ]
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.14.0",
+      "onFail": "download"
+    }
   },
   "//": {
     "@platforma-open/milaboratories.software-ptabler": "file:/Users/dbolotin/mi/core/ptabler/software/package.tgz",
