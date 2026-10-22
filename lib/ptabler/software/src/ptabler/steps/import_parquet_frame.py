@@ -93,19 +93,14 @@ class ImportColumnMapping(Struct, rename="camel"):
         return self.source if self.source is not None else self.column
 
 
-def build_import_query(
-    step: "ImportParquetFrame", source_path: str, target_path: str,
-    row_group_size: int = ROW_GROUP_SIZE, already_sorted: bool = False,
-) -> str:
-    """The whole import as one statement: cast in an inner SELECT so the null filters
-    and the sort see the cast values (a bare alias is not in scope in WHERE), then COPY
-    the result out. TRY_CAST, not CAST, because the Polars chain this replaces casts
-    with strict=false: an unparseable value becomes null and is then dropped by the
-    filters below rather than failing the run.
+def _cast_and_filter(step: "ImportParquetFrame", source_path: str) -> str:
+    """The rows the import writes: source fields cast to their declared types, with the
+    rows the write would drop already dropped. Shared so the order check sees exactly
+    what the import sees; checking anything else is how the check goes wrong.
 
-    `already_sorted` drops the ORDER BY, leaving PRESERVE_ORDER to carry the source
-    order through. That is the whole point of checking: sorting 4.3e9 rows cost 196 GiB
-    of spill, and streaming the same rows in order cost none."""
+    TRY_CAST, not CAST, because the Polars chain this replaces casts with strict=false:
+    an unparseable value becomes null and is dropped below rather than failing the run.
+    """
     projection = ", ".join(
         f"TRY_CAST({_escape(m.source_field)} AS {to_duckdb_type(m.type)}) AS {_escape(m.column)}"
         for m in list(step.axes) + list(step.columns)
@@ -116,14 +111,26 @@ def build_import_query(
         # on an axis lands here too.
         conditions += [f"{_escape(a.column)} IS NOT NULL" for a in step.axes]
     where = f" WHERE {' AND '.join(conditions)}" if conditions else ""
+    return (
+        f"SELECT * FROM (SELECT {projection} "
+        f"FROM read_parquet({_sql_literal(source_path)})){where}"
+    )
+
+
+def build_import_query(
+    step: "ImportParquetFrame", source_path: str, target_path: str,
+    row_group_size: int = ROW_GROUP_SIZE, already_sorted: bool = False,
+) -> str:
+    """The whole import as one statement: cast and filter, then COPY the result out.
+
+    `already_sorted` drops the ORDER BY, leaving PRESERVE_ORDER to carry the source
+    order through. That is the whole point of checking: sorting 4.3e9 rows cost 196 GiB
+    of spill, and streaming the same rows in order cost none."""
     order_by = ", ".join(f"{_escape(a.column)} ASC NULLS FIRST" for a in step.axes)
     ordering = "" if already_sorted else f" ORDER BY {order_by}"
     return f"""
         COPY (
-            SELECT * FROM (
-                SELECT {projection}
-                FROM read_parquet({_sql_literal(source_path)})
-            ){where}{ordering}
+            {_cast_and_filter(step, source_path)}{ordering}
         )
         TO {_sql_literal(target_path)}
         (
@@ -142,24 +149,35 @@ def build_order_check_query(step: "ImportParquetFrame", source_path: str) -> str
     it: 4.3e9 rows took 33s and spilled nothing, against 442s and 196 GiB to sort the
     same file. Worth paying to find out whether the sort can be skipped entirely.
 
-    Compares the source columns rather than the cast ones. A TRY_CAST is monotonic for
-    the widths we map, and a row it nulls is dropped by the filters anyway. The null
-    filters likewise only remove rows, and removing rows cannot unsort what is left.
+    Checks the rows the import will actually write, not the source rows: the same cast
+    and the same filters. Checking the source instead is wrong twice over. A cast need
+    not preserve order, so the strings ['1','10','2'] are sorted while the Ints
+    [1,10,2] are not. And a null breaks the comparison chain rather than failing it, so
+    ['b', null, 'a'] reports no violation and then filters down to the unsorted
+    ['b','a']. Either one skips the sort and hands `convert` a PFrame that breaks the
+    sorted-axis contract its readers rely on.
     """
-    cur = [_escape(a.source_field) for a in step.axes]
-    prev = [f"lag({c}) OVER ()" for c in cur]
+    inner = _cast_and_filter(step, source_path)
+    keys = [_escape(a.column) for a in step.axes]
     projected = ", ".join(
-        f"{c} AS k{i}, {p} AS p{i}" for i, (c, p) in enumerate(zip(cur, prev))
+        f"{k} AS k{i}, lag({k}) OVER () AS p{i}" for i, k in enumerate(keys)
     )
-    # Lexicographic "this row sorts before the previous one", unrolled over the axes.
+    # "This row sorts before the previous one", lexicographic over the axes, under the
+    # ASC NULLS FIRST the write uses: a null outranks any value, so null-after-value is
+    # itself an inversion. Spelled out because `<` yields NULL when either side is null.
     terms = []
-    for i in range(len(cur)):
+    for i in range(len(keys)):
         eq = " AND ".join(f"k{j} IS NOT DISTINCT FROM p{j}" for j in range(i))
-        less = f"k{i} < p{i}"
-        terms.append(f"({eq} AND {less})" if eq else f"({less})")
+        less = (
+            f"((k{i} IS NULL AND p{i} IS NOT NULL)"
+            f" OR (k{i} IS NOT NULL AND p{i} IS NOT NULL AND k{i} < p{i}))"
+        )
+        terms.append(f"({eq} AND {less})" if eq else less)
     return f"""
-        SELECT count(*) FROM (SELECT {projected} FROM read_parquet({_sql_literal(source_path)}))
-        WHERE p0 IS NOT NULL AND ({" OR ".join(terms)})
+        SELECT count(*) FROM (
+            SELECT {projected}, lag(1) OVER () AS has_prev FROM ({inner})
+        )
+        WHERE has_prev IS NOT NULL AND ({" OR ".join(terms)})
     """
 
 

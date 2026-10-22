@@ -201,6 +201,35 @@ class OrderCheckTests(unittest.TestCase):
         })
         self.assertEqual(self._count_out_of_order(t), 1)
 
+    def test_null_axis_does_not_mask_an_inversion(self):
+        """['b', null, 'a'] has no adjacent pair the comparison can fail on, but the
+        null is dropped by the non-strict filter and leaves ['b','a'], unsorted."""
+        t = pa.table({
+            KEY: pa.array(["b", None, "a"], pa.large_string()),
+            "embedding_dim": pa.array([0, 0, 0], pa.int64()),
+            "value": pa.array([1.0, 2.0, 3.0], pa.float32()),
+        })
+        self.assertEqual(self._count_out_of_order(t), 1)
+
+    def test_non_monotonic_cast_is_caught(self):
+        """Sorted as strings, unsorted once cast to Int, so the check has to compare
+        the cast values the write will order by, not the source ones."""
+        t = pa.table({
+            KEY: pa.array(["a", "a", "a"], pa.large_string()),
+            "embedding_dim": pa.array(["1", "10", "2"], pa.large_string()),
+            "value": pa.array([1.0, 2.0, 3.0], pa.float32()),
+        })
+        self.assertEqual(self._count_out_of_order(t), 1)
+
+    def test_value_dropped_by_not_null_filter_cannot_mask_an_inversion(self):
+        """The dropped middle row is the only thing keeping the keys non-decreasing."""
+        t = pa.table({
+            KEY: pa.array(["b", "c", "a"], pa.large_string()),
+            "embedding_dim": pa.array([0, 0, 0], pa.int64()),
+            "value": pa.array([1.0, None, 3.0], pa.float32()),
+        })
+        self.assertEqual(self._count_out_of_order(t), 1)
+
 
 class EngineEquivalenceTests(unittest.TestCase):
     """The step is only safe to switch on if it is a drop-in for the Polars chain."""
