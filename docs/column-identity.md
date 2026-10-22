@@ -83,9 +83,9 @@ form, and nothing that resolves columns accepts it.
 
 Definitions: `lib/model/common/src/drivers/pframe/spec/column_value.ts`,
 `lib/model/common/src/drivers/pframe/spec/column_references.ts`. Value
-pickers (`createColumnValuesSource`, `readColumnValueOptions`,
-`deriveColumnValueOptions`) are in
-[`column-access-api.md`](./column-access-api.md#value-pickers-createcolumnvaluessource-readcolumnvalueoptions-derivecolumnvalueoptions).
+pickers (`createColumnValueOptions`, `usePlColumnValueOptions`,
+`PlColumnValueDropdown`) are in
+[`column-access-api.md`](./column-access-api.md#value-pickers-createcolumnvalueoptions-useplcolumnvalueoptions-plcolumnvaluedropdown).
 
 ### Crossing the boundary: `extractPObjectId`
 
@@ -167,7 +167,8 @@ the leaves is what makes that lookup succeed.
   references in args: `lib/model/common/src/drivers/pframe/spec/column_references.ts`,
   value pickers: `sdk/model/src/columns/column_values.ts`,
   `sdk/model/src/pframe_utils/column_value_options.ts`,
-  `sdk/ui-vue/src/composition/useColumnValueOptions.ts`,
+  `sdk/ui-vue/src/composition/usePlColumnValueOptions.ts`,
+  `sdk/ui-vue/src/components/PlColumnValueDropdown/`,
   workflow-side reader: `sdk/workflow-tengo/src/workflow/column-value.lib.tengo`.
 - Recipe implementations:
   `sdk/model/src/columns/data_column.ts`,

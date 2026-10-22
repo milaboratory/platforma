@@ -97,16 +97,17 @@ you cannot import them.
 
 ### Utilities
 
-| Export                                       | Kind     | One-liner                                                                              |
-| -------------------------------------------- | -------- | -------------------------------------------------------------------------------------- |
-| `deriveColumnOptions(source, labelOptions?)` | function | `ColumnOption[]` — `{ id, label }` drop-down options over a collection.                |
-| `ColumnOption`                               | type     | `{ id: ColumnUniversalId; label: string }`.                                            |
-| `createColumnValuesSource(ctx, column)`      | function | `ColumnValuesSource` — a frame of the picked column, for the UI to read values.        |
-| `readColumnValueOptions(source)`             | function | UI side: `Promise<ColumnValueOption[]>` — the column's distinct values as options.     |
-| `deriveColumnValueOptions(column, values)`   | function | `ColumnValueOption[]` — distinct values as `{ value, label }`, natural order.          |
-| `ColumnValuesSource`, `ColumnValueOption`    | types    | `resolving \| absent \| present` with `column`, and `{ value: ColumnValueId; label }`. |
-| `splitByAxes(inputs, splitAxes, opts?)`      | function | Fan a column out into one recipe per distinct value of the given axes.                 |
-| `SplitAxis`, `SplitByAxesOpts`               | types    | `{ idx }` and `{ axisValuesLabels? }`.                                                 |
+| Export                                         | Kind     | One-liner                                                                                   |
+| ---------------------------------------------- | -------- | ------------------------------------------------------------------------------------------- |
+| `deriveColumnOptions(source, labelOptions?)`   | function | `ColumnOption[]` — `{ id, label }` drop-down options over a collection.                     |
+| `ColumnOption`                                 | type     | `{ id: ColumnUniversalId; label: string }`.                                                 |
+| `createColumnValueOptions(columns, deps?)`     | function | `ColumnValueOptionsModel` — a frame of the value column and its labels, for the UI.         |
+| `readColumnValueOptions(model)`                | function | UI side: `Promise<ColumnValueOption[]>` — the column's distinct values as options.          |
+| `deriveColumnValueOptions(column, values)`     | function | `ColumnValueOption[]` — distinct values as `{ value, label }`, natural order.               |
+| `deriveLabelledColumnValueOptions(c, rows)`    | function | `ColumnValueOption[]` — distinct values labelled by their rows' labels.                     |
+| `ColumnValueOptionsModel`, `ColumnValueOption` | types    | `resolving \| absent \| present` with `valueColumn`, and `{ value: ColumnValueId; label }`. |
+| `splitByAxes(inputs, splitAxes, opts?)`        | function | Fan a column out into one recipe per distinct value of the given axes.                      |
+| `SplitAxis`, `SplitByAxesOpts`                 | types    | `{ idx }` and `{ axisValuesLabels? }`.                                                      |
 
 ### Exported but Not Part of the Surface
 
@@ -515,37 +516,76 @@ const options = deriveColumnOptions(
 );
 ```
 
-### Value pickers: `createColumnValuesSource`, `readColumnValueOptions`, `deriveColumnValueOptions`
+### Value Pickers: `createColumnValueOptions`, `usePlColumnValueOptions`, `PlColumnValueDropdown`
 
 ```ts
-createColumnValuesSource(ctx: ColumnValuesCtx, column: ColumnUniversalId): ColumnValuesSource;
-// { type: "resolving" | "absent"; column } | { type: "present"; column; frame: PFrameHandle }
+// model
+createColumnValueOptions(
+  columns: { valueColumn: ColumnValueOptionsColumn; labelColumn?: ColumnValueOptionsColumn },
+  deps?: { ctx?: GlobalCfgRenderCtx },
+): ColumnValueOptionsModel;
+// ColumnValueOptionsColumn = ColumnUniversalId | PColumn | DataColumnRecipe | ColumnRecipe
+// { type: "resolving" | "absent"; valueColumn }
+// | { type: "present"; valueColumn; frame: PFrameHandle; frameColumns: { value; label | null } }
 
-readColumnValueOptions(source: PresentColumnValuesSource): Promise<ColumnValueOption[]>; // UI
+// UI
+readColumnValueOptions(model: PresentColumnValueOptionsModel): Promise<ColumnValueOption[]>;
+usePlColumnValueOptions({ source, valueColumn? }): { state; options; error };
+// <PlColumnValueDropdown> / <PlColumnValueDropdownMulti> :source :value-column v-model
+
 deriveColumnValueOptions(column: ColumnUniversalId, values: readonly string[]): ColumnValueOption[];
+deriveLabelledColumnValueOptions(column, rows: readonly { value: string; label: string }[]): ColumnValueOption[];
 // { value: ColumnValueId; label: string }[]
 ```
 
 The value-level sibling of `deriveColumnOptions`: options for picking values
-of one column rather than columns. The values are read in the UI, through a
-frame, so a column of any storage format can be picked from. The model gives
-the source as an output: `createColumnValuesSource` makes a frame holding the
-picked column alone, `resolving` while the column or its frame is, `absent`
-once the column is gone. `column` is the pick the source was made for, so the
-UI can tell a source that still describes an earlier pick.
+of one column rather than columns. Like a data table, a picker is made in two
+halves. The model gives `createColumnValueOptions` as an output: a frame
+holding the value column, and the label column when one is given, `resolving`
+while either column is, `absent` once the value column is gone. A label column
+that is gone leaves the values to label themselves. `valueColumn` is the
+column the options are values of, so the UI can tell a model that still
+describes an earlier pick. The values are read in the UI, through the frame, so
+a column of any storage format can be picked from.
 
-`readColumnValueOptions` reads the column's distinct values with
-`getUniqueValues`, skips missing ones, and turns them into options with
-`deriveColumnValueOptions`; a number value becomes its decimal string. It
-rejects a frame that does not hold exactly one column and a column with more
-distinct values than a picker can offer. In Vue, `useColumnValueOptions` from
-`@platforma-sdk/ui-vue` follows the pick and gives the state as
-`loading | absent | read | failed`.
+`readColumnValueOptions` reads the options. Without a label column it takes
+the column's distinct values with `getUniqueValues`; with one it joins the
+value column with the label column on their keys, and labels each value by the
+label in its first row. Missing values are skipped, a value with no label
+labels itself, and a number value becomes its decimal string. It rejects a
+column with more distinct values, or with a label column more rows, than a
+picker reads.
+
+In Vue, `PlColumnValueDropdown` and `PlColumnValueDropdownMulti` from
+`@platforma-sdk/ui-vue` are `PlDropdown` and `PlDropdownMulti` over such an
+output: loading until the values are read, no options and the reason as the
+error once the column is gone or cannot be read, so its picks stay picked and
+are shown as not available. Other attributes go to the dropdown. Where the
+options are needed otherwise — a list of picked values, a check of the values —
+`usePlColumnValueOptions` gives the same as `state`
+(`loading | absent | read | failed`), `options` and `error`. With
+`valueColumn`, the column picked now, an output that still describes an
+earlier pick reads as loading.
+
+An autocomplete over a column too large to list fits the same output: the
+model gives the same frame, and only the UI reads it differently. Its reader
+asks the frame for a page of options matching the typed text — a
+`StringIContains` filter on the value column, or on the label column when
+there is one, with `getUniqueValues` or the join — and its component takes the
+same `source`, `value-column` and `v-model`, so a block switches by the tag
+alone. It still has to look up the labels of the picked values (an `InSet`
+filter on the value column, the values as numbers for a number column), and
+uikit's `PlAutocomplete` / `PlAutocompleteMulti` still lack the
+`missingValueLabel` and `missingValueHint` that show a picked value the column
+no longer holds. A page of the join holds rows, not distinct values, so it may
+offer fewer options than it reads.
 
 `deriveColumnValueOptions` keeps one option per distinct non-empty value,
 each a `ColumnValueId` naming `column` (see
 [`column-identity.md`](./column-identity.md)), labelled by the value itself
-and sorted naturally by label ("R2" before "R10").
+and sorted naturally by label ("R2" before "R10");
+`deriveLabelledColumnValueOptions` does the same with the label of each
+value's first row.
 
 A block arg holding a pick is typed `ColumnValueId` (or `ColumnValueId[]`).
 The id is opaque: compare it with `===` against option values, never build or
@@ -558,14 +598,18 @@ exist for code that must. The workflow reads plain values back with
 .output("groupValues", (ctx) =>
   ctx.data.groupColumn === undefined
     ? undefined
-    : createColumnValuesSource(ctx, ctx.data.groupColumn),
+    : createColumnValueOptions({ valueColumn: ctx.data.groupColumn }),
 )
+```
 
-// UI
-const groupValues = useColumnValueOptions({
-  source: () => app.model.outputs.groupValues,
-  column: () => app.model.data.groupColumn,
-});
+```vue
+<!-- UI -->
+<PlColumnValueDropdownMulti
+  v-model="app.model.data.groups"
+  :source="app.model.outputs.groupValues"
+  :value-column="app.model.data.groupColumn"
+  label="Groups"
+/>
 ```
 
 ### `splitByAxes`
