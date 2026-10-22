@@ -5,7 +5,7 @@ import type {
 } from "@platforma-sdk/model";
 import { createGlobalPObjectId } from "@platforma-sdk/model";
 import { describe, expect, test } from "vitest";
-import { shallowRef } from "vue";
+import { reactive, shallowRef } from "vue";
 import { usePlColumnValueSettings } from "./settings";
 
 describe("usePlColumnValueSettings", () => {
@@ -47,6 +47,19 @@ describe("usePlColumnValueSettings", () => {
     expect(settings.value).toEqual({ type: "pending" });
     source.value = present(DONOR);
     expect(settings.value).toEqual({ type: "present", model: present(DONOR) });
+  });
+
+  test("follows a frame the output changes in place", () => {
+    const source = reactive(present(ROUND));
+    const settings = usePlColumnValueSettings({ source: () => source, valueColumn: ROUND });
+    const before = settings.value;
+
+    source.frame = "frame-after-rerun" as PFrameHandle;
+    expect(settings.value).not.toBe(before);
+    expect(settings.value).toEqual({
+      type: "present",
+      model: { ...present(ROUND), frame: "frame-after-rerun" },
+    });
   });
 });
 
