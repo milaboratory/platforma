@@ -19,6 +19,7 @@ path := import(":path")
 workdirDirs := import(":workdir.dirs")
 render := import(":render")
 maps := import(":maps")
+actionContext := import(":action-context")
 
 _WD_CREATE_FIELD_ALLOCATION := "allocation"
 _WD_CREATE_FIELD_WORKDIR    := "workdir"
@@ -411,7 +412,11 @@ _fill := func() {
 			self.getField("dataIn").set(smart.createBinaryMapResource(values))
 			self.getField("blobsIn").set(smart.createBlobMapResource(blobs))
 
-			return self.lockAndBuild().outputs()[_WD_FILL_FIELD_WORKDIR_OUT]
+			fill := self.lockAndBuild()
+			// the data controller reports the fill of the workdir into the context of this template
+			actionContext.inherit(fill.id)
+
+			return fill.outputs()[_WD_FILL_FIELD_WORKDIR_OUT]
 		}
 	}))
 
