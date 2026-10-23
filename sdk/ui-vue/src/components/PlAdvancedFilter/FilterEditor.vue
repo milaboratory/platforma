@@ -310,7 +310,7 @@ const stringMatchesError = computed(() => {
         :class="$style.titleWrapper"
         :title="currentOption?.label ?? ''"
       >
-        <PlColumnLabel :link-hint="currentOption?.linkHint">
+        <PlColumnLabel :option="currentOption">
           <div :class="$style.title">
             {{
               inconsistentSourceSelected

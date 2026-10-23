@@ -59,7 +59,7 @@ const checkboxSvg = computed(() => (props.isSelected ? CheckboxCheckedSvg : Chec
     <!--eslint-enable-->
     <div class="dropdown-list-item__title-container">
       <div class="dropdown-list-item__title text-s" data-testid="pl-dropdown-list-item-title">
-        <PlColumnLabel :label="option.label" :link-hint="option.linkHint" />
+        <PlColumnLabel :option="option" />
       </div>
       <div
         v-if="option.description"

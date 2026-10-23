@@ -77,7 +77,7 @@ function showMenu() {
         :name="icon"
         class="pl-ag-column-header__type-icon"
       />
-      <PlColumnLabel :link-hint="params.linkHint">
+      <PlColumnLabel :option="{ label: params.displayName, linkHint: params.linkHint }">
         <PlTooltip>
           <template v-if="params.tooltip" #tooltip>{{ params.tooltip }}</template>
           <span data-testid="pl-ag-column-header-name">{{ params.displayName }}</span>
