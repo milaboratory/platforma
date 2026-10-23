@@ -15,6 +15,4 @@ export type ListOptionBase<T = unknown> = {
   description?: string;
   value: T;
   group?: string;
-  /** Shows a link icon before the label, with this text on hover. */
-  linkHint?: string;
 };

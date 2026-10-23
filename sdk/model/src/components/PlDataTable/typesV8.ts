@@ -143,8 +143,6 @@ export type PlDataTableColumnMeta = {
   order?: number;
   /** Per-column data status (set for visible columns only). */
   status?: AnnotationDataStatus;
-  /** Labels of the peer links (e.g. clonotype to clonotype) on this column's path. */
-  peerLinks?: string[];
 };
 
 /** Display metadata for one axis, applied by the UI over the emitted spec. */

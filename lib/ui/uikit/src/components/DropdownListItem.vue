@@ -3,8 +3,6 @@ import { computed } from "vue";
 import CheckboxUncheckedSvg from "../assets/images/24_checkbox-light-enabled-unchecked.svg?raw";
 import CheckboxCheckedSvg from "../assets/images/24_checkbox-light-enabled-checked.svg?raw";
 import type { ListOptionNormalized } from "../types";
-import { PlMaskIcon16 } from "./PlMaskIcon16";
-import { PlTooltip } from "./PlTooltip";
 
 const props = withDefaults(
   defineProps<{
@@ -60,10 +58,6 @@ const checkboxSvg = computed(() => (props.isSelected ? CheckboxCheckedSvg : Chec
     <!--eslint-enable-->
     <div class="dropdown-list-item__title-container">
       <div class="dropdown-list-item__title text-s" data-testid="pl-dropdown-list-item-title">
-        <PlTooltip v-if="option.linkHint" class="dropdown-list-item__link-icon">
-          <template #tooltip>{{ option.linkHint }}</template>
-          <PlMaskIcon16 name="link" />
-        </PlTooltip>
         {{ option.label }}
       </div>
       <div

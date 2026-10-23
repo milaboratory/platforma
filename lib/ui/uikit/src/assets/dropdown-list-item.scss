@@ -65,9 +65,3 @@
     color: var(--txt-03);
   }
 }
-
-/* `display: flex` centres the icon on the text; PlTooltip's own inline block would lift it. */
-.dropdown-list-item .dropdown-list-item__link-icon {
-  display: flex;
-  margin-right: 4px;
-}
