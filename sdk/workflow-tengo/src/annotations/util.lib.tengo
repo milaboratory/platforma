@@ -2,7 +2,6 @@ hex := import("hex")
 text := import("text")
 
 ll := import(":ll")
-wf := import(":workflow")
 sets := import(":sets")
 maps := import(":maps")
 slices := import(":slices")
@@ -18,7 +17,7 @@ createFilterFrameName := func(colName) {
 }
 
 createFilterColumnSpec := func(columnSpec, colName, label) {
-	return maps.deepMerge(columnSpec, {
+	spec := maps.deepMerge(columnSpec, {
 		kind: "PColumn",
 		valueType: "Int",
 		name: columnSpec.name + "/filter/" + colName,
@@ -26,7 +25,9 @@ createFilterColumnSpec := func(columnSpec, colName, label) {
 			"pl7.app/label": columnSpec.annotations["pl7.app/label"] + "/" + label,
 			"pl7.app/isSubset": "true"
 		}
-	});
+	})
+	// Subset pickers build labels from the trace, so each subset needs a step with its own label
+	return pSpec.makeTrace(spec, { type: "milaboratories.annotation.rule", label: label, importance: 30 }).inject(spec)
 }
 
 ENCODE_SEPARATOR := "_encoded_"
@@ -81,9 +82,7 @@ extractColumnsFromExpressions := func(expressions) {
 	return sets.toSlice(columnsSet)
 }
 
-prepareResultColumnSpec := func(args) {
-	blockId := wf.getBlockId()
-	
+prepareResultColumnSpec := func(args, blockId) {
 	steps := slices.filter([args.trace, {
 		id: blockId,
 		type: "milaboratories.annotation",
