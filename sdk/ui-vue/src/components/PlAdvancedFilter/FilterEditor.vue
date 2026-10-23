@@ -2,6 +2,7 @@
 import {
   PlAutocomplete,
   PlAutocompleteMulti,
+  PlColumnLabel,
   PlDropdown,
   PlIcon16,
   PlNumberField,
@@ -129,7 +130,11 @@ const inconsistentSourceSelected = computed(() => {
   return selectedOption === undefined;
 });
 const sourceOptions = computed(() => {
-  const options = props.columnOptions.map((v) => ({ value: v.id, label: v.label ?? v }));
+  const options: ListOptionBase<PlAdvancedFilterColumnId>[] = props.columnOptions.map((v) => ({
+    value: v.id,
+    label: v.label ?? v,
+    linkHint: v.linkHint,
+  }));
   if (inconsistentSourceSelected.value) {
     options.unshift({ value: props.filter.column, label: "Inconsistent value" });
   }
@@ -305,13 +310,15 @@ const stringMatchesError = computed(() => {
         :class="$style.titleWrapper"
         :title="currentOption?.label ?? ''"
       >
-        <div :class="$style.title">
-          {{
-            inconsistentSourceSelected
-              ? "Inconsistent value"
-              : (currentOption?.label ?? props.filter.column)
-          }}
-        </div>
+        <PlColumnLabel :link-hint="currentOption?.linkHint">
+          <div :class="$style.title">
+            {{
+              inconsistentSourceSelected
+                ? "Inconsistent value"
+                : (currentOption?.label ?? props.filter.column)
+            }}
+          </div>
+        </PlColumnLabel>
       </div>
       <div
         data-testid="pl-advanced-filter-remove"

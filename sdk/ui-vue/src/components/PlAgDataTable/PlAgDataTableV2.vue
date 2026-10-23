@@ -618,6 +618,7 @@ watchEffect(() => {
       :default-filters="defaultFiltersState"
       :pframe-handle="'model' in settings ? settings?.model?.fullPframeHandle : undefined"
       :columns="filterableColumns"
+      :columns-meta="getColumnsMeta()"
       @updateFilters="(v) => (filtersState = v)"
       @resetDefaultFilters="resetDefaultFilters"
       @updateDefaultFilters="(v) => (defaultFiltersState = v)"
