@@ -160,6 +160,21 @@ sinkhole := func(rid, ...name) {
 }
 
 /**
+ * Points the "actionContext" field of a resource the current template created to the action context of the current
+ * renderer: its context, or the sinkhole. Nothing when the renderer has no action context. Use it for the
+ * resources a controller processes and reports on, e.g. a RunCommand: their reports land in the
+ * context of the template that created them. Call it in the transaction that created the resource.
+ *
+ * @param rid: resource id
+ */
+inherit := func(rid) {
+	own := _own()
+	if own.kind != "none" {
+		_link(rid, own.id)
+	}
+}
+
+/**
  * Sets the action context of a render that the current template created, from the action context of the current
  * renderer: a new context under the renderer's context, the sinkhole when the renderer is in the
  * sinkhole, nothing when the renderer has no action context.
@@ -273,6 +288,7 @@ export ll.toStrict({
 	linkOf: linkOf,
 	contextOf: contextOf,
 	createChild: createChild,
+	inherit: inherit,
 	sinkhole: sinkhole,
 	of: of,
 	self: self
