@@ -12,8 +12,9 @@
  * so the contexts form a tree.
  *
  * An "actionContext" field can also point to a sinkhole (ActionSinkhole): reports on that resource are
- * dropped, and every render it creates gets the sinkhole too. render(tpl, inputs, { actionContext: false })
- * puts a rendered template and everything below it into the sinkhole.
+ * dropped, but the baggage passes down: a sinkhole holds the baggage like a context does, and every render
+ * it creates gets a sinkhole with a copy of it. render(tpl, inputs, { actionContext: false }) puts a rendered
+ * template and everything below it into the sinkhole.
  * A render without an "actionContext" field reports nowhere, and its children get no field.
  *
  * Reports (record, setReading) are asynchronous key-value sets on the context of the resource
@@ -27,6 +28,7 @@
  */
 
 ll := import(":ll")
+maps := import(":maps")
 feats := import(":feats")
 constants := import(":constants")
 json := import("json")
@@ -42,8 +44,7 @@ CHILD_FIELD_PREFIX := "child/"
 CONTEXT_TYPE := { Name: "ActionContext", Version: "1" }
 SINKHOLE_TYPE := { Name: "ActionSinkhole", Version: "1" }
 
-// The action context of the current renderer, its context baggage, the sinkhole of this execution and a counter
-// for child field names. Every import of this module is a new instance, so the state is kept in the
+// The action context of the current renderer, its context baggage and a counter for child field names. Every import of this module is a new instance, so the state is kept in the
 // execution context.
 _vars := func() {
 	return ll.moduleVars("action-context")
@@ -56,17 +57,15 @@ _vars := func() {
  *         { kind: "sinkhole", id } for anything else.
  */
 linkOf := func(rid) {
-	// ServiceFields is a strict map: a missing key is an error, so look the field up by iteration
-	for name, field in tx.getResource(rid).ServiceFields {
-		if name != LINK_FIELD || field.Value == 0 {
-			continue
-		}
-		if tx.getResource(field.Value).Type.Name == CONTEXT_TYPE.Name {
-			return { kind: "context", id: field.Value }
-		}
-		return { kind: "sinkhole", id: field.Value }
+	fields := tx.getResource(rid).ServiceFields
+	if !maps.containsKey(fields, LINK_FIELD) || fields[LINK_FIELD].Value == 0 {
+		return { kind: "none" }
 	}
-	return { kind: "none" }
+	target := fields[LINK_FIELD].Value
+	if tx.getResource(target).Type.Name == CONTEXT_TYPE.Name {
+		return { kind: "context", id: target }
+	}
+	return { kind: "sinkhole", id: target }
 }
 
 /**
@@ -130,31 +129,34 @@ _validateKeyPart := func(name, part) {
 	ll.assert(!text.contains(part, "/"), "action context: %s %q contains \"/\"", name, part)
 }
 
-_sinkhole := func() {
-	vars := _vars()
-	sinkhole := vars.get("sinkhole")
-	if is_undefined(sinkhole) {
-		sinkhole = tx.createEphemeral(SINKHOLE_TYPE.Name, SINKHOLE_TYPE.Version, "{}")
-		vars.set("sinkhole", sinkhole)
-	}
-	return sinkhole
+_createLinked := func(rid, type, baggage) {
+	id := tx.createEphemeral(type.Name, type.Version, json.encode(baggage))
+	_link(rid, id)
+	return id
 }
 
-_createContext := func(rid, baggage) {
-	contextId := tx.createEphemeral(CONTEXT_TYPE.Name, CONTEXT_TYPE.Version, json.encode(baggage))
-	_link(rid, contextId)
-	return contextId
+// _childBaggage is a copy of the baggage of the current renderer, with the name when it is given.
+_childBaggage := func(name) {
+	baggage := _own().kind == "none" ? {} : _ownBaggage()
+	if !is_undefined(name) {
+		baggage.name = name
+	}
+	return baggage
 }
 
 /**
- * Points the "actionContext" field of a resource the current template created to a sinkhole: reports on it
- * are dropped, and the renders it creates get the sinkhole too. Call it in the transaction that
- * created the resource.
+ * Points the "actionContext" field of a resource the current template created to a new sinkhole: reports on it
+ * are dropped, and the renders it creates get a sinkhole too. The sinkhole holds a copy of the baggage of
+ * the current renderer, so everything below still knows its block and run. Call it in the transaction
+ * that created the resource.
  *
  * @param rid: resource id
+ * @param name: (optional) display name of the resource in the baggage
  */
-sinkhole := func(rid) {
-	_link(rid, _sinkhole())
+sinkhole := func(rid, ...name) {
+	if _enabled() {
+		_createLinked(rid, SINKHOLE_TYPE, _childBaggage(len(name) > 0 ? name[0] : undefined))
+	}
 }
 
 /**
@@ -175,16 +177,11 @@ createChild := func(rid, name) {
 		return undefined
 	}
 	if own.kind == "sinkhole" {
-		sinkhole(rid)
+		sinkhole(rid, name)
 		return undefined
 	}
 
-	baggage := _ownBaggage()
-	if !is_undefined(name) {
-		baggage.name = name
-	}
-
-	contextId := _createContext(rid, baggage)
+	contextId := _createLinked(rid, CONTEXT_TYPE, _childBaggage(name))
 
 	childField := ll.fieldId(own.id, _childFieldName())
 	tx.createField(childField, constants.FTYPE_DYNAMIC)
@@ -232,8 +229,8 @@ of := func(rid) {
 
 /**
  * Returns the action context handle of the current renderer: the handle of `of`, plus
- *   - baggage(): returns a copy of the baggage of the current renderer's action context, e.g. "run-id",
- *             "block-id", "block-pack" and "name"; undefined without a context or in the sinkhole.
+ *   - baggage(): returns a copy of the baggage of the current renderer's action context or sinkhole, e.g.
+ *             "run-id", "block-id", "block-pack" and "name"; undefined without either.
  *   - create(...baggage): creates the action context of the current renderer, for a template rendered
  *                      without an action context; baggage is an optional map of context baggage. Returns the id of
  *                      the context. When the renderer already has an action context, it creates nothing and
@@ -248,7 +245,7 @@ self := func() {
 		record: handle.record,
 
 		baggage: func() {
-			return _own().kind == "context" ? _ownBaggage() : undefined
+			return _own().kind == "none" ? undefined : _ownBaggage()
 		},
 
 		create: func(...baggage) {
@@ -260,7 +257,7 @@ self := func() {
 				return own.kind == "context" ? own.id : undefined
 			}
 			contextBaggage := len(baggage) > 0 ? baggage[0] : {}
-			contextId := _createContext(renderer, contextBaggage)
+			contextId := _createLinked(renderer, CONTEXT_TYPE, contextBaggage)
 			vars := _vars()
 			vars.set("own", { kind: "context", id: contextId })
 			vars.set("ownBaggage", copy(contextBaggage))
