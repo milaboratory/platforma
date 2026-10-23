@@ -13,6 +13,7 @@ smart := import(":smart")
 json := import("json")
 constants := import(":exec.constants")
 feats := import(":feats")
+actionContext := import(":action-context")
 
 _RTYPE_QUOTA := { Name: "Quota", Version: "1" }
 
@@ -279,6 +280,8 @@ computeRequestBuilder := func() {
 			requestBuilder.getField(_CR_FIELD_REQUEST).set(quota)
 
 			requestRef := requestBuilder.lockAndBuild()
+			// the runner reports the quota wait of the request into the context of this template
+			actionContext.inherit(requestRef.id)
 
 			return ll.toStrict(
 				oop.inherit(requestRef, {

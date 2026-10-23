@@ -6,6 +6,7 @@ json := import("json")
 sets := import(":sets")
 smart := import(":smart")
 constants := import(":constants")
+actionContext := import(":action-context")
 
 _WORKDIR_IN_FIELD := "workdirIn"
 _RULES_FIELD := "rules"
@@ -144,6 +145,8 @@ builder := func(wdBefore) {
 			)
 
 			resource := super.lockAndBuild()
+			// the data controller reports the save of the workdir into the context of this template
+			actionContext.inherit(resource.id)
 
 			// still return self to have all the methods
 			return self
