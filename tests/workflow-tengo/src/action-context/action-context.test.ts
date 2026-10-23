@@ -153,8 +153,8 @@ tplTest.concurrent(
     //
     // Scenario:
     //  1. Render a template with its own context; it renders a child with { actionContext: false }.
-    //  2. The child is in the sinkhole: it cannot create its own context, and the template it renders
-    //     is in the sinkhole too. Both finish.
+    //  2. The child is in the sinkhole: it cannot create its own context, it still sees the baggage with
+    //     its own name, and the template it renders is in the sinkhole too. Both finish.
     //  3. The root context has no child context, and none of the child's reports.
     //  Without the backend primitives nothing has a context, so the test has nothing to check.
     //
@@ -174,7 +174,15 @@ tplTest.concurrent(
     );
     expect(
       await result.computeOutput("info", (a) => a?.getDataAsJson()).awaitStableValue(),
-    ).toEqual({ created: false, baggage: false, own: "sinkhole", grandchild: "sinkhole" });
+    ).toEqual({
+      created: false,
+      baggage: {
+        name: "@platforma-sdk/workflow-tengo-tests:action-context.sinkholed",
+        "run-id": "run-2",
+      },
+      own: "sinkhole",
+      grandchild: "sinkhole",
+    });
 
     // 3. The root context does not know the child.
     const rootRef = await result.computeOutput("context", (a) => a?.id).awaitStableValue();
@@ -183,7 +191,9 @@ tplTest.concurrent(
     );
     expect(root.baggage).toEqual({ name: "root", "run-id": "run-2" });
     expect(root.children).toEqual([]);
-    expect(transitions(root, "tpl")).toEqual([{ state: "Running", detail: "root body", reason: "" }]);
+    expect(transitions(root, "tpl")).toEqual([
+      { state: "Running", detail: "root body", reason: "" },
+    ]);
     expect(root.kv.filter((e) => e.key.startsWith("reading/"))).toEqual([]);
   },
 );
