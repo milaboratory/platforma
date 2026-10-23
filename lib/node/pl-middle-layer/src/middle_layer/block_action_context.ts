@@ -94,7 +94,7 @@ function actionContextNode(context: PlTreeNodeAccessor): BlockActionContextNode 
   transitions.sort((a, b) => compareDecimal(a.timestampNs, b.timestampNs));
 
   const children: BlockActionContextNode[] = [];
-  for (const field of context.listInputFields()) {
+  for (const field of context.listDynamicFields()) {
     if (!field.startsWith(childFieldPrefix)) continue;
     const child = context.traverse({ field, stableIfNotFound: true });
     if (child !== undefined) children.push(actionContextNode(child));

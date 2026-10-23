@@ -42,7 +42,7 @@ async function readTree(
       data: r.data === undefined ? undefined : Buffer.from(JSON.stringify(r.data)),
       fields: r.fields.map(({ name, value }) => ({
         name,
-        type: "Service" as const,
+        type: "Dynamic" as const,
         value,
         error: NullSignedResourceId,
         status: "Resolved" as const,
