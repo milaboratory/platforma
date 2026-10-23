@@ -5,6 +5,7 @@ import type {
   PFrameHandle,
   PTableColumnId,
   PColumnSpec,
+  PlDataTableColumnsMeta,
 } from "@platforma-sdk/model";
 import {
   Annotation,
@@ -15,6 +16,7 @@ import {
   getUniqueSourceValuesWithLabels,
   getPTableColumnId,
   deriveDistinctLabels,
+  peerLinkedLast,
 } from "@platforma-sdk/model";
 import { computed, ref } from "vue";
 import { PlBtnGhost, PlSlideModal, usePlBlockPageTitleTeleportTarget } from "@milaboratories/uikit";
@@ -27,10 +29,12 @@ import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
 import type { Nil } from "@milaboratories/helpers";
 import { isFunction, isNil } from "es-toolkit";
 import { resolveSuggestSource, TABLE_FILTER_TYPES } from "./suggest-source";
+import { effectiveLinkHint } from "../PlAgDataTable/sources/table-source-v2";
 
 const props = defineProps<{
   columns: PTableColumnSpec[];
   pframeHandle: Nil | PFrameHandle;
+  columnsMeta?: PlDataTableColumnsMeta;
   filters: PlDataTableFiltersWithMeta;
   defaultFilters: Nil | PlDataTableFiltersWithMeta;
   onUpdateFilters: (value: PlDataTableFiltersWithMeta) => void;
@@ -77,7 +81,7 @@ const options = computed<PlAdvancedFilterItem[]>(() => {
     {},
   ).forEach((label, i) => distinctLabelByIdx.set(columnEntries[i].idx, label));
 
-  return props.columns.map((col, idx) => {
+  const items = props.columns.map((col, idx) => {
     const id = getPTableColumnId(col);
     const label =
       distinctLabelByIdx.get(idx)?.trim() ||
@@ -88,10 +92,13 @@ const options = computed<PlAdvancedFilterItem[]>(() => {
     return {
       id,
       label,
+      linkHint: effectiveLinkHint(col, props.columnsMeta),
       spec: col.spec,
       alphabet: alphabet ?? undefined,
     };
   });
+  // Peer-linked columns last, as in the table.
+  return peerLinkedLast(items, (item) => item.linkHint !== undefined);
 });
 
 const supportedFilters = TABLE_FILTER_TYPES;

@@ -18,6 +18,7 @@ import type { ListOption, ListOptionNormalized, MaskIconName16, MaskIconName24 }
 import DoubleContour from "../../utils/DoubleContour.vue";
 import { useLabelNotch } from "../../utils/useLabelNotch";
 import LongText from "../LongText.vue";
+import { PlColumnLabel } from "../PlColumnLabel";
 import { PlIcon16 } from "../PlIcon16";
 import { PlIcon24 } from "../PlIcon24";
 import { PlSvg } from "../PlSvg";
@@ -205,19 +206,21 @@ const optionsRef = computed<LOption<M>[]>(() =>
   })),
 );
 
-const textValue = computed(() => {
-  const options = unref(optionsRef);
-  const item: ListOption | undefined = options.find((o) => deepEqual(o.value, props.modelValue));
-  return item?.label;
-});
+const selectedOption = computed(() =>
+  unref(optionsRef).find((o) => deepEqual(o.value, props.modelValue)),
+);
 
-// Native tooltip with the full selected value. The `.input-value` layer has
+const textValue = computed(() => selectedOption.value?.label);
+
+// Native tooltip with the full selected value and its link hint. The `.input-value` layer has
 // `pointer-events: none`, so the title must sit on the field wrapper, which is
 // what actually receives the hover.
 const fieldTitle = computed(() => {
   if (data.open) return undefined;
   if (isMissing.value) return props.missingValueLabel;
-  return textValue.value !== undefined ? String(textValue.value) : undefined;
+  if (textValue.value === undefined) return undefined;
+  const hint = selectedOption.value?.linkHint;
+  return hint ? `${textValue.value}\n${hint}` : String(textValue.value);
 });
 
 const computedPlaceholder = computed(() => {
@@ -389,9 +392,9 @@ watchPostEffect(() => {
             >
               {{ missingValueLabel }}
             </LongText>
-            <LongText v-else-if="textValue !== undefined">
-              {{ textValue }}
-            </LongText>
+            <PlColumnLabel v-else-if="textValue !== undefined" :option="selectedOption">
+              <LongText>{{ textValue }}</LongText>
+            </PlColumnLabel>
           </div>
 
           <div class="pl-dropdown__controls">
