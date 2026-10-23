@@ -29,6 +29,7 @@ import {
   Annotation,
   ValueType,
   getPTableColumnId,
+  peerLinkedLast,
 } from "@platforma-sdk/model";
 import type {
   CellStyle,
@@ -332,6 +333,7 @@ export function makeColDef({
       })(),
       tooltip: readAnnotation(spec.spec, Annotation.Description)?.trim(),
       // info: readAnnotation(spec.spec, Annotation.Table.Info)?.trim(),
+      linkHint: effectiveLinkHint(spec, columnsMeta),
     } satisfies PlAgHeaderComponentParams,
     cellDataType: (() => {
       switch (valueType) {
@@ -352,6 +354,14 @@ export function makeColDef({
 
 export function isLabelColumn(column: PTableColumnSpec): column is PTableColumnSpecColumn {
   return column.type === "column" && isLabelColumnSpec(column.spec);
+}
+
+/** Link icon hover text for a column reached through a peer link; axes have none. */
+export function effectiveLinkHint(
+  spec: PTableColumnSpec,
+  meta: PlDataTableColumnsMeta | undefined,
+): string | undefined {
+  return spec.type === "column" ? meta?.columns[spec.id]?.linkHint : undefined;
 }
 
 /**
@@ -486,7 +496,11 @@ function selectDisplayableIndices(
     .toArray();
 }
 
-/** Sort: axes first, then columns by OrderPriority annotation (higher priority = further left). */
+/**
+ * Sort: peer-linked columns after all others. Within each group, axes and label columns first, then
+ * by OrderPriority (higher = further left). Label columns stay pinned left, so a peer-linked label
+ * still sits right after the row's own.
+ */
 function sortIndicesByTypeAndPriority(
   indices: number[],
   tableSpecs: PTableColumnSpec[],
@@ -498,7 +512,8 @@ function sortIndicesByTypeAndPriority(
     const prior = Number(effectiveOrder(spec, meta));
     return isNaN(prior) ? 0 : prior;
   };
-  return [...indices].sort((a, b) => priorityOf(b) - priorityOf(a));
+  const byPriority = [...indices].sort((a, b) => priorityOf(b) - priorityOf(a));
+  return peerLinkedLast(byPriority, (i) => effectiveLinkHint(tableSpecs[i], meta) !== undefined);
 }
 
 /** Default hidden col ids built from columns marked with the Optional annotation. */
