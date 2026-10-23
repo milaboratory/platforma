@@ -100,12 +100,12 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 	renderer := rbuilder.lockInputsAndBuild()
 
 	// the action context of the render: a context under the context of the current renderer, or the sinkhole
+	if is_undefined(actionContextName) {
+		actionContextName = assets.templateName(tpl)
+	}
 	if actionContextOff {
-		actionContext.sinkhole(renderer.id)
+		actionContext.sinkhole(renderer.id, actionContextName)
 	} else {
-		if is_undefined(actionContextName) {
-			actionContextName = assets.templateName(tpl)
-		}
 		actionContext.createChild(renderer.id, actionContextName)
 	}
 
