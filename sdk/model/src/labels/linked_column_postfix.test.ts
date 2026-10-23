@@ -81,14 +81,6 @@ describe("prototype — structural postfix (difference of sources)", () => {
     expect(labels).toEqual(["Read counts", "Coverage"]);
   });
 
-  test("different markers → no postfix", () => {
-    const labels = derivePostfixes([
-      { stem: "Counts" },
-      { stem: "Counts", hit, linkers: [linker("MapperA", axSample)], marker: "peer" },
-    ]);
-    expect(labels).toEqual(["Counts", "Counts"]);
-  });
-
   test("collision only on a subset → bare row stays bare (direct column has no path)", () => {
     const labels = derivePostfixes([
       { stem: "Counts" }, // direct column, no path

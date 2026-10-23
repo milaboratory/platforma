@@ -54,9 +54,6 @@ export type Entry =
       linkerPath?: LinkerStep[];
       /** Axis qualifications applied to the hit column / already-bound anchors; rendered as "[…]" suffixes. */
       qualifications?: MatchQualifications;
-      /** Something the UI shows beside the label, like a link icon. Columns with different markers
-       *  need no "via" postfix to tell them apart. */
-      marker?: string;
     };
 
 /**
@@ -108,10 +105,9 @@ export function deriveDistinctLabels(values: Entry[], options: DeriveLabelsOptio
   const stems = deriveStems(values, options);
   return derivePostfixes(
     values.map((v, i) => {
-      const { spec, linkerPath, marker } = extractEntryParts(v);
+      const { spec, linkerPath } = extractEntryParts(v);
       return {
         stem: stems[i],
-        marker,
         // Hit columns are PColumns; the postfix reads their axesSpec to orient linkers.
         hit: spec as PColumnSpec,
         linkers: (linkerPath ?? []).map((s) => s.spec),
@@ -214,7 +210,6 @@ function extractEntryParts(entry: Entry): {
   extraTrace: ExtendedTraceEntry[] | undefined;
   linkerPath: LinkerStep[] | undefined;
   qualifications: MatchQualifications | undefined;
-  marker: string | undefined;
 } {
   const isEnriched = "spec" in entry && typeof entry.spec === "object";
   if (!isEnriched) {
@@ -223,7 +218,6 @@ function extractEntryParts(entry: Entry): {
       extraTrace: undefined,
       linkerPath: undefined,
       qualifications: undefined,
-      marker: undefined,
     };
   }
   return {
@@ -231,7 +225,6 @@ function extractEntryParts(entry: Entry): {
     extraTrace: entry.extraTrace,
     linkerPath: entry.linkerPath,
     qualifications: entry.qualifications,
-    marker: entry.marker,
   };
 }
 

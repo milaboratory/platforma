@@ -91,6 +91,4 @@ export type SourceOptionInfo = {
   error?: boolean;
   alphabet?: "nucleotide" | "aminoacid" | string;
   axesToBeFixed?: FixedAxisInfo[];
-  /** Set for columns reached through a peer link; shown beside a link icon. */
-  linkHint?: string;
 };

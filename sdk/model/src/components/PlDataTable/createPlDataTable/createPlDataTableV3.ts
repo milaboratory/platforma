@@ -30,8 +30,6 @@ import {
   hasSingleDataColumn,
   hitQualifications,
   collectLinkerColumns,
-  findPeerLinks,
-  getResultPoolDatasetAxes,
   queriesQualifications,
   type ColumnRecipe,
 } from "../../../columns";
@@ -44,7 +42,6 @@ import {
   isColumnHidden,
   buildDataStatusMap,
   toRuleColumn,
-  type LabelableColumn,
 } from "./utils";
 import { createPTableDefV3 } from "./createPTableDefV3";
 import {
@@ -115,16 +112,10 @@ export function createPlDataTableV3<A, U>(
   const { direct, linked } = splitByTopology(secondary);
 
   const allColumns = [...primary, ...secondary];
-  const labelable = allColumns.map(toLabelableColumn);
-  // From all columns: a hidden one still shows when sorted, filtered or made visible by a rule.
-  const peerLinks = collectPeerLinks(labelable);
   const derivedLabels = deriveAllLabels({
     // Skip hidden columns when deriving labels — they don't appear in the
     // table, so they shouldn't influence label disambiguation (#1623).
-    // The link icon tells a peer-linked column from a plain one with the same label.
-    columns: labelable
-      .filter((c) => !isColumnHidden(c.spec))
-      .map((c) => ({ ...c, marker: peerLinks.has(c.id) ? "peerLink" : undefined })),
+    columns: allColumns.filter((c) => !isColumnHidden(c.getSpec())).map(toLabelableColumn),
     deriveLabelsOptions: {
       includeNativeLabel: true,
       ...options.labelsOptions,
@@ -214,7 +205,6 @@ export function createPlDataTableV3<A, U>(
     visibleColumns: [...visible.primary, ...visible.direct, ...visible.linked],
     primaryColumns: primary,
     derivedLabels,
-    peerLinks,
     visibilityByColId,
     orderByColId,
   });
@@ -286,19 +276,7 @@ function collectLinkerSnapshots(linked: ColumnRecipe[]): ColumnRecipe[] {
   );
 }
 
-/** Peer link labels per column, for columns reached through at least one peer link. */
-function collectPeerLinks(columns: LabelableColumn[]): Map<ColumnUniversalId, string[]> {
-  if (!columns.some((c) => c.linkerPath?.length)) return new Map();
-  const datasetAxes = getResultPoolDatasetAxes();
-  return new Map(
-    columns.flatMap((c) => {
-      const links = findPeerLinks(c.linkerPath?.map((step) => step.linker.spec) ?? [], datasetAxes);
-      return links.length > 0 ? [[c.id, links] as const] : [];
-    }),
-  );
-}
-
-function toLabelableColumn(col: ColumnRecipe): LabelableColumn {
+function toLabelableColumn(col: ColumnRecipe) {
   return {
     id: col.id,
     spec: col.getSpec(),
@@ -328,11 +306,10 @@ function buildColumnsMeta(params: {
   /** The primary join columns — their axes are the visible index; all other axes are hidden. */
   primaryColumns: ColumnRecipe[];
   derivedLabels: Record<string, string>;
-  peerLinks: Map<ColumnUniversalId, string[]>;
   visibilityByColId: Map<PObjectId, ColumnVisibilityRule>;
   orderByColId: Map<PObjectId, ColumnOrderRule>;
 }): PlDataTableColumnsMeta {
-  const { fullColumns, visibleColumns, primaryColumns, derivedLabels, peerLinks } = params;
+  const { fullColumns, visibleColumns, primaryColumns, derivedLabels } = params;
   const { visibilityByColId, orderByColId } = params;
   // Status only for visible columns — the probe is meaningful only for what the
   // user actually sees; non-visible columns get no `status`.
@@ -345,7 +322,6 @@ function buildColumnsMeta(params: {
       visibility: getEffectiveVisibility(rc, visibilityByColId),
       order: getOrderPriority(rc, orderByColId),
       status: visibleStatus[c.id],
-      peerLinks: peerLinks.get(c.id),
     };
     return acc;
   }, {});

@@ -5,7 +5,6 @@ import type {
   PFrameHandle,
   PTableColumnId,
   PColumnSpec,
-  PlDataTableColumnsMeta,
 } from "@platforma-sdk/model";
 import {
   Annotation,
@@ -16,7 +15,6 @@ import {
   getUniqueSourceValuesWithLabels,
   getPTableColumnId,
   deriveDistinctLabels,
-  describePeerLinks,
 } from "@platforma-sdk/model";
 import { computed, ref } from "vue";
 import { PlBtnGhost, PlSlideModal, usePlBlockPageTitleTeleportTarget } from "@milaboratories/uikit";
@@ -29,12 +27,10 @@ import type { PlAdvancedFilterColumnId } from "../PlAdvancedFilter/types";
 import type { Nil } from "@milaboratories/helpers";
 import { isFunction, isNil } from "es-toolkit";
 import { resolveSuggestSource, TABLE_FILTER_TYPES } from "./suggest-source";
-import { effectivePeerLinks } from "../PlAgDataTable/sources/table-source-v2";
 
 const props = defineProps<{
   columns: PTableColumnSpec[];
   pframeHandle: Nil | PFrameHandle;
-  columnsMeta?: PlDataTableColumnsMeta;
   filters: PlDataTableFiltersWithMeta;
   defaultFilters: Nil | PlDataTableFiltersWithMeta;
   onUpdateFilters: (value: PlDataTableFiltersWithMeta) => void;
@@ -81,14 +77,7 @@ const options = computed<PlAdvancedFilterItem[]>(() => {
     {},
   ).forEach((label, i) => distinctLabelByIdx.set(columnEntries[i].idx, label));
 
-  const isLinked = (col: PTableColumnSpec) =>
-    effectivePeerLinks(col, props.columnsMeta) !== undefined;
-  // Peer-linked columns last, as in the table.
-  const ordered = [...props.columns.entries()].sort(
-    ([, a], [, b]) => Number(isLinked(a)) - Number(isLinked(b)),
-  );
-
-  return ordered.map(([idx, col]) => {
+  return props.columns.map((col, idx) => {
     const id = getPTableColumnId(col);
     const label =
       distinctLabelByIdx.get(idx)?.trim() ||
@@ -96,11 +85,9 @@ const options = computed<PlAdvancedFilterItem[]>(() => {
       `Unlabeled ${col.type} ${idx}`;
     const alphabet =
       readDomain(col.spec, Domain.Alphabet) ?? readAnnotation(col.spec, Annotation.Alphabet);
-    const peerLinks = effectivePeerLinks(col, props.columnsMeta);
     return {
       id,
       label,
-      linkHint: peerLinks && describePeerLinks(peerLinks),
       spec: col.spec,
       alphabet: alphabet ?? undefined,
     };

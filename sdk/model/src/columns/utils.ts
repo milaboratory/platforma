@@ -21,7 +21,6 @@ import {
 import type { ColumnRecipe } from "./column_recipes/types";
 import { ColumnsCollection, isColumnsCollection } from "./columns_collection";
 import type { ColumnsSource } from "./column_providers/types";
-import { describePeerLinks, findPeerLinks, getResultPoolDatasetAxes } from "./peer_links";
 
 /**
  * PObjectIds of every non-hit column referenced by `recipe.getQuery()`,
@@ -63,16 +62,6 @@ export function collectLinkerColumns(
       DataColumnImpl.fromId(id, opts) ??
       throwError(`materializeLinkers: linker ${id} not resolvable`),
   );
-}
-
-/** Peer link labels for a column, checked against the result pool's datasets. */
-export function createPeerLinkFinder(): (recipe: ColumnRecipe) => string[] {
-  const datasetAxes = getResultPoolDatasetAxes();
-  return (recipe) =>
-    findPeerLinks(
-      collectLinkerColumns(recipe).map((l) => l.getSpec()),
-      datasetAxes,
-    );
 }
 
 /**
@@ -218,8 +207,6 @@ export function hasReachableData(recipe: ColumnRecipe): recipe is DataColumnReci
 export type ColumnOption = {
   readonly id: ColumnUniversalId;
   readonly label: string;
-  /** Set for columns reached through a peer link; the dropdown shows it beside a link icon. */
-  readonly linkHint?: string;
 };
 
 /**
@@ -235,32 +222,10 @@ export function deriveColumnOptions(
   labelOptions: DeriveLabelsOptions = {},
 ): ColumnOption[] {
   const collection = isColumnsCollection(source) ? source : ColumnsCollection(source);
-  return deriveRecipeOptions(collection.getColumns(), labelOptions).map(
-    ({ id, label, linkHint }) => ({ id, label, linkHint }),
-  );
-}
-
-/**
- * {@link ColumnOption}s for `recipes`, each with its recipe. Peer-linked columns go last, the rest
- * keep their order.
- */
-export function deriveRecipeOptions<R extends ColumnRecipe>(
-  recipes: R[],
-  labelOptions: DeriveLabelsOptions = {},
-): (ColumnOption & { readonly recipe: R })[] {
+  const recipes = collection.getColumns();
   const labels = deriveDistinctLabels(
     recipes.map((r) => r.getSpec()),
     labelOptions,
   );
-  const findPeerLinks = createPeerLinkFinder();
-  const options = recipes.map((recipe, i) => {
-    const links = findPeerLinks(recipe);
-    return {
-      id: recipe.id,
-      label: labels[i],
-      linkHint: links.length > 0 ? describePeerLinks(links) : undefined,
-      recipe,
-    };
-  });
-  return [...options.filter((o) => !o.linkHint), ...options.filter((o) => o.linkHint)];
+  return recipes.map((r, i) => ({ id: r.id, label: labels[i] }));
 }

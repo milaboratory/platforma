@@ -150,8 +150,6 @@ export type LabelableColumn = {
   readonly spec: PColumnSpec;
   readonly linkerPath?: ReadonlyArray<{ readonly linker: { readonly spec: PColumnSpec } }>;
   readonly qualifications?: MatchQualifications;
-  /** Columns with different markers are told apart without a "via" postfix. */
-  readonly marker?: string;
 };
 
 /** Derive labels for all table elements: columns via deriveDistinctLabels, axes from label columns. */
@@ -164,7 +162,6 @@ export function deriveAllLabels(options: {
     spec: c.spec,
     linkerPath: c.linkerPath?.map((step) => ({ spec: step.linker.spec })),
     qualifications: c.qualifications,
-    marker: c.marker,
   }));
   const columnLabels = deriveDistinctLabels(entries, deriveLabelsOptions).reduce(
     (acc, label, index) => ((acc[columns[index].id] = label), acc),
