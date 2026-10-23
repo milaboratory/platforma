@@ -24,7 +24,7 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest run --passWithNoTests",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "pnpm pack --out package.tgz",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",

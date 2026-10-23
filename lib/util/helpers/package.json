@@ -25,7 +25,7 @@
     "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
     "watch": "ts-builder build --target node --watch",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "pnpm pack --out package.tgz",
     "fmt": "ts-builder format"
   },
   "devDependencies": {

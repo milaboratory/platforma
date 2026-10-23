@@ -5,7 +5,7 @@ alwaysApply: false
 
 # PR Workflow
 
-Guidelines for creating pull requests, including branch naming and changeset creation.
+Guidelines for creating pull requests, including branch naming and change intent creation.
 
 ## Branch Naming
 
@@ -26,30 +26,23 @@ MILAB-XXXX-brief-description
 - Keep descriptions concise (2-4 words)
 - Use verbs like `add`, `fix`, `update`, `refactor`, `remove`
 
-## Changesets
+## Change Intents
 
-**Do NOT use `pnpm changeset`** - manually create changeset files in the `.changeset/` folder.
+Create a change intent with `pnpm change <pkg> [<pkg>...] --bump patch --summary "Text."`. It writes a file in the `.changeset/` folder.
+
+- Use one bump type per call. Run the command again for another bump type, or edit the file.
+- `pnpm change` with no arguments is interactive. Do not use it.
+- `--bump none` records that a change needs no release.
+- `pnpm change status` prints the release plan. `pnpm change check` validates the intents.
+- Writing the file by hand is also allowed.
 
 ### File Naming
 
-Name changeset files descriptively based on what the change does:
-
-```
-.changeset/{descriptive-name}.md
-```
-
-**Good names (descriptive):**
-- `fix-xsv-library-parsing.md`
-- `add-blob-driver-caching.md`
-- `update-workflow-timeout-handling.md`
-
-**Avoid (random/meaningless):**
-- `angry-insects-doubt.md`
-- `salty-lamps-reply.md`
+`pnpm change` picks a unique name. A hand-written file needs a name that no released intent used: CI rejects a name that is in `.changeset/ledger.yaml`, because pnpm can skip such an intent with no error. Add a date or a ticket ID to a descriptive name, for example `.changeset/fix-xsv-library-parsing-2026-10.md`.
 
 ### File Format
 
-Changesets use YAML frontmatter followed by a description:
+Change intents use YAML frontmatter followed by a description:
 
 ```markdown
 ---
@@ -180,9 +173,9 @@ Or use GitHub MCP `update_pull_request` with `reviewers` parameter.
 Before pushing:
 - [ ] Linter passes (`pnpm run lint`)
 - [ ] Branch name starts with ticket ID (e.g., `MILAB-5070-...`)
-- [ ] Changeset file created with descriptive name
-- [ ] Changeset lists all affected packages with correct version bumps
-- [ ] Changeset description explains what changed and why
+- [ ] Change intent file created with a name that no released intent used
+- [ ] Change intent lists all affected packages with correct version bumps
+- [ ] Change intent description explains what changed and why
 
 Interactive steps (ask operator at each):
 - [ ] Confirm push to origin

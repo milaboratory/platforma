@@ -8,14 +8,11 @@ jobs:
     runs-on: hz-ubuntu-dind
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Check pnpm-workspace.yaml consistency
-        run: |
-          if git diff --name-only origin/main..HEAD | grep -q -E '^pnpm-workspace.yaml$'; then
-            if ! git diff --name-only origin/main..HEAD | grep -q -E '^pnpm-lock.yaml$'; then
-              echo "::error::Changes in pnpm-workspace.yaml detected, but no updates in pnpm-lock.yaml"
-              exit 1
-            fi
-          fi
+      - name: Install pnpm and Node from devEngines
+        uses: milaboratory/github-ci/actions/node/setup-pnpm@v4
+        with:
+          cache: 'false'
+
+      - name: Check that pnpm-lock.yaml matches pnpm-workspace.yaml
+        run: pnpm install --frozen-lockfile --lockfile-only
