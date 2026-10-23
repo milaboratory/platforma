@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { IHeaderParams, SortDirection } from "ag-grid-enterprise";
 import type { MaskIconName16 } from "@milaboratories/uikit";
-import { PlMaskIcon16, PlTooltip } from "@milaboratories/uikit";
+import { PlColumnLabel, PlMaskIcon16, PlTooltip } from "@milaboratories/uikit";
 import { computed, onMounted, ref } from "vue";
 import "./pl-ag-column-header.scss";
 import type { PlAgHeaderComponentParams } from "./types";
@@ -77,10 +77,12 @@ function showMenu() {
         :name="icon"
         class="pl-ag-column-header__type-icon"
       />
-      <PlTooltip>
-        <template v-if="params.tooltip" #tooltip>{{ params.tooltip }}</template>
-        <span data-testid="pl-ag-column-header-name">{{ params.displayName }}</span>
-      </PlTooltip>
+      <PlColumnLabel :link-hint="params.linkHint">
+        <PlTooltip>
+          <template v-if="params.tooltip" #tooltip>{{ params.tooltip }}</template>
+          <span data-testid="pl-ag-column-header-name">{{ params.displayName }}</span>
+        </PlTooltip>
+      </PlColumnLabel>
       <PlTooltip
         v-if="params.info"
         data-testid="pl-ag-column-header-info"
