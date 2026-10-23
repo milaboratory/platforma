@@ -17,6 +17,7 @@ slices := import(":slices")
 limits := import(":exec.limits")
 
 delayedCompAlloc := import(":exec.delayed-compute-allocation")
+actionContext := import(":action-context")
 
 _RTYPE_RUN_COMMAND_V1 := { Name: "RunCommand/executor", Version: "1" }
 _RTYPE_RUN_COMMAND_CMD := { Name: "RunCommandCmd", Version: "1" }
@@ -776,7 +777,11 @@ builder := func(workdir, ...initialState) {
 			argsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_ARGS, json.encode(options.args))
 			runRes.getField(_FIELD_ARGS).set(argsRes)
 
-			res := oop.inherit(runRes.lockAndBuild(), {
+			runCommand := runRes.lockAndBuild()
+			// the runner reports the run of the command into the context of this template
+			actionContext.inherit(runCommand.id)
+
+			res := oop.inherit(runCommand, {
 				"workdir": runRes.outputs()[_FIELD_WORKDIR_OUT],
 				"options": buildOptions
 			})

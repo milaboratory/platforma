@@ -197,3 +197,61 @@ tplTest.concurrent(
     expect(root.kv.filter((e) => e.key.startsWith("reading/"))).toEqual([]);
   },
 );
+
+tplTest.concurrent(
+  "runner and data controller report exec and workdir transitions into the action context tree",
+  async ({ helper, expect, pl }) => {
+    //
+    // Scenario:
+    //  1. Render a template with its own context; it runs a command through exec.
+    //  2. The command finishes.
+    //  3. Somewhere in the tree below the root, the runner recorded WaitingSubmissionGate on the
+    //     ComputeRequest, and Running and Completed on the RunCommand; the data controller recorded
+    //     PopulatingWorkdir and CollectingOutputs on the workdir fill and save.
+    //  Without the backend primitives nothing has a context, so the test has nothing to check.
+    //
+
+    if (!hasActionContextPrimitives(pl)) return;
+
+    const result = await helper.renderTemplate(
+      true,
+      "action-context.exec",
+      ["context", "out"],
+      () => ({}),
+    );
+
+    // 1-2. The command finishes.
+    expect(await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue()).eq(
+      "ok",
+    );
+    // 3. The exec transitions land asynchronously after the commits: poll the tree.
+    const rootRef = await result.computeOutput("context", (a) => a?.id).awaitStableValue();
+    const reportedStates = async () => {
+      const root = await pl.withReadTx("readActionContext", async (tx) =>
+        readActionContextNode(tx, rootRef!),
+      );
+      const states: string[] = [];
+      const walk = (node: ActionContextNode) => {
+        for (const ns of ["exec", "workdir"])
+          for (const t of transitions(node, ns))
+            states.push(`${ns}:${(t as { state: string }).state}`);
+        node.children.forEach(walk);
+      };
+      walk(root);
+      return states;
+    };
+    for (let attempt = 0; ; attempt++) {
+      const states = await reportedStates();
+      const expected = [
+        "exec:WaitingSubmissionGate",
+        "exec:Running",
+        "exec:Completed",
+        "workdir:PopulatingWorkdir",
+        "workdir:CollectingOutputs",
+      ];
+      if (expected.every((s) => states.includes(s))) break;
+      expect(attempt, `states so far: ${states.join(",")}`).toBeLessThan(100);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  },
+);
