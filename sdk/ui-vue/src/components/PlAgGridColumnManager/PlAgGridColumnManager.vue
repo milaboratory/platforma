@@ -132,7 +132,7 @@ const toggleAllFiltered = () => {
       disable-removing
     >
       <template #item-title="{ item }">
-        <PlColumnLabel :link-hint="item.linkHint">
+        <PlColumnLabel :option="item">
           <span data-testid="pl-ag-grid-column-manager-item">
             <span
               v-for="(segment, i) of segments.get(item.label)"

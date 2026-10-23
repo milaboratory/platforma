@@ -1,25 +1,26 @@
 <script setup lang="ts">
+import type { ListOptionBase } from "@platforma-sdk/model";
 import { PlIcon16 } from "../PlIcon16";
 import { PlTooltip } from "../PlTooltip";
 
 /**
  * A column's name as every table and dropdown shows it. A column reached through a link to
- * another dataset gets a link icon in front, with `linkHint` on hover.
+ * another dataset gets a link icon in front, with `linkHint` on hover. Takes the whole option, so
+ * a new option field only needs handling here.
  */
 defineProps<{
-  label?: string;
-  linkHint?: string;
+  option?: Pick<ListOptionBase, "label" | "linkHint">;
 }>();
 </script>
 
 <template>
   <span :class="$style.root" data-testid="pl-column-label">
-    <PlTooltip v-if="linkHint" :class="$style.link" data-testid="pl-column-label-link">
-      <template #tooltip>{{ linkHint }}</template>
+    <PlTooltip v-if="option?.linkHint" :class="$style.link" data-testid="pl-column-label-link">
+      <template #tooltip>{{ option.linkHint }}</template>
       <PlIcon16 name="link" />
     </PlTooltip>
     <!-- For a label the caller renders itself, e.g. with search matches highlighted. -->
-    <slot>{{ label }}</slot>
+    <slot>{{ option?.label }}</slot>
   </span>
 </template>
 

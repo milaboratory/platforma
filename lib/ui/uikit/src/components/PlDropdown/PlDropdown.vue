@@ -392,10 +392,7 @@ watchPostEffect(() => {
             >
               {{ missingValueLabel }}
             </LongText>
-            <PlColumnLabel
-              v-else-if="textValue !== undefined"
-              :link-hint="selectedOption?.linkHint"
-            >
+            <PlColumnLabel v-else-if="textValue !== undefined" :option="selectedOption">
               <LongText>{{ textValue }}</LongText>
             </PlColumnLabel>
           </div>
