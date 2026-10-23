@@ -1,6 +1,6 @@
 ---
 name: platforma-dev
-description: Platforma SDK monorepo development — building packages, do-pack, using local SDK in blocks and desktop app, turbo filters, dev vs normal builds, pnpm overrides workflow, changesets, PRs, running local platforma server for tests.
+description: Platforma SDK monorepo development — building packages, do-pack, using local SDK in blocks and desktop app, turbo filters, dev vs normal builds, pnpm overrides workflow, change intents, PRs, running local platforma server for tests.
 user-invocable: true
 ---
 # Platforma SDK monorepo development
@@ -382,13 +382,21 @@ Both hooks skip in CI (`[ -n "$CI" ] && exit 0`).
 
 ---
 
-## Changesets and PRs
+## Change intents and PRs
 
-Every PR to the platforma monorepo **must** include a changeset. Without it, no version bump or release happens.
+Every PR that changes a public package **must** include a change intent. Without it, no version bump or release happens. CI runs `node scripts/check-change-intents.mjs origin/main` and fails when a public package changed and the PR adds no intent file. It also fails when a private package with a version is missing from `versioning.ignore` in `pnpm-workspace.yaml`. Then CI runs `pnpm change check`.
 
-### Creating a changeset
+### Creating a change intent
 
-Add a markdown file in `.changeset/` (use any kebab-case name):
+Run this command:
+
+```bash
+pnpm change @platforma-sdk/model @platforma-sdk/ui-vue --bump minor --summary "Type-safe usePlugin composable with PluginHandle branded type."
+```
+
+Use one bump type per call. Run it again for another bump type, or edit the file. `pnpm change` with no arguments is interactive. `pnpm change status` prints the release plan.
+
+You can also add a markdown file in `.changeset/` by hand. Use a kebab-case name that no released intent used (see `.changeset/ledger.yaml`; CI checks it). The format stays the same as the Changesets format:
 
 ```markdown
 ---
@@ -403,9 +411,9 @@ The YAML frontmatter lists affected packages with bump type (`patch` / `minor` /
 
 ### CRITICAL: list every modified package
 
-The changeset must include **every package whose source files changed in the PR** — not just the "primary" package. If a PR adds a new tool but also adds exports to `pl-middle-layer`, both packages need entries in the changeset. Without an entry, the package won't get a version bump and npm consumers will get the old version without the new exports.
+The change intent must include **every package whose source files changed in the PR** — not just the "primary" package. If a PR adds a new tool but also adds exports to `pl-middle-layer`, both packages need entries in the change intent. Without an entry, the package won't get a version bump and npm consumers will get the old version without the new exports.
 
-**Verification step:** Before creating the changeset, run `git diff --name-only origin/main...HEAD` and check which `package.json` directories have modified files. Each one needs an entry.
+**Verification step:** Before creating the change intent, run `git diff --name-only origin/main...HEAD` and check which `package.json` directories have modified files. Each one needs an entry.
 
 ### Package naming
 
@@ -414,13 +422,17 @@ Use the full npm package name (including scope):
 - `"@milaboratories/uikit"`, `"@milaboratories/pl-middle-layer"`, etc.
 - `"@milaboratories/build-configs"`, `"@milaboratories/ts-builder"`, etc.
 
-### Linked packages
+### Dependents and shared versions
 
-`@platforma-sdk/model`, `@platforma-sdk/ui-vue`, and `@platforma-sdk/test` are **linked** in the changeset config. When one bumps, the others bump together. Internal dependency updates propagate as `patch`.
+Internal dependents get a patch bump through `workspace:*` ranges. `@platforma-sdk/model`, `@platforma-sdk/ui-vue`, and `@platforma-sdk/test` are no longer linked (pnpm has no `linked`). They do not share a version number. A model release still bumps `ui-vue` and `test`, because they depend on `model` with `workspace:*`.
 
-### Empty changesets
+### Private packages
 
-If a PR has no user-facing changes (CI fixes, internal refactors), use an empty changeset:
+Private packages are not versioned. List each one in `versioning.ignore` in `pnpm-workspace.yaml` (exact names, no globs). Add a new private package that has a `version` there. CI checks this.
+
+### No release
+
+If a PR has no user-facing changes (CI fixes, internal refactors), use `--bump none`, or an intent file with empty front matter:
 
 ```markdown
 ---
@@ -454,9 +466,9 @@ Replace css-injected-by-js with lib-inject-css for per-component CSS imports
 After `pnpm install && pnpm build`, **before committing**, run `git status` and verify:
 
 1. **No unstaged changes remain.** Every modified file must be either staged or intentionally excluded. If `pnpm install` modified `pnpm-lock.yaml`, it must be committed.
-2. **`pnpm-lock.yaml` is included** whenever `pnpm-workspace.yaml` changed. CI rejects PRs without matching lock file updates.
-3. **Changeset file is included.** Every PR needs one in `.changeset/`.
-4. **Changeset covers all modified packages.** Run `git diff --name-only origin/main...HEAD` and verify every package with changed source files has an entry in the changeset. Missing entries mean no version bump — npm consumers get stale code.
+2. **`pnpm-lock.yaml` is up to date.** Run `pnpm install` after you change `pnpm-workspace.yaml` or a `package.json`, and commit the lockfile if it changes. CI runs `pnpm install --frozen-lockfile`.
+3. **Change intent file is included.** Every PR that changes a public package needs one in `.changeset/`.
+4. **Change intent covers all modified packages.** Run `git diff --name-only origin/main...HEAD` and verify every package with changed source files has an entry in the change intent. Missing entries mean no version bump — npm consumers get stale code.
 5. **After pushing**, run `git diff --name-only origin/main..HEAD` to confirm the PR contains exactly the files you expect.
 
 ---

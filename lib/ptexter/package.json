@@ -4,7 +4,7 @@
   "description": "Text processing utilities for platforma",
   "scripts": {
     "build": "rm -rf ./dist && block-tools software build",
-    "do-pack": "rm -f *.tgz && block-tools software build && pnpm pack && mv platforma-open-milaboratories.software-ptexter-*.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && block-tools software build && pnpm pack --out package.tgz"
   },
   "files": [
     "./dist/**/*"

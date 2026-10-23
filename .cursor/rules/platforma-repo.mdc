@@ -11,7 +11,7 @@ This repository is a Teng-/TypeScript-based monorepo for the SDK for Platforma b
 
 ## Repository Organization
 - Uses pnpm as the package manager with workspace support
-- Implements changesets for versioning control and managing package updates
+- Uses pnpm built-in versioning (`pnpm change`, `pnpm version -r`) to manage package updates
 - Structured as a monorepo with multiple packages in lib/, sdk/, tools/, etc/ directories
 - Uses Turbo for build orchestration and task running
 
@@ -26,7 +26,7 @@ This repository is a Teng-/TypeScript-based monorepo for the SDK for Platforma b
 ## Key Technologies
 - pnpm for dependency management
 - Turbo for build process orchestration
-- Changesets for version management
+- pnpm change intents for version management
 - TypeScript for type safety
 - Vue.js for UI components
 - Tengo scripting language for workflow definitions
@@ -34,11 +34,12 @@ This repository is a Teng-/TypeScript-based monorepo for the SDK for Platforma b
 ## Development Process
 - Use `pnpm install` to set up dependencies
 - Use `pnpm build` to build all packages
-- Don't `pnpm changeset` to create version change, manually create files with human-id-style names like angry-insects-doubt.md, and write changes in the changeset format
-<changesets-example>
+- Create a change intent with `pnpm change <pkg> [<pkg>...] --bump patch --summary "Text."`. It writes `.changeset/<name>.md`. Use one bump type per call. Run it again for another bump type, or edit the file. Writing the file by hand is also allowed; use a name that no released intent used (`.changeset/ledger.yaml`).
+- `pnpm change` with no arguments is interactive. Do not use it.
+<change-intent-example>
 ---
 '@platforma-sdk/workflow-tengo': patch
 ---
 
 Fixes incorrect behaviour in xsv library
-</changesets-example>
+</change-intent-example>

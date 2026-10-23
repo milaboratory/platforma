@@ -8,7 +8,7 @@
     "lint": "[ ! -d .venv ] || .venv/bin/ruff check",
     "build": "rm -rf ./dist && block-tools software build",
     "test": "[ ! -d .venv ] || (.venv/bin/coverage run -m unittest discover --verbose -s src -p '*.py' && .venv/bin/coverage report -m)",
-    "do-pack": "rm -f *.tgz && block-tools software build && pnpm pack && mv platforma-open-milaboratories.software-ptabler-*.tgz package.tgz"
+    "do-pack": "rm -f *.tgz && block-tools software build && pnpm pack --out package.tgz"
   },
   "files": [
     "./dist/**/*"

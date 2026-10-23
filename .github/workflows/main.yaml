@@ -8,7 +8,6 @@ on:
 
 permissions:
   id-token: write
-  packages: write
   contents: write
   pull-requests: write
   issues: read
@@ -77,7 +76,6 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           npmjs-token: ${{ secrets.NPMJS_TOKEN }}
-          github-token: ${{ steps.app-token.outputs.token }}
           aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
           # Caches → RGW: turbo to ci-turbo-cache, pnpm to ci-actions-cache (both
           # use-fallback → GitHub). Shared org secrets/vars (selected to platforma).
@@ -91,13 +89,14 @@ jobs:
           quay-username: ${{ secrets.QUAY_USERNAME }}
           quay-robot-token: ${{ secrets.QUAY_ROBOT_TOKEN }}
 
-      - name: Run changeset version
-        run: pnpm run version-packages
+      - name: Apply change intents
+        env:
+          NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
+        run: pnpm version -r
 
       - name: Build for publish (full, non-local)
         env:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PL_RELEASE_BINARY_UPLOAD_URL: ${{ secrets.PL_REGISTRY_PLOPEN_UPLOAD_URL }}
         run: pnpm run ci:build:release
 
@@ -110,11 +109,6 @@ jobs:
       # this repository and main.yaml. A package new to npm has no trusted
       # publisher yet and pack refuses it: publish its first version by hand
       # (npm publish with 2FA), add its trusted publisher, re-run the job.
-      # setup-pnpm installs Node without npm, and pack-unpublished calls npm.
-      # 11.19.1 is the npm that Node 24.22.0 bundles.
-      - name: Install npm
-        run: pnpm add -g npm@11.19.1
-
       - name: Pack unpublished packages
         id: npm-pack
         uses: milaboratory/github-ci/actions/node/pack-unpublished@v4
@@ -122,16 +116,13 @@ jobs:
           output-dir: ${{ runner.temp }}/npm-tarballs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
-          # The action runs npm in the repo root; devEngines names pnpm, so npm fails there without --force.
-          npm_config_force: "true"
           PL_REGISTRY_PLATFORMA_OPEN_UPLOAD_URL: ${{ secrets.PL_REGISTRY_PLOPEN_UPLOAD_URL }}
 
       # The version bump is committed only after the upload succeeds (as
       # before, when it followed `pnpm -r publish`): otherwise a failed upload
       # would leave versions on main that were never published, with no
-      # pending changesets left to retry them.
+      # pending change intents left to retry them.
       - name: Save version changes
         run: |
           git add -A
@@ -162,7 +153,6 @@ jobs:
     permissions:
       id-token: write
       contents: write
-      packages: write
     steps:
       - name: Generate GitHub App token
         id: app-token
@@ -188,7 +178,6 @@ jobs:
         with:
           dir: ${{ runner.temp }}/npm-release/npm-tarballs
           access-public: 'true'
-          npm-auth-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Get GitHub App User ID
         id: get-user-id
@@ -202,6 +191,8 @@ jobs:
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
           PATCH: ${{ runner.temp }}/npm-release/version.patch
         run: |
+          # pnpm keeps an intent for a package's first release, so the patch can be empty.
+          if [ ! -s "${PATCH}" ]; then exit 0; fi
           git apply --index "${PATCH}"
           git config --global user.name "${APP_SLUG}[bot]"
           git config --global user.email "${USER_ID}+${APP_SLUG}[bot]@users.noreply.github.com"

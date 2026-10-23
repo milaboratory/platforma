@@ -30,7 +30,7 @@
     "linter:check": "ts-builder linter --check",
     "types:check": "pnpm generate-pinned && ts-builder type-check --target node",
     "fmt": "ts-builder format",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "pnpm pack --out package.tgz"
   },
   "dependencies": {
     "yaml": "catalog:"

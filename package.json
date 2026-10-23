@@ -15,8 +15,6 @@
     "test:local+no-cache": "pnpm test:local --force",
     "do-pack": "PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=remote turbo run do-pack",
     "do-pack:local": "PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=local turbo run do-pack",
-    "changeset": "changeset",
-    "version-packages": "changeset version",
     "prepare": "husky",
     "fmt": "turbo run fmt",
     "check": "turbo run check",
@@ -41,10 +39,9 @@
     "pl_team:test": "pnpm ci:test"
   },
   "devDependencies": {
-    "@changesets/cli": "catalog:",
-    "@typescript/typescript6": "catalog:",
     "@platforma-sdk/block-tools": "workspace:*",
     "@types/node": "catalog:",
+    "@typescript/typescript6": "catalog:",
     "@zed-industries/vscode-langservers-extracted": "catalog:",
     "husky": "catalog:",
     "rimraf": "catalog:",

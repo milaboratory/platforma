@@ -23,7 +23,7 @@
     "format-stdin": "/usr/bin/env emacs --quick --script ./scripts/format-stdin.el",
     "vscode-tags": "cd ../../ && bash ./sdk/workflow-tengo/scripts/create_tags.sh .tags false",
     "emacs-tags": "./scripts/create_tags.sh ../TAGS false -e",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "pnpm pack --out package.tgz"
   },
   "dependencies": {
     "@milaboratories/pframes-rs-wasip2": "catalog:",

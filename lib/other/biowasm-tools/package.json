@@ -16,7 +16,7 @@
   },
   "scripts": {
     "dev": "ts-builder serve --target browser-lib --build-config ./build.config.ts",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "pnpm pack --out package.tgz",
     "build": "ts-builder build --target browser-lib --build-config ./build.config.ts",
     "check": "ts-builder check --target browser-lib",
     "formatter:check": "ts-builder formatter --check",

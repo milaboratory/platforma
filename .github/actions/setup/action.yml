@@ -5,9 +5,6 @@ inputs:
   npmjs-token:
     description: 'NPM registry auth token'
     required: true
-  github-token:
-    description: 'GitHub token for npm.pkg.github.com'
-    required: true
   aws-iam-role:
     description: 'AWS IAM role ARN for OIDC. Enables Turbo S3 cache, ECR login.'
     required: false
@@ -68,8 +65,6 @@ runs:
       with:
         npmrc: |
           //registry.npmjs.org/:_authToken=${NPMJS_TOKEN}
-          //npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
-          @milaboratory:registry=https://npm.pkg.github.com/
         cache-s3-access-key: ${{ inputs.cache-s3-access-key }}
         cache-s3-secret-key: ${{ inputs.cache-s3-secret-key }}
 
@@ -124,5 +119,4 @@ runs:
       shell: bash
       env:
         NPMJS_TOKEN: ${{ inputs.npmjs-token }}
-        NODE_AUTH_TOKEN: ${{ inputs.github-token }}
       run: pnpm install --frozen-lockfile --prefer-offline
