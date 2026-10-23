@@ -102,8 +102,8 @@ export type PTableParamsV2 =
     };
 
 export type PlDataTableStateV2Normalized = {
-  /** Version for upgrades */
-  version: 8;
+  /** Version for upgrades. v9 has the v8 shape; it marks column ids rewritten to the current form. */
+  version: 9;
   /** Internal states, LRU cache for 5 sourceId-s */
   stateCache: PlDataTableStateV2CacheEntry[];
   /** PTable params derived from the cache state for the current sourceId */
