@@ -1,3 +1,4 @@
+import type { BackendCapability } from "./capabilities";
 import type {
   ColorProof,
   LocalResourceId,
@@ -282,6 +283,8 @@ export class PlTransaction {
     private readonly cachePredicate: FinalResourceDataPredicate,
     private readonly sharedResourceDataCache: LRUCache<SignedResourceId, ResourceDataCacheRecord>,
     private readonly enableFormattedErrors: boolean = false,
+    /** Capabilities the backend advertises, see {@link hasCapability}. */
+    private readonly backendCapabilities: (capability: BackendCapability) => boolean = () => false,
   ) {
     // initiating transaction
     this.txOpen = this.sendSingleAndParse(
@@ -1111,6 +1114,11 @@ export class PlTransaction {
         value: toBytes(value),
       },
     });
+  }
+
+  /** True iff the backend of this transaction advertises the capability token. */
+  public hasCapability(capability: BackendCapability): boolean {
+    return this.backendCapabilities(capability);
   }
 
   public deleteKValue(rId: AnyResourceRef, key: string): void {

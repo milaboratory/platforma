@@ -412,6 +412,8 @@ export class PlClient {
           clientRoot,
           CacheFinality.predicate(),
           this.resourceDataCache,
+          false,
+          (capability) => this.ll.hasCapability(capability),
         );
 
         // Auto-set default color proof from the client root's signature.

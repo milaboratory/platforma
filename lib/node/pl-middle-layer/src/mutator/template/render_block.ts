@@ -1,7 +1,7 @@
 import type { AnyRef, PlTransaction, ResourceRef, ResourceType } from "@milaboratories/pl-client";
 import { field, Pl } from "@milaboratories/pl-client";
 import { randomUUID } from "node:crypto";
-import { createRenderTemplate } from "./render_template";
+import { createRenderTemplate, createRenderTemplateWithResource } from "./render_template";
 
 export const BContextEnd: ResourceType = { name: "BContextEnd", version: "1" };
 export const BContext: ResourceType = { name: "BContext", version: "1" };
@@ -30,12 +30,56 @@ export type HeavyBlockOutputs = {
 
 export const HeavyBlockOutputNames: (keyof HeavyBlockOutputs)[] = ["context", "result"];
 
+/** Baggage of the root action context of a block render. See the block action context spec. */
+export type BlockActionContextBaggage = {
+  /** Display name of the block. */
+  name: string;
+  /** JSON of the block pack spec. */
+  blockPack: string;
+  blockId: string;
+};
+
+/** Resource type of a block action context. See ActionContextV1Type in the backend. */
+export const ActionContextType: ResourceType = { name: "ActionContext", version: "1" };
+
+/**
+ * Creates the heavy block render. With `baggage`, it also creates the root action context of the
+ * render in the same transaction: an ActionContext resource with the baggage, which the render's
+ * optional "actionContext" service field points to. The baggage gets a new random `run-id`: each render
+ * is one run of the block, and the contexts the templates create copy it. A backend without
+ * `optionalServiceField:v1` cannot take the field after the inputs are locked, so there the render
+ * gets no action context.
+ * Returns `actionContext`: the context. The render is garbage collected after its outputs resolve, so the
+ * caller must hold the context to keep it.
+ */
 export function createRenderHeavyBlock(
   tx: PlTransaction,
   tpl: AnyRef,
   inputs: HeavyBlockInputs,
-): HeavyBlockOutputs {
-  return createRenderTemplate(tx, tpl, true, inputs, HeavyBlockOutputNames);
+  baggage?: BlockActionContextBaggage,
+): HeavyBlockOutputs & { actionContext?: ResourceRef } {
+  const { render, outputs } = createRenderTemplateWithResource(
+    tx,
+    tpl,
+    true,
+    inputs,
+    HeavyBlockOutputNames,
+  );
+
+  if (baggage === undefined || !tx.hasCapability("optionalServiceField:v1")) return outputs;
+
+  const context = tx.createEphemeral(
+    ActionContextType,
+    JSON.stringify({
+      name: baggage.name,
+      "block-pack": baggage.blockPack,
+      "block-id": baggage.blockId,
+      "run-id": randomUUID(),
+    }),
+  );
+  tx.createField(field(render, "actionContext"), "Service", context);
+
+  return { ...outputs, actionContext: context };
 }
 
 export type LightBlockInputs = {
