@@ -1,5 +1,5 @@
-import type { PlClient, PlTransaction, SignedResourceId } from "@milaboratories/pl-client";
-import { isNullSignedResourceId, parseSignedResourceId } from "@milaboratories/pl-client";
+import { parseSignedResourceId } from "@milaboratories/pl-client";
+import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import { projectFieldName } from "../model/project_model";
 
 /** Which render of a block the action context tree belongs to. */
@@ -49,50 +49,33 @@ export type BlockActionContextNode = {
 const childFieldPrefix = "child/";
 
 /**
- * Reads the action context tree of a block render: the root action context the project holds in
- * <blockId>-prodActionContext or <blockId>-stagingActionContext, and every child context under it.
- * Reads the current state in one transaction; it does not watch for changes.
+ * Reads the action context tree of a block render from the synchronized project tree: the root action
+ * context the project holds in <blockId>-prodActionContext or <blockId>-stagingActionContext, and every
+ * child context under it. Watches every context it reads.
  *
  * @returns undefined when the block has no action context: it was not rendered yet, or the backend
  *          does not support block action context.
  */
-export async function readBlockActionContextTree(
-  pl: PlClient,
-  projectRid: SignedResourceId,
+export function blockActionContextTree(
+  prj: PlTreeNodeAccessor,
   blockId: string,
   mode: BlockActionContextMode,
-): Promise<BlockActionContextNode | undefined> {
-  return await pl.withReadTx("readBlockActionContextTree", async (tx) => {
-    const project = await tx.getResourceData(projectRid, true);
-    const fieldName = projectFieldName(
-      blockId,
-      mode === "prod" ? "prodActionContext" : "stagingActionContext",
-    );
-    const actionContextField = project.fields.find((f) => f.name === fieldName);
-    if (actionContextField === undefined || isNullSignedResourceId(actionContextField.value))
-      return undefined;
-
-    return await readActionContextNode(tx, actionContextField.value);
-  });
+): BlockActionContextNode | undefined {
+  const field = projectFieldName(
+    blockId,
+    mode === "prod" ? "prodActionContext" : "stagingActionContext",
+  );
+  const context = prj.traverse({ field, stableIfNotFound: true });
+  return context === undefined ? undefined : actionContextNode(context);
 }
 
-async function readActionContextNode(
-  tx: PlTransaction,
-  contextRef: SignedResourceId,
-): Promise<BlockActionContextNode> {
-  const [context, kvs] = await Promise.all([
-    tx.getResourceData(contextRef, true),
-    tx.listKeyValuesString(contextRef),
-  ]);
-
-  const baggage =
-    context.data === undefined || context.data.length === 0
-      ? {}
-      : (JSON.parse(Buffer.from(context.data).toString()) as Record<string, string>);
+function actionContextNode(context: PlTreeNodeAccessor): BlockActionContextNode {
+  const data = context.getDataAsString();
+  const baggage = data ? (JSON.parse(data) as Record<string, string>) : {};
 
   const transitions: BlockActionTransition[] = [];
   const readings: BlockActionReading[] = [];
-  for (const { key, value } of kvs) {
+  for (const { key, value } of context.listKeyValuesAsString()) {
     const parts = key.split("/");
     if (parts[0] === "transition" && parts.length === 4) {
       const parsed = JSON.parse(value) as { state?: string; detail?: string; reason?: string };
@@ -110,15 +93,15 @@ async function readActionContextNode(
   }
   transitions.sort((a, b) => compareDecimal(a.timestampNs, b.timestampNs));
 
-  const childRefs: SignedResourceId[] = [];
-  for (const f of context.fields) {
-    if (f.name.startsWith(childFieldPrefix) && !isNullSignedResourceId(f.value))
-      childRefs.push(f.value);
+  const children: BlockActionContextNode[] = [];
+  for (const field of context.listDynamicFields()) {
+    if (!field.startsWith(childFieldPrefix)) continue;
+    const child = context.traverse({ field, stableIfNotFound: true });
+    if (child !== undefined) children.push(actionContextNode(child));
   }
-  const children = await Promise.all(childRefs.map((ref) => readActionContextNode(tx, ref)));
 
   return {
-    contextId: String(parseSignedResourceId(contextRef).globalId),
+    contextId: String(parseSignedResourceId(context.id).globalId),
     resource: transitions.find((t) => t.namespace === "render")?.resource,
     baggage,
     transitions,
