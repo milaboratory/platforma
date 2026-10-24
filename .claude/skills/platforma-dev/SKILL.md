@@ -28,7 +28,7 @@ pnpm install
 pnpm build
 ```
 
-Node >= 22 required. Package manager: pnpm 9.14+.
+`devEngines` in the root `package.json` pins Node and pnpm. pnpm 11 or newer switches to the pinned versions.
 
 ### Build commands
 
