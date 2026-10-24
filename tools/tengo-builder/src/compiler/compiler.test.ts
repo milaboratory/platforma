@@ -351,7 +351,7 @@ describe("TengoTemplateCompiler requiredCapabilities propagation", () => {
     [],
   );
 
-  it("adds wasm:v1 when a template directly embeds a wasm artifact", () => {
+  it("adds wasm:v2 when a template directly embeds a wasm artifact", () => {
     const compiler = new TengoTemplateCompiler("dist");
     compiler.addWasm(wasmSrc);
 
@@ -365,7 +365,7 @@ describe("TengoTemplateCompiler requiredCapabilities propagation", () => {
       new ArtifactSource("dist", tplName, "tpl-hash", "tpl-src", "tpl-file", [wasmName], []),
     ]);
 
-    expect(result.templates[0].data.template.requiredCapabilities).toEqual(["wasm:v1"]);
+    expect(result.templates[0].data.template.requiredCapabilities).toEqual(["wasm:v2"]);
   });
 
   it("unions child template requiredCapabilities into the parent", () => {
@@ -405,7 +405,7 @@ describe("TengoTemplateCompiler requiredCapabilities propagation", () => {
 
     const result = compiler.compileAndAdd([childSrc, parentSrc]);
     const parent = result.templates.find((t) => t.fullName.id === "parent")!;
-    expect(parent.data.template.requiredCapabilities).toEqual(["wasm:v1"]);
+    expect(parent.data.template.requiredCapabilities).toEqual(["wasm:v2"]);
   });
 
   it("leaves requiredCapabilities undefined when no capability is needed", () => {
