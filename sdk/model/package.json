@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/model",
-  "version": "1.85.2",
+  "version": "1.86.0",
   "description": "Platforma.bio SDK / Block Model",
   "files": [
     "./dist/**/*",
