@@ -3,7 +3,7 @@
  * `ColumnRegistry.resolve(id)` returns a `LeafEntry` whose spec accessor
  * reports `hasData() === true` and `getDataAsJson()` returns the supplied
  * spec. Sufficient for code that goes through
- * `getCtxProviders` / `readLeafSpecAccessor` (e.g. `DataColumnRecipe.fromId`,
+ * `getCtxProviders` / `readSpecAccessor` (e.g. `DataColumnRecipe.fromId`,
  * `ColumnDiscoveredRecipe.fromKey`).
  *
  * Two leaf shapes:
@@ -38,6 +38,8 @@ export type StubLeafConfig = {
   accessorLocked?: boolean;
   /** Drives `spec.hasData()` (ignored when `spec` is omitted). Default `true`. */
   specHasData?: boolean;
+  /** Error message of a spec field that holds an error and no value. Overrides `spec`. */
+  specError?: string;
 };
 
 /** Either the shorthand `PColumnSpec` or a {@link StubLeafConfig}. */
@@ -84,6 +86,7 @@ type NormalizedLeafConfig = {
   spec?: PColumnSpec;
   accessorLocked: boolean;
   specHasData: boolean;
+  specError?: string;
 };
 
 function normalizeLeafInput(raw: StubLeafInput): NormalizedLeafConfig {
@@ -94,6 +97,7 @@ function normalizeLeafInput(raw: StubLeafInput): NormalizedLeafConfig {
     spec: raw.spec,
     accessorLocked: raw.accessorLocked ?? true,
     specHasData: raw.specHasData ?? true,
+    specError: raw.specError,
   };
 }
 
@@ -122,10 +126,12 @@ function stubAccessorFor(id: PObjectId, cfg: NormalizedLeafConfig): TreeNodeAcce
     resolvePath: [],
     traverse: (step: { field?: string } | string) => {
       const field = typeof step === "string" ? step : step?.field;
+      if (field === specField && cfg.specError !== undefined) throw new Error(cfg.specError);
       return field === specField ? specHolder : undefined;
     },
     getDataAsJson: <T>() => cfg.spec as unknown as T,
-    listInputFields: () => (cfg.spec !== undefined ? [specField] : []),
+    listInputFields: () =>
+      cfg.spec !== undefined || cfg.specError !== undefined ? [specField] : [],
     getInputsLocked: () => cfg.accessorLocked,
   };
   return stub as unknown as TreeNodeAccessor;

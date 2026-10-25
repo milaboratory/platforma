@@ -1,12 +1,14 @@
 import {
   AccessorEntriesProvider,
   ResultPoolEntriesProvider,
+  type LeafEntry,
   type PColumn,
   type PObjectId,
   type UpstreamBlockCtx,
 } from "@milaboratories/pl-model-common";
 import { AccessorHandle, PColumnDataUniversal, TreeNodeAccessor } from "../../render";
 import { DataColumn, DataColumnRecipe } from "../data_column";
+import { readSpecAccessor } from "../leaf_readers";
 import { getCfgRenderCtx } from "../../internal";
 import { isNil } from "es-toolkit";
 import { LRUCache } from "lru-cache";
@@ -111,6 +113,19 @@ export class ArrayColumnsProvider implements ColumnsProvider {
   }
 }
 
+/** Columns of the entries, without the ones whose spec has an error or is unset on a locked PFrame. */
+function listedColumns(
+  entries: Iterable<LeafEntry<TreeNodeAccessor>>,
+): DataColumnRecipe<PObjectId>[] {
+  return Array.from(entries)
+    .filter((e) => {
+      const read = readSpecAccessor(e);
+      return !("error" in read) && (read.spec !== undefined || !e.accessor.getInputsLocked());
+    })
+    .map((e) => DataColumn.fromAccessor(e))
+    .filter((v) => v !== undefined);
+}
+
 /**
  * Sandbox-specific provider over a {@link TreeNodeAccessor} root. Uses the
  * accessor's own `resolvePath` as the canonical root path for id construction,
@@ -129,9 +144,7 @@ export class AccessorColumnsProviderImpl
 
   getColumns(): DataColumnRecipe<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
-    return (this.cachedColumns = Array.from(this.entries.values())
-      .map((e) => DataColumn.fromAccessor(e))
-      .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v)));
+    return (this.cachedColumns = listedColumns(this.entries.values()));
   }
 }
 
@@ -173,9 +186,7 @@ export class ResultPoolColumnsProviderImpl
 
   getColumns(): DataColumnRecipe<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
-    return (this.cachedColumns = Array.from(this.getPObjectEntries().values())
-      .map((e) => DataColumn.fromAccessor(e))
-      .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v)));
+    return (this.cachedColumns = listedColumns(this.getPObjectEntries().values()));
   }
 }
 
