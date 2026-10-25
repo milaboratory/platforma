@@ -8,11 +8,12 @@
     "./dist/**/*"
   ],
   "scripts": {
-    "build": "rm -rf ./dist && env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local block-tools software build"
+    "build": "shx rm -rf ./dist && block-tools software build --channel dev --variant binary --location local"
   },
   "devDependencies": {
     "@platforma-open/milaboratories.runenv-python-3": "catalog:",
-    "@platforma-sdk/block-tools": "workspace:*"
+    "@platforma-sdk/block-tools": "workspace:*",
+    "shx": "catalog:"
   },
   "block-software": {
     "requireDocker": false,

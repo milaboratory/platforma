@@ -2,7 +2,11 @@ import { Command } from "commander";
 import path from "node:path";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
-import { runStructureForPath, formatChanges } from "../../structure/cli/run-structure";
+import {
+  runStructureForPath,
+  formatChanges,
+  expandBlockPaths,
+} from "../../structure/cli/run-structure";
 
 // Shared by `structure refresh` and the deprecated `update-deps` alias.
 export async function runRefresh(opts: {
@@ -38,7 +42,7 @@ export function structureRefreshCommand(packageRoot: string): Command {
   );
 
   cmd.action(async (argv: string[], flags) => {
-    const paths = argv.length > 0 ? argv : ["."];
+    const paths = argv.length > 0 ? expandBlockPaths(argv) : ["."];
     const templatesRoot = path.join(packageRoot, "src", "structure", "templates");
     await runRefresh({
       paths,
