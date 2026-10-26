@@ -22,13 +22,15 @@ jobs:
         with:
           cache: 'false'
 
-      - name: Check changeset status
+      - name: Check change intents
+        run: |
+          node scripts/check-change-intents.mjs origin/main
+          pnpm change check
+
+      - name: Check for pending change intents
         id: check
         run: |
-          pnpm dlx @changesets/cli@2.29.5 status --since=origin/main
-
-          NON_README=$(ls .changeset/*.md 2>/dev/null | grep -v README.md || true)
-          if [ -n "$NON_README" ]; then
+          if compgen -G '.changeset/*.md' > /dev/null; then
             echo "has-pending=true" >> "$GITHUB_OUTPUT"
           else
             echo "has-pending=false" >> "$GITHUB_OUTPUT"

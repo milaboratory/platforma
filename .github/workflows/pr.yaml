@@ -52,4 +52,3 @@ jobs:
         uses: fawazahmed0/action-debug-vscode@main
         env:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

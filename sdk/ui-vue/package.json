@@ -20,7 +20,7 @@
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target browser-lib",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "pnpm pack --out package.tgz"
   },
   "dependencies": {
     "@milaboratories/columns-collection-driver": "workspace:*",

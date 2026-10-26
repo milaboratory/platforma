@@ -18,7 +18,7 @@
   "scripts": {
     "build": "rolldown -c",
     "watch": "rolldown -c --watch",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "pnpm pack --out package.tgz",
     "check": "oxlint && oxfmt --check && tsc --noEmit",
     "fmt": "oxlint --fix && oxfmt"
   },

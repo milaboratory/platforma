@@ -32,7 +32,6 @@ jobs:
       - uses: ./.github/actions/setup
         with:
           npmjs-token: ${{ secrets.NPMJS_TOKEN }}
-          github-token: ${{ steps.app-token.outputs.token }}
           aws-iam-role: ${{ secrets.AWS_CI_IAM_MONOREPO_SIMPLE_ROLE }}
           # Caches → RGW: turbo to ci-turbo-cache, pnpm to ci-actions-cache (both
           # use-fallback → GitHub). Shared org secrets/vars (selected to platforma).
@@ -59,7 +58,6 @@ jobs:
         if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
         env:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PL_DOCKER_REGISTRY_PUSH_TO: "quay.io/milaboratories/pl-containers"
         run: pnpm run ci:build:local
 
@@ -67,7 +65,6 @@ jobs:
         if: inputs.no-cache || steps.dry-run.outputs.skip != 'true'
         env:
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # Gate: every block under etc/blocks/* must be up to date with the
         # canonical structure (block-tools structure check --sdk-internal).
         # block-tools is built by the preceding Build step.
@@ -105,7 +102,6 @@ jobs:
           PL_LICENSE: ${{ secrets.MI_LICENSE }}
           MI_LICENSE: ${{ secrets.MI_LICENSE }}
           NPMJS_TOKEN: ${{ secrets.NPMJS_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: pnpm run ${{ inputs.no-cache && 'ci:test:local+no-cache' || 'ci:test:local' }}
 
       - name: Upload coverage

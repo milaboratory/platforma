@@ -26,7 +26,7 @@
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target node",
     "test": "vitest run",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "pnpm pack --out package.tgz",
     "fmt": "ts-builder format"
   },
   "dependencies": {
@@ -48,8 +48,8 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@milaboratories/pl-middle-layer": ">=1.74.7",
-    "@platforma-sdk/model": ">=1.85.2"
+    "@milaboratories/pl-middle-layer": "workspace:>=1.74.7",
+    "@platforma-sdk/model": "workspace:>=1.85.2"
   },
   "engines": {
     "node": ">=24"
