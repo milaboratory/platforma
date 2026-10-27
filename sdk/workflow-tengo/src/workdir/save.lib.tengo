@@ -144,9 +144,9 @@ builder := func(wdBefore) {
 				)
 			)
 
+			// the data controller reports the save of the workdir into the context of this template; linked before the lock
+			actionContext.inherit(super.id)
 			resource := super.lockAndBuild()
-			// the data controller reports the save of the workdir into the context of this template
-			actionContext.inherit(resource.id)
 
 			// still return self to have all the methods
 			return self

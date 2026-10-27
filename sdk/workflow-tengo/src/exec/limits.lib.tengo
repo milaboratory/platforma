@@ -279,9 +279,9 @@ computeRequestBuilder := func() {
 
 			requestBuilder.getField(_CR_FIELD_REQUEST).set(quota)
 
+			// the runner reports the quota wait of the request into the context of this template; linked before the lock
+			actionContext.inherit(requestBuilder.id)
 			requestRef := requestBuilder.lockAndBuild()
-			// the runner reports the quota wait of the request into the context of this template
-			actionContext.inherit(requestRef.id)
 
 			return ll.toStrict(
 				oop.inherit(requestRef, {

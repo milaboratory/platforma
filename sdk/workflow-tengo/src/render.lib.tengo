@@ -32,7 +32,9 @@ _SUBSCRIPTION_FIELD := "subscription"
  *              - name: (optional) display name of the render in the block action context tree.
  *                                  Defaults to the template name given to assets.importTemplate().
  *              - actionContext: (optional) false puts the render and everything it creates into the action
- *                                  sinkhole: their block action context is not recorded.
+ *                                  sinkhole: their block action context is not recorded. A map gives the
+ *                                  render a new action context with that baggage, the root of a new tree:
+ *                                  for templates rendered outside a block, e.g. tests and tools.
  * @return renderer: a smart resource with additional output("name") method
  */
 createUniversal := func(tpl, isEph, inputs, ...opts) {
@@ -41,11 +43,15 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 	inputCache := undefined
 	actionContextName := undefined
 	actionContextOff := false
+	actionContextBaggage := undefined
 	if len(opts) == 1 && opts[0] {
 		metaInputs = opts[0].metaInputs
 		inputCache = opts[0].inputCache
 		actionContextName = opts[0].name
 		actionContextOff = opts[0].actionContext == false
+		if is_map(opts[0].actionContext) {
+			actionContextBaggage = opts[0].actionContext
+		}
 	}
 
 	if !is_undefined(inputCache) && inputCache > 0 && isEph {
@@ -96,18 +102,22 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 	}
 
 	rbuilder.createInputField(tplutil.INPUTS_MAP_FIELD).set(inputsMap.build())
-	// build
-	renderer := rbuilder.lockInputsAndBuild()
 
-	// the action context of the render: a context under the context of the current renderer, or the sinkhole
+	// the action context of the render, linked before the inputs are locked: a new context with the given
+	// baggage, the sinkhole, or a context under the context of the current renderer
 	if is_undefined(actionContextName) {
 		actionContextName = assets.templateName(tpl)
 	}
-	if actionContextOff {
-		actionContext.sinkhole(renderer.id, actionContextName)
+	if !is_undefined(actionContextBaggage) {
+		actionContext.createContext(rbuilder.id, actionContextBaggage)
+	} else if actionContextOff {
+		actionContext.sinkhole(rbuilder.id, actionContextName)
 	} else {
-		actionContext.createChild(renderer.id, actionContextName)
+		actionContext.createChild(rbuilder.id, actionContextName)
 	}
+
+	// build
+	renderer := rbuilder.lockInputsAndBuild()
 
 	self := undefined
 	self = ll.toStrict(oop.inherit(renderer, {

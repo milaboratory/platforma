@@ -44,7 +44,7 @@ function transitions(node: ActionContextNode, namespace: string): unknown[] {
 tplTest.concurrent("block action context tree from templates", async ({ helper, expect, pl }) => {
   //
   // Scenario:
-  //  1. Render the root template: it creates its own action context with baggage, records "Running"
+  //  1. Render the root template with an action context with baggage (tree-root); it records "Running"
   //     and renders a child. The child records "Running", sets an reading and renders a grandchild
   //     with a custom name. The grandchild records "Completed". All three finish.
   //  2. The tree: root -> child -> grandchild, linked by child/ fields. Each child copies the baggage
@@ -58,7 +58,7 @@ tplTest.concurrent("block action context tree from templates", async ({ helper, 
 
   const result = await helper.renderTemplate(
     true,
-    "action-context.tree",
+    "action-context.tree-root",
     ["context", "child", "childBaggage"],
     () => ({}),
   );
@@ -153,7 +153,7 @@ tplTest.concurrent(
     //
     // Scenario:
     //  1. Render a template with its own context; it renders a child with { actionContext: false }.
-    //  2. The child is in the sinkhole: it cannot create its own context, it still sees the baggage with
+    //  2. The child is in the sinkhole: it has no context of its own, it still sees the baggage with
     //     its own name, and the template it renders is in the sinkhole too. Both finish.
     //  3. The root context has no child context, and none of the child's reports.
     //  Without the backend primitives nothing has a context, so the test has nothing to check.
@@ -163,7 +163,7 @@ tplTest.concurrent(
 
     const result = await helper.renderTemplate(
       true,
-      "action-context.sinkhole",
+      "action-context.sinkhole-root",
       ["context", "info", "done"],
       () => ({}),
     );
@@ -175,7 +175,7 @@ tplTest.concurrent(
     expect(
       await result.computeOutput("info", (a) => a?.getDataAsJson()).awaitStableValue(),
     ).toEqual({
-      created: false,
+      context: false,
       baggage: {
         name: "@platforma-sdk/workflow-tengo-tests:action-context.sinkholed",
         "run-id": "run-2",
@@ -215,7 +215,7 @@ tplTest.concurrent(
 
     const result = await helper.renderTemplate(
       true,
-      "action-context.exec",
+      "action-context.exec-root",
       ["context", "out"],
       () => ({}),
     );
