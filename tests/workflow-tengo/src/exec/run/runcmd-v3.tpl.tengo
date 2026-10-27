@@ -5,13 +5,13 @@ feats := import("@platforma-sdk/workflow-tengo:feats")
 delayedCompAlloc := import("@platforma-sdk/workflow-tengo:exec.delayed-compute-allocation")
 json := import("json")
 
-self.defineOutputs(["outcome", "workdirOut"])
+self.defineOutputs(["outcome"])
 
 self.body(func(inputs) {
 	queue := "light"
 	types := feats.getResourceTypes(queue)
 
-	wd := workdir.builder().build()
+	wd := workdir.builder().inQueue(queue).cpu(1).mem("50Mi").build()
 	alloc := delayedCompAlloc.create(wd, { queue: queue, cpu: 1, ram: "50Mi" })
 
 	run := smart.ephemeralBuilder(types.runCommandV3)
@@ -44,7 +44,6 @@ self.body(func(inputs) {
 
 built := run.lockAndBuild()
 return {
-	outcome: built.outputs()["outcome"],
-	workdirOut: built.outputs()["workdirOut"]
+	outcome: built.outputs()["outcome"]
 }
 })
