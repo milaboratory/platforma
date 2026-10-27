@@ -22,3 +22,10 @@ export type {
   BlockActionTransition,
 } from "./block_action_context";
 export { InstanceStatsContextTypeName, parseInstanceStats } from "./instance_stats";
+export {
+  backendSupportsActionContext,
+  BlockStatusWatch,
+  readBlockActionContextRoot,
+} from "./block_status_tree";
+export type { ActionContextNode } from "./block_status_fold";
+export { foldBlockStatus } from "./block_status_fold";
