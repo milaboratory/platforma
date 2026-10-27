@@ -254,3 +254,26 @@ test("closing the project terminates its watches and refuses new ones", async ()
     await expect(prj.watchBlockStatus(blockId)).rejects.toThrow(/project is closed/);
   });
 }, 120_000);
+
+test("the debug panel shares the watch and follows the expansion", async () => {
+  await withMl(async (ml) => {
+    const { prj, blockId } = await projectWithBlock(ml);
+    const run = await plantRoot(ml.pl, prj, blockId);
+
+    const summary = await prj.watchBlockStatus(blockId);
+    const panel = await prj.watchBlockStatusPanel(blockId);
+    const first = await panel.getValue();
+    expect(first.summary.runId).toBe(run);
+    expect(first.root?.children).toEqual([]);
+
+    // The expansion is the panel's own input: setting it recomputes the panel.
+    await prj.setBlockStatusPanelExpanded(blockId, [first.root!.contextId]);
+    await panel.getValue();
+
+    // The panel holds the tree on its own once the line lets go.
+    await prj.unwatchBlockStatus(blockId);
+    expect((await summary.getValue()).runId).toBe(run);
+    await prj.unwatchBlockStatus(blockId);
+    expect((await panel.getValue()).summary.runId).toBeUndefined();
+  });
+}, 120_000);
