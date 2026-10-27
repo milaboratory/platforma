@@ -94,5 +94,13 @@ export ll.toStrict({
 	// true when backend populates the multi-step 'progress' map output field
 	// on Blob* import/upload resources. When false, the SDK synthesizes the
 	// same map shape locally (single entry "01" → handle).
-	multiStepProgress:        _isEnabled("multiStepProgress")
+	multiStepProgress:        _isEnabled("multiStepProgress"),
+
+	// true when tx.resourceKeyValueSetAsync is available: a resource metadata set applied after the commit.
+	kvAsync:                  _isEnabled("kvAsync"),
+
+	// true when a resource schema can declare fields optional, so templates create them in the transaction
+	// that creates the resource, before an explicit lock (e.g. the "actionContext" link of block action
+	// context). "optionalServiceField" is its former name.
+	optionalFieldsInSchemas:  _isEnabled("optionalFieldsInSchemas") || _isEnabled("optionalServiceField")
 })

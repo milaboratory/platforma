@@ -10,6 +10,8 @@ oop := import(":oop")
 tx := import("tx")
 maps := import(":maps")
 feats := import(":feats")
+assets := import(":assets")
+actionContext := import(":action-context")
 
 
 _SUBSCRIPTION_FIELD := "subscription"
@@ -27,15 +29,29 @@ _SUBSCRIPTION_FIELD := "subscription"
  *                                  would be considered as copies of each-other.
  *              - inputCache: (optional) a cache time from 'times' library for all inputs.
  *                                  Can be used only with non-ephemeral templates.
+ *              - name: (optional) display name of the render in the block action context tree.
+ *                                  Defaults to the template name given to assets.importTemplate().
+ *              - actionContext: (optional) false puts the render and everything it creates into the action
+ *                                  sinkhole: their block action context is not recorded. A map gives the
+ *                                  render a new action context with that baggage, the root of a new tree:
+ *                                  for templates rendered outside a block, e.g. tests and tools.
  * @return renderer: a smart resource with additional output("name") method
  */
 createUniversal := func(tpl, isEph, inputs, ...opts) {
 	ll.assert(len(opts) <= 1, "too many arguments, expected at most one options object")
 	metaInputs := undefined
 	inputCache := undefined
+	actionContextName := undefined
+	actionContextOff := false
+	actionContextBaggage := undefined
 	if len(opts) == 1 && opts[0] {
 		metaInputs = opts[0].metaInputs
 		inputCache = opts[0].inputCache
+		actionContextName = opts[0].name
+		actionContextOff = opts[0].actionContext == false
+		if is_map(opts[0].actionContext) {
+			actionContextBaggage = opts[0].actionContext
+		}
 	}
 
 	if !is_undefined(inputCache) && inputCache > 0 && isEph {
@@ -86,6 +102,20 @@ createUniversal := func(tpl, isEph, inputs, ...opts) {
 	}
 
 	rbuilder.createInputField(tplutil.INPUTS_MAP_FIELD).set(inputsMap.build())
+
+	// the action context of the render, linked before the inputs are locked: a new context with the given
+	// baggage, the sinkhole, or a context under the context of the current renderer
+	if is_undefined(actionContextName) {
+		actionContextName = assets.templateName(tpl)
+	}
+	if !is_undefined(actionContextBaggage) {
+		actionContext.createContext(rbuilder.id, actionContextBaggage)
+	} else if actionContextOff {
+		actionContext.sinkhole(rbuilder.id, actionContextName)
+	} else {
+		actionContext.createChild(rbuilder.id, actionContextName)
+	}
+
 	// build
 	renderer := rbuilder.lockInputsAndBuild()
 
