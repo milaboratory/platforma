@@ -21,3 +21,10 @@ export type {
   BlockActionContextNode,
   BlockActionTransition,
 } from "./block_action_context";
+export {
+  backendSupportsActionContext,
+  BlockStatusWatch,
+  readBlockActionContextRoot,
+} from "./block_status_tree";
+export type { ActionContextNode } from "./block_status_fold";
+export { foldBlockStatus } from "./block_status_fold";
