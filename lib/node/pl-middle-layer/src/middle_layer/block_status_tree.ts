@@ -14,7 +14,7 @@ import { isNullSignedResourceId, ResourceTypeName, treeFilter } from "@milaborat
 import { Computable, WatchableValue } from "@milaboratories/computable";
 import type { PlTreeEntry, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
-import type { BlockStatusSummary } from "@milaboratories/pl-model-middle-layer";
+import type { BlockStatusPanel, BlockStatusSummary } from "@milaboratories/pl-model-middle-layer";
 import {
   EmptyBlockStatusSummary,
   UnreadableBlockStatusSummary,
@@ -170,6 +170,33 @@ export type BlockStatusWatchParams = {
   readonly projectGeneration: () => number;
 };
 
+/** A panel with no tree under it. */
+function emptyPanel(summary: BlockStatusSummary): BlockStatusPanel {
+  return { summary, heaviest: { byCompute: [], byNodes: [] } };
+}
+
+/** {@link foldEntry} for the debug panel. */
+function foldPanelEntry(
+  ctx: ComputableCtx,
+  entry: PlTreeEntry,
+  expanded: ReadonlySet<string>,
+  reportsSupported: boolean,
+  onError: (err: unknown) => void,
+): BlockStatusPanel {
+  let panel: BlockStatusPanel;
+  try {
+    const node = ctx.accessor(entry).node({ ignoreError: true });
+    if (node === undefined) return emptyPanel(UnreadableBlockStatusSummary);
+    panel = foldBlockStatusPanel(actionContextNode(node), expanded);
+  } catch (err: unknown) {
+    onError(err);
+    return emptyPanel(UnreadableBlockStatusSummary);
+  }
+
+  if (reportsSupported || panel.summary.totalNodes === 0) return panel;
+  return { ...panel, summary: { ...panel.summary, availability: "unsupported" } };
+}
+
 /**
  * The live status of one block render.
  *
@@ -196,6 +223,15 @@ export class BlockStatusWatch {
   private holders = 0;
 
   public readonly summary: Computable<BlockStatusSummary>;
+
+  /**
+   * The nodes whose children the debug panel shows. Shared by every holder: the Desktop App opens
+   * one panel per block, and two windows on one block see one expansion.
+   */
+  private readonly expanded = new WatchableValue<ReadonlySet<string>>(new Set());
+
+  /** The debug panel, over the same tree as {@link summary}. */
+  public readonly panel: Computable<BlockStatusPanel>;
 
   private readonly env: MiddleLayerEnvironment;
   private readonly projectRid: SignedResourceId;
@@ -227,6 +263,22 @@ export class BlockStatusWatch {
         this.env.logger.warn(new Error("block status fold failed", { cause: err })),
       );
     });
+    this.panel = Computable.make((ctx) => {
+      const entry = this.source.getValue(ctx);
+      const expanded = this.expanded.getValue(ctx);
+      if (entry === undefined)
+        return emptyPanel(
+          reportsSupported ? EmptyBlockStatusSummary : UnsupportedBlockStatusSummary,
+        );
+      return foldPanelEntry(ctx, entry, expanded, reportsSupported, (err) =>
+        this.env.logger.warn(new Error("block status panel fold failed", { cause: err })),
+      );
+    });
+  }
+
+  /** Replaces the set of nodes whose children the panel shows. */
+  public setExpanded(contextIds: readonly string[]): void {
+    this.expanded.setValue(new Set(contextIds), "block status panel expansion changed");
   }
 
   /**
@@ -294,6 +346,7 @@ export class BlockStatusWatch {
     this.current = undefined;
     this.source.setValue(undefined, "block status watch terminated");
     this.summary.resetState();
+    this.panel.resetState();
     await this.terminateTree(held?.tree);
   }
 

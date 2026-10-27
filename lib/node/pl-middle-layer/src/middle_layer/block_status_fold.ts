@@ -61,7 +61,7 @@ export interface ActionContextNode {
 export const MaxDepth = 256;
 
 /** Prefix of the field names holding child contexts. */
-const ChildFieldPrefix = "child/";
+export const ChildFieldPrefix = "child/";
 
 /** Prefix of the transition keys: `transition/<namespace>/<resource>/<ns>`. */
 const TransitionPrefix = "transition/";
@@ -79,7 +79,7 @@ const RenderNamespace = "render";
 const CreatorNamespace = "core";
 
 /** The namespace a command reports under; its `Running` means a job executing on a machine. */
-const ExecNamespace = "exec";
+export const ExecNamespace = "exec";
 
 /** The namespace a job's work folder reports under. */
 const WorkdirNamespace = "workdir";
@@ -96,6 +96,9 @@ export type Transition = {
   detail: string;
   reason: string;
 };
+
+/** A transition whatever its state, for display: a state this build does not know stays a string. */
+export type RawTransition = Omit<Transition, "state"> & { state: string };
 
 /** What one context reported. */
 export type ContextReports = {

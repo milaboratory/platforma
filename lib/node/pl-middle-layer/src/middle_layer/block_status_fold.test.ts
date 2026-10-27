@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { BlockStatusState } from "@milaboratories/pl-model-middle-layer";
 import type { ActionContextNode } from "./block_status_fold";
 import { failureHeadline, foldBlockStatus } from "./block_status_fold";
 import type { BlockStatusJobs, BlockStatusState } from "@milaboratories/pl-model-middle-layer";

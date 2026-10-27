@@ -47,7 +47,7 @@ import type { BlockActionContextMode, BlockActionContextNode } from "./block_act
 import { readBlockActionContextTree } from "./block_action_context";
 import { getBlockPackInfo } from "./util";
 import { BlockStatusWatch } from "./block_status_tree";
-import type { BlockStatusSummary } from "@milaboratories/pl-model-middle-layer";
+import type { BlockStatusPanel, BlockStatusSummary } from "@milaboratories/pl-model-middle-layer";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectId, ProjectStructure } from "../model/project_model";
 import {
@@ -860,6 +860,38 @@ export class Project {
     blockId: string,
     mode: BlockActionContextMode = "prod",
   ): Promise<Computable<BlockStatusSummary>> {
+    return (await this.retainBlockStatusWatch(blockId, mode)).summary;
+  }
+
+  /**
+   * Starts watching the debug panel of a block render. Takes the same hold as
+   * {@link watchBlockStatus}, released by {@link unwatchBlockStatus}, and shares its tree.
+   */
+  public async watchBlockStatusPanel(
+    blockId: string,
+    mode: BlockActionContextMode = "prod",
+  ): Promise<Computable<BlockStatusPanel>> {
+    return (await this.retainBlockStatusWatch(blockId, mode)).panel;
+  }
+
+  /**
+   * Sets which nodes of the debug panel show their children. A no-op while nobody watches the
+   * block: the expansion lives with the watch.
+   */
+  public async setBlockStatusPanelExpanded(
+    blockId: string,
+    contextIds: readonly string[],
+    mode: BlockActionContextMode = "prod",
+  ): Promise<void> {
+    const pending = this.blockStatusWatches.get(blockStatusKey(blockId, mode));
+    if (pending === undefined) return;
+    (await pending).setExpanded(contextIds);
+  }
+
+  private async retainBlockStatusWatch(
+    blockId: string,
+    mode: BlockActionContextMode,
+  ): Promise<BlockStatusWatch> {
     if (this.destroyed)
       throw new Error(`cannot watch the status of ${blockId}: the project is closed`);
 
@@ -868,7 +900,7 @@ export class Project {
     if (existing !== undefined) {
       const watch = await existing;
       watch.retain();
-      return watch.summary;
+      return watch;
     }
 
     const started = BlockStatusWatch.start({
@@ -885,7 +917,7 @@ export class Project {
     started.catch(() => {
       if (this.blockStatusWatches.get(key) === started) this.blockStatusWatches.delete(key);
     });
-    return (await started).summary;
+    return await started;
   }
 
   /**
