@@ -40,9 +40,15 @@ import type { NavigationState } from "@milaboratories/pl-model-common";
 import { getBlockParameters, blockOutputs } from "./block";
 import type { BlockActionContextMode, BlockActionContextNode } from "./block_action_context";
 import { readBlockActionContextTree } from "./block_action_context";
+import { BlockStatusWatch } from "./block_status_tree";
+import type { BlockStatusSummary } from "@milaboratories/pl-model-middle-layer";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectId, ProjectStructure } from "../model/project_model";
-import { projectFieldName } from "../model/project_model";
+import {
+  projectFieldName,
+  ProjectStatusFieldPattern,
+  projectStatusFieldRegex,
+} from "../model/project_model";
 import {
   cachedDeserialize,
   notEmpty,
@@ -107,6 +113,10 @@ export class Project {
   private readonly blockComputables = new Map<string, BlockStateComputables | null>();
 
   private readonly blockFrontends = new Map<string, ComputableStableDefined<FrontendData>>();
+
+  /** Live status watches, keyed by {@link blockStatusKey}. One per block whose status is shown;
+   * each owns a synchronized tree, so they are started and terminated explicitly. */
+  private readonly blockStatusWatches = new Map<string, Promise<BlockStatusWatch>>();
   private readonly activeConfigs: Computable<unknown[]>;
   private readonly refreshLoopResult: Promise<void>;
 
@@ -803,6 +813,86 @@ export class Project {
     return await readBlockActionContextTree(this.env.pl, this.rid, blockId, mode);
   }
 
+  /**
+   * Starts watching the live status of a block render, and returns the folded summary.
+   *
+   * One watch per block and mode: calling it again while a watch is open returns the same
+   * computable. The watch owns a synchronized tree, so the caller must call
+   * {@link unwatchBlockStatus} once it stops showing the status; {@link destroy} terminates
+   * whatever is left.
+   *
+   * The summary survives a re-run of the block: a new render gets a new status context, and the
+   * watch re-seeds itself onto it.
+   */
+  public async watchBlockStatus(
+    blockId: string,
+    mode: BlockActionContextMode = "prod",
+  ): Promise<Computable<BlockStatusSummary>> {
+    if (this.destroyed)
+      throw new Error(`cannot watch the status of ${blockId}: the project is closed`);
+
+    const key = blockStatusKey(blockId, mode);
+    const existing = this.blockStatusWatches.get(key);
+    if (existing !== undefined) {
+      const watch = await existing;
+      watch.retain();
+      return watch.summary;
+    }
+
+    const started = BlockStatusWatch.start(this.env, this.rid, blockId, mode, () =>
+      this.destroyed ? -1 : this.projectTree.changeGeneration,
+    );
+    this.blockStatusWatches.set(key, started);
+    // A failed start must not leave a rejected promise in the map for every later caller. Only
+    // this start's own entry is dropped: by the time a late rejection lands, the key may already
+    // hold a newer, live watch.
+    started.catch(() => {
+      if (this.blockStatusWatches.get(key) === started) this.blockStatusWatches.delete(key);
+    });
+    return (await started).summary;
+  }
+
+  /**
+   * Releases one hold taken by {@link watchBlockStatus}. The tree is terminated when the last
+   * holder lets go, so two callers watching one block do not cut each other off.
+   */
+  public async unwatchBlockStatus(
+    blockId: string,
+    mode: BlockActionContextMode = "prod",
+  ): Promise<void> {
+    const key = blockStatusKey(blockId, mode);
+    const pending = this.blockStatusWatches.get(key);
+    if (pending === undefined) return;
+
+    let watch: BlockStatusWatch;
+    try {
+      watch = await pending;
+    } catch {
+      // The start failed; its own catch handler drops the entry. Nothing to release, and a
+      // panel-close handler must not see that failure again.
+      return;
+    }
+
+    if (await watch.release()) {
+      if (this.blockStatusWatches.get(key) === pending) this.blockStatusWatches.delete(key);
+    }
+  }
+
+  private async terminateBlockStatusWatches(): Promise<void> {
+    const watches = [...this.blockStatusWatches.values()];
+    this.blockStatusWatches.clear();
+    await Promise.all(
+      watches.map(async (watch) => {
+        try {
+          await (await watch).terminate();
+        } catch (e: unknown) {
+          // A watch whose start rejected has nothing to terminate; anything else is logged.
+          this.env.logger.warn(new Error("block status watch termination failed", { cause: e }));
+        }
+      }),
+    );
+  }
+
   public getBlockState(blockId: string): Computable<BlockStateInternalV3> {
     return this.getBlockComputables(blockId).fullState;
   }
@@ -837,6 +927,9 @@ export class Project {
         new Error("Refresh loop had terminated with error before destroy", { cause: e }),
       );
     }
+
+    // terminating the status trees before the project tree: they are seeded from it
+    await this.terminateBlockStatusWatches();
 
     // terminating the synchronized project tree
     try {
@@ -983,6 +1076,11 @@ export function isSnapshotFailsafeError(e: unknown): boolean {
   return false;
 }
 
+/** Key of a status watch in {@link Project.blockStatusWatches}. */
+function blockStatusKey(blockId: string, mode: BlockActionContextMode): string {
+  return `${mode}:${blockId}`;
+}
+
 export function projectTreePruning(logger: MiLogger): PruningFunction {
   return (r: ExtendedResourceData): FieldData[] => {
     if (r.fields.length > 1000)
@@ -998,7 +1096,9 @@ export function projectTreePruning(logger: MiLogger): PruningFunction {
       case "BlockPackCustom":
         return r.fields.filter((f) => f.name !== "template");
       case "UserProject":
-        return r.fields.filter((f) => !f.name.startsWith("__serviceTemplate"));
+        return r.fields.filter(
+          (f) => !f.name.startsWith("__serviceTemplate") && !projectStatusFieldRegex.test(f.name),
+        );
       case "Blob":
         return [];
       default:
@@ -1022,6 +1122,11 @@ export function projectTreeFieldFilter(): Filter {
       treeFilter.and(
         treeFilter.resourceTypeEq("UserProject"),
         treeFilter.fieldNameMatch("^__serviceTemplate"),
+      ),
+      // UserProject: drop the status-context fields, see ProjectStatusFieldPattern
+      treeFilter.and(
+        treeFilter.resourceTypeEq("UserProject"),
+        treeFilter.fieldNameMatch(ProjectStatusFieldPattern),
       ),
       // Blob — pruned entirely
       treeFilter.resourceTypeEq("Blob"),

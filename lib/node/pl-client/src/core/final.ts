@@ -186,6 +186,11 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
     { name: ResourceTypeName.WorkingDirectory },
     "lock acquisition can write its `internal/locks/lockedBy` KV after creation",
   ),
+  never(
+    { name: ResourceTypeName.ActionContext },
+    "every report of its render is a KV write, and reporters keep writing until the render and " +
+      "the work it started have ended; a reader stops by terminating its tree, not by finality",
+  ),
 ]);
 
 /** What the transaction resource cache may keep while an entry stays in its LRU. The cache holds
