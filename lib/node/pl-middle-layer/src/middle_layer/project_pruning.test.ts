@@ -15,6 +15,7 @@ import {
   projectTreeTraverseStopRules,
 } from "./project";
 import { projectsListFieldFilter, ProjectsListTreePruningFunction } from "./project_list";
+import { ProjectStatusFieldNames, ProjectStatusFieldPattern } from "../model/project_model";
 import type { Filter } from "@milaboratories/pl-client";
 import {
   DefaultFinalResourceDataPredicate,
@@ -206,6 +207,47 @@ const projectPruningCases: Array<{
     expected: ["x"],
   },
   {
+    name: "UserProject — status context fields dropped, others kept",
+    typeName: "UserProject",
+    fields: [
+      "block1-prodActionContext",
+      "block1-stagingActionContext",
+      "block1-prodOutput",
+      "block1-blockPack",
+    ],
+    expected: ["block1-prodOutput", "block1-blockPack"],
+  },
+  {
+    name: "UserProject — a block id containing a dash is still matched by suffix",
+    typeName: "UserProject",
+    fields: ["my-block-prodActionContext", "my-block-prodOutput"],
+    expected: ["my-block-prodOutput"],
+  },
+  {
+    name: "UserProject — a block id that is itself a status name is matched by suffix only",
+    typeName: "UserProject",
+    fields: ["prodActionContext-prodActionContext", "prodActionContext-blockPack"],
+    expected: ["prodActionContext-blockPack"],
+  },
+  {
+    name: "UserProject — a bare status name with no block id is kept, the dash is required",
+    typeName: "UserProject",
+    fields: ["prodActionContext", "stagingActionContext"],
+    expected: ["prodActionContext", "stagingActionContext"],
+  },
+  {
+    name: "UserProject — an empty block id still produces a status field",
+    typeName: "UserProject",
+    fields: ["-prodActionContext", "-prodOutput"],
+    expected: ["-prodOutput"],
+  },
+  {
+    name: "another type — a status-looking field is kept, the rule is UserProject's",
+    typeName: "SomeStructure",
+    fields: ["block1-prodActionContext"],
+    expected: ["block1-prodActionContext"],
+  },
+  {
     name: "Blob — all fields dropped",
     typeName: "Blob",
     fields: ["data"],
@@ -218,6 +260,22 @@ const projectPruningCases: Array<{
     expected: ["a", "b", "c"],
   },
 ];
+
+describe("the status field pattern stays portable", () => {
+  // projectTreeFieldFilter's pattern is evaluated by the BACKEND (Go RE2 via expr-lang), while
+  // projectTreePruning evaluates the JS copy. A construct only one engine knows would pass every
+  // parity case above and then fail compileFieldFilter server-side, which stops the project tree
+  // opening at all. Keep the pattern inside the subset both engines share.
+  it("uses no construct RE2 lacks", () => {
+    expect(ProjectStatusFieldPattern).not.toMatch(/\(\?/); // lookaround, named groups
+    expect(ProjectStatusFieldPattern).not.toMatch(/\\[1-9]/); // backreferences
+  });
+
+  it("is derived from the field names, so the two cannot drift", () => {
+    for (const name of ProjectStatusFieldNames)
+      expect(new RegExp(ProjectStatusFieldPattern).test(`block1-${name}`)).toBe(true);
+  });
+});
 
 describe("§4.1 project tree pruning parity", () => {
   const pruner = projectTreePruning(noopLogger);
@@ -645,6 +703,7 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
     { typeName: "Projects", label: "declared never" },
     { typeName: "ClientRoot", label: "declared never" },
     { typeName: "SomeUnknownType", label: "unmatched type" },
+    { typeName: "StatusContext", label: "declared never" },
   ];
 
   for (const { typeName, label } of neverFinalCases) {
