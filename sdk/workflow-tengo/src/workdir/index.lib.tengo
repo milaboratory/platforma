@@ -412,11 +412,10 @@ _fill := func() {
 			self.getField("dataIn").set(smart.createBinaryMapResource(values))
 			self.getField("blobsIn").set(smart.createBlobMapResource(blobs))
 
-			fill := self.lockAndBuild()
-			// the data controller reports the fill of the workdir into the context of this template
-			actionContext.inherit(fill.id)
+			// the data controller reports the fill of the workdir into the context of this template; linked before the lock
+			actionContext.inherit(wd.id)
 
-			return fill.outputs()[_WD_FILL_FIELD_WORKDIR_OUT]
+			return self.lockAndBuild().outputs()[_WD_FILL_FIELD_WORKDIR_OUT]
 		}
 	}))
 

@@ -99,7 +99,8 @@ export ll.toStrict({
 	// true when tx.resourceKeyValueSetAsync is available: a resource metadata set applied after the commit.
 	kvAsync:                  _isEnabled("kvAsync"),
 
-	// true when a resource schema can declare a service field optional, so templates can create and set
-	// it after the inputs are locked (e.g. the "actionContext" link of block action context).
-	optionalServiceField:     _isEnabled("optionalServiceField")
+	// true when a resource schema can declare fields optional, so templates create them in the transaction
+	// that creates the resource, before an explicit lock (e.g. the "actionContext" link of block action
+	// context). "optionalServiceField" is its former name.
+	optionalFieldsInSchemas:  _isEnabled("optionalFieldsInSchemas") || _isEnabled("optionalServiceField")
 })

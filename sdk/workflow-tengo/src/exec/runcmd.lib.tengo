@@ -777,11 +777,10 @@ builder := func(workdir, ...initialState) {
 			argsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_ARGS, json.encode(options.args))
 			runRes.getField(_FIELD_ARGS).set(argsRes)
 
-			runCommand := runRes.lockAndBuild()
-			// the runner reports the run of the command into the context of this template
-			actionContext.inherit(runCommand.id)
+			// the runner reports the run of the command into the context of this template; linked before the lock
+			actionContext.inherit(runRes.id)
 
-			res := oop.inherit(runCommand, {
+			res := oop.inherit(runRes.lockAndBuild(), {
 				"workdir": runRes.outputs()[_FIELD_WORKDIR_OUT],
 				"options": buildOptions
 			})

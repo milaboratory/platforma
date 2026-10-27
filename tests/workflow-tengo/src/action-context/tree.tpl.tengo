@@ -1,4 +1,4 @@
-// tree: creates the action context of its own render, records a transition and renders a child
+// tree: rendered by tree-root with an action context; records a transition and renders a child
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
@@ -8,8 +8,7 @@ smart := import("@platforma-sdk/workflow-tengo:smart")
 self.defineOutputs(["context", "child", "childBaggage"])
 
 self.body(func(inputs) {
-	// the test renders this template without an action context, as the middle layer would create it
-	contextId := self.actionContext().create({ "name": "root", "block-id": "block-1", "run-id": "run-1" })
+	contextId := self.actionContext().id()
 	self.actionContext().record("tpl", "Running", "root body")
 
 	child := render.createEphemeral(assets.importTemplate(":action-context.child"), {})

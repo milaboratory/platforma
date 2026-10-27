@@ -20,7 +20,7 @@
  * Reports (record, setReading) are asynchronous key-value sets on the context of the resource
  * (tx.resourceKeyValueSetAsync): transition/<namespace>/<resource>/<ns> and reading/<namespace>/<resource>/<key>,
  * where <resource> is the decimal resource ID. They are no-ops when the backend lacks the primitives
- * (feats.kvAsync, feats.optionalServiceField), or when the resource has no action context, so templates
+ * (feats.kvAsync, feats.optionalFieldsInSchemas), or when the resource has no action context, so templates
  * can report unconditionally.
  *
  * Namespaces "core", "render", "workdir" and "exec" are reserved for the platform.
@@ -112,7 +112,7 @@ _childFieldName := func() {
 // _enabled is true when the backend has the primitives of block action context: optional service
 // fields for the link and asynchronous key-value sets for the reports.
 _enabled := func() {
-	return feats.kvAsync && feats.optionalServiceField
+	return feats.kvAsync && feats.optionalFieldsInSchemas
 }
 
 _link := func(rid, target) {
@@ -172,6 +172,19 @@ inherit := func(rid) {
 	if own.kind != "none" {
 		_link(rid, own.id)
 	}
+}
+
+/**
+ * Points the "actionContext" field of a resource the current template created to a new action context
+ * with the baggage: the root of a new action context tree. Call it in the transaction that created the
+ * resource, before its inputs are locked. For templates rendered outside a block, e.g. tests and tools.
+ *
+ * @param rid: resource id
+ * @param baggage: map of context baggage
+ * @return id of the new context, or undefined when the backend lacks the primitives
+ */
+createContext := func(rid, baggage) {
+	return _enabled() ? _createLinked(rid, CONTEXT_TYPE, copy(baggage)) : undefined
 }
 
 /**
@@ -246,11 +259,10 @@ of := func(rid) {
  * Returns the action context handle of the current renderer: the handle of `of`, plus
  *   - baggage(): returns a copy of the baggage of the current renderer's action context or sinkhole, e.g.
  *             "run-id", "block-id", "block-pack" and "name"; undefined without either.
- *   - create(...baggage): creates the action context of the current renderer, for a template rendered
- *                      without an action context; baggage is an optional map of context baggage. Returns the id of
- *                      the context. When the renderer already has an action context, it creates nothing and
- *                      returns its context, or undefined for a sinkhole. Returns undefined when the backend
- *                      lacks the primitives (see the module description).
+ *   - id(): returns the id of the current renderer's action context; undefined without one.
+ *
+ * The creator of a render links its action context, in the transaction that creates the render: the
+ * middle layer for the root render of a block, render() for the others. A template cannot link its own.
  */
 self := func() {
 	renderer := ll.getCurrentTemplateRenderer().ID
@@ -263,20 +275,8 @@ self := func() {
 			return _own().kind == "none" ? undefined : _ownBaggage()
 		},
 
-		create: func(...baggage) {
-			if !_enabled() {
-				return undefined
-			}
-			own := _own()
-			if own.kind != "none" {
-				return own.kind == "context" ? own.id : undefined
-			}
-			contextBaggage := len(baggage) > 0 ? baggage[0] : {}
-			contextId := _createLinked(renderer, CONTEXT_TYPE, contextBaggage)
-			vars := _vars()
-			vars.set("own", { kind: "context", id: contextId })
-			vars.set("ownBaggage", copy(contextBaggage))
-			return contextId
+		id: func() {
+			return _own().kind == "context" ? _own().id : undefined
 		}
 	})
 }
@@ -288,6 +288,7 @@ export ll.toStrict({
 	linkOf: linkOf,
 	contextOf: contextOf,
 	createChild: createChild,
+	createContext: createContext,
 	inherit: inherit,
 	sinkhole: sinkhole,
 	of: of,
