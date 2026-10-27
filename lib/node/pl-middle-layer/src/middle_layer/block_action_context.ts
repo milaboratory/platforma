@@ -31,6 +31,11 @@ export type BlockActionReading = {
 
 /** One action context: the action context of one render and the renders it created. */
 export type BlockActionContextNode = {
+  /**
+   * Global resource ID of this ActionContext resource itself, as a decimal string. Not the ID of the
+   * render it describes: that is {@link BlockActionContextNode.resource}. Pass it back to the MCP
+   * tool to fetch this node's subtree.
+   */
   contextId: string;
   /**
    * The render the context belongs to: the resource of its first transition under namespace "render",

@@ -1,4 +1,5 @@
 import type { PlClient, SignedResourceId } from "@milaboratories/pl-client";
+import { ActionContextLinkCapabilities } from "./template/render_block";
 import {
   ContinuePolling,
   field,
@@ -59,12 +60,12 @@ async function contextRender(pl: PlClient, contextRef: SignedResourceId): Promis
   });
 }
 
-test("block action context outlives its render and is replaced on re-render", async () => {
+test("block action context outlives its renderer and is replaced on re-render", async () => {
   //
   // Scenario:
   //  1. Create a project and render production of one block.
   //  2. Wait until the production output is final.
-  //  3. Without optionalServiceField:v1 the render has no action context. Otherwise read the action
+  //  3. Without a link capability the render has no action context. Otherwise read the action
   //     context through prodActionContext and check its baggage.
   //  4. The context has the Running transition of the render. Wait until the render is garbage
   //     collected; the context must stay readable.
@@ -113,7 +114,7 @@ test("block action context outlives its render and is replaced on re-render", as
     });
 
     // 3. Read the action context through prodActionContext and check its baggage.
-    if (!pl.hasCapability("optionalServiceField:v1")) {
+    if (!ActionContextLinkCapabilities.some((c) => pl.hasCapability(c))) {
       expect(await readActionContext(pl, prj, "block1")).toBeUndefined();
       return;
     }

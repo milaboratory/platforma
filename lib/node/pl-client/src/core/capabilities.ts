@@ -37,7 +37,10 @@ export type BackendCapability =
   | "txListGrants:v1" // list grants inside a transaction (batched recipient reads)
   // A schema can declare a service field optional: a client can create and set it after the inputs
   // are locked. Without it, such a field fails the transaction with "inputs are locked".
-  | "optionalServiceField:v1";
+  | "optionalServiceField:v1"
+  // The successor name of optionalServiceField:v1: optional fields declared in resource schemas,
+  // created in the creating transaction before any explicit input lock.
+  | "optionalFieldsInSchemas:v1";
 
 /** True iff `capabilities` advertises the requested token. */
 export function hasCapability(

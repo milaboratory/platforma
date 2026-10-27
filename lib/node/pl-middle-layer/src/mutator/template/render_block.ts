@@ -1,7 +1,7 @@
 import type { AnyRef, PlTransaction, ResourceRef, ResourceType } from "@milaboratories/pl-client";
 import { field, Pl } from "@milaboratories/pl-client";
 import { randomUUID } from "node:crypto";
-import { createRenderTemplate, createRenderTemplateWithResource } from "./render_template";
+import { createRenderTemplateWithResource } from "./render_template";
 
 export const BContextEnd: ResourceType = { name: "BContextEnd", version: "1" };
 export const BContext: ResourceType = { name: "BContext", version: "1" };
@@ -43,32 +43,29 @@ export type BlockActionContextBaggage = {
 export const ActionContextType: ResourceType = { name: "ActionContext", version: "1" };
 
 /**
- * Creates the heavy block render. With `baggage`, it also creates the root action context of the
- * render in the same transaction: an ActionContext resource with the baggage, which the render's
- * optional "actionContext" service field points to. The baggage gets a new random `run-id`: each render
- * is one run of the block, and the contexts the templates create copy it. A backend without
- * `optionalServiceField:v1` cannot take the field after the inputs are locked, so there the render
- * gets no action context.
- * Returns `actionContext`: the context. The render is garbage collected after its outputs resolve, so the
- * caller must hold the context to keep it.
+ * The capabilities under which the backend accepts the "actionContext" link on a render. The
+ * capability is being renamed, so both names count during the transition.
  */
-export function createRenderHeavyBlock(
+export const ActionContextLinkCapabilities = [
+  "optionalServiceField:v1",
+  "optionalFieldsInSchemas:v1",
+] as const;
+
+function backendTakesActionContextLink(tx: PlTransaction): boolean {
+  return ActionContextLinkCapabilities.some((c) => tx.hasCapability(c));
+}
+
+/**
+ * Creates the root action context of a block render: an ActionContext resource carrying the
+ * baggage, with a new random `run-id`, since each render is one run of the block and the contexts
+ * the templates create copy it. Undefined without baggage, or on a backend that cannot take the link.
+ */
+function createBlockActionContext(
   tx: PlTransaction,
-  tpl: AnyRef,
-  inputs: HeavyBlockInputs,
-  baggage?: BlockActionContextBaggage,
-): HeavyBlockOutputs & { actionContext?: ResourceRef } {
-  const { render, outputs } = createRenderTemplateWithResource(
-    tx,
-    tpl,
-    true,
-    inputs,
-    HeavyBlockOutputNames,
-  );
-
-  if (baggage === undefined || !tx.hasCapability("optionalServiceField:v1")) return outputs;
-
-  const context = tx.createEphemeral(
+  baggage: BlockActionContextBaggage | undefined,
+): ResourceRef | undefined {
+  if (baggage === undefined || !backendTakesActionContextLink(tx)) return undefined;
+  return tx.createEphemeral(
     ActionContextType,
     JSON.stringify({
       name: baggage.name,
@@ -77,9 +74,29 @@ export function createRenderHeavyBlock(
       "run-id": randomUUID(),
     }),
   );
-  tx.createField(field(render, "actionContext"), "Service", context);
+}
 
-  return { ...outputs, actionContext: context };
+/**
+ * Creates the heavy block render, and with `baggage` its root action context in the same
+ * transaction. Returns `actionContext`: the render is garbage collected after its outputs resolve,
+ * so the caller must hold the context to keep it.
+ */
+export function createRenderHeavyBlock(
+  tx: PlTransaction,
+  tpl: AnyRef,
+  inputs: HeavyBlockInputs,
+  baggage?: BlockActionContextBaggage,
+): HeavyBlockOutputs & { actionContext?: ResourceRef } {
+  const actionContext = createBlockActionContext(tx, baggage);
+  const { outputs } = createRenderTemplateWithResource(
+    tx,
+    tpl,
+    true,
+    inputs,
+    HeavyBlockOutputNames,
+    actionContext,
+  );
+  return actionContext === undefined ? outputs : { ...outputs, actionContext };
 }
 
 export type LightBlockInputs = {
@@ -95,12 +112,26 @@ export type LightBlockOutput = {
 
 export const LightBlockOutputNames: (keyof LightBlockOutput)[] = ["result"];
 
+/**
+ * Creates the light block render, with the same action context as a heavy one, so template code
+ * of either kind knows its block and run.
+ */
 export function createRenderLightBlock(
   tx: PlTransaction,
   tpl: ResourceRef,
   inputs: LightBlockInputs,
-): LightBlockOutput {
-  return createRenderTemplate(tx, tpl, true, inputs, LightBlockOutputNames);
+  baggage?: BlockActionContextBaggage,
+): LightBlockOutput & { actionContext?: ResourceRef } {
+  const actionContext = createBlockActionContext(tx, baggage);
+  const { outputs } = createRenderTemplateWithResource(
+    tx,
+    tpl,
+    true,
+    inputs,
+    LightBlockOutputNames,
+    actionContext,
+  );
+  return actionContext === undefined ? outputs : { ...outputs, actionContext };
 }
 
 export function createBContextEnd(tx: PlTransaction): ResourceRef {
