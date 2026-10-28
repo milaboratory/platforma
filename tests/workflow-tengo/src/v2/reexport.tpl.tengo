@@ -1,0 +1,22 @@
+// Passes values found upstream on as its own exports: a decoded query hit without data (with its ref
+// key), a value resolved in the body whose data is still a future (it has none upstream), and one
+// resolved in the body that has data.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+
+wf.prepare(func(args) {
+	return { hits: wf.query({ type: "Name", name: "pl7.app/test/y" }) }
+})
+
+wf.body(func(args) {
+	resolved := wf.resolve(args.y)
+	x := wf.resolve(args.x)
+	return {
+		outputs: { hitCount: len(args.hits) },
+		exports: ex.collection({
+			hit: args.hits[0],
+			resolved: { spec: resolved.spec, data: resolved.data },
+			x: { spec: x.spec, data: x.data }
+		})
+	}
+})

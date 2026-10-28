@@ -9,7 +9,14 @@
  *  - `exports`: the node the body returned as `exports` (see `:v2.exports`), set directly; the
  *    project builds the block's context around it.
  *
- * Queries resolve with the BContext/2 family (`:v2.bquery`).
+ * Queries resolve with the BContext/2 family (`:v2.bquery`). A value exported without data reaches
+ * a template in one of these forms, by the path it took:
+ *  - decoded (a `prepare` result, or a sub-template's input): an item `{ref, spec}` with no `data`
+ *    key; the item is a strict map, so test with `maps.containsKey(item, "data")`, not `item.data`;
+ *  - in a PColumnBundle: `data` is undefined;
+ *  - `resolve(ref).data` in the body: a future that resolves to the no-result marker
+ *    (BResolveSingleNoResult); `:v2.exports.collection` and the UI export leave it out;
+ *  - as a table builder input: the table's run fails (see `tableBuilder`).
  *
  * Unstable: this module and every `:v2.*` module may change in any release.
  */
@@ -126,11 +133,12 @@ ref := func(block, workflow, name) {
 }
 
 /**
- * Query the values upstream: see `:workflow.bquery`'s `create` for the query spec.
+ * Query the values upstream: see `:workflow.bquery`'s `create` for the query spec and options.
  *
  * @param spec: query spec
  * @param options: optional query options
- * @return the query result; decodes to a list of {ref, spec, data?}
+ * @return the query result; decodes to a list of {ref, spec, data?}, or to one such item with the
+ *         `first` or `single` option
  */
 query := func(spec, ...options) {
 	return bquery.create(spec, getParentBCtx(), options...)
@@ -145,7 +153,9 @@ _resolveOne := func(r, ...options) {
 }
 
 /**
- * Resolves a ref, or every ref in a structure, into { spec, data } (see `:workflow`'s `resolve`).
+ * Resolves a ref, or every ref in a structure, into { spec, data }. A ref is a map with
+ * `__isRef: true`, or with string `blockId` and `name`; in a structure (maps and arrays, nested),
+ * each ref is replaced by its { spec, data }, and a structure holding no ref panics.
  *
  * @param input: a ref, or any nested structure holding refs
  * @param options: optional query options, applied to every ref
@@ -264,6 +274,7 @@ export ll.toStrict({
 	resolve: resolve,
 	anchoredQuery: anchoredQuery,
 	prepare: prepare,
+	args: args,
 	rawInputs: self.rawInputs,
 	body: body,
 	isProduction: isProduction,

@@ -10,7 +10,7 @@ TestNameProblemAcceptsPlainNames := func() {
 
 TestNameProblemRefusesWhatTheBackendForbids := func() {
 	test.isEqual(rules.nameProblem(""), "is empty")
-	test.isEqual(rules.nameProblem("sum.total"), "contains \".\"")
+	test.isEqual(rules.nameProblem("sum.total"), "contains \".\", which joins the names of a path")
 	test.isEqual(rules.nameProblem("resourceError"), "is reserved by the backend")
 	test.isEqual(rules.nameProblem("recovery/x"), "starts with \"recovery/\", which the backend reserves")
 	test.isEqual(rules.nameProblem(7), "is not a string")
