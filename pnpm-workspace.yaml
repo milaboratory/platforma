@@ -181,8 +181,8 @@ catalog:
   "@typescript/typescript6": 6.0.2
   "tsconfig-paths": ^4.2.0
   "tsup": ~8.3.5
-  "vite": ^8.0.6
-  "@vitejs/plugin-vue": ^6.0.8
+  "vite": ^8.3.5
+  "@vitejs/plugin-vue": ^6.0.10
   "@rollup/plugin-node-resolve": ^16.0.1
   "@rollup/plugin-typescript": ^12.1.4
   "@rollup/plugin-commonjs": ^28.0.6
@@ -191,7 +191,7 @@ catalog:
   "@rollup/plugin-json": ^6.1.0
   "rollup-plugin-node-externals": ^8.0.0
   "rollup-plugin-sourcemaps2": ^0.5.2
-  "vite-plugin-dts": ^5.0.3
+  "vite-plugin-dts": ^5.1.2
   "vite-plugin-lib-inject-css": ^2.2.2
   "vite-plugin-externalize-deps": ^0.10.0
   "vite-plugin-commonjs": ^0.10.4
@@ -212,7 +212,7 @@ catalog:
 
   "husky": ^9.1.7
 
-  "svgo": ^3.3.2
+  "svgo": ^3.3.5
 
   "rimraf": ^6.0.1
 
@@ -221,13 +221,13 @@ catalog:
 
   # Net / MCP
 
-  "@modelcontextprotocol/sdk": ^1.27.1
-  "undici": ~7.16.0
-  "@grpc/grpc-js": ~1.14.4
+  "@modelcontextprotocol/sdk": ^1.32.2
+  "undici": ~7.30.1
+  "@grpc/grpc-js": ~1.14.6
   "@protobuf-ts/grpc-transport": *protobuf-ts
   "@protobuf-ts/runtime": *protobuf-ts
   "@protobuf-ts/runtime-rpc": *protobuf-ts
-  "@aws-sdk/client-s3": &aws-sdk-version 3.859.0
+  "@aws-sdk/client-s3": &aws-sdk-version 3.1157.0
   "@aws-sdk/lib-storage": *aws-sdk-version
   "@aws-sdk/client-ecr-public": *aws-sdk-version
 
@@ -237,7 +237,7 @@ catalog:
   "testcontainers": ^10.18.0
   "utility-types": ^3.11.0
   "denque": ^2.1.0
-  "lru-cache": ^11.2.2
+  "lru-cache": ^11.5.3
   "canonicalize": ~2.1.0
   "long": ^5.3.2
   "mime-types": ^2.1.35
@@ -245,8 +245,8 @@ catalog:
   "jsonc-parser": 3.3.1
 
   "upath": ^2.0.1
-  "tar": ^7.4.3
-  "tar-fs": ^3.0.9
+  "tar": ^7.5.22
+  "tar-fs": ^3.1.3
   "decompress": ^4.2.1
   "readline-sync": ^1.4.10
   "ssh2": ^1.16.0
@@ -264,7 +264,7 @@ catalog:
 
   "@types/archiver": ^6.0.3
 
-  "yaml": ^2.8.0
+  "yaml": ^2.9.1
 
   "winston": ^3.17.0
 
@@ -282,9 +282,9 @@ catalog:
 
   # UI
 
-  "vue": 3.5.24
-  "@vueuse/core": ^13.3.0
-  "@vueuse/integrations": ^13.3.0
+  "vue": 3.5.44
+  "@vueuse/core": ^13.9.0
+  "@vueuse/integrations": ^13.9.0
   "vue-tsc": 3.3.10
   "immer": 11.1.4
   "sass": ~1.83.4
@@ -325,7 +325,7 @@ catalog:
 
   # Test
 
-  "vitest": &vitest-version ^4.1.3
+  "vitest": &vitest-version ^4.1.12
   "@vitest/coverage-istanbul": *vitest-version
   "@faker-js/faker": ^9.2.0
   "jsdom": ^25.0.1
@@ -343,9 +343,6 @@ catalog:
   "@types/mime-types": ^2.1.4
   "@types/tar-fs": ^2.0.4
   "@types/ssh2": ^1.15.5
-
-overrides:
-  "@microsoft/api-extractor>typescript": npm:@typescript/typescript6@6.0.2
 
 minimumReleaseAgeExclude:
   - "@milaboratories/*"

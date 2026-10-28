@@ -7,7 +7,7 @@ import type { PlDataTableSheetsSettings, PlDataTableSheetNormalized } from "./ty
 import { isJsonEqual } from "@milaboratories/helpers";
 
 const state = defineModel<PlDataTableSheetState[]>({
-  default: [],
+  default: () => [],
 });
 const props = defineProps<{
   settings: Readonly<PlDataTableSheetsSettings>;

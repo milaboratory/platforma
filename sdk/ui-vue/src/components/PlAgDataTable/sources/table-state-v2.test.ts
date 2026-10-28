@@ -1,4 +1,4 @@
-// @vitest-environment happy-dom
+// @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import { computed } from "vue";
 
