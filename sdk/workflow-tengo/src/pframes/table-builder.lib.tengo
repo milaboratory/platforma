@@ -5,8 +5,6 @@
  * specs (when workflow context is available). The actual resolution, PFrame assembly,
  * filter-join, and file export run inside the `:pframes.build-table` ephemeral template.
  *
- * Spec: docs/text/work/projects/pframes-api/05-filter-column-api.md (R9–R14).
- *
  * @example
  *   wf := import("@platforma-sdk/workflow-tengo:workflow")
  *   file := import("@platforma-sdk/workflow-tengo:file")
@@ -484,7 +482,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 				primaryEntries = append(primaryEntries, entry)
 			}
 
-			// Run anchored query for column query specs (spec R11):
+			// Run anchored query for column query specs:
 			//   addColumn  → expectSingle   (panics on zero, asserts exactly one).
 			//   addColumns → expectMultiple (returns all matches; empty set OK).
 			singleQueryByIdx := {}
