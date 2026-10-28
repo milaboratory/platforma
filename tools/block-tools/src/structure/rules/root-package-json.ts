@@ -13,9 +13,11 @@ import {
   pruneKeysMatching,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
+  forbidField,
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 import { INITIAL_MODULE_VERSION } from "./shared/initial-version";
+import { NODE_ENGINE, PACKAGE_MANAGER } from "./shared/toolchain";
 
 // `variant=all` builds every variant the software declares — docker-vs-binary is not a per-script
 // choice. `no-software` builds placeholder software for validators.
@@ -71,12 +73,25 @@ export function rootPackageJsonInitial(): Record<string, unknown> {
       shx: "catalog:",
       turbo: "catalog:",
     },
-    packageManager: "pnpm@9.12.0",
   };
 }
 
 export function rootPackageJsonRules(): void {
-  ensureField("packageManager", "pnpm@9.12.0");
+  ensureField("packageManager", PACKAGE_MANAGER);
+  ensureField("engines.node", NODE_ENGINE);
+  removeField(
+    "pnpm",
+    (settings) =>
+      settings === null ||
+      (typeof settings === "object" &&
+        Object.values(settings).every(
+          (value) => typeof value === "object" && value !== null && Object.keys(value).length === 0,
+        )),
+  );
+  forbidField(
+    "pnpm",
+    'pnpm 11+ ignores the "pnpm" field in package.json. Move its settings to pnpm-workspace.yaml: overrides as is, onlyBuiltDependencies as allowBuilds true, neverBuiltDependencies as allowBuilds false.',
+  );
 
   // Root is never published — it carries no `name`; delete any stray one.
   removeField("name");
