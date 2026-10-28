@@ -31,13 +31,15 @@
   "dependencies": {
     "@milaboratories/helpers": "workspace:*",
     "canonicalize": "catalog:",
-    "denque": "catalog:"
+    "denque": "catalog:",
+    "yauzl": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
+    "@types/yauzl": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"

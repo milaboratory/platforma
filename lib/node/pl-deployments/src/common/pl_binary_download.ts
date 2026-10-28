@@ -7,8 +7,7 @@ import { Writable, Readable } from "node:stream";
 import { text } from "node:stream/consumers";
 import * as tar from "tar";
 import type { MiLogger } from "@milaboratories/ts-helpers";
-import { assertNever, fileExists } from "@milaboratories/ts-helpers";
-import decompress from "decompress";
+import { assertNever, extractZip, fileExists } from "@milaboratories/ts-helpers";
 import type { ArchType, OSType } from "./os_and_arch";
 import { newOs, newArch } from "./os_and_arch";
 
@@ -241,7 +240,7 @@ export async function extractArchive(
       break;
 
     case "zip":
-      await decompress(archivePath, dstFolder);
+      await extractZip(archivePath, dstFolder);
       break;
 
     default:

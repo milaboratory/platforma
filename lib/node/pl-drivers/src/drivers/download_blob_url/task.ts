@@ -12,6 +12,7 @@ import {
   CallersCounter,
   createPathAtomically,
   ensureDirExists,
+  extractZip,
   fileExists,
   notEmpty,
 } from "@milaboratories/ts-helpers";
@@ -23,7 +24,6 @@ import {
 } from "../../clients/download";
 import type { ArchiveFormat, FolderURL } from "@milaboratories/pl-model-common";
 import { newFolderURL } from "../urls/url";
-import decompress from "decompress";
 import { assertNever } from "@protobuf-ts/runtime";
 import { resourceIdToString, stringifyWithResourceId } from "@milaboratories/pl-client";
 
@@ -118,21 +118,21 @@ export class DownloadAndUnarchiveTask {
       async (content, size) => {
         this.state!.downloaded = true;
 
-        await createPathAtomically(this.logger, this.path, async (fPath: string) => {
-          this.state!.tempPath = fPath;
+        await createPathAtomically(this.logger, this.path, async (tempPath: string) => {
+          this.state!.tempPath = tempPath;
           this.state!.archiveFormat = this.format;
 
           switch (this.format) {
             case "tar":
-              await fsp.mkdir(fPath); // throws if a directory already exists.
-              const simpleUntar = Writable.toWeb(tar.extract(fPath));
+              await fsp.mkdir(tempPath); // throws if a directory already exists.
+              const simpleUntar = Writable.toWeb(tar.extract(tempPath));
               await content.pipeTo(simpleUntar, { signal });
               return;
 
             case "tgz":
-              await fsp.mkdir(fPath); // throws if a directory already exists.
+              await fsp.mkdir(tempPath); // throws if a directory already exists.
               const gunzip = Transform.toWeb(zlib.createGunzip());
-              const untar = Writable.toWeb(tar.extract(fPath));
+              const untar = Writable.toWeb(tar.extract(tempPath));
 
               await content.pipeThrough(gunzip, { signal }).pipeTo(untar, { signal });
               return;
@@ -140,17 +140,11 @@ export class DownloadAndUnarchiveTask {
             case "zip":
               this.state!.zipPath = this.path + ".zip";
 
-              const f = Writable.toWeb(fs.createWriteStream(this.state!.zipPath));
-              await content.pipeTo(f, { signal });
+              const zipFile = Writable.toWeb(fs.createWriteStream(this.state!.zipPath));
+              await content.pipeTo(zipFile, { signal });
               this.state!.zipPathCreated = true;
 
-              // Without this filter it fails with
-              // "EISDIR: illegal operation on a directory".
-              // The workaround is from
-              // https://github.com/kevva/decompress/issues/46#issuecomment-525048104
-              await decompress(this.state!.zipPath, fPath, {
-                filter: (file) => !file.path.endsWith("/"),
-              });
+              await extractZip(this.state!.zipPath, tempPath, signal);
               this.state!.zipDecompressed = true;
 
               await fs.promises.rm(this.state!.zipPath);
