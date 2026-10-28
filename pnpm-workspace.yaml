@@ -328,7 +328,7 @@ catalog:
   "vitest": &vitest-version ^4.1.12
   "@vitest/coverage-istanbul": *vitest-version
   "@faker-js/faker": ^10.6.0
-  "jsdom": ^25.0.1
+  "jsdom": ^27.4.0
   "@vue/test-utils": ^2.4.6
   "resize-observer-polyfill": ^1.5.1
   "dedent": ^1.7.0
