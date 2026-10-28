@@ -682,7 +682,7 @@ function repairBareLabels(
       // Otherwise only bare members change. They may share a new label only if they shared the old
       // one, and none may take the old label of a bare member that keeps it; repeat until stable.
       const proposed = new Map([...picks].map(([i, p]) => [i, p.label]));
-      for (let changed = true; changed; ) {
+      for (let changed = true; changed;) {
         changed = false;
         const firstOld = new Map<string, string>();
         for (const [i, l] of proposed) {

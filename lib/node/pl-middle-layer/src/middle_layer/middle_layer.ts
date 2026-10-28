@@ -1278,12 +1278,10 @@ export class MiddleLayer {
     if (projectIds.length === 0) throw new Error("shareProjects: no projects given");
 
     const sources: EnvelopeProjectSource[] = await Promise.all(
-      projectIds.map(
-        async (id): Promise<EnvelopeProjectSource> => ({
-          projectId: id,
-          sourceRid: await this.resolveProjectId(id),
-        }),
-      ),
+      projectIds.map(async (id): Promise<EnvelopeProjectSource> => ({
+        projectId: id,
+        sourceRid: await this.resolveProjectId(id),
+      })),
     );
 
     return await this.shareEnvelope("MLShareProjects", options, { writable: true }, (tx, meta) =>
