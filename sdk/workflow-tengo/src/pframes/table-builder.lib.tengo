@@ -157,7 +157,7 @@ isQuerySpec := func(q) {
  * @return TableBuilder with .addPrimary / .addColumn / .addColumns / .setJoinMode /
  *         .setColumnJoin / .setAxisHeader / .cpu / .mem / .cacheInputs / .build
  */
-tableBuilder := func(format, ...ctxArg) {
+tableBuilderWith := func(q, format, ...ctxArg) {
 	ll.assert(!is_undefined(VALID_FORMATS[format]),
 		"format must be one of [tsv, csv, parquet, ndjson], got '%s'", format)
 
@@ -422,14 +422,14 @@ tableBuilder := func(format, ...ctxArg) {
 			resolveColumn := func(value) {
 				if is_string(value) {
 					ref := decodeGlobalPObjectId(value)
-					r := bquery.resolve(ref, _ctx)
+					r := q.resolve(ref, _ctx)
 					return {
 						spec: r.getFutureInputField("spec"),
 						data: r.getFutureInputField("data")
 					}
 				}
 				if isUnresolved(value) {
-					r := bquery.resolve(value, _ctx)
+					r := q.resolve(value, _ctx)
 					return {
 						spec: r.getFutureInputField("spec"),
 						data: r.getFutureInputField("data")
@@ -500,7 +500,7 @@ tableBuilder := func(format, ...ctxArg) {
 					"column query specs require at least one primary added as a PlRef " +
 					"or PrimaryRef (pre-resolved primaries cannot anchor column queries)")
 
-				qResult := bquery.anchoredQuery(_ctx, primaryPlRefs, qMap)
+				qResult := q.anchoredQuery(_ctx, primaryPlRefs, qMap)
 				for idx, c in _columns {
 					if isQuerySpec(c.query) {
 						r := qResult.getResult("q" + string(idx))
@@ -646,6 +646,14 @@ tableBuilder := func(format, ...ctxArg) {
 	return ll.toStrict(self)
 }
 
+/**
+ * `tableBuilderWith(bquery, format, ...ctxArg)`: unresolved inputs resolve with the family-1 query API.
+ */
+tableBuilder := func(format, ...ctxArg) {
+	return tableBuilderWith(bquery, format, ctxArg...)
+}
+
 export ll.toStrict({
-	tableBuilder: tableBuilder
+	tableBuilder: tableBuilder,
+	tableBuilderWith: tableBuilderWith
 })

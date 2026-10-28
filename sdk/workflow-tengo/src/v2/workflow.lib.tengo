@@ -1,0 +1,273 @@
+/*
+ * The entry of a platforma2 block workflow: what a block's main template imports, as V1 blocks
+ * import `:workflow`.
+ *
+ * The project renders the template with the inputs `args` (JSON), `blockId` (a JSON string, the
+ * block's id), `isProduction` (a JSON boolean: true for a run workflow, false for an auto one) and
+ * `context` (the BContext/2 the block reads upstream values from), and reads two outputs:
+ *  - `result`: a map of the body's `outputs`;
+ *  - `exports`: the node the body returned as `exports` (see `:v2.exports`), set directly; the
+ *    project builds the block's context around it.
+ *
+ * Queries resolve with the BContext/2 family (`:v2.bquery`).
+ *
+ * Unstable: this module and every `:v2.*` module may change in any release.
+ */
+
+ll := import(":ll")
+text := import("text")
+smart := import(":smart")
+sets := import(":sets")
+oop := import(":oop")
+bquery := import(":v2.bquery")
+exports := import(":v2.exports")
+resolveUtil := import(":workflow.resolve-util")
+pBundle := import(":pframes.bundle")
+pTableBuilder := import(":pframes.table-builder")
+
+self := import(":tpl")
+
+_RESULT_OUTPUT := "result"
+_EXPORTS_OUTPUT := "exports"
+_INPUT_CONTEXT := "context"
+
+// a field name prefix of the inputs that 'prepare()' requested
+_PREPARED_INPUTS_PREFIX := "prepared/"
+
+// declared for the prepare route, where the framework creates and locks the outputs before the
+// body runs (the template is ephemeral)
+self.defineOutputs([_RESULT_OUTPUT, _EXPORTS_OUTPUT])
+
+/**
+ * Whether this render is a run workflow (true) or an auto one (false).
+ */
+isProduction := func() {
+	return self.rawInputs().isProduction.getValueAsJson() == true
+}
+
+_args := undefined
+
+/**
+ * Block arguments map, with the resources requested by `prepare` added under their names.
+ */
+args := func() {
+	if is_undefined(_args) {
+		inputs := self.inputs()
+
+		_args = inputs.args
+		if is_undefined(_args) || smart.isReference(_args) {
+			ll.panic("Unexpected args type: %v", _args)
+		}
+
+		for k, v in inputs {
+			if text.has_prefix(k, _PREPARED_INPUTS_PREFIX) {
+				name := text.trim_prefix(k, _PREPARED_INPUTS_PREFIX)
+				ll.assert(is_undefined(_args[name]), "prepare name is already in use in inputs: ", name)
+				_args[name] = v
+			}
+		}
+	}
+	return _args
+}
+
+_blockId := undefined
+
+/**
+ * The block id input, a resource holding a JSON string.
+ */
+blockId := func() {
+	if is_undefined(_blockId) {
+		_blockId = self.inputs().blockId
+		ll.assert(!is_undefined(_blockId), "block id is not set in workflow inputs")
+	}
+	return _blockId
+}
+
+/**
+ * The block id as a string.
+ */
+getBlockId := func() {
+	ret := blockId().getDataAsJson()
+	ll.assert(is_string(ret), "block id is not a string")
+	return ret
+}
+
+_parentContext := undefined
+
+/**
+ * The context upstream values are read from: a BContext/2, or a BContextEnd/1 for a block with
+ * nothing upstream.
+ */
+getParentBCtx := func() {
+	if is_undefined(_parentContext) {
+		_parentContext = self.inputs()[_INPUT_CONTEXT]
+		if is_undefined(_parentContext) {
+			ll.panic("parent context is not set in inputs")
+		}
+	}
+	return _parentContext
+}
+
+/**
+ * A ref to a value another block's workflow exports, in the form queried refs decode to.
+ *
+ * @param block: string - the block id
+ * @param workflow: string - the workflow that exports it, e.g. "main"
+ * @param name: string - the value's name: its path in the exported tree joined with "."
+ * @return {__isRef: true, blockId: "<block>/<workflow>", name: name}
+ */
+ref := func(block, workflow, name) {
+	ll.assert(is_string(block) && block != "" && !text.contains(block, "/"),
+		"ref: block must be a non-empty string without \"/\", got %v", block)
+	ll.assert(is_string(workflow) && workflow != "" && !text.contains(workflow, "/"),
+		"ref: workflow must be a non-empty string without \"/\", got %v", workflow)
+	ll.assert(is_string(name) && name != "", "ref: name must be a non-empty string, got %v", name)
+	return { __isRef: true, blockId: block + "/" + workflow, name: name }
+}
+
+/**
+ * Query the values upstream: see `:workflow.bquery`'s `create` for the query spec.
+ *
+ * @param spec: query spec
+ * @param options: optional query options
+ * @return the query result; decodes to a list of {ref, spec, data?}
+ */
+query := func(spec, ...options) {
+	return bquery.create(spec, getParentBCtx(), options...)
+}
+
+_resolveOne := func(r, ...options) {
+	res := bquery.resolve(r, getParentBCtx(), options...)
+	return ll.toStrict(oop.inherit(res, {
+		spec: res.getFutureInputField("spec"),
+		data: res.getFutureInputField("data")
+	}))
+}
+
+/**
+ * Resolves a ref, or every ref in a structure, into { spec, data } (see `:workflow`'s `resolve`).
+ *
+ * @param input: a ref, or any nested structure holding refs
+ * @param options: optional query options, applied to every ref
+ */
+resolve := func(input, ...options) {
+	if ll.isMap(input) && (input.__isRef == true || (is_string(input.blockId) && is_string(input.name))) {
+		return _resolveOne(input, options...)
+	}
+	return resolveUtil.deepResolve(input, func(r) {
+		return _resolveOne(r, options...)
+	})
+}
+
+/**
+ * Resolves anchors and the queries anchored to them in one operation (see `:workflow.bquery`'s
+ * `anchoredQuery`).
+ */
+anchoredQuery := func(anchors, queryMap, ...opts) {
+	return bquery.anchoredQuery(getParentBCtx(), anchors, queryMap, opts...)
+}
+
+/**
+ * Requests resources the body needs resolved: `cb(args)` returns a map of references; the body runs
+ * once they are ready, with each under its name in `args`. Applies to run and auto workflows alike.
+ *
+ * @param cb: func(args) map
+ */
+prepare := func(cb) {
+	self.prepare(func(_) {
+		raw := cb(args())
+		prefixed := {}
+		for k, v in raw {
+			prefixed[_PREPARED_INPUTS_PREFIX + k] = v
+		}
+		return prefixed
+	})
+}
+
+/**
+ * Validate that arguments fulfil the desired schema.
+ */
+validateArgs := func(argsSchema) {
+	self.validateInputs({
+		args: argsSchema
+	})
+}
+
+/**
+ * A PColumnBundle collector resolving upstream (see `:pframes.bundle`'s `createBuilder`).
+ */
+createPBundleBuilder := func() {
+	return pBundle.createBuilderWith(bquery, getParentBCtx())
+}
+
+/**
+ * A table builder resolving its unresolved inputs upstream (see `:pframes.table-builder`).
+ *
+ * @param format: string — "tsv" | "csv" | "parquet" | "ndjson"
+ */
+tableBuilder := func(format) {
+	return pTableBuilder.tableBuilderWith(bquery, format, getParentBCtx())
+}
+
+// The template's outputs must be exactly `result` and `exports`. A module that imports `:workflow`
+// declares `context` too, which nobody would set.
+_assertOwnOutputs := func() {
+	defined := sets.fromSlice(self.definedOutputs())
+	if defined != sets.fromSlice([_RESULT_OUTPUT, _EXPORTS_OUTPUT]) {
+		ll.panic("a v2 workflow's outputs are exactly result and exports, but this template defines %v; " +
+			"is something it imports using @platforma-sdk/workflow-tengo:workflow?", sets.toSlice(defined))
+	}
+}
+
+_buildOutputs := func(results) {
+	ll.assert(ll.isMap(results) && !smart.isReference(results), "expected to see map result from body function")
+	ll.assert(
+		sets.fromSlice(["outputs", "exports"]) == sets.fromMapKeys(results),
+		"expected only outputs and exports in the returned map, found ", sets.fromMapKeys(results)
+	)
+	ll.assert(ll.isMap(results.outputs) && !smart.isReference(results.outputs),
+		"expected a map in outputs returned from workflow.body")
+
+	exports.assertNode(results.exports, "exports")
+
+	resBuilder := smart.mapBuilder()
+	for name, value in results.outputs {
+		ll.assert(!is_undefined(value), "value is undefined for output ", name)
+		resBuilder.add(name, value)
+	}
+
+	tplOutputs := {}
+	tplOutputs[_RESULT_OUTPUT] = resBuilder.build()
+	tplOutputs[_EXPORTS_OUTPUT] = results.exports
+	return tplOutputs
+}
+
+/**
+ * Defines the workflow's body: `fn(args)` returns `{outputs, exports}`, where `outputs` is a map
+ * and `exports` is one node (`:v2.exports`). Runs for run and auto workflows alike.
+ *
+ * @param fn: func(args) {outputs, exports}
+ */
+body := func(fn) {
+	_assertOwnOutputs()
+	self.body(func(_) {
+		return _buildOutputs(fn(args()))
+	})
+}
+
+export ll.toStrict({
+	getParentBCtx: getParentBCtx,
+	query: query,
+	resolve: resolve,
+	anchoredQuery: anchoredQuery,
+	prepare: prepare,
+	rawInputs: self.rawInputs,
+	body: body,
+	isProduction: isProduction,
+	blockId: blockId,
+	getBlockId: getBlockId,
+	ref: ref,
+	validateArgs: validateArgs,
+	createPBundleBuilder: createPBundleBuilder,
+	tableBuilder: tableBuilder
+})
