@@ -12,7 +12,8 @@ env:
 jobs:
   test-k8s-s3:
     name: monorepo tests (k8s)
-    runs-on: hz-ubuntu-dind
+    # Runner pool on the dedicated e2e nodes, next to the backend.
+    runs-on: hz-ubuntu-dind-e2e
     timeout-minutes: 120
     permissions:
       id-token: write
