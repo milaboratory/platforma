@@ -269,7 +269,7 @@ tplTest.concurrent(
 );
 
 tplTest.concurrent(
-  "the table builder over a spec-only primary or a spec-only column: what happens is recorded beside a table built from a column with data",
+  "the table builder fails the table run for a spec-only primary or a spec-only column, beside a table built from a column with data",
   async ({ helper, pl, expect, skip, driverKit }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
@@ -286,28 +286,14 @@ tplTest.concurrent(
     const content = await resultFileContent(control, "table", driverKit, TIMEOUT);
     expect(content.trim().split("\n")).toStrictEqual(["ID\tScore", "A\t10", "B\t20", "C\t30"]);
 
-    const outcome = async (args: Record<string, unknown>, blockId: string) => {
+    const noData = /unsupported p-column data type: \{Name: "BResolveSingleNoResult"/;
+    for (const [args, blockId] of [
+      [{ primary: specOnlyRef }, "table-speconly-primary"],
+      [{ primary: scoreRef, column: specOnlyRef }, "table-speconly-column"],
+    ] as const) {
       const render = await renderWorkflowV2(helper, "v2.table", { blockId, args, upstream });
-      try {
-        return { content: await resultFileContent(render, "table", driverKit, TIMEOUT) };
-      } catch (e) {
-        return { error: e instanceof Error ? e.message : String(e) };
-      }
-    };
-
-    const specOnlyPrimary = await outcome({ primary: specOnlyRef }, "table-speconly-primary");
-    const specOnlyColumn = await outcome(
-      { primary: scoreRef, column: specOnlyRef },
-      "table-speconly-column",
-    );
-    console.log(
-      "table builder, spec-only primary:",
-      JSON.stringify(specOnlyPrimary),
-      "\ntable builder, spec-only column:",
-      JSON.stringify(specOnlyColumn),
-    );
-    expect(specOnlyPrimary).toBeDefined();
-    expect(specOnlyColumn).toBeDefined();
+      await expect(resultFileContent(render, "table", driverKit, TIMEOUT)).rejects.toThrow(noData);
+    }
   },
 );
 
@@ -375,7 +361,7 @@ tplTest.concurrent(
 );
 
 tplTest.concurrent(
-  "a ref a query returned resolves again directly, nested in a map and as a table builder primary",
+  "a ref a query returned resolves again directly, nested in a map and as a table builder primary, and a resolved column made from the hit is a table primary",
   async ({ helper, pl, expect, skip, driverKit }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
@@ -397,6 +383,8 @@ tplTest.concurrent(
     expect(await json(consumer, "nestedData")).toStrictEqual([8, 9]);
     const content = await resultFileContent(consumer, "table", driverKit, TIMEOUT);
     expect(content.trim().split("\n")).toStrictEqual(["ID\tScore", "A\t10", "B\t20", "C\t30"]);
+    const hitContent = await resultFileContent(consumer, "hitTable", driverKit, TIMEOUT);
+    expect(hitContent.trim().split("\n")).toStrictEqual(["ID\tScore", "A\t10", "B\t20", "C\t30"]);
   },
 );
 

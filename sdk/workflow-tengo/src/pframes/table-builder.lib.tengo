@@ -71,7 +71,8 @@ columnJoinOpt := func(opts) {
 	return join
 }
 
-// Returns true if `value` has a `{__isRef: true}` marker anywhere in its structure.
+// Returns true if `value` has a `{__isRef: true}` marker anywhere in its structure, outside resolved
+// columns: a query result `{ref, spec, data}` is resolved even when its `ref` carries the marker.
 // Walks iteratively — the input can be arbitrarily nested (PrimaryRef, arrays, plain maps).
 isUnresolved := func(value) {
 	stack := [value]
@@ -80,6 +81,9 @@ isUnresolved := func(value) {
 		v := stack[si]
 		si += 1
 		if ll.isMap(v) {
+			if maps.containsKey(v, "spec") && maps.containsKey(v, "data") {
+				continue
+			}
 			for k, child in v {
 				if k == "__isRef" && child == true { return true }
 				stack = append(stack, child)

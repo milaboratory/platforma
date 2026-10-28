@@ -29,7 +29,7 @@ nameProblem := func(name) {
 		return "is empty"
 	}
 	if text.contains(name, ".") {
-		return "contains \".\""
+		return "contains \".\", which joins the names of a path"
 	}
 	if name == "resourceError" {
 		return "is reserved by the backend"

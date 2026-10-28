@@ -1,6 +1,7 @@
 // Refs a query returned, used again. prepare() queries the "numbers" values and the "score" values;
 // the body resolves the first numbers hit's ref directly and nested in a map, and builds a table
-// with the first score hit's ref as the primary.
+// with the first score hit's ref as the primary, and another with a resolved column made from the
+// hit, {spec, data, ref}, whose ref carries the ref marker.
 wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
 ex := import("@platforma-sdk/workflow-tengo:v2.exports")
 file := import("@platforma-sdk/workflow-tengo:file")
@@ -23,6 +24,10 @@ wf.body(func(args) {
 	builder := wf.tableBuilder("tsv").addPrimary("main", scoreRef)
 	builder.cacheInputs(1 * times.second)
 
+	hit := args.scoreHits[0]
+	hitBuilder := wf.tableBuilder("tsv").addPrimary("main", { spec: hit.spec, data: hit.data, ref: hit.ref })
+	hitBuilder.cacheInputs(1 * times.second)
+
 	return {
 		outputs: {
 			numbersHitCount: len(args.numbersHits),
@@ -31,7 +36,8 @@ wf.body(func(args) {
 			directSpec: direct.spec,
 			directData: direct.data,
 			nestedData: nested.source.data,
-			table: file.exportFile(builder.build())
+			table: file.exportFile(builder.build()),
+			hitTable: file.exportFile(hitBuilder.build())
 		},
 		exports: ex.collection({})
 	}

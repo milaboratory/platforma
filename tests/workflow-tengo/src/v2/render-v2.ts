@@ -8,6 +8,7 @@ import { field, Pl } from "@milaboratories/pl-middle-layer";
 import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import type { TestRenderResults, TplTestHelpers } from "@platforma-sdk/test";
 import { awaitStableState } from "@platforma-sdk/test";
+import path from "node:path";
 
 /** The backend capability of the BContext/2 family; v2 tests skip without it. */
 export const VALUES_TREE_CAPABILITY = "contextValuesTree:v1";
@@ -130,4 +131,33 @@ export function describeNode(a: PlTreeNodeAccessor | undefined) {
     type: `${a.resourceType.name}/${a.resourceType.version}`,
     fields: a.listInputFields().slice().sort(),
   };
+}
+
+/** The compiled UI-export template as the SDK ships it. */
+const uiExportTemplate = {
+  type: "from-file" as const,
+  // tests run from the package directory, as renderTemplate's own "./dist/..." paths assume
+  path: path.resolve("../../sdk/workflow-tengo/dist/tengo/tpl/v2.export-for-ui.plj.gz"),
+};
+
+export type Tree = { type: string; fields: string[]; children?: Record<string, Tree> };
+
+/** The node's type and fields, descending into folders (std/map/1) only. */
+export function describeTree(a: PlTreeNodeAccessor | undefined): Tree | undefined {
+  const node = describeNode(a);
+  if (a === undefined || node === undefined) return undefined;
+  if (node.type !== "std/map/1") return node;
+  const children: Record<string, Tree> = {};
+  for (const name of node.fields) {
+    const child = describeTree(a.traverse({ field: name, assertFieldType: "Input" }));
+    if (child !== undefined) children[name] = child;
+  }
+  return { ...node, children };
+}
+
+export async function renderUiExport(helper: TplTestHelpers, exports: V2Render) {
+  const ui = await helper.renderTemplate(true, uiExportTemplate, ["result"], (tx) => ({
+    pf: tx.getFutureFieldValue(exports.resultEntry.rid, "exports", "Input"),
+  }));
+  return await awaitStableState(ui.computeOutput("result", (a) => describeTree(a)));
 }
