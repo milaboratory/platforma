@@ -12,7 +12,9 @@ env:
 jobs:
   test-k8s-s3:
     name: monorepo tests (k8s)
-    runs-on: hz-ubuntu-dind
+    # Next to the backend on the Helsinki e2e nodes (cluster-e2e-2; the backend is on
+    # cluster-e2e-1): test->backend gRPC stays sub-millisecond instead of ~40 ms (MILAB-7218).
+    runs-on: hz-ubuntu-dind-e2e
     timeout-minutes: 120
     permissions:
       id-token: write
