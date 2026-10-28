@@ -112,8 +112,8 @@ test("a real action-context tree folds into the summary and follows its reports"
       });
       const waiting = await settled((s) => s.byState.length === 2);
       expect(waiting.byState.map((g) => [g.phrase, g.nodes])).toEqual([
-        ["waiting for a machine", 2],
-        ["staging input files", 1],
+        ["waiting for a machine to start", 2],
+        ["copying input files", 1],
       ]);
       expect(waiting.line).toMatchObject({ state: "WaitingForMachine", nodes: 2, ofNodes: 4 });
 

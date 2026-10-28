@@ -46,20 +46,20 @@ export function isTerminalBlockStatusState(state: BlockStatusState): boolean {
 /**
  * The phrase shown to the user for each state.
  *
- * Taken from the state comments in the spec's `State` enum, which are the only per-state wording
- * the spec gives, trimmed of the `render:` prefixes that address an implementer rather than a
- * scientist. `Completed` is never shown: the line reports live nodes, and a completed node is not
- * one. `Terminated` is shown with the reason the engine reported appended.
+ * Written for scientists, not for whoever runs the backend: no engine terms, and each phrase reads
+ * after a count of tasks ("5 tasks being prepared"), which is how the surface uses it.
+ * `Completed` is never shown: the line reports live nodes, and a completed node is not one.
+ * `Terminated` is shown with the reason the engine reported appended.
  */
 export const blockStatusPhrases: Record<BlockStatusState, string> = {
   WaitingForInputs: "waiting for inputs",
-  Running: "evaluating the workflow",
-  WaitingWorkdirGate: "queued behind the work-dir limit",
-  WaitingSubmissionGate: "held against a compute quota",
-  PopulatingWorkdir: "staging input files",
-  CollectingOutputs: "collecting result files",
-  WaitingForScheduler: "queued on the engine",
-  WaitingForMachine: "waiting for a machine",
+  Running: "being prepared",
+  WaitingWorkdirGate: "waiting to set up",
+  WaitingSubmissionGate: "waiting for compute quota",
+  PopulatingWorkdir: "copying input files",
+  CollectingOutputs: "saving results",
+  WaitingForScheduler: "queued for a machine",
+  WaitingForMachine: "waiting for a machine to start",
   Terminated: "failed",
   Completed: "",
 };
@@ -69,7 +69,12 @@ export const blockStatusPhrases: Record<BlockStatusState, string> = {
  * machine. `Running` from the render itself means only that template code is being evaluated, and
  * keeps {@link blockStatusPhrases}.
  */
-export const BlockStatusOnMachinePhrase = "running on a machine";
+export const BlockStatusOnMachinePhrase = "computing";
+
+/** What one live node is, to the user: "1 task", "5 tasks". */
+export function blockStatusTaskCount(nodes: number): string {
+  return `${nodes} ${nodes === 1 ? "task" : "tasks"}`;
+}
 
 /**
  * How long a state must have held before the surface shows it, in milliseconds.
