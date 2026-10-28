@@ -15,8 +15,10 @@ COLLECTION_TYPE := { Name: "PFrame", Version: "1" }
 /**
  * Why a folder entry or item name is not allowed, or undefined when it is.
  *
- * A name is a non-empty string without "."; the backend reserves `resourceError` and names starting
- * with `recovery/` for its own fields.
+ * A name is a non-empty string without ".". The backend reserves the field name `resourceError` and
+ * field names starting with `recovery/`; these constructors refuse both forms for folder entries and
+ * collection items alike, though the backend would accept an item named `resourceError` (its fields
+ * are `resourceError.spec` and `resourceError.data`).
  *
  * @param name: any
  * @return string|undefined

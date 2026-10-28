@@ -433,7 +433,7 @@ tplTest.concurrent(
       query1: Described[];
       query2: Described[];
     };
-    // family 1 decodes as it always did: no __isRef on the ref
+    // a family-1 ref carries no __isRef
     expect(decoded.resolve1.ref).toStrictEqual({ blockId: "families-v1-both", name: "e1" });
     expect(decoded.resolve1.data).toStrictEqual({ state: "value", value: ["a", "b"] });
     expect(decoded.resolve2).toMatchObject({

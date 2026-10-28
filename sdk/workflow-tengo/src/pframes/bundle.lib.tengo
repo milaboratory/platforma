@@ -402,8 +402,8 @@ pColumnBundleUnmarshaller := func() {
 
 				result := bResultUnmarshaller.parse(value.getValue(), parser)
 
-				// a family-2 result has no `data` key for an item without data; every other value
-				// (including no result at all) is read as before
+				// a family-2 result has no `data` key for an item without data; for every other value,
+				// including an undefined result, the data is `r.data`
 				dataOf := func(r) {
 					if !ll.isMap(r) || maps.containsKey(r, "data") ||
 						value.getValue().get("ops").getDataAsJson().family != 2 {

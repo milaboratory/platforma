@@ -51,7 +51,7 @@ tplTest.concurrent.for([
   { template: "v2.guard-prepare", args: { never: false } },
   { template: "v2.guard-prepare", args: { never: true } },
 ])(
-  "a template that also imports the V1 workflow entry is stopped ($template, $args)",
+  "a template that also imports the V1 workflow entry fails: its outputs are not exactly result and exports ($template, $args)",
   async ({ template, args }, { helper, pl, expect, skip }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 

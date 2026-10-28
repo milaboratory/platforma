@@ -1,10 +1,12 @@
 /*
  * The entry of a platforma2 block workflow: what a block's main template imports, as V1 blocks
- * import `:workflow`.
+ * import `:workflow`. platforma2 is the next block runtime: a block exports a typed values tree
+ * (`:v2.exports`), and downstream blocks read it through a chain of BContext/2 contexts.
  *
  * The project renders the template with the inputs `args` (JSON), `blockId` (a JSON string, the
  * block's id), `isProduction` (a JSON boolean: true for a run workflow, false for an auto one) and
- * `context` (the BContext/2 the block reads upstream values from), and reads two outputs:
+ * `context` (the BContext/2 the block reads upstream values from, or a BContextEnd/1 when nothing is
+ * upstream), and reads two outputs:
  *  - `result`: a map of the body's `outputs`;
  *  - `exports`: the node the body returned as `exports` (see `:v2.exports`), set directly; the
  *    project builds the block's context around it.
@@ -15,7 +17,9 @@
  *    key; the item is a strict map, so test with `maps.containsKey(item, "data")`, not `item.data`;
  *  - in a PColumnBundle: `data` is undefined;
  *  - `resolve(ref).data` in the body: a future that resolves to the no-result marker
- *    (BResolveSingleNoResult); `:v2.exports.collection` and the UI export leave it out;
+ *    (BResolveSingleNoResult/1); `:v2.exports.collection` leaves it out when it has already resolved
+ *    there, and the UI export leaves out data that has resolved there by the time the collection's
+ *    specs are ready;
  *  - as a table builder input: the table's run fails (see `tableBuilder`).
  *
  * Unstable: this module and every `:v2.*` module may change in any release.
@@ -137,8 +141,9 @@ ref := func(block, workflow, name) {
  *
  * @param spec: query spec
  * @param options: optional query options
- * @return the query result; decodes to a list of {ref, spec, data?}, or to one such item with the
- *         `first` or `single` option
+ * @return the query result; decodes to a list of {ref, spec, data?} by default; with `single`, to
+ *         its one item (more or fewer is an error); with `first`, to one item, or undefined when
+ *         nothing matches and `errIfMissing` is not set
  */
 query := func(spec, ...options) {
 	return bquery.create(spec, getParentBCtx(), options...)
@@ -153,9 +158,10 @@ _resolveOne := func(r, ...options) {
 }
 
 /**
- * Resolves a ref, or every ref in a structure, into { spec, data }. A ref is a map with
- * `__isRef: true`, or with string `blockId` and `name`; in a structure (maps and arrays, nested),
- * each ref is replaced by its { spec, data }, and a structure holding no ref panics.
+ * Resolves a ref, or every ref in a structure, into { spec, data }. At the top level, a ref is a map
+ * with `__isRef: true`, or with string `blockId` and `name`; in a structure (maps and arrays,
+ * nested), each map with `__isRef: true` is replaced by its { spec, data }, and a structure holding no
+ * such ref panics.
  *
  * @param input: a ref, or any nested structure holding refs
  * @param options: optional query options, applied to every ref
@@ -212,9 +218,10 @@ createPBundleBuilder := func() {
 }
 
 /**
- * A table builder resolving its unresolved inputs upstream (see `:pframes.table-builder`). Every
- * column needs data: a value exported without data, as a primary or a column, fails the table's run
- * ("unsupported p-column data type: BResolveSingleNoResult").
+ * A table builder resolving its unresolved inputs upstream (see `:pframes.table-builder`). Inputs
+ * are refs, or resolved columns `{spec, data}`. Every column needs data: a value exported without
+ * data fails the table's run — given as a ref, with "unsupported p-column data type" naming
+ * BResolveSingleNoResult; reached through a query, earlier, while the columns are assembled.
  *
  * @param format: string — "tsv" | "csv" | "parquet" | "ndjson"
  */
@@ -223,7 +230,8 @@ tableBuilder := func(format) {
 }
 
 // The template's outputs must be exactly `result` and `exports`. A module that imports `:workflow`
-// declares `context` too, which nobody would set.
+// declares the output `context` too; on the prepare route the framework creates every declared
+// output, and `context` would never be set, so the render would never finish.
 _assertOwnOutputs := func() {
 	defined := sets.fromSlice(self.definedOutputs())
 	if defined != sets.fromSlice([_RESULT_OUTPUT, _EXPORTS_OUTPUT]) {
