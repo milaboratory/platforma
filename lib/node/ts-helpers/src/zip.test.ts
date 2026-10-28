@@ -200,6 +200,16 @@ describe("extractZip", () => {
     expect(await fsp.readdir(target)).toEqual(["self"]);
   });
 
+  test("rejects a duplicate file entry without replacing the first file", async () => {
+    await expect(
+      extract([
+        { name: "same.txt", mode: regular | 0o644, content: "first" },
+        { name: "same.txt", mode: regular | 0o644, content: "second" },
+      ]),
+    ).rejects.toThrow("EEXIST");
+    expect(await fsp.readFile(path.join(target, "same.txt"), "utf8")).toBe("first");
+  });
+
   test("stores a symlink target without inner ../ segments", async () => {
     await extract([
       { name: "link", mode: symlink | 0o777, content: "x/.." },
