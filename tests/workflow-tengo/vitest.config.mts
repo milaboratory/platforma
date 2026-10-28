@@ -8,7 +8,9 @@ export default defineConfig(
       setupFiles: ["./vitest/setup.worker-jitter.ts"],
       testTimeout: 15000,
       maxConcurrency: 1,
-      maxWorkers: 2,
+      // PL_TEST_MAX_WORKERS lets a CI backend with spare job capacity run more
+      // test files at once; 2 when unset.
+      maxWorkers: Number(process.env.PL_TEST_MAX_WORKERS) || 2,
       retry: 2,
       reporters: ["verbose"],
       sequence: {
