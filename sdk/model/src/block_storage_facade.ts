@@ -158,7 +158,9 @@ export interface BlockStorageFacade {
    * @param currentStorageJson - Current storage as JSON string (or undefined for new blocks)
    * @returns Migration result - either error or success with new storage
    */
-  [BlockStorageFacadeCallbacks.StorageMigrate]: (currentStorageJson: StringifiedJson | undefined) =>
+  [BlockStorageFacadeCallbacks.StorageMigrate]: (
+    currentStorageJson: StringifiedJson | undefined,
+  ) =>
     | { error: string }
     | {
         error?: undefined;
