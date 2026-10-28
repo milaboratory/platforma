@@ -275,8 +275,8 @@ catalog:
   # before SDK starts requiring a newer version of desktop.
   "@milaboratories/pframes-rs-node": 1.2.0
   "@milaboratories/pframes-rs-wasip2": 1.2.0
-  "@bytecodealliance/jco-transpile": ^0.6.3
-  "@bytecodealliance/preview2-shim": ^0.20.1
+  "@bytecodealliance/jco-transpile": ^0.20.0
+  "@bytecodealliance/preview2-shim": ^0.30.0
 
   "quickjs-emscripten": 0.32.0
 
