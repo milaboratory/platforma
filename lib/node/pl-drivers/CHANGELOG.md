@@ -1,5 +1,11 @@
 # @milaboratories/pl-drivers
 
+## 1.16.36
+
+### Patch Changes
+
+- 1472a5b: Trim the download, downloadToURL and frontend cache dirs to their size limits on startup, so files from earlier sessions no longer pile up.
+
 ## 1.16.35
 
 ### Patch Changes

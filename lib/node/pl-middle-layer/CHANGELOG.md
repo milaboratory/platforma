@@ -1,5 +1,13 @@
 # @milaboratories/pl-middle-layer
 
+## 1.74.11
+
+### Patch Changes
+
+- 1472a5b: Trim the download, downloadToURL and frontend cache dirs to their size limits on startup, so files from earlier sessions no longer pile up.
+- Updated dependencies [1472a5b]
+  - @milaboratories/pl-drivers@1.16.36
+
 ## 1.74.10
 
 ### Patch Changes
