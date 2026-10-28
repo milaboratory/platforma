@@ -34,7 +34,7 @@ describe("foldBlockStatus", () => {
       {
         state: "PopulatingWorkdir",
         onMachine: false,
-        phrase: "staging input files",
+        phrase: "copying input files",
         nodes: 1,
         since: ms(0),
         detail: undefined,
@@ -77,7 +77,7 @@ describe("the state holding a node", () => {
     expect(summary.line).toMatchObject({
       state: "Running",
       onMachine: true,
-      phrase: "running on a machine",
+      phrase: "computing",
     });
   });
 
@@ -98,8 +98,8 @@ describe("the state holding a node", () => {
     );
 
     expect(summary.byState.map((g) => [g.phrase, g.nodes])).toEqual([
-      ["evaluating the workflow", 2],
-      ["running on a machine", 1],
+      ["being prepared", 2],
+      ["computing", 1],
     ]);
   });
 
