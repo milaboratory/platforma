@@ -1,4 +1,9 @@
-import type { AnyRef, PlClient, PlTransaction } from "@milaboratories/pl-middle-layer";
+import type {
+  AnyRef,
+  MiddleLayerDriverKit,
+  PlClient,
+  PlTransaction,
+} from "@milaboratories/pl-middle-layer";
 import { field, Pl } from "@milaboratories/pl-middle-layer";
 import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import type { TestRenderResults, TplTestHelpers } from "@platforma-sdk/test";
@@ -70,13 +75,37 @@ export async function renderWorkflowV2(
   }));
 }
 
-/** The JSON of `result`'s entry `name`, once stable. */
-export async function resultJson(render: V2Render, name: string): Promise<unknown> {
+/** The JSON of `result`'s entry `name`, once stable. Works for any render with a `result` output. */
+export async function resultJson(
+  render: TestRenderResults<"result">,
+  name: string,
+  timeout: number = 5000,
+): Promise<unknown> {
   return await awaitStableState(
     render.computeOutput("result", (a) =>
       a?.traverse({ field: name, assertFieldType: "Input" })?.getDataAsJson(),
     ),
+    timeout,
   );
+}
+
+/** The content of the file exported as `result`'s entry `name` (a `file.exportFile` handle). */
+export async function resultFileContent(
+  render: TestRenderResults<"result">,
+  name: string,
+  driverKit: MiddleLayerDriverKit,
+  timeout: number = 60_000,
+): Promise<string> {
+  const handle = await awaitStableState(
+    render.computeOutput("result", (a, ctx) => {
+      const file = a?.traverse({ field: name, assertFieldType: "Input" });
+      if (file === undefined) return undefined;
+      return driverKit.blobDriver.getOnDemandBlob(file.persist(), ctx).handle;
+    }),
+    timeout,
+  );
+  if (handle === undefined) throw new Error(`no file in result entry ${name}`);
+  return (await driverKit.blobDriver.getContent(handle)).toString();
 }
 
 /** Reads the node at `path` (field names, each an Input) under the `exports` root, once stable. */
