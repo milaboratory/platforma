@@ -141,9 +141,9 @@ ref := func(block, workflow, name) {
  *
  * @param spec: query spec
  * @param options: optional query options
- * @return the query result; decodes to a list of {ref, spec, data?} by default; with `single`, to
- *         its one item (more or fewer is an error); with `first`, to one item, or undefined when
- *         nothing matches and `errIfMissing` is not set
+ * @return the query result; decodes to a list of {ref, spec, data?} by default; with `first`, to
+ *         one item, or undefined when nothing matches and `errIfMissing` is not set; otherwise, with
+ *         `single`, to its one item (more or fewer is an error)
  */
 query := func(spec, ...options) {
 	return bquery.create(spec, getParentBCtx(), options...)
@@ -219,9 +219,10 @@ createPBundleBuilder := func() {
 
 /**
  * A table builder resolving its unresolved inputs upstream (see `:pframes.table-builder`). Inputs
- * are refs, or resolved columns `{spec, data}`. Every column needs data: a value exported without
- * data fails the table's run — given as a ref, with "unsupported p-column data type" naming
- * BResolveSingleNoResult; reached through a query, earlier, while the columns are assembled.
+ * are refs, resolved columns `{spec, data}` and column query specs. Every column needs data: a value
+ * exported without data, reached through a ref or a single-match query, fails the table's run with
+ * "unsupported p-column data type" naming BResolveSingleNoResult; reached as an item of a
+ * multi-match query, it fails earlier, while the columns are assembled.
  *
  * @param format: string — "tsv" | "csv" | "parquet" | "ndjson"
  */
