@@ -28,7 +28,6 @@
   "dependencies": {
     "@milaboratories/pl-deployments": "workspace:*",
     "commander": "catalog:",
-    "decompress": "catalog:",
     "readline-sync": "catalog:",
     "tar": "catalog:",
     "winston": "catalog:",
@@ -39,7 +38,6 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@types/decompress": "catalog:",
     "@types/node": "catalog:",
     "@types/readline-sync": "catalog:",
     "typescript": "catalog:"
