@@ -1,68 +1,9 @@
 import { describe, expect, it } from "vitest";
+import type { BlockStatusState } from "@milaboratories/pl-model-middle-layer";
 import type { ActionContextNode } from "./block_status_fold";
 import { foldBlockStatus } from "./block_status_fold";
-import type { BlockStatusState } from "@milaboratories/pl-model-middle-layer";
-
-// ── Fixtures ─────────────────────────────────────────────────────────────────
-
-/** One transition, written the way the reporters write it. */
-type TransitionFixture = {
-  namespace: string;
-  /** The resource that reported. Defaults to the context's own render. */
-  reporter?: string;
-  /** Milliseconds since the epoch; the key carries nanoseconds. */
-  atMs: number;
-  state: BlockStatusState | string;
-  detail?: string;
-  reason?: string;
-};
-
-type ContextFixture = {
-  id: string;
-  data?: Record<string, unknown>;
-  transitions?: TransitionFixture[];
-  children?: ContextFixture[];
-  /** Extra KV entries: readings, and malformed input. */
-  kv?: Record<string, string>;
-};
-
-/** Builds an {@link ActionContextNode} over a fixture, with the backend's key layout. */
-function context(fixture: ContextFixture): ActionContextNode {
-  const kv = new Map<string, string>(Object.entries(fixture.kv ?? {}));
-  for (const t of fixture.transitions ?? []) {
-    const reporter = t.reporter ?? fixture.id;
-    const ns = String(BigInt(t.atMs) * 1_000_000n);
-    kv.set(
-      `transition/${t.namespace}/${reporter}/${ns}`,
-      JSON.stringify({ state: t.state, detail: t.detail ?? "", reason: t.reason ?? "" }),
-    );
-  }
-
-  const children = (fixture.children ?? []).map(context);
-  const childFields = new Map(children.map((c) => [`child/${c.id}`, c]));
-
-  return {
-    id: fixture.id,
-    getData: () => fixture.data,
-    listKeyValuesAsString: (prefix: string) =>
-      [...kv.entries()]
-        .filter(([key]) => key.startsWith(prefix))
-        .map(([key, value]) => ({ key, value })),
-    listFields: () => [...childFields.keys()],
-    traverse: (field: string) => childFields.get(field),
-  };
-}
-
-const t0 = Date.UTC(2026, 9, 27, 12, 0, 0);
-const ms = (offset: number) => t0 + offset;
-
-/** The render's own end, as the workflow controller records it. */
-const renderCompleted = (atMs: number, detail?: string): TransitionFixture => ({
-  namespace: "render",
-  atMs,
-  state: "Completed",
-  detail,
-});
+import type { ContextFixture } from "./block_status_test_utils";
+import { context, ms, renderCompleted } from "./block_status_test_utils";
 
 // ── The shape of the summary ─────────────────────────────────────────────────
 
@@ -93,7 +34,7 @@ describe("foldBlockStatus", () => {
       {
         state: "PopulatingWorkdir",
         onMachine: false,
-        phrase: "staging input files",
+        phrase: "copying input files",
         nodes: 1,
         since: ms(0),
         detail: undefined,
@@ -136,7 +77,7 @@ describe("the state holding a node", () => {
     expect(summary.line).toMatchObject({
       state: "Running",
       onMachine: true,
-      phrase: "running on a machine",
+      phrase: "computing",
     });
   });
 
@@ -157,8 +98,8 @@ describe("the state holding a node", () => {
     );
 
     expect(summary.byState.map((g) => [g.phrase, g.nodes])).toEqual([
-      ["evaluating the workflow", 2],
-      ["running on a machine", 1],
+      ["being prepared", 2],
+      ["computing", 1],
     ]);
   });
 
