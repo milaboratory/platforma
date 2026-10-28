@@ -21,6 +21,13 @@ self.body(func(inputs) {
 	queryMap := inputs.request.queryMap
     opts := inputs.request.opts
 
+    // the resolver family the caller asked for (bquery.forFamily); absent means family 1
+    q := bquery
+    family := inputs.request.family
+    if !is_undefined(family) {
+        q = bquery.forFamily(family)
+    }
+
     QUERY_CONFIG_SCHEMA := { any: {
         `__options__,closed`: true,
         `query`: model.AP_COLUMN_SELECTOR_SCHEMA,
@@ -296,7 +303,11 @@ self.body(func(inputs) {
             queryOps.single = false
         }
 
-        queryResult := bquery.create(querySpec, ctx, queryOps)
+        if needsClientFilter && family == 2 {
+            ll.panic("context-domain queries need a backend with contextDomainQuery for the v2 query API (item '%s')", queryId)
+        }
+
+        queryResult := q.create(querySpec, ctx, queryOps)
 
         if needsClientFilter {
             // Extract axis-level contextDomain for filtering.

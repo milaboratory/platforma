@@ -1,0 +1,104 @@
+import type { AnyRef, PlClient, PlTransaction } from "@milaboratories/pl-middle-layer";
+import { field, Pl } from "@milaboratories/pl-middle-layer";
+import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
+import type { TestRenderResults, TplTestHelpers } from "@platforma-sdk/test";
+import { awaitStableState } from "@platforma-sdk/test";
+
+/** The backend capability of the BContext/2 family; v2 tests skip without it. */
+export const VALUES_TREE_CAPABILITY = "contextValuesTree:v1";
+
+export function hasValuesTree(pl: PlClient): boolean {
+  return pl.serverInfo.capabilities?.includes(VALUES_TREE_CAPABILITY) ?? false;
+}
+
+export type V2Render = TestRenderResults<"result" | "exports">;
+
+/** A block whose rendered exports a downstream render reads, through a BContext/2 it is linked into. */
+export type Upstream = {
+  readonly block: string;
+  readonly workflow?: string;
+  readonly render: V2Render;
+};
+
+export type RenderV2Options = {
+  readonly blockId: string;
+  readonly args?: Record<string, unknown>;
+  /** true for a run workflow (the default), false for an auto one */
+  readonly isProduction?: boolean;
+  /** contexts from the nearest to the farthest; none gives a chain of one BContextEnd/1 */
+  readonly upstream?: readonly Upstream[];
+};
+
+const BContext2 = { name: "BContext", version: "2" };
+const BContextEnd = { name: "BContextEnd", version: "1" };
+
+/** A chain as the project builds it: one input-locked BContext/2 per upstream block, `id` the
+ *  JSON string "<block>/<workflow>", `parent/000` the next context, `values` the block's `exports`. */
+export function contextChain(tx: PlTransaction, upstream: readonly Upstream[]): AnyRef {
+  let chain: AnyRef = tx.createEphemeral(BContextEnd);
+  tx.lock(chain);
+  for (const u of [...upstream].reverse()) {
+    const ctx = tx.createEphemeral(BContext2);
+    tx.createField(
+      field(ctx, "id"),
+      "Input",
+      tx.createValue(Pl.JsonString, JSON.stringify(`${u.block}/${u.workflow ?? "main"}`)),
+    );
+    tx.createField(field(ctx, "parent/000"), "Input", chain);
+    tx.createField(
+      field(ctx, "values"),
+      "Input",
+      tx.getFutureFieldValue(u.render.resultEntry.rid, "exports", "Input"),
+    );
+    tx.lockInputs(ctx);
+    chain = ctx;
+  }
+  return chain;
+}
+
+/** Renders a v2 workflow template with inputs typed as the project types them. */
+export async function renderWorkflowV2(
+  helper: TplTestHelpers,
+  template: string,
+  ops: RenderV2Options,
+): Promise<V2Render> {
+  return await helper.renderTemplate(true, template, ["result", "exports"], (tx) => ({
+    args: tx.createValue(Pl.JsonObject, JSON.stringify(ops.args ?? {})),
+    blockId: tx.createValue(Pl.JsonString, JSON.stringify(ops.blockId)),
+    isProduction: tx.createValue(Pl.JsonBool, JSON.stringify(ops.isProduction ?? true)),
+    context: contextChain(tx, ops.upstream ?? []),
+  }));
+}
+
+/** The JSON of `result`'s entry `name`, once stable. */
+export async function resultJson(render: V2Render, name: string): Promise<unknown> {
+  return await awaitStableState(
+    render.computeOutput("result", (a) =>
+      a?.traverse({ field: name, assertFieldType: "Input" })?.getDataAsJson(),
+    ),
+  );
+}
+
+/** Reads the node at `path` (field names, each an Input) under the `exports` root, once stable. */
+export async function exportsAt<R>(
+  render: V2Render,
+  path: readonly string[],
+  read: (a: PlTreeNodeAccessor | undefined) => R,
+): Promise<R | undefined> {
+  return await awaitStableState(
+    render.computeOutput("exports", (a) => {
+      let node = a;
+      for (const name of path) node = node?.traverse({ field: name, assertFieldType: "Input" });
+      return read(node);
+    }),
+  );
+}
+
+/** The type of a node as "Name/Version" and its input field names, sorted. */
+export function describeNode(a: PlTreeNodeAccessor | undefined) {
+  if (a === undefined) return undefined;
+  return {
+    type: `${a.resourceType.name}/${a.resourceType.version}`,
+    fields: a.listInputFields().slice().sort(),
+  };
+}

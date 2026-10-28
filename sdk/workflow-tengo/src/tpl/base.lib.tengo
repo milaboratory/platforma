@@ -739,6 +739,7 @@ tpl := func(ops) {
 				hasInput                : self.hasInput,
 				inputs                  : self.inputs,
 				defineOutputs           : self.defineOutputs,
+				definedOutputs          : func() { return copy(self.definedOutputs) },
 				setOutputCache			: self.setOutputCache,
 				setOutputCacheMillis	: self.setOutputCacheMillis,
 				setOutputCacheSeconds	: self.setOutputCacheSeconds,

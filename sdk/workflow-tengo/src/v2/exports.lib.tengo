@@ -1,0 +1,141 @@
+/*
+ * Typed exports of a platforma2 workflow: the values tree a block exports is built from nodes, each
+ * declared where it is made.
+ *
+ * A node is a folder (`std/map/1`, built by `folder`) or a collection (`PFrame/1`, built by
+ * `collection` or by `pframes.pFrameBuilder()`), or a field that will hold one, such as a
+ * sub-template's output. The backend decides what a node is by its resource type alone. Nothing
+ * here converts a value into a node: a plain map, JSON or a resource of another type is refused at
+ * once.
+ */
+
+ll := import(":ll")
+smart := import(":smart")
+maps := import(":maps")
+constants := import(":constants")
+bobject := import(":workflow.bobject")
+rules := import(":v2.node-rules")
+
+_CONSTRUCTORS_HINT := "build it with v2.exports.folder or v2.exports.collection (or pframes.pFrameBuilder)"
+
+// What can be seen of a value without waiting for it (see node-rules.refusal).
+_see := func(value) {
+	if smart.isField(value) {
+		info := value.info()
+		if info.IsSet && info.Value != 0 {
+			return { kind: "resource", type: value.getValue().info().Type }
+		}
+		return { kind: "pending" }
+	}
+	if smart.isResource(value) {
+		return { kind: "resource", type: value.info().Type }
+	}
+	if ll.isMap(value) {
+		return { kind: "map", keys: maps.getKeys(value) }
+	}
+	return { kind: "other", typeName: type_name(value) }
+}
+
+/**
+ * Panics unless `value` is a node: a resource of type exactly `std/map/1` or `PFrame/1`, or a field.
+ * A field is accepted without waiting for it; when it already holds a resource, that resource is
+ * checked.
+ *
+ * @param value: any
+ * @param what: string - names the value in the message, e.g. "exports" or "folder entry \"pf\""
+ */
+assertNode := func(value, what) {
+	got := rules.refusal(_see(value))
+	if !is_undefined(got) {
+		ll.panic("%s must be a typed node — a folder or a collection — or a reference to one; got %s; %s",
+			what, got, _CONSTRUCTORS_HINT)
+	}
+}
+
+/**
+ * A folder: a `std/map/1` whose entries are nodes, inputs and outputs locked.
+ *
+ * @param entries: map[string]node - entry name to node; names are non-empty, without ".", not
+ *                 `resourceError` and not starting with `recovery/`
+ * @return smart.Resource
+ */
+folder := func(entries) {
+	ll.assert(ll.isMap(entries) && !smart.isReference(entries),
+		"v2.exports.folder: expected a map of entry name to node, got %v", entries)
+
+	b := smart.mapBuilder()
+	for name in maps.getKeys(entries) {
+		rules.assertName(name, "folder entry name")
+		node := entries[name]
+		if !smart.isReference(node) && ll.isMap(node) && maps.containsKey(node, "spec") {
+			ll.panic("folder entry %q is not a node; items belong in a collection (v2.exports.collection)", name)
+		}
+		assertNode(node, "folder entry \"" + name + "\"")
+		b.add(name, node)
+	}
+	return b.build()
+}
+
+// Whether data is visibly the no-result marker: a re-exported item that has no data.
+_isNoResult := func(data) {
+	if smart.isField(data) {
+		info := data.info()
+		if !(info.IsSet && info.Value != 0) {
+			return false
+		}
+		data = data.getValue()
+	}
+	return smart.isResource(data) && data.checkResourceType(constants.RTYPE_BRESOLVE_NO_RESULT)
+}
+
+/**
+ * A collection: a `PFrame/1` with an input field `<name>.spec` per item and `<name>.data` for each
+ * item that has data, inputs and outputs locked.
+ *
+ * Each item is `{spec, data}`; `data` is optional, and a `ref` key is ignored, so a query result can be
+ * passed on as an item. A spec given as a map becomes a spec resource; a
+ * spec or data given as a reference is linked as is. A `data` that is visibly the no-result marker
+ * (an item without data, passed on from a query) is left out.
+ *
+ * @param items: map[string]{spec, data?} - item name to item; names follow `folder`'s rules
+ * @return smart.Resource
+ */
+collection := func(items) {
+	ll.assert(ll.isMap(items) && !smart.isReference(items),
+		"v2.exports.collection: expected a map of item name to {spec, data}, got %v", items)
+
+	b := smart.structBuilder(rules.COLLECTION_TYPE)
+	for name in maps.getKeys(items) {
+		rules.assertName(name, "item name")
+		item := items[name]
+		if smart.isReference(item) || !ll.isMap(item) {
+			ll.panic("item %q must be a map {spec, data}, got %v", name, item)
+		}
+		for key in maps.getKeys(item) {
+			if key != "spec" && key != "data" && key != "ref" {
+				ll.panic("item %q has key %q; an item has only spec and data", name, key)
+			}
+		}
+
+		if !maps.containsKey(item, "spec") || is_undefined(item.spec) {
+			ll.panic("item %q has no spec", name)
+		}
+		spec := item.spec
+		if !smart.isReference(spec) {
+			spec = bobject.createSpec(spec)
+		}
+		b.createInputField(name + ".spec").set(spec)
+
+		data := maps.containsKey(item, "data") ? item.data : undefined
+		if !is_undefined(data) && !_isNoResult(data) {
+			b.createInputField(name + ".data").setRefOrJson(data)
+		}
+	}
+	return b.lockAndBuild()
+}
+
+export ll.toStrict({
+	folder: folder,
+	collection: collection,
+	assertNode: assertNode
+})
