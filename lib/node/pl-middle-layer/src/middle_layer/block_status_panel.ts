@@ -10,7 +10,7 @@
 
 import type {
   BlockStatusPanel,
-  BlockStatusPanelAttribute,
+  BlockStatusPanelReading,
   BlockStatusPanelBranch,
   BlockStatusPanelNode,
   BlockStatusPanelTransition,
@@ -28,7 +28,7 @@ import {
   readTransitions,
 } from "./block_status_fold";
 
-/** Prefix of the reading keys: `reading/<topic>/<resource>/<key>`. */
+/** Prefix of the reading keys: `reading/<namespace>/<resource>/<key>`. */
 const ReadingPrefix = "reading/";
 
 /** The namespace a work dir reports under. */
@@ -173,8 +173,8 @@ function panelNode(
     enteredAt: read.folded.since === undefined ? undefined : nsToMs(read.folded.since),
     ended: read.folded.terminal,
     failure: read.folded.termination?.reason || undefined,
-    lastTransition: lastTransitionOf(read.all),
-    attributes: attributesOf(read.node),
+    transitions: transitionsOf(read.all),
+    readings: readingsOf(read.node),
     childCount: read.children.length,
     subtreeNodes: own.nodes,
     subtreeLiveNodes: own.live,
@@ -198,30 +198,29 @@ function baggageOf(node: ActionContextNode): Record<string, string> {
   return out;
 }
 
-function lastTransitionOf(all: readonly RawTransition[]): BlockStatusPanelTransition | undefined {
-  let last: RawTransition | undefined;
-  for (const t of all) if (last === undefined || compareNs(t.ns, last.ns) > 0) last = t;
-  if (last === undefined) return undefined;
-  return {
-    namespace: last.namespace,
-    reporter: last.reporter,
-    state: last.state,
-    detail: last.detail || undefined,
-    reason: last.reason || undefined,
-    at: nsToMs(last.ns),
-  };
+function transitionsOf(all: readonly RawTransition[]): BlockStatusPanelTransition[] {
+  return [...all]
+    .sort((a, b) => compareNs(a.ns, b.ns))
+    .map((t) => ({
+      namespace: t.namespace,
+      reporter: t.reporter,
+      state: t.state,
+      detail: t.detail || undefined,
+      reason: t.reason || undefined,
+      at: nsToMs(t.ns),
+    }));
 }
 
-function attributesOf(node: ActionContextNode): BlockStatusPanelAttribute[] {
-  const out: BlockStatusPanelAttribute[] = [];
+function readingsOf(node: ActionContextNode): BlockStatusPanelReading[] {
+  const out: BlockStatusPanelReading[] = [];
   for (const { key, value } of node.listKeyValuesAsString(ReadingPrefix)) {
     const parts = key.split("/");
     if (parts.length !== 4) continue;
-    out.push({ topic: parts[1], resource: parts[2], key: parts[3], value });
+    out.push({ namespace: parts[1], resource: parts[2], key: parts[3], value });
   }
   return out.sort(
     (a, b) =>
-      a.topic.localeCompare(b.topic) ||
+      a.namespace.localeCompare(b.namespace) ||
       a.resource.localeCompare(b.resource) ||
       a.key.localeCompare(b.key),
   );

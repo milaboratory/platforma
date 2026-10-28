@@ -80,17 +80,14 @@ describe("foldBlockStatusPanel", () => {
       kind: "command",
       state: "WaitingForMachine",
       enteredAt: ms(0),
-      lastTransition: {
-        namespace: "exec",
-        reporter: "cmd",
-        state: "SomeFutureState",
-        detail: "x",
-        at: ms(5),
-      },
+      transitions: [
+        { namespace: "exec", reporter: "cmd", state: "WaitingForMachine", at: ms(0) },
+        { namespace: "exec", reporter: "cmd", state: "SomeFutureState", detail: "x", at: ms(5) },
+      ],
     });
   });
 
-  it("lists readings as attributes, grouped by topic and then by the resource that wrote them", () => {
+  it("lists readings, grouped by namespace and then by the resource that wrote them", () => {
     const panel = foldBlockStatusPanel(
       context({
         id: "root",
@@ -104,7 +101,7 @@ describe("foldBlockStatusPanel", () => {
       none,
     );
 
-    expect(panel.root?.attributes.map((a) => `${a.topic}/${a.resource}/${a.key}`)).toEqual([
+    expect(panel.root?.readings.map((a) => `${a.namespace}/${a.resource}/${a.key}`)).toEqual([
       "exec/cmd-1/peak-ram",
       "workdir/wd-1/progress",
       "workdir/wd-2/progress",
