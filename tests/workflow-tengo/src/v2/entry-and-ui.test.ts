@@ -1,5 +1,9 @@
+import { vi } from "vitest";
 import { tplTest } from "@platforma-sdk/test";
 import { hasValuesTree, renderUiExport, renderWorkflowV2, resultJson } from "./render-v2";
+
+// Each test renders several templates on a live backend.
+vi.setConfig({ testTimeout: 60_000 });
 
 tplTest.concurrent(
   "the UI export of a folder tree mirrors it: folders stay std/map/1, collections become exported frames",

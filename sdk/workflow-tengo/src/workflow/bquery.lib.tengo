@@ -282,18 +282,13 @@ resultUnmarshaller := func() {
 						spec: s.getValueAsJson()
 					}
 
-					// only if the data is there; a locked family-2 data map has no entry for an item
-					// without data
+					// only if the data is there; a BResolveChoice/2 writes an address's spec and data
+					// entries together, so a missing data entry means the item has no data
 					if !is_undefined(datas) {
 						if !isFamily2 {
 							r.data = getData(datas, ref)
-						} else if datas.hasInputField(ref) {
-							if !isNoResultField(datas.getField(ref)) {
-								r.data = getData(datas, ref)
-							}
-						} else if !datas.info().InputsLocked {
-							// the entry may still come: pending
-							r.data = datas.getFutureInputField(ref)
+						} else if datas.hasInputField(ref) && !isNoResultField(datas.getField(ref)) {
+							r.data = getData(datas, ref)
 						}
 					}
 
