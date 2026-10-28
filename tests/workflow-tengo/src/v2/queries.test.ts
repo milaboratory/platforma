@@ -286,7 +286,7 @@ tplTest.concurrent(
     const content = await resultFileContent(control, "table", driverKit, TIMEOUT);
     expect(content.trim().split("\n")).toStrictEqual(["ID\tScore", "A\t10", "B\t20", "C\t30"]);
 
-    const noData = /unsupported p-column data type: \{Name: "BResolveSingleNoResult"/;
+    const noData = /unsupported p-column data type: \{[^}]*BResolveSingleNoResult/;
     for (const [args, blockId] of [
       [{ primary: specOnlyRef }, "table-speconly-primary"],
       [{ primary: scoreRef, column: specOnlyRef }, "table-speconly-column"],

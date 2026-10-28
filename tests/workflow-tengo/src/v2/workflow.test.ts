@@ -1,5 +1,9 @@
+import { vi } from "vitest";
 import { tplTest } from "@platforma-sdk/test";
 import { describeNode, exportsAt, hasValuesTree, renderWorkflowV2, resultJson } from "./render-v2";
+
+// Each test renders several templates on a live backend.
+vi.setConfig({ testTimeout: 60_000 });
 
 const numbersRef = (block: string) => ({
   __isRef: true,
@@ -97,5 +101,23 @@ tplTest.concurrent(
       type: "std/map/1",
       fields: [],
     });
+  },
+);
+
+tplTest.concurrent(
+  "a ref built with wf.ref resolves the value it names",
+  async ({ helper, pl, expect, skip }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const producer = await renderWorkflowV2(helper, "v2.producer", {
+      blockId: "ref-producer",
+      args: { numbers: [4, 2] },
+    });
+    const consumer = await renderWorkflowV2(helper, "v2.ref-consumer", {
+      blockId: "ref-consumer",
+      args: { block: "ref-producer", workflow: "main", name: "numbers" },
+      upstream: [{ block: "ref-producer", render: producer }],
+    });
+    expect(await resultJson(consumer, "data")).toStrictEqual([4, 2]);
   },
 );
