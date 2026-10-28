@@ -49,21 +49,23 @@ auth:
 # =============================================================================
 
 storage:
-  # -- Database (RWO): small size for CI. ceph-nvme = fast NVMe-backed RBD (RocksDB).
+  # -- Database (RWO): small size for CI. local-path-nvme = node-local NVMe on
+  # cluster-e2e-1, where the backend is pinned. The e2e nodes are in Helsinki,
+  # ~40 ms from Ceph in FSN, so RBD (ceph-nvme) would put every RocksDB write on
+  # that link (MILAB-7218, same layout as pl's helm/internal/values_ci_k8s-s3.yaml).
   database:
     size: 5Gi
-    storageClass: "ceph-nvme"
+    storageClass: "local-path-nvme"
 
-  # -- Workspace: RWX so the Platforma pod + k8s-mode job pods (which can land on
-  # any node) share it. CephFS provides RWX. NOTE: local-path-nvme is node-local
-  # RWO — that's for the CI runner *agents* (work/dind), NOT the Platforma deploy.
+  # -- Workspace: RWX so the Platforma pod + k8s-mode job pods share it.
+  # nfs-e2e = NFS export on cluster-e2e-1 (ceph-fs is ~40 ms away in FSN).
   workspace:
     pvc:
       enabled: true
       accessMode: ReadWriteMany
       size: 10Gi
       chownOnCreate: false
-      storageClass: "ceph-fs"
+      storageClass: "nfs-e2e"
 
   # -- Main storage: Hetzner RadosGW (Ceph RGW). The e2e workflow injects a
   # per-run prefix (--set storage.main.s3.prefix=<release>-primary/) matching the
@@ -88,9 +90,10 @@ storage:
 # =============================================================================
 # JOB EXECUTION (Kueue — Shared Mode)
 # =============================================================================
-# References CI-dedicated ClusterQueues and WorkloadPriorityClasses
-# defined in helm/ci/kueue-dev-ci.yaml (applied once by cluster admin).
-# These are isolated from the staging Platforma instance (platforma-e2e).
+# Uses the platforma-e2e-* ClusterQueues and WorkloadPriorityClasses created by the
+# staging release (pl helm/internal/values_staging.hz.yaml, clusterResourceName:
+# platforma-e2e). They cover the dedicated e2e nodes and are not in any cohort, so
+# platforma-app (ecoteam) load on platforma-batch can't starve these runs.
 
 kueue:
   mode: shared
@@ -99,13 +102,22 @@ kueue:
     cpu: 4
     memory: 8Gi
 
+  # Jobs run on cluster-e2e-1 (cluster-e2e-2 runs only the CI runners). The
+  # platforma-e2e-* ResourceFlavors carry the same selector + toleration; set here
+  # too so the pods themselves match.
   pools:
     ui:
-      nodeSelector: {}
-      tolerations: []
+      nodeSelector:
+        node.kubernetes.io/role: e2e
+        kubernetes.io/hostname: cluster-e2e-1
+      tolerations:
+        - { key: dedicated, operator: Equal, value: e2e, effect: NoSchedule }
     batch:
-      nodeSelector: {}
-      tolerations: []
+      nodeSelector:
+        node.kubernetes.io/role: e2e
+        kubernetes.io/hostname: cluster-e2e-1
+      tolerations:
+        - { key: dedicated, operator: Equal, value: e2e, effect: NoSchedule }
     # -- GPU node pools
     # Routes GPU jobs via nodeAffinity on platforma.bio/gpu-memory-gib label.
     # K8s scheduler + Cluster Autoscaler pick the cheapest node with enough VRAM.
@@ -114,19 +126,16 @@ kueue:
       enabled: false
 
   shared:
-    # Share the cluster-wide Kueue queues that the staging Platforma (platforma-e2e)
-    # already owns: ClusterQueues are cluster-scoped with namespaceSelector {} so the
-    # CI LocalQueues created here (platforma-e2e-ci) admit against the same permanent
-    # queues. Both deployments run shared mode against one set — nothing per-run
-    # created/deleted, queues persist as long as the staging instance does.
+    # Created by the staging release (clusterResourceName: platforma-e2e). Names
+    # must follow staging's prefix.
     clusterQueues:
-      ui: "platforma-ui"
-      batch: "platforma-batch"
+      ui: "platforma-e2e-ui"
+      batch: "platforma-e2e-batch"
     workloadPriorityClasses:
-      uiTasks: "platforma-ui"
-      high: "platforma-high"
-      normal: "platforma-normal"
-      low: "platforma-low"
+      uiTasks: "platforma-e2e-ui"
+      high: "platforma-e2e-high"
+      normal: "platforma-e2e-normal"
+      low: "platforma-e2e-low"
 
 # =============================================================================
 # DATA SOURCES (data libraries for tests)
@@ -163,9 +172,20 @@ ingress:
 # =============================================================================
 
 app:
+  # Backend pod on cluster-e2e-1: fast CPU, the NFS workspace server, and the NVMe
+  # with good fsync for the DB (local-path-nvme follows the pod). cluster-e2e-2
+  # runs only the privileged test runners (hz-ubuntu-dind-e2e).
+  nodeSelector:
+    node.kubernetes.io/role: e2e
+    kubernetes.io/hostname: cluster-e2e-1
+  tolerations:
+    - { key: dedicated, operator: Equal, value: e2e, effect: NoSchedule }
+
   resources:
     requests:
-      cpu: "1"
+      # Measured ~2 CPU per backend during a run (p50; p95 3.1, 14 days on hz).
+      # Requesting real use keeps the scheduler from overpacking cluster-e2e-1.
+      cpu: "2"
       memory: 2Gi
     limits:
       cpu: "4"
@@ -235,7 +255,7 @@ jobs:
   # The scratch suites then had nothing to measure and reported an empty
   # command output as a failure.
   #
-  # ceph-nvme is the RWO NVMe-backed RBD class the database already uses, and
+  # local-path-nvme is the node-local RWO class the database already uses, and
   # the scratch claim is an ephemeral RWO volume made per job and deleted with
   # it, so the class fits without anything new on the cluster. `create: false`
   # keeps the chart from declaring a class it does not own.
@@ -249,7 +269,7 @@ jobs:
       maxRequest: 10Gi
       storageClass:
         create: false
-        name: "ceph-nvme"
+        name: "local-path-nvme"
 
 # =============================================================================
 # VALIDATION
