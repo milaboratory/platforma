@@ -494,8 +494,8 @@ anchoredQuery := func(ctx, anchors, queryMap, ...opts) {
  * Family 1 is this module's own functions: resolvers BResolveSingle/1 and BResolveChoice/1 over
  * BContext/1 chains. Family 2 creates BResolveSingle/2 and BResolveChoice/2, which resolve over
  * BContext/2 chains (platforma2); its results decode with the family-2 rules of `resultUnmarshaller`.
- * A resolver of one family finds nothing over a chain of the other: a family-1 query over a
- * platforma2 context answers "not found".
+ * A family-1 query over a platforma2 context finds no values there (it answers "not found"); a
+ * family-2 resolver needs a BContext/2 or BContextEnd/1 and fails on a BContext/1.
  *
  * Results are told apart by `family: 2` in the options they store, so a family-1 caller must not pass
  * an option named `family`.

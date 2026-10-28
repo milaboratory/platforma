@@ -76,7 +76,7 @@ folder := func(entries) {
 	return b.build()
 }
 
-// Whether data is visibly the no-result marker: a re-exported item that has no data.
+// Whether data is visibly the no-result marker: an item without data, passed on from a query.
 _isNoResult := func(data) {
 	if smart.isField(data) {
 		info := data.info()

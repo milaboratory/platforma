@@ -304,7 +304,7 @@ self.body(func(inputs) {
         }
 
         if needsClientFilter && family == 2 {
-            ll.panic("context-domain queries need a backend with contextDomainQuery for the v2 query API (item '%s')", queryId)
+            ll.panic("context-domain queries in the v2 query API need the backend's contextDomainQuery feature (item '%s')", queryId)
         }
 
         queryResult := q.create(querySpec, ctx, queryOps)
