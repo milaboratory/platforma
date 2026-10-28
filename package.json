@@ -31,7 +31,7 @@
     "ci:build:local": "pnpm ci:prepare && pnpm turbo-why build:dev-local && pnpm build:dev-local --output-logs=errors-only",
     "ci:build:release": "pnpm ci:prepare && pnpm turbo-why build:release && pnpm build:release --output-logs=errors-only",
     "ci:test": "pnpm turbo-why test && pnpm test -- --output-logs=errors-only",
-    "ci:test:parallel": "pnpm turbo-why test && pnpm test:parallel -- --output-logs=errors-only",
+    "ci:test:parallel": "pnpm turbo-why test && pnpm test:parallel --output-logs=errors-only",
     "ci:test:no-cache": "pnpm test:no-cache -- --output-logs=errors-only",
     "ci:test:local": "pnpm turbo-why test:local && pnpm test:local -- --output-logs=errors-only",
     "ci:test:local+no-cache": "pnpm test:local+no-cache --output-logs=errors-only",
