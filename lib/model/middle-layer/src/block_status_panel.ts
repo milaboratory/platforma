@@ -11,7 +11,7 @@
 
 import type { BlockStatusState, BlockStatusSummary } from "./block_status";
 
-/** One reported transition, as the panel shows a node's last one. */
+/** One transition: `transition/<namespace>/<reporter>/<ns>`. */
 export type BlockStatusPanelTransition = {
   /** `render`, `exec`, `workdir`, ... */
   readonly namespace: string;
@@ -25,10 +25,10 @@ export type BlockStatusPanelTransition = {
   readonly at: number;
 };
 
-/** One reading of a node: `reading/<topic>/<resource>/<key>`. */
-export type BlockStatusPanelAttribute = {
+/** One reading of a node: `reading/<namespace>/<resource>/<key>`. */
+export type BlockStatusPanelReading = {
   /** The namespace the reading was written under, e.g. `workdir`. */
-  readonly topic: string;
+  readonly namespace: string;
   /** The resource that wrote it. */
   readonly resource: string;
   readonly key: string;
@@ -59,10 +59,10 @@ export type BlockStatusPanelNode = {
   readonly ended: boolean;
   /** The engine's reason, set when the render terminated. */
   readonly failure?: string;
-  /** The most recent transition of any reporter, whatever its state. */
-  readonly lastTransition?: BlockStatusPanelTransition;
-  /** Readings, sorted by topic, then resource, then key. */
-  readonly attributes: readonly BlockStatusPanelAttribute[];
+  /** Every transition of every reporter, oldest first, whatever its state. */
+  readonly transitions: readonly BlockStatusPanelTransition[];
+  /** Readings, sorted by namespace, then resource, then key. */
+  readonly readings: readonly BlockStatusPanelReading[];
   /** Direct children, whether or not they are present below. */
   readonly childCount: number;
   /** This node and everything under it. */
