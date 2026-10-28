@@ -27,8 +27,8 @@ export const canonicalPackageJsonOrder = [
   "devDependencies",
   "peerDependencies",
   "optionalDependencies",
+  "engines",
   "packageManager",
-  "pnpm",
   "block",
   "block-software",
 ] as const;
