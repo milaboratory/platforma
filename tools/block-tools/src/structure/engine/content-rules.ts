@@ -649,11 +649,12 @@ export function ensureWorkspaceMapEntries(
   if (!isMap(state.doc.get(key))) {
     state.doc.delete(key);
   }
-  Object.entries(entries)
-    .filter(([name, value]) =>
-      keepExisting ? !state.doc.hasIn([key, name]) : state.doc.getIn([key, name]) !== value,
-    )
-    .forEach(([name, value]) => state.doc.setIn([key, name], value));
+  const changed = Object.entries(entries).filter(([name, value]) =>
+    keepExisting ? !state.doc.hasIn([key, name]) : state.doc.getIn([key, name]) !== value,
+  );
+  for (const [name, value] of changed) {
+    state.doc.setIn([key, name], value);
+  }
 }
 
 /** Append each missing `items` entry to the top-level list `key`. */
@@ -669,7 +670,9 @@ export function ensureWorkspaceListItems(key: string, items: readonly string[]):
     state.doc.set(key, missing);
     return;
   }
-  missing.forEach((item) => state.doc.addIn([key], item));
+  for (const item of missing) {
+    state.doc.addIn([key], item);
+  }
 }
 
 // ============================================================
