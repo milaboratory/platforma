@@ -91,10 +91,8 @@ TestEncodeJsonColumnData := func() {
 		"[\"B\",100]": 4
 	}), `{"[\"B\",100]":4,"[\"a\",9]":3,"[\"a\",10]":2,"[\"b\",1]":1}`)
 
-	test.isEqual(pUtil.encodeJsonColumnData({
-		"[9007199254740993]": 1,
-		"[9007199254740992]": 2
-	}), `{"[9007199254740992]":2,"[9007199254740993]":1}`)
+	test.isEqual(pUtil.encodeJsonColumnData({ "[1.5]": 1, "[10]": 2, "[2]": 3, "[-0.5]": 4 }),
+		`{"[-0.5]":4,"[1.5]":1,"[2]":3,"[10]":2}`)
 
 	test.isEqual(pUtil.encodeJsonColumnData({
 		"[-9007199254740992]": 1,
