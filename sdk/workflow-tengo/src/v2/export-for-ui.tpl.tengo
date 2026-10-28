@@ -1,0 +1,39 @@
+// The UI export of a platforma2 workflow's exports: renders over a values tree root (input `pf`)
+// and returns, as `result`, a tree of the same shape: a folder (`std/map/1`) for each folder and,
+// for each collection (`PFrame/1`), the frame `:pframes.export-pframe-for-ui` makes of it.
+//
+// Unstable, as every `:v2.*` module.
+
+ll := import(":ll")
+smart := import(":smart")
+assets := import(":assets")
+render := import(":render")
+rules := import(":v2.node-rules")
+self := import(":tpl")
+
+collectionForUiTpl := assets.importTemplate(":pframes.export-pframe-for-ui")
+
+self.awaitState("pf", "InputsLocked")
+
+self.body(func(_) {
+	// ordinary input unmarshalling turns a folder into a Tengo map; dispatch on the resource
+	node := self.rawInputs().pf.getValue()
+	type := node.info().Type
+
+	if type.Name == rules.COLLECTION_TYPE.Name && type.Version == rules.COLLECTION_TYPE.Version {
+		return {
+			result: render.createEphemeral(collectionForUiTpl, { pf: node }).output("result")
+		}
+	}
+
+	if type.Name == rules.FOLDER_TYPE.Name && type.Version == rules.FOLDER_TYPE.Version {
+		b := smart.mapBuilder()
+		for name, entry in node.inputs() {
+			// the entry is passed unawaited; its own render waits for it
+			b.add(name, render.createEphemeral(self.template(), { pf: entry }).output("result"))
+		}
+		return { result: b.build() }
+	}
+
+	ll.panic("exports node type is %s/%s, expected std/map/1 or PFrame/1", type.Name, type.Version)
+})

@@ -1,0 +1,46 @@
+// An anchored query through the v2 workflow: the anchor is args.anchor; one query finds the
+// spec-only "label" value by the anchor's domain, one finds the "counts" value of species mouse by
+// the anchor's domain and a context-domain criterion. The results are decoded in v2.decode.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+decodeTpl := assets.importTemplate(":v2.decode")
+
+wf.body(func(args) {
+	q := wf.anchoredQuery({ main: args.anchor }, {
+		label: {
+			query: {
+				name: "pl7.app/test/label",
+				domain: { "pl7.app/test/set": { anchor: "main" } }
+			},
+			specOnly: true
+		},
+		mouseCounts: {
+			name: "pl7.app/test/counts",
+			domainAnchor: "main",
+			contextDomain: { species: "mouse" }
+		}
+	})
+
+	decoded := render.createEphemeral(decodeTpl, {
+		items: {
+			anchor: q.getAnchor("main"),
+			label: q.getResult("label"),
+			mouseCounts: q.getResult("mouseCounts")
+		},
+		choices: {}
+	})
+
+	return {
+		outputs: {
+			anchorSpec: q.getAnchor("main").getFutureInputField("spec"),
+			anchorData: q.getAnchor("main").getFutureInputField("data"),
+			labelSpec: q.getResultSpec("label"),
+			mouseCountsData: q.getResultData("mouseCounts"),
+			decoded: decoded.output("out")
+		},
+		exports: ex.collection({})
+	}
+})

@@ -1,0 +1,44 @@
+// A PColumn bundle through the v2 workflow, decoded in v2.decode-bundle.
+//
+// args.anchor  — the anchor's ref (added as anchor "main")
+// args.ref     — a ref added on its own
+// args.single  — an anchored query expected to find one value, under the key "single"
+// args.multi   — an anchored query that may find several, under the key "multi"
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+decodeTpl := assets.importTemplate(":v2.decode-bundle")
+
+wf.body(func(args) {
+	b := wf.createPBundleBuilder()
+	singles := {}
+	multis := {}
+	if !is_undefined(args.anchor) {
+		b.addAnchor("main", args.anchor)
+		singles.anchor = "main"
+	}
+	if !is_undefined(args.ref) {
+		b.addRef(args.ref)
+		singles.ref = args.ref
+	}
+	if !is_undefined(args.single) {
+		b.addSingle(args.single, "single")
+		singles.single = "single"
+	}
+	if !is_undefined(args.multi) {
+		b.addMulti(args.multi, "multi")
+		multis.multi = "multi"
+	}
+
+	decoded := render.createEphemeral(decodeTpl, {
+		bundle: b.build(),
+		request: { singles: singles, multis: multis }
+	})
+
+	return {
+		outputs: { decoded: decoded.output("out") },
+		exports: ex.collection({})
+	}
+})

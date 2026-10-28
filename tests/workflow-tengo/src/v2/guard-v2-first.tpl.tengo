@@ -1,0 +1,8 @@
+// Imports the v2 entry, then the V1 one: the template's outputs are no longer exactly result and exports.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+v1 := import("@platforma-sdk/workflow-tengo:workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+
+wf.body(func(args) {
+	return { outputs: { ran: true }, exports: ex.collection({}) }
+})
