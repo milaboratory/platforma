@@ -194,14 +194,17 @@ validateArgs := func(argsSchema) {
 }
 
 /**
- * A PColumnBundle collector resolving upstream (see `:pframes.bundle`'s `createBuilder`).
+ * A PColumnBundle collector resolving upstream (see `:pframes.bundle`'s `createBuilder`). In the
+ * bundle a template receives, a value without data has `data` undefined.
  */
 createPBundleBuilder := func() {
 	return pBundle.createBuilderWith(bquery, getParentBCtx())
 }
 
 /**
- * A table builder resolving its unresolved inputs upstream (see `:pframes.table-builder`).
+ * A table builder resolving its unresolved inputs upstream (see `:pframes.table-builder`). Every
+ * column needs data: a value exported without data, as a primary or a column, fails the table's run
+ * ("unsupported p-column data type: BResolveSingleNoResult").
  *
  * @param format: string — "tsv" | "csv" | "parquet" | "ndjson"
  */
