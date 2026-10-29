@@ -15,11 +15,11 @@ const TIMEOUT = 60_000;
 vi.setConfig({ testTimeout: 4 * TIMEOUT });
 
 /** A ref to a value a v2 block's main workflow exports. */
-const ref = (block: string, name: string) => ({
-  __isRef: true,
-  blockId: `${block}/main`,
-  name,
-});
+const ref = (block: string, name: string) => ({ block, workflow: "main", name });
+
+/** The render failure of a single lookup that finds nothing, and of one that finds more than one. */
+const MISSING = /single resolve has 0 results/;
+const AMBIGUOUS = /single resolve has 2 or more results/;
 
 /** What v2.describe reports for one decoded item. */
 type Described = {
@@ -138,7 +138,7 @@ tplTest.concurrent(
 );
 
 tplTest.concurrent(
-  "wf.query finds every value a producer exports, each ref marked as a ref, with data where the producer has data",
+  "wf.query finds every value a producer exports, each ref decoded as {block, workflow, name}, with data where the producer has data",
   async ({ helper, pl, expect, skip }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
@@ -361,7 +361,7 @@ tplTest.concurrent(
 );
 
 tplTest.concurrent(
-  "a ref a query returned resolves again directly, nested in a map and as a table builder primary, and a resolved column made from the hit is a table primary",
+  "a ref a query returned resolves again directly and as a table builder primary, and a resolved column made from the hit is a table primary",
   async ({ helper, pl, expect, skip, driverKit }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
@@ -380,7 +380,6 @@ tplTest.concurrent(
     expect(await json(consumer, "numbersRef")).toStrictEqual(ref("reuse-pool", "numbers"));
     expect(await json(consumer, "directSpec")).toMatchObject({ name: "pl7.app/test/numbers" });
     expect(await json(consumer, "directData")).toStrictEqual([8, 9]);
-    expect(await json(consumer, "nestedData")).toStrictEqual([8, 9]);
     const content = await resultFileContent(consumer, "table", driverKit, TIMEOUT);
     expect(content.trim().split("\n")).toStrictEqual(["ID\tScore", "A\t10", "B\t20", "C\t30"]);
     const hitContent = await resultFileContent(consumer, "hitTable", driverKit, TIMEOUT);
@@ -433,7 +432,7 @@ tplTest.concurrent(
       query1: Described[];
       query2: Described[];
     };
-    // a family-1 ref carries no __isRef
+    // a family-1 ref keeps the backend's form {blockId, name}
     expect(decoded.resolve1.ref).toStrictEqual({ blockId: "families-v1-both", name: "e1" });
     expect(decoded.resolve1.data).toStrictEqual({ state: "value", value: ["a", "b"] });
     expect(decoded.resolve2).toMatchObject({
@@ -528,5 +527,230 @@ tplTest.concurrent(
       { state: "value", value: [1] },
       { state: "value", value: [2] },
     ]);
+  },
+);
+
+tplTest.concurrent(
+  "family 1 resolve leaves the caller's options map unchanged",
+  async ({ helper, pl, expect, skip }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const render = await renderFamilies(helper, "opts");
+    expect(await resultJson(render, "resolve1WithOptsData", TIMEOUT)).toStrictEqual(["a", "b"]);
+    expect(await resultJson(render, "opts1After", TIMEOUT)).toStrictEqual({
+      spec: true,
+      data: true,
+    });
+  },
+);
+
+// ---------------------------------------------------------------------------------------------
+// Refs, single lookups and options of the v2 query API.
+
+const numbersQuery = (block: string) => ({
+  type: "And",
+  operands: [
+    { type: "Name", name: "pl7.app/test/numbers" },
+    { type: "Domain", domain: { "pl7.app/test/set": block } },
+  ],
+});
+
+const nothingQuery = { type: "Name", name: "pl7.app/test/nothing" };
+
+/** Renders v2.query with `calls` over one pool `block`. */
+const renderCalls = (
+  helper: Parameters<typeof renderWorkflowV2>[0],
+  blockId: string,
+  pool: { block: string; render: V2Render },
+  calls: Record<string, unknown>,
+) => renderWorkflowV2(helper, "v2.query", { blockId, args: { calls }, upstream: [pool] });
+
+tplTest.concurrent(
+  "a decoded ref is exactly {block, workflow, name} through query and resolve, and it resolves again to the same value",
+  async ({ helper, pl, expect, skip }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const block = "exactref-pool";
+    const pool = { block, render: await renderPool(helper, block, [21, 22]) };
+    const consumer = await renderCalls(helper, "exactref-consumer", pool, {
+      resolved: { resolve: ref(block, "numbers") },
+      queried: { query: numbersQuery(block) },
+    });
+    const decoded = await json<{ resolved: Described; queried: Described[] }>(consumer, "decoded");
+    expect(decoded.resolved.ref).toStrictEqual({ block, workflow: "main", name: "numbers" });
+    expect(decoded.queried).toHaveLength(1);
+    expect(decoded.queried[0].ref).toStrictEqual({ block, workflow: "main", name: "numbers" });
+
+    const again = await renderWorkflowV2(helper, "v2.resolve-again", {
+      blockId: "exactref-again",
+      args: { query: numbersQuery(block) },
+      upstream: [pool],
+    });
+    expect(await json(again, "hitCount")).eq(1);
+    expect(await json(again, "hitRef")).toStrictEqual({ block, workflow: "main", name: "numbers" });
+    const againDecoded = await json<{ again: Described }>(again, "decoded");
+    expect(againDecoded.again.ref).toStrictEqual({ block, workflow: "main", name: "numbers" });
+    expect(againDecoded.again.data).toStrictEqual({ state: "value", value: [21, 22] });
+  },
+);
+
+tplTest.concurrent(
+  "wf.resolve of a ref that matches nothing fails the render, beside a ref that finds its value",
+  async ({ helper, pl, expect, skip }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const block = "missing-pool";
+    const pool = { block, render: await renderPool(helper, block, [23]) };
+    const found = await renderCalls(helper, "missing-control", pool, {
+      found: { resolve: ref(block, "numbers") },
+    });
+    const decoded = await json<{ found: Described }>(found, "decoded");
+    expect(decoded.found.data).toStrictEqual({ state: "value", value: [23] });
+
+    const missing = await renderCalls(helper, "missing-consumer", pool, {
+      missing: { resolve: ref(block, "nothing") },
+    });
+    await expect(json(missing, "decoded")).rejects.toThrow(MISSING);
+  },
+);
+
+tplTest.concurrent(
+  "wf.query with single gives the one match as an item, and fails the render on zero matches and on two",
+  async ({ helper, pl, expect, skip }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const a = { block: "single-pool-a", render: await renderPool(helper, "single-pool-a", [24]) };
+    const b = { block: "single-pool-b", render: await renderPool(helper, "single-pool-b", [25]) };
+    const upstream = [a, b];
+    const single = { single: true };
+
+    const one = await renderWorkflowV2(helper, "v2.query", {
+      blockId: "single-one",
+      args: { calls: { one: { query: numbersQuery("single-pool-a"), options: single } } },
+      upstream,
+    });
+    const decoded = await json<{ one: Described }>(one, "decoded");
+    expect(decoded.one.ref).toStrictEqual({
+      block: "single-pool-a",
+      workflow: "main",
+      name: "numbers",
+    });
+    expect(decoded.one.data).toStrictEqual({ state: "value", value: [24] });
+
+    const zero = await renderWorkflowV2(helper, "v2.query", {
+      blockId: "single-zero",
+      args: { calls: { zero: { query: nothingQuery, options: single } } },
+      upstream,
+    });
+    await expect(json(zero, "decoded")).rejects.toThrow(MISSING);
+
+    // both producers export a value named "numbers" with this column name
+    const two = await renderWorkflowV2(helper, "v2.query", {
+      blockId: "single-two",
+      args: {
+        calls: { two: { query: { type: "Name", name: "pl7.app/test/numbers" }, options: single } },
+      },
+      upstream,
+    });
+    await expect(json(two, "decoded")).rejects.toThrow(AMBIGUOUS);
+  },
+);
+
+tplTest.concurrent(
+  "wf.query without single and with zero matches is an empty list, beside a query that finds its value",
+  async ({ helper, pl, expect, skip }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const block = "empty-pool";
+    const pool = { block, render: await renderPool(helper, block, [26]) };
+    const consumer = await renderCalls(helper, "empty-consumer", pool, {
+      none: { query: nothingQuery },
+      found: { query: numbersQuery(block) },
+    });
+    const decoded = await json<{ none: Described[]; found: Described[] }>(consumer, "decoded");
+    expect(decoded.none).toStrictEqual([]);
+    expect(decoded.found.map((d) => d.data)).toStrictEqual([{ state: "value", value: [26] }]);
+  },
+);
+
+tplTest.concurrent.for([
+  {
+    kind: "errIfMissing",
+    call: (r: unknown) => ({ resolve: r, options: { errIfMissing: true } }),
+    message: /query option "errIfMissing" is not allowed in the v2 query API/,
+  },
+  {
+    kind: "first",
+    call: () => ({ query: nothingQuery, options: { first: true } }),
+    message: /query option "first" is not allowed in the v2 query API/,
+  },
+  {
+    kind: "unknown",
+    call: () => ({ query: nothingQuery, options: { color: true } }),
+    message: /query option "color" is not allowed in the v2 query API/,
+  },
+  {
+    kind: "nonBoolean",
+    call: (r: unknown) => ({ resolve: r, options: { data: "yes" } }),
+    message: /query option "data" must be a boolean/,
+  },
+])(
+  "a v2 query option $kind fails the render",
+  async ({ kind, call, message }, { helper, pl, expect, skip }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const block = `option-pool-${kind}`;
+    const pool = { block, render: await renderPool(helper, block, [27]) };
+    const render = await renderCalls(helper, `option-consumer-${kind}`, pool, {
+      x: call(ref(block, "numbers")),
+    });
+    await expect(json(render, "decoded")).rejects.toThrow(message);
+  },
+);
+
+tplTest.concurrent.for([
+  { kind: "extraKey", malformed: { block: "b", workflow: "main", name: "numbers", extra: "x" } },
+  { kind: "missingField", malformed: { block: "b", name: "numbers" } },
+  { kind: "slashInBlock", malformed: { block: "b/c", workflow: "main", name: "numbers" } },
+])(
+  "wf.resolve of a ref with $kind fails the render",
+  async ({ kind, malformed }, { helper, pl, expect, skip }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const render = await renderWorkflowV2(helper, "v2.query", {
+      blockId: `malformed-${kind}`,
+      args: { calls: { x: { resolve: malformed } } },
+    });
+    await expect(json(render, "decoded")).rejects.toThrow(/a ref is \{block, workflow, name\}/);
+  },
+);
+
+tplTest.concurrent(
+  "an anchored item that is not expectMultiple fails the render on zero matches and on two, beside one that finds its value",
+  async ({ helper, pl, expect, skip }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const block = "anchored-single-pool";
+    const upstream = [{ block, render: await renderPool(helper, block, [28]) }];
+    const byAnchor = (name: string) => ({
+      name,
+      domain: { "pl7.app/test/set": { anchor: "main" } },
+    });
+    const anchoredItem = (blockId: string, item: unknown) =>
+      renderWorkflowV2(helper, "v2.anchored-item", {
+        blockId,
+        args: { anchor: ref(block, "numbers"), item },
+        upstream,
+      });
+
+    const found = await anchoredItem("anchored-single-found", byAnchor("pl7.app/test/label"));
+    expect(await json(found, "spec")).toMatchObject({ name: "pl7.app/test/label" });
+
+    const zero = await anchoredItem("anchored-single-zero", byAnchor("pl7.app/test/nothing"));
+    await expect(json(zero, "spec")).rejects.toThrow(MISSING);
+
+    // the pool exports two "counts" values, for species human and mouse
+    const two = await anchoredItem("anchored-single-two", byAnchor("pl7.app/test/counts"));
+    await expect(json(two, "spec")).rejects.toThrow(AMBIGUOUS);
   },
 );

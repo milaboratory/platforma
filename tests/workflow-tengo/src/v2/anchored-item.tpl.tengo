@@ -1,0 +1,12 @@
+// An anchored query with one item through the v2 workflow: the anchor is args.anchor, the item
+// args.item; outputs the item's spec.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+
+wf.body(func(args) {
+	q := wf.anchoredQuery({ main: args.anchor }, { x: args.item })
+	return {
+		outputs: { spec: q.getResultSpec("x") },
+		exports: ex.collection({})
+	}
+})

@@ -5,11 +5,7 @@ import { describeNode, exportsAt, hasValuesTree, renderWorkflowV2, resultJson } 
 // Each test renders several templates on a live backend.
 vi.setConfig({ testTimeout: 60_000 });
 
-const numbersRef = (block: string) => ({
-  __isRef: true,
-  blockId: `${block}/main`,
-  name: "numbers",
-});
+const numbersRef = (block: string) => ({ block, workflow: "main", name: "numbers" });
 
 tplTest.concurrent(
   "a v2 workflow returns result and its collection as exports, with the inputs the project passes",
@@ -67,7 +63,7 @@ tplTest.concurrent(
 
     const consumer = await renderWorkflowV2(helper, "v2.consumer", {
       blockId: "consumer-3",
-      args: { source: { __isRef: true, blockId: "forward-3/main", name: "ids" } },
+      args: { source: { block: "forward-3", workflow: "main", name: "ids" } },
       upstream: [{ block: "forward-3", render: producer }],
     });
     expect(await resultJson(consumer, "data")).toStrictEqual([7, 8]);
@@ -104,20 +100,21 @@ tplTest.concurrent(
   },
 );
 
-tplTest.concurrent(
-  "a ref built with wf.ref resolves the value it names",
-  async ({ helper, pl, expect, skip }) => {
+tplTest.concurrent.for([{ kind: "literal" }, { kind: "assigned" }])(
+  "an output whose value is undefined ($kind) fails the render, naming the output",
+  async ({ kind }, { helper, pl, expect, skip }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
-    const producer = await renderWorkflowV2(helper, "v2.producer", {
-      blockId: "ref-producer",
-      args: { numbers: [4, 2] },
+    const control = await renderWorkflowV2(helper, "v2.undefined-output", {
+      blockId: `undefined-output-control-${kind}`,
+      args: { kind: "set" },
     });
-    const consumer = await renderWorkflowV2(helper, "v2.ref-consumer", {
-      blockId: "ref-consumer",
-      args: { block: "ref-producer", workflow: "main", name: "numbers" },
-      upstream: [{ block: "ref-producer", render: producer }],
+    expect(await resultJson(control, "x")).eq(1);
+
+    const render = await renderWorkflowV2(helper, "v2.undefined-output", {
+      blockId: `undefined-output-${kind}`,
+      args: { kind },
     });
-    expect(await resultJson(consumer, "data")).toStrictEqual([4, 2]);
+    await expect(resultJson(render, "x")).rejects.toThrow(/value is undefined for output x\b/);
   },
 );

@@ -1,7 +1,8 @@
 // Both resolver families in one template, interleaved: family 1 over request.ctx1 (a BContext/1
 // chain), family 2 over ctx2 (a BContext/2 chain). Each family resolves a ref and runs a query on
 // its own chain; the results are decoded in v2.decode.
-// With request.unknownFamily set, asks for a family that does not exist instead.
+// Family 1 also resolves request.ref1 with an options map, and outputs that map after the call as
+// opts1After. With request.unknownFamily set, asks for a family that does not exist instead.
 self := import("@platforma-sdk/workflow-tengo:tpl")
 bquery := import("@platforma-sdk/workflow-tengo:workflow.bquery")
 assets := import("@platforma-sdk/workflow-tengo:assets")
@@ -30,6 +31,8 @@ self.body(func(inputs) {
 	items.resolve1 = family1.resolve(request.ref1, ctx1)
 	choices.query2 = family2.create(request.query2, ctx2)
 	choices.query1 = family1.create(request.query1, ctx1)
+	opts1 := { spec: true, data: true }
+	withOpts1 := family1.resolve(request.ref1, ctx1, opts1)
 
 	decoded := render.createEphemeral(decodeTpl, { items: items, choices: choices })
 
@@ -37,5 +40,7 @@ self.body(func(inputs) {
 	b.add("resolve1Data", items.resolve1.getFutureInputField("data"))
 	b.add("resolve2Data", items.resolve2.getFutureInputField("data"))
 	b.add("decoded", decoded.output("out"))
+	b.add("resolve1WithOptsData", withOpts1.getFutureInputField("data"))
+	b.add("opts1After", smart.createJsonResource(opts1))
 	return { result: b.build() }
 })

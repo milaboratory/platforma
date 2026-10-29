@@ -69,8 +69,7 @@ columnJoinOpt := func(opts) {
 	return join
 }
 
-// Returns true if `value` has a `{__isRef: true}` marker anywhere in its structure, outside resolved
-// columns: a query result `{ref, spec, data}` is resolved even when its `ref` carries the marker.
+// Returns true if `value` has a `{__isRef: true}` marker anywhere in its structure.
 // Walks iteratively — the input can be arbitrarily nested (PrimaryRef, arrays, plain maps).
 isUnresolved := func(value) {
 	stack := [value]
@@ -79,9 +78,6 @@ isUnresolved := func(value) {
 		v := stack[si]
 		si += 1
 		if ll.isMap(v) {
-			if maps.containsKey(v, "spec") && maps.containsKey(v, "data") {
-				continue
-			}
 			for k, child in v {
 				if k == "__isRef" && child == true { return true }
 				stack = append(stack, child)
@@ -148,6 +144,29 @@ isQuerySpec := func(q) {
 	return !isUnresolved(q) && !isResolvedColumn(q) && !isEnrichmentRef(q)
 }
 
+// Returns true if `value` holds a ref by `isRef` anywhere in its structure, outside resolved columns
+// (a query result `{ref, spec, data}` is resolved although its `ref` is a ref).
+holdsRef := func(value, isRef) {
+	stack := [value]
+	si := 0
+	for si < len(stack) {
+		v := stack[si]
+		si += 1
+		if isRef(v) { return true }
+		if ll.isMap(v) {
+			if isResolvedColumn(v) { continue }
+			for _, child in v {
+				stack = append(stack, child)
+			}
+		} else if is_array(v) {
+			for _, child in v {
+				stack = append(stack, child)
+			}
+		}
+	}
+	return false
+}
+
 /**
  * Creates a table builder.
  *
@@ -160,6 +179,15 @@ isQuerySpec := func(q) {
  *         .setColumnJoin / .setAxisHeader / .cpu / .mem / .cacheInputs / .build
  */
 tableBuilderWith := func(q, format, ...ctxArg) {
+	// a query API whose refs carry no marker (bquery.forFamily(2)) says what a ref is
+	unresolved := isUnresolved
+	if maps.containsKey(q, "isRef") {
+		unresolved = func(value) { return holdsRef(value, q.isRef) }
+	}
+	querySpec := func(v) {
+		return !unresolved(v) && !isResolvedColumn(v) && !isEnrichmentRef(v)
+	}
+
 	ll.assert(!is_undefined(VALID_FORMATS[format]),
 		"format must be one of [tsv, csv, parquet, ndjson], got '%s'", format)
 
@@ -196,7 +224,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 				header = opts[0].header
 			}
 
-			unresolved := isUnresolved(value)
+			unresolved := unresolved(value)
 			if !unresolved {
 				ll.assert(
 					isResolvedColumn(value) ||
@@ -234,7 +262,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 				header = opts[0].header
 			}
 			join := columnJoinOpt(opts)
-			if isUnresolved(query) || isEnrichmentRef(query) {
+			if unresolved(query) || isEnrichmentRef(query) {
 				_hasUnresolved = true
 			}
 			_columns = append(_columns, {
@@ -285,7 +313,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 						entrySuffix = undefined
 					}
 
-					if isUnresolved(entryQuery) || isEnrichmentRef(entryQuery) {
+					if unresolved(entryQuery) || isEnrichmentRef(entryQuery) {
 						_hasUnresolved = true
 					}
 					_columns = append(_columns, {
@@ -300,7 +328,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 				return self
 			}
 
-			if isUnresolved(query) || isEnrichmentRef(query) {
+			if unresolved(query) || isEnrichmentRef(query) {
 				_hasUnresolved = true
 			}
 			_columns = append(_columns, {
@@ -408,7 +436,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 			// Determine whether ctx is needed: any unresolved PlRef, or any column query spec.
 			hasQuerySpec := false
 			for _, c in _columns {
-				if isQuerySpec(c.query) {
+				if querySpec(c.query) {
 					hasQuerySpec = true
 					break
 				}
@@ -430,7 +458,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 						data: r.getFutureInputField("data")
 					}
 				}
-				if isUnresolved(value) {
+				if unresolved(value) {
 					r := q.resolve(value, _ctx)
 					return {
 						spec: r.getFutureInputField("spec"),
@@ -464,7 +492,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 					data: resolvedCol.data,
 					filters: []
 				}
-				if isUnresolved(column) {
+				if unresolved(column) {
 					primaryPlRefs[p.name] = column
 				}
 
@@ -489,7 +517,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 			multiQueryResultByIdx := {}
 			qMap := {}
 			for idx, c in _columns {
-				if isQuerySpec(c.query) {
+				if querySpec(c.query) {
 					strategy := "expectSingle"
 					if c.mode == "multi" { strategy = "expectMultiple" }
 					qMap["q" + string(idx)] = maps.deepMerge(c.query, {
@@ -504,7 +532,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 
 				qResult := q.anchoredQuery(_ctx, primaryPlRefs, qMap)
 				for idx, c in _columns {
-					if isQuerySpec(c.query) {
+					if querySpec(c.query) {
 						r := qResult.getResult("q" + string(idx))
 						if c.mode == "multi" {
 							// Template iterates this resource via
@@ -554,7 +582,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 				} else if isResolvedColumn(c.query) {
 					entry.spec = c.query.spec
 					entry.data = c.query.data
-				} else if isUnresolved(c.query) {
+				} else if unresolved(c.query) {
 					resolved := resolveColumn(c.query)
 					entry.spec = resolved.spec
 					entry.data = resolved.data

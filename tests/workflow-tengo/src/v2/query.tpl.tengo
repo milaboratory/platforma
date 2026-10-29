@@ -3,7 +3,7 @@
 //
 // args.calls: map of label to one of
 //   { resolve: ref, options?: {...} }    — wf.resolve
-//   { query: querySpec, options?: {...} } — wf.query
+//   { query: querySpec, options?: {...} } — wf.query; with options.single, decoded as one item
 // Outputs (in result): decoded — the description v2.decode produces.
 wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
 ex := import("@platforma-sdk/workflow-tengo:v2.exports")
@@ -19,6 +19,8 @@ wf.body(func(args) {
 		options := is_undefined(call.options) ? [] : [call.options]
 		if !is_undefined(call.resolve) {
 			items[label] = wf.resolve(call.resolve, options...)
+		} else if len(options) > 0 && options[0].single == true {
+			items[label] = wf.query(call.query, options...)
 		} else {
 			choices[label] = wf.query(call.query, options...)
 		}

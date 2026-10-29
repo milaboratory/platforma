@@ -50,7 +50,7 @@ tplTest.concurrent(
       blockId: "reexport-producer",
       args: { collectionRoot: true },
     });
-    const ref = (name: string) => ({ __isRef: true, blockId: "reexport-producer/main", name });
+    const ref = (name: string) => ({ block: "reexport-producer", workflow: "main", name });
     const consumer = await renderWorkflowV2(helper, "v2.reexport", {
       blockId: "reexport-consumer",
       args: { x: ref("x"), y: ref("y") },
@@ -78,8 +78,8 @@ tplTest.concurrent(
       blockId: "passon-producer",
       args: { collectionRoot: true },
     });
-    const y = { __isRef: true, blockId: "passon-producer/main", name: "y" };
-    const x = { __isRef: true, blockId: "passon-producer/main", name: "x" };
+    const y = { block: "passon-producer", workflow: "main", name: "y" };
+    const x = { block: "passon-producer", workflow: "main", name: "x" };
     const passOn = await renderWorkflowV2(helper, "v2.reexport", {
       blockId: "passon-reexport",
       args: { x, y },

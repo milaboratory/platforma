@@ -1,8 +1,0 @@
-// Resolves the value named by args (block, workflow, name) through a ref built with wf.ref.
-wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
-ex := import("@platforma-sdk/workflow-tengo:v2.exports")
-
-wf.body(func(args) {
-	r := wf.resolve(wf.ref(args.block, args.workflow, args.name))
-	return { outputs: { data: r.data }, exports: ex.collection({}) }
-})

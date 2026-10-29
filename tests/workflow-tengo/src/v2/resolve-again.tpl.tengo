@@ -1,0 +1,24 @@
+// A ref a query returned, resolved again. prepare() queries args.query; the body resolves the first
+// hit's ref and outputs that ref and the decoded result of resolving it (described by v2.decode).
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+decodeTpl := assets.importTemplate(":v2.decode")
+
+wf.prepare(func(args) {
+	return { hits: wf.query(args.query) }
+})
+
+wf.body(func(args) {
+	hitRef := args.hits[0].ref
+	decoded := render.createEphemeral(decodeTpl, {
+		items: { again: wf.resolve(hitRef) },
+		choices: {}
+	})
+	return {
+		outputs: { hitCount: len(args.hits), hitRef: hitRef, decoded: decoded.output("out") },
+		exports: ex.collection({})
+	}
+})
