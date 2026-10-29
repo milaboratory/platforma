@@ -360,8 +360,8 @@ catalogs:
       specifier: 11.1.4
       version: 11.1.4
     jsdom:
-      specifier: ^25.0.1
-      version: 25.0.1
+      specifier: ^27.4.0
+      version: 27.4.0
     json-stringify-safe:
       specifier: ^5.0.1
       version: 5.0.1
@@ -532,7 +532,7 @@ importers:
         version: 8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/blob-url-custom-protocol/block:
     devDependencies:
@@ -621,7 +621,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/blob-url-custom-protocol/ui:
     dependencies:
@@ -655,7 +655,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -677,7 +677,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/download-file/block:
     devDependencies:
@@ -769,7 +769,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/download-file/ui:
     dependencies:
@@ -806,7 +806,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -828,7 +828,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/enter-numbers/block:
     devDependencies:
@@ -917,7 +917,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/enter-numbers/ui:
     dependencies:
@@ -948,7 +948,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -970,7 +970,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/filter-column-test/block:
     devDependencies:
@@ -1056,7 +1056,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/filter-column-test/test:
     dependencies:
@@ -1093,7 +1093,7 @@ importers:
         version: link:../../../../sdk/test
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/filter-column-test/ui:
     dependencies:
@@ -1121,7 +1121,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/filter-column-test/workflow:
     dependencies:
@@ -1140,7 +1140,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/model-test/block:
     devDependencies:
@@ -1226,7 +1226,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/model-test/test:
     dependencies:
@@ -1254,7 +1254,7 @@ importers:
         version: link:../../../../sdk/test
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/model-test/ui:
     dependencies:
@@ -1285,7 +1285,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -1310,7 +1310,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/monetization-test/block:
     devDependencies:
@@ -1396,7 +1396,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/monetization-test/ui:
     dependencies:
@@ -1430,7 +1430,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/monetization-test/workflow:
     dependencies:
@@ -1458,7 +1458,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/pframes-oom/block:
     devDependencies:
@@ -1547,7 +1547,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/pframes-oom/ui:
     dependencies:
@@ -1578,7 +1578,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/pframes-oom/workflow:
     dependencies:
@@ -1597,7 +1597,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/pool-explorer/block:
     devDependencies:
@@ -1683,7 +1683,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/pool-explorer/ui:
     dependencies:
@@ -1720,7 +1720,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -1742,7 +1742,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/read-logs/block:
     devDependencies:
@@ -1831,7 +1831,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/read-logs/ui:
     dependencies:
@@ -1862,7 +1862,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -1887,7 +1887,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/sum-numbers/block:
     devDependencies:
@@ -1979,7 +1979,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/sum-numbers/ui:
     dependencies:
@@ -2013,7 +2013,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -2035,7 +2035,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/table-test/block:
     devDependencies:
@@ -2121,7 +2121,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/table-test/test:
     dependencies:
@@ -2149,7 +2149,7 @@ importers:
         version: link:../../../../sdk/test
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/table-test/ui:
     dependencies:
@@ -2180,7 +2180,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/table-test/workflow:
     dependencies:
@@ -2202,7 +2202,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/transfer-files/block:
     devDependencies:
@@ -2291,7 +2291,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/transfer-files/ui:
     dependencies:
@@ -2325,7 +2325,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -2347,7 +2347,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/ui-examples/block:
     devDependencies:
@@ -2436,7 +2436,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/ui-examples/ui:
     dependencies:
@@ -2485,7 +2485,7 @@ importers:
         version: 34.1.2(vue@3.5.44(typescript@7.0.2))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -2513,7 +2513,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/upload-file/block:
     devDependencies:
@@ -2602,7 +2602,7 @@ importers:
         version: link:../../../../tools/block-tools
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   etc/blocks/upload-file/ui:
     dependencies:
@@ -2633,7 +2633,7 @@ importers:
         version: link:../../../../tools/ts-configs
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -2655,7 +2655,7 @@ importers:
         version: 0.4.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/model/backend:
     dependencies:
@@ -2689,7 +2689,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/model/columns-collection-driver:
     dependencies:
@@ -2717,7 +2717,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/model/common:
     dependencies:
@@ -2754,7 +2754,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/model/middle-layer:
     dependencies:
@@ -2794,7 +2794,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/model/pf-spec:
     dependencies:
@@ -2837,7 +2837,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/model/pf-spec-driver:
     dependencies:
@@ -2871,7 +2871,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/model/pl-error-like:
     dependencies:
@@ -2902,7 +2902,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/computable:
     dependencies:
@@ -2936,7 +2936,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/node-streams:
     devDependencies:
@@ -3012,7 +3012,7 @@ importers:
         version: 8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/pf-driver:
     dependencies:
@@ -3064,7 +3064,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/pl-client:
     dependencies:
@@ -3140,7 +3140,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/pl-config:
     dependencies:
@@ -3174,7 +3174,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/pl-crash-recorder:
     dependencies:
@@ -3199,7 +3199,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/pl-deployments:
     dependencies:
@@ -3266,7 +3266,7 @@ importers:
         version: 3.11.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/pl-drivers:
     dependencies:
@@ -3351,7 +3351,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/pl-errors:
     dependencies:
@@ -3385,7 +3385,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/pl-healthcheck:
     dependencies:
@@ -3428,7 +3428,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/pl-http:
     dependencies:
@@ -3456,7 +3456,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/pl-mcp-server:
     dependencies:
@@ -3502,7 +3502,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/pl-middle-layer:
     dependencies:
@@ -3623,7 +3623,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/pl-tree:
     dependencies:
@@ -3669,7 +3669,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/resolve-helper:
     devDependencies:
@@ -3721,7 +3721,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/node/ts-helpers-winston:
     dependencies:
@@ -3767,7 +3767,7 @@ importers:
         version: 5.1.2(@vue/language-core@3.3.10)(rolldown@1.2.15)(rollup@4.65.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/ptabler/js:
     dependencies:
@@ -3795,7 +3795,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/ptabler/schema:
     dependencies:
@@ -3904,7 +3904,7 @@ importers:
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
       jsdom:
         specifier: 'catalog:'
-        version: 25.0.1(supports-color@10.2.2)
+        version: 27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2)
       svgo:
         specifier: 'catalog:'
         version: 3.3.5
@@ -3913,7 +3913,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/util/helpers:
     devDependencies:
@@ -3934,7 +3934,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   lib/util/sequences:
     devDependencies:
@@ -3995,7 +3995,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   sdk/model:
     dependencies:
@@ -4062,7 +4062,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   sdk/test:
     dependencies:
@@ -4086,7 +4086,7 @@ importers:
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -4190,7 +4190,7 @@ importers:
         version: 2.5.1(@vue/compiler-dom@3.5.44)(@vue/server-renderer@3.5.44)(vue@3.5.44(typescript@7.0.2))
       jsdom:
         specifier: 'catalog:'
-        version: 25.0.1(supports-color@10.2.2)
+        version: 27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2)
       resize-observer-polyfill:
         specifier: 'catalog:'
         version: 1.5.1
@@ -4211,7 +4211,7 @@ importers:
         version: 8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   sdk/workflow-tengo:
     dependencies:
@@ -4269,7 +4269,7 @@ importers:
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   tests/config-local-ml-integration:
     dependencies:
@@ -4309,7 +4309,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   tests/drivers-ml-blocks-integration:
     dependencies:
@@ -4412,7 +4412,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -4452,7 +4452,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   tests/mcp-server:
     dependencies:
@@ -4492,7 +4492,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   tests/package-builder:
     devDependencies:
@@ -4649,7 +4649,7 @@ importers:
         version: 1.53.0
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   tests/workflow-tengo/wasm-fixture: {}
 
@@ -4757,7 +4757,7 @@ importers:
         version: 5.1.2(@vue/language-core@3.3.10)(rolldown@1.2.15)(rollup@4.65.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   tools/blocks-deps-updater:
     dependencies:
@@ -4782,7 +4782,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   tools/build-configs:
     devDependencies:
@@ -4806,7 +4806,7 @@ importers:
         version: 8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   tools/package-builder:
     dependencies:
@@ -4843,7 +4843,7 @@ importers:
         version: 8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1)
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   tools/pl-bootstrap:
     dependencies:
@@ -4926,7 +4926,7 @@ importers:
         version: 5.1.2(@vue/language-core@3.3.10)(rolldown@1.2.15)(rollup@4.65.1)(supports-color@10.2.2)(typescript@7.0.2)(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   tools/r-builder:
     dependencies:
@@ -4984,7 +4984,7 @@ importers:
         version: 7.0.2
       vitest:
         specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
   tools/ts-builder:
     dependencies:
@@ -5050,8 +5050,17 @@ importers:
 
 packages:
 
-  '@asamuzakjp/css-color@3.2.0':
-    resolution: {integrity: sha512-K1A6z8tS3XsmCMM86xoWdn7Fkdn9m6RSVtocUrJYIwZnFVkng/PvkEoWtOWmP+Scc6saYWHWZYbndEEXxl24jw==}
+  '@acemir/cssom@0.9.32':
+    resolution: {integrity: sha512-OijrAUu7rrJhSIoHNg6LMPS5e344nwUHA+1EFYYjrh64D+GmytUsfBQjci45TjT+rd5Spsp8B5xsZDT+TgyXXQ==}
+
+  '@asamuzakjp/css-color@4.1.2':
+    resolution: {integrity: sha512-NfBUvBaYgKIuq6E/RBLY1m0IohzNHAYyaJGuTK79Z23uNwmz2jl1mPsC5ZxCCxylinKhT1Amn5oNTlx1wN8cQg==}
+
+  '@asamuzakjp/dom-selector@6.8.1':
+    resolution: {integrity: sha512-MvRz1nCqW0fsy8Qz4dnLIvhOlMzqDVBabZx6lH+YywFDdjXhMY37SmpV1XFX3JzG5GWHn63j6HX6QPr3lZXHvQ==}
+
+  '@asamuzakjp/nwsapi@2.3.9':
+    resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
 
   '@ast-grep/napi-darwin-arm64@0.36.3':
     resolution: {integrity: sha512-uM0Hrm5gcHqaBL64ktmPBFMTorTlPKWsUfi0E2Cg09GJfeYWvZmicCqgd7qVtjURmQvFQdb4JSqHIkJvws6Uqw==}
@@ -5408,36 +5417,53 @@ packages:
     resolution: {integrity: sha512-dTmUJzXSuayBK+hZydEaXd2mhx61qWQwkwaBBY6LyEOVx/L9aQU5ac8eFNEsd9nrD1+zb9zvDCphLSe8g1F4Qw==}
     engines: {node: '>=0.1.90'}
 
-  '@csstools/color-helpers@5.1.0':
-    resolution: {integrity: sha512-S11EXWJyy0Mz5SYvRmY8nJYTFFd1LCNV+7cXyAgQtOOuzb4EsgfqDufL+9esx72/eLhsRdGZwaldu/h+E4t4BA==}
-    engines: {node: '>=18'}
+  '@csstools/color-helpers@6.1.2':
+    resolution: {integrity: sha512-grhRy3OKmniaAEKXMjua5z/EODX0MSqBGjunw8+j/3HQjOnahs2AGhvEOIYVUWcU6ScApbhLhVrQTX8XqrMrow==}
+    engines: {node: '>=20.19.0'}
 
-  '@csstools/css-calc@2.1.4':
-    resolution: {integrity: sha512-3N8oaj+0juUw/1H3YwmDDJXCgTB1gKU6Hc/bB502u9zR0q2vd786XJH9QfrKIEgFlZmhZiq6epXl4rHqhzsIgQ==}
-    engines: {node: '>=18'}
+  '@csstools/css-calc@3.4.3':
+    resolution: {integrity: sha512-iex20d8CHVkyvg6B7UKV7uHnI2Bqo9g+EFfT9E0y+GvTvhZ/DwONJ+9aKb1dlqm0ZiGsL5RXjp0fCoJYnkeDjA==}
+    engines: {node: '>=20.19.0'}
     peerDependencies:
-      '@csstools/css-parser-algorithms': ^3.0.5
-      '@csstools/css-tokenizer': ^3.0.4
+      '@csstools/css-parser-algorithms': ^4.0.2
+      '@csstools/css-tokenizer': ^4.0.2
 
-  '@csstools/css-color-parser@3.1.0':
-    resolution: {integrity: sha512-nbtKwh3a6xNVIp/VRuXV64yTKnb1IjTAEEh3irzS+HkKjAOYLTGNb9pmVNntZ8iVBHcWDA2Dof0QtPgFI1BaTA==}
-    engines: {node: '>=18'}
+  '@csstools/css-color-parser@4.2.6':
+    resolution: {integrity: sha512-iiPQ3iRWwnJkeEn6RIu6SJPr7hYrLz6XZ9s/QZl+2/LI5KQVjpl2fdmDSZKuD4xP6GMmMPgHFFXg6k1Wkz0Trg==}
+    engines: {node: '>=20.19.0'}
     peerDependencies:
-      '@csstools/css-parser-algorithms': ^3.0.5
-      '@csstools/css-tokenizer': ^3.0.4
+      '@csstools/css-parser-algorithms': ^4.0.2
+      '@csstools/css-tokenizer': ^4.0.2
 
-  '@csstools/css-parser-algorithms@3.0.5':
-    resolution: {integrity: sha512-DaDeUkXZKjdGhgYaHNJTV9pV7Y9B3b644jCLs9Upc3VeNGg6LWARAT6O+Q+/COo+2gg/bM5rhpMAtf70WqfBdQ==}
-    engines: {node: '>=18'}
+  '@csstools/css-parser-algorithms@4.0.2':
+    resolution: {integrity: sha512-40cSKyMvK+tq4qz6Awrlye2WGuOKt3FwPgtGg6KTfbHOWNw+Rk1rzbAtZnZ6IBhsY491HLRnDXwoyBAijmmILA==}
+    engines: {node: '>=20.19.0'}
     peerDependencies:
-      '@csstools/css-tokenizer': ^3.0.4
+      '@csstools/css-tokenizer': ^4.0.2
 
-  '@csstools/css-tokenizer@3.0.4':
-    resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
-    engines: {node: '>=18'}
+  '@csstools/css-syntax-patches-for-csstree@1.1.15':
+    resolution: {integrity: sha512-J0u7HkVl2nzSlhsiTOp4AmwcUQ3D+mGEEKfBy/7To5/y7F2OHwyLrXfrhR0SMgr4p5Lo+eaMVSeai24zUcBIxA==}
+    peerDependencies:
+      css-tree: ^3.2.1
+    peerDependenciesMeta:
+      css-tree:
+        optional: true
+
+  '@csstools/css-tokenizer@4.0.2':
+    resolution: {integrity: sha512-OoKoR0f76dCY666JlcbhmVTs2drYj1GUXZTYTcbUgJjh9Nv41aFfZ21bPQTERm5+L5cBDo466NltB2lplS5GBw==}
+    engines: {node: '>=20.19.0'}
 
   '@dabh/diagnostics@2.0.9':
     resolution: {integrity: sha512-R6siwR65Hm+3yfgP7o8DKhNvputQAwfoz9zTc3kyDudnomj2/BcLmD+uGQQPICjuFUp8ounPBU+jmKsocwVVAg==}
+
+  '@exodus/bytes@1.16.0':
+    resolution: {integrity: sha512-IcpW84uEn3N7ETtNZMlxKhfl6Pec8rUNGOTBtWbK1FKhJxIFAptZyVrvVRVBimAJxJCgc3PxepxkdWWG4DVzfA==}
+    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
+    peerDependencies:
+      '@noble/hashes': ^1.8.0 || ^2.0.0
+    peerDependenciesMeta:
+      '@noble/hashes':
+        optional: true
 
   '@faker-js/faker@10.6.0':
     resolution: {integrity: sha512-3RQHgEtvL1Frl/d1cSreo7qhJ3Gk1OdNUai/CtZ8G+wYeRQnJih3s9xJ9/kgYekPQRdwgh0HXRPqMlzWGwivIQ==}
@@ -7324,9 +7350,6 @@ packages:
   async@3.2.6:
     resolution: {integrity: sha512-htCUDlxyyCLMgaM3xXg0C0LW2xqfuQ6p05pCEIsXuyQ+a1koYKTuBMzRNwmybfLgvJDMd0r1LTn4+E0Ti6C2AA==}
 
-  asynckit@0.4.0:
-    resolution: {integrity: sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q==}
-
   b4a@1.9.0:
     resolution: {integrity: sha512-dpfcF9fDNR6++cthXR67iyhgqWy9CBouAvIWhIntzBG6cvK/cnIPiZQjBwi/ZqjjBEDGfoNDtmB0kTjroOJ3pQ==}
     peerDependencies:
@@ -7393,6 +7416,9 @@ packages:
   better-path-resolve@1.0.0:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
+
+  bidi-js@1.1.0:
+    resolution: {integrity: sha512-fX1Onk0tdVPC7obPWB5EbJ1z7NVhLq4m2xZLq2YXBkxzMXIGRpNMU88n0EPgWseKl12J7zXs7qrDxPK4sRs2fg==}
 
   binaryen@132.0.0:
     resolution: {integrity: sha512-4Usg7yEvwO3FMso3Oov6qkOOHSod1IEv+boKkh77kTljM+eNBouqCTbqWswGzbG+vDNO/b/v2C4gfEh1WgB9Lg==}
@@ -7529,10 +7555,6 @@ packages:
   colorette@1.4.0:
     resolution: {integrity: sha512-Y2oEozpomLn7Q3HFP7dpww7AtMJplbM9lGZP6RDfHqmbeRjiwRg4n6VM6j4KLmRke85uWEI7JqF17f3pqdRA0g==}
 
-  combined-stream@1.0.8:
-    resolution: {integrity: sha512-FQN4MRfuJeHf7cBbBMJFXhKSDq+2kAArBlmRBvcvFE5BB1HZKXtSFASDhdlz9zOYwxh8lDdnvmMOe/+5cdoEdg==}
-    engines: {node: '>= 0.8'}
-
   commander@14.0.3:
     resolution: {integrity: sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw==}
     engines: {node: '>=20'}
@@ -7633,6 +7655,10 @@ packages:
     resolution: {integrity: sha512-6Fv1DV/TYw//QF5IzQdqsNDjx/wc8TrMBZsqjL9eW01tWb7R7k/mq+/VXfJCl7SoD5emsJop9cOByJZfs8hYIw==}
     engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0}
 
+  css-tree@3.2.1:
+    resolution: {integrity: sha512-X7sjQzceUhu1u7Y/ylrRZFU2FS6LRiFVp6rKLPg23y3x3c3DOKAwuXGDp+PAGjh6CSnCjYeAul8pcT8bAl+lSA==}
+    engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0}
+
   css-what@6.2.2:
     resolution: {integrity: sha512-u/O3vwbptzhMs3L1fQE82ZSLHQQfto5gyZzwteVIEyeaY5Fc7R4dapF/BvRoSYFeqfBk4m0V1Vafq5Pjv25wvA==}
     engines: {node: '>= 6'}
@@ -7641,9 +7667,9 @@ packages:
     resolution: {integrity: sha512-0LrrStPOdJj+SPCCrGhzryycLjwcgUSHBtxNA8aIDxf0GLsRh1cKYhB00Gd1lDOS4yGH69+SNn13+TWbVHETFQ==}
     engines: {node: ^10 || ^12.20.0 || ^14.13.0 || >=15.0.0, npm: '>=7.0.0'}
 
-  cssstyle@4.6.0:
-    resolution: {integrity: sha512-2z+rWdzbbSZv6/rhtvzvqeZQHrBaqgogqt85sqFNbabZOuFbCVFb8kPeEtZjiKkbrm395irpNKiYeFeLiQnFPg==}
-    engines: {node: '>=18'}
+  cssstyle@5.3.7:
+    resolution: {integrity: sha512-7D2EPVltRrsTkhpQmksIu+LxeWAIEk6wRDMJ1qljlv+CKHJM+cJLlfhWIzNA44eAsHXSNe3+vO6DW1yCYx8SuQ==}
+    engines: {node: '>=20'}
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
@@ -7684,9 +7710,9 @@ packages:
     resolution: {integrity: sha512-VqKjzBLejbSMT4IgbmVgDjpkYrNWUYJnbCGo874u7MMKIWsILRX+OpX/gTk8MqjpT1A/c6HY2dCA77ZN0lkQ2Q==}
     engines: {node: '>=12'}
 
-  data-urls@5.0.0:
-    resolution: {integrity: sha512-ZYP5VBHshaDAiVZxjbRVcFJpc+4xGgT0bK3vzy1HLN8jTO975HEbuYzZJcHoQEY5K1a0z8YayJkyVETa08eNTg==}
-    engines: {node: '>=18'}
+  data-urls@6.0.1:
+    resolution: {integrity: sha512-euIQENZg6x8mj3fO6o9+fOW8MimUI4PpD/fZBhJfeioZVy9TUpM4UY7KjQNVZFlqwJ0UdzRDzkycB997HEq1BQ==}
+    engines: {node: '>=20'}
 
   debug@4.4.3:
     resolution: {integrity: sha512-RGwwWnwQvkVfavKVt22FGLw+xYSdzARwm0ru6DhTVA3umU5hZc28V3kO4stgYryrTlLpuvgI9GiijltAjNbcqA==}
@@ -7711,10 +7737,6 @@ packages:
   deepmerge@4.3.1:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
     engines: {node: '>=0.10.0'}
-
-  delayed-stream@1.0.0:
-    resolution: {integrity: sha512-ZySD7Nf91aLB0RxL4KGrKHBXl7Eds1DAmEdcoVawXnLD7SDhpNgtuII2aAkg7a7QS41jxPSZ17p4VdGnMHk3MQ==}
-    engines: {node: '>=0.4.0'}
 
   denque@2.1.0:
     resolution: {integrity: sha512-HVQE3AAb/pxF8fQAoiqpvg9i3evqug3hoiwakOyZAwJm+6vZehbkYXZ0l4JxS+I3QxM97v5aaRNhj8v5oBhekw==}
@@ -7812,13 +7834,13 @@ packages:
     resolution: {integrity: sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw==}
     engines: {node: '>=0.12'}
 
-  entities@6.0.1:
-    resolution: {integrity: sha512-aN97NXWF6AWBTahfVOIrB/NShkzi5H7F9r1s9mD3cDj4Ko5f2qhhVoYMibXF7GlLveb/D2ioWay8lxI97Ven3g==}
-    engines: {node: '>=0.12'}
-
   entities@7.0.1:
     resolution: {integrity: sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA==}
     engines: {node: '>=0.12'}
+
+  entities@8.1.0:
+    resolution: {integrity: sha512-kxL7msIffSuh9aaFAMD7rxAIuTRMAHMeBtgHW2yUdWw732ZNh4MehkF2gdjvtdmikkaIP9bFDDJOPlsvm7avrA==}
+    engines: {node: '>=20.19.0'}
 
   es-define-property@1.0.1:
     resolution: {integrity: sha512-e3nRfgfUZ4rNGL232gUgX06QNyyez04KdjFrF+LTRoOXmrOgFKDg4BCdsjW8EnT69eqdYGmRpJwiPVYNrCaW3g==}
@@ -7836,10 +7858,6 @@ packages:
 
   es-object-atoms@1.1.2:
     resolution: {integrity: sha512-HWcBoN6NileqtSydK2FqHbS/LoDd2pqrnQHLyJzBj4kOp/ky2MWMN694xOfkK8/SnUsW2DH7EfyVlydKCsm1Zw==}
-    engines: {node: '>= 0.4'}
-
-  es-set-tostringtag@2.1.0:
-    resolution: {integrity: sha512-j6vWzfrGVfyXxge+O0x5sh6cvxAog0a/4Rdd2K36zCMV5eJ+/+tOAngRO8cODMNWbVRdVlmGZQL2YS3yR8bIUA==}
     engines: {node: '>= 0.4'}
 
   es-toolkit@1.53.0:
@@ -7964,10 +7982,6 @@ packages:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
     engines: {node: '>=14'}
 
-  form-data@4.0.6:
-    resolution: {integrity: sha512-vKatAh4SlVfgbv+YtmhiRjhEMJsYpsG1Y2rMQtR+SVSbytsSD1YGzDIcrAJmdFec88u/+VoGmxnl+80gL1tRCQ==}
-    engines: {node: '>= 6'}
-
   forwarded@0.2.0:
     resolution: {integrity: sha512-buRG0fpBtRHSTCOASe6hD258tEubFoRLb4ZNA6NxMVHNw2gOcwHo9wyablzMzOA5z9xA9L1KNjk/Nt6MT9aYow==}
     engines: {node: '>= 0.6'}
@@ -8073,10 +8087,6 @@ packages:
     resolution: {integrity: sha512-1cDNdwJ2Jaohmb3sg4OmKaMBwuC48sYni5HUw2DvsC8LjGTLK9h+eb1X6RyuOHe4hT0ULCW68iomhjUoKUqlPQ==}
     engines: {node: '>= 0.4'}
 
-  has-tostringtag@1.0.2:
-    resolution: {integrity: sha512-NqADB8VjPFLM2V0VvHUewwwsw0ZWBaIdgo+ieHtK3hasLz4qeCRjYcqfB6AQrBggRKppKF8L52/VqdVsO47Dlw==}
-    engines: {node: '>= 0.4'}
-
   hasown@2.0.4:
     resolution: {integrity: sha512-T2UbfbBEF32wiepXIsMlTW9+dDYC6wMh/t/vYA4tuOMKqWz/n3vr1NFSxQiyP+zk2mXsoMA/i/7qV6LKut1t1A==}
     engines: {node: '>= 0.4'}
@@ -8089,9 +8099,9 @@ packages:
     resolution: {integrity: sha512-yhRLQ21U6qa9Hsu2N7Qcbh8tE+WKEcoErjIo56LeSGiGXGp9sA7UpE86Ui9uexb61KakiGwuHMn2QdV7w6i6kQ==}
     engines: {node: '>=16.9.0'}
 
-  html-encoding-sniffer@4.0.0:
-    resolution: {integrity: sha512-Y22oTqIU4uuPgEemfz7NDJz6OeKf12Lsu+QC+s3BVpda64lTiMYCyGwg5ki4vFxkMwQdeZDl2adZoqUgdFuTgQ==}
-    engines: {node: '>=18'}
+  html-encoding-sniffer@6.0.0:
+    resolution: {integrity: sha512-CV9TW3Y3f8/wT0BRFc1/KAVQ3TUHiXmaAb6VW9vtiMFf7SLoMd1PdAc4W3KFOFETBJUb90KatHqlsZMWV+R9Gg==}
+    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
 
   html-escaper@2.0.2:
     resolution: {integrity: sha512-H2iMtd0I4Mt5eYiapRdIDjp+XzelXQ0tFE4JS7YFwFevXXMmOp9myNrUvCg0D6ws8iqkRPBfKHgbwig1SmlLfg==}
@@ -8116,10 +8126,6 @@ packages:
     resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
     engines: {node: '>=18'}
     hasBin: true
-
-  iconv-lite@0.6.3:
-    resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
-    engines: {node: '>=0.10.0'}
 
   iconv-lite@0.7.3:
     resolution: {integrity: sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==}
@@ -8264,11 +8270,11 @@ packages:
     resolution: {integrity: sha512-SFNOvSJ+Dgf/9An904Yx+CgSlIPCkIpao4qo51lpee25TIRejdH3rhR4EZMGoNx3/TP3O+wzWuiTFl4sqbltzA==}
     hasBin: true
 
-  jsdom@25.0.1:
-    resolution: {integrity: sha512-8i7LzZj7BF8uplX+ZyOlIz86V6TAsSs+np6m1kpW9u0JWi4z/1t+FzcK1aek+ybTnAC4KhBL4uXCNT0wcUIeCw==}
-    engines: {node: '>=18'}
+  jsdom@27.4.0:
+    resolution: {integrity: sha512-mjzqwWRD9Y1J1KUi7W97Gja1bwOOM5Ug0EZ6UDK3xS7j7mndrkwozHtSblfomlzyB4NepioNt+B2sOSzczVgtQ==}
+    engines: {node: ^20.19.0 || ^22.12.0 || >=24.0.0}
     peerDependencies:
-      canvas: ^2.11.2
+      canvas: ^3.0.0
     peerDependenciesMeta:
       canvas:
         optional: true
@@ -8460,6 +8466,9 @@ packages:
   mdn-data@2.0.30:
     resolution: {integrity: sha512-GaqWWShW4kv/G9IEucWScBx9G1/vsFZZJUO+tD26M8J8z3Kw5RDQjaoZe03YAClgeS/SWPOcb4nkFBTEi5DUEA==}
 
+  mdn-data@2.27.1:
+    resolution: {integrity: sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==}
+
   media-typer@1.1.1:
     resolution: {integrity: sha512-yz3xRaG20c6/BOzvYoDaGtPmGscs7YivItZEEqe6GbwNfHuxu9YNmvnEkMzKldAGY4/80pRcQRZSEnhquk9XuQ==}
     engines: {node: '>= 0.8'}
@@ -8601,9 +8610,6 @@ packages:
   nth-check@2.1.1:
     resolution: {integrity: sha512-lqjrjmaOoAnWfMmBPL+XNnynZh2+swxiX3WUE0s4yEHI6m+AwrK2UZOimIRl3X/4QctVqS8AiZjFqyOGrMXb/w==}
 
-  nwsapi@2.2.28:
-    resolution: {integrity: sha512-IlVB7OS7qrOsVYlpnFIkETjMwT9jwvmocJmmM+GZU/PAB3uGi9Ezd7vcWhWBUnSc0ya4ppmQITOyP1ez9gg8cg==}
-
   object-assign@4.1.1:
     resolution: {integrity: sha512-rJgTQnkUnH1sFw8yT6VSU3zD3sWmu6sZhIseY8VX+GRu3P6F7Fu+JNDoXfklElbLJSnc3FUQHVe4cU5hj+BcUg==}
     engines: {node: '>=0.10.0'}
@@ -8713,8 +8719,8 @@ packages:
     resolution: {integrity: sha512-ybiGyvspI+fAoRQbIPRddCcSTV9/LsJbf0e/S85VLowVGzRmokfneg2kwVW/KU5rOXrPSbF1qAKPMgNTqqROQQ==}
     engines: {node: '>=18'}
 
-  parse5@7.3.0:
-    resolution: {integrity: sha512-IInvU7fabl34qmi9gY8XOVxhYyMyuH2xUNpb2q8/Y+7552KlejkRvqvD19nMoUW/uQGGbqNpA6Tufu5FL5BZgw==}
+  parse5@8.0.1:
+    resolution: {integrity: sha512-z1e/HMG90obSGeidlli3hj7cbocou0/wa5HacvI3ASx34PecNjNQeaHNo5WIZpWofN9kgkqV1q5YvXe3F0FoPw==}
 
   parseurl@1.3.3:
     resolution: {integrity: sha512-CiyeOxFT/JZyN5m0z9PfXw4SCBJ6Sygz1Dpl0wqjlhDEGGBP1GnsUVEL0p63hoG1fcj3fHynXi9NYO4nWOL+qQ==}
@@ -9000,12 +9006,6 @@ packages:
     resolution: {integrity: sha512-nLTrUKm2UyiL7rlhapu/Zl45FwNgkZGaCpZbIHajDYgwlJCOzLSk+cIPAnsEqV955GjILJnKbdQC1nVPz+gAYQ==}
     engines: {node: '>= 18'}
 
-  rrweb-cssom@0.7.1:
-    resolution: {integrity: sha512-TrEMa7JGdVm0UThDJSx7ddw5nVm3UJS9o9CCIZ72B1vSyEZoziDqBYP3XIoi/12lKrJR8rE3jeFHMok2F/Mnsg==}
-
-  rrweb-cssom@0.8.0:
-    resolution: {integrity: sha512-guoltQEx+9aMf2gDZ0s62EcV8lsXR+0w8915TC3ITdn2YueuNjdAYh/levpU9nFaoChh9RUS5ZdQMrKfVEN9tw==}
-
   run-parallel@1.2.0:
     resolution: {integrity: sha512-5l4VyZR86LZ/lDxZTR6jqL8AFE2S0IFLMP26AbjsLVADxHdhB/c0GUsH+y39UfCi3dzz8OlQuPmnaJOMoDHQBA==}
 
@@ -9264,11 +9264,11 @@ packages:
     resolution: {integrity: sha512-LgO3D9yZJjApUiuUfl9iFAwrtaX4+lok3wJIqttGoKCHlWUqHqbQpnxCf82L8FjgKsh4iGo78hqJwgL8F6To2A==}
     engines: {node: '>=14.0.0'}
 
-  tldts-core@6.1.86:
-    resolution: {integrity: sha512-Je6p7pkk+KMzMv2XXKmAE3McmolOQFdxkKw0R8EYNr7sELW46JqnNeTX8ybPiQgvg1ymCoF8LXs5fzFaZvJPTA==}
+  tldts-core@7.4.19:
+    resolution: {integrity: sha512-goNXV6Ho9TIOfpJZanTd6CKG5DyYgYAL+k+22T0SLh8l6+KHIfBUPFuePuSZv05UttIaaLmI9tb7TmGIdK5AkQ==}
 
-  tldts@6.1.86:
-    resolution: {integrity: sha512-WMi/OQ2axVTf/ykqCQgXiIct+mSQDFdH2fkwhPwgEwvJ1kSzZRiinb0zF2Xb8u4+OqPChmyI6MEu4EezNJz+FQ==}
+  tldts@7.4.19:
+    resolution: {integrity: sha512-48dH6aSpQnpbzDUc4vIQZ1VjB8tkK+e8c1yx05/SZK+rkssgjEOlxDd/yU8/a4vGYQ9vRgJr9dwMq9TJ0b3X2Q==}
     hasBin: true
 
   tmp@0.2.7:
@@ -9283,16 +9283,16 @@ packages:
     resolution: {integrity: sha512-o5sSPKEkg/DIQNmH43V0/uerLrpzVedkUh8tGNvaeXpfpuwjKenlSox/2O/BTlZUtEe+JG7s5YhEz608PlAHRA==}
     engines: {node: '>=0.6'}
 
-  tough-cookie@5.1.2:
-    resolution: {integrity: sha512-FVDYdxtnj0G6Qm/DhNPSb8Ju59ULcup3tuJxkFb5K8Bv2pUXILbf0xZWU8PX8Ov19OXljbUyveOFwRMwkXzO+A==}
+  tough-cookie@6.0.2:
+    resolution: {integrity: sha512-exgYmnmL/sJpR3upZfXG5PoatXQii55xAiXGXzY+sROLZ/Y+SLcp9PgJNI9Vz37HpQ74WvDcLT8eqm+kV3FzrA==}
     engines: {node: '>=16'}
 
   tr46@0.0.3:
     resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
 
-  tr46@5.1.1:
-    resolution: {integrity: sha512-hdF5ZgjTqgAntKkklYw0R03MG2x/bSzTtkxmIRw/sTNV8YXsCJ1tfLAX23lhxhHJlEf3CRCOCGGWw3vI3GaSPw==}
-    engines: {node: '>=18'}
+  tr46@6.0.0:
+    resolution: {integrity: sha512-bLVMLPtstlZ4iMQHpFHTR7GAGj2jxi8Dg0s2h2MafAE4uSWF98FC/3MomU51iQAMf8/qDUbKWf5GxuvvVcXEhw==}
+    engines: {node: '>=20'}
 
   triple-beam@1.4.1:
     resolution: {integrity: sha512-aZbgViZrg1QNcG+LULa7nhZpJTZSLm/mXnHXnbAbjmN5aSa0y7V+wvv6+4WaBtpISJzThKy+PIPxc1Nq1EJ9mg==}
@@ -9625,25 +9625,24 @@ packages:
   webidl-conversions@3.0.1:
     resolution: {integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==}
 
-  webidl-conversions@7.0.0:
-    resolution: {integrity: sha512-VwddBukDzu71offAQR975unBIGqfKZpM+8ZX6ySk8nYhVoo5CYaZyzt3YBvYtRtO+aoGlqxPg/B87NGVZ/fu6g==}
-    engines: {node: '>=12'}
+  webidl-conversions@8.0.1:
+    resolution: {integrity: sha512-BMhLD/Sw+GbJC21C/UgyaZX41nPt8bUTg+jWyDeg7e7YN4xOM05YPSIXceACnXVtqyEw/LMClUQMtMZ+PGGpqQ==}
+    engines: {node: '>=20'}
 
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
-
-  whatwg-encoding@3.1.1:
-    resolution: {integrity: sha512-6qN4hJdMwfYBtE3YBTTHhoeuUrDBPZmbQaxWAqSALV/MeEnR5z1xd8UKud2RAkFoPkmB+hli1TZSnyi84xz1vQ==}
-    engines: {node: '>=18'}
-    deprecated: Use @exodus/bytes instead for a more spec-conformant and faster implementation
 
   whatwg-mimetype@4.0.0:
     resolution: {integrity: sha512-QaKxh0eNIi2mE9p2vEdzfagOKHCcj1pJ56EEHGQOVxp8r9/iszLUUV7v89x9O1p/T+NlTM5W7jW6+cz4Fq1YVg==}
     engines: {node: '>=18'}
 
-  whatwg-url@14.2.0:
-    resolution: {integrity: sha512-De72GdQZzNTUBBChsXueQUnPKDkg/5A5zp7pFDuQAj5UFoENpiACU0wlCvzpAGnTkj++ihpKwKyYewn/XNUbKw==}
-    engines: {node: '>=18'}
+  whatwg-mimetype@5.0.0:
+    resolution: {integrity: sha512-sXcNcHOC51uPGF0P/D4NVtrkjSU2fNsm9iog4ZvZJsL3rjoDAzXZhkm2MWt1y+PUdggKAYVoMAIYcs78wJ51Cw==}
+    engines: {node: '>=20'}
+
+  whatwg-url@15.1.0:
+    resolution: {integrity: sha512-2ytDk0kiEj/yu90JOAp44PVPUkO9+jVhyf+SybKlRHSDlvOOZhdPIrr7xTH64l4WixO2cP+wQIcgujkGBPPz6g==}
+    engines: {node: '>=20'}
 
   whatwg-url@5.0.0:
     resolution: {integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==}
@@ -9769,13 +9768,25 @@ packages:
 
 snapshots:
 
-  '@asamuzakjp/css-color@3.2.0':
+  '@acemir/cssom@0.9.32': {}
+
+  '@asamuzakjp/css-color@4.1.2':
     dependencies:
-      '@csstools/css-calc': 2.1.4(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)
-      '@csstools/css-color-parser': 3.1.0(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)
-      '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
-      '@csstools/css-tokenizer': 3.0.4
-      lru-cache: 10.4.3
+      '@csstools/css-calc': 3.4.3(@csstools/css-parser-algorithms@4.0.2(@csstools/css-tokenizer@4.0.2))(@csstools/css-tokenizer@4.0.2)
+      '@csstools/css-color-parser': 4.2.6(@csstools/css-parser-algorithms@4.0.2(@csstools/css-tokenizer@4.0.2))(@csstools/css-tokenizer@4.0.2)
+      '@csstools/css-parser-algorithms': 4.0.2(@csstools/css-tokenizer@4.0.2)
+      '@csstools/css-tokenizer': 4.0.2
+      lru-cache: 11.5.3
+
+  '@asamuzakjp/dom-selector@6.8.1':
+    dependencies:
+      '@asamuzakjp/nwsapi': 2.3.9
+      bidi-js: 1.1.0
+      css-tree: 3.2.1
+      is-potential-custom-element-name: 1.0.1
+      lru-cache: 11.5.3
+
+  '@asamuzakjp/nwsapi@2.3.9': {}
 
   '@ast-grep/napi-darwin-arm64@0.36.3':
     optional: true
@@ -10318,31 +10329,39 @@ snapshots:
 
   '@colors/colors@1.6.1': {}
 
-  '@csstools/color-helpers@5.1.0': {}
+  '@csstools/color-helpers@6.1.2': {}
 
-  '@csstools/css-calc@2.1.4(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)':
+  '@csstools/css-calc@3.4.3(@csstools/css-parser-algorithms@4.0.2(@csstools/css-tokenizer@4.0.2))(@csstools/css-tokenizer@4.0.2)':
     dependencies:
-      '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
-      '@csstools/css-tokenizer': 3.0.4
+      '@csstools/css-parser-algorithms': 4.0.2(@csstools/css-tokenizer@4.0.2)
+      '@csstools/css-tokenizer': 4.0.2
 
-  '@csstools/css-color-parser@3.1.0(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)':
+  '@csstools/css-color-parser@4.2.6(@csstools/css-parser-algorithms@4.0.2(@csstools/css-tokenizer@4.0.2))(@csstools/css-tokenizer@4.0.2)':
     dependencies:
-      '@csstools/color-helpers': 5.1.0
-      '@csstools/css-calc': 2.1.4(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)
-      '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
-      '@csstools/css-tokenizer': 3.0.4
+      '@csstools/color-helpers': 6.1.2
+      '@csstools/css-calc': 3.4.3(@csstools/css-parser-algorithms@4.0.2(@csstools/css-tokenizer@4.0.2))(@csstools/css-tokenizer@4.0.2)
+      '@csstools/css-parser-algorithms': 4.0.2(@csstools/css-tokenizer@4.0.2)
+      '@csstools/css-tokenizer': 4.0.2
 
-  '@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4)':
+  '@csstools/css-parser-algorithms@4.0.2(@csstools/css-tokenizer@4.0.2)':
     dependencies:
-      '@csstools/css-tokenizer': 3.0.4
+      '@csstools/css-tokenizer': 4.0.2
 
-  '@csstools/css-tokenizer@3.0.4': {}
+  '@csstools/css-syntax-patches-for-csstree@1.1.15(css-tree@3.2.1)':
+    optionalDependencies:
+      css-tree: 3.2.1
+
+  '@csstools/css-tokenizer@4.0.2': {}
 
   '@dabh/diagnostics@2.0.9':
     dependencies:
       '@so-ric/colorspace': 1.1.6
       enabled: 2.0.0
       kuler: 2.0.0
+
+  '@exodus/bytes@1.16.0(@noble/hashes@2.4.0)':
+    optionalDependencies:
+      '@noble/hashes': 2.4.0
 
   '@faker-js/faker@10.6.0': {}
 
@@ -11573,7 +11592,7 @@ snapshots:
       magicast: 0.5.5
       obug: 2.2.1
       tinyrainbow: 3.2.0
-      vitest: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+      vitest: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
     transitivePeerDependencies:
       - supports-color
 
@@ -11947,8 +11966,6 @@ snapshots:
 
   async@3.2.6: {}
 
-  asynckit@0.4.0: {}
-
   b4a@1.9.0: {}
 
   balanced-match@1.0.2: {}
@@ -11995,6 +12012,10 @@ snapshots:
   better-path-resolve@1.0.0:
     dependencies:
       is-windows: 1.0.2
+
+  bidi-js@1.1.0:
+    dependencies:
+      require-from-string: 2.0.2
 
   binaryen@132.0.0: {}
 
@@ -12132,10 +12153,6 @@ snapshots:
 
   colorette@1.4.0: {}
 
-  combined-stream@1.0.8:
-    dependencies:
-      delayed-stream: 1.0.0
-
   commander@14.0.3: {}
 
   commander@15.0.0: {}
@@ -12231,16 +12248,23 @@ snapshots:
       mdn-data: 2.0.30
       source-map-js: 1.2.2
 
+  css-tree@3.2.1:
+    dependencies:
+      mdn-data: 2.27.1
+      source-map-js: 1.2.2
+
   css-what@6.2.2: {}
 
   csso@5.0.5:
     dependencies:
       css-tree: 2.2.1
 
-  cssstyle@4.6.0:
+  cssstyle@5.3.7:
     dependencies:
-      '@asamuzakjp/css-color': 3.2.0
-      rrweb-cssom: 0.8.0
+      '@asamuzakjp/css-color': 4.1.2
+      '@csstools/css-syntax-patches-for-csstree': 1.1.15(css-tree@3.2.1)
+      css-tree: 3.2.1
+      lru-cache: 11.5.3
 
   csstype@3.2.3: {}
 
@@ -12276,10 +12300,10 @@ snapshots:
     dependencies:
       d3-array: 3.2.4
 
-  data-urls@5.0.0:
+  data-urls@6.0.1:
     dependencies:
-      whatwg-mimetype: 4.0.0
-      whatwg-url: 14.2.0
+      whatwg-mimetype: 5.0.0
+      whatwg-url: 15.1.0
 
   debug@4.4.3(supports-color@10.2.2):
     dependencies:
@@ -12292,8 +12316,6 @@ snapshots:
   dedent@1.7.2: {}
 
   deepmerge@4.3.1: {}
-
-  delayed-stream@1.0.0: {}
 
   denque@2.1.0: {}
 
@@ -12389,9 +12411,9 @@ snapshots:
 
   entities@4.5.0: {}
 
-  entities@6.0.1: {}
-
   entities@7.0.1: {}
+
+  entities@8.1.0: {}
 
   es-define-property@1.0.1: {}
 
@@ -12404,13 +12426,6 @@ snapshots:
   es-object-atoms@1.1.2:
     dependencies:
       es-errors: 1.3.0
-
-  es-set-tostringtag@2.1.0:
-    dependencies:
-      es-errors: 1.3.0
-      get-intrinsic: 1.3.0
-      has-tostringtag: 1.0.2
-      hasown: 2.0.4
 
   es-toolkit@1.53.0: {}
 
@@ -12559,14 +12574,6 @@ snapshots:
       cross-spawn: 7.0.6
       signal-exit: 4.1.0
 
-  form-data@4.0.6:
-    dependencies:
-      asynckit: 0.4.0
-      combined-stream: 1.0.8
-      es-set-tostringtag: 2.1.0
-      hasown: 2.0.4
-      mime-types: 2.1.35
-
   forwarded@0.2.0: {}
 
   fresh@2.0.0: {}
@@ -12688,10 +12695,6 @@ snapshots:
 
   has-symbols@1.1.0: {}
 
-  has-tostringtag@1.0.2:
-    dependencies:
-      has-symbols: 1.1.0
-
   hasown@2.0.4:
     dependencies:
       function-bind: 1.1.2
@@ -12700,9 +12703,11 @@ snapshots:
 
   hono@4.13.14: {}
 
-  html-encoding-sniffer@4.0.0:
+  html-encoding-sniffer@6.0.0(@noble/hashes@2.4.0):
     dependencies:
-      whatwg-encoding: 3.1.1
+      '@exodus/bytes': 1.16.0(@noble/hashes@2.4.0)
+    transitivePeerDependencies:
+      - '@noble/hashes'
 
   html-escaper@2.0.2: {}
 
@@ -12731,10 +12736,6 @@ snapshots:
   human-id@4.2.2: {}
 
   husky@9.1.7: {}
-
-  iconv-lite@0.6.3:
-    dependencies:
-      safer-buffer: 2.1.2
 
   iconv-lite@0.7.3:
     dependencies:
@@ -12847,30 +12848,30 @@ snapshots:
     dependencies:
       argparse: 2.0.1
 
-  jsdom@25.0.1(supports-color@10.2.2):
+  jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2):
     dependencies:
-      cssstyle: 4.6.0
-      data-urls: 5.0.0
+      '@acemir/cssom': 0.9.32
+      '@asamuzakjp/dom-selector': 6.8.1
+      '@exodus/bytes': 1.16.0(@noble/hashes@2.4.0)
+      cssstyle: 5.3.7
+      data-urls: 6.0.1
       decimal.js: 10.6.0
-      form-data: 4.0.6
-      html-encoding-sniffer: 4.0.0
+      html-encoding-sniffer: 6.0.0(@noble/hashes@2.4.0)
       http-proxy-agent: 7.0.2(supports-color@10.2.2)
       https-proxy-agent: 7.0.6(supports-color@10.2.2)
       is-potential-custom-element-name: 1.0.1
-      nwsapi: 2.2.28
-      parse5: 7.3.0
-      rrweb-cssom: 0.7.1
+      parse5: 8.0.1
       saxes: 6.0.0
       symbol-tree: 3.2.4
-      tough-cookie: 5.1.2
+      tough-cookie: 6.0.2
       w3c-xmlserializer: 5.0.0
-      webidl-conversions: 7.0.0
-      whatwg-encoding: 3.1.1
+      webidl-conversions: 8.0.1
       whatwg-mimetype: 4.0.0
-      whatwg-url: 14.2.0
+      whatwg-url: 15.1.0
       ws: 8.22.0
       xml-name-validator: 5.0.0
     transitivePeerDependencies:
+      - '@noble/hashes'
       - bufferutil
       - supports-color
       - utf-8-validate
@@ -13023,6 +13024,8 @@ snapshots:
 
   mdn-data@2.0.30: {}
 
+  mdn-data@2.27.1: {}
+
   media-typer@1.1.1: {}
 
   merge-descriptors@2.0.0: {}
@@ -13133,8 +13136,6 @@ snapshots:
   nth-check@2.1.1:
     dependencies:
       boolbase: 1.0.0
-
-  nwsapi@2.2.28: {}
 
   object-assign@4.1.1: {}
 
@@ -13274,9 +13275,9 @@ snapshots:
       index-to-position: 1.2.0
       type-fest: 4.41.0
 
-  parse5@7.3.0:
+  parse5@8.0.1:
     dependencies:
-      entities: 6.0.1
+      entities: 8.1.0
 
   parseurl@1.3.3: {}
 
@@ -13606,10 +13607,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  rrweb-cssom@0.7.1: {}
-
-  rrweb-cssom@0.8.0: {}
-
   run-parallel@1.2.0:
     dependencies:
       queue-microtask: 1.2.3
@@ -13933,11 +13930,11 @@ snapshots:
 
   tinyrainbow@3.2.0: {}
 
-  tldts-core@6.1.86: {}
+  tldts-core@7.4.19: {}
 
-  tldts@6.1.86:
+  tldts@7.4.19:
     dependencies:
-      tldts-core: 6.1.86
+      tldts-core: 7.4.19
 
   tmp@0.2.7: {}
 
@@ -13947,13 +13944,13 @@ snapshots:
 
   toidentifier@1.0.1: {}
 
-  tough-cookie@5.1.2:
+  tough-cookie@6.0.2:
     dependencies:
-      tldts: 6.1.86
+      tldts: 7.4.19
 
   tr46@0.0.3: {}
 
-  tr46@5.1.1:
+  tr46@6.0.0:
     dependencies:
       punycode: 2.3.1
 
@@ -14132,7 +14129,7 @@ snapshots:
       sass: 1.83.4
       yaml: 2.9.1
 
-  vitest@4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@25.0.1(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1)):
+  vitest@4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1)):
     dependencies:
       '@vitest/expect': 4.1.12
       '@vitest/mocker': 4.1.12(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
@@ -14157,7 +14154,7 @@ snapshots:
     optionalDependencies:
       '@types/node': 24.19.2
       '@vitest/coverage-istanbul': 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
-      jsdom: 25.0.1(supports-color@10.2.2)
+      jsdom: 27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2)
     transitivePeerDependencies:
       - msw
 
@@ -14242,20 +14239,18 @@ snapshots:
 
   webidl-conversions@3.0.1: {}
 
-  webidl-conversions@7.0.0: {}
+  webidl-conversions@8.0.1: {}
 
   webpack-virtual-modules@0.6.2: {}
 
-  whatwg-encoding@3.1.1:
-    dependencies:
-      iconv-lite: 0.6.3
-
   whatwg-mimetype@4.0.0: {}
 
-  whatwg-url@14.2.0:
+  whatwg-mimetype@5.0.0: {}
+
+  whatwg-url@15.1.0:
     dependencies:
-      tr46: 5.1.1
-      webidl-conversions: 7.0.0
+      tr46: 6.0.0
+      webidl-conversions: 8.0.1
 
   whatwg-url@5.0.0:
     dependencies:
