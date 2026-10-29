@@ -1,0 +1,341 @@
+/**
+ * Exec fallbacks: the policy an exec builder declares with .fallbacks(), and what the outcome
+ * router does with it. Pure functions only: no resources are created here.
+ *
+ * A policy maps a failure reason of a RunCommand v3 outcome to the plan that runs next:
+ *
+ *   .fallbacks({
+ *       GPUMissed:     cpuOnly,                                   // any GPUMissed failure
+ *       OOM:           [{ name: "moreRam", builder: moreRam }],
+ *       SoftwareError: [{ exitCode: 2, builder: reindex },        // first match wins
+ *                       { messageMatch: "index version mismatch", builder: reindex }]
+ *   })
+ *
+ * Serialized for the exec.exec render it becomes the policy JSON
+ *
+ *   { handlers: { <reason>: [{ <attributes>, plan: <plan key> }] } }
+ *
+ * and a plan map (plan key -> builder). A plan key is the entry's name, or "<reason>[<index>]"
+ * when the entry has none; "root" is the root plan.
+ */
+
+ll := import(":ll")
+text := import("text")
+fmt := import("fmt")
+maps := import(":maps")
+regexp := import(":regexp")
+
+ROOT_PLAN := "root"
+
+/**
+ * Failure reasons a policy may handle, with the attributes a handler entry may narrow on and the
+ * type each one has. Reasons no backend reports yet (TimeIsUp, WorkdirOutOfSpace,
+ * ScratchOutOfSpace, InfraError) are accepted, so a handler starts working the day the backend
+ * attributes them. Unallocated is never handleable: the RunCommand errors instead.
+ */
+REASONS := {
+	SoftwareError: { exitCode: "int", messageMatch: "string" },
+	OOM: { exitCode: "int" },
+	GPUMissed: { backendHasGPU: "bool", timeout: "int" },
+	UnknownError: {},
+	TimeIsUp: {},
+	WorkdirOutOfSpace: {},
+	ScratchOutOfSpace: {},
+	InfraError: {}
+}
+
+_ENTRY_KEYS := { name: true, builder: true }
+
+/**
+ * @return bool: whether v is an exec builder (exec.builder())
+ */
+isBuilder := func(v) {
+	return ll.isStrict(v) && ll.methodExists(v, "_execBuilderId")
+}
+
+_checkAttr := func(reason, attr, value) {
+	want := REASONS[reason][attr]
+	ll.assert(!is_undefined(want),
+		"exec.builder.fallbacks: %s handlers cannot narrow on %q (allowed: %v)",
+		reason, attr, maps.getKeys(REASONS[reason]))
+
+	ok := false
+	if want == "int" {
+		ok = is_int(value)
+	} else if want == "bool" {
+		ok = is_bool(value)
+	} else if want == "string" {
+		ok = is_string(value)
+	}
+	ll.assert(ok, "exec.builder.fallbacks: %s.%s must be of type %s, got %v", reason, attr, want, value)
+
+	if attr == "messageMatch" {
+		// panics on an invalid expression, at build time
+		regexp.compile(value)
+	}
+}
+
+/**
+ * Validates a policy given to .fallbacks() and normalizes it.
+ *
+ * @param policy: map - reason -> builder | [builder | { <attributes>?, name?, builder }]
+ * @return map - reason -> [{ attrs: map, name: string | undefined, builder }]
+ */
+validate := func(policy) {
+	ll.assert(ll.isMap(policy) && !ll.isStrict(policy),
+		"exec.builder.fallbacks: expected a map of failure reasons to handlers, got %v", policy)
+	ll.assert(len(policy) > 0, "exec.builder.fallbacks: the policy is empty")
+
+	result := {}
+	for reason, handler in policy {
+		ll.assert(!is_undefined(REASONS[reason]),
+			"exec.builder.fallbacks: %q is not a failure reason a fallback can handle (allowed: %v)",
+			reason, maps.getKeys(REASONS))
+
+		entries := handler
+		if !is_array(handler) {
+			entries = [handler]
+		}
+		ll.assert(len(entries) > 0, "exec.builder.fallbacks: %s has no handlers", reason)
+
+		normalized := []
+		for i, entry in entries {
+			if isBuilder(entry) {
+				normalized = append(normalized, { attrs: {}, name: undefined, builder: entry })
+				continue
+			}
+
+			ll.assert(is_map(entry),
+				"exec.builder.fallbacks: %s[%d] must be an exec builder or a map with a 'builder' key, got %v",
+				reason, i, entry)
+			ll.assert(isBuilder(entry.builder),
+				"exec.builder.fallbacks: %s[%d].builder must be an exec builder (exec.builder())", reason, i)
+
+			attrs := {}
+			for k, v in entry {
+				if !is_undefined(_ENTRY_KEYS[k]) {
+					continue
+				}
+				_checkAttr(reason, k, v)
+				attrs[k] = v
+			}
+
+			name := entry.name
+			if !is_undefined(name) {
+				ll.assert(is_string(name) && name != "",
+					"exec.builder.fallbacks: %s[%d].name must be a non-empty string", reason, i)
+				ll.assert(name != ROOT_PLAN,
+					"exec.builder.fallbacks: %s[%d].name: %q is reserved for the root plan", reason, i, ROOT_PLAN)
+			}
+
+			normalized = append(normalized, { attrs: attrs, name: name, builder: entry.builder })
+		}
+		result[reason] = normalized
+	}
+
+	return result
+}
+
+/**
+ * The plan key of a normalized entry.
+ */
+planKey := func(reason, index, entry) {
+	if !is_undefined(entry.name) {
+		return entry.name
+	}
+	return fmt.sprintf("%s[%d]", reason, index)
+}
+
+/**
+ * Splits a normalized policy into the policy JSON and the plans it names.
+ *
+ * @param normalized: map - the result of validate()
+ * @return { policy: map, plans: map } - plans: plan key -> builder
+ */
+flatten := func(normalized) {
+	handlers := {}
+	plans := {}
+	for reason, entries in normalized {
+		list := []
+		for i, entry in entries {
+			key := planKey(reason, i, entry)
+			existing := plans[key]
+			ll.assert(is_undefined(existing) || existing._execBuilderId() == entry.builder._execBuilderId(),
+				"exec.builder.fallbacks: plan %q names two different builders; give the entries distinct names", key)
+			plans[key] = entry.builder
+
+			e := maps.clone(entry.attrs)
+			e.plan = key
+			list = append(list, e)
+		}
+		handlers[reason] = list
+	}
+
+	return { policy: { handlers: handlers }, plans: plans }
+}
+
+/**
+ * Chooses the plan that handles a failure.
+ *
+ * @param policy: map - the policy JSON, { handlers: ... }
+ * @param failDetails: map - outcome.failDetails: { reason, <attributes> }
+ * @param lastLogLines: string[] - outcome.lastLogLines, for messageMatch
+ * @return string | undefined - the plan key of the first matching entry
+ */
+pick := func(policy, failDetails, lastLogLines) {
+	if is_undefined(policy) || is_undefined(failDetails) {
+		return undefined
+	}
+
+	entries := policy.handlers[failDetails.reason]
+	if is_undefined(entries) {
+		return undefined
+	}
+
+	log := undefined
+	for entry in entries {
+		matches := true
+		for attr, want in entry {
+			if attr == "plan" {
+				continue
+			}
+			if attr == "messageMatch" {
+				if is_undefined(log) {
+					log = is_undefined(lastLogLines) ? "" : text.join(lastLogLines, "\n")
+				}
+				if !regexp.compile(want).match(log) {
+					matches = false
+				}
+			} else if failDetails[attr] != want {
+				matches = false
+			}
+		}
+		if matches {
+			return entry.plan
+		}
+	}
+
+	return undefined
+}
+
+/**
+ * Composes the error text of a failed attempt from its outcome: the backend's meta lines, the
+ * exit code, the command and the log tail, as the runner wrote it into the error before
+ * RunCommand v3.
+ *
+ * @param oc: map - the outcome JSON
+ * @return string
+ */
+composeMessage := func(oc) {
+	lines := []
+	if !is_undefined(oc.meta) {
+		for m in oc.meta {
+			lines = append(lines, m.title + ": " + m.value)
+		}
+	}
+
+	if !is_undefined(oc.exitCode) {
+		lines = append(lines, fmt.sprintf("Exited with code %d.", oc.exitCode))
+	} else {
+		reason := "unknown reason"
+		if !is_undefined(oc.failDetails) && !is_undefined(oc.failDetails.reason) {
+			reason = oc.failDetails.reason
+		}
+		lines = append(lines, "Failed to start: " + reason + ".")
+	}
+	lines = append(lines, "Command: " + oc.command)
+
+	if !is_undefined(oc.lastLogLines) && len(oc.lastLogLines) > 0 {
+		lines = append(lines, "Latest output:")
+		if oc.lastLogLinesTruncated {
+			lines = append(lines, "[… truncated …]")
+		}
+		lines = append(lines, oc.lastLogLines...)
+	}
+
+	return text.join(lines, "\n")
+}
+
+/**
+ * One history entry, as the attempts output (spec §12.4) has it.
+ *
+ * @param attempt: int, plan: string, oc: map - the attempt's outcome
+ */
+historyEntry := func(attempt, plan, oc) {
+	e := { attempt: attempt, plan: plan, result: oc.result }
+	if !is_undefined(oc.failDetails) && !is_undefined(oc.failDetails.reason) {
+		e.reason = oc.failDetails.reason
+	}
+	if !is_undefined(oc.exitCode) {
+		e.exitCode = oc.exitCode
+	}
+	return e
+}
+
+_describeEntry := func(e) {
+	s := fmt.sprintf("#%d %s %s", e.attempt, e.plan, e.result)
+	if !is_undefined(e.reason) {
+		s += " " + e.reason
+	}
+	if !is_undefined(e.exitCode) {
+		s += fmt.sprintf(" (exit %d)", e.exitCode)
+	}
+	if !is_undefined(e.restart) {
+		s += fmt.sprintf(" (restart %d)", e.restart)
+	}
+	return s
+}
+
+/**
+ * The attempt history as the final error shows it:
+ *
+ *   Attempts (2, backend cap 3):
+ *     #0 root fail OOM (exit 137) → handler OOM "moreRam"
+ *     #1 moreRam fail SoftwareError (exit 1) → no handler
+ *
+ * @param hist: map[] - history entries, the last one is the attempt that ended the job
+ * @param attemptLimit: int - outcome.attemptLimit
+ * @param why: string - what ended the job, shown on the last entry
+ */
+historyText := func(hist, attemptLimit, why) {
+	lines := [fmt.sprintf("Attempts (%d, backend cap %v):", len(hist), attemptLimit)]
+	for i, e in hist {
+		decision := why
+		if i + 1 < len(hist) {
+			next := hist[i + 1]
+			if e.result == "workdirMissing" {
+				decision = "restart"
+			} else {
+				decision = fmt.sprintf("handler %s %q", e.reason, next.plan)
+			}
+		}
+		lines = append(lines, "  " + _describeEntry(e) + " → " + decision)
+	}
+	return text.join(lines, "\n")
+}
+
+/**
+ * The error a job ends with when no plan is left to run: the last attempt's composed message,
+ * then the attempt history.
+ *
+ * @param oc: map - the last attempt's outcome
+ * @param hist: map[] - history, including the last attempt
+ * @param why: string - "no handler", "backend attempt limit reached", ...
+ */
+exhaustedMessage := func(oc, hist, why) {
+	return composeMessage(oc) + "\n\n" + historyText(hist, oc.attemptLimit, why)
+}
+
+export ll.toStrict({
+	ROOT_PLAN: ROOT_PLAN,
+	REASONS: REASONS,
+	isBuilder: isBuilder,
+	validate: validate,
+	planKey: planKey,
+	flatten: flatten,
+	pick: pick,
+	composeMessage: composeMessage,
+	historyEntry: historyEntry,
+	historyText: historyText,
+	exhaustedMessage: exhaustedMessage
+})
