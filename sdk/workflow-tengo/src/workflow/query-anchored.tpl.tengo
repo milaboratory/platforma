@@ -307,6 +307,11 @@ self.body(func(inputs) {
             ll.panic("context-domain queries in the v2 query API need the backend's contextDomainQuery feature (item '%s')", queryId)
         }
 
+        if family == 2 {
+            // the v2 query API's options: a single match is exactly one, or an error
+            queryOps = { spec: true, data: fetchData, single: !expectMultiple }
+        }
+
         queryResult := q.create(querySpec, ctx, queryOps)
 
         if needsClientFilter {

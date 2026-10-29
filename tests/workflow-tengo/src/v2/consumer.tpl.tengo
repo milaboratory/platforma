@@ -3,7 +3,7 @@ wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
 ex := import("@platforma-sdk/workflow-tengo:v2.exports")
 
 wf.body(func(args) {
-	r := wf.resolve(args.source, { errIfMissing: true })
+	r := wf.resolve(args.source)
 	return {
 		outputs: { spec: r.spec, data: r.data },
 		exports: ex.collection({})

@@ -3,6 +3,7 @@ smart := import(":smart")
 maps := import(":maps")
 constants := import(":constants")
 json := import("json")
+text := import("text")
 assets := import(":assets")
 render := import(":render")
 validation := import(":validation")
@@ -202,8 +203,8 @@ create := func(spec, ctx, ...options) {
  *    workflow passed a query result on). A `data` key holding a field
  *    reference still means the data is pending, and no `data` key with `ops.data` false means the
  *    data was not requested;
- *  - every ref carries `__isRef: true`, so a ref a query returned can be passed to `resolve` again,
- *    directly or nested in a structure.
+ *  - every ref is a family-2 ref `{block, workflow, name}` (see `forFamily`), so a ref a query
+ *    returned can be passed to `resolve` again.
  */
 resultUnmarshaller := func() {
 	return  {
@@ -227,11 +228,14 @@ resultUnmarshaller := func() {
 					field.getValue().checkResourceType(constants.RTYPE_BRESOLVE_NO_RESULT)
 			}
 
-			decodeRef := func(ref) {
-				if isFamily2 {
-					ref.__isRef = true
+			// the backend's address {blockId: "<block>/<workflow>", name}; neither part contains "/"
+			decodeRef := func(address) {
+				if !isFamily2 {
+					return address
 				}
-				return ref
+				parts := text.split_n(address.blockId, "/", 2)
+				ll.assert(len(parts) == 2, "unexpected address of a family-2 value: %v", address)
+				return { block: parts[0], workflow: parts[1], name: address.name }
 			}
 
 			/**
@@ -314,21 +318,80 @@ resultUnmarshaller := func() {
  * @param ctx: results pool (context) to query
  * @return result: a {ref: spec: data:} object
  */
+_FAMILY2_REF_FIELDS := ["block", "workflow", "name"]
+
+// Whether value is a family-2 ref: a map with exactly the fields block, workflow and name, each a
+// non-empty string, block and workflow without "/".
+_isFamily2Ref := func(value) {
+	if !ll.isMap(value) || smart.isReference(value) || len(value) != len(_FAMILY2_REF_FIELDS) {
+		return false
+	}
+	for f in _FAMILY2_REF_FIELDS {
+		if !maps.containsKey(value, f) || !is_string(value[f]) || value[f] == "" {
+			return false
+		}
+	}
+	return !text.contains(value.block, "/") && !text.contains(value.workflow, "/")
+}
+
+_assertFamily2Ref := func(ref) {
+	if !_isFamily2Ref(ref) {
+		ll.panic("a ref is {block, workflow, name}: three non-empty strings, block and workflow without \"/\"; got %v", ref)
+	}
+}
+
+// The options a family-2 call was given, checked: at most one map, whose keys are among `allowed`
+// and whose values are booleans.
+_family2Options := func(options, allowed) {
+	ll.assert(len(options) <= 1, "expected at most one options map, got %v", options)
+	if len(options) == 0 {
+		return {}
+	}
+	o := options[0]
+	ll.assert(ll.isMap(o) && !smart.isReference(o), "expected a map of options, got %v", o)
+	for k, v in o {
+		ok := false
+		for a in allowed {
+			if a == k {
+				ok = true
+			}
+		}
+		if !ok {
+			ll.panic("query option %q is not allowed in the v2 query API; allowed: %v", k, allowed)
+		}
+		ll.assert(is_bool(v), "query option %q must be a boolean, got %v", k, v)
+	}
+	return copy(o)
+}
+
 _resolve := func(family, ref, ctx, options) {
 
-	spec := {
-		type: "Direct",
-		block_id: ref.blockId, 	// @TODO use consistent naming in pl
-		output_name: ref.name 	// @TODO use consistent naming in pl
+	spec := undefined
+	if family == 2 {
+		_assertFamily2Ref(ref)
+		spec = {
+			type: "Direct",
+			block_id: ref.block + "/" + ref.workflow,
+			output_name: ref.name
+		}
+	} else {
+		spec = {
+			type: "Direct",
+			block_id: ref.blockId, 	// @TODO use consistent naming in pl
+			output_name: ref.name 	// @TODO use consistent naming in pl
+		}
 	}
 
 	ops := {}
 
 	if len(options) > 0 {
-		ops = options[0]
+		ops = copy(options[0])
 	}
 
 	ops.first = true
+	if family == 2 {
+		ops.errIfMissing = true
+	}
 
 	return _create(family, spec, ctx, [ops])
 }
@@ -500,22 +563,52 @@ anchoredQuery := func(ctx, anchors, queryMap, ...opts) {
  * Results are told apart by `family: 2` in the options they store, so a family-1 caller must not pass
  * an option named `family`.
  *
+ * Family 2 differs from family 1 in what it takes:
+ *  - a ref is `{block, workflow, name}`: exactly these three fields, non-empty strings, `block` and
+ *    `workflow` without "/" — the block id, the name of the block's workflow that exports the value,
+ *    and the value's path in that workflow's exported tree joined with "."; decoded results carry
+ *    refs in this form, and `isRef(value)` tells whether a value is one;
+ *  - options are checked: only `spec`, `data` (fetch the spec or the data; both by default) and, for
+ *    `create`, `single`, each a boolean; anything else panics;
+ *  - a single lookup — `resolve`, or `create` with `single` — finds exactly one value: none, or more
+ *    than one, is an error; `create` without `single` finds every match, none being an empty list.
+ *
  * Each call returns a new object; both families can be used in one template.
  *
  * @param family: 1 or 2; anything else panics
  */
 forFamily := func(family) {
 	ll.assert(family == 1 || family == 2, "unknown resolver family: %v, expected 1 or 2", family)
+	if family == 1 {
+		return ll.toStrict({
+			create: func(spec, ctx, ...options) {
+				return _create(1, spec, ctx, options)
+			},
+			resolve: func(ref, ctx, ...options) {
+				return _resolve(1, ref, ctx, options)
+			},
+			anchoredQuery: func(ctx, anchors, queryMap, ...opts) {
+				return _anchoredQuery(1, ctx, anchors, queryMap, opts)
+			}
+		})
+	}
 	return ll.toStrict({
 		create: func(spec, ctx, ...options) {
-			return _create(family, spec, ctx, options)
+			ops := _family2Options(options, ["spec", "data", "single"])
+			if ops.single == true {
+				ops.first = true
+				ops.errIfMissing = true
+			}
+			delete(ops, "single")
+			return _create(2, spec, ctx, [ops])
 		},
 		resolve: func(ref, ctx, ...options) {
-			return _resolve(family, ref, ctx, options)
+			return _resolve(2, ref, ctx, [_family2Options(options, ["spec", "data"])])
 		},
 		anchoredQuery: func(ctx, anchors, queryMap, ...opts) {
-			return _anchoredQuery(family, ctx, anchors, queryMap, opts)
-		}
+			return _anchoredQuery(2, ctx, anchors, queryMap, opts)
+		},
+		isRef: _isFamily2Ref
 	})
 }
 

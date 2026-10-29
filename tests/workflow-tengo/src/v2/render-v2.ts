@@ -114,7 +114,7 @@ export async function exportsAt<R>(
   render: V2Render,
   path: readonly string[],
   read: (a: PlTreeNodeAccessor | undefined) => R,
-): Promise<R | undefined> {
+) {
   return await awaitStableState(
     render.computeOutput("exports", (a) => {
       let node = a;

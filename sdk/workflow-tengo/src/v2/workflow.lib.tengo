@@ -11,8 +11,18 @@
  *  - `exports`: the node the body returned as `exports` (see `:v2.exports`), set directly; the
  *    project builds the block's context around it.
  *
- * Queries resolve with the BContext/2 family (`:v2.bquery`). A value exported without data reaches
- * a template in one of these forms, by the path it took:
+ * A ref names a value another block's workflow exports:
+ *
+ *     { block: "<block id>", workflow: "<workflow name>", name: "<value name>" }
+ *
+ * exactly these three fields, each a non-empty string, `block` and `workflow` without "/"; the value
+ * name is its path in that workflow's exported tree joined with ".". Every function here takes refs in
+ * this form, and query results carry them in this form.
+ *
+ * Queries resolve with the BContext/2 family (`:v2.bquery`). A query finds every match (none is an
+ * empty list); a single lookup — `resolve`, or `query` with `single` — finds exactly one value, and
+ * none or more than one fails the render. A value exported without data reaches a template in one of
+ * these forms, by the path it took:
  *  - decoded (a `prepare` result, or a sub-template's input): an item `{ref, spec}` with no `data`
  *    key; the item is a strict map, so test with `maps.containsKey(item, "data")`, not `item.data`;
  *  - in a PColumnBundle: `data` is undefined;
@@ -32,7 +42,6 @@ sets := import(":sets")
 oop := import(":oop")
 bquery := import(":v2.bquery")
 exports := import(":v2.exports")
-resolveUtil := import(":workflow.resolve-util")
 pBundle := import(":pframes.bundle")
 pTableBuilder := import(":pframes.table-builder")
 
@@ -73,7 +82,7 @@ args := func() {
 		for k, v in inputs {
 			if text.has_prefix(k, _PREPARED_INPUTS_PREFIX) {
 				name := text.trim_prefix(k, _PREPARED_INPUTS_PREFIX)
-				ll.assert(is_undefined(_args[name]), "prepare name is already in use in inputs: ", name)
+				ll.assert(is_undefined(_args[name]), "prepare name is already in use in inputs: %s", name)
 				_args[name] = v
 			}
 		}
@@ -120,30 +129,12 @@ getParentBCtx := func() {
 }
 
 /**
- * A ref to a value another block's workflow exports, in the form queried refs decode to.
- *
- * @param block: string - the block id
- * @param workflow: string - the workflow that exports it, e.g. "main"
- * @param name: string - the value's name: its path in the exported tree joined with "."
- * @return {__isRef: true, blockId: "<block>/<workflow>", name: name}
- */
-ref := func(block, workflow, name) {
-	ll.assert(is_string(block) && block != "" && !text.contains(block, "/"),
-		"ref: block must be a non-empty string without \"/\", got %v", block)
-	ll.assert(is_string(workflow) && workflow != "" && !text.contains(workflow, "/"),
-		"ref: workflow must be a non-empty string without \"/\", got %v", workflow)
-	ll.assert(is_string(name) && name != "", "ref: name must be a non-empty string, got %v", name)
-	return { __isRef: true, blockId: block + "/" + workflow, name: name }
-}
-
-/**
- * Query the values upstream: see `:workflow.bquery`'s `create` for the query spec and options.
+ * Query the values upstream: see `:workflow.bquery`'s `create` for the query spec.
  *
  * @param spec: query spec
- * @param options: optional query options
- * @return the query result; decodes to a list of {ref, spec, data?} by default; with `first`, to
- *         one item, or undefined when nothing matches and `errIfMissing` is not set; otherwise, with
- *         `single`, to its one item (more or fewer is an error)
+ * @param options: optional {spec?: bool, data?: bool, single?: bool} — fetch the spec or the data
+ *        (both by default); `single`: exactly one value must match, else the render fails
+ * @return the query result; decodes to a list of {ref, spec, data?}, or with `single` to that one item
  */
 query := func(spec, ...options) {
 	return bquery.create(spec, getParentBCtx(), options...)
@@ -158,21 +149,13 @@ _resolveOne := func(r, ...options) {
 }
 
 /**
- * Resolves a ref, or every ref in a structure, into { spec, data }. At the top level, a ref is a map
- * with `__isRef: true`, or with string `blockId` and `name`; in a structure (maps and arrays,
- * nested), each map with `__isRef: true` is replaced by its { spec, data }, and a structure holding no
- * such ref panics.
+ * Resolves one ref into { spec, data }: exactly one value must be found, else the render fails.
  *
- * @param input: a ref, or any nested structure holding refs
- * @param options: optional query options, applied to every ref
+ * @param ref: a ref {block, workflow, name} (see the header)
+ * @param options: optional {spec?: bool, data?: bool} — fetch the spec or the data (both by default)
  */
-resolve := func(input, ...options) {
-	if ll.isMap(input) && (input.__isRef == true || (is_string(input.blockId) && is_string(input.name))) {
-		return _resolveOne(input, options...)
-	}
-	return resolveUtil.deepResolve(input, func(r) {
-		return _resolveOne(r, options...)
-	})
+resolve := func(ref, ...options) {
+	return _resolveOne(ref, options...)
 }
 
 /**
@@ -245,7 +228,7 @@ _buildOutputs := func(results) {
 	ll.assert(ll.isMap(results) && !smart.isReference(results), "expected to see map result from body function")
 	ll.assert(
 		sets.fromSlice(["outputs", "exports"]) == sets.fromMapKeys(results),
-		"expected only outputs and exports in the returned map, found ", sets.fromMapKeys(results)
+		"expected only outputs and exports in the returned map, found %v", sets.toSlice(sets.fromMapKeys(results))
 	)
 	ll.assert(ll.isMap(results.outputs) && !smart.isReference(results.outputs),
 		"expected a map in outputs returned from workflow.body")
@@ -254,7 +237,7 @@ _buildOutputs := func(results) {
 
 	resBuilder := smart.mapBuilder()
 	for name, value in results.outputs {
-		ll.assert(!is_undefined(value), "value is undefined for output ", name)
+		ll.assert(!is_undefined(value), "value is undefined for output %s", name)
 		resBuilder.add(name, value)
 	}
 
@@ -289,7 +272,6 @@ export ll.toStrict({
 	isProduction: isProduction,
 	blockId: blockId,
 	getBlockId: getBlockId,
-	ref: ref,
 	validateArgs: validateArgs,
 	createPBundleBuilder: createPBundleBuilder,
 	tableBuilder: tableBuilder
