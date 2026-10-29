@@ -6,6 +6,7 @@
  * inputs.seconds: number - how long the handler prints
  * inputs.forceV2: bool, optional - render as on a backend without RunCommand v3 (AC3.3)
  * inputs.rootExit: string, optional - the root's exit code, 2 by default
+ * inputs.forceSaveV1: bool, optional - save as on a backend without WorkdirSave v3
  */
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
@@ -29,6 +30,9 @@ self.body(func(inputs) {
 			saveStdoutContent()
 		if inputs.forceV2 == true {
 			b._forceRunCommandV2()
+		}
+		if inputs.forceSaveV1 == true {
+			b._forceWorkdirSaveV1()
 		}
 		return b
 	}

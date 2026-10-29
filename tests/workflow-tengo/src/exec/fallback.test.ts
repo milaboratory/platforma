@@ -15,9 +15,11 @@ type Attempt = {
 
 const json = (tx: Pl.PlTransaction, v: unknown) => tx.createValue(Pl.JsonObject, JSON.stringify(v));
 
-tplTest.concurrent(
-  "AC2.1 exec fallbacks: an exit-code handler runs, getAttempts() lists root then the handler",
-  async ({ helper, expect }) => {
+// forceSaveV1: a backend with RunCommand v3 but without WorkdirSave v3 (the _forceWorkdirSaveV1
+// seam): fallbacks work the same, the success path saves with WorkdirSave v1.
+tplTest.concurrent.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
+  "AC2.1 exec fallbacks: an exit-code handler runs, getAttempts() lists root then the handler (forceSaveV1: $forceSaveV1)",
+  async ({ forceSaveV1 }, { helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.exit_code",
@@ -25,6 +27,7 @@ tplTest.concurrent(
       (tx) => ({
         rootExit: json(tx, "2"),
         nonce: json(tx, randomUUID()),
+        forceSaveV1: json(tx, forceSaveV1),
       }),
     );
 
