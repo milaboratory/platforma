@@ -115,6 +115,7 @@ inputSchema := {
 }
 
 inputSchema[execConstants.META_INPUT_FORCE_RUN_COMMAND_V2 + ",?"] = "any"
+inputSchema[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1 + ",?"] = "any"
 
 self.validateInputs(inputSchema)
 
@@ -398,6 +399,9 @@ self.body(func(inputs) {
 		if !is_undefined(raw[name]) {
 			routerInputs[name] = raw[name].getValue()
 		}
+	}
+	if !is_undefined(inputs[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1]) {
+		routerInputs.forceWorkdirSaveV1 = true
 	}
 	router := render.createEphemeral(routerTpl, routerInputs)
 

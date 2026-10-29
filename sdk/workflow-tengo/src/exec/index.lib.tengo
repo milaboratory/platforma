@@ -172,8 +172,10 @@ _newState := func() {
 		// fallbacks(): reason -> [{ attrs, name, builder }], see :exec.fallback
 		fallbacks: undefined,
 
-		// test seam: render as on a backend without RunCommand v3 (see _forceRunCommandV2())
-		forceRunCommandV2: false
+		// test seams: render as on a backend without RunCommand v3 (_forceRunCommandV2()), or
+		// without WorkdirSave v3 (_forceWorkdirSaveV1())
+		forceRunCommandV2: false,
+		forceWorkdirSaveV1: false
 	}
 }
 
@@ -1927,6 +1929,9 @@ _makeBuilder := func(st) {
 			if p.forceRunCommandV2 {
 				planned.meta[execConstants.META_INPUT_FORCE_RUN_COMMAND_V2] = smart.createJsonResource(true)
 			}
+			if p.forceWorkdirSaveV1 {
+				planned.meta[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1] = smart.createJsonResource(true)
+			}
 
 			if is_undefined(p.fallbacks) {
 				return planned
@@ -1969,6 +1974,16 @@ _makeBuilder := func(st) {
 		 */
 		_forceRunCommandV2: func() {
 			st.forceRunCommandV2 = true
+			return self
+		},
+
+		/**
+		 * Test seam: saves this exec, and its fallback plans, as on a backend without WorkdirSave
+		 * v3, whatever the backend has: fallbacks work, a lost working directory is not
+		 * restarted. Not for blocks.
+		 */
+		_forceWorkdirSaveV1: func() {
+			st.forceWorkdirSaveV1 = true
 			return self
 		},
 

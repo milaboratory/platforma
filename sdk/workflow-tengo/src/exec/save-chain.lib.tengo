@@ -22,13 +22,14 @@ _LOST_REASONS := { WorkdirMissing: true, FileMissing: true }
  * @param queue: string - the exec's queue
  * @param settings: map - the exec's settings
  * @return bool - whether the save chain saves with WorkdirSave v3 and the wd-retrier restarts on
- *         a lost working directory. The backend has WorkdirSave v3 iff it has RunCommand v3
- *         (decision D3). Without it the success path saves with v1, as before, and a lost working
- *         directory is an error (spec §5). v3 reserves the save rule key `workdir` for the
- *         directory's own outcome, so an exec saving a file of that name saves with v1.
+ *         a lost working directory: iff the backend publishes `workdirSaveV3` in its resource
+ *         types (decision D3, revised). Without it the success path saves with v1, as before, and
+ *         a lost working directory is an error (spec §5); fallbacks still work, they need only
+ *         RunCommand v3. v3 reserves the save rule key `workdir` for the directory's own outcome,
+ *         so an exec saving a file of that name saves with v1.
  */
 hasWorkdirSaveV3 := func(queue, settings) {
-	if is_undefined(limits.getRunCommandV3Type(queue)) {
+	if is_undefined(limits.getWorkdirSaveV3Type(queue)) {
 		return false
 	}
 	saved := is_undefined(settings.filesToSave) ? [] : settings.filesToSave
