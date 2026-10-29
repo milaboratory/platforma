@@ -20,7 +20,7 @@ import { PlTooltip } from "../PlTooltip";
 import { PlIcon24 } from "../PlIcon24";
 import { downloadContent } from "../../helpers/dom";
 
-const getOutputError = <T,>(o?: OutputWithStatus<T>) => {
+const getOutputError = <T>(o?: OutputWithStatus<T>) => {
   if (o && o.ok === false) {
     return o.errors.join("\n");
   }

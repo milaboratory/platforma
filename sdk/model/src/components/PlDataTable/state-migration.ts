@@ -261,12 +261,10 @@ function unwrapV5GridState(gridState: PlDataTableGridStateV5): PlDataTableGridSt
 function migrateV6toV7(state: PlDataTableStateV2V6): PlDataTableStateV2V7 {
   return {
     version: 7,
-    stateCache: state.stateCache.map(
-      (entry): PlDataTableStateV2V7CacheEntry => ({
-        ...entry,
-        gridState: shrinkV6GridState(entry.gridState),
-      }),
-    ),
+    stateCache: state.stateCache.map((entry): PlDataTableStateV2V7CacheEntry => ({
+      ...entry,
+      gridState: shrinkV6GridState(entry.gridState),
+    })),
     pTableParams: state.pTableParams,
   };
 }

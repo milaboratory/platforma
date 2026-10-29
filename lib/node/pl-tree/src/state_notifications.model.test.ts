@@ -142,12 +142,10 @@ const readers: Reader[] = [
   { name: "listInput", read: (t, w) => t.get(new W(), R).listInputFields(w).sort().join() },
   { name: "listOutput", read: (t, w) => t.get(new W(), R).listOutputFields(w).sort().join() },
   { name: "listDynamic", read: (t, w) => t.get(new W(), R).listDynamicFields(w).sort().join() },
-  ...["k1", "k2"].map(
-    (k): Reader => ({
-      name: "kv:" + k,
-      read: (t, w) => String(t.get(new W(), R).getKeyValueString(w, k)),
-    }),
-  ),
+  ...["k1", "k2"].map((k): Reader => ({
+    name: "kv:" + k,
+    read: (t, w) => String(t.get(new W(), R).getKeyValueString(w, k)),
+  })),
   ...NAMES.flatMap((n): Reader[] => [
     {
       name: "get:" + n,
@@ -164,21 +162,15 @@ const readers: Reader[] = [
           t.get(new W(), R).getField(w, { field: n, errorIfFieldNotFound: true }, () => {}),
         ),
     },
-    ...(["Input", "Output", "Dynamic"] as const).map(
-      (ty): Reader => ({
-        name: `assert${ty}:${n}`,
-        read: (t, w) =>
-          JSON.stringify(
-            t
-              .get(new W(), R)
-              .getField(
-                w,
-                { field: n, assertFieldType: ty, allowPermanentAbsence: true },
-                () => {},
-              ),
-          ),
-      }),
-    ),
+    ...(["Input", "Output", "Dynamic"] as const).map((ty): Reader => ({
+      name: `assert${ty}:${n}`,
+      read: (t, w) =>
+        JSON.stringify(
+          t
+            .get(new W(), R)
+            .getField(w, { field: n, assertFieldType: ty, allowPermanentAbsence: true }, () => {}),
+        ),
+    })),
   ]),
 ];
 function safeRead(rd: Reader, t: PlTreeState, w: W): string {

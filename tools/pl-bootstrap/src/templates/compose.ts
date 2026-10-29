@@ -73,7 +73,7 @@ export function render(
       if (!svcSpec.environment) {
         svcSpec.environment = [];
       }
-      for (let envSpecI = 0; envSpecI < (svcSpec?.environment.length ?? 0); ) {
+      for (let envSpecI = 0; envSpecI < (svcSpec?.environment.length ?? 0);) {
         const envSpec: string = svcSpec.environment[envSpecI];
         const envName = envSpec.split("=")[0];
         if (options.envs[envName]) {

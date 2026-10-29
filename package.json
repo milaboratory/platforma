@@ -54,7 +54,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "oxfmt": "*",
+    "oxfmt": "catalog:",
     "oxlint": "*"
   },
   "engines": {

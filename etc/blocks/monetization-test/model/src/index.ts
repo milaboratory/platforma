@@ -73,14 +73,12 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
   // to keep running while `.args` is still throwing. Without an explicit
   // `prerunArgs`, the runtime falls back to the args lambda and the block
   // deadlocks: no pre-run, no info, no `canRun`, forever.
-  .prerunArgs(
-    (data): BlockPrerunArgs => ({
-      productKey: data.productKey,
-      inputHandles: data.inputHandles,
-      shouldAddRunPerFile: data.shouldAddRunPerFile,
-      __mnzDate: data.__mnzDate,
-    }),
-  )
+  .prerunArgs((data): BlockPrerunArgs => ({
+    productKey: data.productKey,
+    inputHandles: data.inputHandles,
+    shouldAddRunPerFile: data.shouldAddRunPerFile,
+    __mnzDate: data.__mnzDate,
+  }))
 
   .output("__mnzInfo", (ctx) => ctx.prerun?.resolve("info")?.getDataAsJson<unknown>())
 

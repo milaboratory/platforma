@@ -114,9 +114,10 @@ export function splitByAxes(
     if (keyCombinations.length === 0) continue;
 
     for (const keyCombo of keyCombinations) {
-      const axisFilters: AxisFilterByIdx[] = keyCombo.map(
-        (value, sAxisIdx): AxisFilterByIdx => [splitAxisIdxs[sAxisIdx], value as AxisFilterValue],
-      );
+      const axisFilters: AxisFilterByIdx[] = keyCombo.map((value, sAxisIdx): AxisFilterByIdx => [
+        splitAxisIdxs[sAxisIdx],
+        value as AxisFilterValue,
+      ]);
 
       const domain: Record<string, string> = {};
       const traceEntries: TraceEntry[] = [];
