@@ -5,8 +5,8 @@ import type winston from "winston";
 import { Writable } from "node:stream";
 import os from "node:os";
 import readlineSync from "readline-sync";
+import * as tar from "tar";
 import { z } from "zod";
-import decompress from "decompress";
 
 const blockPlatformsToChoose = ["Python"];
 const allPlatforms = ["Tengo", "Python"] as const;
@@ -29,10 +29,10 @@ export async function createBlock(logger: winston.Logger) {
   const targetPath = path.join(process.cwd(), blockName);
 
   logger.info(`Downloading boilerplate code...`);
-  await downloadAndUnzip(
-    // 'https://github.com/milaboratory/platforma-block-boilerplate/archive/refs/heads/software_platforms.zip',
+  await downloadAndUnpack(
+    // 'https://github.com/milaboratory/platforma-block-boilerplate/archive/refs/heads/software_platforms.tar.gz',
     // 'platforma-block-boilerplate-software_platforms',
-    "https://github.com/milaboratory/platforma-block-boilerplate/archive/refs/heads/main.zip",
+    "https://github.com/milaboratory/platforma-block-boilerplate/archive/refs/heads/main.tar.gz",
     "platforma-block-boilerplate-main",
     targetPath,
   );
@@ -102,21 +102,30 @@ function askForOptions(): CreateBlockOptions {
   return result.data!;
 }
 
-async function downloadAndUnzip(url: string, pathInArchive: string, outputPath: string) {
+async function downloadAndUnpack(url: string, pathInArchive: string, outputPath: string) {
   const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to download ${url}: ${response.status} ${response.statusText}`);
+  }
   const content = await response.blob();
 
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "create-repo"));
+  try {
+    const tmpFile = path.join(tmpDir, "packed-repo.tar.gz");
+    const archiveFile = Writable.toWeb(createWriteStream(tmpFile));
+    await content.stream().pipeTo(archiveFile);
 
-  const tmpFile = path.join(tmpDir, "packed-repo.zip");
-  const f = Writable.toWeb(createWriteStream(tmpFile));
-  await content.stream().pipeTo(f);
+    const tmpRepo = path.join(tmpDir, "unpacked-repo");
+    await fs.mkdir(tmpRepo);
+    await tar.x({ file: tmpFile, cwd: tmpRepo });
 
-  const tmpRepo = path.join(tmpDir, "unpacked-repo");
-  await fs.mkdir(tmpRepo);
-  await decompress(tmpFile, tmpRepo);
-
-  await fs.cp(path.join(tmpRepo, pathInArchive), outputPath, { recursive: true });
+    await fs.cp(path.join(tmpRepo, pathInArchive), outputPath, {
+      recursive: true,
+      verbatimSymlinks: true,
+    });
+  } finally {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+  }
 }
 
 /** Removes a bunch of dependencies to the platform. */
