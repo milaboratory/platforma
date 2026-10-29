@@ -59,3 +59,66 @@ export function getResourceInfoFromLogHandle(handle: sdk.AnyLogHandle): Resource
     type: { name: resourceType, version: resourceVersion },
   };
 }
+
+/** One attempt of a composite log handle. */
+export type CompositeLogPart = {
+  /** Handle of the attempt's own log; absent while the attempt's stream is not known yet. */
+  handle?: sdk.LiveLogHandle | sdk.ReadyLogHandle;
+  /** A line that follows the attempt's text, once the attempt has failed. */
+  delimiter?: string;
+};
+
+const compositeLiveLogPrefix = "log+live://log/composite/";
+const compositeReadyLogPrefix = "log+ready://log/composite/";
+
+/** Joins the logs of several exec attempts into one handle. The handle keeps the live/ready
+ * prefixes of a single log handle, so consumers read it the same way; its parts travel in the
+ * handle itself, as base64url-encoded JSON, because the driver reads logs without the tree.
+ * `isCompositeLogHandle` of the model tells such a handle apart. */
+export function newCompositeLogHandle(live: boolean, parts: CompositeLogPart[]): sdk.AnyLogHandle {
+  const payload = Buffer.from(JSON.stringify({ parts })).toString("base64url");
+  if (live) return `${compositeLiveLogPrefix}${payload}` as sdk.LiveLogHandle;
+  return `${compositeReadyLogPrefix}${payload}` as sdk.ReadyLogHandle;
+}
+
+/** Decodes a handle made by {@link newCompositeLogHandle}. */
+export function parseCompositeLogHandle(handle: sdk.AnyLogHandle): {
+  live: boolean;
+  parts: CompositeLogPart[];
+} {
+  const live = handle.startsWith(compositeLiveLogPrefix);
+  if (!live && !handle.startsWith(compositeReadyLogPrefix))
+    throw new Error(`Log handle is not composite: ${handle}`);
+
+  const payload = handle.slice(
+    live ? compositeLiveLogPrefix.length : compositeReadyLogPrefix.length,
+  );
+  const decoded: unknown = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+  if (typeof decoded !== "object" || decoded === null || !("parts" in decoded))
+    throw new Error(`Composite log handle is malformed: ${handle}`);
+  const { parts } = decoded;
+  if (!Array.isArray(parts)) throw new Error(`Composite log handle is malformed: ${handle}`);
+
+  return {
+    live,
+    parts: parts.map((p: unknown): CompositeLogPart => {
+      if (typeof p !== "object" || p === null)
+        throw new Error(`Composite log handle is malformed: ${handle}`);
+      const part: CompositeLogPart = {};
+      if ("handle" in p && p.handle !== undefined) {
+        if (
+          typeof p.handle !== "string" ||
+          !(isLiveLogHandle(p.handle) || isReadyLogHandle(p.handle))
+        )
+          throw new Error(`Composite log handle has a malformed part: ${handle}`);
+        part.handle = p.handle;
+      }
+      if ("delimiter" in p && p.delimiter !== undefined) {
+        if (typeof p.delimiter !== "string")
+          throw new Error(`Composite log handle has a malformed delimiter: ${handle}`);
+        part.delimiter = p.delimiter;
+      }
+      return part;
+    }),
+  };
+}

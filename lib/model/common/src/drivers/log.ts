@@ -13,8 +13,26 @@ export type LiveLogHandle = Branded<`${typeof LIVE_LOG_PREFIX}${string}`, "LiveL
 export type ReadyLogHandle = Branded<`${typeof READY_LOG_PREFIX}${string}`, "ReadyLogHandle">;
 
 /** Handle of logs. This handle should be passed
- * to the driver for retrieving logs. */
+ * to the driver for retrieving logs.
+ *
+ * A handle may be composite: the logs of several attempts of one exec (exec fallbacks),
+ * read as one text with a delimiter after every finished attempt. A composite handle has
+ * the same live/ready prefixes, so it is an ordinary {@link LiveLogHandle} or
+ * {@link ReadyLogHandle} to everything but the driver; see {@link isCompositeLogHandle}. */
 export type AnyLogHandle = LiveLogHandle | ReadyLogHandle;
+
+/** Path segment that follows the live/ready prefix in a composite log handle. */
+const COMPOSITE_LOG_SEGMENT = "composite/";
+
+/** Checks if the handle is composite, i.e. joins the logs of several exec attempts.
+ * Consumers need not tell composite handles apart: reading, offsets and liveness work
+ * the same way as for a handle of a single log. */
+export function isCompositeLogHandle(handle: AnyLogHandle): boolean {
+  return (
+    handle.startsWith(LIVE_LOG_PREFIX + COMPOSITE_LOG_SEGMENT) ||
+    handle.startsWith(READY_LOG_PREFIX + COMPOSITE_LOG_SEGMENT)
+  );
+}
 
 /** Type guard to check if a value is any kind of log handle. */
 export function isAnyLogHandle(value: unknown): value is AnyLogHandle {
