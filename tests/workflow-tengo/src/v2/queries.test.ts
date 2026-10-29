@@ -808,7 +808,7 @@ tplTest.concurrent(
       blockId: "table-query-consumer",
       args: {
         primary: ref("table-query-pool", "score"),
-        column: { name: "pl7.app/score" },
+        column: { name: "pl7.app/score", axes: [{ anchor: "main", name: "pl7.app/id" }] },
         columnHeader: "Score again",
       },
       upstream: [{ block: "table-query-pool", render: tablePool }],
