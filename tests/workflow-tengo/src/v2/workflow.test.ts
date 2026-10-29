@@ -3,7 +3,7 @@ import { tplTest } from "@platforma-sdk/test";
 import { describeNode, exportsAt, hasValuesTree, renderWorkflowV2, resultJson } from "./render-v2";
 
 // Each test renders several templates on a live backend.
-vi.setConfig({ testTimeout: 60_000 });
+vi.setConfig({ testTimeout: 240_000 });
 
 const numbersRef = (block: string) => ({ block, workflow: "main", name: "numbers" });
 

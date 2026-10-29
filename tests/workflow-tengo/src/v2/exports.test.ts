@@ -10,7 +10,7 @@ import {
 } from "./render-v2";
 
 // Each test renders several templates on a live backend.
-vi.setConfig({ testTimeout: 60_000 });
+vi.setConfig({ testTimeout: 240_000 });
 
 tplTest.concurrent.for([
   { kind: "folderItem", message: /folder entry "col" is not a node; items belong in a collection/ },

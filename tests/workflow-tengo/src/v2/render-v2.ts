@@ -62,6 +62,10 @@ export function contextChain(tx: PlTransaction, upstream: readonly Upstream[]): 
   return chain;
 }
 
+/** How long a test waits for one render's output: renders queue behind the rest of the suite on a
+ *  shared backend, so this is generous. */
+export const OUTPUT_TIMEOUT = 60_000;
+
 /** Renders a v2 workflow template with inputs typed as the project types them. */
 export async function renderWorkflowV2(
   helper: TplTestHelpers,
@@ -80,7 +84,7 @@ export async function renderWorkflowV2(
 export async function resultJson(
   render: TestRenderResults<"result">,
   name: string,
-  timeout: number = 5000,
+  timeout: number = OUTPUT_TIMEOUT,
 ): Promise<unknown> {
   return await awaitStableState(
     render.computeOutput("result", (a) =>
@@ -114,6 +118,7 @@ export async function exportsAt<R>(
   render: V2Render,
   path: readonly string[],
   read: (a: PlTreeNodeAccessor | undefined) => R,
+  timeout: number = OUTPUT_TIMEOUT,
 ) {
   return await awaitStableState(
     render.computeOutput("exports", (a) => {
@@ -121,6 +126,7 @@ export async function exportsAt<R>(
       for (const name of path) node = node?.traverse({ field: name, assertFieldType: "Input" });
       return read(node);
     }),
+    timeout,
   );
 }
 
@@ -159,5 +165,8 @@ export async function renderUiExport(helper: TplTestHelpers, exports: V2Render) 
   const ui = await helper.renderTemplate(true, uiExportTemplate, ["result"], (tx) => ({
     pf: tx.getFutureFieldValue(exports.resultEntry.rid, "exports", "Input"),
   }));
-  return await awaitStableState(ui.computeOutput("result", (a) => describeTree(a)));
+  return await awaitStableState(
+    ui.computeOutput("result", (a) => describeTree(a)),
+    OUTPUT_TIMEOUT,
+  );
 }
