@@ -4,27 +4,24 @@ import { ConsoleLoggerAdapter, sleep } from "@milaboratories/ts-helpers";
 import * as fs from "fs/promises";
 import upath from "upath";
 import { ProcessOptions, processStop } from "./process";
-import * as yaml from "yaml";
-import * as os from "os";
 import { mergeDefaultOps } from "./pl";
 import type { LocalPlOptions, LocalPlOptionsFull } from "./pl";
 import { plProcessOps } from "./pl";
-import { getPorts } from "@milaboratories/pl-config";
+import { generateLocalPlConfigs } from "@milaboratories/pl-config";
 
 test(
-  "should start and stop platforma of the current version with hardcoded config",
+  "should start and stop platforma of the current version with generated args",
   { timeout: 25000 },
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
-    const config = await readTestConfig();
+    const dir = await prepareTestDir();
+    const args = await generateTestArgs(logger, dir);
 
-    logger.info("Config:\n" + yaml.stringify(config));
-
-    const dir = await prepareDirForTestConfig();
+    logger.info("Args:\n" + args.join("\n"));
 
     const pl = await localPlatformaInit(logger, {
       workingDir: dir,
-      config,
+      args,
       closeOld: false,
     });
 
@@ -46,11 +43,10 @@ test(
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
 
-    const config = await readTestConfig();
-    const dir = await prepareDirForTestConfig();
+    const dir = await prepareTestDir();
     const options: LocalPlOptions = {
       workingDir: dir,
-      config,
+      args: await generateTestArgs(logger, dir),
     };
 
     const oldPl = await localPlatformaInit(logger, options);
@@ -76,12 +72,11 @@ test(
   { timeout: 25000 },
   async ({ expect }) => {
     const logger = new ConsoleLoggerAdapter();
-    const config = await readTestConfig();
-    const dir = await prepareDirForTestConfig();
+    const dir = await prepareTestDir();
 
     const pl = await localPlatformaInit(logger, {
       workingDir: dir,
-      config,
+      args: await generateTestArgs(logger, dir),
       closeOld: false,
       onCloseAndErrorNoStop: async (pl) => await pl.start(),
     });
@@ -105,35 +100,21 @@ test(
   },
 );
 
-async function readTestConfig() {
-  const testConfig = upath.join(__dirname, "config.test.yaml");
-  const config = (await fs.readFile(testConfig)).toString();
+async function generateTestArgs(logger: ConsoleLoggerAdapter, dir: string) {
+  const generated = await generateLocalPlConfigs({
+    logger,
+    workingDir: dir,
+    portsMode: { type: "pickFree" },
+    licenseMode: { type: "env" },
+  });
 
-  const parsed = yaml.parse(config);
-  parsed.license.value = process.env.MI_LICENSE;
-  if ((parsed.license.value ?? "") == "") {
-    parsed.license.file = process.env.MI_LICENSE_FILE;
-    if ((parsed.license.file ?? "") == "") {
-      parsed.license.file = upath.join(os.homedir(), ".pl.license");
-    }
-  }
-
-  const freePort = await getPorts({ type: "pickFree" });
-  parsed.core.grpc.listen = `127.0.0.1:${freePort.grpc}`;
-  parsed.core.http.listen = `127.0.0.1:${freePort.http}`;
-
-  return yaml.stringify(parsed);
+  return generated.plArgs;
 }
 
-async function prepareDirForTestConfig() {
+async function prepareTestDir() {
   const dir = upath.join(__dirname, "..", "..", ".test");
   await fs.rm(dir, { recursive: true, force: true });
   await fs.mkdir(dir);
-
-  await fs.mkdir(upath.join(dir, "storages", "work"), { recursive: true });
-  await fs.mkdir(upath.join(dir, "storages", "main"), { recursive: true });
-  await fs.mkdir(upath.join(dir, "packages"), { recursive: true });
-  await fs.writeFile(upath.join(dir, "users.htpasswd"), "testuser:testpassword");
 
   return dir;
 }
@@ -151,14 +132,14 @@ const mergeDefaultOpsCases: {
     input: {
       ops: {
         workingDir: "/test",
-        config: "config",
+        args: ["--listen-port=6345"],
         plBinary: { type: "Download", version: "1.29.2" },
       },
       numCpu: 4,
     },
     expected: {
       workingDir: "/test",
-      config: "config",
+      args: ["--listen-port=6345"],
       plBinary: { type: "Download", version: "1.29.2" },
       spawnOptions: {
         env: {
@@ -173,7 +154,7 @@ const mergeDefaultOpsCases: {
     input: {
       ops: {
         workingDir: "/test",
-        config: "config",
+        args: ["--listen-port=6345"],
         // we provided plBinary and closeOld, they should appear in the result
         plBinary: { type: "Local", path: "/custom/binary" },
         closeOld: false,
@@ -182,7 +163,7 @@ const mergeDefaultOpsCases: {
     },
     expected: {
       workingDir: "/test",
-      config: "config",
+      args: ["--listen-port=6345"],
       spawnOptions: {
         env: {
           GOMAXPROCS: "2",
@@ -197,7 +178,7 @@ const mergeDefaultOpsCases: {
     input: {
       ops: {
         workingDir: "/test",
-        config: "config",
+        args: ["--listen-port=6345"],
         plBinary: { type: "Download", version: "1.29.2" },
         spawnOptions: {
           env: {
@@ -210,7 +191,7 @@ const mergeDefaultOpsCases: {
     },
     expected: {
       workingDir: "/test",
-      config: "config",
+      args: ["--listen-port=6345"],
       plBinary: { type: "Download", version: "1.29.2" },
       spawnOptions: {
         env: {
@@ -227,7 +208,7 @@ const mergeDefaultOpsCases: {
     input: {
       ops: {
         workingDir: "/test",
-        config: "config",
+        args: ["--listen-port=6345"],
         plBinary: { type: "Download", version: "1.29.2" },
         spawnOptions: {
           stdio: "inherit",
@@ -238,7 +219,7 @@ const mergeDefaultOpsCases: {
     },
     expected: {
       workingDir: "/test",
-      config: "config",
+      args: ["--listen-port=6345"],
       plBinary: { type: "Download", version: "1.29.2" },
       spawnOptions: {
         env: {
@@ -255,7 +236,7 @@ const mergeDefaultOpsCases: {
     input: {
       ops: {
         workingDir: "/test",
-        config: "config",
+        args: ["--listen-port=6345"],
         plBinary: { type: "Local", path: "/custom/binary" },
         closeOld: false,
         spawnOptions: {
@@ -271,7 +252,7 @@ const mergeDefaultOpsCases: {
     },
     expected: {
       workingDir: "/test",
-      config: "config",
+      args: ["--listen-port=6345"],
       plBinary: { type: "Local", path: "/custom/binary" },
       closeOld: false,
       spawnOptions: {
@@ -297,7 +278,6 @@ const plProcessOpsCases: {
   name: string;
   input: {
     binaryPath: string;
-    configPath: string;
     ops: LocalPlOptionsFull;
     workDir: string;
   };
@@ -307,10 +287,9 @@ const plProcessOpsCases: {
     name: "should set basic options with minimal input",
     input: {
       binaryPath: "/path/to/binary",
-      configPath: "/path/to/config.yaml",
       ops: {
         workingDir: "/work/dir",
-        config: "config-content",
+        args: ["--listen-port=6345"],
         plBinary: { type: "Download", version: "1.29.2" },
         spawnOptions: {},
         closeOld: true,
@@ -319,7 +298,7 @@ const plProcessOpsCases: {
     },
     expected: {
       cmd: "/path/to/binary",
-      args: ["--config", "/path/to/config.yaml"],
+      args: ["--listen-port=6345"],
       opts: {
         env: {},
         cwd: "/work/dir",
@@ -332,10 +311,9 @@ const plProcessOpsCases: {
     name: "should merge environment variables when provided",
     input: {
       binaryPath: "/path/to/binary",
-      configPath: "/config.yaml",
       ops: {
         workingDir: "/work",
-        config: "content",
+        args: ["--listen-port=6345"],
         plBinary: { type: "Download", version: "1.29.2" },
         spawnOptions: {
           env: {
@@ -349,7 +327,7 @@ const plProcessOpsCases: {
     },
     expected: {
       cmd: "/path/to/binary",
-      args: ["--config", "/config.yaml"],
+      args: ["--listen-port=6345"],
       opts: {
         env: {
           DEBUG: "true",
@@ -365,10 +343,9 @@ const plProcessOpsCases: {
     name: "should override spawn options when provided",
     input: {
       binaryPath: "/binary",
-      configPath: "/config.yaml",
       ops: {
         workingDir: "/work",
-        config: "content",
+        args: ["--listen-port=6345"],
         plBinary: { type: "Download", version: "1.29.2" },
         spawnOptions: {
           stdio: "inherit",
@@ -381,7 +358,7 @@ const plProcessOpsCases: {
     },
     expected: {
       cmd: "/binary",
-      args: ["--config", "/config.yaml"],
+      args: ["--listen-port=6345"],
       opts: {
         env: {},
         cwd: "/work",
@@ -396,10 +373,9 @@ const plProcessOpsCases: {
     name: "should handle complex case with multiple options",
     input: {
       binaryPath: "/bin/platforma",
-      configPath: "/etc/platforma/config.yaml",
       ops: {
         workingDir: "/var/platforma",
-        config: "yaml content",
+        args: ["--listen-port=6345"],
         plBinary: { type: "Download", version: "1.29.2" },
         spawnOptions: {
           env: {
@@ -419,7 +395,7 @@ const plProcessOpsCases: {
     },
     expected: {
       cmd: "/bin/platforma",
-      args: ["--config", "/etc/platforma/config.yaml"],
+      args: ["--listen-port=6345"],
       opts: {
         env: {
           PL_DEBUG: "true",
@@ -438,7 +414,7 @@ const plProcessOpsCases: {
 ];
 
 test.each(plProcessOpsCases)("plProcessOps: $name", ({ input, expected }) => {
-  const result = plProcessOps(input.binaryPath, input.configPath, input.ops, input.workDir, {});
+  const result = plProcessOps(input.binaryPath, input.ops, input.workDir, {});
 
   expect(result).toEqual(expected);
 });

@@ -1,18 +1,14 @@
 import { notEmpty, type MiLogger } from "@milaboratories/ts-helpers";
 import upath from "upath";
-import yaml from "yaml";
-import type { Endpoints, PlConfigPorts } from "../common/ports";
-import { getLocalhostEndpoints } from "../common/ports";
-import type { PlConfig } from "../common/types";
-import type { PlLicenseMode } from "../common/license";
+import fsp from "node:fs/promises";
+import type { PlConfigPorts } from "../common/ports";
+import { getPorts } from "../common/ports";
+import type { PlLicenseMode, License } from "../common/license";
 import { getLicense } from "../common/license";
 import { createLocalHtpasswdFile } from "../common/auth";
-import type { StoragesSettings } from "../common/storages";
 import { createDefaultLocalStorages } from "../common/storages";
-import { createDefaultLocalPackageSettings } from "../common/packageloader";
 import { FSKVStorage } from "./fs_kv_storage";
 import * as crypto from "node:crypto";
-import { newDefaultPlConfig } from "../common/config";
 import * as os from "node:os";
 
 export type LocalPlConfigGeneratorOptions = {
@@ -35,12 +31,10 @@ export type LocalPlConfigGeneratorOptions = {
   numCpu?: number;
 
   /**
-   * A hook that allows to override any default configuration.
-   * Check the docs of platforma configuration for the specific fields.
-   *
-   * @param config - a parsed yaml.
+   * Additional backend CLI options, appended after the generated ones.
+   * Check `platforma --help` for the available options.
    */
-  plConfigPostprocessing?: (config: PlConfig) => PlConfig;
+  extraArgs?: string[];
 };
 
 const DefaultLocalPlConfigGeneratorOptions: Pick<
@@ -53,6 +47,9 @@ const DefaultLocalPlConfigGeneratorOptions: Pick<
   // we want to keep at least a couple for UI and other apps to work.
   numCpu: Math.max(os.cpus().length - 2, 1),
 };
+
+/** Software registry the backend uses when global access is requested. */
+const GlobalAccessPackageRegistry = "platforma-open=https://bin-ga.pl-open.science";
 
 /** Defines which storages from pl are available via local paths */
 export type LocalStorageProjection = {
@@ -76,8 +73,8 @@ export type LocalPlConfigGenerationResult = {
   /** Working directory for a local platforma */
   workingDir: string;
 
-  /** Configuration content for a local platforma */
-  plConfigContent: string;
+  /** Backend CLI options for a local platforma */
+  plArgs: string[];
 
   //
   // Data for pl client configuration
@@ -112,18 +109,60 @@ export async function generateLocalPlConfigs(
 
   const user = "default-user";
   const password = await kv.getOrCreate("password", () => crypto.randomBytes(16).toString("hex"));
-  const jwt = await kv.getOrCreate("jwt", () => crypto.randomBytes(32).toString("hex"));
+  // Signs JWTs and resource signatures: changing it invalidates every session and signature.
+  await kv.getOrCreate("master-secret", () => crypto.randomBytes(32).toString("base64url"));
 
-  const ports = await getLocalhostEndpoints(opts.portsMode);
+  const host = "127.0.0.1";
+  const ports = await getPorts(opts.portsMode);
 
-  const storages = await createDefaultLocalStorages(workdir, `http://${ports.http}`);
+  const storages = await createDefaultLocalStorages(workdir, `http://${host}:${ports.http}`);
+  const htpasswdFile = await createLocalHtpasswdFile(workdir, [{ user, password }]);
+  const licenseFile = await localLicenseFile(workdir, await getLicense(opts.licenseMode));
+
+  const plArgs = [
+    `--listen-address=${host}`,
+    `--listen-port=${ports.grpc}`,
+    `--listen-http-port=${ports.http}`,
+    `--monitoring-ip=${host}`,
+    `--monitoring-port=${ports.monitoring}`,
+    "--debug-enabled",
+    `--debug-ip=${host}`,
+    `--debug-port=${ports.debug}`,
+
+    `--main-root=${workdir}`,
+    `--db-dir=${upath.join(workdir, "db")}`,
+    `--work-dir=${storages.runner}`,
+    `--packages-dir=${upath.join(workdir, "packages")}`,
+    `--primary-storage-fs=${storages.mainStoragePath}`,
+    `--primary-storage-fs-url=http://${host}:${ports.http}`,
+
+    // Storages are kept as the yaml configuration of earlier versions declared them,
+    // so projects created there keep working.
+    "--primary-storage-id=main",
+    "--work-storage-id=work",
+    "--host-data-library-id=root",
+    "--host-data-library-downloadable",
+    "--primary-storage-fs-local-access",
+
+    `--auth-htpasswd=${htpasswdFile}`,
+    `--master-secret-file=${upath.join(workdir, "gen", "master-secret")}`,
+    `--license-file=${licenseFile}`,
+
+    `--runner-local-cpu=${notEmpty(opts.numCpu)}`,
+    "--keep-faulty-workdirs=1h",
+
+    `--log-dst=file://${upath.join(workdir, "platforma.log")}`,
+  ];
+
+  if (opts.useGlobalAccess) plArgs.push(`--package-registry=${GlobalAccessPackageRegistry}`);
+  if (opts.extraArgs) plArgs.push(...opts.extraArgs);
 
   return {
     workingDir: opts.workingDir,
 
-    plConfigContent: await createDefaultPlLocalConfig(opts, ports, user, password, jwt, storages),
+    plArgs,
 
-    plAddress: ports.grpc,
+    plAddress: `${host}:${ports.grpc}`,
     plUser: user,
     plPassword: password,
 
@@ -136,41 +175,13 @@ export async function generateLocalPlConfigs(
   };
 }
 
-async function createDefaultPlLocalConfig(
-  opts: LocalPlConfigGeneratorOptions,
-  ports: Endpoints,
-  user: string,
-  password: string,
-  jwtKey: string,
-  storages: StoragesSettings,
-): Promise<string> {
-  const license = await getLicense(opts.licenseMode);
-  const htpasswdAuth = await createLocalHtpasswdFile(opts.workingDir, [{ user, password }]);
+/** Gets a path to the license file, writing the license value into the working dir if needed. */
+async function localLicenseFile(workdir: string, license: License): Promise<string> {
+  if (license.type === "file") return license.file;
 
-  const packageLoaderConfig = await createDefaultLocalPackageSettings(
-    opts.workingDir,
-    notEmpty(opts.useGlobalAccess),
-  );
-
-  let config = newDefaultPlConfig(
-    ports,
-    license,
-    htpasswdAuth,
-    jwtKey,
-    packageLoaderConfig,
-    storages,
-  );
-
-  // In local deployment we need to define a number of
-  // cpus that are less then the maximum one.
-
-  // FIXME: it seems to be overwritten on the backend side.
-  // Let's fix defaults loading in the backend and remove hardcoded constants from here.
-  config.controllers.runner.resources = {
-    cpu: notEmpty(opts.numCpu),
-  };
-
-  if (opts.plConfigPostprocessing) config = opts.plConfigPostprocessing(config);
-
-  return yaml.stringify(config);
+  const file = upath.join(workdir, "gen", "license");
+  await fsp.writeFile(file, license.value, { mode: 0o600 });
+  // mode is applied only when the file is created
+  await fsp.chmod(file, 0o600);
+  return file;
 }
