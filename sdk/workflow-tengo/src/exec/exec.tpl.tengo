@@ -15,15 +15,11 @@ pkg := import(":exec.package")
 desc := import(":exec.descriptor")
 monetization := import(":exec.monetization_internal")
 assets := import(":assets")
-maps := import(":maps")
-runcmd := import(":exec.runcmd")
-loadSoftware := import(":exec.load-software")
 execConstants := import(":exec.constants")
-ll := import(":ll")
-text := import("text")
-execFormula := import(":exec.formula")
+prepare := import(":exec.prepare")
+stream := import(":exec.stream")
+tplutil := import(":tpl.util")
 
-mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-binaries:mnz-client")
 execImplTpl := assets.importTemplate(":exec.exec-impl")
 
 self.defineOutputs(
@@ -33,7 +29,8 @@ self.defineOutputs(
 	"fileSetsContent",
 	"progress",
 	"fileStreams",
-	"wdProcessors"
+	"wdProcessors",
+	"attempts"
 )
 
 inputSchema := {
@@ -87,7 +84,7 @@ inputSchema := {
 }
 
 // Optional resource-formula inputs (attached by the exec builder when a RAM /
-// CPU / VRAM formula is used), evaluated by the body below. The formula ASTs
+// CPU / VRAM formula is used), evaluated by the body below (exec.prepare). The formula ASTs
 // __memFormula__/__cpuFormula__/__gpuFormula__ are JSON value resources on the
 // META rail — CID-transparent, yet readable as final in this pure body (same
 // mechanism as `quota`). __metric_lineCount__ is a COMPUTED map resource
@@ -100,124 +97,48 @@ inputSchema[execConstants.META_INPUT_CPU_FORMULA + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_GPU_FORMULA + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_SCRATCH_FORMULA + ",?"] = "any"
 inputSchema[execConstants.REGULAR_INPUT_LINE_COUNT + ",?"] = "any"
+inputSchema[execConstants.META_INPUT_FORCE_RUN_COMMAND_V2 + ",?"] = "any"
+
+// Exec fallbacks (spec §12.3), present only when the builder used .fallbacks(), so an exec
+// without them renders the same inputs, and has the same CID, as before: plan key -> { inputs,
+// meta } of each handler's exec.exec render, and the policy JSON that names them.
+inputSchema["fallbackPlans,?"] = "any"
+inputSchema["fallbackPolicy,?"] = "any"
 self.validateInputs(inputSchema)
 
 self.body(func(inputs) {
+	impl := prepare.implInputs(inputs, self.rawInputs())
 
-	plan := undefined
-	if (is_undefined(inputs.runOptions.software)) {
-		// Simple local command run, no software packages involved (backward compatibility)
-		plan = runcmd.createRunCommandPlan().cmd(inputs.runOptions.cmd).state()
-	} else {
-		software := inputs.runOptions.software
-		plan = loadSoftware.loadSoftware(software)
-	}
-
-	// Resource-formula evaluation happens HERE, in the pure template. By the time
-	// this body runs, the meta formula ASTs and the regular line-count map (see the
-	// input-schema note above) are resolved and deep-waited, so it reads and
-	// evaluates them directly — no awaitState (ephemeral-only; it would panic here).
-	quota := maps.clone(inputs.quota)
-
-	memFormula := inputs[execConstants.META_INPUT_MEM_FORMULA]
-	cpuFormula := inputs[execConstants.META_INPUT_CPU_FORMULA]
-	gpuFormula := inputs[execConstants.META_INPUT_GPU_FORMULA]
-	scratchFormula := inputs[execConstants.META_INPUT_SCRATCH_FORMULA]
-	if !is_undefined(memFormula) || !is_undefined(cpuFormula) ||
-		!is_undefined(gpuFormula) || !is_undefined(scratchFormula) {
-		fileRefs := inputs.filesToAdd
-		lineCountMap := inputs[execConstants.REGULAR_INPUT_LINE_COUNT]
-		resolver := {
-			// size: sum of blob sizes (bytes) of the referenced input files.
-			size: func(files) {
-				total := 0
-				for fn in files {
-					ll.assert(!is_undefined(fileRefs[fn]), "exec.tpl: resource formula references file %q, which is not among the exec's input files", fn)
-					total += ll.getBlobSize(fileRefs[fn].id)
-				}
-				return total
-			},
-			// lineCount: sum of the deep-waited per-file line counts. Each map entry
-			// is a content resource holding a base-10 int (no trailing newline).
-			lineCount: func(files) {
-				ll.assert(!is_undefined(lineCountMap), "exec.tpl: a lineCount formula was evaluated but the __metric_lineCount__ metric map is missing")
-				total := 0
-				for fn in files {
-					// As a regular input, each map entry is deep-waited to a ready
-					// content-resource handle; read its bytes directly.
-					ll.assert(!is_undefined(lineCountMap[fn]), "exec.tpl: lineCount metric map has no entry for %q (the line-counter pre-exec did not produce a count for this file)", fn)
-					data := lineCountMap[fn].getData()
-					n := int(text.trim(string(data), "\n \r\t"))
-					ll.assert(!is_undefined(n), "exec.tpl: lineCount for %q is not a base-10 integer: %q", fn, string(data))
-					total += n
-				}
-				return total
-			}
+	// With fallbacks, every streamed file is a StreamCollection/1 that follows the running attempt
+	// (spec §13); the attempts write its fields. Without them the streams are the attempt's own
+	// StreamManager/2s, as before.
+	collections := undefined
+	if !is_undefined(inputs.fallbackPlans) && !is_undefined(inputs.filesToStream) && len(inputs.filesToStream) > 0 {
+		// TODO: the CID of this render once Tengo can read it; the inputs map is deduplicated
+		// exactly as the render is, so it stands in for the identity
+		identity := self.renderer().get(tplutil.INPUTS_MAP_FIELD)
+		c := {}
+		for name in inputs.filesToStream {
+			c[name] = stream.createCollection(identity, name)
 		}
-		if !is_undefined(memFormula) {
-			quota.ram = string(execFormula.evaluateResource(memFormula, resolver, "ram")) + "b"
-		}
-		if !is_undefined(cpuFormula) {
-			quota.cpu = execFormula.evaluateResource(cpuFormula, resolver, "cpu")
-		}
-		if !is_undefined(gpuFormula) {
-			// VRAM bytes -> SizeUnit string (the quota's gpuMemory is a size string,
-			// parsed identically to ram). A positive integer is asserted, same as ram.
-			quota.gpuMemory = string(execFormula.evaluateResource(gpuFormula, resolver, "gpuMemory")) + "b"
-		}
-		if !is_undefined(scratchFormula) {
-			quota.scratchFreeSpace = string(execFormula.evaluateScratch(scratchFormula, resolver)) + "b"
-		}
+		collections = smart.createMapResource(c)
+		impl.pure.streamCollections = collections
 	}
 
-	metaImplInputs := { quota: smart.createJsonResource(quota) }
-	pureImplInputs := { mainPlan: plan }
+	// exec-impl cannot import itself through the router (no template import cycles), so it gets
+	// its own template as an input and passes it on
+	impl.pure.execImplTpl = execImplTpl
 
-	if !is_undefined(inputs.runOptions.monetization) {
-		pureImplInputs.mnzPlan = loadSoftware.loadSoftware(mnzSw)
-	}
-
-	//
-	// Code below uses raw inputs, to pass exactly same resource as we received in inputs.
-	// This will not be needed after we finish MILAB-685: https://github.com/milaboratory/platforma/pull/8
-	//
-
-	if !is_undefined(self.rawInputs().filesToAdd) {
-		pureImplInputs.filesToAdd = self.rawInputs().filesToAdd
-	}
-	if !is_undefined(self.rawInputs().filesToWrite) {
-		pureImplInputs.filesToWrite = self.rawInputs().filesToWrite
-	}
-	if !is_undefined(self.rawInputs().assets) {
-		pureImplInputs.assets = self.rawInputs().assets
-	}
-	if !is_undefined(self.rawInputs().wdProcessors) {
-		pureImplInputs.wdProcessors = self.rawInputs().wdProcessors
-	}
-
-	pureImplInputs.settings = smart.createJsonResource(maps.clone({
-		dirsToCreate: inputs.dirsToCreate,
-		runOptions: inputs.runOptions,
-		filesToSave: inputs.filesToSave,
-		filesContentToSave: inputs.filesContentToSave,
-		fileSetsToSave: inputs.fileSetsToSave,
-		fileSetsContentToSave: inputs.fileSetsContentToSave,
-		filesToStream: inputs.filesToStream,
-		writableFiles: inputs.writableFiles,
-		assetDescriptors: inputs.assetDescriptors,
-		assetRules: inputs.assetRules,
-		assetCache: inputs.assetCache
-	}, { removeUndefs: true }))
-
-	execImpl := render.createEphemeral(execImplTpl, pureImplInputs, { metaInputs: metaImplInputs })
+	execImpl := render.createEphemeral(execImplTpl, impl.pure, { metaInputs: impl.meta })
 
 	return {
 		files: execImpl.output("files"),
 		filesContent: execImpl.output("filesContent"),
 		fileSets: execImpl.output("fileSets"),
 		fileSetsContent: execImpl.output("fileSetsContent"),
-		fileStreams: execImpl.output("fileStreams"),
+		fileStreams: is_undefined(collections) ? execImpl.output("fileStreams") : collections,
 		wdProcessors: execImpl.output("wdProcessors"),
-		progress: execImpl.output("progress")
+		progress: execImpl.output("progress"),
+		attempts: execImpl.output("attempts")
 	}
 })

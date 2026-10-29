@@ -1,0 +1,133 @@
+/**
+ * The save chain of an exec: workdir processors, then the save of the post-run working directory
+ * into the exec's outputs. On a RunCommand v3 exec the outcome router runs it on success (wave 2
+ * of spec §14.2), with WorkdirSave v3 when the backend has it, and the wd-retrier reads its save
+ * outcomes.
+ */
+
+ll := import(":ll")
+render := import(":render")
+workdir := import(":workdir")
+limits := import(":exec.limits")
+slices := import(":slices")
+maps := import(":maps")
+
+// The key of the working directory's own entry in the WorkdirSave v3 outcome map.
+_OUTCOME_WORKDIR := "workdir"
+
+// Outcome reasons of WorkdirSave v3 that mean the working directory's content is lost.
+_LOST_REASONS := { WorkdirMissing: true, FileMissing: true }
+
+/**
+ * @param queue: string - the exec's queue
+ * @param settings: map - the exec's settings
+ * @return bool - whether the save chain saves with WorkdirSave v3 and the wd-retrier restarts on
+ *         a lost working directory. The backend has WorkdirSave v3 iff it has RunCommand v3
+ *         (decision D3). Without it the success path saves with v1, as before, and a lost working
+ *         directory is an error (spec §5). v3 reserves the save rule key `workdir` for the
+ *         directory's own outcome, so an exec saving a file of that name saves with v1.
+ */
+hasWorkdirSaveV3 := func(queue, settings) {
+	if is_undefined(limits.getRunCommandV3Type(queue)) {
+		return false
+	}
+	saved := is_undefined(settings.filesToSave) ? [] : settings.filesToSave
+	return !slices.hasElement(saved, _OUTCOME_WORKDIR)
+}
+
+/**
+ * Runs the workdir processors and saves the post-run working directory.
+ *
+ * @param wdAfter: reference - the post-run working directory
+ * @param settings: map - the exec's settings (filesToSave, filesContentToSave, fileSetsToSave,
+ *                  fileSetsContentToSave, filesToStream)
+ * @param wdProcessors: map | undefined - name -> { tpl, tplArgs }
+ * @param opts: map - { v3: bool } - save with WorkdirSave v3
+ * @return map - files, filesContent, fileSets, fileSetsContent, progress, wdProcessors and, with
+ *         v3, outcome: the save outcomes map
+ */
+run := func(wdAfter, settings, wdProcessors, opts) {
+	v3 := opts.v3 == true
+
+	wdProcessorsResults := {}
+	if !is_undefined(wdProcessors) {
+		for name, p in wdProcessors {
+			tplInputs := {
+				workdir: wdAfter,
+				args: p.tplArgs
+			}
+			if v3 {
+				tplInputs.saveVersion = 3
+			}
+
+			// render template & get results
+			r := render.createEphemeral(p.tpl, tplInputs)
+
+			wdProcessorsResults[name] = r.output("result")
+			wdAfter = r.output("workdir")
+		}
+	}
+
+	wdSaver := workdir.save(wdAfter)
+	if v3 {
+		wdSaver.v3()
+	}
+	if !is_undefined(settings.filesToSave) {
+		for fName in settings.filesToSave {
+			wdSaver.saveFile(fName)
+		}
+	}
+	if !is_undefined(settings.filesContentToSave) {
+		for fName in settings.filesContentToSave {
+			wdSaver.saveFileContent(fName)
+		}
+	}
+	if !is_undefined(settings.fileSetsToSave) {
+		for name, regex in settings.fileSetsToSave {
+			wdSaver.saveFileSet(name, regex)
+		}
+	}
+	if !is_undefined(settings.fileSetsContentToSave) {
+		for name, regex in settings.fileSetsContentToSave {
+			wdSaver.saveFileSetContent(name, regex)
+		}
+	}
+
+	wdResult := wdSaver.build()
+
+	return {
+		files: wdResult.files,
+		filesContent: wdResult.filesContent,
+		fileSets: wdResult.fileSets,
+		fileSetsContent: wdResult.fileSetsContent,
+		progress: wdResult.progress,
+		wdProcessors: wdProcessorsResults,
+		outcome: v3 ? wdResult.outcome : undefined
+	}
+}
+
+/**
+ * Reads the save outcomes of WorkdirSave v3 (decision D2): `workdir` -> the directory's outcome,
+ * and one entry per file or archive rule -> its index task's outcome, each
+ * { result: "success" } or { result: "fail", reason: "WorkdirMissing" | "FileMissing", message }.
+ * Either reason means the working directory's content is lost; every other save failure is an
+ * error of the save, not an outcome.
+ *
+ * @param outcomes: map - key -> outcome JSON
+ * @return string | undefined - what was lost, or undefined when everything was saved
+ */
+lostWorkdir := func(outcomes) {
+	for key in maps.getKeys(outcomes) {
+		oc := outcomes[key]
+		if oc.result != "success" && !is_undefined(_LOST_REASONS[oc.reason]) {
+			return key + ": " + (is_undefined(oc.message) ? oc.reason : oc.message)
+		}
+	}
+	return undefined
+}
+
+export ll.toStrict({
+	hasWorkdirSaveV3: hasWorkdirSaveV3,
+	run: run,
+	lostWorkdir: lostWorkdir
+})

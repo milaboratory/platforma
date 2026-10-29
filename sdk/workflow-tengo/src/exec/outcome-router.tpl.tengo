@@ -1,0 +1,147 @@
+/**
+ * The outcome router of one RunCommand v3 attempt (exec fallbacks, spec §10.3): waits for the
+ * command to finish and decides what happens next.
+ *
+ *   success                     the save chain, then exec.wd-retrier on its outcomes (spec §14)
+ *   failure, a handler matches  the handler's plan as the next attempt: a full exec-impl render
+ *                               with a fresh working directory; its outputs are forwarded
+ *   failure, nothing applies    the error: the composed message and the attempt history
+ *
+ * An errored `outcome` or `workdir` (an infrastructure failure) makes inputs() panic with the
+ * upstream message before the body runs, which is the propagation such errors need.
+ *
+ * Outputs: files, filesContent, fileSets, fileSetsContent, wdProcessors, progress, attempts, and
+ * streamOwn: file name -> this attempt's own copy of each streamed file, saved on both branches,
+ * the final content of the attempt's stream managers.
+ */
+
+self := import(":tpl.light")
+
+ll := import(":ll")
+smart := import(":smart")
+render := import(":render")
+assets := import(":assets")
+workdir := import(":workdir")
+file := import(":file")
+maps := import(":maps")
+fallback := import(":exec.fallback")
+prepare := import(":exec.prepare")
+saveChain := import(":exec.save-chain")
+stream := import(":exec.stream")
+
+wdRetrierTpl := assets.importTemplate(":exec.wd-retrier")
+
+self.awaitState("ResourceReady")
+
+self.body(func(inputs) {
+	// run-command/outcome is not a plain JSON resource type, so inputs() leaves it as a resource
+	oc := inputs.outcome
+	if !is_map(oc) {
+		oc = oc.getDataAsJson()
+	}
+	settings := inputs.settings
+	raw := self.rawInputs()
+	collections := is_undefined(inputs.streamCollections) ? {} : inputs.streamCollections
+
+	// attempt 0 has no attempt context; fallback attempts and restarts get it from the template
+	// that rendered them
+	ctx := inputs.attemptCtx
+	if is_undefined(ctx) {
+		ctx = { attempt: 0, jobId: oc.jobId, plan: fallback.ROOT_PLAN, restart: 0, history: [] }
+	}
+	entry := fallback.historyEntry(ctx.attempt, ctx.plan, oc)
+	hist := append(copy(ctx.history), entry)
+
+	if oc.result == "success" {
+		// wave 2: the save chain, then the wd-retrier decides on its outcomes
+		v3Save := saveChain.hasWorkdirSaveV3(settings.runOptions.queue, settings)
+		saved := saveChain.run(raw.workdir.getValue(), settings, inputs.wdProcessors, { v3: v3Save })
+
+		retrierInputs := {
+			files: saved.files,
+			filesContent: saved.filesContent,
+			fileSets: saved.fileSets,
+			fileSetsContent: saved.fileSetsContent,
+			progress: saved.progress,
+			wdProcessors: saved.wdProcessors,
+			settings: raw.settings.getValue(),
+			attemptCtx: maps.merge(ctx, { history: hist, attemptLimit: oc.attemptLimit, restartLimit: oc.restartLimit }),
+			implInputs: raw.implInputs.getValue()
+		}
+		if v3Save {
+			retrierInputs.saveOutcome = saved.outcome
+		}
+		for name in ["streamCollections", "execImplTpl"] {
+			if !is_undefined(raw[name]) {
+				retrierInputs[name] = raw[name].getValue()
+			}
+		}
+		r := render.createEphemeral(wdRetrierTpl, retrierInputs)
+
+		return {
+			files: r.output("files"),
+			filesContent: r.output("filesContent"),
+			fileSets: r.output("fileSets"),
+			fileSetsContent: r.output("fileSetsContent"),
+			wdProcessors: r.output("wdProcessors"),
+			progress: r.output("progress"),
+			attempts: r.output("attempts"),
+			streamOwn: r.output("streamOwn")
+		}
+	}
+
+	next := fallback.pick(inputs.fallbackPolicy, oc.failDetails, oc.lastLogLines)
+	// the error text is the one the backend's error had before RunCommand v3, plus the history
+	if is_undefined(next) {
+		ll.panic("%s", fallback.exhaustedMessage(oc, hist, "no handler"))
+	}
+	if ctx.attempt + 1 >= oc.attemptLimit {
+		ll.panic("%s", fallback.exhaustedMessage(oc, hist, "backend attempt limit reached"))
+	}
+
+	// plan `next`, serialized by the builder: the inputs exec.exec would have received as a root;
+	// prepared here as exec.exec prepares attempt 0
+	planValues := inputs.fallbackPlans[next]
+	planRaw := raw.fallbackPlans.getValue().inputs()[next].getValue()
+	planInputs := maps.merge(planValues.inputs, planValues.meta)
+	impl := prepare.implInputs(planInputs, planRaw.inputs().inputs.getValue().inputs())
+	impl.pure.attemptCtx = {
+		attempt: ctx.attempt + 1,
+		jobId: ctx.jobId,
+		plan: next,
+		restart: ctx.restart,
+		history: hist
+	}
+	for name in ["streamCollections", "execImplTpl"] {
+		if !is_undefined(raw[name]) {
+			impl.pure[name] = raw[name].getValue()
+		}
+	}
+
+	// this attempt's streamed files: the only save a failed attempt gets (spec §13.3), one save per
+	// file, so a file the attempt never wrote fails only its own stream. Not watched: a lost
+	// directory here loses this log only, and the fallback still runs.
+	streamOwn := smart.mapBuilder()
+	if !is_undefined(settings.filesToStream) {
+		for name in settings.filesToStream {
+			saved := workdir.save(raw.workdir.getValue()).saveFile(name).build()
+			streamOwn.addRef(name, file.exportFile(saved.files.getFutureInputField(name)))
+		}
+	}
+
+	stream.attemptEnded(collections, ctx.attempt, entry, undefined)
+
+	// attempt n+1 takes `stream` of the collections over when it starts
+	r := render.createEphemeral(raw.execImplTpl.getValue(), impl.pure, { metaInputs: impl.meta })
+
+	return {
+		files: r.output("files"),
+		filesContent: r.output("filesContent"),
+		fileSets: r.output("fileSets"),
+		fileSetsContent: r.output("fileSetsContent"),
+		wdProcessors: r.output("wdProcessors"),
+		progress: r.output("progress"),
+		attempts: r.output("attempts"),
+		streamOwn: streamOwn.build()
+	}
+})
