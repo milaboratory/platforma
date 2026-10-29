@@ -8,6 +8,7 @@ tplutil := import(":tpl.util")
 constants := import(":constants")
 stateAwait := import(":tpl.state-await")
 validation := import(":validation")
+feats := import(":feats")
 
 // This import is required to guard the code generated with this package from being executed on backends having insufficient capabilities.
 
@@ -161,6 +162,39 @@ tpl := func(ops) {
 		 */
 		template: func() {
 			return smart.resource(_templateId)
+		},
+
+		/**
+		 * Get the canonical ID of the current renderer (the RenderTemplate resource that runs this
+		 * template). Deduplication gives the same canonical ID to all renderers with the same
+		 * template and the same inputs, so the value identifies this computation by its content.
+		 *
+		 * The value is available only in the template body. It is not available:
+		 *  - in ephemeral templates: an EphRenderTemplate is not deduplicated and has no canonical ID;
+		 *  - during the initialization of a pure template: the backend sets the canonical ID of the
+		 *    renderer during deduplication, which can occur after the initialization;
+		 *  - on backends that do not give final canonical IDs (see feats.canonicalIdExposure).
+		 * In all these cases the function causes an error.
+		 *
+		 * @return canonicalId: []byte - the canonical ID of the current renderer
+		 */
+		canonicalId: func() {
+			if _isEphemeral {
+				ll.panic("canonical ID is not available in ephemeral templates: renderer %v has type %v",
+					_renderer.id, _rendererType.Name)
+			}
+
+			if !feats.canonicalIdExposure {
+				ll.panic("canonical ID is not available: the backend does not give final canonical IDs")
+			}
+
+			cid := _renderer.info().CanonicalID
+			if is_undefined(cid) || len(cid) == 0 {
+				ll.panic("canonical ID of renderer %v is not set yet. Read it from the template body, not during initialization",
+					_renderer.id)
+			}
+
+			return cid
 		},
 
 		_unmarshallers: copy(ops.unmarshallers),
@@ -751,7 +785,8 @@ tpl := func(ops) {
 				delegate                : self.routeDelegate,
 				validateInputs          : self.validateInputs,
 				body                    : self.body,
-				template                : self.template
+				template                : self.template,
+				canonicalId             : self.canonicalId
 			})
 		}
 	}
