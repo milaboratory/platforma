@@ -83,3 +83,27 @@ tplTest.concurrent(
     expect(str).toStrictEqual("<undefined>");
   },
 );
+
+tplTest.concurrent(
+  "a V1 bundle gets a column by its serialized value id",
+  async ({ helper, expect }) => {
+    const producer = await helper.renderWorkflow(
+      "workflow.exports.wf1",
+      false,
+      { a: "a", b: "b" },
+      { blockId: "serialized-producer" },
+    );
+    const ctx = await awaitStableState(producer.context());
+    const id = JSON.stringify({ __isRef: true, blockId: "serialized-producer", name: "e1" });
+    const consumer = await helper.renderWorkflow(
+      "workflow.bundle-serialized",
+      false,
+      { id },
+      { parent: ctx, blockId: "serialized-consumer" },
+    );
+    expect(await awaitStableState(consumer.output("kind", (a) => a?.getDataAsJson()))).eq("Json");
+    expect(
+      await awaitStableState(consumer.output("data", (a) => a?.getDataAsJson())),
+    ).toStrictEqual(["a", "b"]);
+  },
+);
