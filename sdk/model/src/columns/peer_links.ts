@@ -1,20 +1,26 @@
 import {
   Annotation,
   canonicalizeAxisId,
+  isPColumnSpec,
   readAnnotation,
   type AxisId,
   type CanonicalizedJson,
   type PColumnSpec,
+  type PObjectSpec,
 } from "@milaboratories/pl-model-common";
 import { uniq } from "es-toolkit";
 import { ResultPoolColumnsProvider } from "./column_providers";
 
 export type DatasetAxes = Set<CanonicalizedJson<AxisId>>;
 
-/** Main axes of the datasets: the second axis of every column marked `pl7.app/isAnchor`. */
-export function collectDatasetAxes(specs: PColumnSpec[]): DatasetAxes {
+/**
+ * Main axes of the datasets: the second axis of every column marked `pl7.app/isAnchor`.
+ * Non-column objects, such as exported files, have no axes and are skipped.
+ */
+export function collectDatasetAxes(specs: PObjectSpec[]): DatasetAxes {
   return new Set(
     specs.flatMap((spec) => {
+      if (!isPColumnSpec(spec)) return [];
       const main = spec.axesSpec[1];
       return readAnnotation(spec, Annotation.IsAnchor) === "true" && main !== undefined
         ? [canonicalizeAxisId(main)]
