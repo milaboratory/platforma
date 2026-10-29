@@ -1,0 +1,95 @@
+/**
+ * Wave 2 of a successful RunCommand v3 attempt (exec fallbacks, spec §14.2): the save chain, then
+ * exec.wd-retrier on its outcomes. Rendered by the outcome router; a library so tests can render
+ * it on a working directory of their own (decision D5).
+ */
+
+ll := import(":ll")
+smart := import(":smart")
+render := import(":render")
+assets := import(":assets")
+file := import(":file")
+slices := import(":slices")
+saveChain := import(":exec.save-chain")
+
+wdRetrierTpl := assets.importTemplate(":exec.wd-retrier")
+
+// The save chain's outputs travel to the wd-retrier in one ephemeral resource of this type: the
+// template framework unmarshals every input of a template before its body runs and fails it on an
+// input that holds an error, and on a lost working directory some of these outputs end in errors
+// (a workdir processor's own save) or never resolve. A type the unmarshaller does not know is
+// handed to the body as a resource, untouched.
+_RTYPE_SAVE_OUTPUTS := { Name: "ExecSaveOutputs", Version: "1" }
+
+/**
+ * @param p: map -
+ *   workdir: reference - the post-run working directory
+ *   settings: map - the exec's settings, decoded
+ *   settingsRef: reference - the same settings resource, passed on
+ *   wdProcessors: map | undefined - name -> { tpl, tplArgs }
+ *   v3: bool - save with WorkdirSave v3; the wd-retrier then restarts on a lost directory
+ *   attemptCtx: map - the attempt context, history including this attempt's success entry,
+ *                     attemptLimit and restartLimit
+ *   implInputs: reference - this attempt's exec-impl inputs, for a restart
+ *   streamCollections: reference | undefined
+ *   execImplTpl: reference | undefined
+ * @return renderer - the wd-retrier: files, filesContent, fileSets, fileSetsContent, wdProcessors,
+ *         progress, attempts, streamOwn
+ */
+run := func(p) {
+	settings := p.settings
+	saved := saveChain.run(p.workdir, settings, p.wdProcessors, { v3: p.v3 })
+
+	// The final content of the attempt's streams: the saved streamed files, as before fallbacks.
+	// A file streamed but not saved gets none: a working directory takes one save only (a save
+	// locks it), and a rule for a file the software never wrote would fail the whole save.
+	savedFiles := is_undefined(settings.filesToSave) ? [] : settings.filesToSave
+	// structural: the stream collections, structural themselves, point at these entries
+	streamOwn := smart.mapBuilder()
+	if !is_undefined(settings.filesToStream) {
+		for name in settings.filesToStream {
+			if slices.hasElement(savedFiles, name) {
+				streamOwn.addRef(name, file.exportFile(saved.files.getFutureInputField(name)))
+			}
+		}
+	}
+
+	outputs := smart.ephemeralMapBuilder(_RTYPE_SAVE_OUTPUTS).
+		addRef("files", saved.files).
+		addRef("filesContent", saved.filesContent).
+		addRef("fileSets", saved.fileSets).
+		addRef("fileSetsContent", saved.fileSetsContent).
+		addRef("progress", saved.progress).
+		add("wdProcessors", saved.wdProcessors).
+		addRef("streamOwn", streamOwn.build())
+
+	inputs := {
+		settings: p.settingsRef,
+		attemptCtx: p.attemptCtx,
+		implInputs: p.implInputs
+	}
+	if p.v3 {
+		outputs.addRef("saveOutcome", saved.outcome)
+		if is_undefined(p.wdProcessors) || len(p.wdProcessors) == 0 {
+			// the main save reads the post-run directory itself
+			inputs.saveOutcome = saved.outcome
+		} else {
+			// the processors read it first, after the probe at the head of the chain: decide on
+			// the probe, then on the main save
+			inputs.probeOutcome = saved.probeOutcome
+		}
+	}
+	inputs.outputs = outputs.build()
+	if !is_undefined(p.streamCollections) {
+		inputs.streamCollections = p.streamCollections
+	}
+	if !is_undefined(p.execImplTpl) {
+		inputs.execImplTpl = p.execImplTpl
+	}
+
+	return render.createEphemeral(wdRetrierTpl, inputs)
+}
+
+export ll.toStrict({
+	run: run
+})

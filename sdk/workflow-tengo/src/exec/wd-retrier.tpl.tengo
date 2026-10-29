@@ -1,36 +1,47 @@
 /**
  * The wd-retrier of a successful RunCommand v3 attempt (exec fallbacks, spec §14.2, wave 2):
- * rendered by the outcome router after the save chain, it decides on the save outcomes.
+ * rendered by :exec.wave2 after the save chain, it decides on the save outcomes.
  *
  *   all saved                 the save chain's outputs; the stream collections switch to the
  *                             attempt's files
  *   working directory lost    the same plan again from a fresh working directory (a restart, not
  *                             an attempt), at most restartLimit times per job
- *   any other save failure    an error of the save, propagated through the inputs
+ *   any other save failure    an error of the save, propagated through the outputs
  *
- * Without WorkdirSave v3 on the backend the router passes no `saveOutcome`: the outputs are the
- * save chain's as they are, and a lost working directory is an error, as before (spec §5).
+ * Two stages when the exec has workdir processors (spec §14.5). The processors read the post-run
+ * directory before the main save does, through saves of their own that error on a lost
+ * directory, so the main save would never run. Stage 1 (input `probeOutcome`) decides on a probe
+ * of the directory (:exec.save-chain probe): lost restarts, present renders this template again as
+ * stage 2 on the main save's outcomes. Without processors there is one stage (`saveOutcome`).
+ *
+ * Without WorkdirSave v3 on the backend there is neither input: the outputs are the save chain's
+ * as they are, and a lost working directory is an error, as before (spec §5).
+ *
+ * The save chain's outputs come in `outputs`, a resource the input unmarshaller does not descend
+ * into (see :exec.wave2), and are forwarded field by field.
  */
 
 self := import(":tpl.light")
 
 ll := import(":ll")
 render := import(":render")
-file := import(":file")
-smart := import(":smart")
-slices := import(":slices")
 fallback := import(":exec.fallback")
 saveChain := import(":exec.save-chain")
 stream := import(":exec.stream")
 
-if self.hasInput("saveOutcome") {
+_STAGE_PROBE := self.hasInput("probeOutcome")
+
+if _STAGE_PROBE {
+	// the probe has one entry, `workdir`
+	self.awaitState("probeOutcome", { wildcard: "*" }, "ResourceReady")
+} else if self.hasInput("saveOutcome") {
 	// one level: the `workdir` entry and one entry per index task (decision D2)
 	self.awaitState("saveOutcome", { wildcard: "*" }, "ResourceReady")
 } else {
 	self.awaitState("attemptCtx", "ResourceReady")
 }
 
-// Values of the save outcomes map, as JSON.
+// Values of a save outcomes map, as JSON (workdir-save/outcome values).
 _outcomeValues := func(outcomes) {
 	res := {}
 	for k, v in outcomes {
@@ -42,40 +53,59 @@ _outcomeValues := func(outcomes) {
 self.body(func(inputs) {
 	ctx := inputs.attemptCtx
 	raw := self.rawInputs()
+	outputs := raw.outputs.getValue()
 	collections := is_undefined(inputs.streamCollections) ? {} : inputs.streamCollections
-	streamed := is_undefined(inputs.settings.filesToStream) ? [] : inputs.settings.filesToStream
 
 	lost := undefined
-	if !is_undefined(inputs.saveOutcome) {
+	if _STAGE_PROBE {
+		lost = saveChain.lostWorkdir(_outcomeValues(inputs.probeOutcome))
+		if is_undefined(lost) {
+			// the directory is there: decide on the main save's outcomes
+			next := {}
+			for name, f in raw {
+				if name != "probeOutcome" {
+					next[name] = f.getValue()
+				}
+			}
+			next.saveOutcome = outputs.getField("saveOutcome")
+			r := render.createEphemeral(self.template(), next)
+			return {
+				files: r.output("files"),
+				filesContent: r.output("filesContent"),
+				fileSets: r.output("fileSets"),
+				fileSetsContent: r.output("fileSetsContent"),
+				wdProcessors: r.output("wdProcessors"),
+				progress: r.output("progress"),
+				attempts: r.output("attempts"),
+				streamOwn: r.output("streamOwn")
+			}
+		}
+	} else if !is_undefined(inputs.saveOutcome) {
 		lost = saveChain.lostWorkdir(_outcomeValues(inputs.saveOutcome))
 	}
 
 	if is_undefined(lost) {
-		// the final content of the attempt's streams: the saved files, as before fallbacks (a file
-		// streamed but not saved never gets one)
-		saved := is_undefined(inputs.settings.filesToSave) ? [] : inputs.settings.filesToSave
-		streamOwn := {}
-		for name in streamed {
-			if slices.hasElement(saved, name) {
-				streamOwn[name] = file.exportFile(raw.files.getFutureInputField(name))
-			}
+		streamOwn := outputs.getField("streamOwn")
+		streamFiles := {}
+		for name, f in streamOwn.getValue().inputs() {
+			streamFiles[name] = f
 		}
-		stream.attemptEnded(collections, ctx.attempt, ctx.history[len(ctx.history) - 1], streamOwn)
+		stream.attemptEnded(collections, ctx.attempt, ctx.history[len(ctx.history) - 1], streamFiles)
 
 		return {
-			files: raw.files,
-			filesContent: raw.filesContent,
-			fileSets: raw.fileSets,
-			fileSetsContent: raw.fileSetsContent,
-			wdProcessors: raw.wdProcessors,
-			progress: raw.progress,
+			files: outputs.getField("files"),
+			filesContent: outputs.getField("filesContent"),
+			fileSets: outputs.getField("fileSets"),
+			fileSetsContent: outputs.getField("fileSetsContent"),
+			wdProcessors: outputs.getField("wdProcessors"),
+			progress: outputs.getField("progress"),
 			attempts: ctx.history,
-			streamOwn: smart.createMapResource(streamOwn)
+			streamOwn: streamOwn
 		}
 	}
 
 	// the attempt's success entry becomes a restart entry
-	hist := append(ctx.history[:len(ctx.history) - 1], {
+	hist := append(copy(ctx.history)[:len(ctx.history) - 1], {
 		attempt: ctx.attempt,
 		plan: ctx.plan,
 		result: "workdirMissing",
