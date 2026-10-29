@@ -86,6 +86,7 @@ jobs:
             --set image.tag="${PL_IMAGE_TAG}" \
             --set auth.htpasswd.secretName="${HTPASSWD_SECRET}" \
             --set "app.extraArgs[2]=--k8s-job-name-prefix=${HELM_RELEASE_NAME}-" \
+            --set storage.main.s3.prefix="${HELM_RELEASE_NAME}" \
             --atomic \
             --timeout 5m0s \
             --namespace "${NAMESPACE}"
