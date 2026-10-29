@@ -58,6 +58,35 @@ export function limitBlockActionContextTree(
 
 export function registerBlockActionContextTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
+    "get_block_action_summary",
+    {
+      description:
+        "Get what a block run is doing: the phase (Failed, Running, Waiting, Done, NotStarted), the resources " +
+        "that work or wait with their state, detail, readings and since when they are in the state (longest first), the failed " +
+        "resources with the reason, and counts per state. Use it first to answer 'what is this block doing'; use " +
+        "get_block_action_context for the full tree. Call again to refresh.",
+      inputSchema: {
+        projectId: z.string().describe("Project ID (must be opened)"),
+        blockId: z.string().describe("Block ID"),
+        mode: z
+          .enum(["prod", "staging"])
+          .optional()
+          .describe("Which render of the block: 'prod' (default) or 'staging'"),
+      },
+    },
+    async ({ projectId, blockId, mode }) => {
+      const project = await ctx.getOpenedProject(projectId);
+      const summary = await project.getBlockActionSummary(blockId, mode ?? "prod");
+      if (summary === undefined)
+        return errorResult(
+          "Block has no action context tree: it was not rendered yet, or the backend does not support block action context.",
+        );
+
+      return textResult(summary);
+    },
+  );
+
+  server.registerTool(
     "get_block_action_context",
     {
       description:
@@ -67,6 +96,7 @@ export function registerBlockActionContextTools(server: McpServer, ctx: ToolCont
         "value) and its child renders. Use it to see which step a block is in or where it waits. " +
         "The result is cut to maxDepth levels and the latest maxTransitions per node; a node with " +
         "childrenOmitted or transitionsOmitted has more. Pass its contextId to read below it. " +
+        "For the rolled-up state of the run, use get_block_action_summary. " +
         "Reads the current state; call again to refresh.",
       inputSchema: {
         projectId: z.string().describe("Project ID (must be opened)"),

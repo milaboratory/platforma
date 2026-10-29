@@ -1,8 +1,15 @@
-import type { PlClient, PlTransaction, SignedResourceId } from "@milaboratories/pl-client";
-import { createSignedResourceId, parseSignedResourceId } from "@milaboratories/pl-client";
+import { Computable } from "@milaboratories/computable";
+import type { SignedResourceId } from "@milaboratories/pl-client";
+import {
+  createSignedResourceId,
+  DefaultFinalResourceDataPredicate,
+  NullSignedResourceId,
+} from "@milaboratories/pl-client";
+import { PlTreeState } from "@milaboratories/pl-tree";
 import { describe, expect, test } from "vitest";
 import { projectFieldName } from "../model/project_model";
-import { readBlockActionContextTree } from "./block_action_context";
+import type { BlockActionContextMode } from "./block_action_context";
+import { blockActionContextTree } from "./block_action_context";
 
 type FakeResource = {
   data?: Record<string, string>;
@@ -14,28 +21,39 @@ function signedId(globalId: number): SignedResourceId {
   return createSignedResourceId(BigInt(globalId), new Uint8Array([1]) as never);
 }
 
-/** A client whose read transaction serves the given resources by global ID. */
-function fakeClient(resources: Map<string, FakeResource>): PlClient {
-  const lookup = (ref: SignedResourceId) => {
-    const resource = resources.get(String(parseSignedResourceId(ref).globalId));
-    if (resource === undefined) throw new Error(`no resource ${ref}`);
-    return resource;
-  };
-  const tx = {
-    getResourceData: async (ref: SignedResourceId) => {
-      const resource = lookup(ref);
-      return {
-        data: resource.data === undefined ? undefined : Buffer.from(JSON.stringify(resource.data)),
-        fields: resource.fields,
-      };
-    },
-    listKeyValuesString: async (ref: SignedResourceId) => lookup(ref).kvs,
-  } as unknown as PlTransaction;
-
-  return {
-    withReadTx: async (_name: string, body: (tx: PlTransaction) => Promise<unknown>) =>
-      await body(tx),
-  } as unknown as PlClient;
+/** Reads the tree of block1 from a project tree that holds the given resources by global ID. */
+async function readTree(
+  resources: Map<string, FakeResource>,
+  mode: BlockActionContextMode,
+  blockId = "block1",
+) {
+  const tree = new PlTreeState(project, DefaultFinalResourceDataPredicate);
+  tree.updateFromResourceData(
+    [...resources].map(([id, r]) => ({
+      id: signedId(Number(id)),
+      type: { name: "ActionContext", version: "1" },
+      kind: "Structural" as const,
+      originalResourceId: NullSignedResourceId,
+      error: NullSignedResourceId,
+      inputsLocked: true,
+      outputsLocked: true,
+      resourceReady: true,
+      final: false,
+      data: r.data === undefined ? undefined : Buffer.from(JSON.stringify(r.data)),
+      fields: r.fields.map(({ name, value }) => ({
+        name,
+        type: "Dynamic" as const,
+        value,
+        error: NullSignedResourceId,
+        status: "Resolved" as const,
+        valueIsFinal: false,
+      })),
+      kv: r.kvs.map(({ key, value }) => ({ key, value: Buffer.from(value) })),
+    })),
+  );
+  return await Computable.make((ctx) =>
+    blockActionContextTree(ctx.accessor(tree.entry()).node(), blockId, mode),
+  ).getValue();
 }
 
 const project = signedId(1);
@@ -60,10 +78,7 @@ function resources(): Map<string, FakeResource> {
       "10",
       {
         data: { name: "prod render" },
-        fields: [
-          { name: "child/32", value: child },
-          { name: "other", value: signedId(99) },
-        ],
+        fields: [{ name: "child/32", value: child }],
         kvs: [
           // timestamps of different lengths: string order differs from time order
           { key: "transition/render/16/1000", value: '{"state":"Running"}' },
@@ -87,14 +102,9 @@ function resources(): Map<string, FakeResource> {
   ]);
 }
 
-describe("readBlockActionContextTree", () => {
+describe("blockActionContextTree", () => {
   test("reads the prod tree with children, ordered transitions and readings", async () => {
-    const tree = (await readBlockActionContextTree(
-      fakeClient(resources()),
-      project,
-      "block1",
-      "prod",
-    ))!;
+    const tree = (await readTree(resources(), "prod"))!;
 
     expect(tree.contextId).toEqual("10");
     expect(tree.resource).toEqual("16");
@@ -127,12 +137,7 @@ describe("readBlockActionContextTree", () => {
   });
 
   test("reads the staging tree for staging mode", async () => {
-    const tree = (await readBlockActionContextTree(
-      fakeClient(resources()),
-      project,
-      "block1",
-      "staging",
-    ))!;
+    const tree = (await readTree(resources(), "staging"))!;
 
     expect(tree.contextId).toEqual("11");
     expect(tree.baggage).toEqual({ name: "staging render" });
@@ -140,8 +145,6 @@ describe("readBlockActionContextTree", () => {
   });
 
   test("returns undefined for a block without an action context field", async () => {
-    expect(
-      await readBlockActionContextTree(fakeClient(resources()), project, "block2", "prod"),
-    ).toBeUndefined();
+    expect(await readTree(resources(), "prod", "block2")).toBeUndefined();
   });
 });
