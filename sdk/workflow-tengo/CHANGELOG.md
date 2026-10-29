@@ -1,5 +1,15 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.17.2
+
+### Patch Changes
+
+- 089402e: Write the keys of a Json column's `.jdata` file in axis value order: numbers as numbers (so `[9]` comes before `[10]`, and `[-10]` before `[-1]`) and strings in byte order. Writing the file is also faster than with `canonical.encode`, which `writeFile` used before: 0.55 s instead of 14.8 s for 70,000 rows. The file bytes change, so ptabler steps that read such a column run again once after the update.
+- 79f8dbc: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.2.0. JsonPartitioned parts are sorted by axes on read, so a part written in another key order no longer gives wrong join rows. Same-axes outer joins no longer re-sort. pframes-rs-node requires Node 24. Bump runenv-python-3 to 1.16.1, which bundles polars-pf 1.2.0 for ptabler.
+- Updated dependencies [79f8dbc]
+  - @platforma-open/milaboratories.software-ptabler@2.2.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.6
+
 ## 6.17.1
 
 ### Patch Changes

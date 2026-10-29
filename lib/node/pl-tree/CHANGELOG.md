@@ -1,5 +1,18 @@
 # @milaboratories/pl-tree
 
+## 1.16.6
+
+### Patch Changes
+
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/computable@2.9.9
+  - @milaboratories/pl-client@3.19.2
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/pl-errors@1.4.54
+
 ## 1.16.5
 
 ### Patch Changes

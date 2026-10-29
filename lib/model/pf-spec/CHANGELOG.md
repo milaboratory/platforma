@@ -1,5 +1,14 @@
 # @milaboratories/pf-spec
 
+## 1.0.11
+
+### Patch Changes
+
+- 6a1b104: Update `@bytecodealliance/jco-transpile` to 0.20.0 and `@bytecodealliance/preview2-shim` to 0.30.0, the versions that pframes-rs 1.2.0 builds with (jco 1.39.0). The `preview2-shim` peer dependency is now `^0.30.0`. The generated bindings also run on `preview2-shim` 0.20, so a consumer that pins the older shim gets only a peer warning; it should still move to `^0.30.0`.
+- 79f8dbc: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.2.0. JsonPartitioned parts are sorted by axes on read, so a part written in another key order no longer gives wrong join rows. Same-axes outer joins no longer re-sort. pframes-rs-node requires Node 24. Bump runenv-python-3 to 1.16.1, which bundles polars-pf 1.2.0 for ptabler.
+  - @milaboratories/pl-model-common@1.54.1
+  - @milaboratories/pl-model-middle-layer@1.34.5
+
 ## 1.0.10
 
 ### Patch Changes

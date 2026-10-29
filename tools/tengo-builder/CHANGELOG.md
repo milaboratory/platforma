@@ -1,5 +1,15 @@
 # @platforma-sdk/tengo-builder
 
+## 4.1.14
+
+### Patch Changes
+
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/pl-model-backend@1.4.39
+
 ## 4.1.13
 
 ### Patch Changes
