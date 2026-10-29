@@ -29,6 +29,11 @@ import type { StreamingAPI_Response } from "../proto-grpc/github.com/milaborator
 import { DownloadDriver } from "./download_blob/download_blob";
 import { LogsDriver } from "./logs";
 import { attemptDelimiter } from "./logs_composite";
+import {
+  maxCompositeLogParts,
+  newCompositeLogHandle,
+  parseCompositeLogHandle,
+} from "./helpers/logs_handle";
 import { LogsStreamDriver } from "./logs_stream";
 
 //
@@ -442,6 +447,37 @@ describe("composite log handle of a StreamCollection", () => {
     expect(r.stable).toBe(false);
     expect(isLiveLog(r.value)).toBe(true);
     expect((await readAll(env.logs, r.value!)).text).toBe(`err\n${rootDelimiter}`);
+  });
+
+  test("an earlier attempt's live stream gone: the whole handle is outdated", async () => {
+    const env = await setup(rid(1));
+    // attempt 0 failed while its manager still pointed at the live stream, which is gone now
+    setCollection(env, [
+      { stream: { kind: "live" }, outcome: rootFailed },
+      { stream: { kind: "live", text: "next\n" } },
+    ]);
+    const handle = (await handleOf(env).getValue())!;
+    expect(await env.logs.readText(handle, 100)).toEqual({ shouldUpdateHandle: true });
+    expect(await env.logs.lastLines(handle, 10)).toEqual({ shouldUpdateHandle: true });
+  });
+
+  test("a handle with more parts than allowed is refused; a long collection keeps the latest", () => {
+    const parts = Array.from({ length: maxCompositeLogParts + 1 }, (_, i) => ({
+      delimiter: `d${i}`,
+    }));
+    const handle = newCompositeLogHandle(true, parts);
+    const parsed = parseCompositeLogHandle(handle);
+    expect(parsed.parts.length).toBe(maxCompositeLogParts);
+    expect(parsed.parts[0]).toEqual({ delimiter: "d1" });
+
+    const payload = Buffer.from(JSON.stringify({ parts })).toString("base64url");
+    const crafted =
+      handle.slice(
+        0,
+        handle.length -
+          Buffer.from(JSON.stringify({ parts: parsed.parts })).toString("base64url").length,
+      ) + payload;
+    expect(() => parseCompositeLogHandle(crafted as AnyLogHandle)).toThrow(/more than/);
   });
 
   test("a log without a trailing newline: the delimiter starts a new line", async () => {
