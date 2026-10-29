@@ -4,6 +4,7 @@
  *
  * inputs.rootExit: string - the root's exit code
  * inputs.nonce: string - keeps the pure exec.exec render from deduplicating against earlier runs
+ * inputs.forceSaveV1: bool, optional - save as on a backend without WorkdirSave v3
  */
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
@@ -29,6 +30,9 @@ self.body(func(inputs) {
 	ok := shell("echo ok > out.txt")
 	root := shell(fmt.sprintf("echo root > out.txt; echo root-says-hello; exit %s", inputs.rootExit)).
 		fallbacks({ SoftwareError: [{ exitCode: 2, name: "ok", builder: ok }] })
+	if inputs.forceSaveV1 == true {
+		root._forceWorkdirSaveV1()
+	}
 
 	res := root.run()
 

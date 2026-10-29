@@ -59,9 +59,11 @@ function streamState(a: PlTreeNodeAccessor | undefined) {
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-tplTest(
-  "AC2.6/AC2.7 exec fallbacks: the stream follows the running attempt, each attempt ends on its own file",
-  async ({ pl, helper, expect }) => {
+// forceSaveV1: a backend with RunCommand v3 but without WorkdirSave v3 (the _forceWorkdirSaveV1
+// seam): the streams behave the same.
+tplTest.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
+  "AC2.6/AC2.7 exec fallbacks: the stream follows the running attempt, each attempt ends on its own file (forceSaveV1: $forceSaveV1)",
+  async ({ forceSaveV1 }, { pl, helper, expect }) => {
     const logsClient = createLogsClient(pl, new ConsoleLoggerAdapter());
     const result = await helper.renderTemplate(
       false,
@@ -70,6 +72,7 @@ tplTest(
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(10)),
+        forceSaveV1: tx.createValue(Pl.JsonObject, JSON.stringify(forceSaveV1)),
       }),
     );
 
