@@ -99,19 +99,13 @@ function resolveScript(scriptName) {
       return { turboArgs: rest.slice(2), env };
     }
 
-    // Case 2: pnpm <script> [-- extra-args]  →  follow the chain
+    // Case 2: pnpm <script> [extra-args]  →  follow the chain
     if (rest[0] === "pnpm") {
       const nextScript = rest[1];
-      // Collect extra args after `--` (e.g. pnpm test -- --force)
-      // but ignore `--` separator and args like --output-logs since those
-      // will be on the turbo level eventually
+      // Ignore extra args (e.g. pnpm test --force, --output-logs):
+      // they reach the turbo level eventually
       current = nextScript;
       continue;
-    }
-
-    // Case 3: npx turbo run <args>
-    if (rest[0] === "npx" && rest[1] === "turbo" && rest[2] === "run") {
-      return { turboArgs: rest.slice(3), env };
     }
 
     console.error(red(`Script "${scriptName}" does not resolve to a turbo command.`));
@@ -121,7 +115,7 @@ function resolveScript(scriptName) {
 }
 
 function runDryRun(turboArgs, env) {
-  const turboCmd = `npx turbo run ${turboArgs.join(" ")} --dry-run=json`;
+  const turboCmd = `pnpm exec turbo run ${turboArgs.join(" ")} --dry-run=json`;
   let stdout;
   try {
     stdout = execSync(turboCmd, {
