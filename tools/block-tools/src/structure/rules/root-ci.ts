@@ -15,6 +15,7 @@
 // `when(!isSdkInternal)` guard, matching the rest of the root scope.
 
 import { scope, when, fixed, tpl } from "../engine/api";
+import { NODE_VERSION } from "./shared/toolchain";
 
 /** Readable default CI label from a short name (`mixcr-clonotyping-2` →
  *  `Mixcr Clonotyping 2`). Dash/underscore words, title-cased. Human-curated
@@ -40,6 +41,7 @@ export function rootCiRules(): void {
             return {
               appName: `Block: ${humanizeShortName(shortName)}`,
               appNameSlug: `block-${shortName}`,
+              nodeVersion: NODE_VERSION,
             };
           }),
         );
@@ -47,6 +49,7 @@ export function rootCiRules(): void {
           ".github/workflows/mark-stable.yaml",
           tpl("workflows/mark-stable.tpl.yaml", (ctx) => ({
             appName: `Block: ${humanizeShortName(ctx.blockVars.shortName)} - Mark Stable`,
+            nodeVersion: NODE_VERSION,
           })),
         );
       },
