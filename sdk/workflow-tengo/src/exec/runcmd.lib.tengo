@@ -87,6 +87,7 @@ _FIELD_OPTIONS := "options"
 _FIELD_WORKDIR_IN := "workdirIn"
 
 // Outputs
+_FIELD_OUTCOME := "outcome"
 _FIELD_WORKDIR_OUT := "workdirOut"
 
 /**
@@ -549,6 +550,10 @@ builder := func(workdir, ...initialState) {
 	ram := undefined
 
 	commandName := ""
+	// RunCommand v3: a software failure is an outcome, not an error (exec fallbacks)
+	useV3 := false
+	attempt := 0
+	jobId := undefined
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
 	nErrorLines := 200
@@ -564,6 +569,23 @@ builder := func(workdir, ...initialState) {
 			validation.assertType(name, "string", "runcmd.builder.name: name must be a string")
 
 			commandName = name
+			return self
+		},
+
+		/**
+		 * Builds a RunCommand v3: a software failure finishes the command with the post-run
+		 * working directory and an `outcome` output instead of an error. Requires a backend with
+		 * RunCommand v3 (limits.getRunCommandV3Type).
+		 *
+		 * @param attemptIndex: int - the SDK attempt index of this command in its job, 0 first.
+		 * @param job: string | undefined - the job id shared by all attempts; undefined on the
+		 *             first attempt, where the backend takes this command's own id.
+		 */
+		v3: func(attemptIndex, job) {
+			ll.assert(is_int(attemptIndex) && attemptIndex >= 0, "runcmd.builder.v3: attempt must be a non-negative integer")
+			useV3 = true
+			attempt = attemptIndex
+			jobId = job
 			return self
 		},
 
@@ -714,8 +736,12 @@ builder := func(workdir, ...initialState) {
 
 			ll.assert(!is_undefined(queue), "runcmd.builder.build: queue is required for any command run")
 
-			resourceTypes := limits.getResourceTypes(queue)
-			runRes = smart.ephemeralBuilder(resourceTypes.runCommand)
+			runType := limits.getResourceTypes(queue).runCommand
+			if useV3 {
+				runType = limits.getRunCommandV3Type(queue)
+				ll.assert(!is_undefined(runType), "runcmd.builder.build: the backend has no RunCommand v3")
+			}
+			runRes = smart.ephemeralBuilder(runType)
 
 			runRes.getField(_FIELD_WORKDIR_IN).set(workdir)
 
@@ -769,6 +795,12 @@ builder := func(workdir, ...initialState) {
 				dockerImageTag: options.dockerImageTag,
 				dockerEntrypoint: options.dockerEntrypoint
 			}
+			if useV3 && attempt > 0 {
+				buildOptions.attempt = attempt
+			}
+			if useV3 && !is_undefined(jobId) {
+				buildOptions.jobId = jobId
+			}
 
 			optionsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_OPTIONS, json.encode(buildOptions))
 			runRes.getField(_FIELD_OPTIONS).set(optionsRes)
@@ -776,8 +808,12 @@ builder := func(workdir, ...initialState) {
 			argsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_ARGS, json.encode(options.args))
 			runRes.getField(_FIELD_ARGS).set(argsRes)
 
-			res := oop.inherit(runRes.lockAndBuild(), {
-				"workdir": runRes.outputs()[_FIELD_WORKDIR_OUT],
+			built := runRes.lockAndBuild()
+			outputs := runRes.outputs()
+			res := oop.inherit(built, {
+				"workdir": outputs[_FIELD_WORKDIR_OUT],
+				// v3 only: how the run ended (run-command/outcome)
+				"outcome": useV3 ? outputs[_FIELD_OUTCOME] : undefined,
 				"options": buildOptions
 			})
 
