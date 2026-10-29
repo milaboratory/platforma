@@ -23,6 +23,10 @@ tmpdirCompat := import(":exec.tmpdir-compat")
 execFormula := import(":exec.formula")
 units := import(":units")
 feats := import(":feats")
+limits := import(":exec.limits")
+fallback := import(":exec.fallback")
+text := import("text")
+fmt := import("fmt")
 
 // line-counter: small Go binary from the software-small-binaries catalogue.
 // CLI: `line-counter --input <file> --output <file>`; writes the exact line
@@ -71,100 +75,589 @@ _assertValidScratchRequest := func(amount, ctx) {
 	ll.assert(is_string(amount) || amount == 0 || amount >= 16 * units.MiB, ctx + ": scratch space in bytes should be at least 16MiB, or exactly 0 to ask only for a temporary directory (did you pass bytes instead of GiB?)")
 }
 
+// Builder ids, one per builder and per copy(): the identity the cycle check of verify() keys on.
+_lastBuilderId := 0
+
+/**
+ * The whole state of one builder, in one map, so copy() is a clone of it.
+ */
+_newState := func() {
+	_lastBuilderId += 1
+
+	return {
+		id: _lastBuilderId,
+
+		soft: undefined,
+		cmd: undefined,
+		args: [], // list of strings
+		argsTyped: [], // list of {type: expression|string, value: string}
+		typedArgSet: false,
+		typedEnvSet: false,
+		envs: {}, // map of names to values-strings
+		envsTyped: {}, // map of names to {type: expression|string, value: string}
+		secrets: {}, // { "env_name": "{secrets.secret_name}", ... }
+
+		entrypointSet: false,
+
+		//
+		// Limits
+		//
+		queue: execConstants.HEAVY_QUEUE,
+		cpuRequest: undefined,
+		ramRequest: undefined,
+		gpuMemory: undefined,
+		scratchFreeSpace: undefined,
+
+		// resource-formula builder state (ram / cpu / vram formulas + addFile tags).
+		// Set by .resources({ ... }); each *FormulaAst holds a plain formula AST and
+		// each *FormulaFallback the static value used on backends that can't evaluate
+		// formulas at run time (see analysis doc §4).
+		memFormulaAst: undefined,
+		memFormulaFallback: undefined,
+		cpuFormulaAst: undefined,
+		cpuFormulaFallback: undefined,
+		gpuFormulaAst: undefined,
+		gpuFormulaFallback: undefined,
+		scratchFormulaAst: undefined,
+		scratchFormulaFallback: undefined,
+		fileTags: {},   // fileName -> tag (for f.size("tag") / f.lineCount("tag") aggregation)
+
+		commandName: "",
+		cache: 0,
+		inputCache: 0,
+		nErrorLines: 200,
+
+		// files to be added in workdir
+		filesToAdd: {},
+		// files to be created in the workdir with the content from resources
+		filesToWrite: {},
+		// names from filesToAdd / filesToWrite that should land in the workdir as
+		// 0o600 (writable). Anything not in the set stays 0o400 (read-only,
+		// hardlinked from the archive cache).
+		writableFiles: {},
+		// directories to create in the workdir
+		dirsToCreate: {},
+
+		// files to save from the workdir
+		filesToSave: {},
+		// files which content to save from the workdir
+		filesContentToSave: {},
+		// file sets to save by regex
+		fileSetsToSave: {},
+		// file sets to save by regex (save file content)
+		fileSetsContentToSave: {},
+		// files to stream from the workdir
+		filesToStream: {},
+		// workdir processors
+		wdProcessors: {},
+
+		// assets to be extracted into workdir before execution
+		assetInfos: {},
+		assetDescriptors: {},
+		assetRules: {},
+		assetCache: {},
+
+		mnz: monetization.init(),
+
+		stdout: "stdout.txt",
+		stderr: "stderr.txt",
+		stderrToStdout: false,
+		stdoutFile: false,
+		stderrFile: false,
+		stdoutStream: false,
+		stderrStream: false,
+		stdoutContent: false,
+		stderrContent: false,
+
+		// fallbacks(): reason -> [{ attrs, name, builder }], see :exec.fallback
+		fallbacks: undefined,
+
+		// test seam: render as on a backend without RunCommand v3 (see _forceRunCommandV2())
+		forceRunCommandV2: false
+	}
+}
+
+// Copies plain maps and arrays; everything else, smart references, software and asset infos and
+// other builders included, is shared. The monetization object is a strict map of plain values
+// and is copied as a whole.
+_cloneValue := undefined
+_cloneValue = func(v) {
+	if is_map(v) {
+		res := {}
+		for k, vv in v {
+			res[k] = _cloneValue(vv)
+		}
+		return res
+	}
+	if is_array(v) {
+		res := []
+		for vv in v {
+			res = append(res, _cloneValue(vv))
+		}
+		return res
+	}
+	return v
+}
+
+_cloneState := func(st) {
+	res := _cloneValue(st)
+	res.mnz = maps.clone(st.mnz)
+	return res
+}
+
+/**
+ * Applies the stdout/stderr shortcuts (saveStdoutFile(), saveStderrStream(), ...) to the save and
+ * stream sets. Mutates the given state: call it on a clone.
+ */
+_finalizeOutputs := func(st) {
+	if st.stderrToStdout {
+		st.stderr = st.stdout
+	}
+	if st.stdoutFile {
+		sets.add(st.filesToSave, st.stdout)
+	}
+	if st.stderrFile {
+		sets.add(st.filesToSave, st.stderr)
+	}
+	if st.stdoutStream {
+		sets.add(st.filesToSave, st.stdout)
+		sets.add(st.filesToStream, st.stdout)
+	}
+	if st.stderrStream {
+		sets.add(st.filesToSave, st.stderr)
+		sets.add(st.filesToStream, st.stderr)
+	}
+	if st.stdoutContent {
+		sets.add(st.filesContentToSave, st.stdout)
+	}
+	if st.stderrContent {
+		sets.add(st.filesContentToSave, st.stderr)
+	}
+}
+
+/**
+ * Today's run() up to and including the render inputs: the pure and the meta inputs of an
+ * exec.exec render for the given state. Mutates the given state: call it on a clone.
+ *
+ * @return {inputs: map, meta: map, renderOpts: map}
+ */
+_planOf := func(st) {
+	_finalizeOutputs(st)
+
+
+	// --- Temporary directory on a backend that does not provide one ---------------
+	// A current backend guarantees TMPDIR and TMP to every command that asked for scratch
+	// space. An older one does not, so the SDK provides them itself: a small script staged
+	// into the working directory makes the directory and execs the real command behind it.
+	// See :exec.tmpdir-compat for why it has to be a file, and why the directory cannot be
+	// created any other way.
+	tmpdirCompatNeeded := tmpdirCompat.isNeeded(
+		feats,
+		tmpdirCompat.isSizedRequest(st.scratchFreeSpace, st.scratchFormulaAst)
+	)
+	if tmpdirCompatNeeded {
+		// Only the wrapper that will actually run is staged, and which one that is
+		// depends on where the command lands: a container is Linux whatever the host
+		// is, while a command on the host needs the interpreter that host has.
+		inContainer := false
+		if !is_undefined(st.soft) {
+			inContainer = tmpdirCompat.usesDocker(
+				ll.fromStrict(st.soft.descriptor), feats.isDockerAvailable)
+		}
+		for name, content in tmpdirCompat.filesToStage(inContainer) {
+			st.filesToWrite[name] = content
+		}
+
+		// 'system.scratch' does not exist on such a backend - an expression naming it
+		// fails to evaluate rather than rendering empty - so every reference to it is
+		// removed. The path becomes the directory the wrapper creates, named relative
+		// to the working directory the command runs in, and the size becomes 0: there
+		// is somewhere to write, and no device sized behind it.
+		st.args = slices.map(st.args, tmpdirCompat.rewriteScratchExpressions)
+		st.argsTyped = slices.map(st.argsTyped, func(a) {
+			a.value = tmpdirCompat.rewriteScratchExpressions(a.value)
+			return a
+		})
+		st.envs = maps.mapValues(st.envs, tmpdirCompat.rewriteScratchExpressions)
+		st.envsTyped = maps.mapValues(st.envsTyped, func(e) {
+			e.value = tmpdirCompat.rewriteScratchExpressions(e.value)
+			return e
+		})
+
+		// A command a block spelled out itself. Software goes through its descriptor
+		// instead, further down, because that is where its command really lives.
+		if is_undefined(st.soft) {
+			wrapped := tmpdirCompat.wrapCommand(st.cmd)
+			st.cmd = wrapped.cmd
+			// Both lists, or an exec that used argExpr would lose the wrapper: the typed
+			// list is what the backend reads whenever it is sent at all.
+			// Not append(prefix, args...): tengo rejects a zero-length spread, and a
+			// command with no arguments at all is the common case.
+			st.args = tmpdirCompat.concat(wrapped.prependArgs, st.args)
+			st.argsTyped = tmpdirCompat.concat(
+				slices.map(wrapped.prependArgs, func(a) {
+					return { type: execConstants.ARG_TYPE_STRING, value: a }
+				}),
+				st.argsTyped)
+		}
+	}
+
+	// We don't want these values to be encoded as JSON's since
+	// values are pure bytes.
+	// Thus, we create a resource with a custom type here manually.
+	filesToWriteRefs := maps.mapValues(st.filesToWrite, func(v) {
+		if smart.isReference(v) { return v }
+		return smart.createValueResource(constants.RTYPE_BINARY_VALUE, v)
+	})
+
+	ll.assert(st.entrypointSet,
+		"incomplete command: cmd() or software() must be provided to exec.builder")
+
+	runOptions := {
+		cmd: st.cmd,
+		args: st.args,
+		envs: st.envs,
+		secrets: st.secrets,
+		queue: st.queue,
+		// both stdout and stderr will always be channeled to a file
+		// even if stdoutFile or stderrFile are false
+		stdout: st.stdout,
+		stderr: st.stderr,
+		nErrorLines: st.nErrorLines
+	}
+
+	pureExecInputs := {
+		filesToAdd: smart.createMapResource(st.filesToAdd),
+		filesToWrite: smart.createMapResource(filesToWriteRefs),
+		dirsToCreate: slices.fromSet(st.dirsToCreate),
+		runOptions: runOptions,
+		filesToSave: slices.fromSet(st.filesToSave),
+		filesContentToSave: slices.fromSet(st.filesContentToSave),
+		fileSetsToSave: st.fileSetsToSave,
+		fileSetsContentToSave: st.fileSetsContentToSave,
+		filesToStream: slices.fromSet(st.filesToStream),
+		wdProcessors: st.wdProcessors,
+		assets: smart.createMapResource(st.assetInfos),
+		assetDescriptors: st.assetDescriptors,
+		assetRules: st.assetRules,
+		assetCache: st.assetCache
+	}
+
+	// Only forward when non-empty so existing workflows that don't
+	// opt into writable files keep the exact same CID.
+	if len(st.writableFiles) > 0 {
+		pureExecInputs.writableFiles = slices.fromSet(st.writableFiles)
+	}
+
+	if (is_int(st.ramRequest)) {
+		st.ramRequest = string(st.ramRequest) + "b"
+	}
+
+	// Resolve formulas (tags -> file lists) and apply the
+	// hasBlobSize fallback gate. The static quota below stays populated;
+	// the ephemeral exec impl overrides ram/cpu per-dimension when the
+	// corresponding formula input is present. lineCount metrics are
+	// computed INLINE by running the `line-counter` Go binary via the
+	// builder() factory itself (see _lineCountResource). That is a plain
+	// recursive function call within :exec — no import of :pt or any
+	// metrics module — so there is no import cycle.
+	hasFormula := !is_undefined(st.memFormulaAst) || !is_undefined(st.cpuFormulaAst) ||
+		!is_undefined(st.gpuFormulaAst) || !is_undefined(st.scratchFormulaAst)
+	resolvedMem := undefined
+	resolvedCpu := undefined
+	resolvedGpu := undefined
+	resolvedScratch := undefined
+	lineCountMapResource := undefined
+
+	if hasFormula {
+		// Live evaluation needs getBlobSize: the pure exec.tpl reads input-file
+		// sizes (getBlobSize) at run time when it evaluates the formula. The
+		// formula ASTs ride the META rail (CID-transparent); only a computed
+		// line-count map, if any, rides the REGULAR rail — it must be deep-waited
+		// to final, and being file-derived it adds no CID differentiation (see the
+		// attach site below and analysis doc §4). Missing getBlobSize => take the
+		// static fallback path, so a formula can never break an exec on a backend
+		// that cannot evaluate it.
+		canEvaluateFormulas := feats.hasBlobSize
+		if !canEvaluateFormulas {
+			// Backend can't evaluate formulas (no getBlobSize). Each formula
+			// dimension falls back to its .staticFallback(), or to a static
+			// request if none was given; error only when a dimension has
+			// neither. Pure decision, unit-tested in exec.formula
+			// (applyFormulaFallback).
+			fb := execFormula.applyFormulaFallback({
+				ram: { ast: st.memFormulaAst, fallback: st.memFormulaFallback, static: st.ramRequest },
+				cpu: { ast: st.cpuFormulaAst, fallback: st.cpuFormulaFallback, static: st.cpuRequest },
+				gpu: { ast: st.gpuFormulaAst, fallback: st.gpuFormulaFallback, static: st.gpuMemory },
+				scratch: { ast: st.scratchFormulaAst, fallback: st.scratchFormulaFallback, static: st.scratchFreeSpace }
+			})
+			ll.assert(is_undefined(fb.err), fb.err)
+			st.ramRequest = fb.ram
+			st.cpuRequest = fb.cpu
+			st.gpuMemory = fb.gpu
+			// A scratch formula with nothing to fall back on leaves the request unset.
+			// The exec still runs: a backend that cannot evaluate the formula has no
+			// scratch storage to give either, so the size is moot rather than missing.
+			st.scratchFreeSpace = fb.scratch
+			if is_int(st.ramRequest) { st.ramRequest = string(st.ramRequest) + "b" }
+			if is_int(st.gpuMemory) { st.gpuMemory = string(st.gpuMemory) + "b" }
+			if is_int(st.scratchFreeSpace) { st.scratchFreeSpace = string(st.scratchFreeSpace) + "b" }
+		} else {
+			tagMap := {}
+			for fileName, tag in st.fileTags {
+				existing := is_undefined(tagMap[tag]) ? [] : tagMap[tag]
+				tagMap[tag] = append(existing, fileName)
+			}
+			allFiles := maps.getKeys(st.filesToAdd)
+
+			neededLineCount := {}
+			if !is_undefined(st.memFormulaAst) {
+				resolvedMem = execFormula.resolveAst(st.memFormulaAst, tagMap, allFiles)
+				refs := execFormula.referencedMetricFiles(resolvedMem)
+				if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
+			}
+			if !is_undefined(st.cpuFormulaAst) {
+				resolvedCpu = execFormula.resolveAst(st.cpuFormulaAst, tagMap, allFiles)
+				refs := execFormula.referencedMetricFiles(resolvedCpu)
+				if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
+			}
+			if !is_undefined(st.gpuFormulaAst) {
+				resolvedGpu = execFormula.resolveAst(st.gpuFormulaAst, tagMap, allFiles)
+				refs := execFormula.referencedMetricFiles(resolvedGpu)
+				if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
+			}
+			if !is_undefined(st.scratchFormulaAst) {
+				resolvedScratch = execFormula.resolveAst(st.scratchFormulaAst, tagMap, allFiles)
+				refs := execFormula.referencedMetricFiles(resolvedScratch)
+				if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
+			}
+
+			if len(neededLineCount) > 0 {
+				perFile := {}
+				for fn, _ in neededLineCount {
+					perFile[fn] = _lineCountResource(fn, st.filesToAdd[fn])
+				}
+				lineCountMapResource = smart.createMapResource(perFile)
+			}
+		}
+	}
+
+	quotaData := {
+		queue: st.queue,
+		cpu: st.cpuRequest,
+		ram: st.ramRequest
+	}
+	if !is_undefined(st.gpuMemory) || !is_undefined(st.gpuFormulaAst) {
+		// A cpu/ram formula satisfies this requirement just like a static
+		// request: it provides an explicit value, computed at run time (the
+		// ephemeral impl overrides the quota before allocation; gpuMemory is
+		// forwarded alongside), and the fallback covers no-getBlobSize backends.
+		// Without this, a GPU + a formula would wrongly assert on hasBlobSize
+		// backends (where ramRequest/cpuRequest stay undefined) yet pass on older ones.
+		ll.assert(!is_undefined(st.cpuRequest) || !is_undefined(st.cpuFormulaAst), "exec.builder: a cpu request is required when a GPU is requested. GPU nodes vary in CPU capacity and cost; please provide an explicit CPU request.")
+		ll.assert(!is_undefined(st.ramRequest) || !is_undefined(st.memFormulaAst), "exec.builder: a ram request is required when a GPU is requested. GPU nodes vary in RAM capacity and cost; please provide an explicit RAM request.")
+		// A VRAM formula computes gpuMemory at run time (in exec.tpl); leave the
+		// static quota's gpuMemory unset in that case, exactly as ram/cpu do.
+		if !is_undefined(st.gpuMemory) { quotaData.gpuMemory = st.gpuMemory }
+	}
+	// Scratch space stands on its own: it needs no cpu/ram companion, and a VRAM-style
+	// formula leaves the static field unset for the pure template to compute.
+	// Always sent, defaulting to 0. The backend reads three states here and all three
+	// carry meaning: absent means "a block built before this contract, give it the
+	// environment it was tested on", 0 means "current SDK, no device wanted, but I do
+	// want a temporary directory", and a size means both. Leaving the field out when a
+	// block asked for nothing would make every current block look like an old one.
+	//
+	// Costs no deduplication: quotaData rides metaExecInputs below, which is excluded
+	// from the exec CID.
+	//
+	// Sent as a size STRING, never a bare number, whichever way the block spelled it: the
+	// backend parses this field through UnmarshalText, so a JSON number does not merely
+	// fail this exec - it fails to parse the quota and takes the runner controller down
+	// with it. The 'b' suffix is the same spelling the formula fallback above uses.
+	scratchRequest := is_undefined(st.scratchFreeSpace) ? 0 : st.scratchFreeSpace
+	if is_int(scratchRequest) { scratchRequest = string(scratchRequest) + "b" }
+	quotaData.scratchFreeSpace = scratchRequest
+	metaExecInputs := {
+		quota: smart.createJsonResource(quotaData)
+	}
+	// Resource-formula input placement (CID-transparent formula; see analysis doc §4):
+	//   - Formula ASTs (__memFormula__/__cpuFormula__) are JSON VALUE resources —
+	//     final on creation — so they ride the META rail (metaExecInputs, like
+	//     `quota`): excluded from the exec CID, yet readable as final in the pure
+	//     exec.tpl body. Changing only the formula does NOT change the CID, so two
+	//     otherwise-identical execs dedup to one allocation (formula CID-transparency).
+	//     On a backend without serviceFields support, render.lib attaches meta inputs
+	//     as regular ones instead — the formula then enters the CID (no transparency)
+	//     but still evaluates correctly. Graceful degradation; hasBlobSize stays the
+	//     only gate (gating on serviceFields would instead disable formulas there).
+	//   - The line-count map (__metric_lineCount__) holds COMPUTED per-file results.
+	//     On a meta (service) field those are only "resolved", not final, and a pure
+	//     template cannot awaitState — so the map MUST ride the REGULAR rail
+	//     (pureExecInputs) to be deep-waited to final before the body reads it. This
+	//     enters the CID, but the counts are file-derived (a deterministic function of
+	//     the already-in-CID input files), so identical inputs still dedup.
+	// Populated only on the canEvaluateFormulas path above.
+	if !is_undefined(resolvedMem) { metaExecInputs[execConstants.META_INPUT_MEM_FORMULA] = smart.createJsonResource(resolvedMem) }
+	if !is_undefined(resolvedCpu) { metaExecInputs[execConstants.META_INPUT_CPU_FORMULA] = smart.createJsonResource(resolvedCpu) }
+	if !is_undefined(resolvedGpu) { metaExecInputs[execConstants.META_INPUT_GPU_FORMULA] = smart.createJsonResource(resolvedGpu) }
+	if !is_undefined(resolvedScratch) { metaExecInputs[execConstants.META_INPUT_SCRATCH_FORMULA] = smart.createJsonResource(resolvedScratch) }
+	if !is_undefined(lineCountMapResource) { pureExecInputs[execConstants.REGULAR_INPUT_LINE_COUNT] = lineCountMapResource }
+
+	// We add monetization only if it's enabled
+	// to not break a deduplication of exec's
+	// that were created before this feature existed.
+	if monetization.shouldRun(st.mnz) {
+		pureExecInputs.runOptions.monetization = monetization.toJson(st.mnz)
+	}
+
+	// We add name only when it is explicitly set
+	// to not break deduplication of exec's created before this feature existed.
+	if st.commandName != "" {
+		pureExecInputs.runOptions.name = st.commandName
+	}
+
+	// We add new argsTyped and envsTyped only when they were added
+	// to not break a deduplication on old pl backend.
+	if st.typedArgSet || st.typedEnvSet {
+		pureExecInputs.runOptions.argsTyped = st.argsTyped
+		pureExecInputs.runOptions.envsTyped = st.envsTyped
+	}
+
+	if !is_undefined(st.soft) {
+		pureExecInputs.softwareInfo = st.soft.resource
+		descriptor := ll.fromStrict(st.soft.descriptor)
+		if tmpdirCompatNeeded {
+			descriptor = tmpdirCompat.patchSoftwareDescriptor(descriptor, feats.isDockerAvailable)
+		}
+		pureExecInputs.runOptions.software = {
+			name: st.soft.name,
+			version: st.soft.version,
+			descriptor: descriptor
+		}
+	}
+
+	renderOpts := { metaInputs: metaExecInputs }
+	if st.inputCache > 0 {
+		renderOpts.inputCache = st.inputCache
+	}
+
+	return { inputs: pureExecInputs, meta: metaExecInputs, renderOpts: renderOpts }
+}
+
+_definedOnly := func(m) {
+	res := {}
+	for k, v in m {
+		if !is_undefined(v) {
+			res[k] = v
+		}
+	}
+	return res
+}
+
+// A comparable form of a value that may hold references: references become their ids.
+_comparable := undefined
+_comparable = func(v) {
+	if smart.isReference(v) {
+		return "ref:" + ll.idToString(v.id)
+	}
+	if is_map(v) {
+		res := {}
+		for k, vv in v {
+			res[k] = _comparable(vv)
+		}
+		return res
+	}
+	if is_array(v) {
+		res := []
+		for vv in v {
+			res = append(res, _comparable(vv))
+		}
+		return res
+	}
+	return v
+}
+
+/**
+ * What a builder hands out as results, the part every fallback handler must declare exactly as
+ * the root does: saved files, contents, file sets, streams and workdir processors, after the
+ * stdout/stderr shortcuts are applied.
+ */
+_outputShapeOf := func(st) {
+	s := _cloneState(st)
+	_finalizeOutputs(s)
+
+	procs := {}
+	for name, p in s.wdProcessors {
+		procs[name] = canonical.encode(_comparable(p))
+	}
+
+	return {
+		saveFile: maps.getKeys(s.filesToSave),
+		saveFileContent: maps.getKeys(s.filesContentToSave),
+		saveFileSet: s.fileSetsToSave,
+		saveFileSetContent: s.fileSetsContentToSave,
+		processWorkdir: procs,
+		streamFile: maps.getKeys(s.filesToStream)
+	}
+}
+
+/**
+ * Lists how a handler's output shape differs from the root's, one string per difference.
+ */
+_shapeDiff := func(root, handler) {
+	diffs := []
+	for kind in ["saveFile", "saveFileContent", "streamFile"] {
+		r := sets.fromSlice(root[kind])
+		h := sets.fromSlice(handler[kind])
+		missing := []
+		extra := []
+		for k in root[kind] {
+			if !sets.hasElement(h, k) { missing = append(missing, k) }
+		}
+		for k in handler[kind] {
+			if !sets.hasElement(r, k) { extra = append(extra, k) }
+		}
+		if len(missing) > 0 {
+			diffs = append(diffs, fmt.sprintf("%s: missing %v", kind, missing))
+		}
+		if len(extra) > 0 {
+			diffs = append(diffs, fmt.sprintf("%s: not in the root %v", kind, extra))
+		}
+	}
+	for kind in ["saveFileSet", "saveFileSetContent", "processWorkdir"] {
+		r := root[kind]
+		h := handler[kind]
+		for k in maps.getKeys(r) {
+			if is_undefined(h[k]) {
+				diffs = append(diffs, fmt.sprintf("%s: missing %q", kind, k))
+			} else if h[k] != r[k] {
+				diffs = append(diffs, fmt.sprintf("%s: %q differs from the root (%v, root: %v)", kind, k, h[k], r[k]))
+			}
+		}
+		for k in maps.getKeys(h) {
+			if is_undefined(r[k]) {
+				diffs = append(diffs, fmt.sprintf("%s: %q is not in the root", kind, k))
+			}
+		}
+	}
+	return diffs
+}
+
 /**
  * Creates a new builder for constructing and executing commands.
  *
  * @return builder - a new builder instance.
  */
-builder := func() {
+builder := undefined
+
+_makeBuilder := func(st) {
 	self := undefined
 
-	soft := undefined
-	cmd := undefined
-	args := [] // list of strings
-	argsTyped := [] // list of {type: expression|string, value: string}
-	typedArgSet := false
-	typedEnvSet := false
-	envs := {} // map of names to values-strings
-	envsTyped := {} // map of names to {type: expression|string, value: string}
-	secrets := {} // { "env_name": "{secrets.secret_name}", ... }
-
-	entrypointSet := false
-
 	assertEntrypointNotSet := func() {
-		ll.assert(!entrypointSet,
+		ll.assert(!st.entrypointSet,
 			"either a command with arguments or a software were already set.")
 	}
-
-	//
-	// Limits
-	//
-	queue := execConstants.HEAVY_QUEUE
-	cpuRequest := undefined
-	ramRequest := undefined
-	gpuMemory := undefined
-	scratchFreeSpace := undefined
-
-	// resource-formula builder state (ram / cpu / vram formulas + addFile tags).
-	// Set by .resources({ ... }); each *FormulaAst holds a plain formula AST and
-	// each *FormulaFallback the static value used on backends that can't evaluate
-	// formulas at run time (see analysis doc §4).
-	memFormulaAst := undefined
-	memFormulaFallback := undefined
-	cpuFormulaAst := undefined
-	cpuFormulaFallback := undefined
-	gpuFormulaAst := undefined
-	gpuFormulaFallback := undefined
-	scratchFormulaAst := undefined
-	scratchFormulaFallback := undefined
-	fileTags := {}   // fileName -> tag (for f.size("tag") / f.lineCount("tag") aggregation)
-
-	commandName := ""
-	cache := 0
-	inputCache := 0
-	nErrorLines := 200
-
-	// files to be added in workdir
-	filesToAdd := {}
-	// files to be created in the workdir with the content from resources
-	filesToWrite := {}
-	// names from filesToAdd / filesToWrite that should land in the workdir as
-	// 0o600 (writable). Anything not in the set stays 0o400 (read-only,
-	// hardlinked from the archive cache).
-	writableFiles := {}
-	// directories to create in the workdir
-	dirsToCreate := {}
-
-	// files to save from the workdir
-	filesToSave := {}
-	// files which content to save from the workdir
-	filesContentToSave := {}
-	// file sets to save by regex
-	fileSetsToSave := {}
-	// file sets to save by regex (save file content)
-	fileSetsContentToSave := {}
-	// files to stream from the workdir
-	filesToStream := {}
-	// workdir processors
-	wdProcessors := {}
-
-	// assets to be extracted into workdir before execution
-	assetInfos := {}
-	assetDescriptors := {}
-	assetRules := {}
-	assetCache := {}
-
-	mnz := monetization.init()
-
-	stdout := "stdout.txt"
-	stderr := "stderr.txt"
-	stderrToStdout := false
-	stdoutFile := false
-	stderrFile := false
-	stdoutStream := false
-	stderrStream := false
-	stdoutContent := false
-	stderrContent := false
 
 	self = ll.toStrict({
 		/**
@@ -175,8 +668,8 @@ builder := func() {
 		cmd: func(commandName) {
 			assertEntrypointNotSet()
 
-			cmd = commandName
-			entrypointSet = true
+			st.cmd = commandName
+			st.entrypointSet = true
 			return self
 		},
 
@@ -191,8 +684,8 @@ builder := func() {
 				"exec.builder.software: <software> parameter is not a software info. Provide the value obtained from assets."+"importSoftware() here" // calm-down tengo-builder
 			)
 
-			soft = sw
-			entrypointSet = true
+			st.soft = sw
+			st.entrypointSet = true
 			return self
 		},
 
@@ -203,8 +696,8 @@ builder := func() {
 		 */
 		arg: func(arg) {
 			ll.assert(is_string(arg), "exec.arg(): argument must be a string, got: %v", arg)
-			args = append(args, arg)
-			argsTyped = append(argsTyped, {
+			st.args = append(st.args, arg)
+			st.argsTyped = append(st.argsTyped, {
 				type: execConstants.ARG_TYPE_STRING,
 				value: arg
 			})
@@ -231,11 +724,11 @@ builder := func() {
 		 */
 		argExpr: func(arg) {
 			ll.assert(is_string(arg), "exec.argExpr(): argument must be a string, got: %v", arg)
-			argsTyped = append(argsTyped, {
+			st.argsTyped = append(st.argsTyped, {
 				type: execConstants.ARG_TYPE_EXPRESSION,
 				value: arg
 			})
-			typedArgSet = true
+			st.typedArgSet = true
 
 			return self
 		},
@@ -258,8 +751,8 @@ builder := func() {
 		 */
 		env: func(name, value) {
 			validation.assertType([name, value], ["string"])
-			envs[name] = value
-			envsTyped[name] = {
+			st.envs[name] = value
+			st.envsTyped[name] = {
 				type: execConstants.ARG_TYPE_STRING,
 				value: value
 			}
@@ -287,11 +780,11 @@ builder := func() {
 		 */
 		envExpr: func(name, value) {
 			validation.assertType([name, value], ["string"])
-			envsTyped[name] = {
+			st.envsTyped[name] = {
 				type: execConstants.ARG_TYPE_EXPRESSION,
 				value: value
 			}
-			typedEnvSet = true
+			st.typedEnvSet = true
 
 			return self
 		},
@@ -372,7 +865,7 @@ builder := func() {
 				validation.assert(envName != "", "exec.secret(): environment name for secret cannot be empty")
 			}
 
-			secrets[envName] = secretName
+			st.secrets[envName] = secretName
 			return self
 		},
 
@@ -427,7 +920,7 @@ builder := func() {
 		 * @param newQueue: string - the name of the queue.
 		 */
 		setQueue: func(newQueue) {
-			queue = newQueue
+			st.queue = newQueue
 			return self
 		},
 
@@ -435,7 +928,7 @@ builder := func() {
 		 * Execute command in the 'heavy' queue.
 		 */
 		inHeavyQueue: func() {
-			queue = execConstants.HEAVY_QUEUE
+			st.queue = execConstants.HEAVY_QUEUE
 			return self
 		},
 
@@ -443,7 +936,7 @@ builder := func() {
 		 * Execute command in the 'medium' queue.
 		 */
 		inMediumQueue: func() {
-			queue = execConstants.MEDIUM_QUEUE
+			st.queue = execConstants.MEDIUM_QUEUE
 			return self
 		},
 
@@ -451,7 +944,7 @@ builder := func() {
 		 * Execute command in the 'light' queue.
 		 */
 		inLightQueue: func() {
-			queue = execConstants.LIGHT_QUEUE
+			st.queue = execConstants.LIGHT_QUEUE
 			return self
 		},
 
@@ -459,7 +952,7 @@ builder := func() {
 		 * Execute command in the 'ui-tasks' queue.
 		 */
 		inUiQueue: func() {
-			queue = execConstants.UI_TASKS_QUEUE
+			st.queue = execConstants.UI_TASKS_QUEUE
 			return self
 		},
 
@@ -470,7 +963,7 @@ builder := func() {
 		 */
 		cpu: func(amount) {
 			_assertValidCpuRequest(amount, "exec.builder.cpu")
-			cpuRequest = amount
+			st.cpuRequest = amount
 
 			return self
 		},
@@ -488,7 +981,7 @@ builder := func() {
 		 */
 		mem: func(amount) {
 			_assertValidMemRequest(amount, "exec.builder.mem")
-			ramRequest = amount
+			st.ramRequest = amount
 
 			return self
 		},
@@ -588,7 +1081,7 @@ builder := func() {
 
 			if !is_undefined(spec.queue) {
 				validation.assertType(spec.queue, "string", "exec.builder.resources: queue must be a string")
-				queue = spec.queue
+				st.queue = spec.queue
 			}
 
 			// Per-dimension setters: a formula (exec.formula chain / AST) sets the
@@ -601,58 +1094,58 @@ builder := func() {
 			// a leftover formula override a later static value (or vice versa) at finalize.
 			setCpu := func(v, ctx) {
 				if execFormula.isFormula(v) {
-					cpuFormulaAst = execFormula.astOf(v)
-					cpuFormulaFallback = undefined
+					st.cpuFormulaAst = execFormula.astOf(v)
+					st.cpuFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
-					if !is_undefined(fb) { _assertValidCpuRequest(fb, ctx + " cpu fallback"); cpuFormulaFallback = fb }
-					cpuRequest = undefined
+					if !is_undefined(fb) { _assertValidCpuRequest(fb, ctx + " cpu fallback"); st.cpuFormulaFallback = fb }
+					st.cpuRequest = undefined
 				} else {
 					_assertValidCpuRequest(v, ctx + " cpu")
-					cpuRequest = v
-					cpuFormulaAst = undefined
-					cpuFormulaFallback = undefined
+					st.cpuRequest = v
+					st.cpuFormulaAst = undefined
+					st.cpuFormulaFallback = undefined
 				}
 			}
 			setRam := func(v, ctx) {
 				if execFormula.isFormula(v) {
-					memFormulaAst = execFormula.astOf(v)
-					memFormulaFallback = undefined
+					st.memFormulaAst = execFormula.astOf(v)
+					st.memFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
-					if !is_undefined(fb) { _assertValidMemRequest(fb, ctx + " ram fallback"); memFormulaFallback = fb }
-					ramRequest = undefined
+					if !is_undefined(fb) { _assertValidMemRequest(fb, ctx + " ram fallback"); st.memFormulaFallback = fb }
+					st.ramRequest = undefined
 				} else {
 					_assertValidMemRequest(v, ctx + " ram")
-					ramRequest = v
-					memFormulaAst = undefined
-					memFormulaFallback = undefined
+					st.ramRequest = v
+					st.memFormulaAst = undefined
+					st.memFormulaFallback = undefined
 				}
 			}
 			setScratch := func(v, ctx) {
 				if execFormula.isFormula(v) {
-					scratchFormulaAst = execFormula.astOf(v)
-					scratchFormulaFallback = undefined
+					st.scratchFormulaAst = execFormula.astOf(v)
+					st.scratchFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
-					if !is_undefined(fb) { _assertValidScratchRequest(fb, ctx + " scratchFreeSpace fallback"); scratchFormulaFallback = fb }
-					scratchFreeSpace = undefined
+					if !is_undefined(fb) { _assertValidScratchRequest(fb, ctx + " scratchFreeSpace fallback"); st.scratchFormulaFallback = fb }
+					st.scratchFreeSpace = undefined
 				} else {
 					_assertValidScratchRequest(v, ctx + " scratchFreeSpace")
-					scratchFreeSpace = v
-					scratchFormulaAst = undefined
-					scratchFormulaFallback = undefined
+					st.scratchFreeSpace = v
+					st.scratchFormulaAst = undefined
+					st.scratchFormulaFallback = undefined
 				}
 			}
 			setVram := func(v, ctx) {
 				if execFormula.isFormula(v) {
-					gpuFormulaAst = execFormula.astOf(v)
-					gpuFormulaFallback = undefined
+					st.gpuFormulaAst = execFormula.astOf(v)
+					st.gpuFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
-					if !is_undefined(fb) { _assertValidGpuRequest(fb, ctx + " vram fallback"); gpuFormulaFallback = fb }
-					gpuMemory = undefined
+					if !is_undefined(fb) { _assertValidGpuRequest(fb, ctx + " vram fallback"); st.gpuFormulaFallback = fb }
+					st.gpuMemory = undefined
 				} else {
 					_assertValidGpuRequest(v, ctx + " vram")
-					gpuMemory = v
-					gpuFormulaAst = undefined
-					gpuFormulaFallback = undefined
+					st.gpuMemory = v
+					st.gpuFormulaAst = undefined
+					st.gpuFormulaFallback = undefined
 				}
 			}
 
@@ -690,9 +1183,9 @@ builder := func() {
 			// earlier .resources() call set — same discipline as the GPU state below.
 			setScratchFrom := func(block, ctx) {
 				if is_undefined(block.scratchFreeSpace) {
-					scratchFreeSpace = undefined
-					scratchFormulaAst = undefined
-					scratchFormulaFallback = undefined
+					st.scratchFreeSpace = undefined
+					st.scratchFormulaAst = undefined
+					st.scratchFormulaFallback = undefined
 					return
 				}
 				setScratch(block.scratchFreeSpace, ctx)
@@ -711,9 +1204,9 @@ builder := func() {
 				setScratchFrom(c, "resources.onCPU")
 				// CPU-only mode: clear any GPU/VRAM state left from a prior .gpuMemory()
 				// or an earlier GPU-shaped .resources() so this spec doesn't leak a GPU request.
-				gpuMemory = undefined
-				gpuFormulaAst = undefined
-				gpuFormulaFallback = undefined
+				st.gpuMemory = undefined
+				st.gpuFormulaAst = undefined
+				st.gpuFormulaFallback = undefined
 			}
 			return self
 		},
@@ -732,10 +1225,10 @@ builder := func() {
 		gpuMemory: func(...args) {
 			ll.assert(len(args) <= 1, "exec.builder.gpuMemory: accepts 0 or 1 argument")
 			if len(args) == 0 {
-				gpuMemory = "1GiB"
+				st.gpuMemory = "1GiB"
 			} else {
 				validation.assertType(args[0], "string", "exec.builder.gpuMemory: argument must be a size string like '16GiB'")
-				gpuMemory = args[0]
+				st.gpuMemory = args[0]
 			}
 			return self
 		},
@@ -751,7 +1244,7 @@ builder := func() {
 				is_int(time),
 				"cache time must be an integer. " +
 					"Did you forget to import a standard tengo library 'times'?")
-			cache = time
+			st.cache = time
 			return self
 		},
 
@@ -762,7 +1255,7 @@ builder := func() {
 		 */
 		cacheMillis: func(millis) {
 			ll.assert(is_int(millis) && millis > 0, "cache time must be a number of milliseconds")
-			cache = millis * times.millisecond
+			st.cache = millis * times.millisecond
 			return self
 		},
 
@@ -773,7 +1266,7 @@ builder := func() {
 		 */
 		cacheSeconds: func(seconds) {
 			ll.assert(is_int(seconds) && seconds > 0, "cache time must be a number of seconds")
-			cache = seconds * times.second
+			st.cache = seconds * times.second
 			return self
 		},
 
@@ -784,7 +1277,7 @@ builder := func() {
 		 */
 		cacheMinutes: func(minutes) {
 			ll.assert(is_int(minutes) && minutes > 0, "cache time must be a number of minutes")
-			cache = minutes * times.minute
+			st.cache = minutes * times.minute
 			return self
 		},
 
@@ -795,7 +1288,7 @@ builder := func() {
 		 */
 		cacheHours: func(hours) {
 			ll.assert(is_int(hours) && hours > 0, "cache time must be a number of hours")
-			cache = hours * times.hour
+			st.cache = hours * times.hour
 			return self
 		},
 
@@ -806,7 +1299,7 @@ builder := func() {
 		 */
 		cacheDays: func(days) {
 			ll.assert(is_int(days) && days > 0, "cache time must be a number of days")
-			cache = days * times.hour * 24
+			st.cache = days * times.hour * 24
 			return self
 		},
 
@@ -824,7 +1317,7 @@ builder := func() {
 				is_int(time),
 				"input cache time must be an integer. " +
 					"Did you forget to import a standard tengo library 'times'?")
-			inputCache = time
+			st.inputCache = time
 			return self
 		},
 
@@ -835,7 +1328,7 @@ builder := func() {
 		 */
 		cacheInputsMillis: func(millis) {
 			ll.assert(is_int(millis) && millis > 0, "input cache time must be a number of milliseconds")
-			inputCache = millis * times.millisecond
+			st.inputCache = millis * times.millisecond
 			return self
 		},
 
@@ -846,7 +1339,7 @@ builder := func() {
 		 */
 		cacheInputsSeconds: func(seconds) {
 			ll.assert(is_int(seconds) && seconds > 0, "input cache time must be a number of seconds")
-			inputCache = seconds * times.second
+			st.inputCache = seconds * times.second
 			return self
 		},
 
@@ -857,7 +1350,7 @@ builder := func() {
 		 */
 		cacheInputsMinutes: func(minutes) {
 			ll.assert(is_int(minutes) && minutes > 0, "input cache time must be a number of minutes")
-			inputCache = minutes * times.minute
+			st.inputCache = minutes * times.minute
 			return self
 		},
 
@@ -868,7 +1361,7 @@ builder := func() {
 		 */
 		cacheInputsHours: func(hours) {
 			ll.assert(is_int(hours) && hours > 0, "input cache time must be a number of hours")
-			inputCache = hours * times.hour
+			st.inputCache = hours * times.hour
 			return self
 		},
 
@@ -879,7 +1372,7 @@ builder := func() {
 		 */
 		cacheInputsDays: func(days) {
 			ll.assert(is_int(days) && days > 0, "input cache time must be a number of days")
-			inputCache = days * times.hour * 24
+			st.inputCache = days * times.hour * 24
 			return self
 		},
 
@@ -892,7 +1385,7 @@ builder := func() {
 		name: func(name) {
 			validation.assertType(name, "string", "exec.builder.name: name must be a string")
 
-			commandName = name
+			st.commandName = name
 			return self
 		},
 
@@ -906,7 +1399,7 @@ builder := func() {
 				is_int(lines) && lines >= 0,
 				"lines must be integer")
 
-			nErrorLines = lines
+			st.nErrorLines = lines
 			return self
 		},
 
@@ -934,18 +1427,18 @@ builder := func() {
 			validation.assertType(pathsInArchive, ["string"], "exec.builder.addAsset: <pathsInArchive> must contain list of strings with paths inside archive")
 
 			assetIdKey := ll.idToString(asset._id)
-			if is_undefined(assetRules[assetIdKey]) {
-				assetInfos[assetIdKey] = asset.resource
-				assetDescriptors[assetIdKey] = ll.fromStrict(asset.descriptor)
-				assetRules[assetIdKey] = {}
+			if is_undefined(st.assetRules[assetIdKey]) {
+				st.assetInfos[assetIdKey] = asset.resource
+				st.assetDescriptors[assetIdKey] = ll.fromStrict(asset.descriptor)
+				st.assetRules[assetIdKey] = {}
 			}
 
-			if len(pathsInArchive) == 0 || is_undefined(assetRules[assetIdKey][destinationDir]) {
-				assetRules[assetIdKey][destinationDir] = []
+			if len(pathsInArchive) == 0 || is_undefined(st.assetRules[assetIdKey][destinationDir]) {
+				st.assetRules[assetIdKey][destinationDir] = []
 			}
 
 			if (len(pathsInArchive) > 0) {
-				assetRules[assetIdKey][destinationDir] = append(assetRules[assetIdKey][destinationDir], pathsInArchive...)
+				st.assetRules[assetIdKey][destinationDir] = append(st.assetRules[assetIdKey][destinationDir], pathsInArchive...)
 			}
 
 			return self
@@ -962,7 +1455,7 @@ builder := func() {
 				"exec.builder.cacheAssetMillis: asset cache time must be a number of milliseconds.")
 
 			assetIdKey := ll.idToString(asset._id)
-			assetCache[assetIdKey] = millis * times.millisecond
+			st.assetCache[assetIdKey] = millis * times.millisecond
 
 			return self
 		},
@@ -978,7 +1471,7 @@ builder := func() {
 				"exec.builder.cacheAssetSeconds: asset cache time must be a number of seconds.")
 
 			assetIdKey := ll.idToString(asset._id)
-			assetCache[assetIdKey] = seconds * times.second
+			st.assetCache[assetIdKey] = seconds * times.second
 
 			return self
 		},
@@ -994,7 +1487,7 @@ builder := func() {
 				"exec.builder.cacheAssetMinutes: asset cache time must be a number of minutes.")
 
 			assetIdKey := ll.idToString(asset._id)
-			assetCache[assetIdKey] = minutes * times.minute
+			st.assetCache[assetIdKey] = minutes * times.minute
 
 			return self
 		},
@@ -1010,7 +1503,7 @@ builder := func() {
 				"exec.builder.cacheAssetHours: asset cache time must be a number of hours.")
 
 			assetIdKey := ll.idToString(asset._id)
-			assetCache[assetIdKey] = hours * times.hour
+			st.assetCache[assetIdKey] = hours * times.hour
 
 			return self
 		},
@@ -1026,21 +1519,21 @@ builder := func() {
 				"exec.builder.cacheAssetDays: asset cache time must be a number of days.")
 
 			assetIdKey := ll.idToString(asset._id)
-			assetCache[assetIdKey] = days * 24 * times.hour
+			st.assetCache[assetIdKey] = days * 24 * times.hour
 
 			return self
 		},
 
 		enableMnz: func(productKey) {
-			monetization.enable(mnz, productKey)
+			monetization.enable(st.mnz, productKey)
 			// exec supports only 1 run.
-			monetization.appendRun(mnz)
+			monetization.appendRun(st.mnz)
 
 			return self
 		},
 
 		setMnzUrl: func(url) {
-			monetization.setUrl(mnz, url)
+			monetization.setUrl(st.mnz, url)
 			return self
 		},
 
@@ -1064,17 +1557,17 @@ builder := func() {
 			ll.assert(smart.isReference(file), "exec.builder().addFile: file must be a reference")
 
 			fileName = path.canonize(fileName)
-			filesToAdd[fileName] = file
+			st.filesToAdd[fileName] = file
 			if len(opts) > 0 && ll.isMap(opts[0]) {
 				if opts[0].writable == true {
-					sets.add(writableFiles, fileName)
+					sets.add(st.writableFiles, fileName)
 				}
 				if !is_undefined(opts[0].tag) {
 					ll.assert(is_string(opts[0].tag), "exec.builder().addFile: tag must be a string")
-					fileTags[fileName] = opts[0].tag
+					st.fileTags[fileName] = opts[0].tag
 				}
 			}
-			monetization.addOptionalArg(mnz, fileName, opts...)
+			monetization.addOptionalArg(st.mnz, fileName, opts...)
 			return self
 		},
 
@@ -1129,11 +1622,11 @@ builder := func() {
 
 			fileName = path.canonize(fileName)
 
-			filesToWrite[fileName] = data
+			st.filesToWrite[fileName] = data
 			if len(opts) > 0 && ll.isMap(opts[0]) && opts[0].writable == true {
-				sets.add(writableFiles, fileName)
+				sets.add(st.writableFiles, fileName)
 			}
-			monetization.addOptionalArg(mnz, fileName, opts...)
+			monetization.addOptionalArg(st.mnz, fileName, opts...)
 
 			return self
 		},
@@ -1163,7 +1656,7 @@ builder := func() {
 		 */
 		mkDir: func(dir) {
 			dir = path.canonize(dir)
-			dirsToCreate = sets.add(dirsToCreate, dir)
+			st.dirsToCreate = sets.add(st.dirsToCreate, dir)
 			return self
 		},
 
@@ -1174,7 +1667,7 @@ builder := func() {
 		 */
 		saveFile: func(fileName) {
 			fileName = path.canonize(fileName)
-			sets.add(filesToSave, fileName)
+			sets.add(st.filesToSave, fileName)
 			return self
 		},
 
@@ -1185,7 +1678,7 @@ builder := func() {
 		 */
 		saveFileContent: func(fileName) {
 			fileName = path.canonize(fileName)
-			sets.add(filesContentToSave, fileName)
+			sets.add(st.filesContentToSave, fileName)
 			return self
 		},
 
@@ -1196,7 +1689,7 @@ builder := func() {
 		 * @param regex: string - regex pattern
 		 */
 		saveFileSet: func(name, regex) {
-			fileSetsToSave[name] = regex
+			st.fileSetsToSave[name] = regex
 			return self
 		},
 
@@ -1204,7 +1697,7 @@ builder := func() {
 		 * Run specified
 		 */
 		processWorkdir: func(name, tpl, tplArgs) {
-			wdProcessors[name] = {
+			st.wdProcessors[name] = {
 				tpl: tpl,
 				tplArgs: tplArgs
 			}
@@ -1218,7 +1711,7 @@ builder := func() {
 		 * @param regex: string - regex pattern
 		 */
 		saveFileSetContent: func(name, regex) {
-			fileSetsContentToSave[name] = regex
+			st.fileSetsContentToSave[name] = regex
 			return self
 		},
 
@@ -1229,7 +1722,7 @@ builder := func() {
 		 */
 		streamFile: func(fileName) {
 			fileName = path.canonize(fileName)
-			sets.add(filesToStream, fileName)
+			sets.add(st.filesToStream, fileName)
 
 			return self
 		},
@@ -1239,7 +1732,7 @@ builder := func() {
 		 */
 		stdoutFileName: func(fileName) {
 			fileName = path.canonize(fileName)
-			stdout = fileName
+			st.stdout = fileName
 			return self
 		},
 
@@ -1248,7 +1741,7 @@ builder := func() {
 		 */
 		stderrFileName: func(fileName) {
 			fileName = path.canonize(fileName)
-			stderr = fileName
+			st.stderr = fileName
 			return self
 		},
 
@@ -1256,7 +1749,7 @@ builder := func() {
 		 * Sets stdout to be captured as a value resource.
 		 */
 		saveStdoutContent: func() {
-			stdoutContent = true
+			st.stdoutContent = true
 			return self
 		},
 
@@ -1264,7 +1757,7 @@ builder := func() {
 		 * Sets stderr to be captured as a value resource.
 		 */
 		saveStderrContent: func() {
-			stderrContent = true
+			st.stderrContent = true
 			return self
 		},
 
@@ -1272,7 +1765,7 @@ builder := func() {
 		 * Redirects stderr output to stdout.
 		 */
 		printErrStreamToStdout: func() {
-			stderrToStdout = true
+			st.stderrToStdout = true
 			return self
 		},
 
@@ -1280,7 +1773,7 @@ builder := func() {
 		 * Save stdout as file.
 		 */
 		saveStdoutFile: func() {
-			stdoutFile = true
+			st.stdoutFile = true
 			return self
 		},
 
@@ -1288,7 +1781,7 @@ builder := func() {
 		 * Save stderr as file.
 		 */
 		saveStderrFile: func() {
-			stderrFile = true
+			st.stderrFile = true
 			return self
 		},
 
@@ -1296,7 +1789,7 @@ builder := func() {
 		 * Save stdout as stream.
 		 */
 		saveStdoutStream: func() {
-			stdoutStream = true
+			st.stdoutStream = true
 			return self
 		},
 
@@ -1304,7 +1797,178 @@ builder := func() {
 		 * Save stderr as stream.
 		 */
 		saveStderrStream: func() {
-			stderrStream = true
+			st.stderrStream = true
+			return self
+		},
+
+		/**
+		 * Returns an independent builder with the same state: the same command, files, limits,
+		 * outputs and fallbacks. Changing one does not change the other. Resources (files,
+		 * software, handler builders) are shared, not copied.
+		 *
+		 * Typical use is a fallback plan that differs from the root in one setting:
+		 *
+		 *   main := exec.builder().software(sw).arg("align")...
+		 *   moreRam := main.copy().mem("64GiB")
+		 *   main.fallbacks({ OOM: [{ name: "moreRam", builder: moreRam }] })
+		 *
+		 * @return builder
+		 */
+		copy: func() {
+			c := _cloneState(st)
+			_lastBuilderId += 1
+			c.id = _lastBuilderId
+			return _makeBuilder(c)
+		},
+
+		/**
+		 * Declares what runs instead when the command fails for a known reason. Needs a backend
+		 * with RunCommand v3; on an older one the policy is ignored with a notice and a failure is
+		 * an error, as without it.
+		 *
+		 * The policy maps a failure reason to a handler: an exec builder, or an ordered list of
+		 * entries { <attributes>?, name?, builder }, the first matching one wins. An entry with no
+		 * attributes matches any failure of that reason. Reasons and their attributes:
+		 *   SoftwareError: exitCode (int), messageMatch (regex over the last log lines)
+		 *   OOM:           exitCode (int)
+		 *   GPUMissed:     backendHasGPU (bool), timeout (int, ms)
+		 *   UnknownError, TimeIsUp, WorkdirOutOfSpace, ScratchOutOfSpace, InfraError: none
+		 *
+		 * `name` is the plan key shown in getAttempts() and in the final error; without it the key
+		 * is "<reason>[<index>]". A handler builder may declare its own fallbacks. Every handler
+		 * must save, stream and process exactly what this builder does (see verify()), and the
+		 * tree must not contain cycles. The backend caps the number of attempts per job.
+		 *
+		 *   exec.builder()...fallbacks({
+		 *       GPUMissed: cpuOnly,
+		 *       SoftwareError: [{ exitCode: 2, name: "reindex", builder: reindex }]
+		 *   })
+		 *
+		 * @param policy: map - reason -> builder | [builder | { <attributes>?, name?, builder }]
+		 * @return builder
+		 */
+		fallbacks: func(policy) {
+			normalized := fallback.validate(policy)
+			// plan keys must be unique per policy: checked here, at the call site
+			fallback.flatten(normalized)
+			st.fallbacks = normalized
+			return self
+		},
+
+		/**
+		 * Checks the fallback tree: no handler is its own ancestor, and every handler, at any
+		 * depth, saves the same files, file contents, file sets and file set contents, streams
+		 * the same files and runs the same workdir processors as this builder. Panics listing
+		 * every difference. run() calls it first; calling it earlier is allowed.
+		 *
+		 * @return builder
+		 */
+		verify: func() {
+			errors := self._verifyErrors()
+			ll.assert(len(errors) == 0, "exec.builder: invalid fallbacks:\n  %s", text.join(errors, "\n  "))
+			return self
+		},
+
+		/**
+		 * @return string[] - the problems verify() reports, empty when there are none
+		 */
+		_verifyErrors: func() {
+			errors := []
+			rootShape := self._outputShape()
+
+			walk := undefined
+			walk = func(b, path, ancestors) {
+				entries := b._fallbackEntries()
+				if is_undefined(entries) {
+					return
+				}
+				for reason in maps.getKeys(entries) {
+					for i, e in entries[reason] {
+						key := fallback.planKey(reason, i, e)
+						where := text.join(append(copy(path), key), " → ")
+						id := e.builder._execBuilderId()
+						if !is_undefined(ancestors[id]) {
+							errors = append(errors, fmt.sprintf("%s: the handler is its own ancestor (a cycle)", where))
+							continue
+						}
+						for d in _shapeDiff(rootShape, e.builder._outputShape()) {
+							errors = append(errors, fmt.sprintf("%s: %s", where, d))
+						}
+						a := copy(ancestors)
+						a[id] = true
+						walk(e.builder, append(copy(path), key), a)
+					}
+				}
+			}
+			rootAncestors := {}
+			rootAncestors[self._execBuilderId()] = true
+			walk(self, [fallback.ROOT_PLAN], rootAncestors)
+
+			return errors
+		},
+
+		/**
+		 * The inputs run() renders exec.exec with: the pure inputs (including the fallback plans
+		 * and policy, when used on a backend with RunCommand v3) and the meta inputs. Does not
+		 * change the builder.
+		 *
+		 * @return { inputs: map, meta: map, renderOpts: map, st: map }
+		 */
+		plan: func() {
+			self.verify()
+			return self._plan()
+		},
+
+		_plan: func() {
+			p := _cloneState(st)
+			planned := _planOf(p)
+			planned.st = p
+
+			if p.forceRunCommandV2 {
+				planned.meta[execConstants.META_INPUT_FORCE_RUN_COMMAND_V2] = smart.createJsonResource(true)
+			}
+
+			if is_undefined(p.fallbacks) {
+				return planned
+			}
+			if p.forceRunCommandV2 || is_undefined(limits.getRunCommandV3Type(p.queue)) {
+				ll.print("exec.builder: the backend has no RunCommand v3, fallbacks are ignored; a failure is an error")
+				return planned
+			}
+
+			flat := fallback.flatten(p.fallbacks)
+			plans := {}
+			for key, b in flat.plans {
+				hp := b._plan()
+				plans[key] = smart.createMapResource({
+					inputs: smart.createMapResource(_definedOnly(hp.inputs)),
+					meta: smart.createMapResource(_definedOnly(hp.meta))
+				})
+			}
+			planned.inputs.fallbackPlans = smart.createMapResource(plans)
+			planned.inputs.fallbackPolicy = flat.policy
+
+			return planned
+		},
+
+		_execBuilderId: func() {
+			return string(st.id)
+		},
+
+		_fallbackEntries: func() {
+			return st.fallbacks
+		},
+
+		_outputShape: func() {
+			return _outputShapeOf(st)
+		},
+
+		/**
+		 * Test seam: renders this exec as on a backend without RunCommand v3, whatever the
+		 * backend has. Not for blocks.
+		 */
+		_forceRunCommandV2: func() {
+			st.forceRunCommandV2 = true
 			return self
 		},
 
@@ -1314,331 +1978,15 @@ builder := func() {
 		 * @return A map containing the execution results.
 		 */
 		run: func() {
-			if stderrToStdout {
-				stderr = stdout
-			}
-			if stdoutFile {
-				sets.add(filesToSave, stdout)
-			}
-			if stderrFile {
-				sets.add(filesToSave, stderr)
-			}
-			if stdoutStream {
-				sets.add(filesToSave, stdout)
-				sets.add(filesToStream, stdout)
-			}
-			if stderrStream {
-				sets.add(filesToSave, stderr)
-				sets.add(filesToStream, stderr)
-			}
-			if stdoutContent {
-				sets.add(filesContentToSave, stdout)
-			}
-			if stderrContent {
-				sets.add(filesContentToSave, stderr)
-			}
+			self.verify()
 
-			// --- Temporary directory on a backend that does not provide one ---------------
-			// A current backend guarantees TMPDIR and TMP to every command that asked for scratch
-			// space. An older one does not, so the SDK provides them itself: a small script staged
-			// into the working directory makes the directory and execs the real command behind it.
-			// See :exec.tmpdir-compat for why it has to be a file, and why the directory cannot be
-			// created any other way.
-			tmpdirCompatNeeded := tmpdirCompat.isNeeded(
-				feats,
-				tmpdirCompat.isSizedRequest(scratchFreeSpace, scratchFormulaAst)
-			)
-			if tmpdirCompatNeeded {
-				// Only the wrapper that will actually run is staged, and which one that is
-				// depends on where the command lands: a container is Linux whatever the host
-				// is, while a command on the host needs the interpreter that host has.
-				inContainer := false
-				if !is_undefined(soft) {
-					inContainer = tmpdirCompat.usesDocker(
-						ll.fromStrict(soft.descriptor), feats.isDockerAvailable)
-				}
-				for name, content in tmpdirCompat.filesToStage(inContainer) {
-					filesToWrite[name] = content
-				}
+			planned := self._plan()
+			fin := planned.st
 
-				// 'system.scratch' does not exist on such a backend - an expression naming it
-				// fails to evaluate rather than rendering empty - so every reference to it is
-				// removed. The path becomes the directory the wrapper creates, named relative
-				// to the working directory the command runs in, and the size becomes 0: there
-				// is somewhere to write, and no device sized behind it.
-				args = slices.map(args, tmpdirCompat.rewriteScratchExpressions)
-				argsTyped = slices.map(argsTyped, func(a) {
-					a.value = tmpdirCompat.rewriteScratchExpressions(a.value)
-					return a
-				})
-				envs = maps.mapValues(envs, tmpdirCompat.rewriteScratchExpressions)
-				envsTyped = maps.mapValues(envsTyped, func(e) {
-					e.value = tmpdirCompat.rewriteScratchExpressions(e.value)
-					return e
-				})
+			tpl := render.create(assets.importTemplate(":exec.exec"), planned.inputs, planned.renderOpts)
 
-				// A command a block spelled out itself. Software goes through its descriptor
-				// instead, further down, because that is where its command really lives.
-				if is_undefined(soft) {
-					wrapped := tmpdirCompat.wrapCommand(cmd)
-					cmd = wrapped.cmd
-					// Both lists, or an exec that used argExpr would lose the wrapper: the typed
-					// list is what the backend reads whenever it is sent at all.
-					// Not append(prefix, args...): tengo rejects a zero-length spread, and a
-					// command with no arguments at all is the common case.
-					args = tmpdirCompat.concat(wrapped.prependArgs, args)
-					argsTyped = tmpdirCompat.concat(
-						slices.map(wrapped.prependArgs, func(a) {
-							return { type: execConstants.ARG_TYPE_STRING, value: a }
-						}),
-						argsTyped)
-				}
-			}
-
-			// We don't want these values to be encoded as JSON's since
-			// values are pure bytes.
-			// Thus, we create a resource with a custom type here manually.
-			filesToWriteRefs := maps.mapValues(filesToWrite, func(v) {
-				if smart.isReference(v) { return v }
-				return smart.createValueResource(constants.RTYPE_BINARY_VALUE, v)
-			})
-
-			ll.assert(entrypointSet,
-				"incomplete command: cmd() or software() must be provided to exec.builder")
-
-			runOptions := {
-				cmd: cmd,
-				args: args,
-				envs: envs,
-				secrets: secrets,
-				queue: queue,
-				// both stdout and stderr will always be channeled to a file
-				// even if stdoutFile or stderrFile are false
-				stdout: stdout,
-				stderr: stderr,
-				nErrorLines: nErrorLines
-			}
-
-			pureExecInputs := {
-				filesToAdd: smart.createMapResource(filesToAdd),
-				filesToWrite: smart.createMapResource(filesToWriteRefs),
-				dirsToCreate: slices.fromSet(dirsToCreate),
-				runOptions: runOptions,
-				filesToSave: slices.fromSet(filesToSave),
-				filesContentToSave: slices.fromSet(filesContentToSave),
-				fileSetsToSave: fileSetsToSave,
-				fileSetsContentToSave: fileSetsContentToSave,
-				filesToStream: slices.fromSet(filesToStream),
-				wdProcessors: wdProcessors,
-				assets: smart.createMapResource(assetInfos),
-				assetDescriptors: assetDescriptors,
-				assetRules: assetRules,
-				assetCache: assetCache
-			}
-
-			// Only forward when non-empty so existing workflows that don't
-			// opt into writable files keep the exact same CID.
-			if len(writableFiles) > 0 {
-				pureExecInputs.writableFiles = slices.fromSet(writableFiles)
-			}
-
-			if (is_int(ramRequest)) {
-				ramRequest = string(ramRequest) + "b"
-			}
-
-			// Resolve formulas (tags -> file lists) and apply the
-			// hasBlobSize fallback gate. The static quota below stays populated;
-			// the ephemeral exec impl overrides ram/cpu per-dimension when the
-			// corresponding formula input is present. lineCount metrics are
-			// computed INLINE by running the `line-counter` Go binary via the
-			// builder() factory itself (see _lineCountResource). That is a plain
-			// recursive function call within :exec — no import of :pt or any
-			// metrics module — so there is no import cycle.
-			hasFormula := !is_undefined(memFormulaAst) || !is_undefined(cpuFormulaAst) ||
-				!is_undefined(gpuFormulaAst) || !is_undefined(scratchFormulaAst)
-			resolvedMem := undefined
-			resolvedCpu := undefined
-			resolvedGpu := undefined
-			resolvedScratch := undefined
-			lineCountMapResource := undefined
-
-			if hasFormula {
-				// Live evaluation needs getBlobSize: the pure exec.tpl reads input-file
-				// sizes (getBlobSize) at run time when it evaluates the formula. The
-				// formula ASTs ride the META rail (CID-transparent); only a computed
-				// line-count map, if any, rides the REGULAR rail — it must be deep-waited
-				// to final, and being file-derived it adds no CID differentiation (see the
-				// attach site below and analysis doc §4). Missing getBlobSize => take the
-				// static fallback path, so a formula can never break an exec on a backend
-				// that cannot evaluate it.
-				canEvaluateFormulas := feats.hasBlobSize
-				if !canEvaluateFormulas {
-					// Backend can't evaluate formulas (no getBlobSize). Each formula
-					// dimension falls back to its .staticFallback(), or to a static
-					// request if none was given; error only when a dimension has
-					// neither. Pure decision, unit-tested in exec.formula
-					// (applyFormulaFallback).
-					fb := execFormula.applyFormulaFallback({
-						ram: { ast: memFormulaAst, fallback: memFormulaFallback, static: ramRequest },
-						cpu: { ast: cpuFormulaAst, fallback: cpuFormulaFallback, static: cpuRequest },
-						gpu: { ast: gpuFormulaAst, fallback: gpuFormulaFallback, static: gpuMemory },
-						scratch: { ast: scratchFormulaAst, fallback: scratchFormulaFallback, static: scratchFreeSpace }
-					})
-					ll.assert(is_undefined(fb.err), fb.err)
-					ramRequest = fb.ram
-					cpuRequest = fb.cpu
-					gpuMemory = fb.gpu
-					// A scratch formula with nothing to fall back on leaves the request unset.
-					// The exec still runs: a backend that cannot evaluate the formula has no
-					// scratch storage to give either, so the size is moot rather than missing.
-					scratchFreeSpace = fb.scratch
-					if is_int(ramRequest) { ramRequest = string(ramRequest) + "b" }
-					if is_int(gpuMemory) { gpuMemory = string(gpuMemory) + "b" }
-					if is_int(scratchFreeSpace) { scratchFreeSpace = string(scratchFreeSpace) + "b" }
-				} else {
-					tagMap := {}
-					for fileName, tag in fileTags {
-						existing := is_undefined(tagMap[tag]) ? [] : tagMap[tag]
-						tagMap[tag] = append(existing, fileName)
-					}
-					allFiles := maps.getKeys(filesToAdd)
-
-					neededLineCount := {}
-					if !is_undefined(memFormulaAst) {
-						resolvedMem = execFormula.resolveAst(memFormulaAst, tagMap, allFiles)
-						refs := execFormula.referencedMetricFiles(resolvedMem)
-						if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
-					}
-					if !is_undefined(cpuFormulaAst) {
-						resolvedCpu = execFormula.resolveAst(cpuFormulaAst, tagMap, allFiles)
-						refs := execFormula.referencedMetricFiles(resolvedCpu)
-						if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
-					}
-					if !is_undefined(gpuFormulaAst) {
-						resolvedGpu = execFormula.resolveAst(gpuFormulaAst, tagMap, allFiles)
-						refs := execFormula.referencedMetricFiles(resolvedGpu)
-						if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
-					}
-					if !is_undefined(scratchFormulaAst) {
-						resolvedScratch = execFormula.resolveAst(scratchFormulaAst, tagMap, allFiles)
-						refs := execFormula.referencedMetricFiles(resolvedScratch)
-						if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
-					}
-
-					if len(neededLineCount) > 0 {
-						perFile := {}
-						for fn, _ in neededLineCount {
-							perFile[fn] = _lineCountResource(fn, filesToAdd[fn])
-						}
-						lineCountMapResource = smart.createMapResource(perFile)
-					}
-				}
-			}
-
-			quotaData := {
-				queue: queue,
-				cpu: cpuRequest,
-				ram: ramRequest
-			}
-			if !is_undefined(gpuMemory) || !is_undefined(gpuFormulaAst) {
-				// A cpu/ram formula satisfies this requirement just like a static
-				// request: it provides an explicit value, computed at run time (the
-				// ephemeral impl overrides the quota before allocation; gpuMemory is
-				// forwarded alongside), and the fallback covers no-getBlobSize backends.
-				// Without this, a GPU + a formula would wrongly assert on hasBlobSize
-				// backends (where ramRequest/cpuRequest stay undefined) yet pass on older ones.
-				ll.assert(!is_undefined(cpuRequest) || !is_undefined(cpuFormulaAst), "exec.builder: a cpu request is required when a GPU is requested. GPU nodes vary in CPU capacity and cost; please provide an explicit CPU request.")
-				ll.assert(!is_undefined(ramRequest) || !is_undefined(memFormulaAst), "exec.builder: a ram request is required when a GPU is requested. GPU nodes vary in RAM capacity and cost; please provide an explicit RAM request.")
-				// A VRAM formula computes gpuMemory at run time (in exec.tpl); leave the
-				// static quota's gpuMemory unset in that case, exactly as ram/cpu do.
-				if !is_undefined(gpuMemory) { quotaData.gpuMemory = gpuMemory }
-			}
-			// Scratch space stands on its own: it needs no cpu/ram companion, and a VRAM-style
-			// formula leaves the static field unset for the pure template to compute.
-			// Always sent, defaulting to 0. The backend reads three states here and all three
-			// carry meaning: absent means "a block built before this contract, give it the
-			// environment it was tested on", 0 means "current SDK, no device wanted, but I do
-			// want a temporary directory", and a size means both. Leaving the field out when a
-			// block asked for nothing would make every current block look like an old one.
-			//
-			// Costs no deduplication: quotaData rides metaExecInputs below, which is excluded
-			// from the exec CID.
-			//
-			// Sent as a size STRING, never a bare number, whichever way the block spelled it: the
-			// backend parses this field through UnmarshalText, so a JSON number does not merely
-			// fail this exec - it fails to parse the quota and takes the runner controller down
-			// with it. The 'b' suffix is the same spelling the formula fallback above uses.
-			scratchRequest := is_undefined(scratchFreeSpace) ? 0 : scratchFreeSpace
-			if is_int(scratchRequest) { scratchRequest = string(scratchRequest) + "b" }
-			quotaData.scratchFreeSpace = scratchRequest
-			metaExecInputs := {
-				quota: smart.createJsonResource(quotaData)
-			}
-			// Resource-formula input placement (CID-transparent formula; see analysis doc §4):
-			//   - Formula ASTs (__memFormula__/__cpuFormula__) are JSON VALUE resources —
-			//     final on creation — so they ride the META rail (metaExecInputs, like
-			//     `quota`): excluded from the exec CID, yet readable as final in the pure
-			//     exec.tpl body. Changing only the formula does NOT change the CID, so two
-			//     otherwise-identical execs dedup to one allocation (formula CID-transparency).
-			//     On a backend without serviceFields support, render.lib attaches meta inputs
-			//     as regular ones instead — the formula then enters the CID (no transparency)
-			//     but still evaluates correctly. Graceful degradation; hasBlobSize stays the
-			//     only gate (gating on serviceFields would instead disable formulas there).
-			//   - The line-count map (__metric_lineCount__) holds COMPUTED per-file results.
-			//     On a meta (service) field those are only "resolved", not final, and a pure
-			//     template cannot awaitState — so the map MUST ride the REGULAR rail
-			//     (pureExecInputs) to be deep-waited to final before the body reads it. This
-			//     enters the CID, but the counts are file-derived (a deterministic function of
-			//     the already-in-CID input files), so identical inputs still dedup.
-			// Populated only on the canEvaluateFormulas path above.
-			if !is_undefined(resolvedMem) { metaExecInputs[execConstants.META_INPUT_MEM_FORMULA] = smart.createJsonResource(resolvedMem) }
-			if !is_undefined(resolvedCpu) { metaExecInputs[execConstants.META_INPUT_CPU_FORMULA] = smart.createJsonResource(resolvedCpu) }
-			if !is_undefined(resolvedGpu) { metaExecInputs[execConstants.META_INPUT_GPU_FORMULA] = smart.createJsonResource(resolvedGpu) }
-			if !is_undefined(resolvedScratch) { metaExecInputs[execConstants.META_INPUT_SCRATCH_FORMULA] = smart.createJsonResource(resolvedScratch) }
-			if !is_undefined(lineCountMapResource) { pureExecInputs[execConstants.REGULAR_INPUT_LINE_COUNT] = lineCountMapResource }
-
-			// We add monetization only if it's enabled
-			// to not break a deduplication of exec's
-			// that were created before this feature existed.
-			if monetization.shouldRun(mnz) {
-				pureExecInputs.runOptions.monetization = monetization.toJson(mnz)
-			}
-
-			// We add name only when it is explicitly set
-			// to not break deduplication of exec's created before this feature existed.
-			if commandName != "" {
-				pureExecInputs.runOptions.name = commandName
-			}
-
-			// We add new argsTyped and envsTyped only when they were added
-			// to not break a deduplication on old pl backend.
-			if typedArgSet || typedEnvSet {
-				pureExecInputs.runOptions.argsTyped = argsTyped
-				pureExecInputs.runOptions.envsTyped = envsTyped
-			}
-
-			if !is_undefined(soft) {
-				pureExecInputs.softwareInfo = soft.resource
-				descriptor := ll.fromStrict(soft.descriptor)
-				if tmpdirCompatNeeded {
-					descriptor = tmpdirCompat.patchSoftwareDescriptor(descriptor, feats.isDockerAvailable)
-				}
-				pureExecInputs.runOptions.software = {
-					name: soft.name,
-					version: soft.version,
-					descriptor: descriptor
-				}
-			}
-
-			renderOpts := { metaInputs: metaExecInputs }
-			if inputCache > 0 {
-				renderOpts.inputCache = inputCache
-			}
-
-			tpl := render.create(assets.importTemplate(":exec.exec"), pureExecInputs, renderOpts)
-
-			self := undefined
-			self = ll.toStrict(oop.inherit(tpl, {
+			res := undefined
+			res = ll.toStrict(oop.inherit(tpl, {
 				/**
 				 * Retrieves a file.
 				 *
@@ -1646,9 +1994,9 @@ builder := func() {
 				 * @return field - a reference to the file resource.
 				 */
 				getFile: func(fileName) {
-					ll.assert(sets.hasElement(filesToSave, fileName),
+					ll.assert(sets.hasElement(fin.filesToSave, fileName),
 						"file '%s' was not saved, add saveFile() call to the exec builder", fileName)
-					return tpl.output("files", cache).getFutureInputField(fileName)
+					return tpl.output("files", fin.cache).getFutureInputField(fileName)
 				},
 
 				/**
@@ -1658,9 +2006,9 @@ builder := func() {
 				 * @return field - a reference to the file content resource.
 				 */
 				getFileContent: func(fileName) {
-					ll.assert(sets.hasElement(filesContentToSave, fileName),
+					ll.assert(sets.hasElement(fin.filesContentToSave, fileName),
 						"file '%s' content was not saved, add saveFileContent() call to the exec builder", fileName)
-					return tpl.output("filesContent", cache).getFutureInputField(fileName)
+					return tpl.output("filesContent", fin.cache).getFutureInputField(fileName)
 				},
 
 				/**
@@ -1670,9 +2018,9 @@ builder := func() {
 				 * @return field - a reference to the file stream resource.
 				 */
 				getFileStream: func(fileName) {
-					ll.assert(sets.hasElement(filesToStream, fileName),
+					ll.assert(sets.hasElement(fin.filesToStream, fileName),
 						"file '%s' stream was not saved, add streamFile() call to the exec builder", fileName)
-					return tpl.output("fileStreams", cache).getFutureInputField(fileName, true)
+					return tpl.output("fileStreams", fin.cache).getFutureInputField(fileName, true)
 				},
 
 				/**
@@ -1682,9 +2030,9 @@ builder := func() {
 				 * @return field - a reference to the map resource with files
 				 */
 				getFileSet: func(fileSetName) {
-					ll.assert(!is_undefined(fileSetsToSave[fileSetName]),
+					ll.assert(!is_undefined(fin.fileSetsToSave[fileSetName]),
 						"file set '%s' was not saved, add saveFileSet() call to the exec builder", fileSetName)
-					return tpl.output("fileSets", cache).getFutureInputField(fileSetName)
+					return tpl.output("fileSets", fin.cache).getFutureInputField(fileSetName)
 				},
 
 				/**
@@ -1694,77 +2042,94 @@ builder := func() {
 				 * @return field - a reference to the map resource with files
 				 */
 				getFileSetContent: func(fileSetName) {
-					ll.assert(!is_undefined(fileSetsContentToSave[fileSetName]),
+					ll.assert(!is_undefined(fin.fileSetsContentToSave[fileSetName]),
 						"file set '%s' content was not saved, add saveFileSetContent() call to the exec builder", fileSetName)
-					return tpl.output("fileSetsContent", cache).getFutureInputField(fileSetName)
+					return tpl.output("fileSetsContent", fin.cache).getFutureInputField(fileSetName)
+				},
+
+				/**
+				 * Retrieves the attempt history of a successful run: one entry per attempt, the
+				 * last one the attempt that succeeded.
+				 *
+				 *   [{ attempt: 0, plan: "root", result: "fail", reason: "OOM", exitCode: 137 },
+				 *    { attempt: 1, plan: "moreRam", result: "success", exitCode: 0 }]
+				 *
+				 * @return field - a reference to the JSON resource with the history.
+				 */
+				getAttempts: func() {
+					return tpl.output("attempts", fin.cache)
 				},
 
 				getProcessorResult: func(procName) {
-					ll.assert(!is_undefined(wdProcessors[procName]),
+					ll.assert(!is_undefined(fin.wdProcessors[procName]),
 						"processor '%s' result was not saved, add processWorkdir() call to the exec builder", procName)
-					return tpl.output("wdProcessors", cache).getFutureInputField(procName)
+					return tpl.output("wdProcessors", fin.cache).getFutureInputField(procName)
 				},
 
 				/**
 				 * Retrieves the stdout stream.
 				 */
 				getStdoutStream: func() {
-					ll.assert(stdoutStream,
+					ll.assert(fin.stdoutStream,
 						"stdout stream was not saved, add saveStdoutStream() call to the exec builder")
-					return self.getFileStream(stdout)
+					return res.getFileStream(fin.stdout)
 				},
 
 				/**
 				 * Retrieves the stderr stream.
 				 */
 				getStderrStream: func() {
-					ll.assert(stderrStream,
+					ll.assert(fin.stderrStream,
 						"stderr stream was not saved, add saveStderrStream() call to the exec builder")
-					return self.getFileStream(stderr)
+					return res.getFileStream(fin.stderr)
 				},
 
 				/**
 				 * Retrieves the stdout file.
 				 */
 				getStdoutFile: func() {
-					ll.assert(stdoutFile,
+					ll.assert(fin.stdoutFile,
 						"stdout file was not saved, add saveStdoutFile() call to the exec builder")
-					return self.getFile(stdout)
+					return res.getFile(fin.stdout)
 				},
 
 				/**
 				 * Retrieves the stderr file.
 				 */
 				getStderrFile: func() {
-					ll.assert(stderrFile,
+					ll.assert(fin.stderrFile,
 						"stderr file was not saved, add saveStderrFile() call to the exec builder")
-					return self.getFile(stderr)
+					return res.getFile(fin.stderr)
 				},
 
 				/**
 				 * Retrieves the content of the stdout file.
 				 */
 				getStdoutContent: func() {
-					ll.assert(stdoutContent,
+					ll.assert(fin.stdoutContent,
 						"stdout content was not saved, add saveStdoutContent() call to the exec builder")
-					return self.getFileContent(stdout)
+					return res.getFileContent(fin.stdout)
 				},
 
 				/**
 				 * Retrieves the content of the stderr file.
 				 */
 				getStderrContent: func() {
-					ll.assert(stderrContent,
+					ll.assert(fin.stderrContent,
 						"stderr content was not saved, add saveStderrContent() call to the exec builder")
-					return self.getFileContent(stderr)
+					return res.getFileContent(fin.stderr)
 				}
 			}))
 
-			return self
+			return res
 		}
 	})
 
 	return self
+}
+
+builder = func() {
+	return _makeBuilder(_newState())
 }
 
 // _lineCountResource runs the line-counter binary on one file and returns a
