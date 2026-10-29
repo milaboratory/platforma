@@ -1,39 +1,90 @@
 /**
  * The second render of the restart test (decision D5): wave 2 on a working directory the first
  * render (exec.fallback.run_v3) produced and the test may have deleted since. A restart runs the
- * plan below, which writes "restarted"; the first render's command wrote "first".
+ * plan below, which writes "restarted" to out.txt and stdout; the first render's command wrote
+ * "first".
  *
  * inputs.workdir: the post-run working directory
  * inputs.restartLimit: number
  * inputs.nonce: string
+ * inputs.attempt: number, optional - the attempt that produced the directory, 0 by default; a
+ *                 later one has a history of failed attempts before it (a restart with fallbacks)
+ * inputs.restart: number, optional - restarts the job already made, 0 by default
+ * inputs.withProcessor: bool, optional - a workdir processor that reads out.txt
+ * inputs.withCollection: bool, optional - stream stdout.txt into a StreamCollection, returned
+ *
+ * outputs.workdirSaveV3: bool - whether the backend has WorkdirSave v3; without it the other
+ * outputs are not computed
  */
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 render := import("@platforma-sdk/workflow-tengo:render")
 assets := import("@platforma-sdk/workflow-tengo:assets")
+smart := import("@platforma-sdk/workflow-tengo:smart")
 maps := import("@platforma-sdk/workflow-tengo:maps")
+limits := import("@platforma-sdk/workflow-tengo:exec.limits")
+stream := import("@platforma-sdk/workflow-tengo:exec.stream")
 
-self.defineOutputs(["out", "attempts"])
+self.defineOutputs(["workdirSaveV3", "out", "processed", "attempts", "collection"])
 
 harnessTpl := assets.importTemplate(":exec.fallback.restart_harness")
+readOutTpl := assets.importTemplate(":exec.fallback.read_out")
 
 self.body(func(inputs) {
-	planned := exec.builder().
-		cmd("sh").arg("-c").arg("echo restarted > out.txt # " + inputs.nonce).
+	if is_undefined(limits.getWorkdirSaveV3Type("light")) {
+		return { workdirSaveV3: false, out: "", processed: "", attempts: [], collection: "" }
+	}
+
+	b := exec.builder().
+		cmd("sh").arg("-c").arg("echo restarted > out.txt; echo restarted # " + inputs.nonce).
 		cpu(1).ram("50Mi").
 		inLightQueue().
 		saveFileContent("out.txt").
-		plan()
+		saveStdoutStream()
+	if inputs.withProcessor == true {
+		b.processWorkdir("read", readOutTpl, {})
+	}
+	planned := b.plan()
+
+	attempt := is_undefined(inputs.attempt) ? 0 : inputs.attempt
+	history := []
+	plan := "root"
+	if attempt > 0 {
+		for i := 0; i < attempt; i++ {
+			history = append(history, { attempt: i, plan: i == 0 ? "root" : "h" + string(i), result: "fail", reason: "SoftwareError", exitCode: 2 })
+		}
+		plan = "h" + string(attempt)
+	}
+	history = append(history, { attempt: attempt, plan: plan, result: "success", exitCode: 0 })
 
 	harnessInputs := maps.merge(planned.inputs, {
 		__workdir: self.rawInputs().workdir.getValue(),
-		__restartLimit: inputs.restartLimit
+		__ctx: {
+			attempt: attempt,
+			jobId: "restart-test",
+			plan: plan,
+			restart: is_undefined(inputs.restart) ? 0 : inputs.restart,
+			history: history,
+			attemptLimit: 3,
+			restartLimit: inputs.restartLimit
+		}
 	})
+
+	collection := ""
+	if inputs.withCollection == true {
+		c := stream.createCollection(smart.createJsonResource({ test: inputs.nonce }), "stdout.txt")
+		harnessInputs.__collections = smart.createMapResource({ "stdout.txt": c })
+		collection = c
+	}
+
 	r := render.createEphemeral(harnessTpl, harnessInputs, { metaInputs: planned.meta })
 
 	return {
+		workdirSaveV3: true,
 		out: r.output("filesContent").getFutureInputField("out.txt"),
-		attempts: r.output("attempts")
+		processed: inputs.withProcessor == true ? r.output("wdProcessors").getFutureInputField("read") : "",
+		attempts: r.output("attempts"),
+		collection: collection
 	}
 })
