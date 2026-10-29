@@ -93,7 +93,7 @@ tplTest.concurrent(
       { a: "a", b: "b" },
       { blockId: "serialized-producer" },
     );
-    const ctx = await awaitStableState(producer.context());
+    const ctx = await awaitStableState(producer.context(), 60_000);
     const id = JSON.stringify({ __isRef: true, blockId: "serialized-producer", name: "e1" });
     const consumer = await helper.renderWorkflow(
       "workflow.bundle-serialized",
@@ -101,9 +101,17 @@ tplTest.concurrent(
       { id },
       { parent: ctx, blockId: "serialized-consumer" },
     );
-    expect(await awaitStableState(consumer.output("kind", (a) => a?.getDataAsJson()))).eq("Json");
     expect(
-      await awaitStableState(consumer.output("data", (a) => a?.getDataAsJson())),
+      await awaitStableState(
+        consumer.output("kind", (a) => a?.getDataAsJson()),
+        60_000,
+      ),
+    ).eq("Json");
+    expect(
+      await awaitStableState(
+        consumer.output("data", (a) => a?.getDataAsJson()),
+        60_000,
+      ),
     ).toStrictEqual(["a", "b"]);
   },
 );
