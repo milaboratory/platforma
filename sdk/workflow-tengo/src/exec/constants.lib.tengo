@@ -30,6 +30,9 @@ META_INPUT_CPU_FORMULA := "__cpuFormula__"
 META_INPUT_GPU_FORMULA := "__gpuFormula__"
 META_INPUT_SCRATCH_FORMULA := "__scratchFormula__"
 REGULAR_INPUT_LINE_COUNT := "__metric_lineCount__"
+// Meta input of exec.exec / exec-impl set by the exec builder's _forceRunCommandV2() test seam:
+// render as on a backend without RunCommand v3.
+META_INPUT_FORCE_RUN_COMMAND_V2 := "__forceRunCommandV2__"
 
 export ll.toStrict({
 	ARG_TYPE_STRING: ARG_TYPE_STRING,
@@ -51,5 +54,6 @@ export ll.toStrict({
 	META_INPUT_CPU_FORMULA: META_INPUT_CPU_FORMULA,
 	META_INPUT_GPU_FORMULA: META_INPUT_GPU_FORMULA,
 	META_INPUT_SCRATCH_FORMULA: META_INPUT_SCRATCH_FORMULA,
-	REGULAR_INPUT_LINE_COUNT: REGULAR_INPUT_LINE_COUNT
+	REGULAR_INPUT_LINE_COUNT: REGULAR_INPUT_LINE_COUNT,
+	META_INPUT_FORCE_RUN_COMMAND_V2: META_INPUT_FORCE_RUN_COMMAND_V2
 })
