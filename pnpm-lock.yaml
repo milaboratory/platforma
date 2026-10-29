@@ -174,11 +174,11 @@ catalogs:
       specifier: 3.1157.0
       version: 3.1157.0
     '@bytecodealliance/jco-transpile':
-      specifier: ^0.6.3
-      version: 0.6.3
+      specifier: ^0.20.0
+      version: 0.20.0
     '@bytecodealliance/preview2-shim':
-      specifier: ^0.20.1
-      version: 0.20.2
+      specifier: ^0.30.0
+      version: 0.30.0
     '@changesets/cli':
       specifier: ^2.29.5
       version: 2.31.1
@@ -192,11 +192,11 @@ catalogs:
       specifier: ^7.0.1
       version: 7.10.1
     '@milaboratories/pframes-rs-node':
-      specifier: 1.1.61
-      version: 1.1.61
+      specifier: 1.2.0
+      version: 1.2.0
     '@milaboratories/pframes-rs-wasip2':
-      specifier: 1.1.61
-      version: 1.1.61
+      specifier: 1.2.0
+      version: 1.2.0
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.9
       version: 2.2.9
@@ -210,8 +210,8 @@ catalogs:
       specifier: ^2.0.1
       version: 2.4.0
     '@platforma-open/milaboratories.runenv-python-3':
-      specifier: 1.13.2
-      version: 1.13.2
+      specifier: 1.16.1
+      version: 1.16.1
     '@platforma-open/milaboratories.software-conda-empty':
       specifier: ^1.0.1
       version: 1.0.1
@@ -2807,16 +2807,16 @@ importers:
     devDependencies:
       '@bytecodealliance/jco-transpile':
         specifier: 'catalog:'
-        version: 0.6.3
+        version: 0.20.0
       '@bytecodealliance/preview2-shim':
         specifier: 'catalog:'
-        version: 0.20.2
+        version: 0.30.0
       '@milaboratories/build-configs':
         specifier: workspace:*
         version: link:../../../tools/build-configs
       '@milaboratories/pframes-rs-wasip2':
         specifier: 'catalog:'
-        version: 1.1.61
+        version: 1.2.0
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../../tools/ts-builder
@@ -2994,7 +2994,7 @@ importers:
         version: link:../../../tools/ts-configs
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.13.2
+        version: 1.16.1
       '@types/archiver':
         specifier: 'catalog:'
         version: 6.0.4
@@ -3024,7 +3024,7 @@ importers:
         version: link:../../model/pf-spec
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.1.61(supports-color@10.2.2)
+        version: 1.2.0(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)(supports-color@10.2.2)
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../../model/common
@@ -3523,7 +3523,7 @@ importers:
         version: link:../../model/pf-spec-driver
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.1.61(supports-color@10.2.2)
+        version: 1.2.0(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)(supports-color@10.2.2)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -3817,7 +3817,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.13.2
+        version: 1.16.1
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../tools/block-tools
@@ -3826,7 +3826,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.13.2
+        version: 1.16.1
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../tools/block-tools
@@ -4217,7 +4217,7 @@ importers:
     dependencies:
       '@milaboratories/pframes-rs-wasip2':
         specifier: 'catalog:'
-        version: 1.1.61
+        version: 1.2.0
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 2.2.9
@@ -4540,7 +4540,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.13.2
+        version: 1.16.1
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../tools/block-tools
@@ -5277,17 +5277,73 @@ packages:
   '@bufbuild/protoplugin@2.16.0':
     resolution: {integrity: sha512-3FdYJys34VhFnBQsjiV9wurBkX/DBACQAkAk+nCKdO1p8ROVNi7gmaRAcba+4qq8hQq8rYVukuutwvGCvd4kJA==}
 
-  '@bytecodealliance/jco-transpile@0.6.3':
-    resolution: {integrity: sha512-97f+ObKbAiIIuBTMyewPHrTBBh3qqiUqCP/FZwC1QXgAwbrzsHaE0XVC75z9lr9OWV1iA+lX6dixic07yH2dxg==}
+  '@bytecodealliance/jco-node-fs-darwin-arm64@0.3.2':
+    resolution: {integrity: sha512-WXQq1tRVUWhbK+ImH0G8Kni2AR0sdokLf/KyXRw5P6n4A9ZbgMHOuPfN/PEsYgw4eosuTAonutK0xILk/hA81A==}
+    engines: {node: '>=20'}
+    cpu: [arm64]
+    os: [darwin]
 
-  '@bytecodealliance/preview2-shim@0.19.0':
-    resolution: {integrity: sha512-OSUlcM62fXLuzYP0DjBn/SwjKMZ/y/2PMXZ8v5cRiiFcroauntlPRl/oCnx0xYjYiqdYvE0PY50VCNutll0xOw==}
+  '@bytecodealliance/jco-node-fs-darwin-x64@0.3.2':
+    resolution: {integrity: sha512-Fy/OjHnto7hNE5ksewVkmAMXG/uXyj+RAKFZWQFTzFkp73UyT5vuPjKq3nvx9KolUGWBG37BudEMb4ZAoD9TbQ==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [darwin]
 
-  '@bytecodealliance/preview2-shim@0.20.2':
-    resolution: {integrity: sha512-Bp1cer1jztaQamLv1YKdc4MimI9LNAAKM2lNxOtGTLs7/At5KlA0fW1HWTi3ZJ5McaWNwJUDWSe5Lr0EgUpsnA==}
+  '@bytecodealliance/jco-node-fs-linux-arm64-gnu@0.3.2':
+    resolution: {integrity: sha512-OafRtRu3tfOFQARfkia/LDEqSo2R3yAL1xPwzf4RcRW6JqkOY7qKWsUS5+LPVo/aFaSkMX7F7bdFGpFPmcoZJg==}
+    engines: {node: '>=20'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
 
-  '@bytecodealliance/preview3-shim@0.2.2':
-    resolution: {integrity: sha512-9z4tjc+qixUhyeYo3ycoT4cZ9yIlUfkowJxGoKeMfbRd8zT3uvIr1YNfXyU0I93GPu+gdaTVsr8iMr55utEJSA==}
+  '@bytecodealliance/jco-node-fs-linux-arm64-musl@0.3.2':
+    resolution: {integrity: sha512-JblDiwD7+Y+w0d/tjaNDX4QdGvh5lyuDc+S/jDeT7sYA1caA9yiwIjLa8PC/lm2xudqSxD+Cuy4AosXvl+qI0g==}
+    engines: {node: '>=20'}
+    cpu: [arm64]
+    os: [linux]
+    libc: [musl]
+
+  '@bytecodealliance/jco-node-fs-linux-x64-gnu@0.3.2':
+    resolution: {integrity: sha512-6FzmHoLOsa6b4X9AuFLsvlpNF66Dt4sRRftZHaT1I1pYzCWrJkkpgNJhRXxf67ZPmOwBZJT4dan/g752Rx4xRw==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  '@bytecodealliance/jco-node-fs-linux-x64-musl@0.3.2':
+    resolution: {integrity: sha512-SbAJG2PDV8YAHBESHU9sVSckOitJyvlezdF4CGP5/mOp01JnijVkLVXzGK62yVSfa5TpAybbSd1rk+v36NAW/Q==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [linux]
+    libc: [musl]
+
+  '@bytecodealliance/jco-node-fs-win32-arm64-msvc@0.3.2':
+    resolution: {integrity: sha512-nUWYdFysRQJGsIOCk0KAYN2smkNYiHG7rZ7m+0ZXqP+5wqWxKEjkDsORwXiBjdaWFLVww0anZ3SBxrju6P7hXQ==}
+    engines: {node: '>=20'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@bytecodealliance/jco-node-fs-win32-x64-msvc@0.3.2':
+    resolution: {integrity: sha512-RsPj2t8TvltsMWK7/Z7JcVC/IWPMi07/AJkNLiNTCuGTdT/sseqTThJJwhuz3sjFw7dJdxA+bSGT+23y/KT0fw==}
+    engines: {node: '>=20'}
+    cpu: [x64]
+    os: [win32]
+
+  '@bytecodealliance/jco-node-fs@0.3.2':
+    resolution: {integrity: sha512-yxvqQreNcOQdMsEKZomkSqThtkxrAz3f1Cmy8BsV0UHi9saa2/D1KDB14IAXPYwDq/maS6lCzS+MuMQx6QkUgA==}
+    engines: {node: '>=20'}
+
+  '@bytecodealliance/jco-transpile@0.20.0':
+    resolution: {integrity: sha512-FJ8Ue1vsqY8loI6TgYe50Dvt5HVFu0DoiJ7r1NLN/UEa+kbLlO2cbl4vwsLmJrMff8yBRkzb5P7rIN1PCvVGgg==}
+
+  '@bytecodealliance/preview2-shim@0.29.0':
+    resolution: {integrity: sha512-Lhr/LNOx3sxWIo0jimsk64LwmkbbAkmrFbXBUjfu9+A0U4vuZZMm88UoZApLrGKiG8exkTCUXP9ndM4WmDQn6A==}
+
+  '@bytecodealliance/preview2-shim@0.30.0':
+    resolution: {integrity: sha512-Op+uxOJPCnW4jp5Jg3kJvFpB5GZGJGxBMX5PvMffksyonpTciILDDSSJQr1ficHAhm1H6X5+Qwx3q21p7Hjr1Q==}
+
+  '@bytecodealliance/preview3-shim@0.10.0':
+    resolution: {integrity: sha512-GTG5GbLcazKEtQIIKEbCh2+bxWA7xOgjMDfA8MML6Z+V8nnwMhPHDa0ts6Z1yd7G1d82g79UKiwIDjOMAs0G3Q==}
 
   '@changesets/apply-release-plan@7.1.1':
     resolution: {integrity: sha512-9qPCm/rLx/xoOFXIHGB229+4GOL76S4MC+7tyOuTsR6+1jYlfFDQORdvwR5hDA6y4FL2BPt3qpbcQIS+dW85LA==}
@@ -5382,15 +5438,6 @@ packages:
 
   '@dabh/diagnostics@2.0.9':
     resolution: {integrity: sha512-R6siwR65Hm+3yfgP7o8DKhNvputQAwfoz9zTc3kyDudnomj2/BcLmD+uGQQPICjuFUp8ounPBU+jmKsocwVVAg==}
-
-  '@emnapi/core@1.11.1':
-    resolution: {integrity: sha512-RSvbQmHzdKzNsLYa/wHrbc3KN4sYLKAdPZxqiM2HATqv/SBk2/ENSHpvXGaLOMcsAyz0poEGqkmmKYG3OWiJEQ==}
-
-  '@emnapi/runtime@1.11.1':
-    resolution: {integrity: sha512-vgj7R3y3Wgx24IQaGPA/R6YFXLHVMOZ0uVEyIQPaWs+rd1AzfEMXlAC22FYwO1XkKR6NPsq7mUandH8oIRdZFw==}
-
-  '@emnapi/wasi-threads@1.2.2':
-    resolution: {integrity: sha512-c95qOXkHdydNKhscBTebqEC1CVAZpyqOfVfBzQ1qgzyl3gfeldUjIggDbIZgDKsHLgnsM+igH7TJ/eAasaVuMA==}
 
   '@faker-js/faker@10.6.0':
     resolution: {integrity: sha512-3RQHgEtvL1Frl/d1cSreo7qhJ3Gk1OdNUai/CtZ8G+wYeRQnJih3s9xJ9/kgYekPQRdwgh0HXRPqMlzWGwivIQ==}
@@ -5616,28 +5663,27 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  '@milaboratories/helpers@1.14.2':
-    resolution: {integrity: sha512-zOkD4aWNbembwI+AsPTz7nmWC1VPA4rwGBc+Nd5jPpKVh7rCtZwQrlOP5mVqRVMKIAjb1nU8kzzCGfqNPqfJjA==}
+  '@milaboratories/helpers@1.14.5':
+    resolution: {integrity: sha512-Kiy0g7sEmFQxDwtnmTrdJ8XdUK0IDAB5ZnPCNEbK7lPGHIa+xG3kzfeR4y44QBdrYaK0NwG63D8Fc7dlv9KItg==}
     engines: {node: '>=22'}
 
-  '@milaboratories/pframes-rs-node@1.1.61':
-    resolution: {integrity: sha512-KbrKVBxdY2HDQU7bxJpYoTWZ3s2pVHm+RGWEKWJnIX8LkYWgd/fuEAL4nttU5EIHUeQMPTdRLLg7gsrOkZv7CQ==}
+  '@milaboratories/pframes-rs-node@1.2.0':
+    resolution: {integrity: sha512-FqQR0Hw404wbF6c5WJT8IM7lG2ByNadHgmoHJqo6VsvVy3iDZmFsZy4hD2jz/vjUXgTo7ZZXpGC63QND0dzcAw==}
+    engines: {node: '>=24'}
+    peerDependencies:
+      '@milaboratories/pl-model-common': ^1.51.0
+      '@milaboratories/pl-model-middle-layer': ^1.34.0
 
-  '@milaboratories/pframes-rs-serv@1.1.61':
-    resolution: {integrity: sha512-FUPwCMQTavwhsA3DYohfSApFoJfe+9PZQuPV7d+4+WGQnBygARCpHU/WNDpvDvSmFmteT1RAYqCoEaKq+EiQEw==}
+  '@milaboratories/pframes-rs-serv@1.2.0':
+    resolution: {integrity: sha512-NbrzJdrcoYjU8QduZwxEXuPPZq5VPi+En3lYstHizpc6Xq3i0gZmY+FV347HMkIdtQM2xhfx1XR1/yozUmd3JA==}
+    engines: {node: '>=24'}
     hasBin: true
+    peerDependencies:
+      '@milaboratories/pl-model-common': ^1.51.0
+      '@milaboratories/pl-model-middle-layer': ^1.34.0
 
-  '@milaboratories/pframes-rs-wasip2@1.1.61':
-    resolution: {integrity: sha512-0/LwALWJxsWjRf7AyhznRCzOOR4MyzAq4OJ+FvaRuNUztSBJZeXWRBzatmDN9JjCoonap1F05cy33NXKX+hUyQ==}
-
-  '@milaboratories/pl-error-like@1.12.10':
-    resolution: {integrity: sha512-iHmnLG5lxJqcymUmEL8onCDGEADk1S/5RNACQ5yfTCNcCkUc+7hYrDHQpFmWXPPGC9sG+NTBxt4wr5m8UsLm2g==}
-
-  '@milaboratories/pl-model-common@1.46.2':
-    resolution: {integrity: sha512-VEeauisApYScvCS8lnK3zpFJ520xuTAodKJmjR8ulHcMrWMyWMfHEdGb7j5OMD0mM/OwTgmQrrJ5eB7Xd+xoOQ==}
-
-  '@milaboratories/pl-model-middle-layer@1.30.7':
-    resolution: {integrity: sha512-rs9x3Ron4ujR/UOdEgB8WUB1SvZ8ZAScT1Av/e4or+iiQ/CzhmK9nqtYamHVwKV+JgwIFbXQwxGvIHDVz955dQ==}
+  '@milaboratories/pframes-rs-wasip2@1.2.0':
+    resolution: {integrity: sha512-veQz38MXRMqbN3So8vwiyg9Cpeua/svPnM3kyLa6oocQVmBcRjXgg6X81YEFczQh1FMsSHSWyY3wFGD4Ho2xLQ==}
 
   '@milaboratories/software-pframes-conv@2.2.9':
     resolution: {integrity: sha512-w+GaazDSqEgqYUJ38I5lgOsggyZJpcBVGvDMHIX1pyTdvPjWAOWu3mLkScaYuWeitFfh8aAedf5vrLqXtnX8bw==}
@@ -5664,13 +5710,6 @@ packages:
     os: [linux]
     libc: [glibc]
 
-  '@napi-rs/wasm-runtime@1.2.6':
-    resolution: {integrity: sha512-mRyDmEw9/fCDXCGfL1sbgIw/GUK0PVxRW4YwgPN61F3LQ+fSyoBFarJVzgGyhF6kRzEQZ0FejDqm4WLXSeqQmw==}
-    engines: {node: ^20.19.0 || ^22.13.0 || >=23.5.0}
-    peerDependencies:
-      '@emnapi/core': ^1.7.1 || 2.0.0-beta.2
-      '@emnapi/runtime': ^1.7.1 || 2.0.0-beta.2
-
   '@noble/hashes@1.8.0':
     resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
     engines: {node: ^14.21.3 || >=16}
@@ -5694,129 +5733,124 @@ packages:
   '@one-ini/wasm@0.2.1':
     resolution: {integrity: sha512-TUqERXGNTifZ9y2g3wPxQrw3HpHv/02DsW3D90T9x0hhonrL1ZqpSmNrU2XkoIq0fP1N6gZfVQzy2Fw1ZvGBNg==}
 
-  '@oxc-minify/binding-android-arm-eabi@0.136.0':
-    resolution: {integrity: sha512-gk1jzky1vLeOcK7w9Ib2RT/UooZ7O21s8YSeXCsy4tzsmguKb3Cbsv/Ra2fKhMp4mKeKCzvC1Xa41OfSBWfWdQ==}
+  '@oxc-minify/binding-android-arm-eabi@0.151.0':
+    resolution: {integrity: sha512-Y1kwFf+GCq62PWojA4u5ME99T1quxdM+VPB67kIC1x0wLmfGAWAhS9cwKIxe/bW95loAxGIruvkYDVMCrvOBvw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [android]
 
-  '@oxc-minify/binding-android-arm64@0.136.0':
-    resolution: {integrity: sha512-5GIYanqud/ohXEcg2dsdn0+eSKXqclw5qlRUkvSM1sKEa4ZQ7hqOk8XPJBNPh3LXXw+Qw85B6jkmOFLKsCHp5w==}
+  '@oxc-minify/binding-android-arm64@0.151.0':
+    resolution: {integrity: sha512-IuRgG5pZ5Axv88yMK5nIeQHOQqrWkGd2Wcu4yUlGhV9NMr2C6N/HpJ7crLWwpflZSHgWXW5s/5AsmEN2CBJw0w==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [android]
 
-  '@oxc-minify/binding-darwin-arm64@0.136.0':
-    resolution: {integrity: sha512-QAMpHKXWOoMCTenSZjQjVT5YmMooujlCKAf1T3PHFl2LuaA6ukQFXba0bgSLgAxRrAeX/itkwi4lzVQXtYmnRg==}
+  '@oxc-minify/binding-darwin-arm64@0.151.0':
+    resolution: {integrity: sha512-Uuo84npyREYIOJ8ohYdc7eA+QKVcZnX4524U81+6nhdmxkMp19AZHaBGmd/tN6c7KDfsF3ATXQUOxKkCOGGxUQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [darwin]
 
-  '@oxc-minify/binding-darwin-x64@0.136.0':
-    resolution: {integrity: sha512-rDnoPj8hztiU8C1VNKuzujh7SgTJlgiUvUCiWQjTnVSLsABsLW9ZWd1l1Ji0VN3UW39wGpptgvahIWTrHnGH/A==}
+  '@oxc-minify/binding-darwin-x64@0.151.0':
+    resolution: {integrity: sha512-XiWlF2PpwoiX6RcqWmFTvcxW5hH+C96l9km164vbM9wisSBoapo95dvZjEzG7lEmffHOGzb4BOAlAeeZ/WlRWw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [darwin]
 
-  '@oxc-minify/binding-freebsd-x64@0.136.0':
-    resolution: {integrity: sha512-9fGSgP7uyPLCTjMx9z3AUV4UjnfOVoGTH5JzamLegPwGLJ97Gr1jht1437CRk8ZNabGmxQR6qNn3e+Tox2lswg==}
+  '@oxc-minify/binding-freebsd-x64@0.151.0':
+    resolution: {integrity: sha512-fM6/wcqfGp1R+zxYxHXs+P+wBpTlhU1Nr7iiZyBoCg+mphrgyYS7drUiHWoWzAvUSpicnmFm6rag9bSSWTDUMA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [freebsd]
 
-  '@oxc-minify/binding-linux-arm-gnueabihf@0.136.0':
-    resolution: {integrity: sha512-k0QvZS+x6ROI4O5Ikqn9dDU2dmkEJ46Yh6baZJI/eUk/a1k1GOs9/vyXItLZrKlwYrSgdEx2BFXbKgyd1NyRPw==}
+  '@oxc-minify/binding-linux-arm-gnueabihf@0.151.0':
+    resolution: {integrity: sha512-s/aBPTyIMW9uAD0mP+xSz7UbuxXfEIi/1rEpqTd1gGjVCz2Sl58sbc65FauI4K26S9nDpk7fGc7y9C9rjK9L+A==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [linux]
 
-  '@oxc-minify/binding-linux-arm-musleabihf@0.136.0':
-    resolution: {integrity: sha512-iRFxUc8ubotVfuyq3e4LPGbHrjvWd1/B3499a55GueMLc1EDJ0fHzNXJiCx2eMQGfzHtHodjmvrJ2BSvSXBNhQ==}
+  '@oxc-minify/binding-linux-arm-musleabihf@0.151.0':
+    resolution: {integrity: sha512-9t44xCPN7E93Pmxsov9qwEGcTc0UJa+z0ZJzvjCk0LqXdLNOQhd15k8KgVuzVbWitI19TvOX/fEC3ZVF6LB/kw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm]
     os: [linux]
 
-  '@oxc-minify/binding-linux-arm64-gnu@0.136.0':
-    resolution: {integrity: sha512-hbKxNCXJsULrb6EyG5SumzJKuPfP8Y0UQ/TElRgXVUhyyPf6cBPlF8HMq+MAylF98ACBzV8jBp2Mm62lJyTo+w==}
+  '@oxc-minify/binding-linux-arm64-gnu@0.151.0':
+    resolution: {integrity: sha512-a77EK4y+3fyD1GZiMnOUSr8x52Hx6eKjPnfIzeh4C9UgnUZBRYMsdHBbBDHLLOX1adjyluxtn4Tze7yTVByCeA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
 
-  '@oxc-minify/binding-linux-arm64-musl@0.136.0':
-    resolution: {integrity: sha512-T+u/CGKW0UXemJeVux4ix6rK+ug3bQCUEbu5hFlX9K61KQNd44rOcrM15mDK99L7USaXwmiwHeIkEDvmmyDMSA==}
+  '@oxc-minify/binding-linux-arm64-musl@0.151.0':
+    resolution: {integrity: sha512-2AjX1jJsj/guky9OuM1jKmuwRVvy+8UUChK3uvrRWV89I/FyrQj9wKPj8TkuL0Ay5yL2xvZj/Ti1Qg0qiRsP+w==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@oxc-minify/binding-linux-ppc64-gnu@0.136.0':
-    resolution: {integrity: sha512-WNPTN2F448tb49BoqjV9IMRzZWa0WB8GHzrB+bnxKQPOyzz07T6rmDKrr4Hjl81ADGjDYSsr1fgXcjyLQFdMdw==}
+  '@oxc-minify/binding-linux-ppc64-gnu@0.151.0':
+    resolution: {integrity: sha512-l3iUa60pK2WenCy9jhO4UTK/yz9RjVIXPXqfzMdz7DA0QQZ9dxAk/p2p3ERf4KZq/MEIfvs9e4LuFVYg5PFYdQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ppc64]
     os: [linux]
     libc: [glibc]
 
-  '@oxc-minify/binding-linux-riscv64-gnu@0.136.0':
-    resolution: {integrity: sha512-MvcCfu8OeabrmNN9wqhh8Gqizg68RQ3iOvXBJmlLMy5p1PC6az9bAwqOk98lsCmKI4I5LpULekOlfxRYh3o5Kw==}
+  '@oxc-minify/binding-linux-riscv64-gnu@0.151.0':
+    resolution: {integrity: sha512-v+sdB36Rp8BxmQoP5Jt6ixz7G0aN9Nayh/LvdNBW/0nkKoLHFyEAcV/Uy+79R3oB0uBC1J6DM9XlDxCC1uMkbA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [riscv64]
     os: [linux]
     libc: [glibc]
 
-  '@oxc-minify/binding-linux-riscv64-musl@0.136.0':
-    resolution: {integrity: sha512-rwJXFUFFA0egAULtOOgfW8YhhLhtWrr2qFxftvZ7/U6Xtxiev8i+eCwSNW1RpHiX74QMsJVpRE3ykoefqb1MtQ==}
+  '@oxc-minify/binding-linux-riscv64-musl@0.151.0':
+    resolution: {integrity: sha512-QER/ajZukltjbfFi4rGx6/jC5XEnImAma5P606Xnej0D3fyMC8rXPmae5Z3HyUJMt1Hd5POOkC3S5yQBNPppwQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [riscv64]
     os: [linux]
     libc: [musl]
 
-  '@oxc-minify/binding-linux-s390x-gnu@0.136.0':
-    resolution: {integrity: sha512-qizAxHmj7VHm5/D5qiIlvzxAS2tlmadDOJ5XFI7zx/wfnk/+fdk5iVaHOv+C4tDE/4wLQyMoBYVIs6R1LeN91w==}
+  '@oxc-minify/binding-linux-s390x-gnu@0.151.0':
+    resolution: {integrity: sha512-+r7s5IPrWPtdz/x5LiNSk0ySmzvdP0/VLwt23ULFvcU6jsMrw8DseylMfp4HxvGlJcYyKAUj7JSGxwEmEACUvw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [s390x]
     os: [linux]
     libc: [glibc]
 
-  '@oxc-minify/binding-linux-x64-gnu@0.136.0':
-    resolution: {integrity: sha512-gcyLAad0UblkEhGjVfx5Mwq63OSx8r04IbcfwzpZYpHisO/vioMsrs4GkDsQZ2Ejc8cdUk6YMIrf9FwNBzh+Dw==}
+  '@oxc-minify/binding-linux-x64-gnu@0.151.0':
+    resolution: {integrity: sha512-O1Rs0HbgKvEhTiq1bVcZnsOY6q8f4LoPE6pgOieB19Coyz1XP/ugq7XILUD6evlszBGRKliRAwycRScbl2kjqg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
 
-  '@oxc-minify/binding-linux-x64-musl@0.136.0':
-    resolution: {integrity: sha512-QAK6kwBjljX6luYzeppVdRP3gTaFNFfp9iS/V0cCvU43wUZay5xFXBgmzBHYrzZV2MhzURNnXfEZRo9poAxyvA==}
+  '@oxc-minify/binding-linux-x64-musl@0.151.0':
+    resolution: {integrity: sha512-RSbyV8xzLsvypVTo871IYAfL5We9/8JNyAQLMXiCRnQGD/daFm/bp+iLhtoy2jelgOa6kp4H3bkdl+ci5SSwDQ==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@oxc-minify/binding-openharmony-arm64@0.136.0':
-    resolution: {integrity: sha512-nIGxkTOnN9GwslmooxbZ3Ti2RgbX9QLHy0X9uO0pslOT+4dsNVUawBU/6r4M5cWM+ZdRD2tOF4V+n0l8tS59nQ==}
+  '@oxc-minify/binding-openharmony-arm64@0.151.0':
+    resolution: {integrity: sha512-WHwdIt3Kj0TQSVey3RiWXgyeZpXUz3Hapq/mdCXyxVCBkvRk/KHIxmHE32EGE/PRx+EQFHVo1+gm627XOde/qg==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [openharmony]
 
-  '@oxc-minify/binding-wasm32-wasi@0.136.0':
-    resolution: {integrity: sha512-YB3G8AHT6PpDS8/DfjlJrQjywj+/6gCkNBcAJdYzcYbQRIZE6SaTNowiGuZPR1m1jOl1WjcjefniKSmVxzhvRA==}
-    engines: {node: ^20.19.0 || >=22.12.0}
-    cpu: [wasm32]
-
-  '@oxc-minify/binding-win32-arm64-msvc@0.136.0':
-    resolution: {integrity: sha512-UVRH3BlNc2rmla+sbSd5xTF/u+esCqZS6VSWPolZybcBh3TlVe1Sf5MOuHQWUaFoyv5uFOvee4hOfS/14nPvZw==}
+  '@oxc-minify/binding-win32-arm64-msvc@0.151.0':
+    resolution: {integrity: sha512-mFL0B3HByMlBxspR+SeqyBR8b96QkoI2D8quQOwBXEUExR4Ozu3Ya0uyYR9MBdwvQHZZWQ2EWgum8bdHdTfl/w==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [arm64]
     os: [win32]
 
-  '@oxc-minify/binding-win32-ia32-msvc@0.136.0':
-    resolution: {integrity: sha512-zFGkUd82jci0E+isc2O36lVmmXVUDXyEMN2RYIyez+MBNqhdjPLIGx62FCsrJtLKeuiPf/8XkFv977aUtndUng==}
+  '@oxc-minify/binding-win32-ia32-msvc@0.151.0':
+    resolution: {integrity: sha512-p6QBBxYsg0A0jUQu5NRqW/UuPtoLtmA72SE8N7Rkhn43m/gSLNTE/nFjsLSsX6T9yM8d8k5PfnYvFnSUf+IlRw==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [ia32]
     os: [win32]
 
-  '@oxc-minify/binding-win32-x64-msvc@0.136.0':
-    resolution: {integrity: sha512-VHgPwd5xibC9UYxBeq7nURTjY+wxhdumllij6JaCIUVfD9IRcrA66SVlJ5fPNoUXcRp8ZXhJfoIZwVz9wAEGJw==}
+  '@oxc-minify/binding-win32-x64-msvc@0.151.0':
+    resolution: {integrity: sha512-lkP3SsNXm3JUrNX9c9Ijhl3Iipw0fWuCAOOxju+YjH2AolPUbTLE664KeEDdxt8kaLCh+wCBNyqnV67OLVHZWA==}
     engines: {node: ^20.19.0 || >=22.12.0}
     cpu: [x64]
     os: [win32]
@@ -6204,11 +6238,17 @@ packages:
   '@platforma-open/milaboratories.runenv-python-3.10.21-clustcr@0.2.0':
     resolution: {integrity: sha512-EKDjVVTzxSgWvfaitCxwqg/3i01NvRSvKk3KrWKgPa89rOW2Zjmwbtv6uZa+nUF3LRvwKSEUm1nOSYaSLq35+A==}
 
+  '@platforma-open/milaboratories.runenv-python-3.12.10-antibody-design@0.2.0':
+    resolution: {integrity: sha512-TzpMQ/4xC58PH/oy5BAfPBjbrVfOOcOrVivXJCzrOFfdmnKYqt83iFVBi0Ddr99M0S9vANKXzr1mKweobiDrNw==}
+
   '@platforma-open/milaboratories.runenv-python-3.12.10-atls@1.2.7':
     resolution: {integrity: sha512-vJiU68NKgyupW5meeWB/pZZ8y5wewPV6/EcRQ2BwUhSyikDQrn83XzBlc/nTu9UmbYmBqQTrt59x0qKtcC0ILw==}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-clustering@0.1.1':
     resolution: {integrity: sha512-hnr1tf0dwoqTyjtUVZcwQm13O0V8kz4jCUz+yvOgdvWMrbg4o/h1KbghtM8HivI+tRoowc629QJWdy0bc7inQA==}
+
+  '@platforma-open/milaboratories.runenv-python-3.12.10-embedding-clustering@0.3.0':
+    resolution: {integrity: sha512-n2XIIs6BNtVsgaRYzRuOa8aSGH3MQMbOM6QFRkXxs4yj0Elys5FxifAU1/gRbOltm8LjnFCo+qnK1RNdczuN7g==}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-h5ad@1.1.5':
     resolution: {integrity: sha512-cuGk6NMBocvNePoMTnDW4z8eIF5RQdDcgwuPHg9atW9/veOOp02p5jk0EwxmnbMSVV0yDwRMd+0crQAQqW9bCA==}
@@ -6222,11 +6262,11 @@ packages:
   '@platforma-open/milaboratories.runenv-python-3.12.10-parapred@1.1.0':
     resolution: {integrity: sha512-nEM4eEj7pFT6yi+P5028qtgK5v9A9H0XdVHDtrKX7xW5Jipc1RIliOEU3gzaH0E7UAzPFQGSqShlwakRcGXwdQ==}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10-pgen@0.2.0':
-    resolution: {integrity: sha512-+4pEVwRZaBAm0716NoNdK9cfF4E7jtsRUpcAWYCuPbbZJ3Q7bgfgq8bEhcck8No97l9jWN2rAeJegA9UQy5FgQ==}
+  '@platforma-open/milaboratories.runenv-python-3.12.10-pgen@0.3.0':
+    resolution: {integrity: sha512-/dbewpNO7GqjwcqKQxxS8MW82zAdBo8yLt9uWs+jP1+Rw7Rb21eOFyyoMCwDScKHhvt/BA77xzGilsDXnElOKQ==}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10-rapids@1.7.2':
-    resolution: {integrity: sha512-rCG+R9WjdopEtEgJcSWNRIWhpo1ABGnA7rPn0BF6ufvLOtKXOGtaGENI7BJlkEaLb2Cbh2XUUgS5l2r5WGhIRw==}
+  '@platforma-open/milaboratories.runenv-python-3.12.10-rapids@1.7.3':
+    resolution: {integrity: sha512-sIJPYAGYsJw+5EVKXRN+d755E+IHkb03b073XQvFg5pk9LIWKsIq+4aqIFnxbT2wlDE2YyjsVRatjwvTSYpt3w==}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-sccoda@1.3.6':
     resolution: {integrity: sha512-NAacPe2uFxf5zqDAa70bblP4ZicvA52lVyzhV7IzlyeEIClAsGatLbitMnRghc2TepwYhQY4EbvElkKDFaSSGw==}
@@ -6237,11 +6277,11 @@ packages:
   '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda@0.2.0':
     resolution: {integrity: sha512-PRGkgsVY08tQvoucU8fJmeCF+x9XjiHHjNTbxWqddqx2EZpiUvmylkxtU8i8xJW13cesAI+xHv3NsVUXQaRDqA==}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.26':
-    resolution: {integrity: sha512-qHrBmmormpmzy+Ribrgyf4jFM0Yp33NZjvc9sLfVwMStGwXFaThTXraZmliCLbUImdcZmQV6pWqPF6HYK0Da5w==}
+  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.27':
+    resolution: {integrity: sha512-us8wG4HOYW8VzN1N1ZWXXSz1y5zYuh+Mne9VfGhDOWpmMlFGaPsPbN0J657n5VKGgnnEhc04g1jhtQdSMtjBOA==}
 
-  '@platforma-open/milaboratories.runenv-python-3@1.13.2':
-    resolution: {integrity: sha512-Jdt4tKiTEI6hYj/pKCWeEvswpqx3zGXDx7TTj+wOBQDzb07pbG4ONn1VSXVHa5mvMVeVrPxgyz4v3uoDOVerug==}
+  '@platforma-open/milaboratories.runenv-python-3@1.16.1':
+    resolution: {integrity: sha512-wnxcd6K6Ebqb2ACaAdOl6moukUjn9rWseNCQI5nWiK+wh3CEo73K6GYnDO1J7l7UY/9k/ovdgjrf5GZNOKgIiw==}
 
   '@platforma-open/milaboratories.software-conda-empty@1.0.1':
     resolution: {integrity: sha512-nftT6/lXdHvDu7Wedc3HCXiLrzHrIl7B4/8jRGgP5EAJy4agIrAk95Ht7/DGBzGIqXUkRdgN2XB46LxMWt1l3g==}
@@ -6673,9 +6713,6 @@ packages:
     resolution: {integrity: sha512-xOkEjF3ws/b/YNlc+bvJHMYBn+vL+QbEISZFVi0qS+ImmhA1X3/gmNmBrjjIG3dg6aeN+n6gQitzSkXQ286qJQ==}
     cpu: [arm64]
     os: [win32]
-
-  '@tybys/wasm-util@0.10.4':
-    resolution: {integrity: sha512-W3c4gRigFS0T/Ma4qIYF3GDAc5AQdHb1yL5znJT1Zv1YaD9Kitx656wBjvr19qbiosmZT8lWDM5BEMynUqX65A==}
 
   '@types/archiver@6.0.4':
     resolution: {integrity: sha512-ULdQpARQ3sz9WH4nb98mJDYA0ft2A8C4f4fovvUcFwINa1cgGjY36JCAYuP5YypRq4mco1lJp1/7jEMS2oR0Hg==}
@@ -7357,12 +7394,8 @@ packages:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
 
-  better-sqlite3@13.0.3:
-    resolution: {integrity: sha512-RbOBxmLBG8uvFUc15X9+9SFemKcQ0WBuISBVkpuiaUB2qblC8UWlHEjdWVoZ8AdhSwmoEgsiXKfopX0CQxaACQ==}
-    engines: {node: '>=22'}
-
-  binaryen@130.0.0:
-    resolution: {integrity: sha512-XDrb+zql0RbFPKgj7MuH9zOc78R3Fa/P/VSGnnpdwYsvNZPWjcMYMdAkKCOQEL2A7yqgjSMTDRFp6gfSDW+/QQ==}
+  binaryen@132.0.0:
+    resolution: {integrity: sha512-4Usg7yEvwO3FMso3Oov6qkOOHSod1IEv+boKkh77kTljM+eNBouqCTbqWswGzbG+vDNO/b/v2C4gfEh1WgB9Lg==}
     hasBin: true
 
   bl@4.1.0:
@@ -8531,10 +8564,6 @@ packages:
   node-addon-api@7.1.1:
     resolution: {integrity: sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==}
 
-  node-addon-api@8.9.2:
-    resolution: {integrity: sha512-VijLXbi3UACN69I0JVXJsX4tjACjNoQDgv2gTF6sx2wWEi8tkSg2eX8p5gSIFi8z2+DL3oHmY6OyKce38SDolg==}
-    engines: {node: ^18 || ^20 || >= 21}
-
   node-fetch@2.7.0:
     resolution: {integrity: sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==}
     engines: {node: 4.x || >=6.0.0}
@@ -8616,8 +8645,8 @@ packages:
   outdent@0.5.0:
     resolution: {integrity: sha512-/jHxFIzoMXdqPzTaCpFzAAWhpkSjZPF4Vsn6jAfNpmbH/ymsmd7Qc6VE9BGn0L6YMj6uwpQLxCECpus4ukKS9Q==}
 
-  oxc-minify@0.136.0:
-    resolution: {integrity: sha512-u9UvPFTYVwQ/i1kpp/c20S/SbvLaLV0Ngzyhgi0YV4B1SlxM7RgnnePl4vY9N3Z9sTRcozL1MRStI3PlUN9RFA==}
+  oxc-minify@0.151.0:
+    resolution: {integrity: sha512-fYdJw3+WYswBWedCl3G0ReJPlHIR1msz3uf5cGAgpHOlQOxfrVu5nOp2gLnccA91Vs7Yw2nH00lj8pc0rjZvYg==}
     engines: {node: ^20.19.0 || >=22.12.0}
 
   oxfmt@0.75.0:
@@ -10087,20 +10116,60 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@bytecodealliance/jco-transpile@0.6.3':
+  '@bytecodealliance/jco-node-fs-darwin-arm64@0.3.2':
+    optional: true
+
+  '@bytecodealliance/jco-node-fs-darwin-x64@0.3.2':
+    optional: true
+
+  '@bytecodealliance/jco-node-fs-linux-arm64-gnu@0.3.2':
+    optional: true
+
+  '@bytecodealliance/jco-node-fs-linux-arm64-musl@0.3.2':
+    optional: true
+
+  '@bytecodealliance/jco-node-fs-linux-x64-gnu@0.3.2':
+    optional: true
+
+  '@bytecodealliance/jco-node-fs-linux-x64-musl@0.3.2':
+    optional: true
+
+  '@bytecodealliance/jco-node-fs-win32-arm64-msvc@0.3.2':
+    optional: true
+
+  '@bytecodealliance/jco-node-fs-win32-x64-msvc@0.3.2':
+    optional: true
+
+  '@bytecodealliance/jco-node-fs@0.3.2':
+    optionalDependencies:
+      '@bytecodealliance/jco-node-fs-darwin-arm64': 0.3.2
+      '@bytecodealliance/jco-node-fs-darwin-x64': 0.3.2
+      '@bytecodealliance/jco-node-fs-linux-arm64-gnu': 0.3.2
+      '@bytecodealliance/jco-node-fs-linux-arm64-musl': 0.3.2
+      '@bytecodealliance/jco-node-fs-linux-x64-gnu': 0.3.2
+      '@bytecodealliance/jco-node-fs-linux-x64-musl': 0.3.2
+      '@bytecodealliance/jco-node-fs-win32-arm64-msvc': 0.3.2
+      '@bytecodealliance/jco-node-fs-win32-x64-msvc': 0.3.2
+
+  '@bytecodealliance/jco-transpile@0.20.0':
     dependencies:
-      '@bytecodealliance/preview2-shim': 0.20.2
-      '@bytecodealliance/preview3-shim': 0.2.2
-      binaryen: 130.0.0
-      oxc-minify: 0.136.0
+      '@bytecodealliance/preview2-shim': 0.30.0
+      '@bytecodealliance/preview3-shim': 0.10.0
+      binaryen: 132.0.0
+      oxc-minify: 0.151.0
 
-  '@bytecodealliance/preview2-shim@0.19.0': {}
-
-  '@bytecodealliance/preview2-shim@0.20.2': {}
-
-  '@bytecodealliance/preview3-shim@0.2.2':
+  '@bytecodealliance/preview2-shim@0.29.0':
     dependencies:
-      '@bytecodealliance/preview2-shim': 0.19.0
+      '@bytecodealliance/jco-node-fs': 0.3.2
+
+  '@bytecodealliance/preview2-shim@0.30.0':
+    dependencies:
+      '@bytecodealliance/jco-node-fs': 0.3.2
+
+  '@bytecodealliance/preview3-shim@0.10.0':
+    dependencies:
+      '@bytecodealliance/jco-node-fs': 0.3.2
+      '@bytecodealliance/preview2-shim': 0.29.0
 
   '@changesets/apply-release-plan@7.1.1':
     dependencies:
@@ -10274,22 +10343,6 @@ snapshots:
       '@so-ric/colorspace': 1.1.6
       enabled: 2.0.0
       kuler: 2.0.0
-
-  '@emnapi/core@1.11.1':
-    dependencies:
-      '@emnapi/wasi-threads': 1.2.2
-      tslib: 2.8.1
-    optional: true
-
-  '@emnapi/runtime@1.11.1':
-    dependencies:
-      tslib: 2.8.1
-    optional: true
-
-  '@emnapi/wasi-threads@1.2.2':
-    dependencies:
-      tslib: 2.8.1
-    optional: true
 
   '@faker-js/faker@10.6.0': {}
 
@@ -10546,49 +10599,29 @@ snapshots:
       - encoding
       - supports-color
 
-  '@milaboratories/helpers@1.14.2': {}
+  '@milaboratories/helpers@1.14.5': {}
 
-  '@milaboratories/pframes-rs-node@1.1.61(supports-color@10.2.2)':
+  '@milaboratories/pframes-rs-node@1.2.0(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)(supports-color@10.2.2)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.3(supports-color@10.2.2)
-      '@milaboratories/helpers': 1.14.2
-      '@milaboratories/pframes-rs-serv': 1.1.61
-      '@milaboratories/pl-model-common': 1.46.2
+      '@milaboratories/helpers': 1.14.5
+      '@milaboratories/pframes-rs-serv': 1.2.0(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+      '@milaboratories/pl-model-common': link:lib/model/common
+      '@milaboratories/pl-model-middle-layer': link:lib/model/middle-layer
       ulid: 3.0.2
     transitivePeerDependencies:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-serv@1.1.61':
+  '@milaboratories/pframes-rs-serv@1.2.0(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
     dependencies:
-      '@milaboratories/helpers': 1.14.2
-      '@milaboratories/pl-model-common': 1.46.2
-      '@milaboratories/pl-model-middle-layer': 1.30.7
-      better-sqlite3: 13.0.3
-      commander: 14.0.3
+      '@milaboratories/helpers': 1.14.5
+      '@milaboratories/pl-model-common': link:lib/model/common
+      '@milaboratories/pl-model-middle-layer': link:lib/model/middle-layer
+      commander: 15.0.0
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasip2@1.1.61': {}
-
-  '@milaboratories/pl-error-like@1.12.10':
-    dependencies:
-      json-stringify-safe: 5.0.1
-      zod: 3.25.76
-
-  '@milaboratories/pl-model-common@1.46.2':
-    dependencies:
-      '@milaboratories/helpers': 1.14.2
-      '@milaboratories/pl-error-like': 1.12.10
-      canonicalize: 2.1.0
-      zod: 3.25.76
-
-  '@milaboratories/pl-model-middle-layer@1.30.7':
-    dependencies:
-      '@milaboratories/helpers': 1.14.2
-      '@milaboratories/pl-model-common': 1.46.2
-      es-toolkit: 1.53.0
-      utility-types: 3.11.0
-      zod: 3.25.76
+  '@milaboratories/pframes-rs-wasip2@1.2.0': {}
 
   '@milaboratories/software-pframes-conv@2.2.9': {}
 
@@ -10619,13 +10652,6 @@ snapshots:
   '@napi-rs/lzma-linux-x64-gnu@1.5.1':
     optional: true
 
-  '@napi-rs/wasm-runtime@1.2.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)':
-    dependencies:
-      '@emnapi/core': 1.11.1
-      '@emnapi/runtime': 1.11.1
-      '@tybys/wasm-util': 0.10.4
-    optional: true
-
   '@noble/hashes@1.8.0': {}
 
   '@noble/hashes@2.4.0': {}
@@ -10644,68 +10670,61 @@ snapshots:
 
   '@one-ini/wasm@0.2.1': {}
 
-  '@oxc-minify/binding-android-arm-eabi@0.136.0':
+  '@oxc-minify/binding-android-arm-eabi@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-android-arm64@0.136.0':
+  '@oxc-minify/binding-android-arm64@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-darwin-arm64@0.136.0':
+  '@oxc-minify/binding-darwin-arm64@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-darwin-x64@0.136.0':
+  '@oxc-minify/binding-darwin-x64@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-freebsd-x64@0.136.0':
+  '@oxc-minify/binding-freebsd-x64@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-linux-arm-gnueabihf@0.136.0':
+  '@oxc-minify/binding-linux-arm-gnueabihf@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-linux-arm-musleabihf@0.136.0':
+  '@oxc-minify/binding-linux-arm-musleabihf@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-linux-arm64-gnu@0.136.0':
+  '@oxc-minify/binding-linux-arm64-gnu@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-linux-arm64-musl@0.136.0':
+  '@oxc-minify/binding-linux-arm64-musl@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-linux-ppc64-gnu@0.136.0':
+  '@oxc-minify/binding-linux-ppc64-gnu@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-linux-riscv64-gnu@0.136.0':
+  '@oxc-minify/binding-linux-riscv64-gnu@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-linux-riscv64-musl@0.136.0':
+  '@oxc-minify/binding-linux-riscv64-musl@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-linux-s390x-gnu@0.136.0':
+  '@oxc-minify/binding-linux-s390x-gnu@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-linux-x64-gnu@0.136.0':
+  '@oxc-minify/binding-linux-x64-gnu@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-linux-x64-musl@0.136.0':
+  '@oxc-minify/binding-linux-x64-musl@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-openharmony-arm64@0.136.0':
+  '@oxc-minify/binding-openharmony-arm64@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-wasm32-wasi@0.136.0':
-    dependencies:
-      '@emnapi/core': 1.11.1
-      '@emnapi/runtime': 1.11.1
-      '@napi-rs/wasm-runtime': 1.2.6(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)
+  '@oxc-minify/binding-win32-arm64-msvc@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-win32-arm64-msvc@0.136.0':
+  '@oxc-minify/binding-win32-ia32-msvc@0.151.0':
     optional: true
 
-  '@oxc-minify/binding-win32-ia32-msvc@0.136.0':
-    optional: true
-
-  '@oxc-minify/binding-win32-x64-msvc@0.136.0':
+  '@oxc-minify/binding-win32-x64-msvc@0.151.0':
     optional: true
 
   '@oxc-project/types@0.155.0': {}
@@ -10980,9 +10999,13 @@ snapshots:
 
   '@platforma-open/milaboratories.runenv-python-3.10.21-clustcr@0.2.0': {}
 
+  '@platforma-open/milaboratories.runenv-python-3.12.10-antibody-design@0.2.0': {}
+
   '@platforma-open/milaboratories.runenv-python-3.12.10-atls@1.2.7': {}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-clustering@0.1.1': {}
+
+  '@platforma-open/milaboratories.runenv-python-3.12.10-embedding-clustering@0.3.0': {}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-h5ad@1.1.5': {}
 
@@ -10992,9 +11015,9 @@ snapshots:
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-parapred@1.1.0': {}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10-pgen@0.2.0': {}
+  '@platforma-open/milaboratories.runenv-python-3.12.10-pgen@0.3.0': {}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10-rapids@1.7.2': {}
+  '@platforma-open/milaboratories.runenv-python-3.12.10-rapids@1.7.3': {}
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-sccoda@1.3.6': {}
 
@@ -11002,20 +11025,22 @@ snapshots:
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda@0.2.0': {}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.26': {}
+  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.27': {}
 
-  '@platforma-open/milaboratories.runenv-python-3@1.13.2':
+  '@platforma-open/milaboratories.runenv-python-3@1.16.1':
     dependencies:
       '@platforma-open/milaboratories.runenv-python-3.10.21-clustcr': 0.2.0
-      '@platforma-open/milaboratories.runenv-python-3.12.10': 1.3.26
+      '@platforma-open/milaboratories.runenv-python-3.12.10': 1.3.27
+      '@platforma-open/milaboratories.runenv-python-3.12.10-antibody-design': 0.2.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-atls': 1.2.7
       '@platforma-open/milaboratories.runenv-python-3.12.10-clustering': 0.1.1
+      '@platforma-open/milaboratories.runenv-python-3.12.10-embedding-clustering': 0.3.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-h5ad': 1.1.5
       '@platforma-open/milaboratories.runenv-python-3.12.10-hilary': 0.2.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-humanness': 0.2.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-parapred': 1.1.0
-      '@platforma-open/milaboratories.runenv-python-3.12.10-pgen': 0.2.0
-      '@platforma-open/milaboratories.runenv-python-3.12.10-rapids': 1.7.2
+      '@platforma-open/milaboratories.runenv-python-3.12.10-pgen': 0.3.0
+      '@platforma-open/milaboratories.runenv-python-3.12.10-rapids': 1.7.3
       '@platforma-open/milaboratories.runenv-python-3.12.10-sccoda': 1.3.6
       '@platforma-open/milaboratories.runenv-python-3.12.10-scientific-slim': 1.1.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda': 0.2.0
@@ -11344,11 +11369,6 @@ snapshots:
     optional: true
 
   '@turbo/windows-arm64@2.11.10':
-    optional: true
-
-  '@tybys/wasm-util@0.10.4':
-    dependencies:
-      tslib: 2.8.1
     optional: true
 
   '@types/archiver@6.0.4':
@@ -11976,11 +11996,7 @@ snapshots:
     dependencies:
       is-windows: 1.0.2
 
-  better-sqlite3@13.0.3:
-    dependencies:
-      node-addon-api: 8.9.2
-
-  binaryen@130.0.0: {}
+  binaryen@132.0.0: {}
 
   bl@4.1.0:
     dependencies:
@@ -13089,8 +13105,6 @@ snapshots:
   node-addon-api@7.1.1:
     optional: true
 
-  node-addon-api@8.9.2: {}
-
   node-fetch@2.7.0:
     dependencies:
       whatwg-url: 5.0.0
@@ -13160,28 +13174,27 @@ snapshots:
 
   outdent@0.5.0: {}
 
-  oxc-minify@0.136.0:
+  oxc-minify@0.151.0:
     optionalDependencies:
-      '@oxc-minify/binding-android-arm-eabi': 0.136.0
-      '@oxc-minify/binding-android-arm64': 0.136.0
-      '@oxc-minify/binding-darwin-arm64': 0.136.0
-      '@oxc-minify/binding-darwin-x64': 0.136.0
-      '@oxc-minify/binding-freebsd-x64': 0.136.0
-      '@oxc-minify/binding-linux-arm-gnueabihf': 0.136.0
-      '@oxc-minify/binding-linux-arm-musleabihf': 0.136.0
-      '@oxc-minify/binding-linux-arm64-gnu': 0.136.0
-      '@oxc-minify/binding-linux-arm64-musl': 0.136.0
-      '@oxc-minify/binding-linux-ppc64-gnu': 0.136.0
-      '@oxc-minify/binding-linux-riscv64-gnu': 0.136.0
-      '@oxc-minify/binding-linux-riscv64-musl': 0.136.0
-      '@oxc-minify/binding-linux-s390x-gnu': 0.136.0
-      '@oxc-minify/binding-linux-x64-gnu': 0.136.0
-      '@oxc-minify/binding-linux-x64-musl': 0.136.0
-      '@oxc-minify/binding-openharmony-arm64': 0.136.0
-      '@oxc-minify/binding-wasm32-wasi': 0.136.0
-      '@oxc-minify/binding-win32-arm64-msvc': 0.136.0
-      '@oxc-minify/binding-win32-ia32-msvc': 0.136.0
-      '@oxc-minify/binding-win32-x64-msvc': 0.136.0
+      '@oxc-minify/binding-android-arm-eabi': 0.151.0
+      '@oxc-minify/binding-android-arm64': 0.151.0
+      '@oxc-minify/binding-darwin-arm64': 0.151.0
+      '@oxc-minify/binding-darwin-x64': 0.151.0
+      '@oxc-minify/binding-freebsd-x64': 0.151.0
+      '@oxc-minify/binding-linux-arm-gnueabihf': 0.151.0
+      '@oxc-minify/binding-linux-arm-musleabihf': 0.151.0
+      '@oxc-minify/binding-linux-arm64-gnu': 0.151.0
+      '@oxc-minify/binding-linux-arm64-musl': 0.151.0
+      '@oxc-minify/binding-linux-ppc64-gnu': 0.151.0
+      '@oxc-minify/binding-linux-riscv64-gnu': 0.151.0
+      '@oxc-minify/binding-linux-riscv64-musl': 0.151.0
+      '@oxc-minify/binding-linux-s390x-gnu': 0.151.0
+      '@oxc-minify/binding-linux-x64-gnu': 0.151.0
+      '@oxc-minify/binding-linux-x64-musl': 0.151.0
+      '@oxc-minify/binding-openharmony-arm64': 0.151.0
+      '@oxc-minify/binding-win32-arm64-msvc': 0.151.0
+      '@oxc-minify/binding-win32-ia32-msvc': 0.151.0
+      '@oxc-minify/binding-win32-x64-msvc': 0.151.0
 
   oxfmt@0.75.0:
     dependencies:
