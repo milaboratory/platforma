@@ -1,4 +1,4 @@
-// read the canonical ID of an input resource
+// read the canonical ID of the current renderer
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 hex := import("hex")
@@ -6,9 +6,7 @@ hex := import("hex")
 self.defineOutputs(["cid"])
 
 self.body(func(inputs) {
-	cid := inputs.value.getCanonicalId()
-
 	return {
-		cid: hex.encode(cid)
+		cid: hex.encode(self.canonicalId())
 	}
 })
