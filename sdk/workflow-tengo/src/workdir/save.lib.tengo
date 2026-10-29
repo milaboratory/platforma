@@ -13,6 +13,16 @@ _SAVED_FILES_FIELD := "blobsOut"
 _SAVED_CONTENT_FIELD := "dataOut"
 _WORKDIR_AFTER_FIELD := "workdirOut"
 _PROGRESS_FIELD := "progress"
+_OUTCOME_FIELD := "outcome"
+
+// WorkdirSave v3 (exec fallbacks, spec §14.4, decision D2): v1's inputs and outputs plus one output
+// `outcome`, a locked std/map with `workdir` -> {result: "success"} | {result: "fail", reason:
+// "WorkdirMissing", message} and one entry per file or archive rule key -> the index task's
+// outcome of the same shape (reason "FileMissing" or "WorkdirMissing"), each a
+// `workdir-save/outcome` value. A missing working directory or file is an outcome, not an error:
+// on a missing directory only `outcome` is set. Everything about the v3 contract the SDK relies on
+// is here and in :exec.save-chain.
+RTYPE_WORKDIR_SAVE_V3 := { Name: "WorkdirSave", Version: "3" }
 
 
 /**
@@ -46,9 +56,10 @@ getContentSaveRule := func(fileName) {
 /**
  * Creates a builder for workdir save resource
  */
-builder := func(wdBefore) {
+builder := func(wdBefore, ...opts) {
+	v3 := len(opts) > 0 && is_map(opts[0]) && opts[0].v3 == true
 
-	super := smart.ephemeralBuilder(constants.RTYPE_WORKDIR_SAVE)
+	super := smart.ephemeralBuilder(v3 ? RTYPE_WORKDIR_SAVE_V3 : constants.RTYPE_WORKDIR_SAVE)
 	// set input wd
 	super.getField(_WORKDIR_IN_FIELD).set(wdBefore)
 
@@ -104,6 +115,14 @@ builder := func(wdBefore) {
 		},
 
 		/**
+		 * WorkdirSave v3 only: the field with the save outcomes map (see RTYPE_WORKDIR_SAVE_V3).
+		 */
+		getOutcome: func() {
+			ll.assert(v3, "workdir.save: outcome is available on WorkdirSave v3 only")
+			return self.getField(_OUTCOME_FIELD)
+		},
+
+		/**
 		 * Get field pointing to progress resource
 		 */
 		getProgress: func() {
@@ -154,5 +173,6 @@ builder := func(wdBefore) {
 }
 
 export ll.toStrict({
+	RTYPE_WORKDIR_SAVE_V3: RTYPE_WORKDIR_SAVE_V3,
 	builder: builder
 })
