@@ -61,6 +61,8 @@
         "PL_TEST_REQUEST_TIMEOUT",
         "PL_TEST_MAX_WORKERS",
         "PL_TEST_RUN_SLOW",
+        "PL_TEST_WORK_STORAGE_ROOT",
+        "PL_ADDRESS_ATTEMPT_CAP_1",
         "LONG_TEST_TIMEOUT",
         "DEBUG",
         "MI_LICENSE",
