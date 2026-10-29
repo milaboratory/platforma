@@ -17,7 +17,7 @@ import {
 } from "../engine/api";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 import { INITIAL_MODULE_VERSION } from "./shared/initial-version";
-import { NODE_ENGINE, PACKAGE_MANAGER } from "./shared/toolchain";
+import { NODE_RUNTIME, PACKAGE_MANAGER } from "./shared/toolchain";
 
 // `variant=all` builds every variant the software declares — docker-vs-binary is not a per-script
 // choice. `no-software` builds placeholder software for validators.
@@ -78,7 +78,7 @@ export function rootPackageJsonInitial(): Record<string, unknown> {
 
 export function rootPackageJsonRules(): void {
   ensureField("packageManager", PACKAGE_MANAGER);
-  ensureField("engines.node", NODE_ENGINE);
+  ensureField("devEngines.runtime", NODE_RUNTIME);
   removeField(
     "pnpm",
     (settings) =>

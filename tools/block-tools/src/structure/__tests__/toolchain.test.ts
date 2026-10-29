@@ -11,7 +11,7 @@ import { run as engineRun } from "../engine/runner";
 import { defaultTemplateProvider, simulateInit } from "../engine/testing";
 import {
   MINIMUM_RELEASE_AGE_EXCLUDE,
-  NODE_ENGINE,
+  NODE_RUNTIME,
   NODE_VERSION,
   PACKAGE_MANAGER,
   REQUIRED_BUILDS,
@@ -59,7 +59,6 @@ describe("block toolchain", () => {
   test("matches the SDK monorepo", () => {
     const root = JSON.parse(readMonorepoFile("package.json"));
     expect(PACKAGE_MANAGER).toBe(root.packageManager);
-    expect(NODE_ENGINE).toBe(root.engines.node);
     const setup = parseYaml(readMonorepoFile(".github/actions/setup/action.yml"));
     expect(NODE_VERSION).toBe(setup.inputs["node-version"].default);
     const workspace = parseYaml(readMonorepoFile("pnpm-workspace.yaml"));
@@ -72,7 +71,7 @@ describe("block toolchain", () => {
     const { fs } = simulateInit({ vars: VARS });
     editJson(fs, (json) => {
       json.packageManager = "pnpm@9.12.0";
-      delete json.engines;
+      delete json.devEngines;
       json.pnpm = { overrides: {} };
     });
     editWorkspace(fs, (doc) => {
@@ -85,12 +84,29 @@ describe("block toolchain", () => {
 
     const pkg = JSON.parse(fs.read("package.json"));
     expect(pkg.packageManager).toBe(PACKAGE_MANAGER);
-    expect(pkg.engines).toEqual({ node: NODE_ENGINE });
+    expect(pkg.devEngines).toEqual({ runtime: NODE_RUNTIME });
     expect(pkg.pnpm).toBeUndefined();
     const workspace = readWorkspace(fs);
     expect(workspace.minimumReleaseAgeExclude).toEqual(MINIMUM_RELEASE_AGE_EXCLUDE);
     expect(workspace.allowBuilds).toEqual({ ...SKIPPED_BUILDS, ...REQUIRED_BUILDS });
     expect(workspace.catalog.turbo).toBe(TURBO_VERSION);
+  });
+
+  test("refresh replaces only the runtime among the author's engines", () => {
+    const { fs } = simulateInit({ vars: VARS });
+    const packageManager = { name: "pnpm", version: "12.16.1" };
+    editJson(fs, (json) => {
+      json.engines = { node: ">=20" };
+      json.devEngines = { packageManager, runtime: { name: "node", version: "22" } };
+    });
+
+    refresh(fs);
+
+    const pkg = JSON.parse(fs.read("package.json"));
+    expect(pkg.devEngines).toEqual({ packageManager, runtime: NODE_RUNTIME });
+    expect(pkg.engines).toEqual({ node: ">=20" });
+    const toolchainKeys = ["devEngines", "engines", "packageManager"];
+    expect(Object.keys(pkg).filter((key) => toolchainKeys.includes(key))).toEqual(toolchainKeys);
   });
 
   test("refresh keeps the author's workspace settings", () => {
