@@ -234,7 +234,7 @@ catalog:
   # Util & other libs
 
   "@inquirer/prompts": ^7.0.1
-  "testcontainers": ^10.18.0
+  "testcontainers": ^12.2.1
   "utility-types": ^3.11.0
   "denque": ^2.1.0
   "lru-cache": ^11.5.3
@@ -327,7 +327,7 @@ catalog:
 
   "vitest": &vitest-version ^4.1.12
   "@vitest/coverage-istanbul": *vitest-version
-  "@faker-js/faker": ^9.2.0
+  "@faker-js/faker": ^10.6.0
   "jsdom": ^25.0.1
   "@vue/test-utils": ^2.4.6
   "resize-observer-polyfill": ^1.5.1
