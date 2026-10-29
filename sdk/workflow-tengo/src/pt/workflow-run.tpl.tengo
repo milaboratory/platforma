@@ -24,6 +24,7 @@ self.body(func(inputs) {
     outFilesContent := inputs.outFilesContent
     outFrames := inputs.outFrames
 
+    runName := inputs.name
     queue := inputs.queue
     cpu := inputs.cpu
     cpuFloor := inputs.cpuFloor
@@ -51,6 +52,9 @@ self.body(func(inputs) {
         arg("--frame-dir").arg(inFramesFolder).
         arg("--spill-dir").argExpr(spillFolderExpr).
         writeFile("workflow_sc.json", workflowJsonStruct);
+    if !is_undefined(runName) {
+        ptCmd.name(runName)
+    }
     // The total input volume sets the cpu, mem and scratchFreeSpace requests. An explicit
     // request from the block always wins. :pt.sizing holds the formulas, the measured
     // slopes and the thread limit.
