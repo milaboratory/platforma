@@ -422,6 +422,30 @@ resource = func(r) {
 		},
 
 		/**
+		 * Get the canonical ID of the resource.
+		 *
+		 * The canonical ID identifies the resource by its content. Deduplication gives the same
+		 * canonical ID to the original resource and to all its duplicates.
+		 *
+		 * The value is empty until the backend sets it. The backend sets it when it creates a
+		 * resource without input fields (value and singleton resources). For all other resources,
+		 * the backend sets it during deduplication. After the backend sets the value, the value
+		 * does not change.
+		 *
+		 * @return canonicalId: []byte - the canonical ID, or empty bytes when the backend did not
+		 *                      set it yet. Also empty bytes on old backends that do not send it.
+		 */
+		getCanonicalId: func() {
+			resourceInfo := self.info()
+
+			if !maps.containsKey(resourceInfo, "CanonicalID") || is_undefined(resourceInfo.CanonicalID) {
+				return bytes(0)
+			}
+
+			return resourceInfo.CanonicalID
+		},
+
+		/**
 		 * Get raw resource data
 		 *
 		 * @return data: []byte - raw resource data
