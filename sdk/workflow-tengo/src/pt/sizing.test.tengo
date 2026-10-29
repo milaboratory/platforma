@@ -274,3 +274,23 @@ TestScratchBelowThresholdIsZero := func() {
 	test.isEqual(17 * GiB, _scratch(512 * units.MiB, 1, 1))
 	test.isEqual(0, _scratch(0, 1, 1))
 }
+
+// ---- countFrameSteps: the frame counts that scratchFormula takes ------------
+
+TestCountFrameStepsWithoutFrames := func() {
+	test.isEqual({ readFrames: 0, writeFrames: 0 }, sizing.countFrameSteps([]))
+	test.isEqual({ readFrames: 0, writeFrames: 0 },
+		sizing.countFrameSteps([{ type: "read_csv" }, { type: "write_csv" }]))
+}
+
+TestCountFrameStepsCountsEachKind := func() {
+	steps := [
+		{ type: "read_frame" },
+		{ type: "read_frame" },
+		{ type: "read_csv" },
+		{ type: "write_frame" },
+		{ type: "import_parquet_frame" }
+	]
+	// import_parquet_frame counts as one read and one write.
+	test.isEqual({ readFrames: 3, writeFrames: 2 }, sizing.countFrameSteps(steps))
+}
