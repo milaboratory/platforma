@@ -1,0 +1,40 @@
+/**
+ * One RunCommand v3, rendered directly (exec fallbacks, AC1.1-AC1.3): the outcome and the post-run
+ * working directory are its outputs.
+ *
+ * inputs.cmd: string - the command
+ * inputs.args: string[] - its arguments
+ * inputs.errorLines: number - options.errorLines
+ * inputs.badExpression: bool, optional - adds an argument with an expression the backend cannot
+ *                       evaluate: a failure before the process starts, not a software failure
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+workdir := import("@platforma-sdk/workflow-tengo:workdir")
+runcmd := import("@platforma-sdk/workflow-tengo:exec.runcmd")
+delayedCompAlloc := import("@platforma-sdk/workflow-tengo:exec.delayed-compute-allocation")
+
+self.defineOutputs(["outcome", "workdirOut"])
+
+self.body(func(inputs) {
+	queue := "light"
+	wd := workdir.builder().inQueue(queue).cpu(1).mem("50Mi").build()
+
+	b := runcmd.builder(wd).
+		inQueue(queue).
+		allocation(delayedCompAlloc.create(wd, { queue: queue, cpu: 1, ram: "50Mi" })).
+		nErrorLines(inputs.errorLines).
+		cmd(inputs.cmd)
+	for a in inputs.args {
+		b.arg(a)
+	}
+	if inputs.badExpression == true {
+		b.argExpression("{no.such.variable * 2}")
+	}
+	run := b.v3(0, undefined).build()
+
+	return {
+		outcome: run.outcome,
+		workdirOut: run.workdir
+	}
+})

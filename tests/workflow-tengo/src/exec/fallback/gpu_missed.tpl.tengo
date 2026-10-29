@@ -1,0 +1,35 @@
+/**
+ * A GPU step with a CPU fallback (exec fallbacks, GPUMissed): on a backend without GPU execution
+ * the root never starts and reports GPUMissed with backendHasGPU false; the CPU plan runs instead.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["out", "attempts"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	step := func(device) {
+		return exec.builder().
+			cpu(1).mem("64MiB").
+			software(shellSw).
+			arg("-c").
+			arg("echo " + device + " > out.txt # " + inputs.nonce).
+			inLightQueue().
+			saveFileContent("out.txt")
+	}
+
+	cpuOnly := step("cpu")
+	res := step("gpu").
+		gpuMemory("1GiB").
+		fallbacks({ GPUMissed: [{ backendHasGPU: false, name: "cpuOnly", builder: cpuOnly }] }).
+		run()
+
+	return {
+		out: res.getFileContent("out.txt"),
+		attempts: res.getAttempts()
+	}
+})

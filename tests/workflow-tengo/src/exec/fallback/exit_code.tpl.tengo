@@ -1,0 +1,39 @@
+/**
+ * An exec whose root exits with a given code and declares one handler, SoftwareError with exit
+ * code 2 -> "ok" (exec fallbacks, AC2.1-AC2.3).
+ *
+ * inputs.rootExit: string - the root's exit code
+ * inputs.nonce: string - keeps the pure exec.exec render from deduplicating against earlier runs
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+fmt := import("fmt")
+
+self.defineOutputs(["out", "attempts"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	shell := func(script) {
+		return exec.builder().
+			cpu(1).ram("50Mi").
+			software(shellSw).
+			arg("-c").
+			arg(script + " # " + inputs.nonce).
+			inLightQueue().
+			saveFileContent("out.txt")
+	}
+
+	ok := shell("echo ok > out.txt")
+	root := shell(fmt.sprintf("echo root > out.txt; echo root-says-hello; exit %s", inputs.rootExit)).
+		fallbacks({ SoftwareError: [{ exitCode: 2, name: "ok", builder: ok }] })
+
+	res := root.run()
+
+	return {
+		out: res.getFileContent("out.txt"),
+		attempts: res.getAttempts()
+	}
+})

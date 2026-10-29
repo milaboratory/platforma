@@ -1,0 +1,48 @@
+/**
+ * Streams of an exec with fallbacks (exec fallbacks, AC2.6/AC2.7): the root prints "root",
+ * sleeps and exits 2; the handler prints fallback-<i> once a second for a while and succeeds.
+ *
+ * inputs.nonce: string
+ * inputs.seconds: number - how long the handler prints
+ * inputs.forceV2: bool, optional - render as on a backend without RunCommand v3 (AC3.3)
+ * inputs.rootExit: string, optional - the root's exit code, 2 by default
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+fmt := import("fmt")
+
+self.defineOutputs(["stdoutStream", "stdoutContent", "attempts"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	shell := func(script) {
+		b := exec.builder().
+			cpu(1).ram("50Mi").
+			software(shellSw).
+			arg("-c").
+			arg(script + " # " + inputs.nonce).
+			inLightQueue().
+			saveStdoutStream().
+			saveStdoutContent()
+		if inputs.forceV2 == true {
+			b._forceRunCommandV2()
+		}
+		return b
+	}
+
+	rootExit := is_undefined(inputs.rootExit) ? "2" : inputs.rootExit
+	handler := shell(fmt.sprintf("for i in $(seq 1 %d); do echo fallback-$i; sleep 1; done", inputs.seconds))
+	root := shell("echo root; sleep 5; exit " + rootExit).
+		fallbacks({ SoftwareError: [{ name: "handler", builder: handler }] })
+
+	res := root.run()
+
+	return {
+		stdoutStream: res.getStdoutStream(),
+		stdoutContent: res.getStdoutContent(),
+		attempts: res.getAttempts()
+	}
+})
