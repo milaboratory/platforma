@@ -72,7 +72,7 @@ proc := func() {
 				// key -> file name
 				files := cb(inputs)
 
-				wdBuilder := wdSave.builder(self.wdBefore(), self.saveOpts())
+				wdBuilder := wdSave.builder(self.wdBefore())
 				for _, fName in files {
 					wdBuilder.saveFileContent(fName)
 				}
@@ -90,21 +90,13 @@ proc := func() {
 			})
 		},
 
-		/**
-		 * Save options: the exec's save chain asks for WorkdirSave v3 on a RunCommand v3 exec, so a
-		 * lost working directory is an outcome here too, not an error (exec fallbacks).
-		 */
-		saveOpts: func() {
-			return { v3: tpl.inputs().saveVersion == 3 }
-		},
-
 		_wdFinalBuilder: undefined,
 		/**
 		 * Final workdir builder, after prepare
 		 */
 		wdFinalBuilder: func() {
 			if is_undefined(self._wdFinalBuilder) {
-				self._wdFinalBuilder = wdSave.builder(self.wdAfterReadFiles(), self.saveOpts())
+				self._wdFinalBuilder = wdSave.builder(self.wdAfterReadFiles())
 			}
 			return self._wdFinalBuilder
 		},

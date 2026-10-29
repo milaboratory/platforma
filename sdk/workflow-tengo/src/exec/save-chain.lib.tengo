@@ -1,14 +1,16 @@
 /**
  * The save chain of an exec: workdir processors, then the save of the post-run working directory
  * into the exec's outputs. On a RunCommand v3 exec the outcome router runs it on success (wave 2
- * of spec §14.2), with WorkdirSave v3 when the backend has it, and the wd-retrier reads its save
- * outcomes.
+ * of spec §14.2, see :exec.wave2), with WorkdirSave v3 for the main save when the backend has it,
+ * and the wd-retrier reads its save outcomes. Processors are rendered exactly as before; they save
+ * with whatever their template uses.
  */
 
 ll := import(":ll")
 render := import(":render")
 workdir := import(":workdir")
 limits := import(":exec.limits")
+wdSave := import(":workdir.save")
 slices := import(":slices")
 maps := import(":maps")
 
@@ -45,10 +47,24 @@ hasWorkdirSaveV3 := func(queue, settings) {
  * @param wdProcessors: map | undefined - name -> { tpl, tplArgs }
  * @param opts: map - { v3: bool } - save with WorkdirSave v3
  * @return map - files, filesContent, fileSets, fileSetsContent, progress, wdProcessors and, with
- *         v3, outcome: the save outcomes map
+ *         v3, outcome: the save outcomes map, and with v3 and processors probeOutcome: the outcome
+ *         map of the probe at the head of the chain
  */
 run := func(wdAfter, settings, wdProcessors, opts) {
 	v3 := opts.v3 == true
+
+	// With processors, a WorkdirSave v3 with no rules heads the chain: its outcome map has only
+	// the `workdir` entry, whether the post-run directory is still there. The processors' own
+	// saves (WorkdirSave v1, as a processor template builds it) error on a lost directory, and the
+	// main save then never reads the directory itself, so the wd-retrier decides on this probe
+	// first (spec §14.5). A working directory takes one save at a time (a save locks it), hence a
+	// link of the chain, not a save beside it.
+	probeOutcome := undefined
+	if v3 && !is_undefined(wdProcessors) && len(wdProcessors) > 0 {
+		probe := wdSave.builder(wdAfter, { v3: true }).build()
+		probeOutcome = probe.getOutcome()
+		wdAfter = probe.getWorkdirAfter()
+	}
 
 	wdProcessorsResults := {}
 	if !is_undefined(wdProcessors) {
@@ -56,9 +72,6 @@ run := func(wdAfter, settings, wdProcessors, opts) {
 			tplInputs := {
 				workdir: wdAfter,
 				args: p.tplArgs
-			}
-			if v3 {
-				tplInputs.saveVersion = 3
 			}
 
 			// render template & get results
@@ -103,7 +116,8 @@ run := func(wdAfter, settings, wdProcessors, opts) {
 		fileSetsContent: wdResult.fileSetsContent,
 		progress: wdResult.progress,
 		wdProcessors: wdProcessorsResults,
-		outcome: v3 ? wdResult.outcome : undefined
+		outcome: v3 ? wdResult.outcome : undefined,
+		probeOutcome: probeOutcome
 	}
 }
 

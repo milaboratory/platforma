@@ -20,17 +20,16 @@ self := import(":tpl.light")
 ll := import(":ll")
 smart := import(":smart")
 render := import(":render")
-assets := import(":assets")
 workdir := import(":workdir")
 file := import(":file")
 maps := import(":maps")
 fallback := import(":exec.fallback")
 prepare := import(":exec.prepare")
 saveChain := import(":exec.save-chain")
+wave2 := import(":exec.wave2")
 stream := import(":exec.stream")
 execConstants := import(":exec.constants")
 
-wdRetrierTpl := assets.importTemplate(":exec.wd-retrier")
 
 self.awaitState("ResourceReady")
 
@@ -50,6 +49,9 @@ self.body(func(inputs) {
 	if is_undefined(ctx) {
 		ctx = { attempt: 0, jobId: oc.jobId, plan: fallback.ROOT_PLAN, restart: 0, history: [] }
 	}
+	// guaranteed by the outcome contract; a backend that published RunCommand v3 before it had the
+	// cap allows one attempt, the cautious reading
+	attemptLimit := is_undefined(oc.attemptLimit) ? 1 : oc.attemptLimit
 	entry := fallback.historyEntry(ctx.attempt, ctx.plan, oc)
 	hist := append(copy(ctx.history), entry)
 
@@ -57,28 +59,21 @@ self.body(func(inputs) {
 		// wave 2: the save chain, then the wd-retrier decides on its outcomes
 		v3Save := inputs.forceWorkdirSaveV1 != true &&
 			saveChain.hasWorkdirSaveV3(settings.runOptions.queue, settings)
-		saved := saveChain.run(raw.workdir.getValue(), settings, inputs.wdProcessors, { v3: v3Save })
-
-		retrierInputs := {
-			files: saved.files,
-			filesContent: saved.filesContent,
-			fileSets: saved.fileSets,
-			fileSetsContent: saved.fileSetsContent,
-			progress: saved.progress,
-			wdProcessors: saved.wdProcessors,
-			settings: raw.settings.getValue(),
-			attemptCtx: maps.merge(ctx, { history: hist, attemptLimit: oc.attemptLimit, restartLimit: oc.restartLimit }),
-			implInputs: raw.implInputs.getValue()
-		}
-		if v3Save {
-			retrierInputs.saveOutcome = saved.outcome
-		}
-		for name in ["streamCollections", "execImplTpl"] {
-			if !is_undefined(raw[name]) {
-				retrierInputs[name] = raw[name].getValue()
-			}
-		}
-		r := render.createEphemeral(wdRetrierTpl, retrierInputs)
+		r := wave2.run({
+			workdir: raw.workdir.getValue(),
+			settings: settings,
+			settingsRef: raw.settings.getValue(),
+			wdProcessors: inputs.wdProcessors,
+			v3: v3Save,
+			attemptCtx: maps.merge(ctx, {
+				history: hist,
+				attemptLimit: attemptLimit,
+				restartLimit: oc.restartLimit
+			}),
+			implInputs: raw.implInputs.getValue(),
+			streamCollections: is_undefined(raw.streamCollections) ? undefined : raw.streamCollections.getValue(),
+			execImplTpl: is_undefined(raw.execImplTpl) ? undefined : raw.execImplTpl.getValue()
+		})
 
 		return {
 			files: r.output("files"),
@@ -97,7 +92,7 @@ self.body(func(inputs) {
 	if is_undefined(next) {
 		ll.panic("%s", fallback.exhaustedMessage(oc, hist, "no handler"))
 	}
-	if ctx.attempt + 1 >= oc.attemptLimit {
+	if ctx.attempt + 1 >= attemptLimit {
 		ll.panic("%s", fallback.exhaustedMessage(oc, hist, "backend attempt limit reached"))
 	}
 
@@ -124,14 +119,19 @@ self.body(func(inputs) {
 		impl.meta[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1] = smart.createJsonResource(true)
 	}
 
-	// this attempt's streamed files: the only save a failed attempt gets (spec §13.3), one save per
-	// file, so a file the attempt never wrote fails only its own stream. Not watched: a lost
-	// directory here loses this log only, and the fallback still runs.
+	// this attempt's streamed files: the only save a failed attempt gets (spec §13.3), one save,
+	// since a working directory takes one save at a time; a file the attempt never wrote fails only
+	// its own blob. Not watched: a lost directory here loses this log only, and the fallback still
+	// runs.
 	streamOwn := smart.mapBuilder()
-	if !is_undefined(settings.filesToStream) {
+	if !is_undefined(settings.filesToStream) && len(settings.filesToStream) > 0 {
+		failedSave := workdir.save(raw.workdir.getValue())
 		for name in settings.filesToStream {
-			saved := workdir.save(raw.workdir.getValue()).saveFile(name).build()
-			streamOwn.addRef(name, file.exportFile(saved.files.getFutureInputField(name)))
+			failedSave.saveFile(name)
+		}
+		failedFiles := failedSave.build().files
+		for name in settings.filesToStream {
+			streamOwn.addRef(name, file.exportFile(failedFiles.getFutureInputField(name)))
 		}
 	}
 
