@@ -63,12 +63,26 @@ const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 // seam): the streams behave the same.
 tplTest.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
   "AC2.6/AC2.7 exec fallbacks: the stream follows the running attempt, each attempt ends on its own file (forceSaveV1: $forceSaveV1)",
-  async ({ forceSaveV1 }, { pl, helper, expect }) => {
+  async ({ forceSaveV1 }, { pl, helper, driverKit, expect }) => {
     const logsClient = createLogsClient(pl, new ConsoleLoggerAdapter());
+
+    // the current driver: the composite handle of a collection, read as a viewer reads it
+    const composite = async (output: "stdoutStream" | "errStream") => {
+      const handle = await result
+        .computeOutput(output, (a, ctx) => {
+          const entry = a?.persist();
+          return entry === undefined ? undefined : driverKit.logDriver.getLogHandle(entry, ctx);
+        })
+        .getValue();
+      if (handle === undefined) return undefined;
+      const resp = await driverKit.logDriver.readText(handle, 1000);
+      if (resp.shouldUpdateHandle) return undefined;
+      return { handle, text: new TextDecoder().decode(resp.data) };
+    };
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "stdoutContent", "attempts"],
+      ["stdoutStream", "errStream", "stdoutContent", "attempts"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(10)),
@@ -88,10 +102,16 @@ tplTest.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
     };
 
     const samples: Sample[] = [];
+    const composites: string[] = [];
+    const errComposites: string[] = [];
     const deadline = Date.now() + 180_000;
     while (Date.now() < deadline) {
       const s = await sample().catch((): Sample => ({ kind: "none" }));
       samples.push(s);
+      const c = await composite("stdoutStream").catch(() => undefined);
+      if (c !== undefined) composites.push(c.text);
+      const e = await composite("errStream").catch(() => undefined);
+      if (e !== undefined) errComposites.push(e.text);
       if (s.kind === "blob") break;
       await sleep(250);
     }
@@ -105,6 +125,14 @@ tplTest.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
     expect(afterSwitch.some((t) => t.includes("root"))).toBe(false);
     expect(afterSwitch.length).toBeGreaterThan(1); // followed while running, not only at the end
     expect(samples[samples.length - 1]?.kind).toBe("blob");
+
+    // AC2.6, current desktop: while the handler runs, attempt 0's text, the delimiter naming it,
+    // then the handler's lines so far
+    const delimiter = "--- attempt 0 (root) failed: SoftwareError, exit code 2 ---\n";
+    expect(composites.some((t) => t.startsWith(`root\n${delimiter}fallback-1\n`))).toBe(true);
+    expect(composites.some((t) => t.includes("root") && !t.includes("fallback-"))).toBe(true);
+    // the variant: err.log, which the handler never writes, ends with the delimiter
+    expect(errComposites.some((t) => t === `root-err\n${delimiter}`)).toBe(true);
 
     const attempts = await result
       .computeOutput("attempts", (a) => a?.getDataAsJson<Attempt[]>())
@@ -144,6 +172,16 @@ tplTest.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
       reason: "SoftwareError",
       exitCode: 2,
     });
+    // after success, the same text from the attempts' files
+    let final: { handle: string; text: string } | undefined;
+    while (Date.now() < deadline) {
+      final = await composite("stdoutStream").catch(() => undefined);
+      if (final?.handle.startsWith("log+ready://")) break;
+      await sleep(250);
+    }
+    expect(final?.handle.startsWith("log+ready://")).toBe(true);
+    expect(final?.text).toBe(`root\n${delimiter}${expected}`);
+
     expect(state?.outcome1).toEqual({
       attempt: 1,
       plan: "handler",
@@ -160,12 +198,14 @@ tplTest(
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "stdoutContent", "attempts"],
+      ["stdoutStream", "errStream", "stdoutContent", "attempts"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
         rootExit: tx.createValue(Pl.JsonObject, JSON.stringify("0")),
         forceV2: tx.createValue(Pl.JsonObject, JSON.stringify(true)),
+        // a streamed file never saved never resolves on the v2 path, as before fallbacks
+        errLog: tx.createValue(Pl.JsonObject, JSON.stringify(false)),
       }),
     );
 
