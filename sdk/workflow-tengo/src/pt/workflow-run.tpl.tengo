@@ -16,7 +16,15 @@ self.defineOutputs([
 ])
 
 self.body(func(inputs) {
-    workflowJsonStruct := inputs.workflowJsonStruct
+    // pt.run() gives the workflow as gzip-compressed JSON (workflowJsonGz).
+    // On a backend without gzip support, it gives plain JSON (workflowJsonStruct).
+    workflowFile := "workflow_sc.json"
+    workflowData := inputs.workflowJsonStruct
+    if !is_undefined(inputs.workflowJsonGz) {
+        workflowFile = "workflow_sc.json.gz"
+        workflowData = inputs.workflowJsonGz
+    }
+    ll.assert(!is_undefined(workflowData), "workflowJsonGz or workflowJsonStruct must be set")
     inFiles := inputs.inFiles
     inFilesContent := inputs.inFilesContent
     inFrames := inputs.inFrames
@@ -37,6 +45,8 @@ self.body(func(inputs) {
     memIntercept := inputs.memIntercept
     polarsMaxThreads := inputs.polarsMaxThreads
     scratchFreeSpace := inputs.scratchFreeSpace
+    readFrames := inputs.readFrames
+    writeFrames := inputs.writeFrames
 
     workdirProcessorName := "import_dir";
     inFramesFolder := "input_frame"
@@ -47,10 +57,10 @@ self.body(func(inputs) {
         printErrStreamToStdout().
         software(ptSoftware).
         envExpr("POLARS_MAX_THREADS", sizing.polarsMaxThreadsExpr(polarsMaxThreads)).
-        arg("workflow_sc.json").
+        arg(workflowFile).
         arg("--frame-dir").arg(inFramesFolder).
         arg("--spill-dir").argExpr(spillFolderExpr).
-        writeFile("workflow_sc.json", workflowJsonStruct);
+        writeFile(workflowFile, workflowData);
     // The total input volume sets the cpu, mem and scratchFreeSpace requests. An explicit
     // request from the block always wins. :pt.sizing holds the formulas, the measured
     // slopes and the thread limit.
@@ -64,20 +74,6 @@ self.body(func(inputs) {
     }
     scratchReq := scratchFreeSpace
     if is_undefined(scratchReq) {
-        readFrames := 0
-        writeFrames := 0
-        for step in workflowJsonStruct.workflow {
-            if step.type == "read_frame" {
-                readFrames += 1
-            } else if step.type == "write_frame" {
-                writeFrames += 1
-            } else if step.type == "import_parquet_frame" {
-                // Reads a frame-sized input and writes a frame, with the same sort
-                // spill in between, so it costs one of each.
-                readFrames += 1
-                writeFrames += 1
-            }
-        }
         scratchReq = sizing.scratchFormula(readFrames, writeFrames)
     }
     ptCmd.resources({

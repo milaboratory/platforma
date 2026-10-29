@@ -3,11 +3,9 @@ import argparse
 import pathlib
 import sys
 import traceback
-import msgspec.msgpack
-import msgspec.json
-import msgspec.yaml
+import msgspec
 
-from ptabler.workflow import PWorkflow
+from ptabler.workflow import PWorkflow, UnsupportedWorkflowFormat, decode_workflow, read_workflow_text
 from ptabler.steps import GlobalSettings
 
 
@@ -17,7 +15,7 @@ def main():
     parser.add_argument(
         "workflow_file",
         type=pathlib.Path,
-        help="Path to the PTabler workflow file (JSON or YAML).",
+        help="Path to the PTabler workflow file (JSON or YAML, optionally gzip-compressed with a .gz suffix).",
     )
     parser.add_argument(
         "--root-dir",
@@ -59,7 +57,7 @@ def main():
     print(f"Root directory: {root_directory}")
 
     try:
-        workflow_content = workflow_file_path.read_text()
+        workflow_content = read_workflow_text(workflow_file_path)
     except Exception as e:
         print(
             f"Error reading workflow file {workflow_file_path}: {e}", file=sys.stderr)
@@ -68,16 +66,10 @@ def main():
     # 2. Deserialize the workflow structure using msgspec
     ptw: PWorkflow
     try:
-        file_extension = workflow_file_path.suffix.lower()
-        if file_extension == ".json":
-            ptw = msgspec.json.decode(workflow_content, type=PWorkflow)
-        elif file_extension in [".yaml", ".yml"]:
-            ptw = msgspec.yaml.decode(workflow_content, type=PWorkflow)
-        else:
-            print(
-                f"Error: Unsupported file extension '{file_extension}'. Please use .json or .yaml/.yml.", file=sys.stderr)
-            sys.exit(1)
-
+        ptw = decode_workflow(workflow_content, workflow_file_path)
+    except UnsupportedWorkflowFormat as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
     except (msgspec.DecodeError, msgspec.ValidationError) as e:
         print(
             f"Error parsing workflow file {workflow_file_path}: {e}, content: {workflow_content}", file=sys.stderr)

@@ -64,6 +64,9 @@ export ll.toStrict({
 	// true when backend supports blob size retrieval via ll.getBlobSize()
 	hasBlobSize:            ll.methodExists(plapi, "getBlobSize"),
 
+	// true when backend supports gzip compression via ll.gzipEncode()
+	hasGzip:                ll.methodExists(plapi, "gzipEncode"),
+
 	// true when backend supports docker packages
 	isDockerAvailable:        _isEnabled("dockerSupport"),
 
