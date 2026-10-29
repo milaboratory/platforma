@@ -36,7 +36,9 @@ self.defineOutputs(
 	"progress",
 	"fileStreams",
 	"wdProcessors",
-	"attempts"
+	"attempts",
+	// RunCommand v3 only: the attempt's final streamed files (the outcome router's streamOwn)
+	"streamOwn"
 )
 
 EXTENDED_PLAN_OPTIONS_SCHEMA := maps.merge(runcmd.RUN_CMD_PLAN_OPTIONS_SCHEMA, {
@@ -416,7 +418,8 @@ self.body(func(inputs) {
 		}
 	}
 	if !is_undefined(inputs.streamCollections) {
-		stream.attemptStarted(inputs.streamCollections, attempt, streams)
+		// attempt 0 of a job, not a restart of it: no attempt context
+		stream.attemptStarted(inputs.streamCollections, attempt, streams, is_undefined(ctx))
 	}
 
 	return {
