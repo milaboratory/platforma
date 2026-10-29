@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-mcp-server",
-  "version": "34.0.0",
+  "version": "34.0.1",
   "description": "MCP server for Platforma Desktop",
   "keywords": [],
   "license": "UNLICENSED",
@@ -48,8 +48,8 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@milaboratories/pl-middle-layer": ">=1.74.11",
-    "@platforma-sdk/model": ">=1.86.0"
+    "@milaboratories/pl-middle-layer": ">=1.74.12",
+    "@platforma-sdk/model": ">=1.86.3"
   },
   "engines": {
     "node": ">=24"

@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.16.1
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- Updated dependencies [4cc1e4e]
+  - @milaboratories/helpers@1.14.6
+  - @platforma-sdk/model@1.86.3
+
 ## 2.16.0
 
 ### Minor Changes

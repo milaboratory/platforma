@@ -1,5 +1,17 @@
 # @milaboratories/ts-helpers
 
+## 1.9.0
+
+### Minor Changes
+
+- 615bd8c: Replace `decompress` (path traversal advisories, no fixed release) with `yauzl` for zip archives and `tar` for the block boilerplate. Zip extraction now fails on entries and symlinks that lead outside the target folder, on entries written through a symlink, and on duplicate entries.
+
+### Patch Changes
+
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- Updated dependencies [4cc1e4e]
+  - @milaboratories/helpers@1.14.6
+
 ## 1.8.6
 
 ### Patch Changes
