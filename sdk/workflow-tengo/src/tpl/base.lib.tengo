@@ -189,7 +189,19 @@ tpl := func(ops) {
 			}
 
 			cid := _renderer.info().CanonicalID
-			if is_undefined(cid) || len(cid) == 0 {
+
+			// An absent canonical ID comes as empty bytes or as bytes that are all zero.
+			isSet := false
+			if !is_undefined(cid) {
+				for b in cid {
+					if b != 0 {
+						isSet = true
+						break
+					}
+				}
+			}
+
+			if !isSet {
 				ll.panic("canonical ID of renderer %v is not set yet. Read it from the template body, not during initialization",
 					_renderer.id)
 			}
