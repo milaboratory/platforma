@@ -28,6 +28,7 @@ fallback := import(":exec.fallback")
 prepare := import(":exec.prepare")
 saveChain := import(":exec.save-chain")
 stream := import(":exec.stream")
+execConstants := import(":exec.constants")
 
 wdRetrierTpl := assets.importTemplate(":exec.wd-retrier")
 
@@ -54,7 +55,8 @@ self.body(func(inputs) {
 
 	if oc.result == "success" {
 		// wave 2: the save chain, then the wd-retrier decides on its outcomes
-		v3Save := saveChain.hasWorkdirSaveV3(settings.runOptions.queue, settings)
+		v3Save := inputs.forceWorkdirSaveV1 != true &&
+			saveChain.hasWorkdirSaveV3(settings.runOptions.queue, settings)
 		saved := saveChain.run(raw.workdir.getValue(), settings, inputs.wdProcessors, { v3: v3Save })
 
 		retrierInputs := {
@@ -116,6 +118,10 @@ self.body(func(inputs) {
 		if !is_undefined(raw[name]) {
 			impl.pure[name] = raw[name].getValue()
 		}
+	}
+	// the _forceWorkdirSaveV1() test seam holds for the whole job
+	if inputs.forceWorkdirSaveV1 == true {
+		impl.meta[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1] = smart.createJsonResource(true)
 	}
 
 	// this attempt's streamed files: the only save a failed attempt gets (spec §13.3), one save per
