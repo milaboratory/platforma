@@ -1,4 +1,5 @@
 import type { PlClient, SignedResourceId } from "@milaboratories/pl-client";
+import { ActionContextLinkCapabilities } from "./template/render_block";
 import {
   ContinuePolling,
   field,
@@ -13,6 +14,7 @@ import { expect, test } from "vitest";
 import { ProjectHelper } from "../model/project_helper";
 import { projectFieldName } from "../model/project_model";
 import { BPSpecEnterV041NotPrepared, TestBPPreparer } from "../test/block_packs";
+import { readBlockActionContextTree } from "../middle_layer/block_action_context";
 import { createProject, ProjectMutator } from "./project";
 
 type ActionContextBaggage = Record<string, string>;
@@ -58,12 +60,12 @@ async function contextRender(pl: PlClient, contextRef: SignedResourceId): Promis
   });
 }
 
-test("block action context outlives its render and is replaced on re-render", async () => {
+test("block action context outlives its renderer and is replaced on re-render", async () => {
   //
   // Scenario:
   //  1. Create a project and render production of one block.
   //  2. Wait until the production output is final.
-  //  3. Without optionalServiceField:v1 the render has no action context. Otherwise read the action
+  //  3. Without a link capability the render has no action context. Otherwise read the action
   //     context through prodActionContext and check its baggage.
   //  4. The context has the Running transition of the render. Wait until the render is garbage
   //     collected; the context must stay readable.
@@ -112,7 +114,7 @@ test("block action context outlives its render and is replaced on re-render", as
     });
 
     // 3. Read the action context through prodActionContext and check its baggage.
-    if (!pl.hasCapability("optionalServiceField:v1")) {
+    if (!ActionContextLinkCapabilities.some((c) => pl.hasCapability(c))) {
       expect(await readActionContext(pl, prj, "block1")).toBeUndefined();
       return;
     }
@@ -133,6 +135,18 @@ test("block action context outlives its render and is replaced on re-render", as
     const afterGc = (await readActionContext(pl, prj, "block1"))!;
     expect(afterGc.contextId).toEqual(first.contextId);
     expect(afterGc.baggage).toEqual(first.baggage);
+
+    // 4b. The read-back sees the same context with its baggage, and names the render.
+    const tree = (await readBlockActionContextTree(pl, prj, "block1", "prod"))!;
+    expect(tree).toBeDefined();
+    expect(tree.contextId).toEqual(first.contextId);
+    expect(tree.baggage).toEqual(first.baggage);
+    expect(tree.resource).toEqual(firstRender);
+    expect(tree.transitions.map((t) => [t.namespace, t.resource, t.state])).toContainEqual([
+      "render",
+      firstRender,
+      "Running",
+    ]);
 
     // 5. Re-render production: prodActionContext must point at a new context with a new run-id.
     await renderBlock([4, 5, 6], false);
