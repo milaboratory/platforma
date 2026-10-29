@@ -11,6 +11,8 @@ wf.body(func(args) {
 		exports = ex.folder({ col: { spec: spec, data: smart.createJsonResource(1) } })
 	} else if args.kind == "folderMap" {
 		exports = ex.folder({ m: { a: 1 } })
+	} else if args.kind == "dottedFolderEntry" {
+		exports = ex.folder({ "a.b": ex.folder({ c: ex.collection({}) }) })
 	} else if args.kind == "dottedName" {
 		exports = ex.collection({ "sum.total": { spec: spec } })
 	} else if args.kind == "extraKey" {

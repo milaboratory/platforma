@@ -19,6 +19,10 @@ tplTest.concurrent.for([
     message: /folder entry "m" must be a typed node .* got a map with keys \[a\]/,
   },
   {
+    kind: "dottedFolderEntry",
+    message: /folder entry name "a\.b" contains "\.", which joins the names of a path/,
+  },
+  {
     kind: "dottedName",
     message: /item name "sum\.total" contains "\.", which joins the names of a path/,
   },
