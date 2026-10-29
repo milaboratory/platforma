@@ -16,8 +16,9 @@
  *     { block: "<block id>", workflow: "<workflow name>", name: "<value name>" }
  *
  * exactly these three fields, each a non-empty string, `block` and `workflow` without "/"; the value
- * name is its path in that workflow's exported tree joined with ".". Every function here takes refs in
- * this form, and query results carry them in this form.
+ * name is its path in that workflow's exported tree joined with ".". `resolve`, the anchors of
+ * `anchoredQuery`, the bundle collector's refs and the table builder's ref inputs take refs in this
+ * form, and query results carry them in this form.
  *
  * Queries resolve with the BContext/2 family (`:v2.bquery`). A query finds every match (none is an
  * empty list); a single lookup — `resolve`, or `query` with `single` — finds exactly one value, and
@@ -133,7 +134,8 @@ getParentBCtx := func() {
  *
  * @param spec: query spec
  * @param options: optional {spec?: bool, data?: bool, single?: bool} — fetch the spec or the data
- *        (both by default); `single`: exactly one value must match, else the render fails
+ *        (both by default; a result without its spec cannot be decoded, only read field by field);
+ *        `single`: exactly one value must match, else the render fails
  * @return the query result; decodes to a list of {ref, spec, data?}, or with `single` to that one item
  */
 query := func(spec, ...options) {
@@ -152,7 +154,8 @@ _resolveOne := func(r, ...options) {
  * Resolves one ref into { spec, data }: exactly one value must be found, else the render fails.
  *
  * @param ref: a ref {block, workflow, name} (see the header)
- * @param options: optional {spec?: bool, data?: bool} — fetch the spec or the data (both by default)
+ * @param options: optional {spec?: bool, data?: bool} — fetch the spec or the data (both by default;
+ *        a result without its spec cannot be decoded, only read field by field)
  */
 resolve := func(ref, ...options) {
 	return _resolveOne(ref, options...)

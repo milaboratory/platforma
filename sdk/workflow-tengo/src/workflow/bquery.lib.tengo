@@ -568,8 +568,9 @@ anchoredQuery := func(ctx, anchors, queryMap, ...opts) {
  *    `workflow` without "/" — the block id, the name of the block's workflow that exports the value,
  *    and the value's path in that workflow's exported tree joined with "."; decoded results carry
  *    refs in this form, and `isRef(value)` tells whether a value is one;
- *  - options are checked: only `spec`, `data` (fetch the spec or the data; both by default) and, for
- *    `create`, `single`, each a boolean; anything else panics;
+ *  - the options of `create` and `resolve` are checked: only `spec`, `data` (fetch the spec or the
+ *    data; both by default) and, for `create`, `single`, each a boolean; anything else panics
+ *    (`anchoredQuery` keeps its own options);
  *  - a single lookup — `resolve`, or `create` with `single` — finds exactly one value: none, or more
  *    than one, is an error; `create` without `single` finds every match, none being an empty list.
  *
