@@ -128,6 +128,7 @@ tplTest.concurrent.for([
   { case: "missingFile", expected: 'root → OOM[0]: saveFile: missing ["out.tsv"]' },
   { case: "extraFile", expected: 'root → OOM[0]: saveFile: not in the root ["more.tsv"]' },
   { case: "extraStream", expected: 'root → OOM[0]: streamFile: not in the root ["err.log"]' },
+  { case: "processor", expected: 'root → OOM[0]: processWorkdir: "p" differs from the root' },
 ])(
   "AC2.4 exec fallbacks: verify() refuses an invalid tree ($case)",
   async ({ case: c, expected }, { helper, expect }) => {
@@ -162,4 +163,40 @@ tplTest.skipIf(!process.env.PL_ADDRESS_ATTEMPT_CAP_1)(
     expect((error as Error).message).toContain("→ backend attempt limit reached");
   },
   120_000,
+);
+
+// AC2.3 on any backend: a chain longer than the attempt cap (3 by default) ends at the cap.
+tplTest.concurrent(
+  "AC2.3 exec fallbacks: a chain longer than the backend cap ends at the cap",
+  async ({ helper, expect, skip }) => {
+    const result = await helper.renderTemplate(false, "exec.fallback.cap_chain", ["out"], (tx) => ({
+      nonce: json(tx, randomUUID()),
+    }));
+    const out = await result
+      .computeOutput("out", (a) => a?.getDataAsString())
+      .awaitStableValue()
+      .catch((e: Error) => e);
+    if (!(out instanceof Error)) return skip("the backend allows 4 attempts or more");
+    const cap = Number(/backend cap (\d+)\)/.exec(out.message)?.[1]);
+    expect(out.message).toContain(`Attempts (${cap}, backend cap ${cap}):`);
+    expect(out.message).toMatch(/→ backend attempt limit reached/);
+  },
+  180_000,
+);
+
+tplTest.concurrent(
+  "exec with a file named workdir saves it as before",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.workdir_file",
+      ["out"],
+      (tx) => ({
+        nonce: json(tx, randomUUID()),
+      }),
+    );
+    expect(await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue()).toBe(
+      "named\n",
+    );
+  },
 );

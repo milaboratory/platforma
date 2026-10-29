@@ -49,3 +49,27 @@ tplTest.concurrent(
     expect(dump).not.toMatch(/fallback|attempt/i);
   },
 );
+
+// The canonical id of the exec.exec render itself, pinned to what the SDK before exec fallbacks
+// (origin/main 2da829fae) produced for the same exec on the same backend. No software, so no
+// package version enters it; it changes only with the exec's inputs, exec.exec's hash override,
+// or the backend's id derivation.
+const CID_BEFORE_FALLBACKS = "736d56c2025fb05b646ef548d3fe7840";
+
+tplTest.concurrent(
+  "AC3.1 exec without fallbacks: the exec.exec render has the CID it had before",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.cid_render",
+      ["cid", "out"],
+      () => ({}),
+    );
+    expect(await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue()).toBe(
+      "hello",
+    );
+    expect(
+      await result.computeOutput("cid", (a) => a?.getDataAsJson<string>()).awaitStableValue(),
+    ).toBe(CID_BEFORE_FALLBACKS);
+  },
+);

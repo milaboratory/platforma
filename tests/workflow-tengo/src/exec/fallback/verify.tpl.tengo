@@ -1,7 +1,7 @@
 /**
  * Fallback trees that verify() refuses (exec fallbacks, AC2.4); run() fails before any render.
  *
- * inputs.case: string - "cycle" | "missingFile" | "extraFile" | "extraStream"
+ * inputs.case: string - "cycle" | "missingFile" | "extraFile" | "extraStream" | "processor"
  */
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
@@ -11,6 +11,7 @@ ll := import("@platforma-sdk/workflow-tengo:ll")
 
 self.defineOutputs(["out"])
 
+procTpl := assets.importTemplate(":exec.fallback.read_out")
 shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
 self.body(func(inputs) {
@@ -34,6 +35,9 @@ self.body(func(inputs) {
 		root.fallbacks({ OOM: base().saveFile("more.tsv") })
 	} else if inputs.case == "extraStream" {
 		root.fallbacks({ OOM: base().streamFile("err.log") })
+	} else if inputs.case == "processor" {
+		root.processWorkdir("p", procTpl, { mode: "a" })
+		root.fallbacks({ OOM: base().processWorkdir("p", procTpl, { mode: "b" }) })
 	} else {
 		ll.panic("unknown case %q", inputs.case)
 	}

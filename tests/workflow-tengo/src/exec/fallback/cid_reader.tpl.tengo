@@ -1,0 +1,10 @@
+// Reads the canonical id of a render once its output is ready (see cid_render), as hex.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+fmt := import("fmt")
+
+self.awaitState("out", "ResourceReady")
+
+self.body(func(inputs) {
+	return { cid: fmt.sprintf("%x", self.rawInputs().exec.getValue().info().CanonicalID) }
+})

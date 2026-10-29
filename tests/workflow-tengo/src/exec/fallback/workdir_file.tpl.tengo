@@ -1,0 +1,23 @@
+/**
+ * An exec saving a file named `workdir`, the key WorkdirSave v3 reserves for the directory's own
+ * outcome: it saves with WorkdirSave v1 and works as before.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["out"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	res := exec.builder().
+		cpu(1).ram("50Mi").
+		software(shellSw).
+		arg("-c").arg("echo named > workdir # " + inputs.nonce).
+		inLightQueue().
+		saveFileContent("workdir").
+		run()
+	return { out: res.getFileContent("workdir") }
+})

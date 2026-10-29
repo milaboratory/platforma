@@ -7,6 +7,9 @@
  * inputs.forceV2: bool, optional - render as on a backend without RunCommand v3 (AC3.3)
  * inputs.rootExit: string, optional - the root's exit code, 2 by default
  * inputs.forceSaveV1: bool, optional - save as on a backend without WorkdirSave v3
+ *
+ * inputs.errLog: bool, optional - every plan also streams err.log, which only the root writes
+ *                 (spec §13.1, second example); true by default
  */
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
@@ -14,7 +17,7 @@ exec := import("@platforma-sdk/workflow-tengo:exec")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 fmt := import("fmt")
 
-self.defineOutputs(["stdoutStream", "stdoutContent", "attempts"])
+self.defineOutputs(["stdoutStream", "errStream", "stdoutContent", "attempts"])
 
 shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
@@ -28,6 +31,9 @@ self.body(func(inputs) {
 			inLightQueue().
 			saveStdoutStream().
 			saveStdoutContent()
+		if inputs.errLog != false {
+			b.streamFile("err.log")
+		}
 		if inputs.forceV2 == true {
 			b._forceRunCommandV2()
 		}
@@ -39,13 +45,14 @@ self.body(func(inputs) {
 
 	rootExit := is_undefined(inputs.rootExit) ? "2" : inputs.rootExit
 	handler := shell(fmt.sprintf("for i in $(seq 1 %d); do echo fallback-$i; sleep 1; done", inputs.seconds))
-	root := shell("echo root; sleep 5; exit " + rootExit).
+	root := shell("echo root; echo root-err > err.log; sleep 5; exit " + rootExit).
 		fallbacks({ SoftwareError: [{ name: "handler", builder: handler }] })
 
 	res := root.run()
 
 	return {
 		stdoutStream: res.getStdoutStream(),
+		errStream: inputs.errLog != false ? res.getFileStream("err.log") : "",
 		stdoutContent: res.getStdoutContent(),
 		attempts: res.getAttempts()
 	}
