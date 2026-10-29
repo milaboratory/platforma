@@ -1,0 +1,183 @@
+/* Streams of an exec with fallbacks (spec §13, AC2.6 old-driver view, AC2.7, AC3.3).
+ *
+ * The old log driver is pinned here, not taken from the middle layer: it is the
+ * LogsDriver.getLogHandle / getLastLogs of before exec fallbacks in two steps, written out so a
+ * driver that learns about StreamCollection/1 cannot change what this test checks:
+ *   1. resolve the `stream` field of what getFileStream returns (logs.ts, streamManagerGetStream),
+ *      here a StreamCollection whose `stream` the templates rewrite, not a StreamManager;
+ *   2. a StreamWorkdir target is read live through the streaming logs API, which is what
+ *      LogsStreamDriver does (logs_stream.ts, LogGetter.update); anything else is a blob.
+ *
+ * The collection is read through the tree accessors. Blobs are compared by content hash: the
+ * local test harness cannot download blobs of an FS primary storage. */
+import { ConsoleLoggerAdapter } from "@milaboratories/helpers";
+import { createLogsClient } from "@milaboratories/pl-drivers";
+import { Pl } from "@milaboratories/pl-middle-layer";
+import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
+import { tplTest } from "@platforma-sdk/test";
+import { createHash, randomUUID } from "node:crypto";
+
+type Sample = { kind: "none" | "live" | "blob"; text?: string };
+type Attempt = {
+  attempt: number;
+  plan: string;
+  result: string;
+  reason?: string;
+  exitCode?: number;
+};
+
+/** What a field of a resource points at: its type, its blob hash, its JSON. */
+type Node = { type?: string; hash?: string; json?: unknown };
+
+function node(a: PlTreeNodeAccessor | undefined): Node {
+  if (a === undefined) return {};
+  const text = a.getDataAsString();
+  let parsed: unknown;
+  try {
+    parsed = text === undefined || text === "" ? undefined : JSON.parse(text);
+  } catch {
+    parsed = undefined;
+  }
+  const hash = (parsed as { hashValue?: string } | undefined)?.hashValue;
+  return { type: a.resourceType.name + ":" + a.resourceType.version, hash, json: parsed };
+}
+
+/** The collection (or manager) of a stream output, with what its fields point at. */
+function streamState(a: PlTreeNodeAccessor | undefined) {
+  return {
+    self: node(a),
+    dynamic: a?.listDynamicFields() ?? [],
+    stream: node(a?.traverse("stream")),
+    attempt0: node(a?.traverse("attempt0")),
+    attempt0Stream: node(a?.traverse("attempt0", "stream")),
+    attempt1: node(a?.traverse("attempt1")),
+    attempt1Stream: node(a?.traverse("attempt1", "stream")),
+    outcome0: node(a?.traverse("outcome0")).json,
+    outcome1: node(a?.traverse("outcome1")).json,
+  };
+}
+
+const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+tplTest(
+  "AC2.6/AC2.7 exec fallbacks: the stream follows the running attempt, each attempt ends on its own file",
+  async ({ pl, helper, expect }) => {
+    const logsClient = createLogsClient(pl, new ConsoleLoggerAdapter());
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.streams",
+      ["stdoutStream", "stdoutContent", "attempts"],
+      (tx) => ({
+        nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
+        seconds: tx.createValue(Pl.JsonObject, JSON.stringify(10)),
+      }),
+    );
+
+    // the pinned old driver: what `stream` points at right now, and its text
+    const sample = async (): Promise<Sample> => {
+      const info = await result
+        .computeOutput("stdoutStream", (a) => a?.traverse("stream")?.resourceInfo)
+        .getValue();
+      if (info === undefined) return { kind: "none" };
+      if (!info.type.name.startsWith("StreamWorkdir")) return { kind: "blob" };
+      const resp = await logsClient.lastLines(info, 100, 0n);
+      return { kind: "live", text: new TextDecoder().decode(resp.data) };
+    };
+
+    const samples: Sample[] = [];
+    const deadline = Date.now() + 180_000;
+    while (Date.now() < deadline) {
+      const s = await sample().catch((): Sample => ({ kind: "none" }));
+      samples.push(s);
+      if (s.kind === "blob") break;
+      await sleep(250);
+    }
+    const live = samples.filter((s) => s.kind === "live").map((s) => s.text ?? "");
+
+    // AC2.6, old desktop: attempt 0 live, then only the handler's lines live, then a blob
+    expect(live.some((t) => t.includes("root") && !t.includes("fallback-"))).toBe(true);
+    const firstFallback = live.findIndex((t) => t.includes("fallback-"));
+    expect(firstFallback).toBeGreaterThan(0);
+    const afterSwitch = live.slice(firstFallback);
+    expect(afterSwitch.some((t) => t.includes("root"))).toBe(false);
+    expect(afterSwitch.length).toBeGreaterThan(1); // followed while running, not only at the end
+    expect(samples[samples.length - 1]?.kind).toBe("blob");
+
+    const attempts = await result
+      .computeOutput("attempts", (a) => a?.getDataAsJson<Attempt[]>())
+      .awaitStableValue();
+    expect(attempts).toEqual([
+      { attempt: 0, plan: "root", result: "fail", reason: "SoftwareError", exitCode: 2 },
+      { attempt: 1, plan: "handler", result: "success", exitCode: 0 },
+    ]);
+
+    // AC2.7: the collection after success
+    const expected = Array.from({ length: 10 }, (_, i) => `fallback-${i + 1}\n`).join("");
+    const content = await result
+      .computeOutput("stdoutContent", (a) => a?.getDataAsString())
+      .awaitStableValue();
+    expect(content).toBe(expected);
+
+    let state = undefined as ReturnType<typeof streamState> | undefined;
+    while (Date.now() < deadline) {
+      state = await result.computeOutput("stdoutStream", (a) => streamState(a)).getValue();
+      if (state?.attempt0Stream.hash && state.attempt1Stream.hash && state.stream.hash) break;
+      await sleep(250);
+    }
+
+    expect(state?.self.type).toBe("StreamCollection:1");
+    expect(state?.attempt0.type).toBe("StreamManager:2");
+    expect(state?.attempt1.type).toBe("StreamManager:2");
+    expect(state?.dynamic).not.toContain("attempt2");
+    // attempt 0's own file reads "root", attempt 1's is the ten handler lines
+    expect(state?.attempt0Stream.hash).toBe(createHash("sha256").update("root\n").digest("hex"));
+    expect(state?.attempt1Stream.hash).toBe(createHash("sha256").update(expected).digest("hex"));
+    // `stream` ends on the winner's file
+    expect(state?.stream.hash).toBe(state?.attempt1Stream.hash);
+    expect(state?.outcome0).toEqual({
+      attempt: 0,
+      plan: "root",
+      result: "fail",
+      reason: "SoftwareError",
+      exitCode: 2,
+    });
+    expect(state?.outcome1).toEqual({
+      attempt: 1,
+      plan: "handler",
+      result: "success",
+      exitCode: 0,
+    });
+  },
+  240_000,
+);
+
+tplTest(
+  "AC3.3 exec fallbacks: without RunCommand v3, getAttempts() resolves and the stream is a bare manager",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.streams",
+      ["stdoutStream", "stdoutContent", "attempts"],
+      (tx) => ({
+        nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
+        seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
+        rootExit: tx.createValue(Pl.JsonObject, JSON.stringify("0")),
+        forceV2: tx.createValue(Pl.JsonObject, JSON.stringify(true)),
+      }),
+    );
+
+    const attempts = await result
+      .computeOutput("attempts", (a) => a?.getDataAsJson<Attempt[]>())
+      .awaitStableValue();
+    expect(attempts).toEqual([{ attempt: 0, plan: "root", result: "success" }]);
+
+    const content = await result
+      .computeOutput("stdoutContent", (a) => a?.getDataAsString())
+      .awaitStableValue();
+    expect(content).toBe("root\n");
+
+    const state = await result.computeOutput("stdoutStream", (a) => streamState(a)).getValue();
+    expect(state?.self.type).toBe("StreamManager:2");
+  },
+  120_000,
+);
