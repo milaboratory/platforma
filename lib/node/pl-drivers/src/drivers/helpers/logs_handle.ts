@@ -75,8 +75,14 @@ const compositeReadyLogPrefix = "log+ready://log/composite/";
  * prefixes of a single log handle, so consumers read it the same way; its parts travel in the
  * handle itself, as base64url-encoded JSON, because the driver reads logs without the tree.
  * `isCompositeLogHandle` of the model tells such a handle apart. */
+/** The most parts a composite log handle may have: attempts and restarts of one job are bounded by
+ * the backend's caps, far below this. */
+export const maxCompositeLogParts = 256;
+
 export function newCompositeLogHandle(live: boolean, parts: CompositeLogPart[]): sdk.AnyLogHandle {
-  const payload = Buffer.from(JSON.stringify({ parts })).toString("base64url");
+  // the latest parts, if a collection ever holds more than a handle may carry
+  const kept = parts.length > maxCompositeLogParts ? parts.slice(-maxCompositeLogParts) : parts;
+  const payload = Buffer.from(JSON.stringify({ parts: kept })).toString("base64url");
   if (live) return `${compositeLiveLogPrefix}${payload}` as sdk.LiveLogHandle;
   return `${compositeReadyLogPrefix}${payload}` as sdk.ReadyLogHandle;
 }
@@ -98,6 +104,11 @@ export function parseCompositeLogHandle(handle: sdk.AnyLogHandle): {
     throw new Error(`Composite log handle is malformed: ${handle}`);
   const { parts } = decoded;
   if (!Array.isArray(parts)) throw new Error(`Composite log handle is malformed: ${handle}`);
+  // Every read fans out to each part: a handle is client-supplied, so bound it (review finding m4).
+  if (parts.length > maxCompositeLogParts)
+    throw new Error(
+      `Composite log handle has ${parts.length} parts, more than ${maxCompositeLogParts}`,
+    );
 
   return {
     live,

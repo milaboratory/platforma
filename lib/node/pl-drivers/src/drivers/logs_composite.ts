@@ -19,6 +19,9 @@ import {
 /** The resource the workflow SDK puts into `fileStreams[name]` of an exec with fallbacks.
  * Fields: dynamic `attempt<K>` (attempt K's `StreamManager/2`), dynamic `outcome<K>` (attempt K's
  * history entry, written when it ends) and `stream` (a mirror for drivers that predate it). */
+/** Per-read state: whether any part answered that its handle is outdated. */
+type ReadState = { outdated: boolean };
+
 export const StreamCollectionResourceType: ResourceType = {
   name: "StreamCollection",
   version: "1",
@@ -122,10 +125,9 @@ export function getCompositeLogHandle(
 /** Reads one log of a single (not composite) handle. */
 export type SingleLogReader = Pick<sdk.LogsDriver, "lastLines" | "readText">;
 
-type Segment = { size: number } & (
-  | { kind: "part"; handle: sdk.AnyLogHandle }
-  | { kind: "text"; bytes: Uint8Array }
-);
+type Segment = { size: number } &
+  /** last: the running (or final) attempt's part */
+  ({ kind: "part"; handle: sdk.AnyLogHandle; last: boolean } | { kind: "text"; bytes: Uint8Array });
 
 type PartInfo = { size: number; endsWithNewline: boolean };
 
@@ -147,7 +149,9 @@ export class CompositeLogReader {
     searchStr?: string,
   ): Promise<sdk.StreamingApiResponse> {
     const { live, parts } = parseCompositeLogHandle(handle);
-    const segments = await this.segments(parts);
+    const read: ReadState = { outdated: false };
+    const segments = await this.segments(parts, read);
+    if (read.outdated) return { shouldUpdateHandle: true };
     const total = segments.reduce((sum, s) => sum + s.size, 0);
 
     if (lineCount === 0)
@@ -182,7 +186,7 @@ export class CompositeLogReader {
         continue;
       }
 
-      const resp = await this.readPart(() =>
+      const resp = await this.readPart(s.last ? undefined : read, () =>
         this.single.lastLines(s.handle, linesLeft, localEnd, searchStr),
       );
       if (resp === undefined || resp.data.length === 0) continue;
@@ -191,6 +195,7 @@ export class CompositeLogReader {
       newOffset = start + resp.newOffset;
     }
 
+    if (read.outdated) return { shouldUpdateHandle: true };
     return { live, shouldUpdateHandle: false, data: concat(chunks), size: total, newOffset };
   }
 
@@ -201,7 +206,9 @@ export class CompositeLogReader {
     searchStr?: string,
   ): Promise<sdk.StreamingApiResponse> {
     const { live, parts } = parseCompositeLogHandle(handle);
-    const segments = await this.segments(parts);
+    const read: ReadState = { outdated: false };
+    const segments = await this.segments(parts, read);
+    if (read.outdated) return { shouldUpdateHandle: true };
 
     const chunks: Uint8Array[] = [];
     const limited = lineCount > 0;
@@ -224,7 +231,7 @@ export class CompositeLogReader {
           }
           pos = start + s.size;
         } else {
-          const resp = await this.readPart(() =>
+          const resp = await this.readPart(s.last ? undefined : read, () =>
             this.single.readText(s.handle, limited ? linesLeft : lineCount, local, searchStr),
           );
           if (resp === undefined) pos = start + s.size;
@@ -242,20 +249,32 @@ export class CompositeLogReader {
       start += s.size;
     }
 
+    if (read.outdated) return { shouldUpdateHandle: true };
     return { live, shouldUpdateHandle: false, data: concat(chunks), size: start, newOffset: pos };
   }
 
   /** The joined text as segments: each attempt's log, then its delimiter if it failed. */
-  private async segments(parts: CompositeLogPart[]): Promise<Segment[]> {
+  private async segments(parts: CompositeLogPart[], read: ReadState): Promise<Segment[]> {
+    // Only an earlier attempt's outdated part outdates the handle: the running attempt's live
+    // file may simply not exist yet, which the stream driver reports the same way (§13.1).
     const infos = await Promise.all(
-      parts.map((p) => (p.handle === undefined ? undefined : this.partInfo(p.handle))),
+      parts.map((p, i) =>
+        p.handle === undefined
+          ? undefined
+          : this.partInfo(p.handle, i === parts.length - 1 ? undefined : read),
+      ),
     );
 
     const segments: Segment[] = [];
     parts.forEach((p, i) => {
       const info = infos[i];
       if (p.handle !== undefined)
-        segments.push({ kind: "part", handle: p.handle, size: info?.size ?? 0 });
+        segments.push({
+          kind: "part",
+          handle: p.handle,
+          size: info?.size ?? 0,
+          last: i === parts.length - 1,
+        });
       if (p.delimiter !== undefined) {
         // An attempt's log may end in the middle of a line: the delimiter starts a new one.
         const lead = info !== undefined && !info.endsWithNewline ? "\n" : "";
@@ -266,11 +285,11 @@ export class CompositeLogReader {
     return segments;
   }
 
-  private async partInfo(handle: sdk.AnyLogHandle): Promise<PartInfo> {
+  private async partInfo(handle: sdk.AnyLogHandle, read?: ReadState): Promise<PartInfo> {
     const cached = this.readyParts.get(handle);
     if (cached !== undefined) return cached;
 
-    const resp = await this.readPart(() => this.single.lastLines(handle, 1));
+    const resp = await this.readPart(read, () => this.single.lastLines(handle, 1));
     const info: PartInfo =
       resp === undefined
         ? { size: 0, endsWithNewline: true }
@@ -287,13 +306,21 @@ export class CompositeLogReader {
   }
 
   /** Reads one part; a part that does not exist (yet) reads as empty. An attempt may never write
-   * the file at all, and the earlier attempts' text must stay readable then (spec §13.1). */
+   * the file at all, and the earlier attempts' text must stay readable then (spec §13.1). A part
+   * whose handle is outdated (its live stream ended and the manager switched to the file) marks
+   * the whole read outdated: the viewer then fetches a new composite handle instead of seeing
+   * that part's text vanish from the joined text (review finding m3). */
   private async readPart(
+    state: ReadState | undefined,
     read: () => Promise<sdk.StreamingApiResponse>,
   ): Promise<sdk.StreamingApiResponseOk | undefined> {
     try {
       const resp = await read();
-      return resp.shouldUpdateHandle ? undefined : resp;
+      if (resp.shouldUpdateHandle) {
+        if (state !== undefined) state.outdated = true;
+        return undefined;
+      }
+      return resp;
     } catch (e: unknown) {
       if (isNotFoundError(e)) return undefined;
       throw e;
