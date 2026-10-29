@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/bootstrap",
-  "version": "5.3.45",
+  "version": "5.3.51",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "keywords": [],
   "license": "UNLICENSED",
@@ -28,7 +28,6 @@
   "dependencies": {
     "@milaboratories/pl-deployments": "workspace:*",
     "commander": "catalog:",
-    "decompress": "catalog:",
     "readline-sync": "catalog:",
     "tar": "catalog:",
     "winston": "catalog:",
@@ -39,7 +38,6 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@types/decompress": "catalog:",
     "@types/node": "catalog:",
     "@types/readline-sync": "catalog:",
     "typescript": "catalog:"

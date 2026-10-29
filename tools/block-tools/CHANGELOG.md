@@ -1,5 +1,147 @@
 # @platforma-sdk/block-tools
 
+## 2.17.0
+
+### Minor Changes
+
+- 39a9676: `structure refresh` (and so `upgrade-sdk`) moves a block to the SDK toolchain: Node 24.22.1 and pnpm 12.16.1.
+
+  - Root `package.json`: `packageManager` is the SDK's pnpm, and `devEngines.runtime` is Node 24.22.1 with `onFail: download`, so pnpm runs the block scripts on that Node. Refresh overwrites `packageManager` and `devEngines.runtime`. It keeps other `devEngines` entries and `engines`.
+  - CI workflows: `node-version` is `24.22.1`.
+  - `pnpm-workspace.yaml`: `minimumReleaseAgeExclude` lists our scopes, so `upgrade-sdk` can install an SDK release less than a day old. `allowBuilds` lists the install scripts in the SDK dependency tree: `@milaboratories/pframes-rs-node` is always `true` (it downloads the native addon), and the others default to `false`. The `turbo` catalog entry is raised to at least `~2.11.10`: older turbo cannot read a pnpm 12 lockfile.
+  - pnpm 11+ ignores the `pnpm` field in `package.json`. Refresh removes an empty one and stops with an error when it holds settings; move them to `pnpm-workspace.yaml`.
+
+  After `upgrade-sdk`, a block needs pnpm 12 locally. pnpm downloads Node 24.22.1 for the block scripts.
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/pl-http@1.2.5
+  - @platforma-sdk/blocks-deps-updater@2.2.1
+  - @platforma-sdk/package-builder-lib@1.4.2
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/pl-model-backend@1.4.39
+  - @milaboratories/pl-model-common@1.54.1
+  - @milaboratories/pl-model-middle-layer@1.34.5
+
+## 2.16.17
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @milaboratories/pl-model-common@1.54.0
+  - @milaboratories/pl-model-middle-layer@1.34.4
+  - @milaboratories/pl-model-backend@1.4.38
+
+## 2.16.16
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.37
+
+## 2.16.15
+
+### Patch Changes
+
+- Updated dependencies [5d27046]
+  - @milaboratories/pl-model-middle-layer@1.34.3
+
+## 2.16.14
+
+### Patch Changes
+
+- 6635396: `structure refresh` adds a changesets `fixed` group of the block, model, ui and workflow packages, so a change in any sibling now releases a new block version.
+
+## 2.16.13
+
+### Patch Changes
+
+- f69c796: Make software docker image builds work when `docker` is podman. Replace `--provenance=false --sbom=false` with `BUILDX_NO_DEFAULT_ATTESTATIONS=1` in the `docker build` environment. Docker buildx output does not change: the default provenance attestation stays off and SBOM is off by default. Podman rejects both flags and ignores the variable.
+- Updated dependencies [f69c796]
+  - @platforma-sdk/package-builder-lib@1.4.1
+
+## 2.16.12
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+  - @milaboratories/pl-model-middle-layer@1.34.2
+  - @milaboratories/pl-model-backend@1.4.36
+
+## 2.16.11
+
+### Patch Changes
+
+- 277e74b: Structure refresh keeps Tengo unit tests in the workflow `test` script. With `src/**/*.test.tengo` files, the script runs `pl-tengo test`; with co-located `*.test.ts` files too, it runs `pl-tengo test && vitest run --passWithNoTests`.
+
+## 2.16.10
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.35
+
+## 2.16.9
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-model-common@1.52.0
+  - @milaboratories/pl-model-backend@1.4.34
+  - @milaboratories/pl-model-middle-layer@1.34.1
+
+## 2.16.8
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.33
+
+## 2.16.7
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.32
+
+## 2.16.6
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.31
+
+## 2.16.5
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.30
+
+## 2.16.4
+
+### Patch Changes
+
+- Updated dependencies [61aefa1]
+  - @milaboratories/pl-model-middle-layer@1.34.0
+
+## 2.16.3
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+  - @milaboratories/pl-model-middle-layer@1.33.0
+  - @milaboratories/pl-model-backend@1.4.29
+
+## 2.16.2
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+  - @milaboratories/pl-model-middle-layer@1.32.2
+  - @milaboratories/pl-model-backend@1.4.28
+
 ## 2.16.1
 
 ### Patch Changes

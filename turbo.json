@@ -59,6 +59,7 @@
         "PL_TEST_USE_DOCKER",
         "PL_TEST_K8S",
         "PL_TEST_REQUEST_TIMEOUT",
+        "PL_TEST_MAX_WORKERS",
         "PL_TEST_RUN_SLOW",
         "LONG_TEST_TIMEOUT",
         "DEBUG",

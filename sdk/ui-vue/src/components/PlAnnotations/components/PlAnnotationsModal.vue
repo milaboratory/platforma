@@ -19,6 +19,7 @@ async function handleDeleteSchema() {
 
 <template>
   <PlPureSlideModal
+    data-testid="pl-annotations-modal"
     :model-value="props.opened"
     :class="$style.modal"
     width="768px"

@@ -1,5 +1,56 @@
 # @milaboratories/pl-local
 
+## 3.0.23
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- 615bd8c: Replace `decompress` (path traversal advisories, no fixed release) with `yauzl` for zip archives and `tar` for the block boilerplate. Zip extraction now fails on entries and symlinks that lead outside the target folder, on entries written through a symlink, and on duplicate entries.
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/pl-config@1.8.6
+  - @milaboratories/pl-healthcheck@1.0.6
+  - @milaboratories/pl-http@1.2.5
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/pl-model-common@1.54.1
+
+## 3.0.22
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @milaboratories/pl-model-common@1.54.0
+
+## 3.0.21
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+
+## 3.0.20
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-model-common@1.52.0
+
+## 3.0.19
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+
+## 3.0.18
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+
 ## 3.0.17
 
 ### Patch Changes

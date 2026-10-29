@@ -66,19 +66,25 @@ const normalizedOptions = computed(() =>
 </script>
 
 <template>
-  <div class="pl-btn-group" :class="{ disabled, compact }">
-    <label v-if="label">
+  <div data-testid="pl-btn-group" class="pl-btn-group" :class="{ disabled, compact }">
+    <label v-if="label" data-testid="pl-btn-group-label">
       <span>{{ label }}</span>
-      <PlTooltip v-if="slots.tooltip" class="info" position="top">
+      <PlTooltip
+        v-if="slots.tooltip"
+        data-testid="pl-btn-group-tooltip"
+        class="info"
+        position="top"
+      >
         <template #tooltip>
           <slot name="tooltip" />
         </template>
       </PlTooltip>
     </label>
-    <InnerBorder class="pl-btn-group__container">
+    <InnerBorder data-testid="pl-btn-group-options" class="pl-btn-group__container">
       <div
         v-for="(opt, i) in normalizedOptions"
         :key="i"
+        data-testid="pl-btn-group-option"
         class="pl-btn-group__option text-s"
         :tabindex="modelValue === opt.value || disabled ? undefined : 0"
         :class="{ active: modelValue === opt.value }"
@@ -88,7 +94,11 @@ const normalizedOptions = computed(() =>
         {{ opt.label }}
       </div>
     </InnerBorder>
-    <div v-if="helper" class="pl-btn-group__helper">{{ helper }}</div>
-    <div v-else-if="error" class="pl-btn-group__error">{{ getErrorMessage(error) }}</div>
+    <div v-if="helper" data-testid="pl-btn-group-helper" class="pl-btn-group__helper">
+      {{ helper }}
+    </div>
+    <div v-else-if="error" data-testid="pl-btn-group-error" class="pl-btn-group__error">
+      {{ getErrorMessage(error) }}
+    </div>
   </div>
 </template>

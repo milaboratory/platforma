@@ -1,5 +1,86 @@
 # @milaboratories/pl-model-backend
 
+## 1.4.39
+
+### Patch Changes
+
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+  - @milaboratories/pl-client@3.19.2
+
+## 1.4.38
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.19.1
+
+## 1.4.37
+
+### Patch Changes
+
+- Updated dependencies [7d9925e]
+  - @milaboratories/pl-client@3.19.0
+
+## 1.4.36
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.18.2
+
+## 1.4.35
+
+### Patch Changes
+
+- Updated dependencies [41f0c56]
+  - @milaboratories/pl-client@3.18.1
+
+## 1.4.34
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-client@3.18.0
+
+## 1.4.33
+
+### Patch Changes
+
+- Updated dependencies [90073ff]
+  - @milaboratories/pl-client@3.17.7
+
+## 1.4.32
+
+### Patch Changes
+
+- Updated dependencies [fd9f892]
+  - @milaboratories/pl-client@3.17.6
+
+## 1.4.31
+
+### Patch Changes
+
+- Updated dependencies [9c97fb0]
+  - @milaboratories/pl-client@3.17.5
+
+## 1.4.30
+
+### Patch Changes
+
+- Updated dependencies [7b19fcc]
+  - @milaboratories/pl-client@3.17.4
+
+## 1.4.29
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.17.3
+
+## 1.4.28
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.17.2
+
 ## 1.4.27
 
 ### Patch Changes

@@ -32,16 +32,18 @@ function onCopy() {
 </script>
 
 <template>
-  <div :style="{ maxHeight: props.maxHeight }" :class="$style.root">
-    <PlClipboard :class="$style.copy" @copy="onCopy" />
+  <div data-testid="pl-error-alert" :style="{ maxHeight: props.maxHeight }" :class="$style.root">
+    <PlClipboard data-testid="pl-error-alert-copy" :class="$style.copy" @copy="onCopy" />
     <slot name="title">
-      <div :class="$style.title">
-        <PlMaskIcon16 :class="$style.titleIcon" name="warning" />
-        <div :class="$style.titleText">{{ props.title }}</div>
+      <div data-testid="pl-error-alert-title" :class="$style.title">
+        <PlMaskIcon16 data-testid="pl-error-alert-icon" :class="$style.titleIcon" name="warning" />
+        <div data-testid="pl-error-alert-title-text" :class="$style.titleText">
+          {{ props.title }}
+        </div>
       </div>
     </slot>
     <slot name="message">
-      <div :class="$style.message">
+      <div data-testid="pl-error-alert-message" :class="$style.message">
         {{ props.message }}
       </div>
     </slot>

@@ -98,18 +98,26 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="pl-editable-title" :class="style.component" :style="computedStyle">
+  <div
+    class="pl-editable-title"
+    :class="style.component"
+    :style="computedStyle"
+    data-testid="pl-editable-title"
+  >
     <div :class="style.container" @click="() => inputRef?.focus()">
-      <span v-if="prefix">{{ prefix.trim() }}&nbsp;</span>
+      <span v-if="prefix" data-testid="pl-editable-title-prefix">{{ prefix.trim() }}&nbsp;</span>
       <input
         ref="inputRef"
         v-model="local.value"
         :placeholder="placeholder"
+        data-testid="pl-editable-title-input"
         @focusout="save"
         @keydown.escape="local.reset"
         @keydown.enter="(ev) => (ev.target as HTMLInputElement)?.blur()"
       />
     </div>
-    <div v-if="local.error" :class="style.error">{{ local.error }}</div>
+    <div v-if="local.error" :class="style.error" data-testid="pl-editable-title-error">
+      {{ local.error }}
+    </div>
   </div>
 </template>

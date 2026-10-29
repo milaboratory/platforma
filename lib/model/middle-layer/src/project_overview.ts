@@ -180,9 +180,8 @@ export type BlockStateOverview = {
   navigationState: NavigationState;
 
   /**
-   * Storage debug view as JSON string (e.g., '{"dataVersion": "v1"}').
-   * Used by developer tools to display block state info.
-   * Undefined when block-pack is not yet materialized or for non-V2 blocks.
+   * @deprecated No longer filled by the middle layer, because building it ran the block model for
+   * every block on each overview update. Read `blockStorage` from the block state instead.
    */
-  storageDebugView: StringifiedJson<StorageDebugView> | undefined;
+  storageDebugView?: StringifiedJson<StorageDebugView>;
 };

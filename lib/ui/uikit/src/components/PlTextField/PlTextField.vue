@@ -132,10 +132,11 @@ useLabelNotch(rootRef);
 </script>
 
 <template>
-  <div class="pl-text-field__envelope">
+  <div class="pl-text-field__envelope" data-testid="pl-text-field">
     <div
       ref="rootRef"
       class="pl-text-field"
+      data-testid="pl-text-field-control"
       :class="{
         error: hasErrors,
         disabled,
@@ -143,16 +144,21 @@ useLabelNotch(rootRef);
         nonEmpty: !isEmpty,
       }"
     >
-      <label v-if="label" ref="label">
-        <PlSvg v-if="required" :uri="SvgRequired" />
+      <label v-if="label" ref="label" data-testid="pl-text-field-label">
+        <PlSvg v-if="required" :uri="SvgRequired" data-testid="pl-text-field-required" />
         <span>{{ label }}</span>
-        <PlTooltip v-if="slots.tooltip" class="info" position="top">
+        <PlTooltip
+          v-if="slots.tooltip"
+          class="info"
+          position="top"
+          data-testid="pl-text-field-tooltip"
+        >
           <template #tooltip>
             <slot name="tooltip" />
           </template>
         </PlTooltip>
       </label>
-      <div v-if="prefix" class="pl-text-field__prefix">
+      <div v-if="prefix" class="pl-text-field__prefix" data-testid="pl-text-field-prefix">
         {{ prefix }}
       </div>
       <input
@@ -162,11 +168,17 @@ useLabelNotch(rootRef);
         :placeholder="placeholder || '...'"
         :type="fieldType"
         spellcheck="false"
+        data-testid="pl-text-field-input"
       />
-      <div class="pl-text-field__append" @click="setFocusOnInput">
+      <div
+        class="pl-text-field__append"
+        data-testid="pl-text-field-append"
+        @click="setFocusOnInput"
+      >
         <PlIcon16
           v-if="canShowClearable"
           class="pl-text-field__clearable"
+          data-testid="pl-text-field-clear"
           name="delete-clear"
           @click.stop="clear"
         />
@@ -174,15 +186,18 @@ useLabelNotch(rootRef);
           v-if="type === 'password'"
           :name="passwordIcon"
           style="cursor: pointer"
+          data-testid="pl-text-field-password-toggle"
           @click.stop="togglePasswordVisibility"
         />
         <slot name="append" />
       </div>
       <DoubleContour class="pl-text-field__contour" :group-position="groupPosition" />
     </div>
-    <div v-if="hasErrors" class="pl-text-field__error">
+    <div v-if="hasErrors" class="pl-text-field__error" data-testid="pl-text-field-error">
       {{ displayErrors.join(" ") }}
     </div>
-    <div v-else-if="helper" class="pl-text-field__helper">{{ helper }}</div>
+    <div v-else-if="helper" class="pl-text-field__helper" data-testid="pl-text-field-helper">
+      {{ helper }}
+    </div>
   </div>
 </template>

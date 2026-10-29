@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-deployments",
-  "version": "3.0.17",
+  "version": "3.0.23",
   "description": "MiLaboratories Platforma Backend code service run wrapper",
   "keywords": [],
   "license": "UNLICENSED",
@@ -44,7 +44,6 @@
     "@milaboratories/pl-http": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
-    "decompress": "catalog:",
     "ssh2": "catalog:",
     "tar": "catalog:",
     "undici": "catalog:",
@@ -56,7 +55,6 @@
     "@milaboratories/build-configs": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@types/decompress": "catalog:",
     "@types/node": "catalog:",
     "@types/ssh2": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
@@ -66,7 +64,7 @@
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=22.19.0"
+    "node": ">=24"
   },
   "pl-version": "3.5.0"
 }

@@ -102,8 +102,10 @@ export const PERSISTED_TREE_SCHEMA_VERSION = 2;
  *  periodic write falls back to if compression CPU ever becomes a problem. */
 const FLAG_COMPRESSED = 1 << 0;
 
-const HEADER_FIXED_BYTES = 4 /* magic */ + 2 /* schema */ + 2 /* flags */ + 2 /* witness len */;
-const TRAILER_BYTES = 4 /* payload length */ + 4 /* checksum */;
+// magic + schema + flags + witness len
+const HEADER_FIXED_BYTES = 4 + 2 + 2 + 2;
+// payload length + checksum
+const TRAILER_BYTES = 4 + 4;
 
 /** Ceiling on the inflated payload. The checksum only says the bytes are the ones that were
  *  written, so a replaced file can pair a small, consistent payload with a ratio that

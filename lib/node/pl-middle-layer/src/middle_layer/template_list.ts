@@ -17,10 +17,10 @@ import {
 import type { TreeAndComputableU } from "./types";
 import { Computable } from "@milaboratories/computable";
 import type { MiddleLayerEnvironment } from "./middle_layer";
-import { notEmpty } from "@milaboratories/ts-helpers";
-import type { Branded, ProjectTemplateV1 } from "@milaboratories/pl-model-common";
+import type { ProjectTemplateV1, TemplateId } from "@milaboratories/pl-model-common";
+import { asTemplateId } from "@milaboratories/pl-model-common";
+import { normalizeDescription } from "@milaboratories/pl-model-middle-layer";
 import type { TemplateExportProblem } from "../model/template_export";
-import type { ShareId } from "../model/sharing_model";
 import type { AppliedEntry, TemplateApplyProblem } from "../model/template_apply";
 import type { ProjectId } from "../model/project_model";
 
@@ -30,14 +30,19 @@ export const TemplateResourceType: ResourceType = { name: "UserTemplate", versio
 
 /** Mutable: the only part of a stored template a rename may touch. */
 export const TemplateLabelKey = "TemplateLabel";
+/** Mutable: free text about the template. Absent on a template nobody described. */
+export const TemplateDescriptionKey = "TemplateDescription";
 export const TemplateCreatedTimestamp = "TemplateCreated";
 
 /**
  * Unique template identifier in middle layer, the stringified signed resource id of the
  * `UserTemplate`. Branded so it cannot be confused with a {@link ProjectId} — both are
  * stringified resource ids and every template method takes one of them.
+ *
+ * Declared in the model package because the folder document places templates as well as
+ * projects, and that document is written by code that cannot see this file.
  */
-export type TemplateId = Branded<string, "TemplateId">;
+export type { TemplateId };
 
 /**
  * Immutable `data` on a UserTemplate: the document plus what was true when it was taken.
@@ -67,6 +72,8 @@ export interface TemplateListEntry {
   id: TemplateId;
   /** The mutable label, the only part a rename changes. */
   label: string;
+  /** Free text the user wrote about the template. Absent when there is none. */
+  description?: string;
   created: Date;
   /** Number of blocks the stored document lists — derived, not stored. */
   blockCount: number;
@@ -78,9 +85,6 @@ export interface TemplateListEntry {
 export type SaveProjectAsTemplateOutcome =
   | { readonly ok: true; readonly templateId: TemplateId }
   | { readonly ok: false; readonly problems: readonly TemplateExportProblem[] };
-
-/** What sharing a stored template yields: the share's logical id. */
-export type ShareTemplateOutcome = { readonly shareId: ShareId };
 
 /**
  * What applying a stored template yields.
@@ -143,32 +147,68 @@ export async function createTemplateList(
   const c = Computable.make((ctx) => {
     const node = ctx.accessor(tree.entry()).node();
     if (node === undefined) return undefined;
-    const result: TemplateListEntry[] = [];
-
-    // Templates list resource keeps templates assigned to fields. Each field name is a UUID
-    for (const field of node.listDynamicFields()) {
-      const tpl = node.traverse(field);
-      if (tpl === undefined) continue;
-      const data = tpl.getDataAsJson<StoredTemplateData>();
-      // A template whose data has not synced yet is not an entry with unknown content —
-      // it is an entry we cannot describe at all, so it stays out of the list until it has.
-      if (data === undefined) continue;
-      const label = notEmpty(tpl.getKeyValueAsJson<string>(TemplateLabelKey));
-      const created = notEmpty(tpl.getKeyValueAsJson<number>(TemplateCreatedTimestamp));
-      result.push({
-        id: resourceIdToString(tpl.id) as TemplateId,
-        label,
-        created: new Date(created),
-        blockCount: data.document.blocks.length,
-        ...(data.sourceProjectLabel !== undefined
-          ? { sourceProjectLabel: data.sourceProjectLabel }
-          : {}),
-        ...(data.sender !== undefined ? { sender: data.sender } : {}),
-      });
-    }
-    result.sort((a, b) => b.created.valueOf() - a.created.valueOf());
-    return result;
+    return templateListEntries(node);
   }).withStableType();
 
   return { computable: c, tree };
+}
+
+/** The part of a tree node this reader needs from a single entry of the templates list. */
+interface TemplateListEntryNode {
+  readonly id: SignedResourceId;
+  readonly resourceType: ResourceType;
+  getDataAsJson<T>(): T | undefined;
+  getKeyValueAsJson<T>(key: string): T | undefined;
+}
+
+/** The part of a tree node this reader needs from the templates-list resource itself. */
+interface TemplatesListNode {
+  listDynamicFields(): string[];
+  traverse(fieldName: string): TemplateListEntryNode | undefined;
+}
+
+/**
+ * Every stored template of one root, most recently created first.
+ *
+ * A function rather than a closure inside {@link createTemplateList} because the folder listing
+ * reads the same tree in its own computable: templates and projects share one folder tree, and
+ * joining it against two independently published lists would let a template show up in a folder
+ * the tree has not heard of.
+ *
+ * Skips, rather than throws on, anything that is not a fully synced template, by the same rule
+ * the project list follows: the folder listing is built on this, so one template whose data or
+ * label has not arrived must cost that entry and nothing else. The resource type is matched by
+ * name only, to exclude foreign resources without hiding a template stored under an earlier
+ * resource-type version.
+ */
+export function templateListEntries(node: TemplatesListNode): TemplateListEntry[] {
+  const result: TemplateListEntry[] = [];
+
+  // Templates list resource keeps templates assigned to fields. Each field name is a UUID
+  for (const field of node.listDynamicFields()) {
+    const tpl = node.traverse(field);
+    if (tpl === undefined) continue;
+    if (tpl.resourceType.name !== TemplateResourceType.name) continue;
+
+    const data = tpl.getDataAsJson<StoredTemplateData>();
+    const label = tpl.getKeyValueAsJson<string>(TemplateLabelKey);
+    const created = tpl.getKeyValueAsJson<number>(TemplateCreatedTimestamp);
+    if (data === undefined || label === undefined || created === undefined) continue;
+
+    // Written only once something is said about the template, so its absence is the ordinary case.
+    const description = normalizeDescription(tpl.getKeyValueAsJson<string>(TemplateDescriptionKey));
+    result.push({
+      id: asTemplateId(resourceIdToString(tpl.id)),
+      label,
+      ...(description === undefined ? {} : { description }),
+      created: new Date(created),
+      blockCount: data.document.blocks.length,
+      ...(data.sourceProjectLabel !== undefined
+        ? { sourceProjectLabel: data.sourceProjectLabel }
+        : {}),
+      ...(data.sender !== undefined ? { sender: data.sender } : {}),
+    });
+  }
+  result.sort((a, b) => b.created.valueOf() - a.created.valueOf());
+  return result;
 }
