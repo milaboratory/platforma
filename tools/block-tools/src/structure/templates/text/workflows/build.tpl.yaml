@@ -24,7 +24,7 @@ jobs:
     with:
       app-name: '${appName}'
       app-name-slug: '${appNameSlug}'
-      node-version: '22.x'
+      node-version: '${nodeVersion}'
       gha-runner-label: hz-ubuntu-dind
       build-script-name: 'build:dev-local'
       build-before-publish-script-name: 'build:release'
