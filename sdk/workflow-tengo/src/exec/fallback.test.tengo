@@ -1,0 +1,136 @@
+test := import(":test")
+exec := import(":exec")
+fallback := import(":exec.fallback")
+saveChain := import(":exec.save-chain")
+text := import("text")
+maps := import(":maps")
+
+_shell := func(script) {
+	return exec.builder().cmd("sh").arg("-c").arg(script).saveFile("out.tsv").saveStdoutStream()
+}
+
+_POLICY := {
+	handlers: {
+		GPUMissed: [
+			{ backendHasGPU: false, plan: "cpuOnly" },
+			{ plan: "GPUMissed[1]" }
+		],
+		OOM: [{ plan: "moreRam" }],
+		SoftwareError: [
+			{ exitCode: 2, plan: "reindex" },
+			{ messageMatch: "index version mismatch", plan: "reindex" }
+		]
+	}
+}
+
+Test_pick_byReasonAndAttributes := func() {
+	test.isEqual("cpuOnly", fallback.pick(_POLICY, { reason: "GPUMissed", backendHasGPU: false, timeout: 0 }, []))
+	test.isEqual("GPUMissed[1]", fallback.pick(_POLICY, { reason: "GPUMissed", backendHasGPU: true, timeout: 600000 }, []))
+	test.isEqual("moreRam", fallback.pick(_POLICY, { reason: "OOM", exitCode: 137 }, []))
+	test.isEqual("reindex", fallback.pick(_POLICY, { reason: "SoftwareError", exitCode: 2 }, []))
+	test.isEqual("reindex", fallback.pick(_POLICY, { reason: "SoftwareError", exitCode: 1 },
+		["loading", "fatal: index version mismatch (3 != 4)"]))
+	test.isEqual(undefined, fallback.pick(_POLICY, { reason: "SoftwareError", exitCode: 1 }, ["other"]))
+	test.isEqual(undefined, fallback.pick(_POLICY, { reason: "UnknownError" }, []))
+	test.isEqual(undefined, fallback.pick(undefined, { reason: "OOM" }, []))
+}
+
+Test_composeMessage_asBeforeV3 := func() {
+	oc := {
+		result: "fail",
+		exitCode: 1,
+		failDetails: { reason: "SoftwareError", exitCode: 1 },
+		command: "sh -c 'exit 1'",
+		meta: [{ title: "Command name", value: "align" }, { title: "Resource usage", value: "cpu 1" }],
+		lastLogLines: ["a", "b"],
+		lastLogLinesTruncated: true,
+		attemptLimit: 3
+	}
+	test.isEqual(
+		"Command name: align\nResource usage: cpu 1\nExited with code 1.\nCommand: sh -c 'exit 1'\nLatest output:\n[… truncated …]\na\nb",
+		fallback.composeMessage(oc))
+
+	gpu := { result: "fail", failDetails: { reason: "GPUMissed", backendHasGPU: false }, command: "x", meta: [], lastLogLines: [] }
+	test.isEqual("Failed to start: GPUMissed.\nCommand: x", fallback.composeMessage(gpu))
+}
+
+Test_historyText := func() {
+	hist := [
+		{ attempt: 0, plan: "root", result: "fail", reason: "OOM", exitCode: 137 },
+		{ attempt: 1, plan: "moreRam", result: "workdirMissing", restart: 0 },
+		{ attempt: 1, plan: "moreRam", result: "fail", reason: "SoftwareError", exitCode: 1 }
+	]
+	test.isEqual(text.join([
+		"Attempts (3, backend cap 3):",
+		"  #0 root fail OOM (exit 137) → handler OOM \"moreRam\"",
+		"  #1 moreRam workdirMissing (restart 0) → restart",
+		"  #1 moreRam fail SoftwareError (exit 1) → no handler"
+	], "\n"), fallback.historyText(hist, 3, "no handler"))
+}
+
+Test_flatten_keys := func() {
+	a := _shell("a")
+	b := _shell("b")
+	flat := fallback.flatten(fallback.validate({
+		OOM: a,
+		SoftwareError: [{ exitCode: 2, name: "fix", builder: b }, { builder: a }]
+	}))
+	test.isEqual({
+		handlers: {
+			OOM: [{ plan: "OOM[0]" }],
+			SoftwareError: [{ exitCode: 2, plan: "fix" }, { plan: "SoftwareError[1]" }]
+		}
+	}, flat.policy)
+	test.isEqual(["OOM[0]", "SoftwareError[1]", "fix"], maps.getKeys(flat.plans))
+}
+
+Test_copy_isIndependent := func() {
+	root := _shell("root")
+	c := root.copy().saveFile("more.tsv")
+	test.isFalse(root._execBuilderId() == c._execBuilderId(), "a copy has its own id")
+	test.isEqual(["out.tsv", "stdout.txt"], root._outputShape().saveFile)
+	test.isEqual(["more.tsv", "out.tsv", "stdout.txt"], c._outputShape().saveFile)
+}
+
+Test_verify_acceptsSameShape := func() {
+	root := _shell("root")
+	root.fallbacks({ OOM: root.copy(), SoftwareError: [{ exitCode: 2, builder: _shell("other") }] })
+	test.isEqual([], root._verifyErrors())
+}
+
+Test_verify_refusesCyclesAndShapes := func() {
+	root := _shell("root")
+	handler := _shell("h").saveFile("extra.tsv")
+	nested := _shell("nested")
+	nested.fallbacks({ OOM: root })
+	root.fallbacks({ OOM: root, SoftwareError: [{ name: "h", builder: handler }], UnknownError: nested })
+
+	errors := root._verifyErrors()
+	test.isEqual([
+		"root → OOM[0]: the handler is its own ancestor (a cycle)",
+		"root → h: saveFile: not in the root [\"extra.tsv\"]",
+		"root → UnknownError[0] → OOM[0]: the handler is its own ancestor (a cycle)"
+	], errors)
+}
+
+Test_verify_streamsAndProcessors := func() {
+	root := _shell("root")
+	root.fallbacks({ OOM: _shell("h").streamFile("err.log"), SoftwareError: exec.builder().cmd("sh").saveFile("out.tsv") })
+	errors := root._verifyErrors()
+	test.isEqual([
+		"root → OOM[0]: streamFile: not in the root [\"err.log\"]",
+		"root → SoftwareError[0]: saveFile: missing [\"stdout.txt\"]",
+		"root → SoftwareError[0]: streamFile: missing [\"stdout.txt\"]"
+	], errors)
+}
+
+Test_lostWorkdir := func() {
+	test.isEqual(undefined, saveChain.lostWorkdir({ workdir: { result: "success" }, "out.tsv": { result: "success" } }))
+	test.isEqual("workdir: working directory \"x\" does not exist", saveChain.lostWorkdir({
+		workdir: { result: "fail", reason: "WorkdirMissing", message: "working directory \"x\" does not exist" }
+	}))
+	test.isEqual("out.tsv: FileMissing", saveChain.lostWorkdir({
+		workdir: { result: "success" },
+		"out.tsv": { result: "fail", reason: "FileMissing" }
+	}))
+}

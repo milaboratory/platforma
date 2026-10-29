@@ -1,0 +1,122 @@
+/**
+ * The wd-retrier of a successful RunCommand v3 attempt (exec fallbacks, spec §14.2, wave 2):
+ * rendered by the outcome router after the save chain, it decides on the save outcomes.
+ *
+ *   all saved                 the save chain's outputs; the stream collections switch to the
+ *                             attempt's files
+ *   working directory lost    the same plan again from a fresh working directory (a restart, not
+ *                             an attempt), at most restartLimit times per job
+ *   any other save failure    an error of the save, propagated through the inputs
+ *
+ * Without WorkdirSave v3 on the backend the router passes no `saveOutcome`: the outputs are the
+ * save chain's as they are, and a lost working directory is an error, as before (spec §5).
+ */
+
+self := import(":tpl.light")
+
+ll := import(":ll")
+render := import(":render")
+file := import(":file")
+smart := import(":smart")
+slices := import(":slices")
+fallback := import(":exec.fallback")
+saveChain := import(":exec.save-chain")
+stream := import(":exec.stream")
+
+if self.hasInput("saveOutcome") {
+	// one level: the `workdir` entry and one entry per index task (decision D2)
+	self.awaitState("saveOutcome", { wildcard: "*" }, "ResourceReady")
+} else {
+	self.awaitState("attemptCtx", "ResourceReady")
+}
+
+// Values of the save outcomes map, as JSON.
+_outcomeValues := func(outcomes) {
+	res := {}
+	for k, v in outcomes {
+		res[k] = is_map(v) ? v : v.getDataAsJson()
+	}
+	return res
+}
+
+self.body(func(inputs) {
+	ctx := inputs.attemptCtx
+	raw := self.rawInputs()
+	collections := is_undefined(inputs.streamCollections) ? {} : inputs.streamCollections
+	streamed := is_undefined(inputs.settings.filesToStream) ? [] : inputs.settings.filesToStream
+
+	lost := undefined
+	if !is_undefined(inputs.saveOutcome) {
+		lost = saveChain.lostWorkdir(_outcomeValues(inputs.saveOutcome))
+	}
+
+	if is_undefined(lost) {
+		// the final content of the attempt's streams: the saved files, as before fallbacks (a file
+		// streamed but not saved never gets one)
+		saved := is_undefined(inputs.settings.filesToSave) ? [] : inputs.settings.filesToSave
+		streamOwn := {}
+		for name in streamed {
+			if slices.hasElement(saved, name) {
+				streamOwn[name] = file.exportFile(raw.files.getFutureInputField(name))
+			}
+		}
+		stream.attemptEnded(collections, ctx.attempt, ctx.history[len(ctx.history) - 1], streamOwn)
+
+		return {
+			files: raw.files,
+			filesContent: raw.filesContent,
+			fileSets: raw.fileSets,
+			fileSetsContent: raw.fileSetsContent,
+			wdProcessors: raw.wdProcessors,
+			progress: raw.progress,
+			attempts: ctx.history,
+			streamOwn: smart.createMapResource(streamOwn)
+		}
+	}
+
+	// the attempt's success entry becomes a restart entry
+	hist := append(ctx.history[:len(ctx.history) - 1], {
+		attempt: ctx.attempt,
+		plan: ctx.plan,
+		result: "workdirMissing",
+		restart: ctx.restart
+	})
+	restartLimit := is_undefined(ctx.restartLimit) ? 0 : ctx.restartLimit
+	if ctx.restart >= restartLimit {
+		ll.panic("Working directory lost, restart limit (%v) reached: %s\n\n%s",
+			restartLimit, lost, fallback.historyText(hist, ctx.attemptLimit, "restart limit reached"))
+	}
+
+	// the same plan again, with the attempt's own exec-impl inputs and the same attempt index; the
+	// restart writes its manager into `attempt<K>` and its live tail into `stream` when it starts
+	impl := raw.implInputs.getValue().inputs()
+	pure := {}
+	for name, f in impl.pure.getValue().inputs() {
+		pure[name] = f.getValue()
+	}
+	meta := {}
+	for name, f in impl.meta.getValue().inputs() {
+		meta[name] = f.getValue()
+	}
+	pure.attemptCtx = {
+		attempt: ctx.attempt,
+		jobId: ctx.jobId,
+		plan: ctx.plan,
+		restart: ctx.restart + 1,
+		history: hist
+	}
+
+	r := render.createEphemeral(raw.execImplTpl.getValue(), pure, { metaInputs: meta })
+
+	return {
+		files: r.output("files"),
+		filesContent: r.output("filesContent"),
+		fileSets: r.output("fileSets"),
+		fileSetsContent: r.output("fileSetsContent"),
+		wdProcessors: r.output("wdProcessors"),
+		progress: r.output("progress"),
+		attempts: r.output("attempts"),
+		// the lost attempt's stream managers end on the restart's files
+		streamOwn: r.output("streamOwn")
+	}
+})
