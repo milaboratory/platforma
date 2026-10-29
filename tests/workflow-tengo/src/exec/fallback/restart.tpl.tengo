@@ -1,0 +1,39 @@
+/**
+ * The second render of the restart test (decision D5): wave 2 on a working directory the first
+ * render (exec.fallback.run_v3) produced and the test may have deleted since. A restart runs the
+ * plan below, which writes "restarted"; the first render's command wrote "first".
+ *
+ * inputs.workdir: the post-run working directory
+ * inputs.restartLimit: number
+ * inputs.nonce: string
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+render := import("@platforma-sdk/workflow-tengo:render")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+
+self.defineOutputs(["out", "attempts"])
+
+harnessTpl := assets.importTemplate(":exec.fallback.restart_harness")
+
+self.body(func(inputs) {
+	planned := exec.builder().
+		cmd("sh").arg("-c").arg("echo restarted > out.txt # " + inputs.nonce).
+		cpu(1).ram("50Mi").
+		inLightQueue().
+		saveFileContent("out.txt").
+		plan()
+
+	harnessInputs := maps.merge(planned.inputs, {
+		__workdir: self.rawInputs().workdir.getValue(),
+		__restartLimit: inputs.restartLimit
+	})
+	r := render.createEphemeral(harnessTpl, harnessInputs, { metaInputs: planned.meta })
+
+	return {
+		out: r.output("filesContent").getFutureInputField("out.txt"),
+		attempts: r.output("attempts")
+	}
+})

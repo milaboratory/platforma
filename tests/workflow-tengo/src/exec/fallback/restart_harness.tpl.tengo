@@ -1,0 +1,74 @@
+/**
+ * Wave 2 of an exec on a given post-run working directory (exec fallbacks, spec §14, decision D5):
+ * the save chain with WorkdirSave v3 and the wd-retrier, as the outcome router renders them after
+ * a successful attempt. The attempt's own exec-impl inputs, used for a restart, come from the
+ * plan of an exec builder, prepared as exec.exec prepares attempt 0.
+ *
+ * Inputs: the pure and meta inputs of an exec.exec render (exec.builder().plan()), plus
+ *   __workdir: the post-run working directory to save
+ *   __restartLimit: number - the restart cap the backend would publish
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+render := import("@platforma-sdk/workflow-tengo:render")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+prepare := import("@platforma-sdk/workflow-tengo:exec.prepare")
+saveChain := import("@platforma-sdk/workflow-tengo:exec.save-chain")
+
+execImplTpl := assets.importTemplate("@platforma-sdk/workflow-tengo:exec.exec-impl")
+wdRetrierTpl := assets.importTemplate("@platforma-sdk/workflow-tengo:exec.wd-retrier")
+
+self.awaitState("ResourceReady")
+
+self.body(func(inputs) {
+	raw := self.rawInputs()
+	impl := prepare.implInputs(inputs, raw)
+	impl.pure.execImplTpl = execImplTpl
+
+	pure := smart.ephemeralMapBuilder()
+	for k, v in impl.pure {
+		pure.add(k, v)
+	}
+	meta := smart.ephemeralMapBuilder()
+	for k, v in impl.meta {
+		meta.add(k, v)
+	}
+	implInputs := smart.ephemeralMapBuilder().addRef("pure", pure.build()).addRef("meta", meta.build()).build()
+
+	settings := {
+		filesToSave: inputs.filesToSave,
+		filesContentToSave: inputs.filesContentToSave,
+		fileSetsToSave: inputs.fileSetsToSave,
+		fileSetsContentToSave: inputs.fileSetsContentToSave,
+		filesToStream: inputs.filesToStream
+	}
+	saved := saveChain.run(raw.__workdir.getValue(), settings, undefined, { v3: true })
+
+	r := render.createEphemeral(wdRetrierTpl, {
+		files: saved.files,
+		filesContent: saved.filesContent,
+		fileSets: saved.fileSets,
+		fileSetsContent: saved.fileSetsContent,
+		progress: saved.progress,
+		wdProcessors: saved.wdProcessors,
+		saveOutcome: saved.outcome,
+		settings: settings,
+		attemptCtx: {
+			attempt: 0,
+			jobId: "restart-test",
+			plan: "root",
+			restart: 0,
+			history: [{ attempt: 0, plan: "root", result: "success", exitCode: 0 }],
+			attemptLimit: 3,
+			restartLimit: inputs.__restartLimit
+		},
+		implInputs: implInputs,
+		execImplTpl: execImplTpl
+	})
+
+	return {
+		filesContent: r.output("filesContent"),
+		attempts: r.output("attempts")
+	}
+})
