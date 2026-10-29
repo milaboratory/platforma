@@ -1841,6 +1841,11 @@ _makeBuilder := func(st) {
 		 * must save, stream and process exactly what this builder does (see verify()), and the
 		 * tree must not contain cycles. The backend caps the number of attempts per job.
 		 *
+		 * Every handler's plan is an input of the exec, so the exec starts once the inputs of
+		 * all its plans are ready, the files they add and line counts their formulas need
+		 * included, whether a handler ever runs or not. A handler must run in a queue with
+		 * RunCommand v3 when the root does.
+		 *
 		 *   exec.builder()...fallbacks({
 		 *       GPUMissed: cpuOnly,
 		 *       SoftwareError: [{ exitCode: 2, name: "reindex", builder: reindex }]
@@ -1945,6 +1950,11 @@ _makeBuilder := func(st) {
 			plans := {}
 			for key, b in flat.plans {
 				hp := b._plan()
+				// a handler on a RunCommand v2 queue would run without the outcome router: its
+				// stream would never join the collection and its own fallbacks would be ignored
+				ll.assert(!is_undefined(limits.getRunCommandV3Type(hp.st.queue)),
+					"exec.builder.fallbacks: handler %q runs in queue %q, which has no RunCommand v3 on this backend, while the root's queue %q has it",
+					key, hp.st.queue, p.queue)
 				plans[key] = smart.createMapResource({
 					inputs: smart.createMapResource(_definedOnly(hp.inputs)),
 					meta: smart.createMapResource(_definedOnly(hp.meta))
@@ -2064,7 +2074,9 @@ _makeBuilder := func(st) {
 
 				/**
 				 * Retrieves the attempt history of a successful run: one entry per attempt, the
-				 * last one the attempt that succeeded.
+				 * last one the attempt that succeeded. A result reused from an exec rendered by an
+				 * SDK before exec fallbacks (same inputs, so the same exec.exec render) has no
+				 * attempts output: there this never resolves.
 				 *
 				 *   [{ attempt: 0, plan: "root", result: "fail", reason: "OOM", exitCode: 137 },
 				 *    { attempt: 1, plan: "moreRam", result: "success", exitCode: 0 }]

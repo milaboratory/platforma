@@ -134,3 +134,32 @@ Test_lostWorkdir := func() {
 		"out.tsv": { result: "fail", reason: "FileMissing" }
 	}))
 }
+
+Test_pick_firstMatchWins := func() {
+	policy := {
+		handlers: {
+			SoftwareError: [
+				{ exitCode: 3, messageMatch: "disk", plan: "a" },
+				{ messageMatch: "disk", plan: "b" },
+				{ exitCode: 3, plan: "c" },
+				{ plan: "d" }
+			],
+			OOM: [{ exitCode: 137, plan: "oom137" }, { plan: "oomAny" }]
+		}
+	}
+	test.isEqual("a", fallback.pick(policy, { reason: "SoftwareError", exitCode: 3 }, ["no disk space"]))
+	test.isEqual("b", fallback.pick(policy, { reason: "SoftwareError", exitCode: 4 }, ["no disk space"]))
+	test.isEqual("c", fallback.pick(policy, { reason: "SoftwareError", exitCode: 3 }, ["other"]))
+	test.isEqual("d", fallback.pick(policy, { reason: "SoftwareError", exitCode: 1 }, []))
+	test.isEqual("oom137", fallback.pick(policy, { reason: "OOM", exitCode: 137 }, []))
+	test.isEqual("oomAny", fallback.pick(policy, { reason: "OOM" }, []))
+}
+
+Test_historyText_noReason := func() {
+	hist := [
+		{ attempt: 0, plan: "root", result: "fail" },
+		{ attempt: 1, plan: "h", result: "success", exitCode: 0 }
+	]
+	test.isEqual("Attempts (2, backend cap 3):\n  #0 root fail → handler \"h\"\n  #1 h success (exit 0) → done",
+		fallback.historyText(hist, 3, "done"))
+}
