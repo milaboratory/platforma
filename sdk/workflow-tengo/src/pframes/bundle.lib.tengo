@@ -118,6 +118,9 @@ createBuilderWith := func(q, ctx) {
 		// Global-form PObjectId: canonicalize({__isRef: true, blockId, name}).
 		// Opaque id from cross-block result pool — must be resolved by ref, not as a query.
 		isGlobalRef := is_map(decodedId) && decodedId.__isRef == true
+		if isGlobalRef && maps.containsKey(q, "isRef") {
+			ll.panic("serialized value ids are not supported by this query API; add a ref {block, workflow, name} with addRef, got %v", id)
+		}
 		if isGlobalRef {
 			refKey := is_string(id) ? id : canonical.encode(decodedId)
 			if !is_undefined(queryKey) {

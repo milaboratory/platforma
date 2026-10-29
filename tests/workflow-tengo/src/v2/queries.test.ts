@@ -694,6 +694,11 @@ tplTest.concurrent.for([
     call: (r: unknown) => ({ resolve: r, options: { data: "yes" } }),
     message: /query option "data" must be a boolean/,
   },
+  {
+    kind: "nonBooleanSingle",
+    call: () => ({ query: nothingQuery, options: { single: "yes" } }),
+    message: /query option "single" must be a boolean/,
+  },
 ])(
   "a v2 query option $kind fails the render",
   async ({ kind, call, message }, { helper, pl, expect, skip }) => {
@@ -712,6 +717,7 @@ tplTest.concurrent.for([
   { kind: "extraKey", malformed: { block: "b", workflow: "main", name: "numbers", extra: "x" } },
   { kind: "missingField", malformed: { block: "b", name: "numbers" } },
   { kind: "slashInBlock", malformed: { block: "b/c", workflow: "main", name: "numbers" } },
+  { kind: "slashInWorkflow", malformed: { block: "b", workflow: "main/x", name: "numbers" } },
 ])(
   "wf.resolve of a ref with $kind fails the render",
   async ({ kind, malformed }, { helper, pl, expect, skip }) => {
@@ -752,5 +758,95 @@ tplTest.concurrent(
     // the pool exports two "counts" values, for species human and mouse
     const two = await anchoredItem("anchored-single-two", byAnchor("pl7.app/test/counts"));
     await expect(json(two, "spec")).rejects.toThrow(AMBIGUOUS);
+  },
+);
+
+tplTest.concurrent(
+  "a value exported by a workflow other than main decodes with that workflow in its ref, and resolves by it",
+  async ({ helper, pl, expect, skip }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const block = "otherwf-pool";
+    const pool = { block, workflow: "preview", render: await renderPool(helper, block, [31]) };
+    const numbers = { block, workflow: "preview", name: "numbers" };
+    const consumer = await renderWorkflowV2(helper, "v2.query", {
+      blockId: "otherwf-consumer",
+      args: { calls: { resolved: { resolve: numbers }, queried: { query: numbersQuery(block) } } },
+      upstream: [pool],
+    });
+    const decoded = await json<{ resolved: Described; queried: Described[] }>(consumer, "decoded");
+    expect(decoded.resolved.ref).toStrictEqual(numbers);
+    expect(decoded.resolved.data).toStrictEqual({ state: "value", value: [31] });
+    expect(decoded.queried.map((d) => d.ref)).toStrictEqual([numbers]);
+  },
+);
+
+tplTest.concurrent(
+  "family 1 resolve of an address nothing exports decodes to nothing, without failing the render",
+  async ({ helper, pl, expect, skip }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const render = await renderFamilies(helper, "missing", {
+      missing1: { blockId: "families-v1-missing", name: "absent" },
+    });
+    const decoded = (await resultJson(render, "decoded", TIMEOUT)) as Record<string, unknown>;
+    expect(decoded.missing1).eq("none");
+    expect((decoded.resolve1 as Described).data).toStrictEqual({
+      state: "value",
+      value: ["a", "b"],
+    });
+  },
+);
+
+tplTest.concurrent(
+  "a v2 table with a ref primary and a column query anchored to it finds the query's columns",
+  async ({ helper, pl, expect, skip, driverKit }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const tablePool = await renderTablePool(helper, "table-query-pool");
+    const render = await renderWorkflowV2(helper, "v2.table", {
+      blockId: "table-query-consumer",
+      args: {
+        primary: ref("table-query-pool", "score"),
+        column: { name: "pl7.app/score" },
+        columnHeader: "Score again",
+      },
+      upstream: [{ block: "table-query-pool", render: tablePool }],
+    });
+    const content = await resultFileContent(render, "table", driverKit, TIMEOUT);
+    expect(content.trim().split("\n")).toStrictEqual([
+      "ID\tScore\tScore again",
+      "A\t10\t10",
+      "B\t20\t20",
+      "C\t30\t30",
+    ]);
+  },
+);
+
+const serializedId = JSON.stringify({ __isRef: true, blockId: "nowhere/main", name: "x" });
+
+tplTest.concurrent.for([
+  {
+    kind: "a table enrichment column's hit",
+    template: "v2.table",
+    args: {
+      primary: ref("nowhere", "score"),
+      column: { __isEnrichment: "v1", hit: serializedId, path: [] },
+    },
+  },
+  { kind: "a bundle's single", template: "v2.bundle", args: { single: serializedId } },
+])(
+  "a serialized value id given as $kind fails the render under the v2 query API",
+  async ({ kind, template, args }, { helper, pl, expect, skip }) => {
+    if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+
+    const render = await renderWorkflowV2(helper, template, {
+      blockId: `serialized-${kind.replace(/\W+/g, "-")}`,
+      args,
+    });
+    const output = template === "v2.table" ? "table" : "decoded";
+    await expect(json(render, output)).rejects.toThrow(
+      /serialized value ids are not supported by this query API/,
+    );
   },
 );

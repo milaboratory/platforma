@@ -451,6 +451,9 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 			// Accepts: PObjectId string | PlRef map | resolved {spec, data}.
 			resolveColumn := func(value) {
 				if is_string(value) {
+					if maps.containsKey(q, "isRef") {
+						ll.panic("serialized value ids are not supported by this query API; pass a ref {block, workflow, name}, got %v", value)
+					}
 					ref := decodeGlobalPObjectId(value)
 					r := q.resolve(ref, _ctx)
 					return {

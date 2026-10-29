@@ -2,7 +2,7 @@
 // chain), family 2 over ctx2 (a BContext/2 chain). Each family resolves a ref and runs a query on
 // its own chain; the results are decoded in v2.decode.
 // Family 1 also resolves request.ref1 with an options map, and outputs that map after the call as
-// opts1After. With request.unknownFamily set, asks for a family that does not exist instead.
+// opts1After; and resolves request.missing1, an address nothing exports, when given. With request.unknownFamily set, asks for a family that does not exist instead.
 self := import("@platforma-sdk/workflow-tengo:tpl")
 bquery := import("@platforma-sdk/workflow-tengo:workflow.bquery")
 assets := import("@platforma-sdk/workflow-tengo:assets")
@@ -31,6 +31,9 @@ self.body(func(inputs) {
 	items.resolve1 = family1.resolve(request.ref1, ctx1)
 	choices.query2 = family2.create(request.query2, ctx2)
 	choices.query1 = family1.create(request.query1, ctx1)
+	if !is_undefined(request.missing1) {
+		items.missing1 = family1.resolve(request.missing1, ctx1)
+	}
 	opts1 := { spec: true, data: true }
 	withOpts1 := family1.resolve(request.ref1, ctx1, opts1)
 
