@@ -47,7 +47,7 @@ export class PTableCachePlain {
       this.logger("info", `createPTable cache - added PTable ${key} with size ${size}`);
     }
 
-    const status: LRUCache.Status<PoolEntry<PTableHandle, PTableHolder>> = {};
+    const status: LRUCache.Status<PTableHandle, PoolEntry<PTableHandle, PTableHolder>> = {};
     this.global.set(key, resource, { size: Math.max(size, 1), status }); // 1 is minimum size to avoid cache evictions
 
     if (status.maxEntrySizeExceeded) {
