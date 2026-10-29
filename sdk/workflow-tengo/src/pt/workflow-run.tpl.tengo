@@ -26,38 +26,65 @@ self.body(func(inputs) {
 
     queue := inputs.queue
     cpu := inputs.cpu
+    cpuFloor := inputs.cpuFloor
+    cpuIntercept := inputs.cpuIntercept
+    cpuSlope := inputs.cpuSlope
+    cpuCeiling := inputs.cpuCeiling
     mem := inputs.mem
     inputCache := inputs.inputCache
     memFloor := inputs.memFloor
+    memSlope := inputs.memSlope
+    memIntercept := inputs.memIntercept
+    polarsMaxThreads := inputs.polarsMaxThreads
+    scratchFreeSpace := inputs.scratchFreeSpace
 
     workdirProcessorName := "import_dir";
     inFramesFolder := "input_frame"
-    spillFolder := "pframes_spill"
+    spillFolderExpr := "{system.scratch.path + '/ptabler-spill'}"
 
     ptCmd := exec.builder().
         setQueue(queue).
         printErrStreamToStdout().
         software(ptSoftware).
-        envExpr("POLARS_MAX_THREADS", "{max(2,system.cpu)}").
+        envExpr("POLARS_MAX_THREADS", sizing.polarsMaxThreadsExpr(polarsMaxThreads)).
         arg("workflow_sc.json").
         arg("--frame-dir").arg(inFramesFolder).
-        arg("--spill-dir").arg(spillFolder).
+        arg("--spill-dir").argExpr(spillFolderExpr).
         writeFile("workflow_sc.json", workflowJsonStruct);
-    // Size the ptabler run from total input volume, unless the block author sets cpu or
-    // mem. An explicit request always wins. The formulas, the measured slopes behind
-    // them and the thread ceiling they assume live in :pt.sizing.
+    // The total input volume sets the cpu, mem and scratchFreeSpace requests. An explicit
+    // request from the block always wins. :pt.sizing holds the formulas, the measured
+    // slopes and the thread limit.
     ramReq := mem
     if is_undefined(ramReq) {
-        ramReq = sizing.ramFormula(memFloor)
+        ramReq = sizing.ramFormula({ floor: memFloor, slope: memSlope, intercept: memIntercept })
     }
     cpuReq := cpu
     if is_undefined(cpuReq) {
-        cpuReq = sizing.cpuFormula()
+        cpuReq = sizing.cpuFormula({ floor: cpuFloor, intercept: cpuIntercept, slope: cpuSlope, ceiling: cpuCeiling })
+    }
+    scratchReq := scratchFreeSpace
+    if is_undefined(scratchReq) {
+        readFrames := 0
+        writeFrames := 0
+        for step in workflowJsonStruct.workflow {
+            if step.type == "read_frame" {
+                readFrames += 1
+            } else if step.type == "write_frame" {
+                writeFrames += 1
+            } else if step.type == "import_parquet_frame" {
+                // Reads a frame-sized input and writes a frame, with the same sort
+                // spill in between, so it costs one of each.
+                readFrames += 1
+                writeFrames += 1
+            }
+        }
+        scratchReq = sizing.scratchFormula(readFrames, writeFrames)
     }
     ptCmd.resources({
         onCPU: {
             cpu: cpuReq,
-            ram: ramReq
+            ram: ramReq,
+            scratchFreeSpace: scratchReq
         }
     })
     if !is_undefined(inputCache) {

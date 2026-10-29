@@ -16,7 +16,11 @@ defineProps<{
 </script>
 
 <template>
-  <div class="pl-layout-component pl-row" :class="{ wrap, 'align-center': alignCenter }">
+  <div
+    class="pl-layout-component pl-row"
+    data-testid="pl-row"
+    :class="{ wrap, 'align-center': alignCenter }"
+  >
     <slot />
   </div>
 </template>

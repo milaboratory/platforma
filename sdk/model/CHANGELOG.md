@@ -1,5 +1,110 @@
 # @platforma-sdk/model
 
+## 1.86.3
+
+### Patch Changes
+
+- Updated dependencies [4cc1e4e]
+  - @milaboratories/helpers@1.14.6
+  - @milaboratories/pl-model-common@1.54.1
+  - @milaboratories/pl-model-middle-layer@1.34.5
+  - @milaboratories/pl-error-like@1.12.10
+  - @milaboratories/ptabler-expression-js@1.2.45
+
+## 1.86.0
+
+### Minor Changes
+
+- bb4e8d4: Mark columns reached through a peer link with a link icon. A peer link joins two datasets' main axes (the second axis of a `pl7.app/isAnchor` column), e.g. a clonotype to its nearest known antibody, so the columns behind it describe a different clonotype than the row. Hovering the icon shows "Reached via <link label>".
+
+  - `PlColumnLabel` (uikit) takes an option (`{ label, linkHint }`) and draws the label with the link icon and its hover text. Every table and dropdown below uses it.
+  - Tables: the header, Manage Columns and the table filter show the icon, and list peer-linked columns after the others. `PlDataTableColumnMeta.linkHint` carries the hover text, the same field dropdown options use. Same-named columns reached through different links, or one through a link and one directly, no longer get a "via" postfix; the icon and its hover text tell them apart.
+  - Dropdowns: options take an optional `linkHint`, the hover text. `PlDropdown` shows it on the icon, and on the closed field's tooltip. `deriveColumnOptions` and the new `deriveRecipeOptions` set it and list peer-linked options last.
+  - New helpers: `collectDatasetAxes`, `getResultPoolDatasetAxes`, `findPeerLinks`, `describePeerLinks`, `createPeerLinkFinder`, `peerLinkedLast`.
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @milaboratories/pl-model-common@1.54.0
+  - @milaboratories/pl-model-middle-layer@1.34.4
+  - @milaboratories/ptabler-expression-js@1.2.44
+
+## 1.85.2
+
+### Patch Changes
+
+- Updated dependencies [5d27046]
+  - @milaboratories/pl-model-middle-layer@1.34.3
+
+## 1.85.0
+
+### Minor Changes
+
+- 2a781e0: tableBuilder: setColumnJoin("left" | "full" | "inner") and a per-column join option control how columns added with addColumn / addColumns are joined onto the primaries. The default stays "full". Use "left" with a filtered primary so added columns don't bring back keys the filter removed.
+
+  buildDatasetOptions: new requireEnrichments option (default true). Set it to false for blocks that only need the dataset and its filters, so blocks that enrich the dataset no longer make them stale when they run.
+
+  PlDatasetSelector: a stored selection whose requireEnrichments flag differs from the options' is now shown instead of appearing empty.
+
+## 1.84.20
+
+### Patch Changes
+
+- 7dc8428: Derived labels no longer tell same-named columns apart only by what one of them lacks. When a column's shown label parts are a strict subset of a same-named column's (for example "Enrichment Quality" next to "Enrichment Quality / Sequence clustering"), either the group is re-labelled from the parts all its members carry, such as each enrichment block's subtitle, or the bare column adds a part that differs from its peer (a trace entry or a qualification tag), preferring the same kind of part the peer shows. The more important of the two distinctions wins. When the native label is shown, the added part also appears on every same-named column that carries it, so the group reads consistently; when it is not, only the bare column changes. Qualification tags are kept, labels stay unique across the list, and a single repair pass replaces the previous by-presence repair.
+
+## 1.84.19
+
+### Patch Changes
+
+- fc41fe4: Table filters: suggest values for axis columns, merged across every table column carrying the axis, instead of failing with "Data loading error"; offer "In List" / "Not In List" predicates. New `getUniqueAxisValuesWithLabels` in `@platforma-sdk/model`.
+
+## 1.84.17
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+  - @milaboratories/pl-model-middle-layer@1.34.2
+  - @milaboratories/ptabler-expression-js@1.2.43
+
+## 1.84.10
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-model-common@1.52.0
+  - @milaboratories/pl-model-middle-layer@1.34.1
+  - @milaboratories/ptabler-expression-js@1.2.42
+
+## 1.84.3
+
+### Patch Changes
+
+- Updated dependencies [61aefa1]
+  - @milaboratories/pl-model-middle-layer@1.34.0
+
+## 1.84.1
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+  - @milaboratories/pl-model-middle-layer@1.33.0
+  - @milaboratories/ptabler-expression-js@1.2.41
+
+## 1.84.0
+
+### Minor Changes
+
+- 3716dcb: Graph aesthetic annotations: new `pl7.app/graph/shape` carries a default dot shape per column value (R shape codes). `pl7.app/graph/palette` gains `midPoint`, `min`, `max` and `log` for continuous columns, and its `mapping` is now optional so a continuous default needs no per-value entries. Both annotations are defaults a user can override in the interface.
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+  - @milaboratories/pl-model-middle-layer@1.32.2
+  - @milaboratories/ptabler-expression-js@1.2.40
+
 ## 1.83.17
 
 ### Patch Changes

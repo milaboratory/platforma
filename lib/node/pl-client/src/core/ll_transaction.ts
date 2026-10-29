@@ -149,6 +149,15 @@ function isRecoverable(status: Status): boolean {
   return status.code === PlErrorCodeNotFound;
 }
 
+/** The error an error factory throws, as an Error: a stream reader is handed an Error value. */
+function errorThrownBy(errorFactory: () => never): Error {
+  try {
+    errorFactory();
+  } catch (e: unknown) {
+    return e instanceof Error ? e : new Error(String(e));
+  }
+}
+
 export class RethrowError extends Error {
   name = "RethrowError";
   constructor(public readonly rethrowLambda: () => never) {
@@ -409,7 +418,9 @@ export class LLPlTransaction {
       if (handler.mode === "single" || handler.mode === "multiBuffered") {
         handler.reject(noReplyError);
       } else {
-        handler.stream.fail(noReplyError);
+        // A stream's reader is handed the error itself: unlike send(), nothing on the reading side
+        // unwraps a RethrowError, and a reader classifying the failure would see none of its cause.
+        handler.stream.fail(this.errorFactory ? errorThrownBy(this.errorFactory) : noReplyError);
       }
     }
 

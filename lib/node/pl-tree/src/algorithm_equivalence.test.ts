@@ -84,8 +84,8 @@ test("every algorithm converges on the same mirror at every step", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
     const caps = pl.serverInfo.capabilities ?? [];
     const modes: TraversalMode[] = ["client-bfs", "backend-streaming"];
-    if (hasCapability(caps, "treeChangedSince:v1")) modes.push("backend-delta");
-    else console.warn("SKIPPING backend-delta: backend lacks treeChangedSince:v1");
+    if (hasCapability(caps, "treeChangedSince:v2")) modes.push("backend-delta");
+    else console.warn("SKIPPING backend-delta: backend lacks treeChangedSince:v2");
 
     // A root with two children, deep enough that a change can hide under an unchanged parent.
     const seed = await pl.withWriteTx(

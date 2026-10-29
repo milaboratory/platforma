@@ -326,7 +326,7 @@ async function downloadFile(
 
   let redirCount = 0;
   let attempt = 0;
-  for (; attempt <= maxAttempts; ) {
+  for (; attempt <= maxAttempts;) {
     attempt++;
 
     logger.debug(`Trying to download: ${url}`);

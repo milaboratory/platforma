@@ -8,20 +8,36 @@ defineProps<{
 </script>
 
 <template>
-  <div :class="$style.item">
-    <div :class="$style.name">{{ item.fileName }}</div>
-    <div v-if="item.status === 'in-progress'" :class="$style.details">
+  <div data-testid="pl-btn-export-archive-item" :class="$style.item">
+    <div data-testid="pl-btn-export-archive-item-name" :class="$style.name">
+      {{ item.fileName }}
+    </div>
+    <div
+      v-if="item.status === 'in-progress'"
+      data-testid="pl-btn-export-archive-item-status"
+      :class="$style.details"
+    >
       <span>{{ prettyBytes(item.current, {}) }}</span>
       <span>/</span>
       <span>{{ prettyBytes(item.size, {}) }}</span>
     </div>
-    <div v-else-if="item.status === 'completed'" :class="$style.details">
+    <div
+      v-else-if="item.status === 'completed'"
+      data-testid="pl-btn-export-archive-item-status"
+      :class="$style.details"
+    >
       Done <span>{{ prettyBytes(item.size, {}) }}</span>
     </div>
-    <div v-else-if="item.status === 'error'" :class="$style.error">
+    <div
+      v-else-if="item.status === 'error'"
+      data-testid="pl-btn-export-archive-item-error"
+      :class="$style.error"
+    >
       <span>{{ item.error }}</span>
     </div>
-    <div v-else :class="$style.details">Pending</div>
+    <div v-else data-testid="pl-btn-export-archive-item-status" :class="$style.details">
+      Pending
+    </div>
   </div>
 </template>
 

@@ -1,5 +1,129 @@
 # @milaboratories/uikit
 
+## 2.16.1
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- Updated dependencies [4cc1e4e]
+  - @milaboratories/helpers@1.14.6
+  - @platforma-sdk/model@1.86.3
+
+## 2.16.0
+
+### Minor Changes
+
+- bb4e8d4: Mark columns reached through a peer link with a link icon. A peer link joins two datasets' main axes (the second axis of a `pl7.app/isAnchor` column), e.g. a clonotype to its nearest known antibody, so the columns behind it describe a different clonotype than the row. Hovering the icon shows "Reached via <link label>".
+
+  - `PlColumnLabel` (uikit) takes an option (`{ label, linkHint }`) and draws the label with the link icon and its hover text. Every table and dropdown below uses it.
+  - Tables: the header, Manage Columns and the table filter show the icon, and list peer-linked columns after the others. `PlDataTableColumnMeta.linkHint` carries the hover text, the same field dropdown options use. Same-named columns reached through different links, or one through a link and one directly, no longer get a "via" postfix; the icon and its hover text tell them apart.
+  - Dropdowns: options take an optional `linkHint`, the hover text. `PlDropdown` shows it on the icon, and on the closed field's tooltip. `deriveColumnOptions` and the new `deriveRecipeOptions` set it and list peer-linked options last.
+  - New helpers: `collectDatasetAxes`, `getResultPoolDatasetAxes`, `findPeerLinks`, `describePeerLinks`, `createPeerLinkFinder`, `peerLinkedLast`.
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @platforma-sdk/model@1.86.0
+
+## 2.15.43
+
+### Patch Changes
+
+- @platforma-sdk/model@1.85.2
+
+## 2.15.42
+
+### Patch Changes
+
+- Updated dependencies [2a781e0]
+  - @platforma-sdk/model@1.85.0
+
+## 2.15.41
+
+### Patch Changes
+
+- Updated dependencies [7dc8428]
+  - @platforma-sdk/model@1.84.20
+
+## 2.15.40
+
+### Patch Changes
+
+- Updated dependencies [fc41fe4]
+  - @platforma-sdk/model@1.84.19
+
+## 2.15.39
+
+### Patch Changes
+
+- @platforma-sdk/model@1.84.17
+
+## 2.15.38
+
+### Patch Changes
+
+- ad7b703: Components render default `data-testid` anchors for E2E tests: `pl-<component>` on the root and `pl-<component>-<part>` on inner parts (inputs, options, buttons, titles, chart marks, …). A `data-testid` passed by the caller replaces the root one. PlFileInput now has a single root (its file dialog moved inside), so attributes passed to it are no longer dropped.
+
+## 2.15.37
+
+### Patch Changes
+
+- @platforma-sdk/model@1.84.10
+
+## 2.15.36
+
+### Patch Changes
+
+- 33c1499: Remove the background from outlined control labels
+
+## 2.15.35
+
+### Patch Changes
+
+- a37d7c6: PlTextArea: the textarea uses the base font instead of the browser's monospace default
+
+## 2.15.34
+
+### Patch Changes
+
+- @platforma-sdk/model@1.84.3
+
+## 2.15.33
+
+### Patch Changes
+
+- 43e07a3: Fix an infinite grid-remount loop in `PlAgDataTableV2` that recreated the whole
+  AG Grid around twenty times a second — strobing the column headers and filling
+  the console with AG Grid licence banners — on opening a page whose table had a
+  saved grid state, most often right after a block rebuild.
+
+  `computedCached`'s `writeThrough` made a set visible to readers immediately, but
+  the cache was still overwritten whenever the source re-emitted. A set is
+  debounced, so between the write and its arrival in the project state the source
+  still holds the value the write moved away from; a running block has that state
+  pushed back repeatedly, and each push reverted the cache. The stored grid state
+  therefore flipped between what the grid had and what the project still held, and
+  every flip made the reload watch destroy and recreate the grid — which, because
+  the flips never stopped on their own, never converged.
+
+  A write-through value now stays authoritative until the source reports it back.
+  Since `get` maps set values to themselves, that is exactly when the round trip
+  has completed; a change from elsewhere arriving mid-flight is dropped in favour
+  of the local write that is about to land.
+
+## 2.15.32
+
+### Patch Changes
+
+- @platforma-sdk/model@1.84.1
+
+## 2.15.31
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @platforma-sdk/model@1.84.0
+
 ## 2.15.30
 
 ### Patch Changes

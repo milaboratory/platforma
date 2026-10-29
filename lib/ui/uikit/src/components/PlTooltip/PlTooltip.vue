@@ -164,6 +164,7 @@ const anchorName = `--anchor-${uniqueId()}`;
   <component
     :class="$style.plTooltipAnchorWrapper"
     :is="element"
+    data-testid="pl-tooltip"
     v-bind="$attrs"
     ref="rootRef"
     @click="onOver"
@@ -175,6 +176,7 @@ const anchorName = `--anchor-${uniqueId()}`;
     <Transition name="pl-tooltip-fade">
       <Teleport v-if="$slots['tooltip'] && data.tooltipOpen" :to="container">
         <div
+          data-testid="pl-tooltip-popup"
           :class="[
             $style.plTooltipContainer,
             {
@@ -195,6 +197,7 @@ const anchorName = `--anchor-${uniqueId()}`;
           <div :class="$style.plTooltipBox" @click.stop>
             <div
               ref="tooltip"
+              data-testid="pl-tooltip-content"
               :class="[$style.plTooltipContent, position]"
               @mouseover="onOver"
               @mouseleave="onLeave"

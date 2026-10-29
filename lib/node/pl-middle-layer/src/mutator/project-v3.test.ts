@@ -23,6 +23,8 @@ const BPSpecSumV3: BlockPackSpec = {
   folder: path.resolve(__dirname, "../../../../../etc/blocks/sum-numbers/block"),
 };
 
+// Waits for two blocks to compute on the backend, so it runs as long as the backend is busy with
+// whatever else the suite is running; it gets twice the suite's default.
 test("v3 blocks: basic test with unified state", async () => {
   const quickJs = await getQuickJS();
 
@@ -154,7 +156,7 @@ test("v3 blocks: basic test with unified state", async () => {
       expect(sum).toBe(21);
     });
   });
-});
+}, 160_000);
 
 test("v3 blocks: prerunArgs skip test", async () => {
   const quickJs = await getQuickJS();

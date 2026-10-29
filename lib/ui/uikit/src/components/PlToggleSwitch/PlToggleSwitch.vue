@@ -35,13 +35,14 @@ defineProps<{
   <div
     tabindex="0"
     class="ui-toggle-switch"
+    data-testid="pl-toggle-switch"
     :class="{ active: modelValue }"
     @click="$emit('update:modelValue', !modelValue)"
     @keydown.enter="$emit('update:modelValue', !modelValue)"
   >
-    <div class="ui-toggle-switch__body">
-      <div class="ui-toggle-switch__handle" />
+    <div class="ui-toggle-switch__body" data-testid="pl-toggle-switch-body">
+      <div class="ui-toggle-switch__handle" data-testid="pl-toggle-switch-handle" />
     </div>
-    <span v-if="label" class="label">{{ label }}</span>
+    <span v-if="label" class="label" data-testid="pl-toggle-switch-label">{{ label }}</span>
   </div>
 </template>

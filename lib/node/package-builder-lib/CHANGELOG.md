@@ -1,5 +1,17 @@
 # @platforma-sdk/package-builder-lib
 
+## 1.4.2
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+
+## 1.4.1
+
+### Patch Changes
+
+- f69c796: Make software docker image builds work when `docker` is podman. Replace `--provenance=false --sbom=false` with `BUILDX_NO_DEFAULT_ATTESTATIONS=1` in the `docker build` environment. Docker buildx output does not change: the default provenance attestation stays off and SBOM is off by default. Podman rejects both flags and ignores the variable.
+
 ## 1.4.0
 
 ### Minor Changes

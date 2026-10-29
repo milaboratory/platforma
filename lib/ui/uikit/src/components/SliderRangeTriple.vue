@@ -244,15 +244,21 @@ onMounted(() => {
 
 <template>
   <div
+    data-testid="pl-slider-range-triple"
     :class="props.disabled ? 'ui-slider__disabled' : undefined"
     class="ui-slider__envelope ui-slider__triple"
   >
     <div :class="`ui-slider__mode-${props.mode}`" class="ui-slider">
       <div class="ui-slider__wrapper">
         <div class="ui-slider__label-section">
-          <label v-if="label" class="text-s">
+          <label v-if="label" data-testid="pl-slider-range-triple-label" class="text-s">
             <span>{{ label }}</span>
-            <PlTooltip v-if="slots.tooltip" class="info" position="top">
+            <PlTooltip
+              v-if="slots.tooltip"
+              data-testid="pl-slider-range-triple-tooltip"
+              class="info"
+              position="top"
+            >
               <template #tooltip>
                 <slot name="tooltip" />
               </template>
@@ -261,8 +267,12 @@ onMounted(() => {
         </div>
         <div class="ui-slider__base">
           <div class="ui-slider__container">
-            <div ref="barRef" class="ui-slider__bar">
-              <div class="ui-slider__progress" :style="progressStyle" />
+            <div ref="barRef" data-testid="pl-slider-range-triple-bar" class="ui-slider__bar">
+              <div
+                data-testid="pl-slider-range-triple-progress"
+                class="ui-slider__progress"
+                :style="progressStyle"
+              />
             </div>
           </div>
           <div class="ui-slider__container ui-slider__container-thumb">
@@ -270,12 +280,14 @@ onMounted(() => {
               <div
                 v-for="(item, index) in breakpointsRef"
                 :key="index"
+                data-testid="pl-slider-range-triple-step"
                 :style="{ right: `${item}%` }"
                 class="ui-slider__thumb-step"
               />
             </template>
             <div
               ref="thumbRef1"
+              data-testid="pl-slider-range-triple-thumb"
               :style="thumbStyle1"
               :data-percent="props.modelValue[0] + '%'"
               class="ui-slider__thumb ui-slider__triple-thumb"
@@ -287,6 +299,7 @@ onMounted(() => {
             </div>
             <div
               ref="thumbRef2"
+              data-testid="pl-slider-range-triple-thumb"
               :style="thumbStyle2"
               :data-percent="props.modelValue[1] + '%'"
               class="ui-slider__thumb ui-slider__triple-thumb"
@@ -298,6 +311,7 @@ onMounted(() => {
             </div>
             <div
               ref="thumbRef3"
+              data-testid="pl-slider-range-triple-thumb"
               :style="thumbStyle3"
               :data-percent="props.modelValue[2] + '%'"
               class="ui-slider__thumb ui-slider__triple-thumb"
@@ -319,7 +333,7 @@ onMounted(() => {
     <!-- <div v-if="helper" class="ui-slider__helper">
       {{ helper }}
     </div> -->
-    <div v-if="error" class="ui-slider__error">
+    <div v-if="error" data-testid="pl-slider-range-triple-error" class="ui-slider__error">
       {{ error }}
     </div>
   </div>

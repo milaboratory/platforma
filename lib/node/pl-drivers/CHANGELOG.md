@@ -1,5 +1,122 @@
 # @milaboratories/pl-drivers
 
+## 1.16.37
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- 615bd8c: Replace `decompress` (path traversal advisories, no fixed release) with `yauzl` for zip archives and `tar` for the block boilerplate. Zip extraction now fails on entries and symlinks that lead outside the target folder, on entries written through a symlink, and on duplicate entries.
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/computable@2.9.9
+  - @milaboratories/pl-client@3.19.2
+  - @milaboratories/pl-tree@1.16.6
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/helpers@1.14.6
+  - @milaboratories/pl-model-common@1.54.1
+
+## 1.16.36
+
+### Patch Changes
+
+- 1472a5b: Trim the download, downloadToURL and frontend cache dirs to their size limits on startup, so files from earlier sessions no longer pile up.
+
+## 1.16.35
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @milaboratories/pl-model-common@1.54.0
+  - @milaboratories/pl-client@3.19.1
+  - @milaboratories/pl-tree@1.16.5
+
+## 1.16.34
+
+### Patch Changes
+
+- Updated dependencies [7d9925e]
+  - @milaboratories/pl-client@3.19.0
+  - @milaboratories/pl-tree@1.16.4
+
+## 1.16.33
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+  - @milaboratories/pl-client@3.18.2
+  - @milaboratories/pl-tree@1.16.3
+
+## 1.16.32
+
+### Patch Changes
+
+- Updated dependencies [41f0c56]
+  - @milaboratories/pl-client@3.18.1
+  - @milaboratories/pl-tree@1.16.2
+
+## 1.16.31
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-client@3.18.0
+  - @milaboratories/pl-model-common@1.52.0
+  - @milaboratories/pl-tree@1.16.1
+
+## 1.16.30
+
+### Patch Changes
+
+- Updated dependencies [c539b39]
+- Updated dependencies [90073ff]
+  - @milaboratories/pl-tree@1.16.0
+  - @milaboratories/pl-client@3.17.7
+
+## 1.16.29
+
+### Patch Changes
+
+- Updated dependencies [fd9f892]
+  - @milaboratories/pl-client@3.17.6
+  - @milaboratories/pl-tree@1.15.7
+
+## 1.16.28
+
+### Patch Changes
+
+- Updated dependencies [9c97fb0]
+  - @milaboratories/pl-client@3.17.5
+  - @milaboratories/pl-tree@1.15.6
+
+## 1.16.27
+
+### Patch Changes
+
+- Updated dependencies [7b19fcc]
+  - @milaboratories/pl-client@3.17.4
+  - @milaboratories/pl-tree@1.15.5
+
+## 1.16.26
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+  - @milaboratories/pl-client@3.17.3
+  - @milaboratories/pl-tree@1.15.4
+
+## 1.16.25
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+  - @milaboratories/pl-client@3.17.2
+  - @milaboratories/pl-tree@1.15.3
+
 ## 1.16.24
 
 ### Patch Changes

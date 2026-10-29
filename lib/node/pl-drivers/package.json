@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-drivers",
-  "version": "1.16.24",
+  "version": "1.16.37",
   "description": "Drivers and a low-level clients for log streaming, downloading and uploading files from and to pl",
   "files": [
     "dist/**/*",
@@ -39,7 +39,6 @@
     "@protobuf-ts/plugin": "catalog:",
     "@protobuf-ts/runtime": "catalog:",
     "@protobuf-ts/runtime-rpc": "catalog:",
-    "decompress": "catalog:",
     "denque": "catalog:",
     "lru-cache": "catalog:",
     "openapi-fetch": "catalog:",
@@ -52,7 +51,6 @@
     "@milaboratories/test-helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
-    "@types/decompress": "catalog:",
     "@types/node": "catalog:",
     "@types/tar-fs": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
@@ -61,6 +59,6 @@
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   }
 }

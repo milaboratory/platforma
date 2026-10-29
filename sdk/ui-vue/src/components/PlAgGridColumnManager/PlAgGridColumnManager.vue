@@ -2,6 +2,7 @@
 import {
   PlBtnGhost,
   PlBtnSecondary,
+  PlColumnLabel,
   PlElementList,
   PlIcon24,
   PlSearchField,
@@ -11,6 +12,7 @@ import {
 import { type GridApi } from "ag-grid-enterprise";
 import { computed, ref } from "vue";
 import { PlAgDataTableRowNumberColId } from "../PlAgDataTable/sources/row-number";
+import type { PlAgHeaderComponentParams } from "../PlAgColumnHeader/types";
 import { useFilteredItems } from "./useFilteredItems";
 import { useGridColumns } from "./useGridColumns";
 
@@ -35,11 +37,15 @@ const teleportTarget = usePlBlockPageTitleTeleportTarget("PlAgGridColumnManager"
 const columns = useGridColumns(props);
 
 const items = computed(() => {
-  return columns.value.map((col, i) => ({
-    column: col,
-    id: col.getId(),
-    label: col.getColDef().headerName ?? `Unnamed Column (${i + 1})`,
-  }));
+  return columns.value.map((col, i) => {
+    const header: PlAgHeaderComponentParams | undefined = col.getColDef().headerComponentParams;
+    return {
+      column: col,
+      id: col.getId(),
+      label: col.getColDef().headerName ?? `Unnamed Column (${i + 1})`,
+      linkHint: header?.linkHint,
+    };
+  });
 });
 
 const { filteredItems, segments } = useFilteredItems({
@@ -69,14 +75,26 @@ const toggleAllFiltered = () => {
 
 <template>
   <Teleport v-if="teleportTarget" :to="teleportTarget">
-    <PlBtnGhost icon="columns" @click.stop="slideModal = !slideModal"> Columns </PlBtnGhost>
+    <PlBtnGhost
+      data-testid="pl-ag-grid-column-manager"
+      icon="columns"
+      @click.stop="slideModal = !slideModal"
+    >
+      Columns
+    </PlBtnGhost>
   </Teleport>
 
-  <PlSlideModal v-model="slideModal" :width="width" close-on-outside-click>
+  <PlSlideModal
+    v-model="slideModal"
+    data-testid="pl-ag-grid-column-manager-panel"
+    :width="width"
+    close-on-outside-click
+  >
     <template #title>Manage Columns</template>
-    <div :class="$style.searchRow">
-      <PlSearchField v-model="query" clearable />
+    <div data-testid="pl-ag-grid-column-manager-search-row" :class="$style.searchRow">
+      <PlSearchField v-model="query" data-testid="pl-ag-grid-column-manager-search" clearable />
       <PlBtnSecondary
+        data-testid="pl-ag-grid-column-manager-toggle-all"
         :class="$style.toggleAllBtn"
         :disabled="toggleableFilteredItems.length === 0"
         @click.stop="toggleAllFiltered"
@@ -86,6 +104,7 @@ const toggleAllFiltered = () => {
       </PlBtnSecondary>
     </div>
     <PlElementList
+      data-testid="pl-ag-grid-column-manager-list"
       :items="filteredItems"
       :get-item-key="(item) => item.id"
       :is-draggable="(item) => !item.column.getColDef().lockPosition"
@@ -113,14 +132,16 @@ const toggleAllFiltered = () => {
       disable-removing
     >
       <template #item-title="{ item }">
-        <span>
-          <span
-            v-for="(segment, i) of segments.get(item.label)"
-            :key="i"
-            :class="{ [$style.match]: segment.match }"
-            >{{ segment.value }}</span
-          >
-        </span>
+        <PlColumnLabel :option="item">
+          <span data-testid="pl-ag-grid-column-manager-item">
+            <span
+              v-for="(segment, i) of segments.get(item.label)"
+              :key="i"
+              :class="{ [$style.match]: segment.match }"
+              >{{ segment.value }}</span
+            >
+          </span>
+        </PlColumnLabel>
       </template>
     </PlElementList>
   </PlSlideModal>

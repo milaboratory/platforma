@@ -171,6 +171,47 @@ makeWriteFrameStep := func(frameName, dfName, params, translation) {
     return step
 }
 
+/**
+ * Builds an `import_parquet_frame` step: the whole read -> cast -> filter -> sort ->
+ * write_frame chain fused into one DuckDB pass, for Parquet imports that opt in with
+ * `importEngine: "duckdb"`. Same `params` shape as `makeWriteFrameStep`, plus the
+ * source file; `translation` maps each spec column onto its colN output name, so the
+ * written frame is identical to the one the Polars chain produces. `notNullSet` is a
+ * set of source column names whose null rows the step drops, standing in for the
+ * filter the Polars chain applies before the write.
+ */
+makeImportParquetFrameStep := func(frameName, fileName, params, translation, notNullSet) {
+	step := {
+		type: "import_parquet_frame",
+		file: fileName,
+		frameName: frameName,
+		axes: slices.map(params.axes, func(entry) {
+			return {
+				column: translation[entry.column],
+				source: entry.column,
+				type: entry.spec.type
+			}
+		}),
+		columns: slices.map(params.columns, func(entry) {
+			return {
+				column: translation[entry.column],
+				source: entry.column,
+				type: entry.spec.valueType,
+				notNull: !is_undefined(notNullSet[entry.column])
+			}
+		}),
+		partitionKeyLength: 0,
+		strict: false
+	}
+	if !is_undefined(params.partitionKeyLength) {
+		step.partitionKeyLength = params.partitionKeyLength
+	}
+	if !is_undefined(params.strict) {
+		step.strict = params.strict
+	}
+	return step
+}
+
 makeFrameColumnRef := func(frameName, columnId) {
 	return canonical.encode({
 		frame: frameName,
@@ -464,6 +505,7 @@ export ll.toStrict({
 	validateParamsForFrameFromColumnBundle: validateParamsForFrameFromColumnBundle,
     makeFrameColumnInfo: makeFrameColumnInfo,
     makeWriteFrameStep: makeWriteFrameStep,
+    makeImportParquetFrameStep: makeImportParquetFrameStep,
     makeFrameColumnRef: makeFrameColumnRef,
     renameSpecQueryColumns: renameSpecQueryColumns,
     validateAxisFilters: validateAxisFilters

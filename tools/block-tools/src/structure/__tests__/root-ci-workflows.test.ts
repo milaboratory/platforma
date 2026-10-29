@@ -12,6 +12,7 @@ import type { BlockVars, RunContext } from "../engine/api";
 import { STRUCTURE } from "../structure-definition";
 import { run as engineRun } from "../engine/runner";
 import { defaultTemplateProvider, simulateInit } from "../engine/testing";
+import { NODE_VERSION } from "../rules/shared/toolchain";
 
 const TEMPLATES = defaultTemplateProvider();
 
@@ -37,9 +38,9 @@ describe("root CI workflows (fixed, generated)", () => {
     // Shared constants.
     expect(build).toContain("team-id: 'ciplopen'");
     expect(build).toContain("test: true");
-    // Both workflows track the toolchain's node major (mise pins 22).
-    expect(build).toContain("node-version: '22.x'");
-    expect(fs.read(MARK_STABLE)).toContain("node-version: '22.x'");
+    // Both workflows run the SDK's Node.
+    expect(build).toContain(`node-version: '${NODE_VERSION}'`);
+    expect(fs.read(MARK_STABLE)).toContain(`node-version: '${NODE_VERSION}'`);
     // Opt-in gate: the published `block` package must be bumped on PRs.
     expect(build).toContain("require-package-path-bump: true");
     // No bare `build` script exists (root-package-json removes it), so both

@@ -42,6 +42,66 @@ applyNaRegex := func(colExpr, naRegex, colType) {
 }
 
 /**
+ * Whether this import can run as a single fused DuckDB step. The step does a plain
+ * projection and cast, so anything needing a per-column transform (preProcess,
+ * naRegex, filterOutRegex) or a synthesised index axis stays on the pt step chain.
+ * Opt-in only: an unset importEngine keeps the existing behaviour.
+ */
+_duckdbEligible := func(spec, xsvType) {
+	if spec.importEngine != "duckdb" || xsvType != "parquet" {
+		return false
+	}
+	if !is_undefined(spec.index) {
+		return false
+	}
+	for ax in spec.axes {
+		if !is_undefined(ax.preProcess) || !is_undefined(ax.naRegex) || !is_undefined(ax.filterOutRegex) {
+			return false
+		}
+	}
+	for col in spec.columns {
+		if !is_undefined(col.preProcess) || !is_undefined(col.naRegex) || !is_undefined(col.filterOutRegex) {
+			return false
+		}
+	}
+	return true
+}
+
+/**
+ * Maps the written frame's columns onto the shape the caller asked for. Shared by
+ * both engines: they differ in how the frame is produced, not in what it contains.
+ */
+_buildResult := func(pf, spec, ops) {
+	if ops.dataOnly {
+		pfd := smart.mapBuilder()
+		for col in spec.columns {
+			colId := util.xsvColumnId(col)
+			colData := pf.getFutureInputField(col.column + ".data")
+			pfd.createInputField(colId).set(colData)
+		}
+		return pfd.lockAndBuild()
+	}
+
+	result := {}
+	axesSpec := slices.map(spec.axes, func(ax) { return ax.spec })
+	for col in spec.columns {
+		colId := util.xsvColumnId(col)
+		colSpec := getColumnSpec(axesSpec, col)
+		colData := pf.getFutureInputField(col.column + ".data")
+		if ops.splitDataAndSpec {
+			result[colId] = {
+				spec: colSpec,
+				data: colData
+			}
+		} else {
+			result[colId + ".spec"] = colSpec
+			result[colId + ".data"] = colData
+		}
+	}
+	return result
+}
+
+/**
  * Import XSV file into parquet-based PFrame using PT workflow
  *
  * @param xsvFile: resource - XSV file resource
@@ -107,6 +167,43 @@ importFileParquet := func(xsvFile, xsvType, spec, ops) {
 		wf.cacheInputs(ops.inputCache)
 	}
 
+	// saveParams is independent of how the rows are produced, so both engines share it.
+	saveParams := {
+		axes: [],
+		columns: [],
+		partitionKeyLength: 0
+	}
+	if !is_undefined(spec.partitionKeyLength) {
+		saveParams.partitionKeyLength = spec.partitionKeyLength
+	}
+	for ax in spec.axes {
+		saveParams.axes = append(saveParams.axes, {
+			column: ax.column,
+			spec: maps.deepMerge({ name: ax.column }, ax.spec)
+		})
+	}
+	notNullColumns := []
+	for col in spec.columns {
+		saveParams.columns = append(saveParams.columns, {
+			column: col.column,
+			spec: maps.deepMerge({ name: col.column }, col.spec)
+		})
+		if col.allowNA == false {
+			// warning: pfconv raised an error, we cannot do that and instead silently filter-out NULLs
+			notNullColumns = append(notNullColumns, col.column)
+		}
+	}
+
+	frameName := "xsv_import_output"
+
+	// The DuckDB engine fuses read + cast + filter + sort + write into one pass with no
+	// u32 row ceiling, but implements only a plain projection and cast. Anything that
+	// needs a per-column transform stays on the pt step chain.
+	if _duckdbEligible(spec, xsvType) {
+		wf.importParquetFrame(xsvFile, frameName, saveParams, notNullColumns)
+		return _buildResult(wf.run().getFrameDirect(frameName), spec, ops)
+	}
+
 	schema := []
 	for ax in spec.axes {
 		schema = append(schema, {
@@ -169,68 +266,15 @@ importFileParquet := func(xsvFile, xsvType, spec, ops) {
 	notNullConditions := []
 	// allowNA for axes is ignored as we no longer support NA values in axes
 	// it support would eventually be needed, pass strict = false to the write_frame step
-	for col in spec.columns {
-		if col.allowNA == false {
-			// warning: pfconv raised an error, we cannot do that and instead silently filter-out NULLs
-			notNullConditions = append(notNullConditions, pt.col(col.column).isNotNull())
-		}
+	for column in notNullColumns {
+		notNullConditions = append(notNullConditions, pt.col(column).isNotNull())
 	}
 	if len(notNullConditions) > 0 {
 		df = df.filter(pt.and(notNullConditions...))
 	}
 
-	saveParams := {
-		axes: [],
-		columns: [],
-		partitionKeyLength: 0
-	}
-	if !is_undefined(spec.partitionKeyLength) {
-		saveParams.partitionKeyLength = spec.partitionKeyLength
-	}
-	for ax in spec.axes {
-		saveParams.axes = append(saveParams.axes, {
-			column: ax.column,
-			spec: maps.deepMerge({ name: ax.column }, ax.spec)
-		})
-	}
-	for col in spec.columns {
-		saveParams.columns = append(saveParams.columns, {
-			column: col.column,
-			spec: maps.deepMerge({ name: col.column }, col.spec)
-		})
-	}
-
-	frameName := "xsv_import_output"
 	df.saveFrameDirect(frameName, saveParams)
-	pf := wf.run().getFrameDirect(frameName)
-
-	if ops.dataOnly {
-		pfd := smart.mapBuilder()
-		for col in spec.columns {
-			colId := util.xsvColumnId(col)
-			colData := pf.getFutureInputField(col.column + ".data")
-			pfd.createInputField(colId).set(colData)
-		}
-		return pfd.lockAndBuild()
-	}
-
-	result := {}
-	axesSpec := slices.map(spec.axes, func(ax) { return ax.spec })
-	for col in spec.columns {
-		colId := util.xsvColumnId(col)
-		colSpec := getColumnSpec(axesSpec, col)
-		colData := pf.getFutureInputField(col.column + ".data")
-		if ops.splitDataAndSpec {
-			result[colId] = {
-				spec: colSpec,
-				data: colData
-			}
-		} else {
-			result[colId + ".spec"] = colSpec
-			result[colId + ".data"] = colData
-		}
-	}
-	return result
+	return _buildResult(wf.run().getFrameDirect(frameName), spec, ops)
 }
 
 export ll.toStrict({

@@ -19,7 +19,7 @@ import {
 import { scopeDepMaps } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
 import { ensureModuleVersion, INITIAL_MODULE_VERSION } from "./shared/initial-version";
-import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
+import { COLOCATED_TEST_GLOB, TENGO_TEST_GLOB } from "./shared/colocated-tests";
 import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
 export function workflowPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
@@ -38,8 +38,8 @@ export function workflowPackageJsonInitial(ctx: RunContext): Record<string, unkn
       // its input, so a command that rewrites sources inside it would change
       // the inputs turbo has already hashed.
       check: "pl-tengo imports && pl-tengo check",
-      // No `test`: the vitest `test` script is wired by the body rule ONLY
-      // when co-located test files exist (a freshly-init'd workflow has none).
+      // No `test`: the body rule wires it ONLY when Tengo or vitest test files
+      // exist (a freshly-init'd workflow has none).
       // Tengo source formatter (emacs batch). Falls back to a notice when
       // emacs is absent, so the script never hard-fails the environment.
       format: "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'",
@@ -53,7 +53,7 @@ export function workflowPackageJsonInitial(ctx: RunContext): Record<string, unkn
       "@platforma-sdk/tengo-builder": "sdk:",
       "@platforma-sdk/test": "sdk:",
       // `vitest` is NOT seeded here — it's wired by the body rule only when the
-      // workflow carries co-located tests (a freshly-init'd workflow has none).
+      // workflow carries `*.test.ts` tests (a freshly-init'd workflow has none).
       shx: "catalog:",
     },
   };
@@ -73,13 +73,14 @@ export function workflowPackageJsonRules(): void {
   ensureScript("build", "shx rm -rf dist && pl-tengo build");
   ensureScript("check", "pl-tengo imports && pl-tengo check");
   ensureScript("format", "/usr/bin/env emacs --script ./format.el || echo 'No emacs.'");
-  // The vitest `test` script AND the `vitest` devDep are wired ONLY when the
-  // workflow carries co-located integration tests (`src/**/*.test.ts`, incl.
-  // `src/test/`). A test-less workflow gets neither — no `test` task, no
-  // vitest dep — and stays a refresh fixpoint. (Workflow tests type-check via
-  // the standalone workflow/tsconfig with `types: []` — they pull their types
-  // from `@platforma-sdk/test` — so no node-types wiring is needed here,
-  // unlike model/ui.)
+  // The `test` script runs `pl-tengo test` when the workflow carries Tengo unit
+  // tests (`src/**/*.test.tengo`) and vitest when it carries co-located
+  // integration tests (`src/**/*.test.ts`, incl. `src/test/`); both when it
+  // carries both. The `vitest` devDep follows the vitest tests. A test-less
+  // workflow gets no vitest dep, and an existing `test` script is left as is.
+  // (Workflow tests type-check via the standalone workflow/tsconfig with
+  // `types: []` — they pull their types from `@platforma-sdk/test` — so no
+  // node-types wiring is needed here, unlike model/ui.)
   //
   // Skipped entirely for sdk-internal (in-monorepo) blocks: they own their test
   // wiring under the monorepo's shared infrastructure — see model-package-json.
@@ -89,10 +90,17 @@ export function workflowPackageJsonRules(): void {
       when(
         whenFilesExist(COLOCATED_TEST_GLOB),
         () => {
-          ensureScript("test", "vitest run --passWithNoTests");
+          when(
+            whenFilesExist(TENGO_TEST_GLOB),
+            () => ensureScript("test", "pl-tengo test && vitest run --passWithNoTests"),
+            () => ensureScript("test", "vitest run --passWithNoTests"),
+          );
           ensureDevDeps({ vitest: "catalog:" });
         },
-        () => removeDep("vitest"),
+        () => {
+          when(whenFilesExist(TENGO_TEST_GLOB), () => ensureScript("test", "pl-tengo test"));
+          removeDep("vitest");
+        },
       ),
   );
 

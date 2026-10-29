@@ -1,0 +1,49 @@
+/**
+ * Regression test for the E2BIG failure on large working directories
+ * (fixed in Platforma 4.3.2).
+ *
+ * The k8s runner used to pass the expected-workdir-item list to the job
+ * inline. Above roughly 7300 entries the argument list got larger than the
+ * kernel limit, `execve` returned E2BIG and the job failed before the
+ * container started. The list now goes to the job by path
+ * (`.pl/expected_items` inside the workdir, see
+ * `util/k8s/job_params.go: DefaultExpectedItemsFileName` in the backend).
+ *
+ * The template fills the working directory with 10000 files, which is
+ * comfortably above the ~7300 threshold, then runs a command in it. Do not
+ * lower the count below ~7300: under that number the test passes on the
+ * buggy runner too and gives no coverage. Every file holds one byte, because
+ * the item *count* is what matters here, not the payload size.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+self.defineOutputs(["main"])
+
+sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:hello-world")
+
+// Number of files to put into the working directory.
+// Keep it above the ~7300 entries that used to break `execve`.
+workdirFileCount := 10000
+
+self.body(func(inputs) {
+	builder := exec.builder().
+		cpu(1).ram("50Mi").
+		software(sw).
+		arg(inputs.text).
+		saveStdoutContent()
+
+	// `writeFile` is the cheapest way to reach the file count: it needs no
+	// blob, no upload and no signature, only a small value resource.
+	for i := 0; i < workdirFileCount; i++ {
+		builder.writeFile("filler/" + string(i) + ".txt", "x")
+	}
+
+	run := builder.run()
+
+	return {
+		main: run.getStdoutContent()
+	}
+})

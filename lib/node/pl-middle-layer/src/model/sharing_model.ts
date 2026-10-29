@@ -1,10 +1,16 @@
 import type { ResourceType, Role } from "@milaboratories/pl-client";
 import { Role as RoleEnum } from "@milaboratories/pl-client";
-import type { Branded, ProjectId, ProjectTemplateV1 } from "@milaboratories/pl-model-common";
+import type {
+  Branded,
+  ProjectId,
+  ProjectTemplateV1,
+  TemplateId,
+} from "@milaboratories/pl-model-common";
+import type { FolderId } from "@milaboratories/pl-model-middle-layer";
 import { randomUUID } from "node:crypto";
 
 /**
- * Logical identity of a share, stable across replaces. A donor-generated UUID string,
+ * Identity of one share. A donor-generated UUID string,
  * branded so it cannot be silently confused with a project id, a login, or a raw field
  * name. Minted once with {@link newShareId}; every other site receives it (from decoded
  * {@link EnvelopeData} or by parsing a `decision/{shareId}` field name) and threads it
@@ -32,7 +38,7 @@ export function asShareId(id: string): ShareId {
 
 /** Field on the donor's clientRoot holding the {@link SharingOutboxResourceType} resource. */
 export const SharingOutboxField = "sharingOutbox";
-/** Field on the acceptor's clientRoot holding the {@link SharingStateResourceType} resource. */
+/** Field on the recipient's clientRoot holding the {@link SharingStateResourceType} resource. */
 export const SharingStateField = "sharingState";
 
 export const SharingOutboxResourceType: ResourceType = { name: "SharingOutbox", version: "1" };
@@ -41,13 +47,14 @@ export const SharingStateResourceType: ResourceType = { name: "SharingState", ve
 
 export type EnvelopeMode = "copy" | "read-only" | "collaboration";
 
-/** Per-project decision on change, matching the UI labels: re-snapshot the live source ("update"),
- *  carry the existing snapshot ("keep"), or drop the project from the pack ("remove"). */
-export type ProjectChangeAction = "keep" | "update" | "remove";
-
 /** Key of the per-project envelope maps: a uuid minted per snapshot to name the `project/{uuid}`
  *  field. Distinct from {@link ProjectId} — re-snapshotting one source yields a new uuid each time. */
 export type ProjectFieldUuid = Branded<string, "ProjectFieldUuid">;
+
+/** Mints a fresh {@link ProjectFieldUuid} for one snapshot. */
+export function newProjectFieldUuid(): ProjectFieldUuid {
+  return randomUUID() as ProjectFieldUuid;
+}
 
 /**
  * Whether a role may make a resource public (grant to everyone): true for controller,
@@ -87,9 +94,50 @@ export function canImpersonate(role: Role | null): boolean {
 /** One project's snapshot inside an envelope, keyed by {@link ProjectFieldUuid} in a
  *  `projects` {@link EnvelopePayload}. */
 export interface EnvelopeProject {
-  label: string; // carried so the pending-share UI renders without traversing into the project
-  source: ProjectId; // donor's source projectId; supersedes a prior share and matches the snapshot to its live source on change
+  label: string; // carried so the share lists render without traversing into the project
+  source: ProjectId; // donor's source projectId; what a prior share of the same project is matched on
   updatedAt: number; // ms epoch of the last (re)snapshot
+  /** What the project said about itself when it was snapshotted, carried for the same reason as
+   *  `label`. Absent when it had none, and on envelopes written before it was carried. */
+  description?: string;
+}
+
+/**
+ * Identifier of a folder inside one envelope.
+ *
+ * Local to the envelope, because the recipient's own folder document mints its own ids and the
+ * donor's mean nothing there. What travels is the shape of the subtree, not its identity.
+ */
+export type EnvelopeFolderId = Branded<string, "EnvelopeFolderId">;
+
+/** Mints a fresh {@link EnvelopeFolderId} for one folder of the envelope being built. */
+export function newEnvelopeFolderId(): EnvelopeFolderId {
+  return randomUUID() as EnvelopeFolderId;
+}
+
+/** One folder of a shared subtree. */
+export interface EnvelopeFolder {
+  name: string;
+  /** Absent for the subtree's root — the folder that was shared. */
+  parent?: EnvelopeFolderId;
+  /** What the donor wrote about the folder. Absent when there is none. */
+  description?: string;
+}
+
+/** A project of a shared subtree: an {@link EnvelopeProject} placed in the subtree. */
+export interface EnvelopeFolderProject extends EnvelopeProject {
+  folder: EnvelopeFolderId;
+}
+
+/** A template of a shared subtree. The document rides here whole, exactly as a `template`
+ *  payload carries it — a template is never snapshotted. */
+export interface EnvelopeFolderTemplate {
+  document: ProjectTemplateV1;
+  /** Label to give the template among the recipient's templates. */
+  label: string;
+  /** What the template says about itself. Absent when the donor described it with nothing. */
+  description?: string;
+  folder: EnvelopeFolderId;
 }
 
 /**
@@ -105,9 +153,31 @@ export type EnvelopePayload =
   | {
       kind: "template";
       document: ProjectTemplateV1;
-      /** Label to give the template on the recipient's own shelf. */
+      /** Donor's own id of the shared template; what a prior share of the same template is
+       *  matched on. It names nothing in the recipient's tree, and envelopes written before it
+       *  existed carry none — those match no later share of anything. */
+      source?: TemplateId;
+      /** Label to give the template among the recipient's templates. */
       label: string;
-      /** Donor login, kept on the accepted template as its provenance. */
+      /** What the template says about itself, carried to the recipient's copy. Absent when the
+       *  donor described it with nothing. */
+      description?: string;
+      /** Donor login, kept on each copy of the template as its provenance. */
+      from: string;
+    }
+  | {
+      kind: "folder";
+      /** Donor's own id of the shared folder; what a prior share of the same folder is matched
+       *  on. It names nothing in the recipient's tree. */
+      source: FolderId;
+      /** The shared subtree. Exactly one folder has no parent, and that one is its root. */
+      folders: Record<EnvelopeFolderId, EnvelopeFolder>;
+      /** Project snapshots, each tagged with the folder of the subtree holding it. Their
+       *  `project/{uuid}` fields are the same ones a `projects` payload describes. */
+      projects: Record<ProjectFieldUuid, EnvelopeFolderProject>;
+      /** Templates of the subtree, documents and all. Nothing of a template is snapshotted. */
+      templates: EnvelopeFolderTemplate[];
+      /** Donor login, kept on each copied template as its provenance. */
       from: string;
     };
 
@@ -130,10 +200,10 @@ export const EnvelopeSchemaVersionCurrent = 2 satisfies EnvelopeSchemaVersion;
  */
 export interface EnvelopeData {
   schemaVersion: typeof EnvelopeSchemaVersionCurrent;
-  shareId: ShareId; // donor-generated UUID; logical share identity, stable across changes
-  sharedAt: number; // ms epoch; this instance's creation time — distinguishes instances of one shareId
+  shareId: ShareId; // donor-generated UUID; identity of this share alone
+  sharedAt: number; // ms epoch; when the share was created
   expiresAt: number | null; // ms epoch; sharedAt + ttl (default 14 days) for a targeted share; null for share-with-everybody (never expires)
-  mode: EnvelopeMode; // what the acceptor's app should do with the contents
+  mode: EnvelopeMode; // what the recipient's app should do with the contents
   sender: string; // donor login (informational; backend granted_by is authoritative)
   title: string; // display name shown to recipients; defaults to the first project's name
   payload: EnvelopePayload; // what the share carries
@@ -145,31 +215,44 @@ export function envelopeProjectMap(data: EnvelopeData): Record<ProjectFieldUuid,
   return data.payload.kind === "projects" ? data.payload.projects : {};
 }
 
-/** Dynamic field on SharingState, one per handled share, keyed by shareId. */
-export const decisionField = (shareId: ShareId) => `decision/${shareId}`;
-
-export interface SharingDecision {
-  decision: "accepted" | "rejected";
-  timestamp: number; // ms epoch — when the acceptor acted
-  envelopeSharedAt: number; // the acted-on envelope instance's sharedAt — pins which instance was handled (paired with the shareId key; the resource id is never stored)
-  acceptedProjects: string[]; // ids of the projects created in the acceptor's list ([] for a rejected share, and for a template share, which creates none)
+/**
+ * The shared folder itself: the one folder of the subtree that has no parent.
+ *
+ * Derived rather than stored, so it cannot disagree with the folders beside it. `undefined` for
+ * a subtree with no root or more than one, which is an envelope nothing can be reconstructed
+ * from — the copy reports it rather than guessing which folder was meant.
+ */
+export function envelopeFolderRoot(
+  folders: Record<EnvelopeFolderId, EnvelopeFolder>,
+): EnvelopeFolderId | undefined {
+  const roots = (Object.keys(folders) as EnvelopeFolderId[]).filter(
+    (id) => folders[id].parent === undefined,
+  );
+  return roots.length === 1 ? roots[0] : undefined;
 }
 
-/** Dynamic field on SharedEnvelope, one per recipient who accepted or rejected, keyed
- *  by recipient login. Written by the acceptor in read-write shares only (Copy & Share,
- *  Live collaboration) — the acceptor's writable envelope grant is what permits the
- *  write; read-only shares omit it. The donor reads these from its own outbox to see
- *  who responded and when. Informational, not authoritative (a writable grant holder
- *  could write under another login — same trust assumption as the sender field).
- *  Copied forward when a share is changed. */
-export const AcceptanceFieldPrefix = "acceptance/";
-export const acceptanceField = (login: string) => `${AcceptanceFieldPrefix}${login}`;
-export const isAcceptanceField = (name: string) => name.startsWith(AcceptanceFieldPrefix);
-export const acceptanceFieldLogin = (name: string) => name.slice(AcceptanceFieldPrefix.length);
+/**
+ * Dynamic field on SharingState, one per share this user has hidden, keyed by shareId.
+ *
+ * Hiding is private to the recipient and reversible: the field is written to put a share out of
+ * sight and removed to bring it back. It says nothing to the donor and nothing about whether
+ * anything was ever copied out of the share — a share can be copied from any number of times,
+ * before or after being hidden.
+ *
+ * The field name keeps its original `decision/` prefix. Records written before hiding replaced
+ * accept/reject carry a different value under the same key, and every reader treats the presence
+ * of the field as the whole answer: someone who accepted or rejected a share back then does not
+ * want to see it, which is exactly what hidden means.
+ */
+export const HiddenFieldPrefix = "decision/";
+export const hiddenField = (shareId: ShareId) => `${HiddenFieldPrefix}${shareId}`;
+export const isHiddenField = (name: string) => name.startsWith(HiddenFieldPrefix);
+export const hiddenFieldShareId = (name: string): ShareId =>
+  asShareId(name.slice(HiddenFieldPrefix.length));
 
-export interface EnvelopeAcceptance {
-  action: "accepted" | "rejected";
-  timestamp: number; // ms since epoch
+export interface ShareHidden {
+  hidden: true;
+  timestamp: number; // ms epoch — when the recipient hid it
 }
 
 /**
@@ -218,48 +301,52 @@ export function normalizeEnvelopeData(raw: unknown): EnvelopeData | undefined {
 }
 
 /**
- * Options for {@link MiddleLayer.shareProjects}.
+ * Who a share is granted to: named recipients XOR everyone — two clean variants, not one struct
+ * with mutually exclusive optional fields.
  *
- * Recipients XOR everyone — two clean variants, not one struct with mutually exclusive
- * optional fields. The everyone variant issues a single make-public grant (the envelope's
- * `expiresAt` is set to `null`, so it never expires); the recipients variant grants each
- * named recipient and the envelope expires after the default TTL.
+ * The everyone variant issues a single make-public grant, and the envelope's `expiresAt` is `null`,
+ * so it never expires. The recipients variant grants each named login, and the envelope expires
+ * after the default TTL.
  */
-export type ShareProjectsOptions =
-  | {
-      recipients: string[]; // recipient logins
-      title: string; // display name shown to recipients; defaults to the first project's name
-      mode: EnvelopeMode; // v1 UI always sends "copy"
-    }
-  | {
-      everyone: true; // share with all users on the server
-      /**
-       * When true and an everyone-share of the same project already exists, refresh it under its
-       * stable shareId (recipients who already accepted or rejected are not re-prompted) instead of
-       * minting a new share. No-op when no prior everyone-share of the project exists. Callers that
-       * don't care pass `false`.
-       */
-      replace: boolean;
-      title: string;
-      mode: EnvelopeMode;
-    };
+export type ShareAudience =
+  | { recipients: string[] } // recipient logins
+  | { everyone: true }; // every user on the server
 
 /**
- * Options for {@link MiddleLayer.shareTemplate}.
- *
- * Recipients XOR everyone, exactly as {@link ShareProjectsOptions}, minus the mode: a template
- * share is always granted read-only, because the recipient copies no resource out of the
- * envelope — the document is in the envelope's own data.
+ * Options every share takes: the audience, the title recipients see it under, and the prior
+ * shares it replaces.
  */
-export type ShareTemplateOptions =
-  | {
-      recipients: string[]; // recipient logins
-      title: string; // display name shown to recipients; defaults to the template's label
-    }
-  | {
-      everyone: true; // share with all users on the server
-      title: string;
-    };
+export type ShareOptions = ShareAudience & {
+  title: string;
+  replace?: ShareReplaceOption;
+};
+
+/**
+ * Prior shares the new one supersedes: each is deleted in the same transaction that creates the
+ * replacement, so the outbox never holds both.
+ *
+ * The set is the caller's, never inferred here. The author is shown the shares that will go and
+ * agrees to that list, so what was shown has to be what is deleted — an overlap rule computed on
+ * this side would diverge from it. Ids that no longer resolve are skipped: a share revoked between
+ * the dialog opening and the confirm is nothing to undo.
+ *
+ * The replacement is a new {@link ShareId}: a recipient who had hidden the old share sees the new
+ * one, and copies already taken from the old share are untouched.
+ */
+export type ShareReplaceOption = ShareId[];
+
+/** Options for {@link MiddleLayer.shareProjects}: the common ones, plus what the recipient's app
+ *  does with the projects. */
+export type ShareProjectsOptions = ShareOptions & { mode: EnvelopeMode };
+
+/** Options for {@link MiddleLayer.shareTemplate}. */
+export type ShareTemplateOptions = ShareOptions;
+
+/** Options for {@link MiddleLayer.shareFolder}. */
+export type ShareFolderOptions = ShareOptions;
+
+/** What creating a share hands back: the id of the share just created. */
+export type ShareOutcome = { readonly shareId: ShareId };
 
 //
 // Internals
@@ -271,6 +358,7 @@ export type ShareTemplateOptions =
 const KnownPayloadKinds: Record<EnvelopePayloadKind, true> = {
   projects: true,
   template: true,
+  folder: true,
 };
 
 /** Every schema version {@link normalizeEnvelopeData} accepts. Keyed by

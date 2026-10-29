@@ -21,7 +21,7 @@ const style = computed(() => {
 </script>
 
 <template>
-  <div class="pl-layout-component pl-grid" :style="style">
+  <div class="pl-layout-component pl-grid" data-testid="pl-grid" :style="style">
     <slot />
   </div>
 </template>

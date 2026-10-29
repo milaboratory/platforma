@@ -105,6 +105,7 @@ const options = computed(() =>
 
 <template>
   <PlDropdown
+    data-testid="pl-dropdown-ref"
     v-bind="props"
     :options="options"
     :loading-options-helper="loadingOptionsHelper"

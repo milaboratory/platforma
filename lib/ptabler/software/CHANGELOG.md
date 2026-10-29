@@ -1,5 +1,55 @@
 # @platforma-open/software-ptabler
 
+## 2.2.1
+
+### Patch Changes
+
+- 79f8dbc: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.2.0. JsonPartitioned parts are sorted by axes on read, so a part written in another key order no longer gives wrong join rows. Same-axes outer joins no longer re-sort. pframes-rs-node requires Node 24. Bump runenv-python-3 to 1.16.1, which bundles polars-pf 1.2.0 for ptabler.
+
+## 2.2.0
+
+### Minor Changes
+
+- 48fd5df: Add a DuckDB engine for Parquet PColumn imports, lifting the row ceilings that kept
+  large long-format columns from importing at all (MILAB-7195).
+
+  Polars indexes rows with a u32, so the step chain the SDK emits for a Parquet import
+  refuses any file over 2^32 rows. The new `import_parquet_frame` step does the
+  projection, cast, null filter and sort in one out-of-core DuckDB pass and hands the
+  result to `polars_pf.convert`, which `write_frame` already used for the write. Opt in
+  per import with `importEngine: "duckdb"`; it covers plain projection-and-cast specs,
+  and anything using preProcess, naRegex, filterOutRegex or an index axis keeps the
+  Polars chain.
+
+  Two further limits sit behind that one and are also addressed. DuckDB's sort keeps
+  per-thread buffers, so the thread count is now derived from the memory budget rather
+  than the core count. Parquet stores a row group's ordinal as an i16, capping a file
+  at 32767 groups, so the row group size is derived from the row count; frames that fit
+  the default are unchanged. Because sorting at this size is expensive in scratch, the
+  step first checks whether the input is already ordered by its axes and streams
+  straight through when it is.
+
+  The sort tuning is scoped to the new step. `write_frame` issues the same ORDER BY
+  and has the same exposure, but only at a row count no caller has reached, and capping
+  its threads would slow every PFrame the platform writes.
+
+## 2.1.14
+
+### Patch Changes
+
+- 974b2c1: Size the DuckDB memory limit of the `write_frame` sort from the free memory. The DuckDB default is 80% of the memory it detects (the cgroup limit or the RAM). It ignores the memory that the Polars phase still holds, so the process was OOM-killed in the sort. On Linux, the limit is now 70% of the detected memory minus the resident size of the process, never below 16 MiB, and never above the DuckDB default. On macOS and Windows the DuckDB default stays.
+- 1c11af2: pt: put the ptabler spill on scratch space, sized from the plan
+
+  ptabler spills into `{system.scratch.path}/ptabler-spill`: the tables pframes-rs writes for each `read_frame`, the DuckDB sort files, and now also the `unsorted.parquet` and `intermediate.parquet` files of `write_frame`. Before, all of it went to the working directory, which on AWS is EFS in Elastic Throughput mode and bills every GB read and written.
+
+  The run requests scratch space with a formula in `:pt.sizing`:
+
+      scratch = size * (16 * (read_frames + 1) + 2 * write_frames)
+
+  and 0 below 16 GiB, so a small run keeps its spill on the working directory's filesystem and does not wait for a volume. The factors cover the measured peak of every tested data shape by 1.8x or more. `pt.workflow().scratchFreeSpace(amount)` sets the request by hand.
+
+  `exec`: a `scratchFreeSpace` formula may now evaluate to 0, which asks for the temporary directory without a sized device, as a static 0 does. Before, 0 failed the positive-integer check.
+
 ## 2.1.13
 
 ### Patch Changes

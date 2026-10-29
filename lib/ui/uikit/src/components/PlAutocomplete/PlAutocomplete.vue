@@ -378,11 +378,16 @@ watch(
 </script>
 
 <template>
-  <div class="pl-autocomplete__envelope" @click.stop="setFocusOnInput">
+  <div
+    class="pl-autocomplete__envelope"
+    @click.stop="setFocusOnInput"
+    data-testid="pl-autocomplete"
+  >
     <div
       ref="rootRef"
       :tabindex="tabindex"
       class="pl-autocomplete"
+      data-testid="pl-autocomplete-control"
       :class="{ open: data.open, error: Boolean(computedError), disabled: isDisabled }"
       @keydown="handleKeydown"
       @focusout="onFocusOut"
@@ -398,23 +403,33 @@ watch(
             :placeholder="computedPlaceholder"
             spellcheck="false"
             autocomplete="chrome-off"
+            data-testid="pl-autocomplete-input"
             @focus="onInputFocus"
           />
 
-          <div v-if="!data.open" class="input-value">
+          <div v-if="!data.open" class="input-value" data-testid="pl-autocomplete-value">
             <LongText> {{ textValue }} </LongText>
           </div>
 
           <div class="pl-autocomplete__controls">
-            <PlMaskIcon24 v-if="isLoadingOptions" name="loading" />
+            <PlMaskIcon24
+              v-if="isLoadingOptions"
+              name="loading"
+              data-testid="pl-autocomplete-loading"
+            />
             <PlIcon16
               v-if="clearable && hasValue"
               class="clear"
+              data-testid="pl-autocomplete-clear"
               name="delete-clear"
               @click.stop="clear"
             />
             <slot name="append" />
-            <div class="pl-autocomplete__arrow-wrapper" @click.stop="toggleOpen">
+            <div
+              class="pl-autocomplete__arrow-wrapper"
+              data-testid="pl-autocomplete-arrow"
+              @click.stop="toggleOpen"
+            >
               <div
                 v-if="arrowIconLarge"
                 class="arrow-icon"
@@ -425,10 +440,15 @@ watch(
             </div>
           </div>
         </div>
-        <label v-if="label">
-          <PlSvg v-if="required" :uri="SvgRequired" />
+        <label v-if="label" data-testid="pl-autocomplete-label">
+          <PlSvg v-if="required" :uri="SvgRequired" data-testid="pl-autocomplete-required" />
           <span>{{ label }}</span>
-          <PlTooltip v-if="slots.tooltip" class="info" position="top">
+          <PlTooltip
+            v-if="slots.tooltip"
+            class="info"
+            position="top"
+            data-testid="pl-autocomplete-tooltip"
+          >
             <template #tooltip>
               <slot name="tooltip" />
             </template>
@@ -439,6 +459,7 @@ watch(
           ref="overlay"
           :root="rootRef"
           class="pl-autocomplete__options"
+          data-testid="pl-autocomplete-options"
           tabindex="-1"
           :gap="3"
         >
@@ -449,17 +470,32 @@ watch(
             :is-selected="item.isSelected"
             :is-hovered="item.isActive"
             :size="optionSize"
+            data-testid="pl-autocomplete-option"
             @click.stop="selectOption(item)"
           />
-          <div v-if="!renderedOptionsRef.length" class="nothing-found">Nothing found</div>
+          <div
+            v-if="!renderedOptionsRef.length"
+            class="nothing-found"
+            data-testid="pl-autocomplete-options-empty"
+          >
+            Nothing found
+          </div>
         </DropdownOverlay>
         <DoubleContour class="pl-autocomplete__contour" :group-position="groupPosition" />
       </div>
     </div>
-    <div v-if="computedError" class="pl-autocomplete__error">{{ computedError }}</div>
-    <div v-else-if="isLoadingOptions && loadingOptionsHelper" class="pl-autocomplete__helper">
+    <div v-if="computedError" class="pl-autocomplete__error" data-testid="pl-autocomplete-error">
+      {{ computedError }}
+    </div>
+    <div
+      v-else-if="isLoadingOptions && loadingOptionsHelper"
+      class="pl-autocomplete__helper"
+      data-testid="pl-autocomplete-helper"
+    >
       {{ loadingOptionsHelper }}
     </div>
-    <div v-else-if="helper" class="pl-autocomplete__helper">{{ helper }}</div>
+    <div v-else-if="helper" class="pl-autocomplete__helper" data-testid="pl-autocomplete-helper">
+      {{ helper }}
+    </div>
   </div>
 </template>

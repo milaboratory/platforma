@@ -1,5 +1,68 @@
 # @milaboratories/pl-mcp-server
 
+## 34.0.1
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [79f8dbc]
+- Updated dependencies [615bd8c]
+  - @milaboratories/pl-middle-layer@1.74.12
+  - @platforma-sdk/model@1.86.3
+
+## 34.0.0
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @platforma-sdk/model@1.86.0
+  - @milaboratories/pl-middle-layer@1.74.9
+
+## 33.0.0
+
+### Patch Changes
+
+- Updated dependencies [2a781e0]
+  - @platforma-sdk/model@1.85.0
+  - @milaboratories/pl-middle-layer@1.74.4
+
+## 32.0.0
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-middle-layer@1.74.0
+  - @platforma-sdk/model@1.84.17
+
+## 31.0.0
+
+### Patch Changes
+
+- Updated dependencies [61aefa1]
+  - @milaboratories/pl-middle-layer@1.73.0
+  - @platforma-sdk/model@1.84.3
+
+## 30.0.0
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+- Updated dependencies [cadf144]
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-middle-layer@1.72.0
+  - @platforma-sdk/model@1.84.1
+
+## 29.0.0
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @platforma-sdk/model@1.84.0
+  - @milaboratories/pl-middle-layer@1.71.16
+
 ## 28.0.0
 
 ### Patch Changes

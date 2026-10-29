@@ -253,14 +253,20 @@ function handleMousedown(ev: MouseEvent) {
     ref="rootRef"
     :class="{ error: !!error, disabled: disabled }"
     class="pl-number-field d-flex-column"
+    data-testid="pl-number-field"
     @keydown="handleKeyDown"
   >
     <div class="pl-number-field__main-wrapper d-flex">
       <DoubleContour class="pl-number-field__contour" :group-position="groupPosition" />
       <div class="pl-number-field__wrapper flex-grow d-flex flex-align-center">
-        <label v-if="label" class="text-description">
+        <label v-if="label" class="text-description" data-testid="pl-number-field-label">
           {{ label }}
-          <PlTooltip v-if="slots.tooltip" class="info" position="top">
+          <PlTooltip
+            v-if="slots.tooltip"
+            class="info"
+            position="top"
+            data-testid="pl-number-field-tooltip"
+          >
             <template #tooltip>
               <slot name="tooltip" />
             </template>
@@ -274,6 +280,7 @@ function handleMousedown(ev: MouseEvent) {
           :disabled="disabled"
           :placeholder="placeholder"
           class="text-s flex-grow"
+          data-testid="pl-number-field-input"
           @input="handleInput"
           @focusout="handleBlur"
           @focusin="handleFocus"
@@ -281,6 +288,7 @@ function handleMousedown(ev: MouseEvent) {
         <PlIcon16
           v-if="canShowClearable"
           class="pl-number-field__clearable"
+          data-testid="pl-number-field-clear"
           name="delete-clear"
           @click.stop="clear"
         />
@@ -288,11 +296,13 @@ function handleMousedown(ev: MouseEvent) {
       <div
         v-if="!props.disableSteps"
         class="pl-number-field__icons d-flex-column"
+        data-testid="pl-number-field-steps"
         @mousedown="handleMousedown"
       >
         <div
           :class="{ disabled: isIncrementDisabled }"
           class="pl-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
+          data-testid="pl-number-field-increment"
           @click="increment"
         >
           <svg
@@ -313,6 +323,7 @@ function handleMousedown(ev: MouseEvent) {
         <div
           :class="{ disabled: isDecrementDisabled }"
           class="pl-number-field__icon d-flex flex-justify-center uc-pointer flex-grow flex-align-center"
+          data-testid="pl-number-field-decrement"
           @click="decrement"
         >
           <svg
@@ -332,7 +343,7 @@ function handleMousedown(ev: MouseEvent) {
         </div>
       </div>
     </div>
-    <div v-if="error" class="pl-number-field__error">
+    <div v-if="error" class="pl-number-field__error" data-testid="pl-number-field-error">
       {{ error }}
     </div>
   </div>

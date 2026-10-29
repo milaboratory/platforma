@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-builder",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "TS build tool for the milaboratories packages",
   "bin": {
     "ts-builder": "./bin/ts-builder.js"
@@ -28,7 +28,7 @@
     "@vitejs/plugin-vue": "catalog:",
     "commander": "catalog:",
     "jsonc-parser": "catalog:",
-    "oxfmt": "0.35.0",
+    "oxfmt": "catalog:",
     "oxlint": "1.63.0",
     "oxlint-plugin-eslint": "1.63.0",
     "rolldown": "^1.1.2",

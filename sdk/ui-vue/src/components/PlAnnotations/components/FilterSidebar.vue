@@ -125,10 +125,11 @@ const supportedFilters = [
 </script>
 
 <template>
-  <PlSidebarItem v-if="props.step">
+  <PlSidebarItem v-if="props.step" data-testid="pl-annotations-step">
     <template #header-content>
       <PlEditableTitle
         :key="props.step.id"
+        data-testid="pl-annotations-step-label"
         :model-value="props.step.label"
         :class="{ [$commonStyle.flashing]: props.step.label.length === 0 }"
         :max-length="40"
@@ -151,10 +152,17 @@ const supportedFilters = [
         :enable-add-group-button="true"
       >
         <template #add-group-buttons>
-          <div :class="$style.actions">
-            <PlBtnSecondary icon="add" @click="addFilterPlaceholder"> Add Filter </PlBtnSecondary>
+          <div data-testid="pl-annotations-filter-actions" :class="$style.actions">
+            <PlBtnSecondary
+              data-testid="pl-annotations-add-filter"
+              icon="add"
+              @click="addFilterPlaceholder"
+            >
+              Add Filter
+            </PlBtnSecondary>
             <PlBtnSecondary
               v-if="withSelection"
+              data-testid="pl-annotations-add-from-selection"
               icon="add"
               :disabled="props.hasSelectedColumns !== true"
               @click="addFilterFromSelected"

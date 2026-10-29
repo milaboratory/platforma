@@ -58,5 +58,11 @@ defineExpose({ error, reset });
 
 <template>
   <slot />
-  <PlErrorAlert v-if="error" ref="errorAlert" :message="message" :title="data?.title" />
+  <PlErrorAlert
+    v-if="error"
+    ref="errorAlert"
+    data-testid="pl-error-boundary-alert"
+    :message="message"
+    :title="data?.title"
+  />
 </template>

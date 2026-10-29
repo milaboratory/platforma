@@ -7,7 +7,13 @@ defineProps<{
 </script>
 
 <template>
-  <PlTooltip class="info" position="bottom" max-width="420px" :container="container">
+  <PlTooltip
+    class="info"
+    position="bottom"
+    max-width="420px"
+    :container="container"
+    data-testid="pl-file-dialog-shortcuts"
+  >
     <template #tooltip>
       <span :class="$style.title">Shortcuts</span>
 

@@ -584,17 +584,17 @@ test("orphan-invariant-preserved: error referent streamed alongside stop marker"
 //
 
 test("auto prefers delta, then streaming, then BFS", () => {
-  expect(resolveTreeLoadingAlgorithm("auto", ["treeChangedSince:v1", "treeFilter:v2"])).toBe(
+  expect(resolveTreeLoadingAlgorithm("auto", ["treeChangedSince:v2", "treeFilter:v2"])).toBe(
     "backend-delta",
   );
   // Delta needs no treeFilter:v2 of its own.
-  expect(resolveTreeLoadingAlgorithm("auto", ["treeChangedSince:v1"])).toBe("backend-delta");
+  expect(resolveTreeLoadingAlgorithm("auto", ["treeChangedSince:v2"])).toBe("backend-delta");
   expect(resolveTreeLoadingAlgorithm("auto", ["treeFilter:v2"])).toBe("backend-streaming");
   expect(resolveTreeLoadingAlgorithm("auto", [])).toBe("client-bfs");
 });
 
 test("an explicit mode is honoured over what auto would pick", () => {
-  const capable = ["treeChangedSince:v1", "treeFilter:v2"];
+  const capable = ["treeChangedSince:v2", "treeFilter:v2"];
   expect(resolveTreeLoadingAlgorithm("client-bfs", capable)).toBe("client-bfs");
   expect(resolveTreeLoadingAlgorithm("backend-streaming", capable)).toBe("backend-streaming");
   expect(resolveTreeLoadingAlgorithm("backend-delta", capable)).toBe("backend-delta");
@@ -610,7 +610,7 @@ test("backend-delta degrades to the best available path, with a warning, never a
   expect(resolveTreeLoadingAlgorithm("backend-delta", [], logger)).toBe("client-bfs");
 
   expect(warnings).toHaveLength(2);
-  for (const w of warnings) expect(w).toContain("treeChangedSince:v1");
+  for (const w of warnings) expect(w).toContain("treeChangedSince:v2");
 });
 
 test("loadTreeState routes into the delta path and passes the token through", async () => {
@@ -635,7 +635,7 @@ test("loadTreeState routes into the delta path and passes the token through", as
   const stat = initialTreeLoadingStat();
   // Via the mode, not by calling loadDeltaTreeState directly: this is the only test that
   // proves the dispatch in loadTreeState reaches delta at all.
-  await loadTreeState(tx, request, stat, ["treeChangedSince:v1"], "auto", { warn: () => {} });
+  await loadTreeState(tx, request, stat, ["treeChangedSince:v2"], "auto", { warn: () => {} });
 
   expect(received.seeds).toEqual(["NG:0x1"]);
   expect(received.token).toEqual(new Uint8Array([9]));

@@ -166,6 +166,7 @@ export const Annotation = {
     IsDenseAxis: "pl7.app/graph/isDenseAxis",
     IsVirtual: "pl7.app/graph/isVirtual",
     Palette: "pl7.app/graph/palette",
+    Shape: "pl7.app/graph/shape",
     Thresholds: "pl7.app/graph/thresholds",
     TreatAbsentValuesAs: "pl7.app/graph/treatAbsentValuesAs",
   },
@@ -227,7 +228,15 @@ export type Annotation = Metadata &
     [Annotation.Graph.Axis.UpperLimit]: StringifiedJson<number>;
     [Annotation.Graph.IsDenseAxis]: StringifiedJson<boolean>;
     [Annotation.Graph.IsVirtual]: StringifiedJson<boolean>;
-    [Annotation.Graph.Palette]: StringifiedJson<{ mapping: Record<string, number>; name: string }>;
+    [Annotation.Graph.Palette]: StringifiedJson<{
+      name: string;
+      mapping?: Record<string, number>;
+      midPoint?: number;
+      min?: number;
+      max?: number;
+      log?: boolean;
+    }>;
+    [Annotation.Graph.Shape]: StringifiedJson<{ mapping: Record<string, string> }>;
     [Annotation.Graph.Thresholds]: StringifiedJson<
       { columnId: { valueType: ValueType; name: string }; value: number }[]
     >;
@@ -293,7 +302,15 @@ export const AnnotationJson: AnnotationJson = {
   [Annotation.Graph.Axis.UpperLimit]: z.number(),
   [Annotation.Graph.Axis.SymmetricRange]: z.boolean(),
   [Annotation.Graph.IsDenseAxis]: z.boolean(),
-  [Annotation.Graph.Palette]: z.object({ mapping: z.record(z.number()), name: z.string() }),
+  [Annotation.Graph.Palette]: z.object({
+    name: z.string(),
+    mapping: z.record(z.coerce.number()).optional(),
+    midPoint: z.number().optional(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    log: z.boolean().optional(),
+  }),
+  [Annotation.Graph.Shape]: z.object({ mapping: z.record(z.string()) }),
   [Annotation.Graph.Thresholds]: z.array(
     z.object({
       columnId: z.object({ valueType: ValueTypeSchema, name: z.string() }),

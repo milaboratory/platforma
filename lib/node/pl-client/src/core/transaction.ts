@@ -278,7 +278,8 @@ export class PlTransaction {
     public readonly name: string,
     public readonly writable: boolean,
     private readonly _clientRoot: OptionalSignedResourceId,
-    private readonly finalPredicate: FinalResourceDataPredicate,
+    /** What {@link sharedResourceDataCache} may keep. */
+    private readonly cachePredicate: FinalResourceDataPredicate,
     private readonly sharedResourceDataCache: LRUCache<SignedResourceId, ResourceDataCacheRecord>,
     private readonly enableFormattedErrors: boolean = false,
   ) {
@@ -767,7 +768,7 @@ export class PlTransaction {
 
       // we will cache only final resource data states
       // caching result even if we were ignore the cache
-      if (isResourceId(rId) && this.finalPredicate(result)) {
+      if (isResourceId(rId) && this.cachePredicate(result)) {
         deepFreeze(result);
         const fromCache = this.sharedResourceDataCache.get(rId);
         if (fromCache) {
@@ -825,6 +826,43 @@ export class PlTransaction {
       if (result === undefined && isResourceId(rId)) this.sharedResourceDataCache.delete(rId);
 
       return result;
+    });
+  }
+
+  /**
+   * Lists resources of the given type, in ascending order of resource ID.
+   * The backend allows this request only for admin and controller roles.
+   *
+   * Use `after` and `limit` to read a long list page by page: give the ID of the
+   * last resource of the previous page as `after` for the next page.
+   */
+  public async listResourcesByType(
+    type: ResourceType,
+    opts: {
+      /** Maximum number of resources to return. 0 (the default) returns all resources. */
+      limit?: number;
+      /** Return only resources with IDs greater than this ID. */
+      after?: AnyResourceRef;
+      /** Load the fields of each resource. Resource error is reported only when true. */
+      loadFields?: boolean;
+    } = {},
+  ): Promise<ResourceData[]> {
+    return this.track(async () => {
+      const after = opts.after === undefined ? 0n : this.toSignedResourceId(opts.after).resourceId;
+      return await this.sendMultiAndParse(
+        {
+          oneofKind: "resourceListByType",
+          resourceListByType: {
+            resourceType: type,
+            limit: opts.limit ?? 0,
+            after,
+            resolveDuplicates: false,
+            loadFields: opts.loadFields ?? false,
+            showSoftDeletes: false,
+          },
+        },
+        (r) => r.map((e) => protoToResource(notEmpty(e.resourceListByType.resource))),
+      );
     });
   }
 

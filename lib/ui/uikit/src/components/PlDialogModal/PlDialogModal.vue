@@ -135,8 +135,14 @@ useEventListener(document.body, "keyup", (ev) => {
 <template>
   <Teleport to="body">
     <Transition name="dialog">
-      <div v-if="modelValue" class="pl-dialog-modal__shadow" @click="onClickShadow">
+      <div
+        v-if="modelValue"
+        data-testid="pl-dialog-modal-shadow"
+        class="pl-dialog-modal__shadow"
+        @click="onClickShadow"
+      >
         <div
+          data-testid="pl-dialog-modal"
           v-bind="$attrs"
           ref="modal"
           class="pl-dialog-modal"
@@ -145,13 +151,19 @@ useEventListener(document.body, "keyup", (ev) => {
         >
           <PlCloseModalBtn
             v-if="closable"
+            data-testid="pl-dialog-modal-close"
             class="close-modal-btn"
             @click.stop="emit('update:modelValue', false)"
           />
-          <div v-if="slots.title" class="pl-dialog-modal__title">
+          <div
+            v-if="slots.title"
+            data-testid="pl-dialog-modal-title"
+            class="pl-dialog-modal__title"
+          >
             <slot name="title" />
           </div>
           <div
+            data-testid="pl-dialog-modal-content"
             class="pl-dialog-modal__content"
             :class="{
               'no-content-gutters': noContentGutters,
@@ -162,6 +174,7 @@ useEventListener(document.body, "keyup", (ev) => {
           </div>
           <div
             v-if="slots.actions"
+            data-testid="pl-dialog-modal-actions"
             class="pl-dialog-modal__actions"
             :class="{ 'has-top-border': actionsHasTopBorder }"
           >

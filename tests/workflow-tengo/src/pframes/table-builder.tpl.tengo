@@ -19,9 +19,10 @@
 //                    mode: "single" | "multi",
 //                    sourceImport: string,
 //                    sourceColumn?: string,
-//                    opts?: { header?, headerPrefix?, headerSuffix? }
+//                    opts?: { header?, headerPrefix?, headerSuffix?, join? }
 //                  }
 //   joinMode?    — "inner" | "full"
+//   columnJoin?  — "left" | "full" | "inner"
 //   axisHeaders? — [[axisName: string, header: string], ...]
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
@@ -78,6 +79,9 @@ self.body(func(inputs) {
 
 	if !is_undefined(inputs.joinMode) {
 		builder = builder.setJoinMode(inputs.joinMode)
+	}
+	if !is_undefined(inputs.columnJoin) {
+		builder = builder.setColumnJoin(inputs.columnJoin)
 	}
 	if !is_undefined(inputs.axisHeaders) {
 		for h in inputs.axisHeaders {

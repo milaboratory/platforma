@@ -21,7 +21,6 @@
     "vue": "catalog:"
   },
   "devDependencies": {
-    "@faker-js/faker": "catalog:",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",

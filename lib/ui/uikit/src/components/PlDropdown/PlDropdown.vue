@@ -18,6 +18,7 @@ import type { ListOption, ListOptionNormalized, MaskIconName16, MaskIconName24 }
 import DoubleContour from "../../utils/DoubleContour.vue";
 import { useLabelNotch } from "../../utils/useLabelNotch";
 import LongText from "../LongText.vue";
+import { PlColumnLabel } from "../PlColumnLabel";
 import { PlIcon16 } from "../PlIcon16";
 import { PlIcon24 } from "../PlIcon24";
 import { PlSvg } from "../PlSvg";
@@ -205,19 +206,21 @@ const optionsRef = computed<LOption<M>[]>(() =>
   })),
 );
 
-const textValue = computed(() => {
-  const options = unref(optionsRef);
-  const item: ListOption | undefined = options.find((o) => deepEqual(o.value, props.modelValue));
-  return item?.label;
-});
+const selectedOption = computed(() =>
+  unref(optionsRef).find((o) => deepEqual(o.value, props.modelValue)),
+);
 
-// Native tooltip with the full selected value. The `.input-value` layer has
+const textValue = computed(() => selectedOption.value?.label);
+
+// Native tooltip with the full selected value and its link hint. The `.input-value` layer has
 // `pointer-events: none`, so the title must sit on the field wrapper, which is
 // what actually receives the hover.
 const fieldTitle = computed(() => {
   if (data.open) return undefined;
   if (isMissing.value) return props.missingValueLabel;
-  return textValue.value !== undefined ? String(textValue.value) : undefined;
+  if (textValue.value === undefined) return undefined;
+  const hint = selectedOption.value?.linkHint;
+  return hint ? `${textValue.value}\n${hint}` : String(textValue.value);
 });
 
 const computedPlaceholder = computed(() => {
@@ -356,11 +359,12 @@ watchPostEffect(() => {
 </script>
 
 <template>
-  <div class="pl-dropdown__envelope" @click="setFocusOnInput">
+  <div class="pl-dropdown__envelope" @click="setFocusOnInput" data-testid="pl-dropdown">
     <div
       ref="rootRef"
       :tabindex="tabindex"
       class="pl-dropdown"
+      data-testid="pl-dropdown-control"
       :class="{ open: data.open, error: error || errorStatus, disabled: isDisabled }"
       @keydown="handleKeydown"
       @focusout="onFocusOut"
@@ -376,38 +380,53 @@ watchPostEffect(() => {
             :placeholder="computedPlaceholder"
             spellcheck="false"
             autocomplete="chrome-off"
+            data-testid="pl-dropdown-input"
             @focus="onInputFocus"
           />
 
-          <div v-if="!data.open" class="input-value">
-            <LongText v-if="isMissing" class="input-value--missing">
+          <div v-if="!data.open" class="input-value" data-testid="pl-dropdown-value">
+            <LongText
+              v-if="isMissing"
+              class="input-value--missing"
+              data-testid="pl-dropdown-value-missing"
+            >
               {{ missingValueLabel }}
             </LongText>
-            <LongText v-else-if="textValue !== undefined">
-              {{ textValue }}
-            </LongText>
+            <PlColumnLabel v-else-if="textValue !== undefined" :option="selectedOption">
+              <LongText>{{ textValue }}</LongText>
+            </PlColumnLabel>
           </div>
 
           <div class="pl-dropdown__controls">
-            <PlIcon24 v-if="showLoadingSpinner" name="loading" />
+            <PlIcon24 v-if="showLoadingSpinner" name="loading" data-testid="pl-dropdown-loading" />
             <PlIcon16
               v-if="clearable && hasValue"
               class="clear"
+              data-testid="pl-dropdown-clear"
               name="delete-clear"
               @click.stop="clear"
             />
             <slot name="append" />
-            <div class="pl-dropdown__arrow-wrapper" @click.stop="toggleOpen">
+            <div
+              class="pl-dropdown__arrow-wrapper"
+              data-testid="pl-dropdown-arrow"
+              @click.stop="toggleOpen"
+            >
               <PlIcon24 v-if="arrowIconLarge" :name="arrowIconLarge" class="arrow-icon" />
               <PlIcon16 v-else-if="arrowIcon" :name="arrowIcon" class="arrow-icon" />
               <PlIcon16 v-else name="chevron-down" class="arrow-icon arrow-icon-default" />
             </div>
           </div>
         </div>
-        <label v-if="label">
-          <PlSvg v-if="required" :uri="SvgRequired" />
+        <label v-if="label" data-testid="pl-dropdown-label">
+          <PlSvg v-if="required" :uri="SvgRequired" data-testid="pl-dropdown-required" />
           <span>{{ label }}</span>
-          <PlTooltip v-if="$slots.tooltip" class="info" position="top">
+          <PlTooltip
+            v-if="$slots.tooltip"
+            class="info"
+            position="top"
+            data-testid="pl-dropdown-tooltip"
+          >
             <template #tooltip>
               <slot name="tooltip" />
             </template>
@@ -425,10 +444,18 @@ watchPostEffect(() => {
         <DoubleContour class="pl-dropdown__contour" :group-position="groupPosition" />
       </div>
     </div>
-    <div v-if="computedError" class="pl-dropdown__error">{{ computedError }}</div>
-    <div v-else-if="showLoadingSpinner && loadingOptionsHelper" class="pl-dropdown__helper">
+    <div v-if="computedError" class="pl-dropdown__error" data-testid="pl-dropdown-error">
+      {{ computedError }}
+    </div>
+    <div
+      v-else-if="showLoadingSpinner && loadingOptionsHelper"
+      class="pl-dropdown__helper"
+      data-testid="pl-dropdown-helper"
+    >
       {{ loadingOptionsHelper }}
     </div>
-    <div v-else-if="helper" class="pl-dropdown__helper">{{ helper }}</div>
+    <div v-else-if="helper" class="pl-dropdown__helper" data-testid="pl-dropdown-helper">
+      {{ helper }}
+    </div>
   </div>
 </template>

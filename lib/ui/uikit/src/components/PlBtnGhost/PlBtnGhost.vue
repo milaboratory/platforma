@@ -62,16 +62,17 @@ useRipple(btnRef);
   <button
     ref="btnRef"
     tabindex="0"
+    data-testid="pl-btn-ghost"
     class="pl-btn-ghost"
     :class="{ loading, small, large, round, reverse, justifyCenter, [$attrs.class + '']: true }"
     v-bind="{ ...$attrs, disabled: Boolean($attrs.disabled) || loading }"
   >
-    <span v-if="slots.default && !round">
+    <span v-if="slots.default && !round" data-testid="pl-btn-ghost-label">
       <slot />
     </span>
     <slot name="icon">
-      <PlMaskIcon24 v-if="loading" name="loading" :size="size" />
-      <PlMaskIcon24 v-else-if="icon" :name="icon" :size="size" />
+      <PlMaskIcon24 v-if="loading" data-testid="pl-btn-ghost-loading" name="loading" :size="size" />
+      <PlMaskIcon24 v-else-if="icon" data-testid="pl-btn-ghost-icon" :name="icon" :size="size" />
     </slot>
     <slot name="append" />
   </button>
