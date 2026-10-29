@@ -105,6 +105,7 @@ implInputs := func(inputs, raw) {
 			pureImplInputs[name] = raw[name]
 		}
 	}
+	// the policy is plain JSON: passing the decoded value creates an equal resource
 	if !is_undefined(inputs.fallbackPolicy) {
 		pureImplInputs.fallbackPolicy = inputs.fallbackPolicy
 	}

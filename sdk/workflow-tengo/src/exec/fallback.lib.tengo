@@ -305,6 +305,8 @@ historyText := func(hist, attemptLimit, why) {
 			next := hist[i + 1]
 			if e.result == "workdirMissing" {
 				decision = "restart"
+			} else if is_undefined(e.reason) {
+				decision = fmt.sprintf("handler %q", next.plan)
 			} else {
 				decision = fmt.sprintf("handler %s %q", e.reason, next.plan)
 			}
