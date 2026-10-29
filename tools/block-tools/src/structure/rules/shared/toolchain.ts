@@ -3,8 +3,8 @@
 /** Node version for the block CI workflows. */
 export const NODE_VERSION = "24.22.1";
 
-/** Root `engines.node` of a block. */
-export const NODE_ENGINE = `>=${NODE_VERSION.split(".")[0]}`;
+/** Root `devEngines.runtime` of a block: pnpm runs the block scripts on this Node. */
+export const NODE_RUNTIME = { name: "node", version: NODE_VERSION, onFail: "download" };
 
 /** Root `packageManager` of a block. The shared CI workflow installs this pnpm. */
 export const PACKAGE_MANAGER =
