@@ -22,6 +22,7 @@ feats := import(":feats")
 R := import(":exec.R")
 limits := import(":exec.limits")
 execConstants := import(":exec.constants")
+saveChain := import(":exec.save-chain")
 
 delayedCompAlloc := import(":exec.delayed-compute-allocation")
 tplutil := import(":tpl.util")
@@ -358,8 +359,15 @@ self.body(func(inputs) {
 	mainRunBuilder.stderr(runOptions.stderr)
 	mainRunBuilder.nErrorLines(runOptions.nErrorLines)
 	queue := runOptions.queue
+	// The outcome router serves fallbacks and the restart of a lost working directory. An exec
+	// with neither, on a backend without WorkdirSave v3, keeps the RunCommand v2 path: the router
+	// would only add renders between the command and its save, and their latency (an existing
+	// exec-heavy pframes test timed out on it in CI).
+	routed := !is_undefined(inputs.fallbackPlans) || !is_undefined(inputs.attemptCtx) ||
+		(is_undefined(inputs[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1]) &&
+			saveChain.hasWorkdirSaveV3(queue, settings))
 	useV3 := is_undefined(inputs[execConstants.META_INPUT_FORCE_RUN_COMMAND_V2]) &&
-		!is_undefined(limits.getRunCommandV3Type(queue))
+		!is_undefined(limits.getRunCommandV3Type(queue)) && routed
 	if !useV3 {
 		return _runV2(inputs, mainRunBuilder, wdBefore)
 	}
