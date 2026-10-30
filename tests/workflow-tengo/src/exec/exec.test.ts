@@ -22,8 +22,9 @@ tplTest.concurrent("run-hello-world-go", async ({ helper, expect }) => {
  * Checks that default limits are applied per queue when no explicit cpu/ram is set.
  * Actual values are capped by min(queueLimit, queueDefault), so we assert > 0 and <= default.
  *
- * On k8s the job waits for Kueue admission, and the heavy one needs 16 CPU free at once. When
- * several CI runs share one ClusterQueue, that wait alone exceeds the 15s default timeout.
+ * On k8s each job waits for Kueue admission; the backend caps its CPU request (3 in CI, so the
+ * heavy one asks for 3, not 16). When several CI runs share one ClusterQueue, that wait alone
+ * exceeds the 15s default timeout.
  */
 tplTest.concurrent.for([
   { queue: "ui-tasks", defaultCpuCores: 1, defaultRamBytes: 100 * 1024 * 1024 },
