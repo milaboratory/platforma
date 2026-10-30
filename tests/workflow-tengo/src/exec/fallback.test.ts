@@ -19,6 +19,16 @@ const json = (tx: Pl.PlTransaction, v: unknown) => tx.createValue(Pl.JsonObject,
 // code 1"), not the process output, so nothing in it can match a messageMatch pattern.
 const ON_K8S = process.env.PL_TEST_K8S === "1";
 
+// Whether the backend has WorkdirSave v3. Without it an exec without fallbacks runs on the
+// RunCommand v2 path: its error has no attempt history, and its outputs fail as before.
+type Helper = Parameters<Parameters<typeof tplTest>[1]>[0]["helper"];
+const hasWorkdirSaveV3 = async (helper: Helper) =>
+  (await helper
+    .renderTemplate(false, "exec.fallback.capability", ["workdirSaveV3"], () => ({}))
+    .then((r) =>
+      r.computeOutput("workdirSaveV3", (a) => a?.getDataAsJson<boolean>()).awaitStableValue(),
+    )) === true;
+
 // forceSaveV1: a backend with RunCommand v3 but without WorkdirSave v3 (the _forceWorkdirSaveV1
 // seam): fallbacks work the same, the success path saves with WorkdirSave v1.
 tplTest.concurrent.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
@@ -94,7 +104,10 @@ tplTest.concurrent(
       .catch((e: Error) => e);
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message).toContain("Exited with code 2.");
-    expect((error as Error).message).toContain("#0 root fail SoftwareError (exit 2) → no handler");
+    if (await hasWorkdirSaveV3(helper))
+      expect((error as Error).message).toContain(
+        "#0 root fail SoftwareError (exit 2) → no handler",
+      );
   },
   120_000,
 );
@@ -256,16 +269,10 @@ const partialSaveCases = [
 tplTest.concurrent.for(partialSaveCases)(
   "exec: a saved file never written (v2: $forceV2, file set: $withFileSet)",
   async ({ forceV2, withFileSet }, { helper, expect }) => {
-    const capability = await helper.renderTemplate(
-      false,
-      "exec.fallback.capability",
-      ["workdirSaveV3"],
-      () => ({}),
-    );
-    const saveV3 = await capability
-      .computeOutput("workdirSaveV3", (a) => a?.getDataAsJson<boolean>())
-      .awaitStableValue();
-    const ok = forceV2 || !saveV3 ? ["stdout", "attempts", ...(withFileSet ? ["set"] : [])] : [];
+    const ok =
+      forceV2 || !(await hasWorkdirSaveV3(helper))
+        ? ["stdout", "attempts", ...(withFileSet ? ["set"] : [])]
+        : [];
     const nonce = randomUUID();
     for (const withFallbacks of forceV2 ? [false] : [false, true]) {
       for (const which of [
