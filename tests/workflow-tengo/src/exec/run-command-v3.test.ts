@@ -75,7 +75,10 @@ tplTest.concurrent(
 
 tplTest.concurrent(
   "AC1.3 RunCommand v3: the log tail respects both the line and the byte limit",
-  async ({ helper, expect }) => {
+  async ({ helper, expect, skip }) => {
+    // On Kubernetes the log tail is the job script's own few lines, not the process output
+    if (process.env.PL_TEST_K8S === "1")
+      return skip("the Kubernetes log tail carries no process output");
     const script = `line=$(printf '%01024d' 0 | tr 0 x); i=0; while [ $i -lt 10000 ]; do echo "$i $line"; i=$((i+1)); done; exit 3 # ${randomUUID()}`;
     for (const errorLines of [20, 1000]) {
       const result = await render(helper, ["-c", script], errorLines);
