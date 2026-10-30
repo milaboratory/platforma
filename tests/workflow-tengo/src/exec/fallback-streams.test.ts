@@ -335,3 +335,34 @@ tplTest(
   },
   120_000,
 );
+
+// Review 4, m3: a failed attempt's streamed file that cannot be saved (a broken symlink) loses
+// that attempt's log only; the successful fallback's outputs resolve
+tplTest(
+  "exec fallbacks: a failed attempt's unsaveable stream does not fail the fallback",
+  async ({ helper, expect, skip }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.streams",
+      ["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts"],
+      (tx) => ({
+        nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
+        seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
+        rootBadStream: tx.createValue(Pl.JsonObject, JSON.stringify(true)),
+      }),
+    );
+    const content = await result
+      .computeOutput("stdoutContent", (a) => a?.getDataAsString())
+      .awaitStableValue()
+      .catch((e: Error) => e);
+    // without WorkdirSave v3 the failed attempt's log save cannot be checked first: as before
+    if (content instanceof Error && !content.message.includes("not a regular file")) throw content;
+    if (content instanceof Error) return skip("no WorkdirSave v3 on the backend");
+    expect(content).toBe("fallback-1\n");
+    const attempts = await result
+      .computeOutput("attempts", (a) => a?.getDataAsJson<Attempt[]>())
+      .awaitStableValue();
+    expect(attempts?.map((a) => a.plan)).toEqual(["root", "handler"]);
+  },
+  120_000,
+);

@@ -4,6 +4,7 @@
  * The full dump was compared with the SDK before exec fallbacks when this test was written (same
  * template, both SDKs, identical text). Kept here are the parts that do not depend on the test
  * software's version: the input names and the absence of any fallback input. */
+import { Pl } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 
 tplTest.concurrent(
@@ -70,5 +71,26 @@ tplTest.concurrent(
     expect(
       await result.computeOutput("cid", (a) => a?.getDataAsJson<string>()).awaitStableValue(),
     ).toBe(CID_BEFORE_FALLBACKS);
+  },
+);
+
+// The same exec with an OOM handler: the plans and the policy are inputs, so the id differs from the
+// one without, and is stable from run to run (pinned when it was introduced)
+const CID_WITH_FALLBACKS = "cff12d1e7dd0957a1ef5ba826daa5f84";
+
+tplTest.concurrent(
+  "exec with fallbacks: the exec.exec render's CID is stable",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.cid_render",
+      ["cid", "out"],
+      (tx) => ({
+        withFallbacks: tx.createValue(Pl.JsonObject, JSON.stringify(true)),
+      }),
+    );
+    expect(
+      await result.computeOutput("cid", (a) => a?.getDataAsJson<string>()).awaitStableValue(),
+    ).toBe(CID_WITH_FALLBACKS);
   },
 );
