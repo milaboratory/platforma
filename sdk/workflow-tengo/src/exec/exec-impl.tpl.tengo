@@ -24,6 +24,7 @@ limits := import(":exec.limits")
 execConstants := import(":exec.constants")
 
 delayedCompAlloc := import(":exec.delayed-compute-allocation")
+tplutil := import(":tpl.util")
 
 routerTpl := assets.importTemplate(":exec.outcome-router")
 v2AttemptsTpl := assets.importTemplate(":exec.v2-attempts")
@@ -376,21 +377,9 @@ self.body(func(inputs) {
 
 	raw := self.rawInputs()
 
-	// this attempt's own exec-impl inputs, for a restart of the same plan (spec §14.3)
-	implPure := smart.ephemeralMapBuilder()
-	for name, f in raw {
-		if name != "attemptCtx" {
-			implPure.addRef(name, f.getValue())
-		}
-	}
-	implMeta := smart.ephemeralMapBuilder()
-	for name, f in self.rawMetaInputs() {
-		implMeta.addRef(name, f.getValue())
-	}
-	implInputs := smart.ephemeralMapBuilder().
-		addRef("pure", implPure.build()).
-		addRef("meta", implMeta.build()).
-		build()
+	// this attempt's own exec-impl inputs, for a restart of the same plan (spec §14.3): the inputs
+	// map of this render itself, pure and meta inputs; a restart replaces attemptCtx
+	implInputs := self.renderer().get(tplutil.INPUTS_MAP_FIELD)
 
 	routerInputs := {
 		outcome: run.outcome,

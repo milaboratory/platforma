@@ -1,104 +1,109 @@
 /**
- * Wave 2 of a successful RunCommand v3 attempt (exec fallbacks, spec §14.2): the save chain, then
- * exec.wd-retrier on its outcomes. Rendered by the outcome router; a library so tests can render
- * it on a working directory of their own (decision D5).
+ * Wave 2 of a successful RunCommand v3 attempt (exec fallbacks, spec §14.2): the save chain and,
+ * with WorkdirSave v3, exec.wd-retrier on its outcomes. Rendered by the outcome router; a library
+ * so tests can render it on a working directory of their own (decision D5).
  */
 
 ll := import(":ll")
-render := import(":render")
 smart := import(":smart")
+render := import(":render")
 assets := import(":assets")
 saveChain := import(":exec.save-chain")
+stream := import(":exec.stream")
 
 wdRetrierTpl := assets.importTemplate(":exec.wd-retrier")
-wdForwardTpl := assets.importTemplate(":exec.wd-forward")
-wdStreamOwnTpl := assets.importTemplate(":exec.wd-stream-own")
+
+// The save chain's outputs travel to the wd-retrier in one ephemeral resource of this type, which
+// the input unmarshaller hands to the body untouched, so the body never opens the outputs (a map
+// with an errored entry would fail it) and returns references into it.
+_RTYPE_SAVE_OUTPUTS := { Name: "ExecSaveOutputs", Version: "1" }
+
+_ownMap := func(own) {
+	m := smart.ephemeralMapBuilder()
+	for name, ref in own {
+		m.addRef(name, ref)
+	}
+	return m.build()
+}
 
 /**
  * @param p: map -
- *   workdir: reference - the post-run working directory
+ *   workdir: resource - the post-run working directory, ready
  *   settings: map - the exec's settings, decoded
  *   settingsRef: reference - the same settings resource, passed on
  *   wdProcessors: map | undefined - name -> { tpl, tplArgs }
  *   v3: bool - save with WorkdirSave v3; the wd-retrier then restarts on a lost directory
  *   attemptCtx: map - the attempt context, history including this attempt's success entry,
  *                     attemptLimit and restartLimit
- *   implInputs: reference - this attempt's exec-impl inputs, for a restart
- *   streamCollections: reference | undefined
+ *   implInputs: reference - this attempt's exec-impl inputs map, for a restart
+ *   streamCollections: map | undefined - file name -> StreamCollection
+ *   streamCollectionsRef: reference | undefined - the same map, passed on
  *   execImplTpl: reference | undefined
- * @return { output(name) } - files, filesContent, fileSets, fileSetsContent, wdProcessors, progress,
- *         attempts, streamOwn
+ * @return map - files, filesContent, fileSets, fileSetsContent, wdProcessors, progress, attempts,
+ *         streamOwn
  */
 run := func(p) {
 	settings := p.settings
 	saved := saveChain.run(p.workdir, settings, p.wdProcessors, { v3: p.v3 })
 
-	// The wd-retrier decides on the outcome maps, whose entries are values (WorkdirSave v3, D2), and
-	// never sees the save chain's outputs: a file the software never wrote errors its own blob, and
-	// a template with an error anywhere among its inputs, meta inputs included, fails as a whole.
-	// Each output then goes out through a forwarder of its own, choosing between the saved output
-	// and the restart's, so an error reaches the output it is in and no other, as with v1.
+	if !p.v3 {
+		// no WorkdirSave v3, no restart: the save chain's outputs as they are (spec §5)
+		streams := stream.attemptFiles(p.workdir, settings, saved.files)
+		collections := is_undefined(p.streamCollections) ? {} : p.streamCollections
+		ctx := p.attemptCtx
+		stream.attemptEnded(collections, ctx.attempt, ctx.history[len(ctx.history) - 1], streams.blobs)
+		return {
+			files: saved.files,
+			filesContent: saved.filesContent,
+			fileSets: saved.fileSets,
+			fileSetsContent: saved.fileSetsContent,
+			progress: saved.progress,
+			wdProcessors: saved.wdProcessors,
+			attempts: ctx.history,
+			streamOwn: _ownMap(streams.own)
+		}
+	}
+
+	outputs := smart.ephemeralMapBuilder(_RTYPE_SAVE_OUTPUTS).
+		addRef("files", saved.files).
+		addRef("filesContent", saved.filesContent).
+		addRef("fileSets", saved.fileSets).
+		addRef("fileSetsContent", saved.fileSetsContent).
+		addRef("progress", saved.progress).
+		add("wdProcessors", saved.wdProcessors).
+		build()
+
 	inputs := {
 		settings: p.settingsRef,
 		attemptCtx: p.attemptCtx,
-		implInputs: p.implInputs
+		implInputs: p.implInputs,
+		workdir: p.workdir,
+		outputs: outputs,
+		saveOutcome: saved.outcome
 	}
-	if p.v3 {
-		inputs.saveOutcome = saved.outcome
-		if is_undefined(p.wdProcessors) || len(p.wdProcessors) == 0 {
-			// the main save reads the post-run directory itself
-			inputs.awaitOutcome = "saveOutcome"
-		} else {
-			// the processors read it first, after the probe at the head of the chain: decide on
-			// the probe, then on the main save. On a lost directory the probe hands nothing on,
-			// so the processors and the main save never run.
-			inputs.probeOutcome = saved.probeOutcome
-			inputs.awaitOutcome = "probeOutcome"
-		}
+	if is_undefined(p.wdProcessors) || len(p.wdProcessors) == 0 {
+		// the main save reads the post-run directory itself
+		inputs.awaitOutcome = "saveOutcome"
+	} else {
+		// the processors read it first, after the probe at the head of the chain: decide on the
+		// probe, then on the main save. On a lost directory the probe hands nothing on, so the
+		// processors and the main save never run.
+		inputs.probeOutcome = saved.probeOutcome
+		inputs.awaitOutcome = "probeOutcome"
 	}
-	if !is_undefined(p.streamCollections) {
-		inputs.streamCollections = p.streamCollections
+	if !is_undefined(p.streamCollectionsRef) {
+		inputs.streamCollections = p.streamCollectionsRef
 	}
 	if !is_undefined(p.execImplTpl) {
 		inputs.execImplTpl = p.execImplTpl
 	}
-	retrier := render.createEphemeral(wdRetrierTpl, inputs)
-	decision := retrier.output("decision")
 
-	forward := func(name, savedOutput) {
-		return render.createEphemeral(wdForwardTpl, { decision: decision }, {
-			metaInputs: { saved: savedOutput, restarted: retrier.output(name) }
-		}).output("value")
+	r := render.createEphemeral(wdRetrierTpl, inputs)
+	res := {}
+	for name in ["files", "filesContent", "fileSets", "fileSetsContent", "wdProcessors", "progress", "attempts", "streamOwn"] {
+		res[name] = r.output(name)
 	}
-
-	streamInputs := {
-		decision: decision,
-		settings: p.settingsRef,
-		attemptCtx: p.attemptCtx,
-		workdir: p.workdir
-	}
-	if !is_undefined(p.streamCollections) {
-		streamInputs.streamCollections = p.streamCollections
-	}
-	streamOwn := render.createEphemeral(wdStreamOwnTpl, streamInputs, {
-		metaInputs: { files: saved.files, restarted: retrier.output("streamOwn") }
-	}).output("value")
-
-	outputs := {
-		files: forward("files", saved.files),
-		filesContent: forward("filesContent", saved.filesContent),
-		fileSets: forward("fileSets", saved.fileSets),
-		fileSetsContent: forward("fileSetsContent", saved.fileSetsContent),
-		progress: forward("progress", saved.progress),
-		wdProcessors: forward("wdProcessors", smart.createMapResource(saved.wdProcessors)),
-		attempts: retrier.output("attempts"),
-		streamOwn: streamOwn
-	}
-	return ll.toStrict({
-		output: func(name) {
-			return outputs[name]
-		}
-	})
+	return res
 }
 
 export ll.toStrict({

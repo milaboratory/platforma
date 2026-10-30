@@ -34,6 +34,9 @@ execConstants := import(":exec.constants")
 
 self.awaitState("ResourceReady")
 
+// this attempt's exec-impl inputs: passed on to a restart, never read
+saveChain.keepOpaque(self, ["implInputs"])
+
 self.body(func(inputs) {
 	// run-command/outcome is not a plain JSON resource type, so inputs() leaves it as a resource
 	oc := inputs.outcome
@@ -60,7 +63,8 @@ self.body(func(inputs) {
 		// wave 2: the save chain, then the wd-retrier decides on its outcomes
 		v3Save := inputs.forceWorkdirSaveV1 != true &&
 			saveChain.hasWorkdirSaveV3(settings.runOptions.queue, settings)
-		r := wave2.run({
+		// the attempt context the wd-retrier gets: attempt 0 has none of its own
+		return wave2.run({
 			workdir: raw.workdir.getValue(),
 			settings: settings,
 			settingsRef: raw.settings.getValue(),
@@ -72,20 +76,10 @@ self.body(func(inputs) {
 				restartLimit: oc.restartLimit
 			}),
 			implInputs: raw.implInputs.getValue(),
-			streamCollections: is_undefined(raw.streamCollections) ? undefined : raw.streamCollections.getValue(),
+			streamCollections: inputs.streamCollections,
+			streamCollectionsRef: is_undefined(raw.streamCollections) ? undefined : raw.streamCollections.getValue(),
 			execImplTpl: is_undefined(raw.execImplTpl) ? undefined : raw.execImplTpl.getValue()
 		})
-
-		return {
-			files: r.output("files"),
-			filesContent: r.output("filesContent"),
-			fileSets: r.output("fileSets"),
-			fileSetsContent: r.output("fileSetsContent"),
-			wdProcessors: r.output("wdProcessors"),
-			progress: r.output("progress"),
-			attempts: r.output("attempts"),
-			streamOwn: r.output("streamOwn")
-		}
 	}
 
 	next := fallback.pick(inputs.fallbackPolicy, oc.failDetails, oc.lastLogLines)
