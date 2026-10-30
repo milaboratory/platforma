@@ -168,9 +168,11 @@ function buildStubProvider(
     getPObjectEntries: () => entries,
     isFinal: () => true,
     getColumns: () =>
-      Array.from(entries.values())
+      entries
+        .values()
         .map((entry) => DataColumn.fromAccessor(entry))
-        .filter((column) => column !== undefined),
+        .filter((column) => column !== undefined)
+        .toArray(),
   };
 }
 
