@@ -22,11 +22,11 @@ feats := import(":feats")
 R := import(":exec.R")
 limits := import(":exec.limits")
 execConstants := import(":exec.constants")
-fallback := import(":exec.fallback")
 
 delayedCompAlloc := import(":exec.delayed-compute-allocation")
 
 routerTpl := assets.importTemplate(":exec.outcome-router")
+v2AttemptsTpl := assets.importTemplate(":exec.v2-attempts")
 
 self.defineOutputs(
 	"files",
@@ -124,7 +124,8 @@ self.validateInputs(inputSchema)
 /**
  * The RunCommand v2 path, as before exec fallbacks: a software failure is an error of the
  * command, propagated through the save chain to the outputs. `attempts` is the one entry a
- * successful exec has, so getAttempts() resolves on such a backend too.
+ * successful exec has, resolved once the save is done, so getAttempts() resolves on such a backend
+ * as the other outputs do, and errors as they do.
  */
 _runV2 := func(inputs, mainRunBuilder, wdBefore) {
 	settings := inputs.settings
@@ -204,7 +205,7 @@ _runV2 := func(inputs, mainRunBuilder, wdBefore) {
 		fileStreams: streams.build(),
 		wdProcessors: wdProcessorsResults,
 		progress: wdResult.progress,
-		attempts: [{ attempt: 0, plan: fallback.ROOT_PLAN, result: "success" }]
+		attempts: render.createEphemeral(v2AttemptsTpl, { workdir: wdResult.workdir }).output("attempts")
 	}
 }
 

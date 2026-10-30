@@ -1,0 +1,14 @@
+/**
+ * The `attempts` output of an exec on RunCommand v2 (exec fallbacks, spec §10.2): the one entry a
+ * successful exec has, once its working directory is saved. A failed command errors the save, and
+ * the error reaches `attempts` too, as it reaches the other outputs.
+ */
+
+self := import(":tpl.light")
+fallback := import(":exec.fallback")
+
+self.awaitState("workdir", "ResourceReady")
+
+self.body(func(inputs) {
+	return { attempts: [{ attempt: 0, plan: fallback.ROOT_PLAN, result: "success" }] }
+})
