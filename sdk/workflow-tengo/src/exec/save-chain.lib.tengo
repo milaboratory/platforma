@@ -175,7 +175,37 @@ lostWorkdir := func(outcomes) {
 	return undefined
 }
 
+/**
+ * Keeps the named inputs of the current template out of the input unmarshalling: the body gets
+ * them as resources and reads only what it needs. An exec's own inputs (its plan and files) are
+ * large, and the outcome router and the wd-retrier pass them on without reading them. Call at the
+ * top of a template.
+ *
+ * @param tpl: the template (:tpl.light)
+ * @param names: string[] - input names
+ */
+keepOpaque := func(tpl, names) {
+	ids := {}
+	for name in names {
+		if tpl.hasInput(name) {
+			f := tpl.rawInputs()[name]
+			if f.isSet() {
+				ids[string(f.getValue().id)] = true
+			}
+		}
+	}
+	tpl.registerUnmarshaller({
+		canParse: func(r) {
+			return !is_undefined(ids[string(r.id)])
+		},
+		parse: func(r, _) {
+			return r
+		}
+	})
+}
+
 export ll.toStrict({
+	keepOpaque: keepOpaque,
 	hasWorkdirSaveV3: hasWorkdirSaveV3,
 	run: run,
 	lostWorkdir: lostWorkdir

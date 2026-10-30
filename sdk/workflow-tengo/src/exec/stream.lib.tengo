@@ -8,6 +8,7 @@ oop := import(":oop")
 file := import(":file")
 constants := import(":constants")
 text := import("text")
+slices := import(":slices")
 
 _RTYPE_CREATE_STREAM := { Name: "CreateStream", Version: "2" }
 _RTYPE_STREAM_MANAGER := { Name: "StreamManager", Version: "2" }
@@ -91,8 +92,8 @@ createWithLive := func(workdirBefore, filePath, downloadableRef) {
 }
 
 /**
- * The final content of a stream whose file the attempt never wrote, or wrote but did not save: a
- * JSON value naming the file, never an error. A save of a missing file, or a missing key, would be
+ * The final content of a stream whose file the attempt never wrote, or wrote but did not save
+ * (streamFile() without saveFile()): a JSON value naming the file, never an error. A save of a missing file, or a missing key, would be
  * an error that spreads from the manager to every other output of the exec. A log driver that
  * knows it reads it as no log (pl-drivers LogsDriver); an older one reports it as a log it cannot
  * read, as it did with the error before.
@@ -102,6 +103,41 @@ createWithLive := func(workdirBefore, filePath, downloadableRef) {
  */
 notWritten := func(filePath) {
 	return smart.createJsonResource({ streamFileNotWritten: filePath })
+}
+
+/**
+ * The final content of an attempt's streams: the saved file for a streamed file the attempt
+ * wrote and saved; the live stream for one it wrote but did not save, as before fallbacks; a
+ * stand-in for one it never wrote (stream.notWritten): a missing key or a save of a missing file
+ * would be an error that spreads to the exec's other outputs.
+ *
+ * @param workdir: reference - the post-run working directory, ready
+ * @param settings: map - the exec's settings
+ * @param files: field - the saved files
+ * @return { blobs: map, own: map } - blobs: name -> saved file, for the collections; own: every
+ *         streamed name -> its final content
+ */
+attemptFiles := func(workdir, settings, files) {
+	blobs := {}
+	own := {}
+	if is_undefined(settings.filesToStream) || len(settings.filesToStream) == 0 {
+		return { blobs: blobs, own: own }
+	}
+	listed := workdir.getDataAsJson().files
+	savedFiles := is_undefined(settings.filesToSave) ? [] : settings.filesToSave
+	for name in settings.filesToStream {
+		if !slices.hasElement(listed, name) {
+			own[name] = notWritten(name)
+		} else if slices.hasElement(savedFiles, name) {
+			blobs[name] = file.exportFile(files.getFutureInputField(name))
+			own[name] = blobs[name]
+		} else {
+			// written but not saved: before fallbacks the manager's file never resolved and the
+			// stream stayed live; a manager may not reference a live stream, so the stand-in
+			own[name] = notWritten(name)
+		}
+	}
+	return { blobs: blobs, own: own }
 }
 
 /**
@@ -206,6 +242,7 @@ export ll.toStrict({
 	create: create,
 	createWithLive: createWithLive,
 	notWritten: notWritten,
+	attemptFiles: attemptFiles,
 	createCollection: createCollection,
 	attemptStarted: attemptStarted,
 	attemptEnded: attemptEnded
