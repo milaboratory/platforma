@@ -91,6 +91,20 @@ createWithLive := func(workdirBefore, filePath, downloadableRef) {
 }
 
 /**
+ * The final content of a stream whose file the attempt never wrote, or wrote but did not save: a
+ * JSON value naming the file, never an error. A save of a missing file, or a missing key, would be
+ * an error that spreads from the manager to every other output of the exec. A log driver that
+ * knows it reads it as no log (pl-drivers LogsDriver); an older one reports it as a log it cannot
+ * read, as it did with the error before.
+ *
+ * @param filePath: string - the path of the file in the workdir.
+ * @return reference - the stand-in
+ */
+notWritten := func(filePath) {
+	return smart.createJsonResource({ streamFileNotWritten: filePath })
+}
+
+/**
  * Creates the StreamCollection/1 of one streamed file of an exec with fallbacks.
  *
  * The collection must be structural: it is an output of the pure exec.exec render. Structural
@@ -191,6 +205,7 @@ export ll.toStrict({
 	RTYPE_STREAM_COLLECTION: RTYPE_STREAM_COLLECTION,
 	create: create,
 	createWithLive: createWithLive,
+	notWritten: notWritten,
 	createCollection: createCollection,
 	attemptStarted: attemptStarted,
 	attemptEnded: attemptEnded

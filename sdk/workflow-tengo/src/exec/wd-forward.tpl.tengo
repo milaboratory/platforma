@@ -1,0 +1,20 @@
+/**
+ * Hands out one output of an exec's wave 2 (see :exec.wave2): the save chain's when the
+ * wd-retrier decided "saved", the restart's when it restarted. One forwarder per output, so an
+ * error in one saved output (a file never written) reaches that output only, as with WorkdirSave
+ * v1: both candidates are meta inputs, and a template with an error among its inputs fails as a
+ * whole.
+ *
+ * inputs.decision: the wd-retrier's decision
+ * meta inputs saved, restarted: the two candidates
+ * outputs.value: the chosen one
+ */
+
+self := import(":tpl.light")
+
+self.awaitState("decision", "ResourceReady")
+
+self.body(func(inputs) {
+	meta := self.rawMetaInputs()
+	return { value: inputs.decision == "saved" ? meta.saved : meta.restarted }
+})

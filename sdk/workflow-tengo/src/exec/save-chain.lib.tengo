@@ -10,6 +10,7 @@ ll := import(":ll")
 render := import(":render")
 workdir := import(":workdir")
 limits := import(":exec.limits")
+smart := import(":smart")
 wdSave := import(":workdir.save")
 slices := import(":slices")
 maps := import(":maps")
@@ -82,6 +83,38 @@ run := func(wdAfter, settings, wdProcessors, opts) {
 		}
 	}
 
+	hasSets := (!is_undefined(settings.fileSetsToSave) && len(settings.fileSetsToSave) > 0) ||
+		(!is_undefined(settings.fileSetsContentToSave) && len(settings.fileSetsContentToSave) > 0)
+
+	if v3 && !hasSets {
+		// The save built here, not in a template: its outputs are the save's own fields. An
+		// output of a template is reached through a future on the render, which an error in a
+		// sibling output (a file never written) marks too, and the outcome must stay readable
+		// whatever the files are. File sets need the post-run listing, hence the template there.
+		saver := wdSave.builder(wdAfter, { v3: true })
+		if !is_undefined(settings.filesToSave) {
+			for fName in settings.filesToSave {
+				saver.saveFile(fName)
+			}
+		}
+		if !is_undefined(settings.filesContentToSave) {
+			for fName in settings.filesContentToSave {
+				saver.saveFileContent(fName)
+			}
+		}
+		saver.build()
+		return {
+			files: saver.getSavedFiles(),
+			filesContent: saver.getSavedFilesContent(),
+			fileSets: smart.createMapResource({}),
+			fileSetsContent: smart.createMapResource({}),
+			progress: saver.getProgress(),
+			wdProcessors: wdProcessorsResults,
+			outcome: saver.getOutcome(),
+			probeOutcome: probeOutcome
+		}
+	}
+
 	wdSaver := workdir.save(wdAfter)
 	if v3 {
 		wdSaver.v3()
@@ -120,6 +153,7 @@ run := func(wdAfter, settings, wdProcessors, opts) {
 		probeOutcome: probeOutcome
 	}
 }
+
 
 /**
  * Reads the save outcomes of WorkdirSave v3 (decision D2): `workdir` -> the directory's outcome,
