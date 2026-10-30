@@ -189,9 +189,15 @@ usually are, because the id-accepting consumers take them directly.
 
 - Ids that are still resolving are **dropped**, so the result can be shorter
   than `getColumnIds()`.
-- An id whose column is provably absent makes recipe construction throw
-  `ColumnAbsentError`. Catch it at the boundary if partial absence should be
-  surfaced rather than silently yielding an empty table.
+- Ids whose column is provably absent are **dropped** too. Use
+  `ColumnRecipe.getStatus(id)` on `getColumnIds()` if absence should be
+  surfaced rather than silently yielding a shorter list.
+
+A collection holds columns only: exports that are not columns, such as a
+`kind: "File"` library, are left out. A desktop built before its driver
+dropped them still returns them, so there `isEmpty()` and `getColumnIds()`
+check each id's status in the sandbox, which reads its spec, and drop ids
+whose column is absent.
 
 ```ts
 // only the current block's own outputs/prerun
@@ -659,7 +665,7 @@ What crosses the sandbox bridge, and when.
 | `ColumnsCollection(...)`, `.discover`, `.filter`, `.addSource`    | one host call, returns a handle                  |
 | `.isEmpty()`, `.isFinal()`                                        | one host call, no payload                        |
 | `.getColumnIds()`                                                 | one host call, N id strings                      |
-| `.getColumns()`                                                   | ids + per-id registry resolution (no spec bytes) |
+| `.getColumns()`                                                   | ids + per-id registry resolution and spec read   |
 | `recipe.id`, `.getQuery()`, `.getReferencedIds()`, `.withSpecs()` | none                                             |
 | `recipe.getSpec()`                                                | one round-trip per recipe, memoised per instance |
 | `recipe.getData()`                                                | one round-trip, memoised per instance            |

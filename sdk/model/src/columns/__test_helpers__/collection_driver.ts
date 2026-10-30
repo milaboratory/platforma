@@ -41,7 +41,7 @@ export interface TestCollectionDriverHandle {
    * `DataColumnRecipe.fromId`. Call inside `beforeEach` if the code under test uses
    * the ambient ctx instead of an explicit `driver` option.
    */
-  installAmbientCtx(): void;
+  installAmbientCtx(options?: { featureFlags?: GlobalCfgRenderCtx["featureFlags"] }): void;
   /** Remove the ambient ctx installed by {@link installAmbientCtx}. */
   uninstallAmbientCtx(): void;
   /** Dispose the underlying SpecDriver. */
@@ -105,8 +105,9 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
         _ctxProvidersCache.set(installedCtx, [buildStubProvider(specMap)]);
       }
     },
-    installAmbientCtx() {
+    installAmbientCtx(options) {
       const ctx = {
+        featureFlags: options?.featureFlags,
         getAccessorHandleByName: () => undefined,
         getUpstreamBlockCtx: () => [],
         getServiceNames: () => [Services.ColumnsCollection, Services.PFrameSpec] as ServiceName[],

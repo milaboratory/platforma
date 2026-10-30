@@ -13,8 +13,7 @@ import { isColumnProvider } from "./column_providers";
 import { TreeNodeAccessor } from "../render/accessor";
 import { getService } from "../services/get_services";
 import { getCfgRenderCtx } from "../internal";
-import { ColumnRecipe } from "./column_recipes";
-import { isNil } from "es-toolkit";
+import { ColumnAbsentError, ColumnRecipe } from "./column_recipes";
 
 export interface ColumnsCollectionDeps {
   /** Render ctx used both for service resolution and for default ctx sources. */
@@ -51,7 +50,7 @@ export function ColumnsCollection(
   const serialized: SerializedColumnsSource[] = sources
     ? sources.flatMap((s) => toSerializedSources(s, deps?.ctx))
     : defaultCtxSources(deps?.ctx);
-  return new ColumnsCollectionImpl(driver.create(serialized), driver);
+  return new ColumnsCollectionImpl(driver.create(serialized), driver, deps?.ctx);
 }
 
 export function isColumnsCollection(value: unknown): value is ColumnsCollection {
@@ -76,10 +75,14 @@ export class ColumnsCollectionImpl {
   constructor(
     public readonly handle: CollectionHandle,
     private readonly driver: ColumnsCollectionDriverModel,
+    private readonly ctx?: GlobalCfgRenderCtx,
   ) {}
 
   isEmpty(): boolean {
-    return this.driver.isEmpty(this.handle);
+    if (this.hostSkipsNonColumns()) return this.driver.isEmpty(this.handle);
+    return !this.driver
+      .getColumns(this.handle)
+      .some((id) => ColumnRecipe.getStatus(id, { ctx: this.ctx }) !== "absent");
   }
 
   isFinal(): boolean {
@@ -87,28 +90,57 @@ export class ColumnsCollectionImpl {
   }
 
   getColumnIds(): ColumnUniversalId[] {
-    return this.driver.getColumns(this.handle);
+    const ids = this.driver.getColumns(this.handle);
+    if (this.hostSkipsNonColumns()) return ids;
+    return ids.filter((id) => ColumnRecipe.getStatus(id, { ctx: this.ctx }) !== "absent");
   }
 
   getColumns(): ColumnRecipe[] {
-    return this.getColumnIds()
-      .map((id) => ColumnRecipe(id))
-      .filter((c): c is ColumnRecipe => !isNil(c));
+    return this.driver
+      .getColumns(this.handle)
+      .map((id) => buildUnlessAbsent(id, this.ctx))
+      .filter((recipe) => recipe !== undefined);
   }
 
   addSource(source: ColumnsSource | ColumnsCollection): ColumnsCollection {
     return new ColumnsCollectionImpl(
-      this.driver.addSource(this.handle, toSerializedSources(source)),
+      this.driver.addSource(this.handle, toSerializedSources(source, this.ctx)),
       this.driver,
+      this.ctx,
     );
   }
 
   discover(options: ColumnsDiscoverOptions): ColumnsCollection {
-    return new ColumnsCollectionImpl(this.driver.discover(this.handle, options), this.driver);
+    return new ColumnsCollectionImpl(
+      this.driver.discover(this.handle, options),
+      this.driver,
+      this.ctx,
+    );
   }
 
   filter(options: ColumnsFilterOptions): ColumnsCollection {
-    return new ColumnsCollectionImpl(this.driver.filter(this.handle, options), this.driver);
+    return new ColumnsCollectionImpl(
+      this.driver.filter(this.handle, options),
+      this.driver,
+      this.ctx,
+    );
+  }
+
+  private hostSkipsNonColumns(): boolean {
+    // Drop the sandbox-side filter once no supported desktop lacks this flag.
+    return (this.ctx ?? getCfgRenderCtx()).featureFlags?.columnsCollectionSkipsNonColumns === true;
+  }
+}
+
+function buildUnlessAbsent(
+  id: ColumnUniversalId,
+  ctx: GlobalCfgRenderCtx | undefined,
+): ColumnRecipe | undefined {
+  try {
+    return ColumnRecipe(id, { ctx });
+  } catch (error) {
+    if (error instanceof ColumnAbsentError) return undefined;
+    throw error;
   }
 }
 

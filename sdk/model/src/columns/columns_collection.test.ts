@@ -2,6 +2,7 @@ import type { AxisSpec, PColumnSpec, PObjectId } from "@milaboratories/pl-model-
 import { createGlobalPObjectId } from "@milaboratories/pl-model-common";
 
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { GlobalCfgRenderCtxFeatureFlags } from "../render/internal";
 import { ColumnsCollection } from "./columns_collection";
 import {
   createTestCollectionDriver,
@@ -12,9 +13,11 @@ let handle: TestCollectionDriverHandle;
 
 beforeEach(() => {
   handle = createTestCollectionDriver();
+  handle.installAmbientCtx();
 });
 
 afterEach(async () => {
+  handle.uninstallAmbientCtx();
   await handle.dispose();
 });
 
@@ -85,6 +88,44 @@ describe("ColumnsCollection.isEmpty", () => {
     handle.register([file]);
     const collection = handle.driver.create([{ kind: "ids", ids: [file.id], isFinal: true }]);
     expect(handle.driver.isEmpty(collection)).toBe(true);
+  });
+});
+
+describe("ColumnsCollection on a host driver that skips non-column exports", () => {
+  test("trusts the driver's ids and skips an absent one when building columns", () => {
+    handle.uninstallAmbientCtx();
+    handle.installAmbientCtx({ featureFlags: GlobalCfgRenderCtxFeatureFlags });
+    const column = { id: gid("c1"), spec: spec("col1") };
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([column, file]);
+    const collection = ColumnsCollection([], {
+      driver: { ...handle.driver, getColumns: () => [column.id, file.id] },
+    });
+    expect(collection.getColumnIds()).toEqual([column.id, file.id]);
+    expect(collection.getColumns().map((recipe) => recipe.id)).toEqual([column.id]);
+  });
+});
+
+describe("ColumnsCollection on a host driver that keeps non-column exports", () => {
+  function collectionOverIds(ids: PObjectId[]): ColumnsCollection {
+    return ColumnsCollection([], {
+      driver: { ...handle.driver, getColumns: () => ids, isEmpty: () => ids.length === 0 },
+    });
+  }
+
+  test("skips a file export", () => {
+    const column = { id: gid("c1"), spec: spec("col1") };
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([column, file]);
+    const collection = collectionOverIds([column.id, file.id]);
+    expect(collection.getColumnIds()).toEqual([column.id]);
+    expect(collection.getColumns().map((recipe) => recipe.id)).toEqual([column.id]);
+  });
+
+  test("is empty when the only export is not a column", () => {
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([file]);
+    expect(collectionOverIds([file.id]).isEmpty()).toBe(true);
   });
 });
 
