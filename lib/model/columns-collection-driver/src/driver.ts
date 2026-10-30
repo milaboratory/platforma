@@ -87,20 +87,8 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     return this.mint(contributions);
   }
 
-  /** Counts exports, not columns: a source that holds only a file export is not empty. */
-  isEmpty(handle: CollectionHandle): boolean {
-    const state = this.requireState(handle);
-    for (const c of state.contributions) {
-      switch (c.type) {
-        case "provider":
-          if (c.provider.getPObjectEntries().size > 0) return false;
-          break;
-        case "ids":
-          if (c.ids.length > 0) return false;
-          break;
-      }
-    }
-    return true;
+  isEmpty(handle: CollectionHandle, host: ColumnsCollectionDriverHost<A>): boolean {
+    return this.getColumns(handle, host).length === 0;
   }
 
   isFinal(handle: CollectionHandle): boolean {

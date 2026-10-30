@@ -228,7 +228,9 @@ export function getServiceInjectors(): ServiceInjectorMap {
           ),
 
         isEmpty: (handle: QuickJSHandle) =>
-          vm.exportSingleValue(driver.isEmpty(vm.vm.getString(handle) as CollectionHandle)),
+          vm.exportSingleValue(
+            driver.isEmpty(vm.vm.getString(handle) as CollectionHandle, bindings),
+          ),
 
         isFinal: (handle: QuickJSHandle) =>
           vm.exportSingleValue(driver.isFinal(vm.vm.getString(handle) as CollectionHandle)),

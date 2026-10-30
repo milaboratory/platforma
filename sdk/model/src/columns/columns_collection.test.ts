@@ -79,6 +79,13 @@ describe("ColumnsCollection.isEmpty", () => {
     const c = { id: gid("c1"), spec: spec("col1") };
     expect(makeCollection([c]).isEmpty()).toBe(false);
   });
+
+  test("driver: true when the only export is not a column", () => {
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([file]);
+    const collection = handle.driver.create([{ kind: "ids", ids: [file.id], isFinal: true }]);
+    expect(handle.driver.isEmpty(collection)).toBe(true);
+  });
 });
 
 describe("ColumnsCollection.isFinal", () => {

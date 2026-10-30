@@ -104,8 +104,8 @@ function stubAccessorFor(id: PObjectId, cfg: NormalizedLeafConfig): TreeNodeAcce
           getDataAsJson: <T>() => cfg.spec as unknown as T,
           hasData: () => cfg.specHasData,
         };
-  // Per-installation unique handle. The module-level `readSpecAccessor` LRU
-  // cache keys by `${accessor.handle}:${name}`, and reinstalling the stub
+  // Per-installation unique handle. The module-level `memoizeByEntry` LRU
+  // caches key by `${accessor.handle}:${name}`, and reinstalling the stub
   // for the same id should produce a fresh cache lookup (otherwise tests
   // that vary leaf state for the same id see stale spec accessors).
   const handle = `${id}#${++stubAccessorSeq}`;

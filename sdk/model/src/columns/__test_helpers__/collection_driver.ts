@@ -87,7 +87,7 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
 
   const driver: ColumnsCollectionDriverModel = {
     create: (sources) => impl.create(sources, bindings).key,
-    isEmpty: (h) => impl.isEmpty(h),
+    isEmpty: (h) => impl.isEmpty(h, bindings),
     isFinal: (h) => impl.isFinal(h),
     getColumns: (h) => impl.getColumns(h, bindings),
     addSource: (h, srcs) => impl.addSource(h, srcs, bindings).key,

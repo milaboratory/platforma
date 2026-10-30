@@ -308,11 +308,11 @@ const readSpecAccessor = memoizeByEntry(
 );
 
 /** The leaf's spec, or `undefined` until the spec resource has data. */
-function readSpec(entry: LeafEntry<TreeNodeAccessor>): undefined | PObjectSpec {
+const readSpec = memoizeByEntry((entry: LeafEntry<TreeNodeAccessor>): undefined | PObjectSpec => {
   const spec = readSpecAccessor(entry);
   if (isNil(spec) || !spec.hasData()) return undefined;
   return spec.getDataAsJson<PObjectSpec>();
-}
+});
 
 /**
  * Per-entry counterpart to {@link readDataStatus}: tells whether the leaf's

@@ -122,7 +122,7 @@ export interface ColumnsCollectionDriver {
     host: ColumnsCollectionDriverHost,
   ): PoolEntry<CollectionHandle>;
 
-  isEmpty(handle: CollectionHandle): boolean;
+  isEmpty(handle: CollectionHandle, host: ColumnsCollectionDriverHost): boolean;
   isFinal(handle: CollectionHandle): boolean;
   getColumns(handle: CollectionHandle, host: ColumnsCollectionDriverHost): ColumnUniversalId[];
 
