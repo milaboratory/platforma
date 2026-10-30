@@ -1,0 +1,172 @@
+/**
+ * Canonical IDs of resources, with a fallback for old backends.
+ *
+ * Internal library: block code must not use it. Templates read the canonical ID of their own
+ * renderer with tpl.canonicalId().
+ *
+ * The canonical ID (CID) identifies a resource by its content. The backend gives it in the
+ * resource info ('CanonicalID'). Some backends do not give it for all resources:
+ *  - before v1.34.0 the resource info has no 'CanonicalID' at all;
+ *  - from v4.2.0 to v4.3.0 the CID of value and singleton resources is empty;
+ *  - on all backends the CID is empty until the backend sets it: a structural resource gets
+ *    it during deduplication.
+ * When the backend does not give the CID, this library calculates it with the same formula
+ * as the backend:
+ *
+ *   value, singleton: sha256( type ‖ data )[0:16]
+ *   structural:       sha256( type ‖ data ‖ name1 ‖ CID1 ‖ name2 ‖ CID2 ‖ ... )[0:16]
+ *
+ * 'type' is 1 byte of name length, the name, 1 byte of version length, the version. 'nameN'
+ * and 'CIDN' are the name of an input field and the CID of its value, sorted by name. Only
+ * input fields take part: service, output, dynamic and one-time-writable fields do not.
+ *
+ * The calculation needs plapi.sha256Encode (backend v1.34.0 or later). On older backends,
+ * a resource without CID causes an error that tells to update the backend.
+ */
+
+ll := import(":ll")
+maps := import(":maps")
+smart := import(":smart")
+plapi := import("plapi")
+hex := import("hex")
+
+_HEX_DIGITS := "0123456789abcdef"
+
+// Number of bytes in a CID: SHA-256 truncated to 128 bits.
+_CID_SIZE := 16
+
+// The CIDs that this template execution already got or calculated: resource ID -> CID.
+_cache := {}
+
+/**
+ * Returns true when the CID is set. An absent CID comes as undefined, as empty bytes or as
+ * bytes that are all zero.
+ *
+ * @param cid: bytes | undefined
+ * @return bool
+ */
+isSet := func(cid) {
+	if is_undefined(cid) {
+		return false
+	}
+
+	for b in cid {
+		if b != 0 {
+			return true
+		}
+	}
+
+	return false
+}
+
+/**
+ * Encodes a string as the backend encodes db.String8: 1 byte of length, then the bytes.
+ */
+_string8 := func(s) {
+	b := bytes(s)
+	n := len(b)
+	if n > 255 {
+		ll.panic("canonical ID: string is longer than 255 bytes: %v", s)
+	}
+
+	return hex.decode(_HEX_DIGITS[n / 16:n / 16 + 1] + _HEX_DIGITS[n % 16:n % 16 + 1]) + b
+}
+
+_hash := func(rid, data) {
+	if !ll.methodExists(plapi, "sha256Encode") {
+		ll.panic("canonical ID of resource %v is not available, and this backend cannot calculate it. " +
+			"Update the Platforma backend to v1.34.0 or later", rid)
+	}
+
+	return plapi.sha256Encode(data)[0:_CID_SIZE]
+}
+
+get := undefined
+
+_calculate := func(rid, info) {
+	kind := info.Kind
+	buf := _string8(info.Type.Name) + _string8(info.Type.Version) + info.Data
+
+	if kind == "Value" || kind == "Singleton" {
+		return _hash(rid, buf)
+	}
+
+	if kind != "Structural" {
+		ll.panic("canonical ID: resource %v of kind %v has no canonical ID", rid, kind)
+	}
+
+	if maps.containsKey(info, "Features") && info.Features.ephemeral {
+		ll.panic("canonical ID: ephemeral resource %v has no canonical ID", rid)
+	}
+
+	if !info.InputsLocked {
+		ll.panic("canonical ID: cannot calculate the canonical ID of resource %v: its inputs are not locked", rid)
+	}
+
+	inputs := ll.fromStrict(info.Inputs)
+	for name in maps.getKeys(inputs) {
+		f := inputs[name]
+		if f.Error != 0 {
+			ll.panic("canonical ID: cannot calculate the canonical ID of resource %v: input %v has an error", rid, name)
+		}
+		if f.Value == 0 {
+			ll.panic("canonical ID: cannot calculate the canonical ID of resource %v: input %v has no value", rid, name)
+		}
+
+		buf += bytes(name) + get(f.Value)
+	}
+
+	return _hash(rid, buf)
+}
+
+/**
+ * Returns the CID of a resource. Uses the CID from the backend when it is set, and calculates
+ * it otherwise. Calculates each CID one time in a template execution.
+ *
+ * Causes an error when the CID is not set and cannot be calculated: for an ephemeral resource,
+ * for a structural resource with unlocked inputs or with inputs without value, and on backends
+ * before v1.34.0.
+ *
+ * @param r: smart resource | resource ID
+ * @return cid: bytes - 16 bytes
+ */
+get = func(r) {
+	res := smart.resource(r)
+	key := string(res.id)
+
+	cached := _cache[key]
+	if !is_undefined(cached) {
+		return cached
+	}
+
+	info := res.info()
+	cid := undefined
+	if maps.containsKey(info, "CanonicalID") {
+		cid = info.CanonicalID
+	}
+
+	if !isSet(cid) {
+		cid = _calculate(res.id, info)
+	}
+
+	_cache[key] = cid
+	return cid
+}
+
+/**
+ * Calculates the CID of a resource with the backend formula, also when the backend gives it.
+ * For tests: on a current backend the result must be equal to the CID from the backend.
+ *
+ * @param r: smart resource | resource ID
+ * @return cid: bytes - 16 bytes
+ */
+calculate := func(r) {
+	res := smart.resource(r)
+	return _calculate(res.id, res.info())
+}
+
+export ll.toStrict({
+	isSet: isSet,
+	get: get,
+	calculate: calculate
+})

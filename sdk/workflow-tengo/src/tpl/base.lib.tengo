@@ -9,6 +9,7 @@ constants := import(":constants")
 stateAwait := import(":tpl.state-await")
 validation := import(":validation")
 feats := import(":feats")
+canonicalIds := import(":canonical-id")
 
 // This import is required to guard the code generated with this package from being executed on backends having insufficient capabilities.
 
@@ -169,14 +170,20 @@ tpl := func(ops) {
 		 * template). Deduplication gives the same canonical ID to all renderers with the same
 		 * template and the same inputs, so the value identifies this computation by its content.
 		 *
-		 * The value is available only in the template body. It is not available:
-		 *  - in ephemeral templates: an EphRenderTemplate is not deduplicated and has no canonical ID;
-		 *  - during the initialization of a pure template: the backend sets the canonical ID of the
-		 *    renderer during deduplication, which can occur after the initialization;
-		 *  - on backends that do not give final canonical IDs (see feats.canonicalIdExposure).
-		 * In all these cases the function causes an error.
+		 * Read it from the template body. In the body of a pure template, deduplication of the
+		 * renderer is complete, so the backend has set its canonical ID.
 		 *
-		 * @return canonicalId: []byte - the canonical ID of the current renderer
+		 * On backends that do not give final canonical IDs (see feats.canonicalIdExposure), the
+		 * function uses the canonical ID from the backend when it is set, and calculates it on the
+		 * template level otherwise (see the canonical-id library).
+		 *
+		 * The function causes an error:
+		 *  - in ephemeral templates: an EphRenderTemplate is not deduplicated and has no canonical ID;
+		 *  - when the canonical ID is not set yet (for example, during initialization of a pure
+		 *    template) and the backend gives final canonical IDs;
+		 *  - when the canonical ID is not set and the template cannot calculate it.
+		 *
+		 * @return canonicalId: []byte - the canonical ID of the current renderer (16 bytes)
 		 */
 		canonicalId: func() {
 			if _isEphemeral {
@@ -185,23 +192,11 @@ tpl := func(ops) {
 			}
 
 			if !feats.canonicalIdExposure {
-				ll.panic("canonical ID is not available: the backend does not give final canonical IDs")
+				return canonicalIds.get(_renderer)
 			}
 
 			cid := _renderer.info().CanonicalID
-
-			// An absent canonical ID comes as empty bytes or as bytes that are all zero.
-			isSet := false
-			if !is_undefined(cid) {
-				for b in cid {
-					if b != 0 {
-						isSet = true
-						break
-					}
-				}
-			}
-
-			if !isSet {
+			if !canonicalIds.isSet(cid) {
 				ll.panic("canonical ID of renderer %v is not set yet. Read it from the template body, not during initialization",
 					_renderer.id)
 			}
