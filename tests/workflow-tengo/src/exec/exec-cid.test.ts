@@ -51,7 +51,9 @@ tplTest.concurrent(
 );
 
 // The canonical id of the exec.exec render itself, pinned to what the SDK before exec fallbacks
-// (origin/main 2da829fae) produced for the same exec on the same backend. No software, so no
+// (origin/main 2da829fae) produced for the same exec on the same backend. Read without running the
+// exec: a plain command cannot run on a Kubernetes executor (no docker image), and the id does not
+// depend on the run. No software, so no
 // package version enters it; it changes only with the exec's inputs, exec.exec's hash override,
 // or the backend's id derivation.
 const CID_BEFORE_FALLBACKS = "736d56c2025fb05b646ef548d3fe7840";
@@ -64,9 +66,6 @@ tplTest.concurrent(
       "exec.fallback.cid_render",
       ["cid", "out"],
       () => ({}),
-    );
-    expect(await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue()).toBe(
-      "hello",
     );
     expect(
       await result.computeOutput("cid", (a) => a?.getDataAsJson<string>()).awaitStableValue(),

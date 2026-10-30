@@ -82,7 +82,7 @@ tplTest.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"],
+      ["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts", "logs"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(10)),
@@ -214,7 +214,7 @@ tplTest(
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"],
+      ["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts", "logs"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
@@ -249,7 +249,7 @@ tplTest(
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"],
+      ["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts", "logs"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
@@ -287,7 +287,7 @@ tplTest(
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"],
+      ["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts", "logs"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
@@ -302,6 +302,36 @@ tplTest(
       .catch((e: Error) => e);
     expect(attempts).toBeInstanceOf(Error);
     expect((attempts as Error).message).toContain("Exited with code 1.");
+  },
+  120_000,
+);
+
+// Review 3, m1: streamFile without saveFile. Before fallbacks the stream stayed live forever; a
+// manager may not reference a live stream as its final content, so it ends on the stand-in for a
+// file without a final content, which the current log driver reads as no log
+tplTest(
+  "exec fallbacks: a streamed file that is not saved ends on the stand-in after success",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.streams",
+      ["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts"],
+      (tx) => ({
+        nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
+        seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
+        errLog: tx.createValue(Pl.JsonObject, JSON.stringify(false)),
+        streamOnly: tx.createValue(Pl.JsonObject, JSON.stringify(true)),
+      }),
+    );
+    await result.computeOutput("stdoutContent", (a) => a?.getDataAsString()).awaitStableValue();
+    const deadline = Date.now() + 60_000;
+    let state: ReturnType<typeof streamState> | undefined;
+    while (Date.now() < deadline) {
+      state = await result.computeOutput("infoStream", (a) => streamState(a)).getValue();
+      if (state?.attempt1Stream.type?.startsWith("json")) break;
+      await sleep(250);
+    }
+    expect(state?.attempt1Stream.json).toEqual({ streamFileNotWritten: "info.log" });
   },
   120_000,
 );

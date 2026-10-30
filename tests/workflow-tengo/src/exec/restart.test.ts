@@ -34,7 +34,6 @@ async function firstRender(helper: Helper, deleteWorkdir: boolean | "file") {
     "exec.fallback.run_v3",
     ["outcome", "workdirOut"],
     (tx) => ({
-      cmd: json(tx, "sh"),
       args: json(tx, ["-c", `echo first > out.txt; echo x > extra.txt # ${randomUUID()}`]),
       errorLines: json(tx, 10),
     }),

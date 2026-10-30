@@ -199,9 +199,14 @@ tplTest.concurrent.for([
 tplTest.concurrent(
   "AC2.3 exec fallbacks: a chain longer than the backend's attempt cap ends at the cap",
   async ({ helper, expect, skip }) => {
-    const result = await helper.renderTemplate(false, "exec.fallback.cap_chain", ["out"], (tx) => ({
-      nonce: json(tx, randomUUID()),
-    }));
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.cap_chain",
+      ["out", "attempts"],
+      (tx) => ({
+        nonce: json(tx, randomUUID()),
+      }),
+    );
     const out = await result
       .computeOutput("out", (a) => a?.getDataAsString())
       .awaitStableValue()
@@ -231,34 +236,58 @@ tplTest.concurrent(
   },
 );
 
-// Review 2, M1: a saved file the software never wrote is that file's error, not a restart and not
-// an error of the wd-retrier. What else reads as an error is the platform's business, and the
-// same as with WorkdirSave v1: an output resolved after the index error is reported (the render's
-// `files` and `progress` carry it), one resolved before it is not, so other outputs are not
-// asserted here.
-tplTest.concurrent.for([{ withFallbacks: false }, { withFallbacks: true }])(
-  "exec: a saved file never written is that file's error (withFallbacks: $withFallbacks)",
-  async ({ withFallbacks }, { helper, expect }) => {
-    const result = await helper.renderTemplate(
-      false,
-      "exec.fallback.partial_save",
-      ["out"],
-      (tx) => ({
-        nonce: json(tx, randomUUID()),
-        withFallbacks: json(tx, withFallbacks),
-        which: json(tx, "never"),
-      }),
-    );
-    const never = await result
-      .computeOutput("out", (a) => a?.resourceType.name)
-      .awaitStableValue()
-      .catch((e: Error) => e);
-    expect(never).toBeInstanceOf(Error);
-    expect((never as Error).message).toContain("cannot index file");
-    expect((never as Error).message).toContain("never.txt");
-    expect((never as Error).message).not.toContain("Working directory lost");
+// Review 2 M1, review 3 T1/T2: a saved file the software never wrote. It is that file's error,
+// not a restart and not a hang, with and without fallbacks and file sets. The rest is pinned as it
+// is (decision D12): on RunCommand v2 the outputs that resolve before the file's index error stay
+// readable; on v3 every output resolves after it, and the platform reports an error in one output
+// of a render on every output read through it.
+const partialSaveCases = [
+  { forceV2: true, withFileSet: false, ok: ["stdout", "attempts"] },
+  { forceV2: true, withFileSet: true, ok: ["stdout", "attempts", "set"] },
+  { forceV2: false, withFileSet: false, ok: [] },
+  { forceV2: false, withFileSet: true, ok: [] },
+];
+tplTest.concurrent.for(partialSaveCases)(
+  "exec: a saved file never written (v2: $forceV2, file set: $withFileSet)",
+  async ({ forceV2, withFileSet, ok }, { helper, expect }) => {
+    const nonce = randomUUID();
+    for (const withFallbacks of forceV2 ? [false] : [false, true]) {
+      for (const which of [
+        "stdout",
+        "written",
+        "never",
+        "attempts",
+        ...(withFileSet ? ["set"] : []),
+      ]) {
+        const result = await helper.renderTemplate(
+          false,
+          "exec.fallback.partial_save",
+          ["out"],
+          (tx) => ({
+            nonce: json(tx, nonce + String(withFallbacks)),
+            withFallbacks: json(tx, withFallbacks),
+            withFileSet: json(tx, withFileSet),
+            forceV2: json(tx, forceV2),
+            which: json(tx, which),
+          }),
+        );
+        const out = await result
+          .computeOutput("out", (a) => a?.resourceType.name)
+          .awaitStableValue()
+          .then(
+            () => "ok",
+            (e: Error) => e,
+          );
+        if (ok.includes(which)) expect(out, which).toBe("ok");
+        else expect(out, which).toBeInstanceOf(Error);
+        if (which === "never") {
+          expect((out as Error).message).toContain("never.txt");
+          expect((out as Error).message).not.toContain("Working directory lost");
+        }
+      }
+    }
   },
-  120_000,
+  300_000,
 );
 
 // Review 2, m4: a file set matching a file named workdir, the key WorkdirSave v3 reserves
@@ -286,5 +315,33 @@ tplTest.concurrent(
     expect(set?.fields).toEqual(["a.txt", "workdir"]);
     expect(set?.workdir).toMatch(/^Blob/);
     expect(set?.other).toMatch(/^Blob/);
+  },
+);
+
+// Review 3, T6: nested handlers succeeding two levels deep. Plan keys are per policy, so entries
+// without names repeat SoftwareError[0] at every level; the attempt index tells them apart.
+tplTest.concurrent(
+  "exec fallbacks: nested handlers, the deepest succeeds",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.cap_chain",
+      ["out", "attempts"],
+      (tx) => ({
+        nonce: json(tx, randomUUID()),
+        unnamed: json(tx, true),
+      }),
+    );
+    expect(await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue()).toBe(
+      "h2\n",
+    );
+    const attempts = await result
+      .computeOutput("attempts", (a) => a?.getDataAsJson<Attempt[]>())
+      .awaitStableValue();
+    expect(attempts?.map((a) => [a.attempt, a.plan, a.result])).toEqual([
+      [0, "root", "fail"],
+      [1, "SoftwareError[0]", "fail"],
+      [2, "SoftwareError[0]", "success"],
+    ]);
   },
 );
