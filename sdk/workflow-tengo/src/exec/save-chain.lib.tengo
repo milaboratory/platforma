@@ -1,0 +1,214 @@
+/**
+ * The save chain of an exec: workdir processors, then the save of the post-run working directory
+ * into the exec's outputs. On a RunCommand v3 exec the outcome router runs it on success (wave 2
+ * of spec §14.2, see :exec.wave2), with WorkdirSave v3 for the main save when the backend has it,
+ * and the wd-retrier reads its save outcomes. Processors are rendered exactly as before; they save
+ * with whatever their template uses.
+ */
+
+ll := import(":ll")
+render := import(":render")
+workdir := import(":workdir")
+limits := import(":exec.limits")
+smart := import(":smart")
+wdSave := import(":workdir.save")
+slices := import(":slices")
+maps := import(":maps")
+
+// The key of the working directory's own entry in the WorkdirSave v3 outcome map.
+_OUTCOME_WORKDIR := "workdir"
+
+// Outcome reasons of WorkdirSave v3 that mean the working directory's content is lost.
+_LOST_REASONS := { WorkdirMissing: true, FileMissing: true }
+
+/**
+ * @param queue: string - the exec's queue
+ * @param settings: map - the exec's settings
+ * @return bool - whether the save chain saves with WorkdirSave v3 and the wd-retrier restarts on
+ *         a lost working directory: iff the backend publishes `workdirSaveV3` in its resource
+ *         types (decision D3, revised). Without it the success path saves with v1, as before, and
+ *         a lost working directory is an error (spec §5); fallbacks still work, they need only
+ *         RunCommand v3. v3 reserves the save rule key `workdir` for the directory's own outcome,
+ *         so an exec saving a file of that name saves with v1.
+ */
+hasWorkdirSaveV3 := func(queue, settings) {
+	if is_undefined(limits.getWorkdirSaveV3Type(queue)) {
+		return false
+	}
+	saved := is_undefined(settings.filesToSave) ? [] : settings.filesToSave
+	return !slices.hasElement(saved, _OUTCOME_WORKDIR)
+}
+
+/**
+ * Runs the workdir processors and saves the post-run working directory.
+ *
+ * @param wdAfter: reference - the post-run working directory
+ * @param settings: map - the exec's settings (filesToSave, filesContentToSave, fileSetsToSave,
+ *                  fileSetsContentToSave, filesToStream)
+ * @param wdProcessors: map | undefined - name -> { tpl, tplArgs }
+ * @param opts: map - { v3: bool } - save with WorkdirSave v3
+ * @return map - files, filesContent, fileSets, fileSetsContent, progress, wdProcessors and, with
+ *         v3, outcome: the save outcomes map, and with v3 and processors probeOutcome: the outcome
+ *         map of the probe at the head of the chain
+ */
+run := func(wdAfter, settings, wdProcessors, opts) {
+	v3 := opts.v3 == true
+
+	// With processors, a WorkdirSave v3 with no rules heads the chain: its outcome map has only
+	// the `workdir` entry, whether the post-run directory is still there. The processors' own
+	// saves (WorkdirSave v1, as a processor template builds it) error on a lost directory, and the
+	// main save then never reads the directory itself, so the wd-retrier decides on this probe
+	// first (spec §14.5). A working directory takes one save at a time (a save locks it), hence a
+	// link of the chain, not a save beside it.
+	probeOutcome := undefined
+	if v3 && !is_undefined(wdProcessors) && len(wdProcessors) > 0 {
+		probe := wdSave.builder(wdAfter, { v3: true }).build()
+		probeOutcome = probe.getOutcome()
+		wdAfter = probe.getWorkdirAfter()
+	}
+
+	wdProcessorsResults := {}
+	if !is_undefined(wdProcessors) {
+		for name, p in wdProcessors {
+			tplInputs := {
+				workdir: wdAfter,
+				args: p.tplArgs
+			}
+
+			// render template & get results
+			r := render.createEphemeral(p.tpl, tplInputs)
+
+			wdProcessorsResults[name] = r.output("result")
+			wdAfter = r.output("workdir")
+		}
+	}
+
+	hasSets := (!is_undefined(settings.fileSetsToSave) && len(settings.fileSetsToSave) > 0) ||
+		(!is_undefined(settings.fileSetsContentToSave) && len(settings.fileSetsContentToSave) > 0)
+
+	if v3 && !hasSets {
+		// The save built here, not in a template: its outputs are the save's own fields. An
+		// output of a template is reached through a future on the render, which an error in a
+		// sibling output (a file never written) marks too, and the outcome must stay readable
+		// whatever the files are. File sets need the post-run listing, hence the template there.
+		saver := wdSave.builder(wdAfter, { v3: true })
+		if !is_undefined(settings.filesToSave) {
+			for fName in settings.filesToSave {
+				saver.saveFile(fName)
+			}
+		}
+		if !is_undefined(settings.filesContentToSave) {
+			for fName in settings.filesContentToSave {
+				saver.saveFileContent(fName)
+			}
+		}
+		saver.build()
+		return {
+			files: saver.getSavedFiles(),
+			filesContent: saver.getSavedFilesContent(),
+			fileSets: smart.createMapResource({}),
+			fileSetsContent: smart.createMapResource({}),
+			progress: saver.getProgress(),
+			wdProcessors: wdProcessorsResults,
+			outcome: saver.getOutcome(),
+			probeOutcome: probeOutcome
+		}
+	}
+
+	wdSaver := workdir.save(wdAfter)
+	if v3 {
+		wdSaver.v3()
+	}
+	if !is_undefined(settings.filesToSave) {
+		for fName in settings.filesToSave {
+			wdSaver.saveFile(fName)
+		}
+	}
+	if !is_undefined(settings.filesContentToSave) {
+		for fName in settings.filesContentToSave {
+			wdSaver.saveFileContent(fName)
+		}
+	}
+	if !is_undefined(settings.fileSetsToSave) {
+		for name, regex in settings.fileSetsToSave {
+			wdSaver.saveFileSet(name, regex)
+		}
+	}
+	if !is_undefined(settings.fileSetsContentToSave) {
+		for name, regex in settings.fileSetsContentToSave {
+			wdSaver.saveFileSetContent(name, regex)
+		}
+	}
+
+	wdResult := wdSaver.build()
+
+	return {
+		files: wdResult.files,
+		filesContent: wdResult.filesContent,
+		fileSets: wdResult.fileSets,
+		fileSetsContent: wdResult.fileSetsContent,
+		progress: wdResult.progress,
+		wdProcessors: wdProcessorsResults,
+		outcome: v3 ? wdResult.outcome : undefined,
+		probeOutcome: probeOutcome,
+		// the post-save working directory: set once the save is done, an error when it failed
+		workdir: wdResult.workdir
+	}
+}
+
+
+/**
+ * Reads the save outcomes of WorkdirSave v3 (decision D2): `workdir` -> the directory's outcome,
+ * and one entry per file or archive rule -> its index task's outcome, each
+ * { result: "success" } or { result: "fail", reason: "WorkdirMissing" | "FileMissing", message }.
+ * Either reason means the working directory's content is lost; every other save failure is an
+ * error of the save, not an outcome.
+ *
+ * @param outcomes: map - key -> outcome JSON
+ * @return string | undefined - what was lost, or undefined when everything was saved
+ */
+lostWorkdir := func(outcomes) {
+	for key in maps.getKeys(outcomes) {
+		oc := outcomes[key]
+		if oc.result != "success" && !is_undefined(_LOST_REASONS[oc.reason]) {
+			return key + ": " + (is_undefined(oc.message) ? oc.reason : oc.message)
+		}
+	}
+	return undefined
+}
+
+/**
+ * Keeps the named inputs of the current template out of the input unmarshalling: the body gets
+ * them as resources and reads only what it needs. An exec's own inputs (its plan and files) are
+ * large, and the outcome router and the wd-retrier pass them on without reading them. Call at the
+ * top of a template.
+ *
+ * @param tpl: the template (:tpl.light)
+ * @param names: string[] - input names
+ */
+keepOpaque := func(tpl, names) {
+	ids := {}
+	for name in names {
+		if tpl.hasInput(name) {
+			f := tpl.rawInputs()[name]
+			if f.isSet() {
+				ids[string(f.getValue().id)] = true
+			}
+		}
+	}
+	tpl.registerUnmarshaller({
+		canParse: func(r) {
+			return !is_undefined(ids[string(r.id)])
+		},
+		parse: func(r, _) {
+			return r
+		}
+	})
+}
+
+export ll.toStrict({
+	keepOpaque: keepOpaque,
+	hasWorkdirSaveV3: hasWorkdirSaveV3,
+	run: run,
+	lostWorkdir: lostWorkdir
+})

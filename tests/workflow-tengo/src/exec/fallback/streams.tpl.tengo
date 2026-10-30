@@ -1,0 +1,81 @@
+/**
+ * Streams of an exec with fallbacks (exec fallbacks, AC2.6/AC2.7): the root prints "root",
+ * sleeps and exits 2; the handler prints fallback-<i> once a second for a while and succeeds.
+ *
+ * inputs.nonce: string
+ * inputs.seconds: number - how long the handler prints
+ * inputs.forceV2: bool, optional - render as on a backend without RunCommand v3 (AC3.3)
+ * inputs.rootExit: string, optional - the root's exit code, 2 by default
+ * inputs.forceSaveV1: bool, optional - save as on a backend without WorkdirSave v3
+ *
+ * inputs.errLog: bool, optional - every plan also streams err.log, which only the root writes
+ *                 (spec §13.1, second example); true by default
+ * inputs.rootBadStream: bool, optional - the root leaves err.log a broken symlink, which its log
+ *                 save cannot save
+ * inputs.handlerExit: string, optional - the handler's exit code, 0 by default
+ * inputs.streamOnly: bool, optional - stream info.log, which every plan writes, without saving it
+ * inputs.errLogByHandler: bool, optional - the reverse: only the handler writes err.log, which
+ *                 every plan also saves
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+fmt := import("fmt")
+
+self.defineOutputs(["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts", "logs"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	shell := func(script) {
+		b := exec.builder().
+			cpu(1).ram("50Mi").
+			software(shellSw).
+			arg("-c").
+			arg(script + " # " + inputs.nonce).
+			inLightQueue().
+			saveStdoutStream().
+			saveStdoutContent().
+			saveFileSet("logs", "^stdout\\.txt$")
+		if inputs.errLog != false {
+			b.streamFile("err.log")
+		}
+		if inputs.errLogByHandler == true {
+			b.saveFile("err.log")
+		}
+		if inputs.streamOnly == true {
+			b.streamFile("info.log")
+		}
+		if inputs.forceV2 == true {
+			b._forceRunCommandV2()
+		}
+		if inputs.forceSaveV1 == true {
+			b._forceWorkdirSaveV1()
+		}
+		return b
+	}
+
+	rootExit := is_undefined(inputs.rootExit) ? "2" : inputs.rootExit
+	rootErr := inputs.errLogByHandler == true ? "" : "echo root-err > err.log; "
+	if inputs.rootBadStream == true {
+		rootErr = "ln -s /nonexistent/err.log err.log; "
+	}
+	handlerErr := inputs.errLogByHandler == true ? "echo handler-err > err.log; " : ""
+	handlerExit := is_undefined(inputs.handlerExit) ? "0" : inputs.handlerExit
+	handler := shell(handlerErr + "echo handler-info > info.log; " +
+		fmt.sprintf("for i in $(seq 1 %d); do echo fallback-$i; sleep 1; done; exit %s", inputs.seconds, handlerExit))
+	root := shell("echo root; " + rootErr + "sleep 5; exit " + rootExit).
+		fallbacks({ SoftwareError: [{ name: "handler", builder: handler }] })
+
+	res := root.run()
+
+	return {
+		stdoutStream: res.getStdoutStream(),
+		errStream: inputs.errLog != false ? res.getFileStream("err.log") : "",
+		stdoutContent: res.getStdoutContent(),
+		logs: res.getFileSet("logs"),
+		infoStream: inputs.streamOnly == true ? res.getFileStream("info.log") : "",
+		attempts: res.getAttempts()
+	}
+})

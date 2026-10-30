@@ -1,0 +1,30 @@
+// The RunCommand v3 of exec.fallback.run_v3, once the software plan is loaded.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+workdir := import("@platforma-sdk/workflow-tengo:workdir")
+runcmd := import("@platforma-sdk/workflow-tengo:exec.runcmd")
+delayedCompAlloc := import("@platforma-sdk/workflow-tengo:exec.delayed-compute-allocation")
+
+self.awaitState("ResourceReady")
+
+self.body(func(inputs) {
+	queue := "light"
+	wd := workdir.builder().inQueue(queue).cpu(1).mem("50Mi").build()
+
+	b := runcmd.builder(wd, inputs.plan).
+		inQueue(queue).
+		allocation(delayedCompAlloc.create(wd, { queue: queue, cpu: 1, ram: "50Mi" })).
+		nErrorLines(inputs.errorLines)
+	for a in inputs.args {
+		b.arg(a)
+	}
+	if inputs.badExpression {
+		b.argExpression("{no.such.variable * 2}")
+	}
+	run := b.v3(0, undefined).build()
+
+	return {
+		outcome: run.outcome,
+		workdirOut: run.workdir
+	}
+})

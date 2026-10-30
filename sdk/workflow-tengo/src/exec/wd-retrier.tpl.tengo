@@ -1,0 +1,147 @@
+/**
+ * The wd-retrier of a successful RunCommand v3 attempt on a backend with WorkdirSave v3 (exec
+ * fallbacks, spec §14.2, wave 2): rendered by :exec.wave2 after the save chain, it decides on the
+ * save outcomes.
+ *
+ *   all saved                 the save chain's outputs; the stream collections switch to the
+ *                             attempt's files
+ *   working directory lost    the same plan again from a fresh working directory (a restart, not
+ *                             an attempt), at most restartLimit times per job
+ *   any other save failure    in the outputs it concerns, as with WorkdirSave v1
+ *
+ * Two stages when the exec has workdir processors (spec §14.5). The processors read the post-run
+ * directory before the main save does, through saves of their own that error on a lost
+ * directory, so the main save would never run. Stage 1 (awaitOutcome "probeOutcome") decides on a
+ * probe of the directory at the head of the save chain: lost restarts, present renders this
+ * template again as stage 2 (awaitOutcome "saveOutcome") on the main save's outcomes. Without
+ * processors there is one stage.
+ *
+ * Only an outcome saying the directory's content is lost (WorkdirMissing, FileMissing) restarts;
+ * any other failed entry (reason Error) is about its own file, which carries the error as with
+ * WorkdirSave v1. The save chain's outputs come in `outputs`, a resource the input unmarshaller
+ * hands over unopened, and go out as references into it: the body never reads them.
+ */
+
+self := import(":tpl.light")
+
+ll := import(":ll")
+render := import(":render")
+smart := import(":smart")
+fallback := import(":exec.fallback")
+saveChain := import(":exec.save-chain")
+stream := import(":exec.stream")
+
+// this attempt's exec-impl inputs: passed on to a restart, never read
+saveChain.keepOpaque(self, ["implInputs"])
+
+_AWAIT_OUTCOME := self.rawInputs().awaitOutcome.getValue().getDataAsJson()
+_STAGE_PROBE := _AWAIT_OUTCOME == "probeOutcome"
+
+// one level: the `workdir` entry and, for the main save, one entry per index task (D2)
+self.awaitState(_AWAIT_OUTCOME, { wildcard: "*" }, "ResourceReady")
+
+_OUTPUTS := ["files", "filesContent", "fileSets", "fileSetsContent", "wdProcessors", "progress", "attempts", "streamOwn"]
+
+// Values of a save outcomes map, as JSON (workdir-save/outcome values).
+_outcomeValues := func(outcomes) {
+	res := {}
+	for k, v in outcomes {
+		if is_map(v) {
+			res[k] = v
+		} else if smart.isResource(v) {
+			res[k] = v.getDataAsJson()
+		}
+	}
+	return res
+}
+
+self.body(func(inputs) {
+	ctx := inputs.attemptCtx
+	raw := self.rawInputs()
+
+	// a failure of the save itself (its outcome map an error) fails the exec through the inputs, as
+	// with v1
+	lost := saveChain.lostWorkdir(_outcomeValues(inputs[_AWAIT_OUTCOME]))
+
+	if _STAGE_PROBE && is_undefined(lost) {
+		// the directory is there: decide on the main save's outcomes
+		next := {}
+		for name, f in raw {
+			if name != "probeOutcome" {
+				// the main save's outcome may not be there yet
+				next[name] = f.isSet() ? f.getValue() : f
+			}
+		}
+		next.awaitOutcome = "saveOutcome"
+		r := render.createEphemeral(self.template(), next)
+		res := {}
+		for name in _OUTPUTS {
+			res[name] = r.output(name)
+		}
+		return res
+	}
+
+	if is_undefined(lost) {
+		outputs := raw.outputs.getValue()
+		streams := stream.attemptFiles(raw.workdir.getValue(), inputs.settings, outputs.getField("files"))
+		collections := is_undefined(inputs.streamCollections) ? {} : inputs.streamCollections
+		stream.attemptEnded(collections, ctx.attempt, ctx.history[len(ctx.history) - 1], streams.own)
+
+		own := smart.ephemeralMapBuilder()
+		for name, ref in streams.own {
+			own.addRef(name, ref)
+		}
+		return {
+			files: outputs.getField("files"),
+			filesContent: outputs.getField("filesContent"),
+			fileSets: outputs.getField("fileSets"),
+			fileSetsContent: outputs.getField("fileSetsContent"),
+			wdProcessors: outputs.getField("wdProcessors"),
+			progress: outputs.getField("progress"),
+			attempts: ctx.history,
+			streamOwn: own.build()
+		}
+	}
+
+	// the attempt's success entry becomes a restart entry
+	hist := append(copy(ctx.history)[:len(ctx.history) - 1], {
+		attempt: ctx.attempt,
+		plan: ctx.plan,
+		result: "workdirMissing",
+		restart: ctx.restart
+	})
+	restartLimit := is_undefined(ctx.restartLimit) ? 0 : ctx.restartLimit
+	if ctx.restart >= restartLimit {
+		ll.panic("Working directory lost, restart limit (%v) reached: %s\n\n%s",
+			restartLimit, lost, fallback.historyText(hist, ctx.attemptLimit, "restart limit reached"))
+	}
+
+	// the same plan again, with the attempt's own exec-impl inputs and the same attempt index; the
+	// restart writes its manager into `attempt<K>` and its live tail into `stream` when it starts
+	impl := raw.implInputs.getValue()
+	pure := {}
+	for name, f in impl.inputs() {
+		if name != "attemptCtx" {
+			pure[name] = f.getValue()
+		}
+	}
+	meta := {}
+	for name, f in impl.metaInputs() {
+		meta[name] = f.getValue()
+	}
+	pure.attemptCtx = {
+		attempt: ctx.attempt,
+		jobId: ctx.jobId,
+		plan: ctx.plan,
+		restart: ctx.restart + 1,
+		history: hist
+	}
+
+	r := render.createEphemeral(raw.execImplTpl.getValue(), pure, { metaInputs: meta })
+	res := {}
+	for name in _OUTPUTS {
+		// streamOwn: the lost attempt's stream managers end on the restart's files
+		res[name] = r.output(name)
+	}
+	return res
+})

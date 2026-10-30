@@ -1,0 +1,16 @@
+// The job start of exec.fallback.stale_collection: attempt 0 writes its stand-in manager.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+stream := import("@platforma-sdk/workflow-tengo:exec.stream")
+
+self.body(func(inputs) {
+	streams := {
+		"stdout.txt": {
+			manager: smart.createJsonResource("new manager"),
+			live: smart.createJsonResource("new live")
+		}
+	}
+	stream.attemptStarted(inputs.collections, 0, streams, true)
+	return { started: true }
+})

@@ -6,9 +6,25 @@ ll := import(":ll")
 smart := import(":smart")
 oop := import(":oop")
 file := import(":file")
+constants := import(":constants")
+text := import("text")
+slices := import(":slices")
 
 _RTYPE_CREATE_STREAM := { Name: "CreateStream", Version: "2" }
 _RTYPE_STREAM_MANAGER := { Name: "StreamManager", Version: "2" }
+
+// One per streamed file of an exec with fallbacks: what getFileStream() returns there. The backend
+// has no schema or controller for it; the templates write its fields. Deliberately not a std/map:
+// readers treat a ready std/map as final and stop watching it, while a type they do not know is
+// never final, on old desktops too.
+//
+//   exec        input    the identity of the exec.exec render (see createCollection)
+//   file        input    the streamed file name
+//   attempt<K>  dynamic  attempt K's StreamManager/2
+//   outcome<K>  dynamic  attempt K's history entry, JSON (spec §12.4)
+//   stream      dynamic  the running attempt's live stream, then the winner's file. An old log
+//                        driver reads only this field, as it reads a manager's.
+RTYPE_STREAM_COLLECTION := { Name: "StreamCollection", Version: "1" }
 
 /**
  * Creates a stream in the specified workdir for the given file path.
@@ -59,6 +75,175 @@ create := func(workdirBefore, workdirAfter, filePath) {
 	return _manager(stream, downloadable)
 }
 
+/**
+ * Creates a stream for a file of a working directory and a manager whose final content is given
+ * by the caller, not by the working directory after the run, and also returns the live stream. Used
+ * on RunCommand v3: the outcome router decides the downloadable, the attempt's own file, saved on
+ * success and on a failure alike.
+ *
+ * @param workdirBefore: reference - the workdir the command runs in, for the live tail.
+ * @param filePath: string - the path of the file in the workdir.
+ * @param downloadableRef: reference - the blob the manager switches to once it resolves.
+ * @return { manager: reference, live: field } - the manager and the CreateStream output.
+ */
+createWithLive := func(workdirBefore, filePath, downloadableRef) {
+	stream := _create(workdirBefore, filePath)
+	return { manager: _manager(stream, downloadableRef), live: stream.output }
+}
+
+/**
+ * The final content of a stream whose file the attempt never wrote, or wrote but did not save
+ * (streamFile() without saveFile()): a JSON value naming the file, never an error. A save of a missing file, or a missing key, would be
+ * an error that spreads from the manager to every other output of the exec. A log driver that
+ * knows it reads it as no log (pl-drivers LogsDriver); an older one reports it as a log it cannot
+ * read, as it did with the error before.
+ *
+ * @param filePath: string - the path of the file in the workdir.
+ * @return reference - the stand-in
+ */
+notWritten := func(filePath) {
+	return smart.createJsonResource({ streamFileNotWritten: filePath })
+}
+
+/**
+ * The final content of an attempt's streams: the saved file for a streamed file the attempt
+ * wrote and saved; a stand-in (notWritten) for one it never wrote, or wrote but did not save. A
+ * missing key or a save of a missing file would be an error that spreads to the exec's other
+ * outputs; a manager may not end on a live stream.
+ *
+ * @param workdir: reference - the post-run working directory, ready
+ * @param settings: map - the exec's settings
+ * @param files: field - the saved files
+ * @return { blobs: map, own: map } - blobs: name -> saved file; own: every streamed name -> its
+ *         final content, what the managers and the collections' `stream` end on
+ */
+attemptFiles := func(workdir, settings, files) {
+	blobs := {}
+	own := {}
+	if is_undefined(settings.filesToStream) || len(settings.filesToStream) == 0 {
+		return { blobs: blobs, own: own }
+	}
+	listed := workdir.getDataAsJson().files
+	savedFiles := is_undefined(settings.filesToSave) ? [] : settings.filesToSave
+	for name in settings.filesToStream {
+		if !slices.hasElement(listed, name) {
+			own[name] = notWritten(name)
+		} else if slices.hasElement(savedFiles, name) {
+			blobs[name] = file.exportFile(files.getFutureInputField(name))
+			own[name] = blobs[name]
+		} else {
+			// written but not saved: before fallbacks the manager's file never resolved and the
+			// stream stayed live; a manager may not reference a live stream, so the stand-in
+			own[name] = notWritten(name)
+		}
+	}
+	return { blobs: blobs, own: own }
+}
+
+/**
+ * Creates the StreamCollection/1 of one streamed file of an exec with fallbacks.
+ *
+ * The collection must be structural: it is an output of the pure exec.exec render. Structural
+ * resources are deduplicated by their inputs, so `exec` must carry the identity of the exec, or
+ * every exec streaming the same file name would share one collection.
+ *
+ * @param execIdentity: reference - the identity of the exec.exec render.
+ *        TODO: the CID of the exec.exec render once Tengo can read it; until then the caller
+ *        passes the render's inputs map, which is deduplicated exactly as the render is.
+ * @param fileName: string - the streamed file.
+ * @return reference - the collection
+ */
+createCollection := func(execIdentity, fileName) {
+	c := smart.structBuilder(RTYPE_STREAM_COLLECTION)
+	c.createInputField("exec").set(execIdentity)
+	c.createInputField("file").setJson(fileName)
+	c.createField("stream", constants.FTYPE_DYNAMIC)
+	return c.lockAndBuild()
+}
+
+// Replaces the value of a dynamic field of a collection, creating the field when it is new.
+_setDynamic := func(coll, name, value) {
+	f := undefined
+	if coll.hasField(name) {
+		f = coll.getField(name)
+		if f.isSet() {
+			f.reset()
+		}
+	} else {
+		f = coll.createDynamicField(name)
+	}
+	f.setRefOrJson(value)
+}
+
+// Attempt and outcome fields, the ones a job writes per attempt.
+_ATTEMPT_FIELD_RE := "^(attempt|outcome)[0-9]+$"
+
+/**
+ * Removes every attempt<K> and outcome<K> a collection holds, except attempt0, which the caller
+ * overwrites at once.
+ *
+ * A collection has the identity of its exec.exec render (createCollection), and a render with the
+ * same identity normally deduplicates as a whole: its attempts never run again. They do run again
+ * when the earlier render is not reused but its collection is: a failed render executed again
+ * (error recovery), or a render that is gone while something else, a block's previous outputs for
+ * instance, still holds its collection. A new job must then not show the earlier job's later
+ * attempts after its own (review finding M2), so attempt 0 clears them when the job starts.
+ */
+_clearAttempts := func(coll) {
+	for name, _ in ll.fromStrict(coll.info().DynamicFields) {
+		if name != "attempt0" && text.re_match(_ATTEMPT_FIELD_RE, name) {
+			coll.getField(name).remove()
+		}
+	}
+}
+
+/**
+ * An attempt started: its managers go into `attempt<K>`, and `stream` follows its live tails.
+ *
+ * @param collections: map - file name -> StreamCollection
+ * @param attempt: int - the attempt index K
+ * @param streams: map - file name -> { manager, live } (see createWithLive)
+ * @param jobStart: bool - the job's first attempt: fields of an earlier job are removed first
+ */
+attemptStarted := func(collections, attempt, streams, jobStart) {
+	for name, coll in collections {
+		if jobStart {
+			_clearAttempts(coll)
+		}
+		s := streams[name]
+		if is_undefined(s) {
+			continue
+		}
+		_setDynamic(coll, "attempt" + string(attempt), s.manager)
+		_setDynamic(coll, "stream", s.live)
+	}
+}
+
+/**
+ * An attempt ended: its history entry goes into `outcome<K>`; when it is the winner, `stream`
+ * switches to its files.
+ *
+ * @param collections: map - file name -> StreamCollection
+ * @param attempt: int - the attempt index K
+ * @param entry: map - the attempt's history entry
+ * @param files: map | undefined - file name -> the attempt's file, for the winner only
+ */
+attemptEnded := func(collections, attempt, entry, files) {
+	for name, coll in collections {
+		_setDynamic(coll, "outcome" + string(attempt), entry)
+		if !is_undefined(files) && !is_undefined(files[name]) {
+			_setDynamic(coll, "stream", files[name])
+		}
+	}
+}
+
 export ll.toStrict({
-	create: create
+	RTYPE_STREAM_COLLECTION: RTYPE_STREAM_COLLECTION,
+	create: create,
+	createWithLive: createWithLive,
+	notWritten: notWritten,
+	attemptFiles: attemptFiles,
+	createCollection: createCollection,
+	attemptStarted: attemptStarted,
+	attemptEnded: attemptEnded
 })

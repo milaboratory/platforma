@@ -45,6 +45,44 @@ getResourceTypes := func(queueName) {
 }
 
 /**
+ * The RunCommand v3 type for a queue, or undefined on a backend without it. v3 finishes a software
+ * failure as an outcome instead of an error; its presence in the backend's resource types is the
+ * capability (exec fallbacks).
+ *
+ * @param queueName: string - name of the queue.
+ * @return {Name, Version} | undefined
+ */
+getRunCommandV3Type := func(queueName) {
+	types := feats.getResourceTypes(queueName)
+	if is_undefined(types) {
+		return undefined
+	}
+	if ll.isStrict(types) {
+		types = ll.fromStrict(types)
+	}
+	return types.runCommandV3
+}
+
+/**
+ * The WorkdirSave v3 type for a queue, or undefined on a backend without it. v3 reports a lost
+ * working directory or file as an outcome; its presence in the backend's resource types is the
+ * capability the exec's restart after a lost working directory needs (decision D3).
+ *
+ * @param queueName: string - name of the queue.
+ * @return {Name, Version} | undefined
+ */
+getWorkdirSaveV3Type := func(queueName) {
+	types := feats.getResourceTypes(queueName)
+	if is_undefined(types) {
+		return undefined
+	}
+	if ll.isStrict(types) {
+		types = ll.fromStrict(types)
+	}
+	return types.workdirSaveV3
+}
+
+/**
  * Builder for quota resource.
  *
  * Creates 'Quota' resource used to request specific amount of CPU and RAM in a given queue
@@ -293,6 +331,8 @@ computeRequestBuilder := func() {
 
 export ll.toStrict({
 	getResourceTypes:                getResourceTypes,
+	getRunCommandV3Type:             getRunCommandV3Type,
+	getWorkdirSaveV3Type:            getWorkdirSaveV3Type,
 	quotaBuilder:                    quotaBuilder,
 	storageSpaceRequestBuilder:      storageSpaceRequestBuilder,
 	computeRequestBuilder:           computeRequestBuilder

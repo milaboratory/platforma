@@ -1,0 +1,63 @@
+/**
+ * An exec saving two files of which the software writes one (review 2, M1): only the other one
+ * errors, the rest of the outputs resolve, as with WorkdirSave v1.
+ *
+ * inputs.withFallbacks: bool - also declare a fallback, which never runs
+ * inputs.withFileSet: bool, optional - also save the set of .txt files
+ * inputs.which: string - the output to return: "written", "never", "stdout", "set" or "attempts" (one per render: a
+ *               render whose outputs include an error reads as an error as a whole)
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["out"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	shell := func(script) {
+		return exec.builder().
+			cpu(1).ram("50Mi").
+			software(shellSw).
+			arg("-c").arg(script + " # " + inputs.nonce).
+			inLightQueue().
+			saveFile("a.txt").
+			saveFile("never.txt").
+			saveStdoutContent()
+	}
+
+	b := shell("echo a > a.txt; echo hi")
+	if inputs.withFileSet == true {
+		b.saveFileSet("txt", ".*\\.txt$")
+	}
+	if inputs.forceV2 == true {
+		b._forceRunCommandV2()
+	}
+	if inputs.forceSaveV1 == true {
+		b._forceWorkdirSaveV1()
+	}
+	if inputs.withFallbacks == true {
+		h := shell("echo a > a.txt; echo never > never.txt; echo hi")
+		if inputs.withFileSet == true {
+			h.saveFileSet("txt", ".*\\.txt$")
+		}
+		b.fallbacks({ OOM: h })
+	}
+	res := b.run()
+
+	out := undefined
+	if inputs.which == "written" {
+		out = res.getFile("a.txt")
+	} else if inputs.which == "never" {
+		out = res.getFile("never.txt")
+	} else if inputs.which == "set" {
+		out = res.getFileSet("txt")
+	} else if inputs.which == "attempts" {
+		out = res.getAttempts()
+	} else {
+		out = res.getStdoutContent()
+	}
+	return { out: out }
+})

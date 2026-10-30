@@ -1,0 +1,11 @@
+// Reads the canonical id of a render once its inputs are locked (see cid_render), as hex. It does
+// not wait for the exec to run: the id is the render's, whatever the run does.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+fmt := import("fmt")
+
+self.awaitState("exec", "InputsLocked")
+
+self.body(func(inputs) {
+	return { cid: fmt.sprintf("%x", self.rawInputs().exec.getValue().info().CanonicalID) }
+})

@@ -1,0 +1,36 @@
+/**
+ * The canonical id of the exec.exec render of an exec without fallbacks (exec fallbacks, AC3.1),
+ * read once the render is ready. No software: its package version would enter the id.
+ *
+ * inputs.withFallbacks: bool, optional - the same exec with an OOM handler
+ * inputs.handlerMem: string, optional - the handler's RAM, "128MiB" by default
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+render := import("@platforma-sdk/workflow-tengo:render")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["cid", "out"])
+
+readerTpl := assets.importTemplate(":exec.fallback.cid_reader")
+
+self.body(func(inputs) {
+	b := exec.builder().
+		cmd("sh").
+		arg("-c").arg("cat in.txt > out.txt").
+		env("A", "1").
+		writeFile("in.txt", "hello").
+		cpu(1).mem("64MiB").
+		inLightQueue().
+		saveFileContent("out.txt").
+		saveStdoutStream()
+	if inputs.withFallbacks == true {
+		handlerMem := is_undefined(inputs.handlerMem) ? "128MiB" : inputs.handlerMem
+		b.fallbacks({ OOM: [{ name: "moreRam", builder: b.copy().mem(handlerMem) }] })
+	}
+	res := b.run()
+
+	reader := render.createEphemeral(readerTpl, { exec: res })
+	return { cid: reader.output("cid"), out: res.getFileContent("out.txt") }
+})

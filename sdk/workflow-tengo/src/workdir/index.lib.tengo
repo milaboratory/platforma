@@ -444,6 +444,8 @@ save := func(workdir) {
 	fileSets := {}
 	// file sets to save their content by regex
 	fileSetsContent := {}
+	// WorkdirSave v3 (exec fallbacks)
+	v3 := false
 
 	self := undefined
 	self = ll.toStrict({
@@ -491,7 +493,16 @@ save := func(workdir) {
 		saveFileSetContent: func(name, regex) {
 			validation.assertType(regex, "string")
 			ll.assert(is_undefined(fileSetsContent[name]), "file set content with name '", name, "' is already in added")
-			sets.add(fileSetsContent, regex)
+			fileSetsContent[name] = regex
+			return self
+		},
+
+		/**
+		 * Saves with WorkdirSave v3: a missing working directory or file is an outcome, read from
+		 * the `outcome` of the result, not an error. Needs a backend with it (:exec.save-chain).
+		 */
+		v3: func() {
+			v3 = true
 			return self
 		},
 
@@ -510,10 +521,14 @@ save := func(workdir) {
 				fileSets: fileSets,
 				fileSetsContent: fileSetsContent
 			}
+			if v3 {
+				inputs.saveVersion = 3
+			}
 
 			wds := render.createEphemeral(tpl, inputs)
 
 			return ll.toStrict({
+				outcome: v3 ? wds.output("outcome") : undefined,
 				files: wds.output("files"),
 				filesContent: wds.output("filesContent"),
 				fileSets : wds.output("fileSets"),
