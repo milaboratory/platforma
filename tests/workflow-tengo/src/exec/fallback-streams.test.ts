@@ -82,7 +82,7 @@ tplTest.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "errStream", "stdoutContent", "attempts"],
+      ["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(10)),
@@ -142,6 +142,22 @@ tplTest.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
       { attempt: 1, plan: "handler", result: "success", exitCode: 0 },
     ]);
 
+    // the handler never writes err.log: its stream ends on an empty live stream, and nothing
+    // else of the job reads as an error (spec §13.1)
+    const logs = await result
+      .computeOutput("logs", (a) => ({
+        fields: a?.listInputFields(),
+        type: a?.traverse("stdout.txt")?.resourceType.name,
+      }))
+      .awaitStableValue();
+    expect(logs?.fields).toEqual(["stdout.txt"]);
+    expect(logs?.type).toMatch(/^Blob/);
+    // a collection is never final: read it once, not until stable
+    const errStream = await result
+      .computeOutput("errStream", (a) => a?.resourceType.name)
+      .getValue();
+    expect(errStream).toBe("StreamCollection");
+
     // AC2.7: the collection after success
     const expected = Array.from({ length: 10 }, (_, i) => `fallback-${i + 1}\n`).join("");
     const content = await result
@@ -198,7 +214,7 @@ tplTest(
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "errStream", "stdoutContent", "attempts"],
+      ["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
@@ -221,6 +237,71 @@ tplTest(
 
     const state = await result.computeOutput("stdoutStream", (a) => streamState(a)).getValue();
     expect(state?.self.type).toBe("StreamManager:2");
+  },
+  120_000,
+);
+
+// Review 2, m7: the reverse of the err.log variant: the root never wrote the file, the handler
+// did; the composite handle still ends ready, not live forever
+tplTest(
+  "exec fallbacks: an attempt that never wrote a streamed file does not keep the log live",
+  async ({ helper, driverKit, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.streams",
+      ["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"],
+      (tx) => ({
+        nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
+        seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
+        errLogByHandler: tx.createValue(Pl.JsonObject, JSON.stringify(true)),
+      }),
+    );
+    const delimiter = "--- attempt 0 (root) failed: SoftwareError, exit code 2 ---\n";
+    const deadline = Date.now() + 120_000;
+    let last: { handle: string; text: string } | undefined;
+    while (Date.now() < deadline) {
+      const handle = await result
+        .computeOutput("errStream", (a, ctx) => {
+          const entry = a?.persist();
+          return entry === undefined ? undefined : driverKit.logDriver.getLogHandle(entry, ctx);
+        })
+        .getValue()
+        .catch(() => undefined);
+      if (handle !== undefined) {
+        const resp = await driverKit.logDriver.readText(handle, 1000);
+        if (!resp.shouldUpdateHandle) last = { handle, text: new TextDecoder().decode(resp.data) };
+        if (handle.startsWith("log+ready://") && last?.text.endsWith("handler-err\n")) break;
+      }
+      await sleep(250);
+    }
+    expect(last?.handle.startsWith("log+ready://")).toBe(true);
+    expect(last?.text).toBe(`${delimiter}handler-err\n`);
+  },
+  180_000,
+);
+
+// Review 2, m1: on RunCommand v2 getAttempts() follows the run: a failed run has no attempts
+tplTest(
+  "AC3.3 exec fallbacks: without RunCommand v3, a failed run's getAttempts() is an error",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.streams",
+      ["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"],
+      (tx) => ({
+        nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
+        seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
+        rootExit: tx.createValue(Pl.JsonObject, JSON.stringify("1")),
+        forceV2: tx.createValue(Pl.JsonObject, JSON.stringify(true)),
+        errLog: tx.createValue(Pl.JsonObject, JSON.stringify(false)),
+      }),
+    );
+    const attempts = await result
+      .computeOutput("attempts", (a) => a?.getDataAsJson<Attempt[]>())
+      .awaitStableValue()
+      .catch((e: Error) => e);
+    expect(attempts).toBeInstanceOf(Error);
+    expect((attempts as Error).message).toContain("Exited with code 1.");
   },
   120_000,
 );

@@ -10,6 +10,8 @@
  *
  * inputs.errLog: bool, optional - every plan also streams err.log, which only the root writes
  *                 (spec §13.1, second example); true by default
+ * inputs.errLogByHandler: bool, optional - the reverse: only the handler writes err.log, which
+ *                 every plan also saves
  */
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
@@ -17,7 +19,7 @@ exec := import("@platforma-sdk/workflow-tengo:exec")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 fmt := import("fmt")
 
-self.defineOutputs(["stdoutStream", "errStream", "stdoutContent", "attempts"])
+self.defineOutputs(["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"])
 
 shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
@@ -30,9 +32,13 @@ self.body(func(inputs) {
 			arg(script + " # " + inputs.nonce).
 			inLightQueue().
 			saveStdoutStream().
-			saveStdoutContent()
+			saveStdoutContent().
+			saveFileSet("logs", "^stdout\\.txt$")
 		if inputs.errLog != false {
 			b.streamFile("err.log")
+		}
+		if inputs.errLogByHandler == true {
+			b.saveFile("err.log")
 		}
 		if inputs.forceV2 == true {
 			b._forceRunCommandV2()
@@ -44,8 +50,10 @@ self.body(func(inputs) {
 	}
 
 	rootExit := is_undefined(inputs.rootExit) ? "2" : inputs.rootExit
-	handler := shell(fmt.sprintf("for i in $(seq 1 %d); do echo fallback-$i; sleep 1; done", inputs.seconds))
-	root := shell("echo root; echo root-err > err.log; sleep 5; exit " + rootExit).
+	rootErr := inputs.errLogByHandler == true ? "" : "echo root-err > err.log; "
+	handlerErr := inputs.errLogByHandler == true ? "echo handler-err > err.log; " : ""
+	handler := shell(handlerErr + fmt.sprintf("for i in $(seq 1 %d); do echo fallback-$i; sleep 1; done", inputs.seconds))
+	root := shell("echo root; " + rootErr + "sleep 5; exit " + rootExit).
 		fallbacks({ SoftwareError: [{ name: "handler", builder: handler }] })
 
 	res := root.run()
@@ -54,6 +62,7 @@ self.body(func(inputs) {
 		stdoutStream: res.getStdoutStream(),
 		errStream: inputs.errLog != false ? res.getFileStream("err.log") : "",
 		stdoutContent: res.getStdoutContent(),
+		logs: res.getFileSet("logs"),
 		attempts: res.getAttempts()
 	}
 })

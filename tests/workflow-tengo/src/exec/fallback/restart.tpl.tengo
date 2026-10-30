@@ -12,6 +12,7 @@
  * inputs.restart: number, optional - restarts the job already made, 0 by default
  * inputs.withProcessor: bool, optional - a workdir processor that reads out.txt
  * inputs.withCollection: bool, optional - stream stdout.txt into a StreamCollection, returned
+ * inputs.saveOutFile: bool, optional - also save extra.txt as a file (an index with an outcome)
  *
  * outputs.workdirSaveV3: bool - whether the backend has WorkdirSave v3; without it the other
  * outputs are not computed
@@ -37,11 +38,14 @@ self.body(func(inputs) {
 	}
 
 	b := exec.builder().
-		cmd("sh").arg("-c").arg("echo restarted > out.txt; echo restarted # " + inputs.nonce).
+		cmd("sh").arg("-c").arg("echo restarted > out.txt; echo x > extra.txt; echo restarted # " + inputs.nonce).
 		cpu(1).ram("50Mi").
 		inLightQueue().
 		saveFileContent("out.txt").
 		saveStdoutStream()
+	if inputs.saveOutFile == true {
+		b.saveFile("extra.txt")
+	}
 	if inputs.withProcessor == true {
 		b.processWorkdir("read", readOutTpl, {})
 	}

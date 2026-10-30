@@ -45,6 +45,55 @@ tplTest.concurrent.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
   120_000,
 );
 
+// messageMatch end to end: the root exits 1, its output matches, the handler runs
+tplTest.concurrent(
+  "exec fallbacks: a messageMatch handler runs on the matching output",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.exit_code",
+      ["out", "attempts"],
+      (tx) => ({
+        rootExit: json(tx, "1"),
+        nonce: json(tx, randomUUID()),
+        policy: json(tx, "messageMatch"),
+      }),
+    );
+    expect(await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue()).toBe(
+      "ok\n",
+    );
+    const attempts = await result
+      .computeOutput("attempts", (a) => a?.getDataAsJson<Attempt[]>())
+      .awaitStableValue();
+    expect(attempts?.map((a) => [a.plan, a.result, a.exitCode])).toEqual([
+      ["root", "fail", 1],
+      ["ok", "success", 0],
+    ]);
+  },
+  120_000,
+);
+
+// A handler in a queue without RunCommand v3 (the seam stands in for it): the exec runs without
+// fallbacks, with a notice, instead of failing to render (spec §5)
+tplTest.concurrent(
+  "exec fallbacks: a handler without RunCommand v3 drops the fallbacks, the run stays",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(false, "exec.fallback.exit_code", ["out"], (tx) => ({
+      rootExit: json(tx, "2"),
+      nonce: json(tx, randomUUID()),
+      handlerForceV2: json(tx, true),
+    }));
+    const error = await result
+      .computeOutput("out", (a) => a?.getDataAsString())
+      .awaitStableValue()
+      .catch((e: Error) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toContain("Exited with code 2.");
+    expect((error as Error).message).toContain("#0 root fail SoftwareError (exit 2) → no handler");
+  },
+  120_000,
+);
+
 tplTest.concurrent(
   "AC2.2 exec fallbacks: nothing applies, the error is today's message plus the history",
   async ({ helper, expect }) => {
@@ -145,29 +194,10 @@ tplTest.concurrent.for([
   },
 );
 
-// Needs a second backend started with --runner-max-job-attempts 1; its address in
-// PL_ADDRESS_ATTEMPT_CAP_1. Skipped without it.
-tplTest.skipIf(!process.env.PL_ADDRESS_ATTEMPT_CAP_1)(
-  "AC2.3 exec fallbacks: the backend attempt cap wins",
-  async ({ helper, expect }) => {
-    const result = await helper.renderTemplate(false, "exec.fallback.exit_code", ["out"], (tx) => ({
-      rootExit: json(tx, "2"),
-      nonce: json(tx, randomUUID()),
-    }));
-    const error = await result
-      .computeOutput("out", (a) => a?.getDataAsString())
-      .awaitStableValue()
-      .catch((e: Error) => e);
-    expect(error).toBeInstanceOf(Error);
-    expect((error as Error).message).toContain("Attempts (1, backend cap 1):");
-    expect((error as Error).message).toContain("→ backend attempt limit reached");
-  },
-  120_000,
-);
-
-// AC2.3 on any backend: a chain longer than the attempt cap (3 by default) ends at the cap.
+// AC2.3 on the test backend itself: a chain of 4 plans is longer than the default attempt cap of 3
+// and ends at the cap; a backend with a cap of 4 or more skips it.
 tplTest.concurrent(
-  "AC2.3 exec fallbacks: a chain longer than the backend cap ends at the cap",
+  "AC2.3 exec fallbacks: a chain longer than the backend's attempt cap ends at the cap",
   async ({ helper, expect, skip }) => {
     const result = await helper.renderTemplate(false, "exec.fallback.cap_chain", ["out"], (tx) => ({
       nonce: json(tx, randomUUID()),
@@ -198,5 +228,63 @@ tplTest.concurrent(
     expect(await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue()).toBe(
       "named\n",
     );
+  },
+);
+
+// Review 2, M1: a saved file the software never wrote is that file's error, not a restart and not
+// an error of the wd-retrier. What else reads as an error is the platform's business, and the
+// same as with WorkdirSave v1: an output resolved after the index error is reported (the render's
+// `files` and `progress` carry it), one resolved before it is not, so other outputs are not
+// asserted here.
+tplTest.concurrent.for([{ withFallbacks: false }, { withFallbacks: true }])(
+  "exec: a saved file never written is that file's error (withFallbacks: $withFallbacks)",
+  async ({ withFallbacks }, { helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.partial_save",
+      ["out"],
+      (tx) => ({
+        nonce: json(tx, randomUUID()),
+        withFallbacks: json(tx, withFallbacks),
+        which: json(tx, "never"),
+      }),
+    );
+    const never = await result
+      .computeOutput("out", (a) => a?.resourceType.name)
+      .awaitStableValue()
+      .catch((e: Error) => e);
+    expect(never).toBeInstanceOf(Error);
+    expect((never as Error).message).toContain("cannot index file");
+    expect((never as Error).message).toContain("never.txt");
+    expect((never as Error).message).not.toContain("Working directory lost");
+  },
+  120_000,
+);
+
+// Review 2, m4: a file set matching a file named workdir, the key WorkdirSave v3 reserves
+tplTest.concurrent(
+  "exec: a file set with a file named workdir is saved",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.workdir_file",
+      ["out", "set"],
+      (tx) => ({
+        nonce: json(tx, randomUUID()),
+      }),
+    );
+    expect(await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue()).toBe(
+      "named\n",
+    );
+    const set = await result
+      .computeOutput("set", (a) => ({
+        fields: a?.listInputFields().sort(),
+        workdir: a?.traverse("workdir")?.resourceType.name,
+        other: a?.traverse("a.txt")?.resourceType.name,
+      }))
+      .awaitStableValue();
+    expect(set?.fields).toEqual(["a.txt", "workdir"]);
+    expect(set?.workdir).toMatch(/^Blob/);
+    expect(set?.other).toMatch(/^Blob/);
   },
 );
