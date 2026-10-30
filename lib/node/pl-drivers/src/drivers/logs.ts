@@ -47,6 +47,7 @@ export class LogsDriver implements sdk.LogsDriver {
       ctx.markUnstable("no stream in stream manager");
       return undefined;
     }
+    if (isNotWrittenStandIn(stream)) return undefined;
 
     if (isBlob(stream)) return this.downloadDriver.getLastLogs(stream, lines, ctx);
 
@@ -78,6 +79,7 @@ export class LogsDriver implements sdk.LogsDriver {
       ctx.markUnstable("no stream in stream manager");
       return undefined;
     }
+    if (isNotWrittenStandIn(stream)) return undefined;
 
     if (isBlob(stream)) return this.downloadDriver.getProgressLog(stream, patternToSearch, ctx);
 
@@ -118,6 +120,7 @@ export class LogsDriver implements sdk.LogsDriver {
       ctx.markUnstable("no stream in stream manager");
       return undefined;
     }
+    if (isNotWrittenStandIn(stream)) return undefined;
 
     if (isBlob(stream)) {
       const log = this.downloadDriver.getProgressLog(stream, patternToSearch, ctx);
@@ -163,6 +166,9 @@ export class LogsDriver implements sdk.LogsDriver {
       ctx.markUnstable("no stream in stream manager");
       return undefined;
     }
+
+    // the workflow SDK's stand-in for a streamed file the run never wrote: no log
+    if (isNotWrittenStandIn(stream)) return undefined;
 
     if (isBlob(stream)) return this.downloadDriver.getLogHandle(stream, ctx);
 
@@ -212,6 +218,13 @@ export class LogsDriver implements sdk.LogsDriver {
       return await this.logsStreamDriver.readText(handle, lineCount, offsetBytes, searchStr);
     return await this.downloadDriver.readText(handle, lineCount, offsetBytes, searchStr);
   }
+}
+
+/** A JSON value the workflow SDK sets as a stream's final content when the file was never written
+ * (workflow-tengo `exec.stream` notWritten), instead of an error that would spread to the exec's
+ * other outputs. */
+export function isNotWrittenStandIn(rInfo: ResourceInfo): boolean {
+  return rInfo.type.name.startsWith("json/");
 }
 
 function isBlob(rInfo: ResourceInfo) {
