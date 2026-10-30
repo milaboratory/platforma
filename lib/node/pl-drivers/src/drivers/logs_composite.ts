@@ -105,14 +105,18 @@ export function getCompositeLogHandle(
 
     lastEndedInError = false;
     const part: CompositeLogPart = {};
-    // A manager starts with its live stream set; one without a stream has had its final
-    // content error (the manager resets `stream` then, for good). The attempt ended in an error:
-    // its part reads as empty and is final. When that is the last attempt and it has no outcome,
-    // the job failed (the router raised the error instead of writing one): the handle is no
-    // longer live. The workflow SDK's stand-in for a file never written, a JSON value, reads as
-    // empty and final too.
+    // A manager has no stream until its CreateStream has the working directory (the attempt is
+    // still starting), and again once its final content errored (it resets `stream` then, for
+    // good). Only the second ends the attempt: its part reads as empty and is final, and when it
+    // is the last attempt with no outcome, the job failed (the router raised the error instead of
+    // writing one) and the handle is no longer live. The workflow SDK's stand-in for a file never
+    // written, a JSON value, reads as empty and final too.
     if (stream === undefined) {
-      lastEndedInError = true;
+      const ended =
+        outcome !== undefined ||
+        collection.traverse(`attempt${k}`)?.getField("downloadable")?.error !== undefined;
+      if (ended) lastEndedInError = true;
+      else streamsFinal = false;
     } else if (stream.type.name.startsWith("json/")) {
       // empty and final
     } else {

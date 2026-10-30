@@ -48,6 +48,7 @@ const ManagerType: ResourceType = { name: "StreamManager", version: "2" };
 const LiveStreamType: ResourceType = { name: "StreamWorkdir/main", version: "1" };
 const BlobType: ResourceType = { name: "Blob/main", version: "1" };
 const JsonType: ResourceType = { name: "json/object", version: "1" };
+const ErrorType: ResourceType = { name: "json/resourceError", version: "1" };
 
 function resource(
   id: SignedResourceId,
@@ -204,6 +205,8 @@ afterEach(async () => {
 /** One attempt of a collection: its manager, the stream the manager points at, its outcome. */
 type Attempt = {
   stream?: { kind: "live" | "blob" | "notWritten"; text?: string };
+  /** the manager's final content errored (what the router's error does to the last attempt) */
+  downloadableError?: boolean;
   outcome?: Record<string, unknown>;
 };
 
@@ -237,6 +240,18 @@ function setCollection(env: Env, attempts: Attempt[]) {
           final: a.stream.kind === "blob",
         });
     } else managerFields.push(dField("stream"));
+    if (a.downloadableError) {
+      const errorId = rid(100 + k * 10 + 4);
+      managerFields.push({
+        name: "downloadable",
+        type: "Input",
+        value: NullSignedResourceId,
+        error: errorId,
+        status: "Resolved",
+        valueIsFinal: true,
+      });
+      addLeaf(resource(errorId, ErrorType, [], JSON.stringify({ message: "router failed" })));
+    }
     resources.push(resource(managerId, ManagerType, managerFields));
 
     if (a.outcome !== undefined) {
@@ -466,13 +481,21 @@ describe("composite log handle of a StreamCollection", () => {
     expect((await readAll(env.logs, r.value!)).text).toBe(`${rootDelimiter}handler\n`);
   });
 
-  test("the job failed: the last attempt's manager has no stream and no outcome", async () => {
-    // a manager starts with its live stream; it loses it when its final content errors, which is
-    // what the router's error does to the last attempt of a failed job (review 3, m4)
+  test("an attempt still starting (no stream yet, nothing errored) keeps the handle live", async () => {
+    const env = await setup(rid(1));
+    setCollection(env, [{ stream: { kind: "blob", text: "err\n" }, outcome: rootFailed }, {}]);
+    const r = await handleOf(env).getFullValue();
+    expect(r.stable).toBe(false);
+    expect(isLiveLog(r.value)).toBe(true);
+  });
+
+  test("the job failed: the last attempt's manager lost its stream to an error", async () => {
+    // the router's error reaches the last attempt's manager through its final content, and the
+    // manager resets its stream (review 3, m4; review 4, m1)
     const env = await setup(rid(1));
     setCollection(env, [
       { stream: { kind: "blob", text: "err\n" }, outcome: rootFailed },
-      { stream: undefined },
+      { stream: undefined, downloadableError: true },
     ]);
     const r = await handleOf(env).getFullValue();
     expect(r.stable).toBe(false);
