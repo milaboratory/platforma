@@ -107,15 +107,15 @@ notWritten := func(filePath) {
 
 /**
  * The final content of an attempt's streams: the saved file for a streamed file the attempt
- * wrote and saved; the live stream for one it wrote but did not save, as before fallbacks; a
- * stand-in for one it never wrote (stream.notWritten): a missing key or a save of a missing file
- * would be an error that spreads to the exec's other outputs.
+ * wrote and saved; a stand-in (notWritten) for one it never wrote, or wrote but did not save. A
+ * missing key or a save of a missing file would be an error that spreads to the exec's other
+ * outputs; a manager may not end on a live stream.
  *
  * @param workdir: reference - the post-run working directory, ready
  * @param settings: map - the exec's settings
  * @param files: field - the saved files
- * @return { blobs: map, own: map } - blobs: name -> saved file, for the collections; own: every
- *         streamed name -> its final content
+ * @return { blobs: map, own: map } - blobs: name -> saved file; own: every streamed name -> its
+ *         final content, what the managers and the collections' `stream` end on
  */
 attemptFiles := func(workdir, settings, files) {
 	blobs := {}

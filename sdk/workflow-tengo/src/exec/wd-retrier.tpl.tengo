@@ -85,7 +85,7 @@ self.body(func(inputs) {
 		outputs := raw.outputs.getValue()
 		streams := stream.attemptFiles(raw.workdir.getValue(), inputs.settings, outputs.getField("files"))
 		collections := is_undefined(inputs.streamCollections) ? {} : inputs.streamCollections
-		stream.attemptEnded(collections, ctx.attempt, ctx.history[len(ctx.history) - 1], streams.blobs)
+		stream.attemptEnded(collections, ctx.attempt, ctx.history[len(ctx.history) - 1], streams.own)
 
 		own := smart.ephemeralMapBuilder()
 		for name, ref in streams.own {

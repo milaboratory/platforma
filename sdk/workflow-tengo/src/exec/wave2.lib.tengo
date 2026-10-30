@@ -52,7 +52,7 @@ run := func(p) {
 		streams := stream.attemptFiles(p.workdir, settings, saved.files)
 		collections := is_undefined(p.streamCollections) ? {} : p.streamCollections
 		ctx := p.attemptCtx
-		stream.attemptEnded(collections, ctx.attempt, ctx.history[len(ctx.history) - 1], streams.blobs)
+		stream.attemptEnded(collections, ctx.attempt, ctx.history[len(ctx.history) - 1], streams.own)
 		return {
 			files: saved.files,
 			filesContent: saved.filesContent,
