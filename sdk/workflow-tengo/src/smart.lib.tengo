@@ -421,7 +421,6 @@ resource = func(r) {
 			return resourceInfo.Features.ephemeral
 		},
 
-
 		/**
 		 * Get raw resource data
 		 *
