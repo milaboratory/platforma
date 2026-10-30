@@ -90,7 +90,15 @@ _hash := func(rid, data) {
 
 get := undefined
 
-_calculate := func(rid, info) {
+/**
+ * Calculates the CID of a resource from its info with the backend formula.
+ *
+ * @param rid: resource ID, for error messages
+ * @param info: resource info (see smart.resource().info())
+ * @param inputCid: func(resourceId) -> bytes - gives the CID of an input value
+ * @return cid: bytes - 16 bytes
+ */
+_calculate := func(rid, info, inputCid) {
 	kind := info.Kind
 	buf := _string8(info.Type.Name) + _string8(info.Type.Version) + info.Data
 
@@ -120,7 +128,7 @@ _calculate := func(rid, info) {
 			ll.panic("canonical ID: cannot calculate the canonical ID of resource %v: input %v has no value", rid, name)
 		}
 
-		buf += bytes(name) + get(f.Value)
+		buf += bytes(name) + inputCid(f.Value)
 	}
 
 	return _hash(rid, buf)
@@ -142,7 +150,7 @@ get = func(r) {
 	key := string(res.id)
 
 	if is_undefined(_cache) {
-		_cache = ll.moduleVars("canonical-id")
+		_cache = ll.moduleVars("ll.canonical-id")
 	}
 
 	cached := _cache.get(key)
@@ -157,7 +165,7 @@ get = func(r) {
 	}
 
 	if !isSet(cid) {
-		cid = _calculate(res.id, info)
+		cid = _calculate(res.id, info, get)
 	}
 
 	_cache.set(key, cid)
@@ -173,11 +181,14 @@ get = func(r) {
  */
 calculate := func(r) {
 	res := smart.resource(r)
-	return _calculate(res.id, res.info())
+	return _calculate(res.id, res.info(), get)
 }
 
 export ll.toStrict({
 	isSet: isSet,
 	get: get,
-	calculate: calculate
+	calculate: calculate,
+
+	// for unit tests
+	_calculate: _calculate
 })

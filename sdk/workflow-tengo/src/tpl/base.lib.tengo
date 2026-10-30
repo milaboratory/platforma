@@ -9,7 +9,7 @@ constants := import(":constants")
 stateAwait := import(":tpl.state-await")
 validation := import(":validation")
 feats := import(":feats")
-canonicalIds := import(":canonical-id")
+canonicalIds := import(":ll.canonical-id")
 
 // This import is required to guard the code generated with this package from being executed on backends having insufficient capabilities.
 
@@ -175,7 +175,7 @@ tpl := func(ops) {
 		 *
 		 * On backends that do not give final canonical IDs (see feats.canonicalIdExposure), the
 		 * function uses the canonical ID from the backend when it is set, and calculates it on the
-		 * template level otherwise (see the canonical-id library).
+		 * template level otherwise (see the ll.canonical-id library).
 		 *
 		 * The function causes an error:
 		 *  - in ephemeral templates: an EphRenderTemplate is not deduplicated and has no canonical ID;
