@@ -94,3 +94,24 @@ tplTest.concurrent(
     ).toBe(CID_WITH_FALLBACKS);
   },
 );
+
+// A handler's settings are part of the identity: another RAM for the handler, another exec
+tplTest.concurrent(
+  "exec with fallbacks: a handler's RAM changes the CID",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.cid_render",
+      ["cid", "out"],
+      (tx) => ({
+        withFallbacks: tx.createValue(Pl.JsonObject, JSON.stringify(true)),
+        handlerMem: tx.createValue(Pl.JsonObject, JSON.stringify("256MiB")),
+      }),
+    );
+    const cid = await result
+      .computeOutput("cid", (a) => a?.getDataAsJson<string>())
+      .awaitStableValue();
+    expect(cid).not.toBe(CID_WITH_FALLBACKS);
+    expect(cid).not.toBe(CID_BEFORE_FALLBACKS);
+  },
+);

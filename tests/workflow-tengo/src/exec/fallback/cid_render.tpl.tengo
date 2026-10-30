@@ -3,6 +3,7 @@
  * read once the render is ready. No software: its package version would enter the id.
  *
  * inputs.withFallbacks: bool, optional - the same exec with an OOM handler
+ * inputs.handlerMem: string, optional - the handler's RAM, "128MiB" by default
  */
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
@@ -25,7 +26,8 @@ self.body(func(inputs) {
 		saveFileContent("out.txt").
 		saveStdoutStream()
 	if inputs.withFallbacks == true {
-		b.fallbacks({ OOM: [{ name: "moreRam", builder: b.copy().mem("128MiB") }] })
+		handlerMem := is_undefined(inputs.handlerMem) ? "128MiB" : inputs.handlerMem
+		b.fallbacks({ OOM: [{ name: "moreRam", builder: b.copy().mem(handlerMem) }] })
 	}
 	res := b.run()
 
