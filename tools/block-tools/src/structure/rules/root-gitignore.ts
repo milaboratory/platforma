@@ -1,5 +1,5 @@
 // Root `.gitignore` content rules.
-// The static template under templates/static/root/.gitignore carries the
+// The static template under templates/static/root/gitignore carries the
 // canonical line set; the body re-asserts the same set via
 // `ensureGitignoreEntries` so any future edit that drops a required line
 // is restored.

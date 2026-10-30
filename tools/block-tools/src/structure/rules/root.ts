@@ -44,7 +44,9 @@ export function rootRules(): void {
           },
         );
 
-        managed(".gitignore", file("root/.gitignore"), () => {
+        // The template has no dot: `pnpm pack` (pnpm 11+) leaves every
+        // `.gitignore` out of the published package.
+        managed(".gitignore", file("root/gitignore"), () => {
           rootGitignoreRules();
         });
 
