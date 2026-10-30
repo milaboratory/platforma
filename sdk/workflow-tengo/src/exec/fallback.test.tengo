@@ -51,7 +51,10 @@ Test_composeMessage_asBeforeV3 := func() {
 		fallback.composeMessage(oc))
 
 	gpu := { result: "fail", failDetails: { reason: "GPUMissed", backendHasGPU: false }, command: "x", meta: [], lastLogLines: [] }
-	test.isEqual("Failed to start: GPUMissed.\nCommand: x", fallback.composeMessage(gpu))
+	test.isEqual("Failed to start: GPUMissed.\nCommand: x\nNo output was saved to logs", fallback.composeMessage(gpu))
+
+	killed := { result: "fail", failDetails: { reason: "UnknownError" }, command: "x", meta: [], lastLogLines: ["a"] }
+	test.isEqual("Failed without an exit code: UnknownError.\nCommand: x\nLatest output:\na", fallback.composeMessage(killed))
 }
 
 Test_historyText := func() {
@@ -61,7 +64,7 @@ Test_historyText := func() {
 		{ attempt: 1, plan: "moreRam", result: "fail", reason: "SoftwareError", exitCode: 1 }
 	]
 	test.isEqual(text.join([
-		"Attempts (3, backend cap 3):",
+		"Attempts (2, backend cap 3):",
 		"  #0 root fail OOM (exit 137) → handler OOM \"moreRam\"",
 		"  #1 moreRam workdirMissing (restart 0) → restart",
 		"  #1 moreRam fail SoftwareError (exit 1) → no handler"

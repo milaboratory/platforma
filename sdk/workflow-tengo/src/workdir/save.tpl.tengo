@@ -97,7 +97,7 @@ self.body(func(inputs) {
 	maps.forEach(fileSetsMatch, func(fSetName, list) {
 		r := smart.mapBuilder()
 		for f in list {
-			r.addRef(f, filesResult.getFutureInputField(f))
+			r.addRef(f, wd.getSavedFile(f))
 		}
 		fileSetsResult.addRef(fSetName, r.build())
 	})
