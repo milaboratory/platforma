@@ -82,7 +82,7 @@ export interface AccessorLike<Self extends AccessorLike<Self>> {
   /** Whether this node has a data payload attached. */
   hasData(): boolean;
 
-  /** Decode the data payload as JSON. Returns `undefined` if no data. */
+  /** Decode the data payload as JSON. Without data, the host returns `undefined` and the sandbox throws: check {@link hasData} first. */
   getDataAsJson<T = unknown>(): T | undefined;
 }
 

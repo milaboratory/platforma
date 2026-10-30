@@ -114,6 +114,28 @@ describe("ColumnsCollection.getColumnIds", () => {
   });
 });
 
+describe("ColumnsCollection driver getColumns", () => {
+  test("drops ids whose spec is not a column", () => {
+    const column = { id: gid("c1"), spec: spec("col1") };
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([column, file]);
+    const collection = handle.driver.create([
+      { kind: "ids", ids: [column.id, file.id], isFinal: true },
+    ]);
+    expect(handle.driver.getColumns(collection)).toEqual([column.id]);
+  });
+
+  test("filter over a collection with a file export returns only columns", () => {
+    const column = { id: gid("c1"), spec: spec("col1") };
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([column, file]);
+    const collection = handle.driver.create([
+      { kind: "ids", ids: [column.id, file.id], isFinal: true },
+    ]);
+    expect(handle.driver.getColumns(handle.driver.filter(collection, {}))).toEqual([column.id]);
+  });
+});
+
 describe("ColumnsCollection.addSource", () => {
   test("returns new instance, original unchanged", () => {
     const c1 = { id: gid("c1"), spec: spec("col1") };

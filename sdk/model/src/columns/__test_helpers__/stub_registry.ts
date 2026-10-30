@@ -23,17 +23,18 @@ import type {
   LeafEntry,
   PColumnSpec,
   PObjectId,
+  PObjectSpec,
 } from "@milaboratories/pl-model-common";
 import type { GlobalCfgRenderCtx } from "../../render/internal";
 import type { TreeNodeAccessor } from "../../render/accessor";
 import { _ctxProvidersCache } from "../column_providers";
 import type { ColumnsProvider } from "../column_providers";
-import { DataColumn, type DataColumnRecipe } from "../data_column";
+import { DataColumn } from "../data_column";
 
 /** Fine-grained per-leaf stub config. Defaults match the shorthand form. */
 export type StubLeafConfig = {
   /** Spec returned by `${id}.spec` traverse. Omit to simulate a missing field. */
-  spec?: PColumnSpec;
+  spec?: PObjectSpec;
   /** Drives `leaf.accessor.getInputsLocked()`. Default `true`. */
   accessorLocked?: boolean;
   /** Drives `spec.hasData()` (ignored when `spec` is omitted). Default `true`. */
@@ -59,35 +60,30 @@ function buildStubProvider(
   leaves: ReadonlyMap<PObjectId, StubLeafInput>,
   isFinal: boolean,
 ): ColumnEntriesProvider<TreeNodeAccessor> & ColumnsProvider {
-  const { entries, columns } = [...leaves].reduce(
-    (acc, [id, raw]) => {
-      const cfg = normalizeLeafInput(raw);
-      acc.entries.set(id, { accessor: stubAccessorFor(id, cfg), name: id, id });
-      if (cfg.spec !== undefined && cfg.specHasData) {
-        acc.columns.push(DataColumn.fromColumn({ id, spec: cfg.spec, data: undefined as never }));
-      }
-      return acc;
-    },
-    {
-      entries: new Map<PObjectId, LeafEntry<TreeNodeAccessor>>(),
-      columns: [] as DataColumnRecipe<PObjectId>[],
-    },
+  const entries = new Map<PObjectId, LeafEntry<TreeNodeAccessor>>(
+    [...leaves].map(([id, raw]) => [
+      id,
+      { accessor: stubAccessorFor(id, normalizeLeafInput(raw)), name: id, id },
+    ]),
   );
   return {
     getPObjectEntries: () => entries,
     isFinal: () => isFinal,
-    getColumns: () => columns,
+    getColumns: () =>
+      Array.from(entries.values())
+        .map((entry) => DataColumn.fromAccessor(entry))
+        .filter((column) => column !== undefined),
   };
 }
 
 type NormalizedLeafConfig = {
-  spec?: PColumnSpec;
+  spec?: PObjectSpec;
   accessorLocked: boolean;
   specHasData: boolean;
 };
 
 function normalizeLeafInput(raw: StubLeafInput): NormalizedLeafConfig {
-  if (isPColumnSpec(raw)) {
+  if ("kind" in raw) {
     return { spec: raw, accessorLocked: true, specHasData: true };
   }
   return {
@@ -95,10 +91,6 @@ function normalizeLeafInput(raw: StubLeafInput): NormalizedLeafConfig {
     accessorLocked: raw.accessorLocked ?? true,
     specHasData: raw.specHasData ?? true,
   };
-}
-
-function isPColumnSpec(v: StubLeafInput): v is PColumnSpec {
-  return typeof v === "object" && v !== null && "kind" in v;
 }
 
 let stubAccessorSeq = 0;

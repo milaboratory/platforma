@@ -4,8 +4,7 @@ import type { AccessorHandle, AccessorLike, UpstreamBlockCtx } from "../../colum
 import type { ColumnUniversalId } from "../pframe/spec/ids";
 import type { ColumnsDiscoverOptions, ColumnsFilterOptions } from "./discover_columns_options";
 import type { PFrameSpecDriver } from "../pframe/spec_driver";
-import type { PColumnSpec } from "../pframe/spec/spec";
-import type { PObjectId } from "../../pool";
+import type { PObjectId, PObjectSpec } from "../../pool";
 
 /**
  * Opaque host-owned handle for a `ColumnsCollection` instance. Issued by
@@ -60,13 +59,14 @@ export interface ColumnsCollectionDriverHost<A extends AccessorLike<A> = Accesso
   getSpecDriver(): PFrameSpecDriver;
 
   /**
-   * Resolve the canonical {@link PColumnSpec} for a leaf {@link PObjectId}.
-   * Returns `undefined` when the id is not present in the active registry
-   * (e.g. handed to the driver via a `{kind:"ids"}` source whose underlying
+   * Resolve the spec for a leaf {@link PObjectId}. An export can be any
+   * object, so the spec is not always a column spec (a `kind: "File"`
+   * export, for example). Returns `undefined` when the id is not present in
+   * the active registry (e.g. handed to the driver via a `{kind:"ids"}` source whose underlying
    * column has since left the visible scope). Override-wrapped ids are
    * unwrapped by the caller — this method only resolves the underlying leaf.
    */
-  resolveSpec(id: PObjectId): PColumnSpec | undefined;
+  resolveSpec(id: PObjectId): PObjectSpec | undefined;
 }
 
 /**

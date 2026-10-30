@@ -5,6 +5,7 @@ import {
   SpecOverrides,
   type PColumnSpec,
   type PObjectId,
+  type PObjectSpec,
 } from "@milaboratories/pl-model-common";
 import { ColumnAbsentError, DataColumnImpl } from "./data_column";
 import { _ctxProvidersCache } from "./column_providers";
@@ -32,6 +33,8 @@ afterEach(() => {
 const baseLeaf = createLocalPObjectId(["main", "out"], "col-1");
 
 const stubSpec = { kind: "PColumn", name: "stub" } as unknown as PColumnSpec;
+
+const fileSpec: PObjectSpec = { kind: "File", name: "library" };
 
 function lazyOf(id: PObjectId, spec: PColumnSpec = stubSpec) {
   return DataColumnImpl.fromColumn({ id, spec, data: undefined });
@@ -164,6 +167,13 @@ describe("DataColumnImpl resolution: fromId / fromAccessor / getStatus", () => {
     installStubRegistry(mockCtx, { [baseLeaf]: { accessorLocked: false } });
     const entry = pluckLeafEntry(baseLeaf);
     expect(DataColumnImpl.fromAccessor(entry)).toBeUndefined();
+  });
+
+  test("an export that is not a column: fromId throws, fromAccessor skips, status is absent", () => {
+    installStubRegistry(mockCtx, { [baseLeaf]: { spec: fileSpec } });
+    expect(() => DataColumnImpl.fromId(baseLeaf)).toThrow(ColumnAbsentError);
+    expect(DataColumnImpl.fromAccessor(pluckLeafEntry(baseLeaf))).toBeUndefined();
+    expect(DataColumnImpl.getStatusById(baseLeaf)).toBe("absent");
   });
 
   test("getStatusById returns 'absent' / 'resolving' / 'present' across configurations", () => {

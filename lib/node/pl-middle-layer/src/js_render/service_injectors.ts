@@ -18,6 +18,7 @@ import type {
   PColumnSpec,
   PColumnValues,
   PObjectId,
+  PObjectSpec,
   PTableColumnId,
   PTableColumnSpec,
   PTableRecordFilter,
@@ -208,7 +209,7 @@ export function getServiceInjectors(): ServiceInjectorMap {
             assertFieldType: "Input",
             ignoreError: true,
           });
-          return specNode?.getDataAsJson<PColumnSpec>();
+          return specNode?.getDataAsJson<PObjectSpec>();
         },
       };
 

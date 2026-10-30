@@ -87,6 +87,7 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     return this.mint(contributions);
   }
 
+  /** Counts exports, not columns: a source that holds only a file export is not empty. */
   isEmpty(handle: CollectionHandle): boolean {
     const state = this.requireState(handle);
     for (const c of state.contributions) {
@@ -118,29 +119,14 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
   }
 
   /**
-   * Returns the deduplicated id list for `handle`. Dedup semantics are
-   * shared with sandbox-side `extractColumns` via {@link dedupColumns} —
-   * the same physical column reached via outputs vs. result_pool collapses
-   * to one (provider order decides which id is canonical).
+   * Returns the deduplicated id list for `handle`, without exports that are
+   * not columns. Dedup semantics are shared with sandbox-side `extractColumns`
+   * via {@link dedupColumns} — the same physical column reached via outputs
+   * vs. result_pool collapses to one (provider order decides which id is
+   * canonical).
    */
   getColumns(handle: CollectionHandle, host: ColumnsCollectionDriverHost<A>): ColumnUniversalId[] {
-    const state = this.requireState(handle);
-    const all = state.contributions.flatMap((c) => {
-      switch (c.type) {
-        case "provider":
-          return Array.from(c.provider.getPObjectEntries().keys());
-        case "ids":
-          return [...c.ids];
-      }
-    });
-    return dedupColumns(
-      all,
-      (id) => id,
-      (id) => {
-        const spec = host.resolveSpec(extractPObjectId(id));
-        return spec === undefined ? undefined : reconstructSpecFromId(spec, id);
-      },
-    );
+    return this.resolveColumns(handle, host).map(({ id }) => id);
   }
 
   addSource(
@@ -247,25 +233,52 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     return state;
   }
 
+  /** Deduplicated columns of `handle` with their specs. Exports that are not columns are dropped. */
+  private resolveColumns(
+    handle: CollectionHandle,
+    host: ColumnsCollectionDriverHost<A>,
+  ): { id: ColumnUniversalId; spec: PColumnSpec | undefined }[] {
+    const { contributions } = this.requireState(handle);
+    const columns = contributions
+      .flatMap((contribution) => {
+        switch (contribution.type) {
+          case "provider":
+            return contribution.provider.getPObjectEntries().keys().toArray();
+          case "ids":
+            return contribution.ids;
+        }
+      })
+      .map((id) => {
+        const spec = host.resolveSpec(extractPObjectId(id));
+        if (spec === undefined) return { id, spec: undefined };
+        if (!isPColumnSpec(spec)) return undefined;
+        return { id, spec: reconstructSpecFromId(spec, id) };
+      })
+      .filter((column) => column !== undefined);
+    return dedupColumns(
+      columns,
+      ({ id }) => id,
+      ({ spec }) => spec,
+    );
+  }
+
   private runDiscovery(
     handle: CollectionHandle,
     options: DiscoverColumnsOptions,
     host: ColumnsCollectionDriverHost<A>,
   ): PoolEntry<CollectionHandle> {
     const sourceIsFinal = this.isFinal(handle);
-    const ids = this.getColumns(handle, host);
-    if (ids.length === 0) {
+    const columns = this.resolveColumns(handle, host);
+    if (columns.length === 0) {
       return this.mint([{ type: "ids", ids: [], isFinal: sourceIsFinal }]);
     }
 
     const specDriver = host.getSpecDriver();
-    const specMap = new Map<ColumnUniversalId, PColumnSpec>();
-    for (const id of ids) {
-      const leaf = extractPObjectId(id);
-      const spec = host.resolveSpec(leaf);
-      if (spec === undefined) continue;
-      specMap.set(id, reconstructSpecFromId(spec, id));
-    }
+    const specMap = new Map(
+      columns
+        .map(({ id, spec }) => (spec === undefined ? undefined : ([id, spec] as const)))
+        .filter((entry) => entry !== undefined),
+    );
 
     const anchors = options.anchors;
     const hasAnchors = anchors !== undefined && Object.keys(anchors).length > 0;
