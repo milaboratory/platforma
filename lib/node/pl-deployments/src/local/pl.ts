@@ -9,7 +9,6 @@ import { filePid, readPid, writePid } from "./pid";
 import type { Trace } from "./trace";
 import { withTrace } from "./trace";
 import upath from "upath";
-import fsp from "node:fs/promises";
 import type { Required } from "utility-types";
 import * as os from "node:os";
 import { sleep } from "@milaboratories/ts-helpers";
@@ -17,8 +16,6 @@ import type { ProxySettings } from "@milaboratories/pl-http";
 import { defaultHttpDispatcher } from "@milaboratories/pl-http";
 import { parseHttpAuth } from "@milaboratories/pl-model-common";
 import { plHealthCheck, ServingStatus } from "@milaboratories/pl-healthcheck";
-
-export const LocalConfigYaml = "config-local.yaml";
 
 /**
  * Represents a local running pl-core,
@@ -195,8 +192,8 @@ export class LocalPl {
 export type LocalPlOptions = {
   /** From what directory start a process. */
   readonly workingDir: string;
-  /** A string representation of yaml config. */
-  readonly config: string;
+  /** Backend CLI options (see `generateLocalPlConfigs` from `@milaboratories/pl-config`). */
+  readonly args: string[];
   /** How to get a binary, download it or get an existing one (default: download latest version) */
   readonly plBinary?: PlBinarySource;
   /** Additional options for a process, environments, stdout, stderr etc. */
@@ -242,18 +239,13 @@ export async function localPlatformaInit(logger: MiLogger, _ops: LocalPlOptions)
   const ops = mergeDefaultOps(_ops, numCpu);
 
   return await withTrace(logger, async (trace, t) => {
-    trace("startOptions", { ...ops, config: "too wordy" });
+    trace("startOptions", ops);
 
     const workDir = upath.resolve(ops.workingDir);
 
     if (ops.closeOld) {
       trace("closeOld", await localPlatformaReadPidAndStop(logger, workDir));
     }
-
-    const configPath = upath.join(workDir, LocalConfigYaml);
-
-    logger.info(`writing configuration '${configPath}'...`);
-    await fsp.writeFile(configPath, ops.config);
 
     const plBinPath = upath.join(workDir, "binaries");
     const baseBinaryPath = await resolveLocalPlBinaryPath({
@@ -282,7 +274,7 @@ Only Basic auth is supported by the backend.`);
       env.https_proxy = url.toString();
     }
 
-    const processOpts = plProcessOps(binaryPath, configPath, ops, workDir, env);
+    const processOpts = plProcessOps(binaryPath, ops, workDir, env);
     trace("processOpts", {
       cmd: processOpts.cmd,
       args: processOpts.args,
@@ -369,14 +361,13 @@ export function mergeDefaultOps(ops: LocalPlOptions, numCpu: number): LocalPlOpt
  * and overrides them with the provided options. */
 export function plProcessOps(
   binaryPath: any,
-  configPath: string,
   ops: LocalPlOptionsFull,
   workDir: string,
   defaultEnv: Record<string, string | undefined>,
 ): ProcessOptions {
   const result: ProcessOptions = {
     cmd: binaryPath,
-    args: ["--config", configPath],
+    args: [...ops.args],
     opts: {
       env: { ...defaultEnv },
       cwd: workDir,

@@ -5,8 +5,8 @@ import type { PlBinarySource } from "../common/pl_binary";
 export type LocalPlOptions = {
   /** From what directory start a process. */
   readonly workingDir: string;
-  /** A string representation of yaml config. */
-  readonly config: string;
+  /** Backend CLI options. */
+  readonly args: string[];
   /** How to get a binary, download it or get an existing one. */
   readonly binary: PlBinarySource;
   /** Additional options for a process, environments, stdout, stderr etc. */
