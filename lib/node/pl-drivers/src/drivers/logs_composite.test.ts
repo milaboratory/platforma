@@ -466,7 +466,9 @@ describe("composite log handle of a StreamCollection", () => {
     expect((await readAll(env.logs, r.value!)).text).toBe(`${rootDelimiter}handler\n`);
   });
 
-  test("an attempt whose manager has no stream yet reads as empty", async () => {
+  test("the job failed: the last attempt's manager has no stream and no outcome", async () => {
+    // a manager starts with its live stream; it loses it when its final content errors, which is
+    // what the router's error does to the last attempt of a failed job (review 3, m4)
     const env = await setup(rid(1));
     setCollection(env, [
       { stream: { kind: "blob", text: "err\n" }, outcome: rootFailed },
@@ -474,7 +476,7 @@ describe("composite log handle of a StreamCollection", () => {
     ]);
     const r = await handleOf(env).getFullValue();
     expect(r.stable).toBe(false);
-    expect(isLiveLog(r.value)).toBe(true);
+    expect(isLiveLog(r.value)).toBe(false);
     expect((await readAll(env.logs, r.value!)).text).toBe(`err\n${rootDelimiter}`);
   });
 

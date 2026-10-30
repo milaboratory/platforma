@@ -68,8 +68,8 @@ export type CompositeLogPart = {
   delimiter?: string;
 };
 
-const compositeLiveLogPrefix = "log+live://log/composite/";
-const compositeReadyLogPrefix = "log+ready://log/composite/";
+const compositeLiveLogPrefix = "log+live://log/@composite/";
+const compositeReadyLogPrefix = "log+ready://log/@composite/";
 
 /** Joins the logs of several exec attempts into one handle. The handle keeps the live/ready
  * prefixes of a single log handle, so consumers read it the same way; its parts travel in the
