@@ -1,0 +1,26 @@
+// compare canonical IDs from the backend with the ones the canonical-id library calculates
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+canonicalIds := import("@platforma-sdk/workflow-tengo:canonical-id")
+hex := import("hex")
+
+self.defineOutputs(["cids"])
+
+_pair := func(r) {
+	return {
+		backend: hex.encode(r.info().CanonicalID),
+		calculated: hex.encode(canonicalIds.calculate(r))
+	}
+}
+
+self.body(func(inputs) {
+	result := {}
+	for name, f in self.rawInputs() {
+		result[name] = _pair(f.getValue())
+	}
+	result["renderer"] = _pair(self.renderer())
+
+	return {
+		cids: result
+	}
+})
