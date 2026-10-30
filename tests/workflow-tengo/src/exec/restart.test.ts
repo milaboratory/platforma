@@ -28,14 +28,14 @@ const json = (tx: Pl.PlTransaction, v: unknown) => tx.createValue(Pl.JsonObject,
 type Helper = Parameters<Parameters<typeof tplTest>[1]>[0]["helper"];
 
 /** The first render: a command whose post-run working directory is returned, then deleted or kept. */
-async function firstRender(helper: Helper, deleteWorkdir: boolean) {
+async function firstRender(helper: Helper, deleteWorkdir: boolean | "file") {
   const first = await helper.renderTemplate(
     true,
     "exec.fallback.run_v3",
     ["outcome", "workdirOut"],
     (tx) => ({
       cmd: json(tx, "sh"),
-      args: json(tx, ["-c", `echo first > out.txt # ${randomUUID()}`]),
+      args: json(tx, ["-c", `echo first > out.txt; echo x > extra.txt # ${randomUUID()}`]),
       errorLines: json(tx, 10),
     }),
   );
@@ -46,14 +46,20 @@ async function firstRender(helper: Helper, deleteWorkdir: boolean) {
       return { id: a.id, location: (JSON.parse(storage) as { Location: string }).Location };
     })
     .awaitStableValue();
-  const dir = path.join(WORK_ROOT!, wd!.location);
+  const dir = path.resolve(WORK_ROOT!, wd!.location);
+  // the location comes from the backend: never delete outside the work storage
+  expect(dir.startsWith(path.resolve(WORK_ROOT!) + path.sep)).toBe(true);
   expect(fs.existsSync(dir)).toBe(true);
-  if (deleteWorkdir) fs.rmSync(dir, { recursive: true, force: true });
+  if (deleteWorkdir === true) fs.rmSync(dir, { recursive: true, force: true });
+  // only a file the command wrote and the plan saves as a file (a content rule has no outcome:
+  // a lost content is an error, as with v1): a FileMissing outcome
+  if (deleteWorkdir === "file") fs.rmSync(path.join(dir, "extra.txt"));
   return wd!.id;
 }
 
 type SecondOptions = {
   restartLimit: number;
+  saveOutFile?: boolean;
   attempt?: number;
   restart?: number;
   withProcessor?: boolean;
@@ -100,11 +106,14 @@ async function secondRender(
       restart: json(tx, opts.restart ?? 0),
       withProcessor: json(tx, opts.withProcessor ?? false),
       withCollection: json(tx, opts.withCollection ?? false),
+      saveOutFile: json(tx, opts.saveOutFile ?? false),
     }),
   );
+  // an error here is the job's, reported on the whole result: the backend has WorkdirSave v3 then
   const v3 = await result
     .computeOutput("workdirSaveV3", (a) => a?.getDataAsJson<boolean>())
-    .awaitStableValue();
+    .awaitStableValue()
+    .catch(() => true);
   if (!v3) return undefined;
 
   const out = await result
@@ -156,6 +165,20 @@ tplTest.skipIf(WORK_ROOT === undefined)(
       { attempt: 0, plan: "root", result: "workdirMissing", restart: 0 },
       { attempt: 0, plan: "root", result: "success", exitCode: 0 },
     ]);
+  },
+  120_000,
+);
+
+tplTest.skipIf(WORK_ROOT === undefined)(
+  "exec restart: a saved file gone from a kept directory restarts too (FileMissing)",
+  async ({ helper, expect, skip }) => {
+    const r = await secondRender(helper, await firstRender(helper, "file"), {
+      restartLimit: 3,
+      saveOutFile: true,
+    });
+    if (r === undefined) return skip("no WorkdirSave v3 on the backend");
+    expect(r.out).toBe("restarted\n");
+    expect(r.attempts?.map((a) => a.result)).toEqual(["workdirMissing", "success"]);
   },
   120_000,
 );
