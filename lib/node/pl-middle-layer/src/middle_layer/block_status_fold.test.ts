@@ -541,3 +541,43 @@ describe("malformed input", () => {
     expect(foldBlockStatus(root)).toMatchObject({ totalNodes: 2, liveNodes: 2 });
   });
 });
+
+describe("a run the user stopped", () => {
+  const stopped = () =>
+    context({
+      id: "root",
+      transitions: [
+        { namespace: "render", atMs: ms(0), state: "Running" },
+        { namespace: "core", reporter: "root", atMs: ms(90_000), state: "Terminated", reason: "cancelled" },
+      ],
+      children: [
+        {
+          id: "c1",
+          transitions: [{ namespace: "exec", reporter: "cmd", atMs: ms(10_000), state: "Running" }],
+        },
+      ],
+    });
+
+  it("is done and cancelled, not failed, and its time ends at the stop", () => {
+    const summary = foldBlockStatus(stopped());
+
+    expect(summary).toMatchObject({ done: true, cancelled: true, lastChangeAt: ms(90_000) });
+    expect(summary.failure).toBeUndefined();
+    expect(summary.line).toMatchObject({ state: "Terminated", phrase: "cancelled" });
+    expect(summary.line?.reason).toBeUndefined();
+  });
+
+  it("keeps the counters, to say where each node was when it stopped", () => {
+    expect(foldBlockStatus(stopped()).byState).toEqual(
+      expect.arrayContaining([expect.objectContaining({ state: "Running", onMachine: true, nodes: 1 })]),
+    );
+  });
+
+  it("is not cancelled while only the backend has reported", () => {
+    const running = context({
+      id: "root",
+      transitions: [{ namespace: "render", atMs: ms(0), state: "Running" }],
+    });
+    expect(foldBlockStatus(running).cancelled).toBeUndefined();
+  });
+});

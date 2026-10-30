@@ -15,6 +15,7 @@ import type {
   BlockStatusSummary,
 } from "@milaboratories/pl-model-middle-layer";
 import {
+  BlockStatusCancelledPhrase,
   BlockStatusOnMachinePhrase,
   blockStatusPhrases,
   blockStatusStates,
@@ -53,6 +54,12 @@ const TransitionPrefix = "transition/";
 
 /** The namespace the workflow controller reports a render's own lifecycle under. */
 const RenderNamespace = "render";
+
+/**
+ * The namespace the creator of a context reports under. The middle layer records `Terminated` here
+ * on the root when the user stops the run, see `recordBlockRunCancelled`.
+ */
+const CreatorNamespace = "core";
 
 /** The namespace a command reports under; its `Running` means a job executing on a machine. */
 const ExecNamespace = "exec";
@@ -240,6 +247,8 @@ type Accumulator = {
   lastNs?: string;
   /** The root's own fold, kept by the walk so the root is read once. */
   root?: FoldedNode;
+  /** When the creator marked the run cancelled on the root. */
+  cancelledNs?: string;
 };
 
 function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): void {
@@ -253,7 +262,13 @@ function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): void 
       acc.lastNs = reports.lastNs;
 
   const folded = foldNode(reports.known);
-  if (isRoot) acc.root = folded;
+  if (isRoot) {
+    acc.root = folded;
+    for (const t of reports.known)
+      if (t.namespace === CreatorNamespace && t.state === "Terminated")
+        if (acc.cancelledNs === undefined || compareNs(t.ns, acc.cancelledNs) > 0)
+          acc.cancelledNs = t.ns;
+  }
   acc.totalNodes++;
 
   if (folded.terminal) return;
@@ -347,6 +362,29 @@ export function foldBlockStatus(root: ActionContextNode): BlockStatusSummary {
     rootFolded?.terminal === true && rootFolded.termination !== undefined
       ? rootFolded.termination
       : undefined;
+
+  // A stopped run: its render is gone and reports nothing more, so the tree is frozen where it
+  // stopped. The counters stay, to say where each node was; the run itself is over.
+  if (acc.cancelledNs !== undefined)
+    return {
+      availability: "read",
+      runId,
+      liveNodes: acc.liveNodes,
+      totalNodes: acc.totalNodes,
+      byState,
+      line: {
+        state: "Terminated",
+        onMachine: false,
+        phrase: BlockStatusCancelledPhrase,
+        nodes: 1,
+        ofNodes: acc.liveNodes,
+        heldSince: nsToMs(acc.cancelledNs),
+      },
+      startedAt: acc.firstNs === undefined ? undefined : nsToMs(acc.firstNs),
+      lastChangeAt: nsToMs(acc.cancelledNs),
+      done: true,
+      cancelled: true,
+    };
 
   return {
     availability: "read",
