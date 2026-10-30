@@ -203,7 +203,7 @@ afterEach(async () => {
 
 /** One attempt of a collection: its manager, the stream the manager points at, its outcome. */
 type Attempt = {
-  stream?: { kind: "live" | "blob"; text?: string };
+  stream?: { kind: "live" | "blob" | "notWritten"; text?: string };
   outcome?: Record<string, unknown>;
 };
 
@@ -226,7 +226,11 @@ function setCollection(env: Env, attempts: Attempt[]) {
     const managerFields: FieldData[] = [];
     if (a.stream !== undefined) {
       managerFields.push(dField("stream", streamId));
-      addLeaf(resource(streamId, a.stream.kind === "blob" ? BlobType : LiveStreamType));
+      addLeaf(
+        a.stream.kind === "notWritten"
+          ? resource(streamId, JsonType, [], JSON.stringify({ streamFileNotWritten: "err.log" }))
+          : resource(streamId, a.stream.kind === "blob" ? BlobType : LiveStreamType),
+      );
       if (a.stream.text !== undefined)
         env.clientLogs.logs.set(parseSignedResourceId(streamId).globalId, {
           text: a.stream.text,
@@ -435,6 +439,31 @@ describe("composite log handle of a StreamCollection", () => {
     expect(text).toBe(rootDelimiter);
     expect(last).toMatchObject({ live: true });
     expect(decode(await env.logs.lastLines(handle, 10))).toBe(rootDelimiter);
+  });
+
+  test("a failed attempt that never wrote the file does not keep the handle live", async () => {
+    const env = await setup(rid(1));
+    // the reverse of §13.1 example 2: the root never wrote the file, the handler did
+    setCollection(env, [
+      { stream: undefined, outcome: rootFailed },
+      { stream: { kind: "blob", text: "handler\n" }, outcome: { attempt: 1, result: "success" } },
+    ]);
+    const r = await handleOf(env).getFullValue();
+    // ready, so the viewer stops polling; the value itself stays unstable, since the manager's
+    // `stream` is a dynamic field that may still be set
+    expect(isLiveLog(r.value)).toBe(false);
+    expect((await readAll(env.logs, r.value!)).text).toBe(`${rootDelimiter}handler\n`);
+  });
+
+  test("the SDK's stand-in for a file never written reads as empty and final", async () => {
+    const env = await setup(rid(1));
+    setCollection(env, [
+      { stream: { kind: "notWritten" }, outcome: rootFailed },
+      { stream: { kind: "blob", text: "handler\n" }, outcome: { attempt: 1, result: "success" } },
+    ]);
+    const r = await handleOf(env).getFullValue();
+    expect(isLiveLog(r.value)).toBe(false);
+    expect((await readAll(env.logs, r.value!)).text).toBe(`${rootDelimiter}handler\n`);
   });
 
   test("an attempt whose manager has no stream yet reads as empty", async () => {

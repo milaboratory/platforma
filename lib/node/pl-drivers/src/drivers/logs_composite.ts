@@ -103,8 +103,14 @@ export function getCompositeLogHandle(
     lastOutcome = outcome;
 
     const part: CompositeLogPart = {};
-    if (stream === undefined) streamsFinal = false;
-    else {
+    // A failed attempt whose manager has no stream never wrote the file: its manager's file
+    // errored and the manager left `stream` unset for good. It reads as empty, and is final. So
+    // does the workflow SDK's stand-in for a file never written, a JSON value.
+    if (stream === undefined) {
+      if (outcome?.result !== "fail") streamsFinal = false;
+    } else if (stream.type.name.startsWith("json/")) {
+      // empty and final
+    } else {
       const live = isStreamWorkdir(stream.type);
       if (live) streamsFinal = false;
       part.handle = newLogHandle(live, stream);
