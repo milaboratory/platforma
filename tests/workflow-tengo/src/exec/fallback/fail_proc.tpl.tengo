@@ -1,0 +1,9 @@
+// A workdir processor that fails: the save after it errors.
+
+self := import("@platforma-sdk/workflow-tengo:workdir.proc")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+self.body(func(inputs) {
+	ll.panic("the processor failed on purpose")
+	return {}
+})

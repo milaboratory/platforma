@@ -345,3 +345,54 @@ tplTest.concurrent(
     ]);
   },
 );
+
+// Review 4, m2: getAttempts() follows the save, also without WorkdirSave v3
+tplTest.concurrent.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
+  "exec: a failed save fails getAttempts() too (forceSaveV1: $forceSaveV1)",
+  async ({ forceSaveV1 }, { helper, expect }) => {
+    const result = await helper.renderTemplate(false, "exec.fallback.misc", ["out"], (tx) => ({
+      case: json(tx, "failedSave"),
+      nonce: json(tx, randomUUID()),
+      forceSaveV1: json(tx, forceSaveV1),
+    }));
+    const out = await result
+      .computeOutput("out", (a) => a?.getDataAsString())
+      .awaitStableValue()
+      .catch((e: Error) => e);
+    expect(out).toBeInstanceOf(Error);
+    expect((out as Error).message).toContain("the processor failed on purpose");
+  },
+  120_000,
+);
+
+// Review 4, m6: saveFileSetContent() saves the set under its name
+tplTest.concurrent(
+  "exec: saveFileSetContent saves the matching files' contents",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(false, "exec.fallback.misc", ["out"], (tx) => ({
+      case: json(tx, "fileSetContent"),
+      nonce: json(tx, randomUUID()),
+    }));
+    const set = await result
+      .computeOutput("out", (a) => ({
+        fields: a?.listInputFields().sort(),
+        a: a?.traverse("a.txt")?.getDataAsString(),
+        b: a?.traverse("b.txt")?.getDataAsString(),
+      }))
+      .awaitStableValue();
+    expect(set).toEqual({ fields: ["a.txt", "b.txt"], a: "a\n", b: "b\n" });
+  },
+);
+
+// Review 4: a handler whose RAM is a resource formula, evaluated by the router for the handler
+tplTest.concurrent(
+  "exec fallbacks: a handler with a resource formula gets its RAM",
+  async ({ helper, expect }) => {
+    const result = await helper.renderTemplate(false, "exec.fallback.misc", ["out"], (tx) => ({
+      case: json(tx, "formulaHandler"),
+      nonce: json(tx, randomUUID()),
+    }));
+    const out = await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue();
+    expect(Number(out?.trim())).toBe(96 * 1024 * 1024);
+  },
+);

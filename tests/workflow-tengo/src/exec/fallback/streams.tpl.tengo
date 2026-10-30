@@ -10,6 +10,8 @@
  *
  * inputs.errLog: bool, optional - every plan also streams err.log, which only the root writes
  *                 (spec §13.1, second example); true by default
+ * inputs.rootBadStream: bool, optional - the root leaves err.log a broken symlink, which its log
+ *                 save cannot save
  * inputs.handlerExit: string, optional - the handler's exit code, 0 by default
  * inputs.streamOnly: bool, optional - stream info.log, which every plan writes, without saving it
  * inputs.errLogByHandler: bool, optional - the reverse: only the handler writes err.log, which
@@ -56,6 +58,9 @@ self.body(func(inputs) {
 
 	rootExit := is_undefined(inputs.rootExit) ? "2" : inputs.rootExit
 	rootErr := inputs.errLogByHandler == true ? "" : "echo root-err > err.log; "
+	if inputs.rootBadStream == true {
+		rootErr = "ln -s /nonexistent/err.log err.log; "
+	}
 	handlerErr := inputs.errLogByHandler == true ? "echo handler-err > err.log; " : ""
 	handlerExit := is_undefined(inputs.handlerExit) ? "0" : inputs.handlerExit
 	handler := shell(handlerErr + "echo handler-info > info.log; " +
