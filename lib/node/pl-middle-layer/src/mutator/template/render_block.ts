@@ -1,5 +1,11 @@
-import type { AnyRef, PlTransaction, ResourceRef, ResourceType } from "@milaboratories/pl-client";
-import { field, Pl } from "@milaboratories/pl-client";
+import type {
+  AnyRef,
+  AnyResourceRef,
+  PlTransaction,
+  ResourceRef,
+  ResourceType,
+} from "@milaboratories/pl-client";
+import { field, isResourceId, parseSignedResourceId, Pl } from "@milaboratories/pl-client";
 import { randomUUID } from "node:crypto";
 import { createRenderTemplateWithResource } from "./render_template";
 
@@ -63,6 +69,30 @@ function createBlockActionContext(
       "block-id": baggage.blockId,
       "run-id": randomUUID(),
     }),
+  );
+}
+
+/** The namespace the creator of a context reports under, as the backend reserves it. */
+export const ActionContextCreatorNamespace = "core";
+
+/** The reason recorded when the user stops a run. */
+export const BlockRunCancelledReason = "cancelled";
+
+/**
+ * Marks a block run's root action context as cancelled by the user.
+ *
+ * Stopping a block destroys its render, and a destroyed render reports nothing, so without this
+ * every node of a stopped run would read as live forever. The middle layer created the context, so
+ * it reports under the creator's namespace, with the context itself as the reporting resource and
+ * this machine's clock, the same key layout the backend's reporters use.
+ */
+export function recordBlockRunCancelled(tx: PlTransaction, context: AnyResourceRef): void {
+  const reporter = isResourceId(context) ? String(parseSignedResourceId(context).globalId) : "0";
+  const ns = (BigInt(Date.now()) * 1_000_000n).toString();
+  tx.setKValue(
+    context,
+    `transition/${ActionContextCreatorNamespace}/${reporter}/${ns}`,
+    JSON.stringify({ state: "Terminated", detail: "", reason: BlockRunCancelledReason }),
   );
 }
 

@@ -71,6 +71,9 @@ export const blockStatusPhrases: Record<BlockStatusState, string> = {
  */
 export const BlockStatusOnMachinePhrase = "computing";
 
+/** The phrase for a run the user stopped. */
+export const BlockStatusCancelledPhrase = "cancelled";
+
 /** What one live node is, to the user: "1 task", "5 tasks". */
 export function blockStatusTaskCount(nodes: number): string {
   return `${nodes} ${nodes === 1 ? "task" : "tasks"}`;
@@ -164,6 +167,11 @@ export type BlockStatusSummary = {
   readonly done: boolean;
   /** The reason the run ended in, set only when the root render terminated. */
   readonly failure?: string;
+  /**
+   * True when the user stopped the run. The tree is kept as it was when it stopped, so the counters
+   * say where each node was, but nothing in it runs any more.
+   */
+  readonly cancelled?: boolean;
 };
 
 /** A summary for a block whose run has not reported anything yet. */
