@@ -4,8 +4,10 @@ import { field } from "./transaction";
 import { test, expect } from "vitest";
 
 /**
- * Every pure resource must expose a non-empty canonical id to clients once its
- * creating transaction is committed.
+ * Every pure resource must expose a non-empty canonical id to clients after
+ * commit. Value/singleton resources get CID immediately, structural resources
+ * may get CID with delay defined by resource's lifecycle and resource tree
+ * structure.
  *
  * Regression test. The canonical id the server puts on the wire comes from a
  * single field that only deduplication used to write. Deduplication needs all
