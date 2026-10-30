@@ -16,11 +16,18 @@ import {
   parseCompositeLogHandle,
 } from "./helpers/logs_handle";
 
+/** Per-read state: whether any part answered that its handle is outdated. */
+type ReadState = { outdated: boolean };
+
 /** The resource the workflow SDK puts into `fileStreams[name]` of an exec with fallbacks.
  * Fields: dynamic `attempt<K>` (attempt K's `StreamManager/2`), dynamic `outcome<K>` (attempt K's
  * history entry, written when it ends) and `stream` (a mirror for drivers that predate it). */
-/** Per-read state: whether any part answered that its handle is outdated. */
-type ReadState = { outdated: boolean };
+/** A JSON value the workflow SDK sets as a stream's final content when the file was never written,
+ * or was not saved (workflow-tengo `exec.stream` notWritten), instead of an error that would spread
+ * to the exec's other outputs. */
+export function isNotWrittenStandIn(rInfo: { type: ResourceType }): boolean {
+  return rInfo.type.name.startsWith("json/");
+}
 
 export const StreamCollectionResourceType: ResourceType = {
   name: "StreamCollection",
@@ -117,7 +124,7 @@ export function getCompositeLogHandle(
         collection.traverse(`attempt${k}`)?.getField("downloadable")?.error !== undefined;
       if (ended) lastEndedInError = true;
       else streamsFinal = false;
-    } else if (stream.type.name.startsWith("json/")) {
+    } else if (isNotWrittenStandIn(stream)) {
       // empty and final
     } else {
       const live = isStreamWorkdir(stream.type);

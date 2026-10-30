@@ -71,14 +71,14 @@ export type CompositeLogPart = {
 const compositeLiveLogPrefix = "log+live://log/@composite/";
 const compositeReadyLogPrefix = "log+ready://log/@composite/";
 
-/** Joins the logs of several exec attempts into one handle. The handle keeps the live/ready
- * prefixes of a single log handle, so consumers read it the same way; its parts travel in the
- * handle itself, as base64url-encoded JSON, because the driver reads logs without the tree.
- * `isCompositeLogHandle` of the model tells such a handle apart. */
 /** The most parts a composite log handle may have: attempts and restarts of one job are bounded by
  * the backend's caps, far below this. */
 export const maxCompositeLogParts = 256;
 
+/** Joins the logs of several exec attempts into one handle. The handle keeps the live/ready
+ * prefixes of a single log handle, so consumers read it the same way; its parts travel in the
+ * handle itself, as base64url-encoded JSON, because the driver reads logs without the tree.
+ * `isCompositeLogHandle` of the model tells such a handle apart. */
 export function newCompositeLogHandle(live: boolean, parts: CompositeLogPart[]): sdk.AnyLogHandle {
   // the latest parts, if a collection ever holds more than a handle may carry
   const kept = parts.length > maxCompositeLogParts ? parts.slice(-maxCompositeLogParts) : parts;
