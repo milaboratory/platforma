@@ -22,7 +22,8 @@ export type ReadyLogHandle = Branded<`${typeof READY_LOG_PREFIX}${string}`, "Rea
 export type AnyLogHandle = LiveLogHandle | ReadyLogHandle;
 
 /** Path segment that follows the live/ready prefix in a composite log handle. */
-const COMPOSITE_LOG_SEGMENT = "composite/";
+// "@" never starts a resource type name, so no single-log handle has this segment
+const COMPOSITE_LOG_SEGMENT = "@composite/";
 
 /** Checks if the handle is composite, i.e. joins the logs of several exec attempts.
  * Consumers need not tell composite handles apart: reading, offsets and liveness work

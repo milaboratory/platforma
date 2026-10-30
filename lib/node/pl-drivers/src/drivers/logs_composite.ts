@@ -94,6 +94,7 @@ export function getCompositeLogHandle(
   }
 
   let lastOutcome: AttemptOutcome | undefined;
+  let lastEndedInError = false;
   let streamsFinal = true;
   const parts = attempts.map((k): CompositeLogPart => {
     const stream = collection.traverse(`attempt${k}`, "stream")?.resourceInfo;
@@ -102,12 +103,16 @@ export function getCompositeLogHandle(
       : undefined;
     lastOutcome = outcome;
 
+    lastEndedInError = false;
     const part: CompositeLogPart = {};
-    // A failed attempt whose manager has no stream never wrote the file: its manager's file
-    // errored and the manager left `stream` unset for good. It reads as empty, and is final. So
-    // does the workflow SDK's stand-in for a file never written, a JSON value.
+    // A manager starts with its live stream set; one without a stream has had its final
+    // content error (the manager resets `stream` then, for good). The attempt ended in an error:
+    // its part reads as empty and is final. When that is the last attempt and it has no outcome,
+    // the job failed (the router raised the error instead of writing one): the handle is no
+    // longer live. The workflow SDK's stand-in for a file never written, a JSON value, reads as
+    // empty and final too.
     if (stream === undefined) {
-      if (outcome?.result !== "fail") streamsFinal = false;
+      lastEndedInError = true;
     } else if (stream.type.name.startsWith("json/")) {
       // empty and final
     } else {
@@ -119,7 +124,7 @@ export function getCompositeLogHandle(
     return part;
   });
 
-  const live = !streamsFinal || lastOutcome === undefined;
+  const live = !streamsFinal || (lastOutcome === undefined && !lastEndedInError);
   if (live || lastOutcome?.result !== "success")
     ctx.markUnstable(
       "The stream collection is not complete: an attempt is running or another one may start.",
