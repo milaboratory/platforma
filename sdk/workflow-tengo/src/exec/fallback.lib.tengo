@@ -340,9 +340,11 @@ historyText := func(hist, attemptLimit, why) {
  * @param oc: map - the last attempt's outcome
  * @param hist: map[] - history, including the last attempt
  * @param why: string - "no handler", "backend attempt limit reached", ...
+ * @param attemptLimit: int, optional - the cap the caller applied, when the outcome lacks it
  */
-exhaustedMessage := func(oc, hist, why) {
-	return composeMessage(oc) + "\n\n" + historyText(hist, oc.attemptLimit, why)
+exhaustedMessage := func(oc, hist, why, ...attemptLimit) {
+	limit := len(attemptLimit) > 0 ? attemptLimit[0] : oc.attemptLimit
+	return composeMessage(oc) + "\n\n" + historyText(hist, limit, why)
 }
 
 export ll.toStrict({
