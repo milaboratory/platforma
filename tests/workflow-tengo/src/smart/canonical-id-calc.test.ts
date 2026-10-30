@@ -4,7 +4,7 @@ import { tplTest } from "@platforma-sdk/test";
 type CidPair = { backend: string; calculated: string };
 
 /*
- * The canonical-id library calculates canonical IDs on the template level for old backends.
+ * The ll.canonical-id library calculates canonical IDs on the template level for old backends.
  * On a current backend, the calculated canonical ID must be equal to the one from the backend:
  * for value resources (JSON and binary data), for a structural resource, and for the renderer.
  */
