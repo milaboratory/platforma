@@ -12,6 +12,7 @@ import {
   CompositeLogReader,
   getCompositeLogHandle,
   isStreamCollection,
+  isNotWrittenStandIn,
   isStreamWorkdir,
 } from "./logs_composite";
 
@@ -218,13 +219,6 @@ export class LogsDriver implements sdk.LogsDriver {
       return await this.logsStreamDriver.readText(handle, lineCount, offsetBytes, searchStr);
     return await this.downloadDriver.readText(handle, lineCount, offsetBytes, searchStr);
   }
-}
-
-/** A JSON value the workflow SDK sets as a stream's final content when the file was never written
- * (workflow-tengo `exec.stream` notWritten), instead of an error that would spread to the exec's
- * other outputs. */
-export function isNotWrittenStandIn(rInfo: ResourceInfo): boolean {
-  return rInfo.type.name.startsWith("json/");
 }
 
 function isBlob(rInfo: ResourceInfo) {
