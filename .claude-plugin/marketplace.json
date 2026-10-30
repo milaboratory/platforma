@@ -1,0 +1,22 @@
+{
+  "name": "platforma",
+  "owner": { "name": "milaboratory" },
+  "metadata": {
+    "description": "Plugins shipped from the Platforma monorepo",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "platforma",
+      "source": {
+        "source": "github",
+        "repo": "milaboratory/platforma",
+        "plugin-dir": "lib/node/pl-mcp-server/claude-plugin"
+      },
+      "description": "Drive the Platforma Desktop App from Claude. The plugin finds the running MCP server itself.",
+      "version": "0.1.0",
+      "author": { "name": "milaboratory" },
+      "category": "developer-tools"
+    }
+  ]
+}

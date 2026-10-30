@@ -5,6 +5,11 @@ import { z } from "zod";
 import type { ToolContext } from "./types";
 import { errorResult } from "./types";
 
+/** A capture that carries no base64 payload character — empty, whitespace, or padding only. */
+export function isEmptyCapture(base64: string): boolean {
+  return base64.replace(/[\s=]/g, "").length === 0;
+}
+
 export function registerScreenshotTool(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
     "capture_screenshot",
@@ -28,6 +33,12 @@ export function registerScreenshotTool(server: McpServer, ctx: ToolContext): voi
         );
       }
       const base64Png = await ctx.callbacks.captureScreenshot();
+      if (isEmptyCapture(base64Png)) {
+        return errorResult(
+          "Screenshot capture failed and returned no image.",
+          "The desktop app logged why the capture failed. Read it with get_app_log, make sure the Platforma window is open and visible, then retry.",
+        );
+      }
 
       if (savePath) {
         const absPath = resolve(savePath);
