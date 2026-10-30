@@ -1,0 +1,12 @@
+// Resolves args.source and has a sub-template build its exports from the resolved value.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+collectTpl := assets.importTemplate(":v2.collect")
+
+wf.body(func(args) {
+	r := wf.resolve(args.source)
+	collected := render.createEphemeral(collectTpl, { spec: r.spec, data: r.data })
+	return { outputs: {}, exports: collected.output("pf") }
+})

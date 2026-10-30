@@ -1,0 +1,12 @@
+// The v2 entry alone with a prepare step, in a run or an auto render: the prepared value reaches the body.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+wf.prepare(func(args) {
+	return { x: smart.createJsonResource(41) }
+})
+
+wf.body(func(args) {
+	return { outputs: { x: args.x + 1, isProduction: wf.isProduction() }, exports: ex.collection({}) }
+})

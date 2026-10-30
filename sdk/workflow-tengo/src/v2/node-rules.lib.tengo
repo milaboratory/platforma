@@ -1,0 +1,102 @@
+/*
+ * The rules a values tree node and its names follow, as pure functions (no backend access).
+ *
+ * A values tree is what a platforma2 workflow exports: folders (`std/map/1`) whose entries are
+ * nodes, and collections (`PFrame/1`) whose items are `<name>.spec` and `<name>.data` fields. The
+ * backend decides what a node is by its resource type alone, with exact name and version.
+ */
+
+ll := import(":ll")
+text := import("text")
+
+FOLDER_TYPE := { Name: "std/map", Version: "1" }
+COLLECTION_TYPE := { Name: "PFrame", Version: "1" }
+
+/**
+ * Why a folder entry or item name is not allowed, or undefined when it is.
+ *
+ * A name is a non-empty string without ".". The backend reserves the field name `resourceError` and
+ * field names starting with `recovery/`; these constructors refuse both forms for folder entries and
+ * collection items alike, though the backend would accept an item named `resourceError` (its fields
+ * are `resourceError.spec` and `resourceError.data`).
+ *
+ * @param name: any
+ * @return string|undefined
+ */
+nameProblem := func(name) {
+	if !is_string(name) {
+		return "is not a string"
+	}
+	if name == "" {
+		return "is empty"
+	}
+	if text.contains(name, ".") {
+		return "contains \".\", which joins the names of a path"
+	}
+	if name == "resourceError" {
+		return "is reserved by the backend"
+	}
+	if text.has_prefix(name, "recovery/") {
+		return "starts with \"recovery/\", which the backend reserves"
+	}
+	return undefined
+}
+
+/**
+ * Panics unless `name` is allowed (see `nameProblem`).
+ *
+ * @param name: any
+ * @param what: string - how the name is introduced in the message, e.g. "export name"
+ */
+assertName := func(name, what) {
+	problem := nameProblem(name)
+	if !is_undefined(problem) {
+		ll.panic("%s %q %s", what, name, problem)
+	}
+}
+
+/**
+ * Whether a resource type is a node type: exactly `std/map/1` or `PFrame/1`.
+ *
+ * @param type: { Name: string, Version: string }
+ * @return bool
+ */
+isNodeType := func(type) {
+	return (type.Name == FOLDER_TYPE.Name && type.Version == FOLDER_TYPE.Version) ||
+		(type.Name == COLLECTION_TYPE.Name && type.Version == COLLECTION_TYPE.Version)
+}
+
+/**
+ * Classifies a value offered as a node, from what can be seen of it without waiting.
+ *
+ * @param seen: one of
+ *   { kind: "pending" }                          - a field whose value is not resolved yet
+ *   { kind: "resource", type: {Name, Version} }  - a resource, or a field resolved to one
+ *   { kind: "map", keys: [string] }              - a Tengo map
+ *   { kind: "other", typeName: string }          - any other Tengo value
+ * @return undefined when it is accepted as a node, else what was got, for the refusal message
+ */
+refusal := func(seen) {
+	if seen.kind == "pending" {
+		return undefined
+	}
+	if seen.kind == "resource" {
+		if isNodeType(seen.type) {
+			return undefined
+		}
+		return "a resource of type " + seen.type.Name + "/" + seen.type.Version
+	}
+	if seen.kind == "map" {
+		return "a map with keys [" + text.join(seen.keys, ", ") + "]"
+	}
+	return "a value of type " + seen.typeName
+}
+
+export ll.toStrict({
+	FOLDER_TYPE: FOLDER_TYPE,
+	COLLECTION_TYPE: COLLECTION_TYPE,
+	nameProblem: nameProblem,
+	assertName: assertName,
+	isNodeType: isNodeType,
+	refusal: refusal
+})

@@ -1,0 +1,28 @@
+// Calls a constructor with what args.kind names; every kind is refused.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+spec := { kind: "PColumn", name: "pl7.app/test/x", valueType: "Int", axesSpec: [] }
+
+wf.body(func(args) {
+	exports := undefined
+	if args.kind == "folderItem" {
+		exports = ex.folder({ col: { spec: spec, data: smart.createJsonResource(1) } })
+	} else if args.kind == "folderMap" {
+		exports = ex.folder({ m: { a: 1 } })
+	} else if args.kind == "dottedFolderEntry" {
+		exports = ex.folder({ "a.b": ex.folder({ c: ex.collection({}) }) })
+	} else if args.kind == "dottedName" {
+		exports = ex.collection({ "sum.total": { spec: spec } })
+	} else if args.kind == "extraKey" {
+		exports = ex.collection({ x: { spec: spec, label: "x" } })
+	} else if args.kind == "resolvedJsonField" {
+		holder := smart.mapBuilder()
+		holder.add("v", smart.createJsonResource(1))
+		exports = ex.folder({ f: holder.build().getField("v") })
+	} else if args.kind == "noSpec" {
+		exports = ex.collection({ x: { data: smart.createJsonResource(1) } })
+	}
+	return { outputs: {}, exports: exports }
+})

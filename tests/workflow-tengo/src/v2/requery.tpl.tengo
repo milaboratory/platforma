@@ -1,0 +1,16 @@
+// Queries every value named pl7.app/test/y upstream and reports, per hit, whether it decoded with data.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+
+wf.prepare(func(args) {
+	return { hits: wf.query({ type: "Name", name: "pl7.app/test/y" }) }
+})
+
+wf.body(func(args) {
+	withData := []
+	for hit in args.hits {
+		withData = append(withData, { name: hit.ref.name, hasData: maps.containsKey(hit, "data") })
+	}
+	return { outputs: { hits: withData }, exports: ex.collection({}) }
+})

@@ -1,0 +1,23 @@
+// A table built through the v2 workflow's table builder: args.primary is the primary's ref;
+// args.column, when given, is one more column (a ref or a column query), with args.columnHeader as its
+// header when given.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+file := import("@platforma-sdk/workflow-tengo:file")
+times := import("times")
+
+wf.body(func(args) {
+	builder := wf.tableBuilder("tsv").addPrimary("main", args.primary)
+	if !is_undefined(args.column) {
+		if is_undefined(args.columnHeader) {
+			builder = builder.addColumn(args.column)
+		} else {
+			builder = builder.addColumn(args.column, { header: args.columnHeader })
+		}
+	}
+	builder.cacheInputs(1 * times.second)
+	return {
+		outputs: { table: file.exportFile(builder.build()) },
+		exports: ex.collection({})
+	}
+})

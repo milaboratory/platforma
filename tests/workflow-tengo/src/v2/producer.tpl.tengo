@@ -1,0 +1,30 @@
+// A producer: one collection with a value that has data and one that has only a spec.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+columnSpec := func(name, valueType) {
+	return {
+		kind: "PColumn",
+		name: name,
+		valueType: valueType,
+		axesSpec: [{ name: "pl7.app/test/index", type: "Int" }]
+	}
+}
+
+wf.body(func(args) {
+	return {
+		outputs: {
+			count: len(args.numbers),
+			blockId: wf.getBlockId(),
+			isProduction: wf.isProduction()
+		},
+		exports: ex.collection({
+			numbers: {
+				spec: columnSpec("pl7.app/test/numbers", "Int"),
+				data: smart.createJsonResource(args.numbers)
+			},
+			label: { spec: columnSpec("pl7.app/test/label", "String") }
+		})
+	}
+})

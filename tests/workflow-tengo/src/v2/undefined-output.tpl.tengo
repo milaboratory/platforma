@@ -1,0 +1,15 @@
+// Returns an output whose value is undefined, built as args.kind names: "literal" in a map literal,
+// "assigned" by assigning to a key of an empty map; any other kind returns x = 1.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+
+wf.body(func(args) {
+	outputs := { x: 1 }
+	if args.kind == "literal" {
+		outputs = { x: undefined }
+	} else if args.kind == "assigned" {
+		outputs = {}
+		outputs["x"] = undefined
+	}
+	return { outputs: outputs, exports: ex.collection({}) }
+})

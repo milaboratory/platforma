@@ -1,0 +1,14 @@
+// Exports a sub-render's output, unawaited: the root is a future whose type the sub-template gives.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+frameTpl := assets.importTemplate(":v2.frame")
+
+wf.body(func(args) {
+	frame := render.create(frameTpl, { ids: args.ids })
+	return {
+		outputs: {},
+		exports: frame.output("pf")
+	}
+})
