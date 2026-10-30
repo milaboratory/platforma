@@ -93,8 +93,12 @@ storage:
 kueue:
   mode: shared
 
+  # 3, not 4: Kueue admits on requests, and job request == limit. Measured 7d
+  # (2026-10-30): one whole run peaks at ~4.5 CPU used, the e2e namespace at 18,
+  # while requests reached 44, so the 20-CPU e2e queue filled at ~20% real use.
+  # Not lower than 3: formula tests in workflow-tengo expect a job to get exactly 3.
   maxJobResources:
-    cpu: 4
+    cpu: 3
     memory: 8Gi
 
   # Jobs run on the dedicated e2e node. The platforma-e2e-* ResourceFlavors carry
