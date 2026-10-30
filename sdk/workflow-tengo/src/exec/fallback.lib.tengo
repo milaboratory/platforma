@@ -46,6 +46,9 @@ REASONS := {
 
 _ENTRY_KEYS := { name: true, builder: true }
 
+// Reasons for which the process never started.
+_NEVER_STARTED := { GPUMissed: true, Unallocated: true }
+
 /**
  * @return bool: whether v is an exec builder (exec.builder())
  */
@@ -241,7 +244,13 @@ composeMessage := func(oc) {
 		if !is_undefined(oc.failDetails) && !is_undefined(oc.failDetails.reason) {
 			reason = oc.failDetails.reason
 		}
-		lines = append(lines, "Failed to start: " + reason + ".")
+		// no exit code: either the process never started, or it ended without one (a signal kill
+		// locally, a job without a completion marker on Kubernetes)
+		if !is_undefined(_NEVER_STARTED[reason]) {
+			lines = append(lines, "Failed to start: " + reason + ".")
+		} else {
+			lines = append(lines, "Failed without an exit code: " + reason + ".")
+		}
 	}
 	lines = append(lines, "Command: " + oc.command)
 
@@ -251,6 +260,9 @@ composeMessage := func(oc) {
 			lines = append(lines, "[… truncated …]")
 		}
 		lines = append(lines, oc.lastLogLines...)
+	} else {
+		// as the runner's error text said before RunCommand v3
+		lines = append(lines, "No output was saved to logs")
 	}
 
 	return text.join(lines, "\n")
@@ -298,7 +310,12 @@ _describeEntry := func(e) {
  * @param why: string - what ended the job, shown on the last entry
  */
 historyText := func(hist, attemptLimit, why) {
-	lines := [fmt.sprintf("Attempts (%d, backend cap %v):", len(hist), attemptLimit)]
+	// restarts repeat an attempt's index: count attempts, not entries
+	attempts := {}
+	for e in hist {
+		attempts[string(e.attempt)] = true
+	}
+	lines := [fmt.sprintf("Attempts (%d, backend cap %v):", len(attempts), attemptLimit)]
 	for i, e in hist {
 		decision := why
 		if i + 1 < len(hist) {

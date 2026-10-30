@@ -1843,8 +1843,11 @@ _makeBuilder := func(st) {
 		 *
 		 * Every handler's plan is an input of the exec, so the exec starts once the inputs of
 		 * all its plans are ready, the files they add and line counts their formulas need
-		 * included, whether a handler ever runs or not. A handler must run in a queue with
-		 * RunCommand v3 when the root does.
+		 * included, whether a handler ever runs or not. A handler's plan, its quota and resource
+		 * formulas included, is part of the exec's identity (CID): unlike the root's, they are
+		 * not CID-transparent, so changing them, or a backend feature they depend on, computes
+		 * the exec anew. When a handler's queue has no RunCommand v3 the exec runs without
+		 * fallbacks, with a notice.
 		 *
 		 *   exec.builder()...fallbacks({
 		 *       GPUMissed: cpuOnly,
@@ -1947,14 +1950,18 @@ _makeBuilder := func(st) {
 			}
 
 			flat := fallback.flatten(p.fallbacks)
+			// A handler in a queue without RunCommand v3 would run without the outcome router: its
+			// stream would never join the collection and its own fallbacks would be ignored. As on a
+			// backend without v3 at all (spec §5), the exec then runs without fallbacks.
+			for key, b in flat.plans {
+				if !b._hasRunCommandV3() {
+					ll.print(fmt.sprintf("exec.builder: fallback plan %q runs in a queue without RunCommand v3 on this backend, fallbacks are ignored; a failure is an error", key))
+					return planned
+				}
+			}
 			plans := {}
 			for key, b in flat.plans {
 				hp := b._plan()
-				// a handler on a RunCommand v2 queue would run without the outcome router: its
-				// stream would never join the collection and its own fallbacks would be ignored
-				ll.assert(!is_undefined(limits.getRunCommandV3Type(hp.st.queue)),
-					"exec.builder.fallbacks: handler %q runs in queue %q, which has no RunCommand v3 on this backend, while the root's queue %q has it",
-					key, hp.st.queue, p.queue)
 				plans[key] = smart.createMapResource({
 					inputs: smart.createMapResource(_definedOnly(hp.inputs)),
 					meta: smart.createMapResource(_definedOnly(hp.meta))
@@ -1968,6 +1975,10 @@ _makeBuilder := func(st) {
 
 		_execBuilderId: func() {
 			return string(st.id)
+		},
+
+		_hasRunCommandV3: func() {
+			return !st.forceRunCommandV2 && !is_undefined(limits.getRunCommandV3Type(st.queue))
 		},
 
 		_fallbackEntries: func() {

@@ -24,6 +24,10 @@ _OUTCOME_FIELD := "outcome"
 // is here and in :exec.save-chain.
 RTYPE_WORKDIR_SAVE_V3 := { Name: "WorkdirSave", Version: "3" }
 
+// v3 reserves the key `workdir` for the directory's own outcome; a file of that name is saved
+// under this key instead (a saved path never starts with "./"), and getSavedFile() maps it back.
+_V3_WORKDIR_FILE_KEY := "./workdir"
+
 
 /**
  * Generates a file save rule for a given file name.
@@ -31,9 +35,9 @@ RTYPE_WORKDIR_SAVE_V3 := { Name: "WorkdirSave", Version: "3" }
  * @param fileName: string - the name of the file.
  * @return rule: map - the file save rule.
  */
-getFileSaveRule := func(fileName) {
+getFileSaveRule := func(fileName, ...blobKey) {
 	return {
-		blobKey: fileName,
+		blobKey: len(blobKey) > 0 ? blobKey[0] : fileName,
 		type: "file",
 		filePath: fileName
 	}
@@ -133,7 +137,12 @@ builder := func(wdBefore, ...opts) {
 		 * Get future field pointing to saved file resource
 		 */
 		getSavedFile: func(fName) {
-			return self.getSavedFiles().getFutureInputField(fName)
+			return self.getSavedFiles().getFutureInputField(self._fileKey(fName))
+		},
+
+		// the key a saved file has in the outputs (see _V3_WORKDIR_FILE_KEY)
+		_fileKey: func(fName) {
+			return v3 && fName == "workdir" ? _V3_WORKDIR_FILE_KEY : fName
 		},
 
 		/**
@@ -149,7 +158,7 @@ builder := func(wdBefore, ...opts) {
 		build: func() {
 			rules := []
 			for fName, _ in fRules {
-				rules = append(rules, getFileSaveRule(fName))
+				rules = append(rules, getFileSaveRule(fName, self._fileKey(fName)))
 			}
 			for fName, _ in cRules {
 				rules = append(rules, getContentSaveRule(fName))
