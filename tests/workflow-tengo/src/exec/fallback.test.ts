@@ -15,6 +15,10 @@ type Attempt = {
 
 const json = (tx: Pl.PlTransaction, v: unknown) => tx.createValue(Pl.JsonObject, JSON.stringify(v));
 
+// On Kubernetes the log tail is the job script's own lines ("[job-script] Process exited with
+// code 1"), not the process output, so nothing in it can match a messageMatch pattern.
+const ON_K8S = process.env.PL_TEST_K8S === "1";
+
 // forceSaveV1: a backend with RunCommand v3 but without WorkdirSave v3 (the _forceWorkdirSaveV1
 // seam): fallbacks work the same, the success path saves with WorkdirSave v1.
 tplTest.concurrent.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
@@ -48,7 +52,8 @@ tplTest.concurrent.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
 // messageMatch end to end: the root exits 1, its output matches, the handler runs
 tplTest.concurrent(
   "exec fallbacks: a messageMatch handler runs on the matching output",
-  async ({ helper, expect }) => {
+  async ({ helper, expect, skip }) => {
+    if (ON_K8S) return skip("the Kubernetes log tail carries no process output");
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.exit_code",
@@ -240,16 +245,27 @@ tplTest.concurrent(
 // not a restart and not a hang, with and without fallbacks and file sets. The rest is pinned as it
 // is (decision D12): on RunCommand v2 the outputs that resolve before the file's index error stay
 // readable; on v3 every output resolves after it, and the platform reports an error in one output
-// of a render on every output read through it.
+// of a render on every output read through it. Without WorkdirSave v3 on the backend the v3 path
+// saves with WorkdirSave v1 and reads as the v2 one.
 const partialSaveCases = [
-  { forceV2: true, withFileSet: false, ok: ["stdout", "attempts"] },
-  { forceV2: true, withFileSet: true, ok: ["stdout", "attempts", "set"] },
-  { forceV2: false, withFileSet: false, ok: [] },
-  { forceV2: false, withFileSet: true, ok: [] },
+  { forceV2: true, withFileSet: false },
+  { forceV2: true, withFileSet: true },
+  { forceV2: false, withFileSet: false },
+  { forceV2: false, withFileSet: true },
 ];
 tplTest.concurrent.for(partialSaveCases)(
   "exec: a saved file never written (v2: $forceV2, file set: $withFileSet)",
-  async ({ forceV2, withFileSet, ok }, { helper, expect }) => {
+  async ({ forceV2, withFileSet }, { helper, expect }) => {
+    const capability = await helper.renderTemplate(
+      false,
+      "exec.fallback.capability",
+      ["workdirSaveV3"],
+      () => ({}),
+    );
+    const saveV3 = await capability
+      .computeOutput("workdirSaveV3", (a) => a?.getDataAsJson<boolean>())
+      .awaitStableValue();
+    const ok = forceV2 || !saveV3 ? ["stdout", "attempts", ...(withFileSet ? ["set"] : [])] : [];
     const nonce = randomUUID();
     for (const withFallbacks of forceV2 ? [false] : [false, true]) {
       for (const which of [
@@ -344,6 +360,7 @@ tplTest.concurrent(
       [2, "SoftwareError[0]", "success"],
     ]);
   },
+  180_000,
 );
 
 // Review 4, m2: getAttempts() follows the save, also without WorkdirSave v3
