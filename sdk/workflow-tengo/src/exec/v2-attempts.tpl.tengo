@@ -1,7 +1,12 @@
 /**
- * The `attempts` output of an exec on RunCommand v2 (exec fallbacks, spec §10.2): the one entry a
- * successful exec has, once its working directory is saved. A failed command errors the save, and
- * the error reaches `attempts` too, as it reaches the other outputs.
+ * The `attempts` output of an exec whose save has no outcome to decide on (exec fallbacks, spec
+ * §10.2, §12.4): on RunCommand v2 the one entry a successful exec has, on RunCommand v3 without
+ * WorkdirSave v3 the attempt history, once the working directory is saved. A failed command or
+ * save errors the save's working directory, and the error reaches `attempts` too, as it reaches
+ * the other outputs.
+ *
+ * inputs.workdir: the save's post-save working directory
+ * inputs.history: map[], optional - the history; the one success entry of attempt 0 by default
  */
 
 self := import(":tpl.light")
@@ -10,5 +15,8 @@ fallback := import(":exec.fallback")
 self.awaitState("workdir", "ResourceReady")
 
 self.body(func(inputs) {
+	if !is_undefined(inputs.history) {
+		return { attempts: inputs.history }
+	}
 	return { attempts: [{ attempt: 0, plan: fallback.ROOT_PLAN, result: "success" }] }
 })

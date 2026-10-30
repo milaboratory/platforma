@@ -12,6 +12,7 @@ saveChain := import(":exec.save-chain")
 stream := import(":exec.stream")
 
 wdRetrierTpl := assets.importTemplate(":exec.wd-retrier")
+v2AttemptsTpl := assets.importTemplate(":exec.v2-attempts")
 
 // The save chain's outputs travel to the wd-retrier in one ephemeral resource of this type, which
 // the input unmarshaller hands to the body untouched, so the body never opens the outputs (a map
@@ -59,7 +60,11 @@ run := func(p) {
 			fileSetsContent: saved.fileSetsContent,
 			progress: saved.progress,
 			wdProcessors: saved.wdProcessors,
-			attempts: ctx.history,
+			// once the save is done: a failed save fails attempts too (spec §12.4)
+			attempts: render.createEphemeral(v2AttemptsTpl, {
+				workdir: saved.workdir,
+				history: ctx.history
+			}).output("attempts"),
 			streamOwn: _ownMap(streams.own)
 		}
 	}

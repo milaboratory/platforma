@@ -150,7 +150,9 @@ run := func(wdAfter, settings, wdProcessors, opts) {
 		progress: wdResult.progress,
 		wdProcessors: wdProcessorsResults,
 		outcome: v3 ? wdResult.outcome : undefined,
-		probeOutcome: probeOutcome
+		probeOutcome: probeOutcome,
+		// the post-save working directory: set once the save is done, an error when it failed
+		workdir: wdResult.workdir
 	}
 }
 

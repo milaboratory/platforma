@@ -20,6 +20,7 @@ self := import(":tpl.light")
 ll := import(":ll")
 smart := import(":smart")
 render := import(":render")
+assets := import(":assets")
 workdir := import(":workdir")
 file := import(":file")
 maps := import(":maps")
@@ -27,6 +28,9 @@ fallback := import(":exec.fallback")
 prepare := import(":exec.prepare")
 saveChain := import(":exec.save-chain")
 wave2 := import(":exec.wave2")
+wdSave := import(":workdir.save")
+
+failedStreamsTpl := assets.importTemplate(":exec.failed-streams")
 stream := import(":exec.stream")
 slices := import(":slices")
 execConstants := import(":exec.constants")
@@ -119,32 +123,55 @@ self.body(func(inputs) {
 	// its own blob. Not watched: a lost directory here loses this log only, and the fallback still
 	// runs.
 	// A streamed file the attempt never wrote is not saved: the save would be an error that spreads
-	// to the other outputs; its stream ends on a stand-in instead (spec §13.1).
-	wdOut := raw.workdir.getValue()
-	listed := wdOut.getDataAsJson().files
-	streamOwn := smart.ephemeralMapBuilder()
+	// to the other outputs; its stream ends on a stand-in instead (spec §13.1). A listed one can
+	// still fail to save (the directory lost meanwhile, a path that is not a regular file); with
+	// WorkdirSave v3, exec.failed-streams decides on the save's outcomes first and saves again only
+	// what saved, so such a failure loses this attempt's log only (spec §14.3) and nothing among
+	// the router's outputs holds an error. Without it, as before.
+	streamOwn := undefined
 	if !is_undefined(settings.filesToStream) && len(settings.filesToStream) > 0 {
+		wdOut := raw.workdir.getValue()
+		listed := wdOut.getDataAsJson().files
 		written := []
 		for name in settings.filesToStream {
 			if slices.hasElement(listed, name) {
 				written = append(written, name)
 			}
 		}
-		failedFiles := undefined
-		if len(written) > 0 {
-			failedSave := workdir.save(wdOut)
+		v3Save := inputs.forceWorkdirSaveV1 != true &&
+			saveChain.hasWorkdirSaveV3(settings.runOptions.queue, { filesToSave: written })
+		if v3Save && len(written) > 0 {
+			probe := wdSave.builder(wdOut, { v3: true })
 			for name in written {
-				failedSave.saveFile(name)
+				probe.saveFile(name)
 			}
-			failedFiles = failedSave.build().files
-		}
-		for name in settings.filesToStream {
-			if slices.hasElement(written, name) {
-				streamOwn.addRef(name, file.exportFile(failedFiles.getFutureInputField(name)))
-			} else {
-				streamOwn.addRef(name, stream.notWritten(name))
+			probe.build()
+			streamOwn = render.createEphemeral(failedStreamsTpl, {
+				outcome: probe.getOutcome(),
+				workdir: probe.getWorkdirAfter(),
+				streamed: settings.filesToStream
+			}).output("streamOwn")
+		} else {
+			own := smart.ephemeralMapBuilder()
+			failedFiles := undefined
+			if len(written) > 0 {
+				failedSave := workdir.save(wdOut)
+				for name in written {
+					failedSave.saveFile(name)
+				}
+				failedFiles = failedSave.build().files
 			}
+			for name in settings.filesToStream {
+				if slices.hasElement(written, name) {
+					own.addRef(name, file.exportFile(failedFiles.getFutureInputField(name)))
+				} else {
+					own.addRef(name, stream.notWritten(name))
+				}
+			}
+			streamOwn = own.build()
 		}
+	} else {
+		streamOwn = smart.ephemeralMapBuilder().build()
 	}
 
 	stream.attemptEnded(collections, ctx.attempt, entry, undefined)
@@ -160,6 +187,6 @@ self.body(func(inputs) {
 		wdProcessors: r.output("wdProcessors"),
 		progress: r.output("progress"),
 		attempts: r.output("attempts"),
-		streamOwn: streamOwn.build()
+		streamOwn: streamOwn
 	}
 })
