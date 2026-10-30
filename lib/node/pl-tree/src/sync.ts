@@ -407,6 +407,7 @@ async function processResourceTreeStream(
       resourceReady: frame.resourceReady,
       error: frame.error,
       originalResourceId: frame.originalResourceId,
+      canonicalId: frame.canonicalId,
       // The backend's flag as sent. A stopped traversal (children not streamed) is handled
       // through the fields below, not by claiming the backend marked the resource final.
       final: frame.final,

@@ -154,6 +154,8 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   readonly id: SignedResourceId;
   originalResourceId: OptionalSignedResourceId;
+  /** Empty until the server fills it in; fixed from then on, like originalResourceId. */
+  canonicalId: Uint8Array;
 
   readonly kind: ResourceKind;
   readonly type: ResourceType;
@@ -177,6 +179,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   constructor(initialState: BasicResourceData, logger?: MiLogger) {
     this.id = initialState.id;
     this.originalResourceId = initialState.originalResourceId;
+    this.canonicalId = initialState.canonicalId;
     this.kind = initialState.kind;
     this.type = initialState.type;
     this.data = initialState.data;
@@ -414,6 +417,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
       outputsLocked: this.outputsLocked,
       error: this.error,
       originalResourceId: this.originalResourceId,
+      canonicalId: this.canonicalId,
       final: this.finalFlag,
     };
   }
@@ -589,6 +593,7 @@ export class PlTreeState {
     let errRd: ExtendedResourceData;
     let errRes: PlTreeResource | undefined;
     let errOriginalResourceId: OptionalSignedResourceId = NullSignedResourceId;
+    let errCanonicalId: Uint8Array = new Uint8Array(0);
     let errError: OptionalSignedResourceId = NullSignedResourceId;
     let errInputsLocked = false;
     let errOutputsLocked = false;
@@ -610,6 +615,7 @@ export class PlTreeState {
               outputsLocked: errOutputsLocked,
               error: errError,
               originalResourceId: errOriginalResourceId,
+              canonicalId: errCanonicalId,
               final: errFinal,
             };
       this.invalidateTree();
@@ -635,6 +641,7 @@ export class PlTreeState {
       if (resource !== undefined) {
         // updating existing resource
         errOriginalResourceId = resource.originalResourceId;
+        errCanonicalId = resource.canonicalId;
         errError = resource.error;
         errInputsLocked = resource.inputsLocked;
         errOutputsLocked = resource.outputsLocked;
@@ -646,6 +653,14 @@ export class PlTreeState {
 
         // updating resource version, even if it was not changed
         resource.version += 1;
+
+        // canonical id: empty until the server fills it in, fixed from then on
+        if (!Buffer.from(resource.canonicalId).equals(Buffer.from(rd.canonicalId))) {
+          if (resource.canonicalId.length !== 0)
+            unexpectedTransitionError("canonicalId can't change after it is set");
+          resource.canonicalId = rd.canonicalId;
+          changed = true;
+        }
 
         // duplicate / original
         if (resource.originalResourceId !== rd.originalResourceId) {

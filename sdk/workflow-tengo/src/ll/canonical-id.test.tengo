@@ -1,0 +1,106 @@
+test := import(":test")
+canonicalIds := import(":ll.canonical-id")
+hex := import("hex")
+text := import("text")
+
+// The expected CIDs come from the backend code: tx.getSingletonResourceID for value and
+// singleton resources, lifecycle.ResourceCID for structural resources.
+
+_valueInfo := func(kind, name, version, data) {
+	return {
+		Kind: kind,
+		Type: { Name: name, Version: version },
+		Data: data
+	}
+}
+
+// 16 bytes, all equal to the byte that the 2 hex digits give
+_rep := func(hexByte) {
+	return hex.decode(text.repeat(hexByte, 16))
+}
+
+_noInputs := func(rid) {
+	test.fail("unexpected request of input CID for resource ", rid)
+}
+
+Test_canonicalId_calculate_value := func() {
+	info := _valueInfo("Value", "TestValue", "1", hex.decode("000102ff"))
+	test.isEqual(
+		"2e2c2a90c24464e9689aa73907c041b4",
+		hex.encode(canonicalIds._calculate(1, info, _noInputs)),
+		"wrong CID of value resource"
+	)
+}
+
+Test_canonicalId_calculate_value_empty_data := func() {
+	info := _valueInfo("Value", "json/object", "1", bytes(0))
+	test.isEqual(
+		"7590647447c4194354f8278aad115ed8",
+		hex.encode(canonicalIds._calculate(1, info, _noInputs)),
+		"wrong CID of value resource without data"
+	)
+}
+
+// A singleton resource gets its CID with the same formula as a value resource.
+Test_canonicalId_calculate_singleton := func() {
+	info := _valueInfo("Singleton", "TestValue", "1", hex.decode("000102ff"))
+	test.isEqual(
+		"2e2c2a90c24464e9689aa73907c041b4",
+		hex.encode(canonicalIds._calculate(1, info, _noInputs)),
+		"wrong CID of singleton resource"
+	)
+}
+
+// The inputs are not in sorted order. The backend sorts them by name bytes:
+// "[10]" < "[1]" < "[2]".
+Test_canonicalId_calculate_structural := func() {
+	inputCids := {
+		"101": _rep("01"),
+		"102": _rep("02"),
+		"103": _rep("03")
+	}
+
+	info := {
+		Kind: "Structural",
+		Type: { Name: "PColumnData/ResourceMap", Version: "1" },
+		Data: bytes("{\"keyLength\":1}"),
+		Features: { ephemeral: false },
+		InputsLocked: true,
+		Inputs: {
+			"[2]": { Value: 101, Error: 0 },
+			"[10]": { Value: 102, Error: 0 },
+			"[1]": { Value: 103, Error: 0 }
+		}
+	}
+
+	test.isEqual(
+		"65e9368c1c72a7bbbc03364fffb38b6c",
+		hex.encode(canonicalIds._calculate(100, info, func(rid) { return inputCids[string(rid)] })),
+		"wrong CID of structural resource"
+	)
+}
+
+Test_canonicalId_calculate_structural_no_inputs := func() {
+	info := {
+		Kind: "Structural",
+		Type: { Name: "TestStruct", Version: "1" },
+		Data: bytes(0),
+		Features: { ephemeral: false },
+		InputsLocked: true,
+		Inputs: {}
+	}
+
+	test.isEqual(
+		"bf9f951b0fa1e7e21a97bd82605d7df0",
+		hex.encode(canonicalIds._calculate(100, info, _noInputs)),
+		"wrong CID of structural resource without inputs"
+	)
+}
+
+Test_canonicalId_isSet := func() {
+	test.isFalse(canonicalIds.isSet(undefined), "undefined CID must be absent")
+	test.isFalse(canonicalIds.isSet(bytes(0)), "empty CID must be absent")
+	test.isFalse(canonicalIds.isSet(bytes(16)), "all-zero CID must be absent")
+	test.isTrue(canonicalIds.isSet(_rep("01")), "non-zero CID must be set")
+	test.isTrue(canonicalIds.isSet(hex.decode("00000000000000000000000000000001")), "CID with one non-zero byte must be set")
+}
