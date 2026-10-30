@@ -29,15 +29,15 @@ self.body(func(inputs) {
 		impl.pure.streamCollections = raw.__collections.getValue()
 	}
 
-	pure := smart.ephemeralMapBuilder()
+	// the exec-impl inputs map a restart renders from: pure inputs and meta inputs
+	implInputs := smart.ephemeralMapBuilder()
 	for k, v in impl.pure {
-		pure.add(k, v)
+		implInputs.add(k, v)
 	}
-	meta := smart.ephemeralMapBuilder()
 	for k, v in impl.meta {
-		meta.add(k, v)
+		implInputs.addMeta(k, v)
 	}
-	implInputs := smart.ephemeralMapBuilder().addRef("pure", pure.build()).addRef("meta", meta.build()).build()
+	implInputs = implInputs.build()
 
 	settings := {
 		filesToSave: inputs.filesToSave,
@@ -55,13 +55,13 @@ self.body(func(inputs) {
 		v3: true,
 		attemptCtx: inputs.__ctx,
 		implInputs: implInputs,
-		streamCollections: is_undefined(raw.__collections) ? undefined : raw.__collections.getValue(),
+		streamCollectionsRef: is_undefined(raw.__collections) ? undefined : raw.__collections.getValue(),
 		execImplTpl: execImplTpl
 	})
 
 	return {
-		filesContent: r.output("filesContent"),
-		wdProcessors: r.output("wdProcessors"),
-		attempts: r.output("attempts")
+		filesContent: r.filesContent,
+		wdProcessors: r.wdProcessors,
+		attempts: r.attempts
 	}
 })

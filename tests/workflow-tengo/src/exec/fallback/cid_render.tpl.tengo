@@ -24,6 +24,6 @@ self.body(func(inputs) {
 		saveStdoutStream().
 		run()
 
-	reader := render.createEphemeral(readerTpl, { exec: res, out: res.getFileContent("out.txt") })
+	reader := render.createEphemeral(readerTpl, { exec: res })
 	return { cid: reader.output("cid"), out: res.getFileContent("out.txt") }
 })

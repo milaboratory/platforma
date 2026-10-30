@@ -19,13 +19,11 @@ const json = (tx: Pl.PlTransaction, v: unknown) => tx.createValue(Pl.JsonObject,
 
 const render = (
   helper: Parameters<Parameters<typeof tplTest>[1]>[0]["helper"],
-  cmd: string,
   args: string[],
   errorLines: number,
   badExpression = false,
 ) =>
   helper.renderTemplate(true, "exec.fallback.run_v3", ["outcome", "workdirOut"], (tx) => ({
-    cmd: json(tx, cmd),
     args: json(tx, args),
     errorLines: json(tx, errorLines),
     badExpression: json(tx, badExpression),
@@ -34,12 +32,7 @@ const render = (
 tplTest.concurrent(
   "AC1.1 RunCommand v3: a failed run sets outcome and workdirOut, no error",
   async ({ helper, expect }) => {
-    const result = await render(
-      helper,
-      "sh",
-      ["-c", `echo boom >&2; exit 2 # ${randomUUID()}`],
-      10,
-    );
+    const result = await render(helper, ["-c", `echo boom >&2; exit 2 # ${randomUUID()}`], 10);
 
     const outcome = await result
       .computeOutput("outcome", (a) => JSON.parse(a?.getDataAsString() ?? "null") as Outcome | null)
@@ -69,7 +62,7 @@ tplTest.concurrent(
     // An unknown executable is not a start error on every driver: the local one starts it through
     // `env`, which exits 127, a software failure. An argument expression the backend cannot
     // evaluate fails before any process starts, on every driver.
-    const result = await render(helper, "sh", ["-c", `true # ${randomUUID()}`], 10, true);
+    const result = await render(helper, ["-c", `true # ${randomUUID()}`], 10, true);
     const error = await result
       .computeOutput("outcome", (a) => a?.getDataAsString())
       .awaitStableValue()
@@ -85,7 +78,7 @@ tplTest.concurrent(
   async ({ helper, expect }) => {
     const script = `line=$(printf '%01024d' 0 | tr 0 x); i=0; while [ $i -lt 10000 ]; do echo "$i $line"; i=$((i+1)); done; exit 3 # ${randomUUID()}`;
     for (const errorLines of [20, 1000]) {
-      const result = await render(helper, "sh", ["-c", script], errorLines);
+      const result = await render(helper, ["-c", script], errorLines);
       const outcome = await result
         .computeOutput(
           "outcome",
