@@ -321,6 +321,8 @@ getPersistentCtx := func() {
  *
  * Pros: it can store non-serializable data, like methods.
  * Cons: it's not saved after the script execution.
+ *
+ * Needs plapi.getExecutionCtx, which appeared in backend v1.34.0.
  */
 getExecutionCtx := func() {
 	assert(methodExists(plapi, "getExecutionCtx"), "ll.getExecutionCtx: method does not exists in this backend instance.")

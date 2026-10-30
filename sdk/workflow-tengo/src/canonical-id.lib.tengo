@@ -36,7 +36,20 @@ _HEX_DIGITS := "0123456789abcdef"
 _CID_SIZE := 16
 
 // The CIDs that this template execution already got or calculated: resource ID -> CID.
-_cache := {}
+// Each import of a module makes a separate instance of it, so a module-level map is not shared
+// between the places that import this library. ll.moduleVars shares the cache in the template
+// execution. It needs plapi.getExecutionCtx, which came in the same backend release as
+// plapi.sha256Encode (v1.34.0). Older backends cannot calculate CIDs, so a local cache is enough.
+_cache := undefined
+if ll.methodExists(plapi, "getExecutionCtx") {
+	_cache = ll.moduleVars("canonical-id")
+} else {
+	_localCache := {}
+	_cache = {
+		get: func(k) { return _localCache[k] },
+		set: func(k, v) { _localCache[k] = v }
+	}
+}
 
 /**
  * Returns true when the CID is set. An absent CID comes as undefined, as empty bytes or as
@@ -134,7 +147,7 @@ get = func(r) {
 	res := smart.resource(r)
 	key := string(res.id)
 
-	cached := _cache[key]
+	cached := _cache.get(key)
 	if !is_undefined(cached) {
 		return cached
 	}
@@ -149,7 +162,7 @@ get = func(r) {
 		cid = _calculate(res.id, info)
 	}
 
-	_cache[key] = cid
+	_cache.set(key, cid)
 	return cid
 }
 
