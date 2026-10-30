@@ -493,7 +493,7 @@ save := func(workdir) {
 		saveFileSetContent: func(name, regex) {
 			validation.assertType(regex, "string")
 			ll.assert(is_undefined(fileSetsContent[name]), "file set content with name '", name, "' is already in added")
-			sets.add(fileSetsContent, regex)
+			fileSetsContent[name] = regex
 			return self
 		},
 
