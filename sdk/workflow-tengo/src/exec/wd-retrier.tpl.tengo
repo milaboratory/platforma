@@ -10,15 +10,21 @@
  *
  * Two stages when the exec has workdir processors (spec §14.5). The processors read the post-run
  * directory before the main save does, through saves of their own that error on a lost
- * directory, so the main save would never run. Stage 1 (input `probeOutcome`) decides on a probe
- * of the directory (:exec.save-chain probe): lost restarts, present renders this template again as
- * stage 2 on the main save's outcomes. Without processors there is one stage (`saveOutcome`).
+ * directory, so the main save would never run. Stage 1 (awaitOutcome "probeOutcome") decides on a
+ * probe of the directory at the head of the save chain: lost restarts, present renders this
+ * template again as stage 2 (awaitOutcome "saveOutcome") on the main save's outcomes. Without
+ * processors there is one stage. Without WorkdirSave v3 on the backend there is no awaitOutcome:
+ * the outputs are the save chain's as they are, and a lost working directory is an error, as
+ * before (spec §5).
  *
- * Without WorkdirSave v3 on the backend there is neither input: the outputs are the save chain's
- * as they are, and a lost working directory is an error, as before (spec §5).
- *
- * The save chain's outputs come in `outputs`, a resource the input unmarshaller does not descend
- * into (see :exec.wave2), and are forwarded field by field.
+ * The wd-retrier decides and never sees the save chain's outputs: a file the software never wrote
+ * errors its own blob, and a template with an error anywhere among its inputs, meta inputs
+ * included, fails as a whole. Its inputs are the outcome maps, whose entries are values
+ * (WorkdirSave v3, D2), and its outputs are `decision` ("saved" or "restarted"), `attempts`, and on
+ * a restart the restart's outputs; :exec.wave2 hands each output out through a forwarder of its
+ * own. Only an outcome saying the directory's content is lost (WorkdirMissing, FileMissing)
+ * restarts; any other failed entry (reason Error) is about its own file, which carries the error
+ * as with WorkdirSave v1 (review 2, M1).
  */
 
 self := import(":tpl.light")
@@ -27,25 +33,35 @@ ll := import(":ll")
 render := import(":render")
 fallback := import(":exec.fallback")
 saveChain := import(":exec.save-chain")
-stream := import(":exec.stream")
+smart := import(":smart")
 
-_STAGE_PROBE := self.hasInput("probeOutcome")
+// Outputs on a restart: the restart's. The decision output says which way the wd-retrier went.
+_RESTART_OUTPUTS := ["files", "filesContent", "fileSets", "fileSetsContent", "wdProcessors", "progress", "attempts", "streamOwn"]
+_OUTPUTS := append(["decision"], _RESTART_OUTPUTS...)
 
-if _STAGE_PROBE {
-	// the probe has one entry, `workdir`
-	self.awaitState("probeOutcome", { wildcard: "*" }, "ResourceReady")
-} else if self.hasInput("saveOutcome") {
-	// one level: the `workdir` entry and one entry per index task (decision D2)
-	self.awaitState("saveOutcome", { wildcard: "*" }, "ResourceReady")
-} else {
+_AWAIT_OUTCOME := undefined
+if self.hasInput("awaitOutcome") {
+	_AWAIT_OUTCOME = self.rawInputs().awaitOutcome.getValue().getDataAsJson()
+}
+_STAGE_PROBE := _AWAIT_OUTCOME == "probeOutcome"
+
+if is_undefined(_AWAIT_OUTCOME) {
 	self.awaitState("attemptCtx", "ResourceReady")
+} else {
+	// one level: the `workdir` entry and, for the main save, one entry per index task (D2)
+	self.awaitState(_AWAIT_OUTCOME, { wildcard: "*" }, "ResourceReady")
 }
 
 // Values of a save outcomes map, as JSON (workdir-save/outcome values).
 _outcomeValues := func(outcomes) {
 	res := {}
 	for k, v in outcomes {
-		res[k] = is_map(v) ? v : v.getDataAsJson()
+		if is_map(v) {
+			res[k] = v
+		} else if smart.isResource(v) {
+			res[k] = v.getDataAsJson()
+		}
+		// an entry not set yet (an index still running) is not read
 	}
 	return res
 }
@@ -53,55 +69,40 @@ _outcomeValues := func(outcomes) {
 self.body(func(inputs) {
 	ctx := inputs.attemptCtx
 	raw := self.rawInputs()
-	outputs := raw.outputs.getValue()
 	collections := is_undefined(inputs.streamCollections) ? {} : inputs.streamCollections
 
 	lost := undefined
-	if _STAGE_PROBE {
-		lost = saveChain.lostWorkdir(_outcomeValues(inputs.probeOutcome))
-		if is_undefined(lost) {
-			// the directory is there: decide on the main save's outcomes
-			next := {}
-			for name, f in raw {
-				if name != "probeOutcome" {
-					next[name] = f.getValue()
-				}
-			}
-			next.saveOutcome = outputs.getField("saveOutcome")
-			r := render.createEphemeral(self.template(), next)
-			return {
-				files: r.output("files"),
-				filesContent: r.output("filesContent"),
-				fileSets: r.output("fileSets"),
-				fileSetsContent: r.output("fileSetsContent"),
-				wdProcessors: r.output("wdProcessors"),
-				progress: r.output("progress"),
-				attempts: r.output("attempts"),
-				streamOwn: r.output("streamOwn")
-			}
+	if !is_undefined(_AWAIT_OUTCOME) {
+		// a failure of the save itself (its outcome map an error) fails the exec through the
+		// inputs, as with v1; any other failed entry is about its own file, which carries the error
+		lost = saveChain.lostWorkdir(_outcomeValues(inputs[_AWAIT_OUTCOME]))
+	}
+	if _STAGE_PROBE && is_undefined(lost) {
+		// the directory is there: decide on the main save's outcomes
+		next := {}
+		for name, f in raw {
+			// the main save's outcome may not be there yet
+			next[name] = f.isSet() ? f.getValue() : f
 		}
-	} else if !is_undefined(inputs.saveOutcome) {
-		lost = saveChain.lostWorkdir(_outcomeValues(inputs.saveOutcome))
+		next.awaitOutcome = "saveOutcome"
+		r := render.createEphemeral(self.template(), next)
+		res := {}
+		for name in _OUTPUTS {
+			res[name] = r.output(name)
+		}
+		return res
 	}
 
 	if is_undefined(lost) {
-		streamOwn := outputs.getField("streamOwn")
-		streamFiles := {}
-		for name, f in streamOwn.getValue().inputs() {
-			streamFiles[name] = f
+		// the forwarders hand the save chain's outputs out (see :exec.wave2); every output is set,
+		// so the restart candidates the forwarders hold resolve, to a value they never choose
+		res := { decision: "saved", attempts: ctx.history }
+		for name in _RESTART_OUTPUTS {
+			if name != "attempts" {
+				res[name] = "not restarted"
+			}
 		}
-		stream.attemptEnded(collections, ctx.attempt, ctx.history[len(ctx.history) - 1], streamFiles)
-
-		return {
-			files: outputs.getField("files"),
-			filesContent: outputs.getField("filesContent"),
-			fileSets: outputs.getField("fileSets"),
-			fileSetsContent: outputs.getField("fileSetsContent"),
-			wdProcessors: outputs.getField("wdProcessors"),
-			progress: outputs.getField("progress"),
-			attempts: ctx.history,
-			streamOwn: streamOwn
-		}
+		return res
 	}
 
 	// the attempt's success entry becomes a restart entry
@@ -138,15 +139,10 @@ self.body(func(inputs) {
 
 	r := render.createEphemeral(raw.execImplTpl.getValue(), pure, { metaInputs: meta })
 
-	return {
-		files: r.output("files"),
-		filesContent: r.output("filesContent"),
-		fileSets: r.output("fileSets"),
-		fileSetsContent: r.output("fileSetsContent"),
-		wdProcessors: r.output("wdProcessors"),
-		progress: r.output("progress"),
-		attempts: r.output("attempts"),
-		// the lost attempt's stream managers end on the restart's files
-		streamOwn: r.output("streamOwn")
+	res := { decision: "restarted" }
+	for name in _RESTART_OUTPUTS {
+		// streamOwn: the lost attempt's stream managers end on the restart's files
+		res[name] = r.output(name)
 	}
+	return res
 })
