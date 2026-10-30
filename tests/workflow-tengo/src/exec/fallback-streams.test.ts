@@ -336,11 +336,24 @@ tplTest(
   120_000,
 );
 
-// Review 4, m3: a failed attempt's streamed file that cannot be saved (a broken symlink) loses
-// that attempt's log only; the successful fallback's outputs resolve
+// Review 4 m3, review 5 m2/T1: a failed attempt's streamed file that cannot be saved (a broken
+// symlink) loses that attempt's log only, on a backend with WorkdirSave v3; the successful
+// fallback's outputs resolve, and every stream ends on the winner's final content
 tplTest(
   "exec fallbacks: a failed attempt's unsaveable stream does not fail the fallback",
-  async ({ helper, expect, skip }) => {
+  async ({ helper, driverKit, expect, skip }) => {
+    const capability = await helper.renderTemplate(
+      false,
+      "exec.fallback.capability",
+      ["workdirSaveV3"],
+      () => ({}),
+    );
+    const v3 = await capability
+      .computeOutput("workdirSaveV3", (a) => a?.getDataAsJson<boolean>())
+      .awaitStableValue();
+    // without WorkdirSave v3 such a failure spreads to the job's outputs (decision D9)
+    if (!v3) return skip("no WorkdirSave v3 on the backend");
+
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
@@ -353,16 +366,40 @@ tplTest(
     );
     const content = await result
       .computeOutput("stdoutContent", (a) => a?.getDataAsString())
-      .awaitStableValue()
-      .catch((e: Error) => e);
-    // without WorkdirSave v3 the failed attempt's log save cannot be checked first: as before
-    if (content instanceof Error && !content.message.includes("not a regular file")) throw content;
-    if (content instanceof Error) return skip("no WorkdirSave v3 on the backend");
+      .awaitStableValue();
     expect(content).toBe("fallback-1\n");
     const attempts = await result
       .computeOutput("attempts", (a) => a?.getDataAsJson<Attempt[]>())
       .awaitStableValue();
     expect(attempts?.map((a) => a.plan)).toEqual(["root", "handler"]);
+
+    // err.log: the root's could not be saved, the handler never wrote one. The collection's
+    // `stream` ends on the winner's final content, the stand-in, not on a live tail; the composite
+    // log is the delimiter only, and ready
+    const deadline = Date.now() + 60_000;
+    let state: ReturnType<typeof streamState> | undefined;
+    let composite: { handle: string; text: string } | undefined;
+    while (Date.now() < deadline) {
+      state = await result.computeOutput("errStream", (a) => streamState(a)).getValue();
+      const handle = await result
+        .computeOutput("errStream", (a, ctx) => {
+          const entry = a?.persist();
+          return entry === undefined ? undefined : driverKit.logDriver.getLogHandle(entry, ctx);
+        })
+        .getValue();
+      if (handle !== undefined) {
+        const resp = await driverKit.logDriver.readText(handle, 1000);
+        if (!resp.shouldUpdateHandle)
+          composite = { handle, text: new TextDecoder().decode(resp.data) };
+      }
+      if (state?.stream.type?.startsWith("json") && composite?.handle.startsWith("log+ready://"))
+        break;
+      await sleep(250);
+    }
+    expect(state?.stream.json).toEqual({ streamFileNotWritten: "err.log" });
+    expect(state?.attempt0Stream.json).toEqual({ streamFileNotWritten: "err.log" });
+    expect(composite?.handle.startsWith("log+ready://")).toBe(true);
+    expect(composite?.text).toBe("--- attempt 0 (root) failed: SoftwareError, exit code 2 ---\n");
   },
   120_000,
 );

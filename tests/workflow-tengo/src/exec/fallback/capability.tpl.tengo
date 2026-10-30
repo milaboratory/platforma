@@ -1,0 +1,10 @@
+// Whether the backend has WorkdirSave v3 (exec fallbacks): tests that depend on it read it here.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+limits := import("@platforma-sdk/workflow-tengo:exec.limits")
+
+self.defineOutputs(["workdirSaveV3"])
+
+self.body(func(inputs) {
+	return { workdirSaveV3: !is_undefined(limits.getWorkdirSaveV3Type("light")) }
+})
