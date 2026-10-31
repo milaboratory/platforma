@@ -104,3 +104,32 @@ test("getDataAsJsonOrUndefined throws when a ready resource has no error and no 
   });
   expect(() => acc.getDataAsJsonOrUndefined()).toThrow("Resource has no content.");
 });
+
+test("getFieldError decodes the field's error resource from the host", () => {
+  const fieldError = JSON.stringify({ message: "step ran out of memory" });
+  const acc = accessorWithCtx({
+    getFieldError: (_handle: AccessorHandle, field: string) =>
+      field === "col.data" ? ERROR_HANDLE : undefined,
+    getDataAsString: (handle: AccessorHandle) => (handle === ERROR_HANDLE ? fieldError : undefined),
+  });
+  expect(acc.getFieldError("col.data")?.message).toBe("step ran out of memory");
+  expect(acc.getFieldError("col.spec")).toBeUndefined();
+});
+
+test("getFieldError on a host without the method reports the error traversal throws", () => {
+  const acc = accessorWithCtx({
+    getFieldError: undefined,
+    resolveWithCommon: () => {
+      throw new Error("step ran out of memory");
+    },
+  });
+  expect(acc.getFieldError("col.data")?.message).toBe("step ran out of memory");
+});
+
+test("getFieldError on a host without the method reports no error for a readable field", () => {
+  const acc = accessorWithCtx({
+    getFieldError: undefined,
+    resolveWithCommon: () => ERROR_HANDLE,
+  });
+  expect(acc.getFieldError("col.data")).toBeUndefined();
+});
