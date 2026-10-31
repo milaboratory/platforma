@@ -63,8 +63,10 @@ export interface ColumnsCollectionDriverHost<A extends AccessorLike<A> = Accesso
    * Resolve the canonical {@link PColumnSpec} for a leaf {@link PObjectId}.
    * Returns `undefined` when the id is not present in the active registry
    * (e.g. handed to the driver via a `{kind:"ids"}` source whose underlying
-   * column has since left the visible scope). Override-wrapped ids are
-   * unwrapped by the caller — this method only resolves the underlying leaf.
+   * column has since left the visible scope), when its spec is not readable
+   * yet, or when the export is not a column (a `kind: "File"` export, for
+   * example). Override-wrapped ids are unwrapped by the caller — this method
+   * only resolves the underlying leaf.
    */
   resolveSpec(id: PObjectId): PColumnSpec | undefined;
 }
@@ -122,7 +124,7 @@ export interface ColumnsCollectionDriver {
     host: ColumnsCollectionDriverHost,
   ): PoolEntry<CollectionHandle>;
 
-  isEmpty(handle: CollectionHandle): boolean;
+  isEmpty(handle: CollectionHandle, host: ColumnsCollectionDriverHost): boolean;
   isFinal(handle: CollectionHandle): boolean;
   getColumns(handle: CollectionHandle, host: ColumnsCollectionDriverHost): ColumnUniversalId[];
 

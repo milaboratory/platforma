@@ -185,13 +185,15 @@ handle on the host; the receiver is unchanged.
 `getColumnIds()` is the fast path when the ids are all you need — and they
 usually are, because the id-accepting consumers take them directly.
 
-`getColumns()` builds a recipe per id. Two consequences worth knowing:
+`getColumns()` builds a recipe per id and drops ids whose column is absent.
 
-- Ids that are still resolving are **dropped**, so the result can be shorter
-  than `getColumnIds()`.
-- An id whose column is provably absent makes recipe construction throw
-  `ColumnAbsentError`. Catch it at the boundary if partial absence should be
-  surfaced rather than silently yielding an empty table.
+A collection holds columns only: the host drops every id without a readable
+column spec. That covers exports that are not columns, such as a
+`kind: "File"` library, ids that have left the result pool, and ids whose spec
+is not written yet. A desktop built before this change returns such ids, so
+there `isEmpty()` and `getColumnIds()` read each id's status in the sandbox
+and keep only `"present"` ids. On such a desktop `getColumnIds()` costs a spec
+read per id.
 
 ```ts
 // only the current block's own outputs/prerun
@@ -405,7 +407,8 @@ DataColumn.fromAccessor(leafEntry);
 `resolving` — retry on the next render pass, more accessor inputs may arrive.
 Every factory throws `ColumnAbsentError` when the column is `absent` — every
 relevant accessor reports `inputsLocked` and the column did not appear, so it
-never will in this ctx. Always check for `undefined` before chaining.
+never will in this ctx, or the id names an export that is not a column (a
+`kind: "File"` library, for example). Always check for `undefined` before chaining.
 
 `ColumnRecipe(id)` additionally throws for an id variant it cannot build (e.g. a
 legacy `AnchoredPColumnId`, which needs an anchor map to resolve).
@@ -659,7 +662,7 @@ What crosses the sandbox bridge, and when.
 | `ColumnsCollection(...)`, `.discover`, `.filter`, `.addSource`    | one host call, returns a handle                  |
 | `.isEmpty()`, `.isFinal()`                                        | one host call, no payload                        |
 | `.getColumnIds()`                                                 | one host call, N id strings                      |
-| `.getColumns()`                                                   | ids + per-id registry resolution (no spec bytes) |
+| `.getColumns()`                                                   | ids + per-id registry resolution and spec read   |
 | `recipe.id`, `.getQuery()`, `.getReferencedIds()`, `.withSpecs()` | none                                             |
 | `recipe.getSpec()`                                                | one round-trip per recipe, memoised per instance |
 | `recipe.getData()`                                                | one round-trip, memoised per instance            |

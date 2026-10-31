@@ -2,19 +2,24 @@ import type { AxisSpec, PColumnSpec, PObjectId } from "@milaboratories/pl-model-
 import { createGlobalPObjectId } from "@milaboratories/pl-model-common";
 
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { getCfgRenderCtx } from "../internal";
+import { GlobalCfgRenderCtxFeatureFlags } from "../render/internal";
 import { ColumnsCollection } from "./columns_collection";
 import {
   createTestCollectionDriver,
   type TestCollectionDriverHandle,
 } from "./__test_helpers__/collection_driver";
+import { installStubRegistry } from "./__test_helpers__/stub_registry";
 
 let handle: TestCollectionDriverHandle;
 
 beforeEach(() => {
   handle = createTestCollectionDriver();
+  handle.installAmbientCtx();
 });
 
 afterEach(async () => {
+  handle.uninstallAmbientCtx();
   await handle.dispose();
 });
 
@@ -79,6 +84,61 @@ describe("ColumnsCollection.isEmpty", () => {
     const c = { id: gid("c1"), spec: spec("col1") };
     expect(makeCollection([c]).isEmpty()).toBe(false);
   });
+
+  test("driver: true when the only export is not a column", () => {
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([file]);
+    const collection = handle.driver.create([{ kind: "ids", ids: [file.id], isFinal: true }]);
+    expect(handle.driver.isEmpty(collection)).toBe(true);
+  });
+});
+
+describe("ColumnsCollection on a host driver that skips non-column exports", () => {
+  test("trusts the driver's ids and skips an absent one when building columns", () => {
+    handle.uninstallAmbientCtx();
+    handle.installAmbientCtx({ featureFlags: GlobalCfgRenderCtxFeatureFlags });
+    const column = { id: gid("c1"), spec: spec("col1") };
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([column, file]);
+    const collection = ColumnsCollection([], {
+      driver: { ...handle.driver, getColumns: () => [column.id, file.id] },
+    });
+    expect(collection.getColumnIds()).toEqual([column.id, file.id]);
+    expect(collection.getColumns().map((recipe) => recipe.id)).toEqual([column.id]);
+  });
+});
+
+describe("ColumnsCollection on a host driver that keeps non-column exports", () => {
+  function collectionOverIds(ids: PObjectId[]): ColumnsCollection {
+    return ColumnsCollection([], {
+      driver: { ...handle.driver, getColumns: () => ids, isEmpty: () => ids.length === 0 },
+    });
+  }
+
+  test("skips a file export", () => {
+    const column = { id: gid("c1"), spec: spec("col1") };
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([column, file]);
+    const collection = collectionOverIds([column.id, file.id]);
+    expect(collection.getColumnIds()).toEqual([column.id]);
+    expect(collection.getColumns().map((recipe) => recipe.id)).toEqual([column.id]);
+  });
+
+  test("is empty when the only export is not a column", () => {
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([file]);
+    expect(collectionOverIds([file.id]).isEmpty()).toBe(true);
+  });
+
+  test("skips an id whose spec is not written yet, as the host does", () => {
+    const pending = gid("pending");
+    installStubRegistry(getCfgRenderCtx(), {
+      [pending]: { spec: spec("pending"), specHasData: false },
+    });
+    const collection = collectionOverIds([pending]);
+    expect(collection.getColumnIds()).toEqual([]);
+    expect(collection.isEmpty()).toBe(true);
+  });
 });
 
 describe("ColumnsCollection.isFinal", () => {
@@ -111,6 +171,37 @@ describe("ColumnsCollection.getColumnIds", () => {
       { driver: handle.driver },
     ).getColumnIds();
     expect(ids).toEqual([id]);
+  });
+});
+
+describe("ColumnsCollection driver getColumns", () => {
+  test("drops ids whose spec is not a column", () => {
+    const column = { id: gid("c1"), spec: spec("col1") };
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([column, file]);
+    const collection = handle.driver.create([
+      { kind: "ids", ids: [column.id, file.id], isFinal: true },
+    ]);
+    expect(handle.driver.getColumns(collection)).toEqual([column.id]);
+  });
+
+  test("drops ids that are not in the registry", () => {
+    const column = { id: gid("c1"), spec: spec("col1") };
+    handle.register([column]);
+    const collection = handle.driver.create([
+      { kind: "ids", ids: [column.id, gid("gone")], isFinal: true },
+    ]);
+    expect(handle.driver.getColumns(collection)).toEqual([column.id]);
+  });
+
+  test("filter over a collection with a file export returns only columns", () => {
+    const column = { id: gid("c1"), spec: spec("col1") };
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([column, file]);
+    const collection = handle.driver.create([
+      { kind: "ids", ids: [column.id, file.id], isFinal: true },
+    ]);
+    expect(handle.driver.getColumns(handle.driver.filter(collection, {}))).toEqual([column.id]);
   });
 });
 

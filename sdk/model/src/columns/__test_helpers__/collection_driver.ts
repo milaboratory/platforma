@@ -18,30 +18,30 @@ import type {
   ColumnsCollectionDriverHost,
   ColumnsCollectionDriverModel,
   LeafEntry,
-  PColumnSpec,
   PObjectId,
+  PObjectSpec,
   ServiceName,
 } from "@milaboratories/pl-model-common";
-import { extractPObjectId, Services } from "@milaboratories/pl-model-common";
+import { extractPObjectId, isPColumnSpec, Services } from "@milaboratories/pl-model-common";
 import { ColumnsCollectionDriverImpl } from "@milaboratories/columns-collection-driver";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
 import type { GlobalCfgRenderCtx } from "../../render/internal";
 import { TreeNodeAccessor } from "../../render/accessor";
 import { _ctxProvidersCache } from "../column_providers";
 import type { ColumnsProvider } from "../column_providers";
-import { DataColumn, type DataColumnRecipe } from "../data_column";
+import { DataColumn } from "../data_column";
 
 export interface TestCollectionDriverHandle {
   readonly driver: ColumnsCollectionDriverModel;
   /** Register `(id → spec)` pairs the driver will see via `resolveSpec`. */
-  register(columns: ReadonlyArray<{ readonly id: PObjectId; readonly spec: PColumnSpec }>): void;
+  register(columns: ReadonlyArray<{ readonly id: PObjectId; readonly spec: PObjectSpec }>): void;
   /**
    * Install a minimal `globalThis.cfgRenderCtx` so `getService("columnsCollection")`
    * resolves to this driver and registered columns are reachable via
    * `DataColumnRecipe.fromId`. Call inside `beforeEach` if the code under test uses
    * the ambient ctx instead of an explicit `driver` option.
    */
-  installAmbientCtx(): void;
+  installAmbientCtx(options?: { featureFlags?: GlobalCfgRenderCtx["featureFlags"] }): void;
   /** Remove the ambient ctx installed by {@link installAmbientCtx}. */
   uninstallAmbientCtx(): void;
   /** Dispose the underlying SpecDriver. */
@@ -72,7 +72,7 @@ const PFRAME_SPEC_METHODS: ReadonlyArray<string> = [
 ];
 
 export function createTestCollectionDriver(): TestCollectionDriverHandle {
-  const specMap = new Map<PObjectId, PColumnSpec>();
+  const specMap = new Map<PObjectId, PObjectSpec>();
   const specDriver = new SpecDriver();
   const impl = new ColumnsCollectionDriverImpl();
 
@@ -82,12 +82,18 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
     },
     getUpstreamBlockCtxes: () => [],
     getSpecDriver: () => specDriver,
-    resolveSpec: (id) => specMap.get(extractPObjectId(id)),
+    resolveSpec: (id) => {
+      const spec = specMap.get(extractPObjectId(id));
+      if (spec === undefined || !isPColumnSpec(spec)) {
+        return undefined;
+      }
+      return spec;
+    },
   };
 
   const driver: ColumnsCollectionDriverModel = {
     create: (sources) => impl.create(sources, bindings).key,
-    isEmpty: (h) => impl.isEmpty(h),
+    isEmpty: (h) => impl.isEmpty(h, bindings),
     isFinal: (h) => impl.isFinal(h),
     getColumns: (h) => impl.getColumns(h, bindings),
     addSource: (h, srcs) => impl.addSource(h, srcs, bindings).key,
@@ -105,8 +111,9 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
         _ctxProvidersCache.set(installedCtx, [buildStubProvider(specMap)]);
       }
     },
-    installAmbientCtx() {
+    installAmbientCtx(options) {
       const ctx = {
+        featureFlags: options?.featureFlags,
         getAccessorHandleByName: () => undefined,
         getUpstreamBlockCtx: () => [],
         getServiceNames: () => [Services.ColumnsCollection, Services.PFrameSpec] as ServiceName[],
@@ -157,24 +164,26 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
  *   - `getInputsLocked()` → `true` (no pending resolution).
  */
 function buildStubProvider(
-  specMap: ReadonlyMap<PObjectId, PColumnSpec>,
+  specMap: ReadonlyMap<PObjectId, PObjectSpec>,
 ): ColumnEntriesProvider<TreeNodeAccessor> & ColumnsProvider {
   const entries = new Map<PObjectId, LeafEntry<TreeNodeAccessor>>();
   for (const [id, spec] of specMap) {
     entries.set(id, { accessor: stubAccessorFor(id, spec), name: id, id });
   }
-  const columns: DataColumnRecipe<PObjectId>[] = [];
-  for (const [id, spec] of specMap) {
-    columns.push(DataColumn.fromColumn({ id, spec, data: undefined as never }));
-  }
   return {
     getPObjectEntries: () => entries,
     isFinal: () => true,
-    getColumns: () => columns,
+    getColumns: () =>
+      entries
+        .values()
+        .filter((entry) => DataColumn.getStatusByAccessor(entry) !== "absent")
+        .map((entry) => DataColumn.fromAccessor(entry))
+        .filter((column) => column !== undefined)
+        .toArray(),
   };
 }
 
-function stubAccessorFor(id: PObjectId, spec: PColumnSpec): TreeNodeAccessor {
+function stubAccessorFor(id: PObjectId, spec: PObjectSpec): TreeNodeAccessor {
   const specField = `${id}.spec`;
   const specHolder = {
     getDataAsJson: <T>() => spec as unknown as T,

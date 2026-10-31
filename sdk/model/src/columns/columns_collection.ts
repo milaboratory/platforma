@@ -13,8 +13,7 @@ import { isColumnProvider } from "./column_providers";
 import { TreeNodeAccessor } from "../render/accessor";
 import { getService } from "../services/get_services";
 import { getCfgRenderCtx } from "../internal";
-import { ColumnRecipe } from "./column_recipes";
-import { isNil } from "es-toolkit";
+import { ColumnAbsentError, ColumnRecipe } from "./column_recipes";
 
 export interface ColumnsCollectionDeps {
   /** Render ctx used both for service resolution and for default ctx sources. */
@@ -51,7 +50,7 @@ export function ColumnsCollection(
   const serialized: SerializedColumnsSource[] = sources
     ? sources.flatMap((s) => toSerializedSources(s, deps?.ctx))
     : defaultCtxSources(deps?.ctx);
-  return new ColumnsCollectionImpl(driver.create(serialized), driver);
+  return new ColumnsCollectionImpl(driver.create(serialized), driver, deps);
 }
 
 export function isColumnsCollection(value: unknown): value is ColumnsCollection {
@@ -64,7 +63,7 @@ export function isColumnsCollection(value: unknown): value is ColumnsCollection 
  * {@link CollectionHandle} plus a reference to the driver service.
  *
  * Construct via {@link ColumnsCollection} — the bare constructor is a
- * trivial `(handle, driver)` pair so that `addSource` / `discover` / `filter`
+ * trivial `(handle, driver, options)` triple so that `addSource` / `discover` / `filter`
  * can rebind a freshly-minted handle without going through source
  * serialisation again.
  *
@@ -76,10 +75,14 @@ export class ColumnsCollectionImpl {
   constructor(
     public readonly handle: CollectionHandle,
     private readonly driver: ColumnsCollectionDriverModel,
+    private readonly options: Pick<ColumnsCollectionDeps, "ctx"> = {},
   ) {}
 
   isEmpty(): boolean {
-    return this.driver.isEmpty(this.handle);
+    if (this.hostSkipsNonColumns()) return this.driver.isEmpty(this.handle);
+    return !this.driver
+      .getColumns(this.handle)
+      .some((id) => ColumnRecipe.getStatus(id, this.options) === "present");
   }
 
   isFinal(): boolean {
@@ -87,28 +90,60 @@ export class ColumnsCollectionImpl {
   }
 
   getColumnIds(): ColumnUniversalId[] {
-    return this.driver.getColumns(this.handle);
+    const ids = this.driver.getColumns(this.handle);
+    if (this.hostSkipsNonColumns()) return ids;
+    return ids.filter((id) => ColumnRecipe.getStatus(id, this.options) === "present");
   }
 
   getColumns(): ColumnRecipe[] {
-    return this.getColumnIds()
-      .map((id) => ColumnRecipe(id))
-      .filter((c): c is ColumnRecipe => !isNil(c));
+    return this.driver
+      .getColumns(this.handle)
+      .map((id) => buildUnlessAbsent(id, this.options))
+      .filter((recipe) => recipe !== undefined);
   }
 
   addSource(source: ColumnsSource | ColumnsCollection): ColumnsCollection {
     return new ColumnsCollectionImpl(
-      this.driver.addSource(this.handle, toSerializedSources(source)),
+      this.driver.addSource(this.handle, toSerializedSources(source, this.options.ctx)),
       this.driver,
+      this.options,
     );
   }
 
   discover(options: ColumnsDiscoverOptions): ColumnsCollection {
-    return new ColumnsCollectionImpl(this.driver.discover(this.handle, options), this.driver);
+    return new ColumnsCollectionImpl(
+      this.driver.discover(this.handle, options),
+      this.driver,
+      this.options,
+    );
   }
 
   filter(options: ColumnsFilterOptions): ColumnsCollection {
-    return new ColumnsCollectionImpl(this.driver.filter(this.handle, options), this.driver);
+    return new ColumnsCollectionImpl(
+      this.driver.filter(this.handle, options),
+      this.driver,
+      this.options,
+    );
+  }
+
+  private hostSkipsNonColumns(): boolean {
+    // Drop the sandbox-side filter once no supported desktop lacks this flag.
+    return (
+      (this.options.ctx ?? getCfgRenderCtx()).featureFlags?.columnsCollectionSkipsNonColumns ===
+      true
+    );
+  }
+}
+
+function buildUnlessAbsent(
+  id: ColumnUniversalId,
+  options: Pick<ColumnsCollectionDeps, "ctx">,
+): ColumnRecipe | undefined {
+  try {
+    return ColumnRecipe(id, options);
+  } catch (error) {
+    if (error instanceof ColumnAbsentError) return undefined;
+    throw error;
   }
 }
 

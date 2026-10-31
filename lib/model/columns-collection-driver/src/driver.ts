@@ -87,19 +87,10 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     return this.mint(contributions);
   }
 
-  isEmpty(handle: CollectionHandle): boolean {
-    const state = this.requireState(handle);
-    for (const c of state.contributions) {
-      switch (c.type) {
-        case "provider":
-          if (c.provider.getPObjectEntries().size > 0) return false;
-          break;
-        case "ids":
-          if (c.ids.length > 0) return false;
-          break;
-      }
-    }
-    return true;
+  isEmpty(handle: CollectionHandle, host: ColumnsCollectionDriverHost<A>): boolean {
+    return !this.collectIds(handle).some(
+      (id) => host.resolveSpec(extractPObjectId(id)) !== undefined,
+    );
   }
 
   isFinal(handle: CollectionHandle): boolean {
@@ -118,29 +109,14 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
   }
 
   /**
-   * Returns the deduplicated id list for `handle`. Dedup semantics are
-   * shared with sandbox-side `extractColumns` via {@link dedupColumns} —
-   * the same physical column reached via outputs vs. result_pool collapses
-   * to one (provider order decides which id is canonical).
+   * Returns the deduplicated id list for `handle`, without exports that are
+   * not columns. Dedup semantics are shared with sandbox-side `extractColumns`
+   * via {@link dedupColumns} — the same physical column reached via outputs
+   * vs. result_pool collapses to one (provider order decides which id is
+   * canonical).
    */
   getColumns(handle: CollectionHandle, host: ColumnsCollectionDriverHost<A>): ColumnUniversalId[] {
-    const state = this.requireState(handle);
-    const all = state.contributions.flatMap((c) => {
-      switch (c.type) {
-        case "provider":
-          return Array.from(c.provider.getPObjectEntries().keys());
-        case "ids":
-          return [...c.ids];
-      }
-    });
-    return dedupColumns(
-      all,
-      (id) => id,
-      (id) => {
-        const spec = host.resolveSpec(extractPObjectId(id));
-        return spec === undefined ? undefined : reconstructSpecFromId(spec, id);
-      },
-    );
+    return this.resolveIdsAndSpecs(handle, host).map(({ id }) => id);
   }
 
   addSource(
@@ -247,25 +223,49 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     return state;
   }
 
+  private collectIds(handle: CollectionHandle): ColumnUniversalId[] {
+    return this.requireState(handle).contributions.flatMap((contribution) => {
+      switch (contribution.type) {
+        case "provider":
+          return contribution.provider.getPObjectEntries().keys().toArray();
+        case "ids":
+          return contribution.ids;
+      }
+    });
+  }
+
+  /** Deduplicated ids of `handle` with their column specs. Ids without a column spec are dropped. */
+  private resolveIdsAndSpecs(
+    handle: CollectionHandle,
+    host: ColumnsCollectionDriverHost<A>,
+  ): { id: ColumnUniversalId; spec: PColumnSpec }[] {
+    const columns = this.collectIds(handle)
+      .map((id) => {
+        const spec = host.resolveSpec(extractPObjectId(id));
+        if (spec === undefined) return undefined;
+        return { id, spec: reconstructSpecFromId(spec, id) };
+      })
+      .filter((column) => column !== undefined);
+    return dedupColumns(
+      columns,
+      ({ id }) => id,
+      ({ spec }) => spec,
+    );
+  }
+
   private runDiscovery(
     handle: CollectionHandle,
     options: DiscoverColumnsOptions,
     host: ColumnsCollectionDriverHost<A>,
   ): PoolEntry<CollectionHandle> {
     const sourceIsFinal = this.isFinal(handle);
-    const ids = this.getColumns(handle, host);
-    if (ids.length === 0) {
+    const columns = this.resolveIdsAndSpecs(handle, host);
+    if (columns.length === 0) {
       return this.mint([{ type: "ids", ids: [], isFinal: sourceIsFinal }]);
     }
 
     const specDriver = host.getSpecDriver();
-    const specMap = new Map<ColumnUniversalId, PColumnSpec>();
-    for (const id of ids) {
-      const leaf = extractPObjectId(id);
-      const spec = host.resolveSpec(leaf);
-      if (spec === undefined) continue;
-      specMap.set(id, reconstructSpecFromId(spec, id));
-    }
+    const specMap = new Map(columns.map(({ id, spec }) => [id, spec]));
 
     const anchors = options.anchors;
     const hasAnchors = anchors !== undefined && Object.keys(anchors).length > 0;

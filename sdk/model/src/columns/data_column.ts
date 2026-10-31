@@ -2,6 +2,7 @@ import {
   ColumnRegistry,
   createGlobalPObjectId,
   isPColumn,
+  isPColumnSpec,
   isPlRef,
   PlRef,
   PObjectId,
@@ -9,6 +10,7 @@ import {
   type LeafEntry,
   type PColumn,
   type PColumnSpec,
+  type PObjectSpec,
   type SpecOverrides,
   type SpecQuery,
 } from "@milaboratories/pl-model-common";
@@ -134,8 +136,9 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
    * Resolve via the ambient {@link ColumnRegistry}. Spec is resolved eagerly:
    * returns `undefined` if the leaf isn't reachable yet (resolving). Throws
    * {@link ColumnAbsentError} when every relevant accessor is `inputsLocked`
-   * and the column did not appear — the column will not exist in this ctx.
-   * Data and dataStatus stay lazy.
+   * and the column did not appear, or when the id names an export that is not
+   * a column (a `kind: "File"` object, for example) — the column will not
+   * exist in this ctx. Data and dataStatus stay lazy.
    */
   static fromId(
     id: PObjectId,
@@ -147,14 +150,15 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
       if (registry.isFinal()) throw new ColumnAbsentError(id);
       return undefined;
     }
-    const spec = readSpecAccessor(leaf);
-    if (isNil(spec)) {
+    if (isNil(readSpecAccessor(leaf))) {
       if (leaf.accessor.getInputsLocked()) throw new ColumnAbsentError(id);
       return undefined;
     }
-    if (!spec.hasData()) return undefined;
+    const spec = readSpec(leaf);
+    if (spec === undefined) return undefined;
+    if (!isPColumnSpec(spec)) throw new ColumnAbsentError(id);
     return new DataColumnImpl(id, {
-      getSpec: () => spec.getDataAsJson<PColumnSpec>(),
+      getSpec: () => spec,
       getData: () => readDataAccessor(leaf),
       getDataStatus: () => readDataStatus(leaf),
     });
@@ -168,17 +172,19 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
   /**
    * Bind directly to an accessor-backed {@link LeafEntry} — no registry.
    * Throws {@link ColumnAbsentError} if the leaf has no spec field and its
-   * accessor is `inputsLocked`. Returns `undefined` while still resolving.
+   * accessor is `inputsLocked`, or if it names an export that is not a column.
+   * Returns `undefined` while still resolving.
    */
   static fromAccessor(entry: LeafEntry<TreeNodeAccessor>): undefined | DataColumnRecipe<PObjectId> {
-    const spec = readSpecAccessor(entry);
-    if (isNil(spec)) {
+    if (isNil(readSpecAccessor(entry))) {
       if (entry.accessor.getInputsLocked()) throw new ColumnAbsentError(entry.id);
       return undefined;
     }
-    if (!spec.hasData()) return undefined;
+    const spec = readSpec(entry);
+    if (spec === undefined) return undefined;
+    if (!isPColumnSpec(spec)) throw new ColumnAbsentError(entry.id);
     return new DataColumnImpl(entry.id, {
-      getSpec: () => spec.getDataAsJson<PColumnSpec>(),
+      getSpec: () => spec,
       getData: () => readDataAccessor(entry),
       getDataStatus: () => readDataStatus(entry),
     });
@@ -306,6 +312,13 @@ const readSpecAccessor = memoizeByEntry(
     accessor.traverse({ field: `${name}.spec`, assertFieldType: "Input", ignoreError: true }),
 );
 
+/** The leaf's spec, or `undefined` until the spec resource has data. */
+const readSpec = memoizeByEntry((entry: LeafEntry<TreeNodeAccessor>): undefined | PObjectSpec => {
+  const spec = readSpecAccessor(entry);
+  if (isNil(spec) || !spec.hasData()) return undefined;
+  return spec.getDataAsJson<PObjectSpec>();
+});
+
 /**
  * Per-entry counterpart to {@link readDataStatus}: tells whether the leaf's
  * **spec** can be read in this ctx, and — for the negative cases —
@@ -315,13 +328,16 @@ const readSpecAccessor = memoizeByEntry(
  *  - spec field not yet on the entry's accessor + still resolving → `resolving`
  *  - spec resource present but bytes not yet written → `resolving`
  *    (transient — the spec resource is connected, just unfilled)
+ *  - spec resource present and `hasData()`, not a column spec → `absent`
  *  - spec resource present and `hasData()` → `present`
  */
 function getLeafEntryStatus(entry: LeafEntry<TreeNodeAccessor>): ColumnResolutionStatus {
-  const spec = readSpecAccessor(entry);
-  if (isNil(spec)) return entry.accessor.getInputsLocked() ? "absent" : "resolving";
-  if (!spec.hasData()) return "resolving";
-  return "present";
+  if (isNil(readSpecAccessor(entry))) {
+    return entry.accessor.getInputsLocked() ? "absent" : "resolving";
+  }
+  const spec = readSpec(entry);
+  if (spec === undefined) return "resolving";
+  return isPColumnSpec(spec) ? "present" : "absent";
 }
 
 const readDataAccessor = memoizeByEntry(
