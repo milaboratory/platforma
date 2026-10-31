@@ -85,7 +85,7 @@ type NormalizedLeafConfig = {
 };
 
 function normalizeLeafInput(raw: StubLeafInput): NormalizedLeafConfig {
-  if ("kind" in raw) {
+  if (isPColumnSpec(raw)) {
     return { spec: raw, accessorLocked: true, specHasData: true };
   }
   return {
@@ -93,6 +93,10 @@ function normalizeLeafInput(raw: StubLeafInput): NormalizedLeafConfig {
     accessorLocked: raw.accessorLocked ?? true,
     specHasData: raw.specHasData ?? true,
   };
+}
+
+function isPColumnSpec(v: StubLeafInput): v is PColumnSpec {
+  return typeof v === "object" && v !== null && "kind" in v;
 }
 
 let stubAccessorSeq = 0;

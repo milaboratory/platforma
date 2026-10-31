@@ -8,7 +8,11 @@ import type {
   SerializedColumnsSource,
   ServiceBrand,
 } from "@milaboratories/pl-model-common";
-import { Services, ServiceNotRegisteredError } from "@milaboratories/pl-model-common";
+import {
+  isPColumnSpec,
+  Services,
+  ServiceNotRegisteredError,
+} from "@milaboratories/pl-model-common";
 import type { PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import type {
   AxesId,
@@ -209,7 +213,11 @@ export function getServiceInjectors(): ServiceInjectorMap {
             assertFieldType: "Input",
             ignoreError: true,
           });
-          return specNode?.getDataAsJson<PObjectSpec>();
+          const spec = specNode?.getDataAsJson<PObjectSpec>();
+          if (spec === undefined || !isPColumnSpec(spec)) {
+            return undefined;
+          }
+          return spec;
         },
       };
 

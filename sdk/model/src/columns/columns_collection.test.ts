@@ -2,12 +2,14 @@ import type { AxisSpec, PColumnSpec, PObjectId } from "@milaboratories/pl-model-
 import { createGlobalPObjectId } from "@milaboratories/pl-model-common";
 
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { getCfgRenderCtx } from "../internal";
 import { GlobalCfgRenderCtxFeatureFlags } from "../render/internal";
 import { ColumnsCollection } from "./columns_collection";
 import {
   createTestCollectionDriver,
   type TestCollectionDriverHandle,
 } from "./__test_helpers__/collection_driver";
+import { installStubRegistry } from "./__test_helpers__/stub_registry";
 
 let handle: TestCollectionDriverHandle;
 
@@ -127,6 +129,16 @@ describe("ColumnsCollection on a host driver that keeps non-column exports", () 
     handle.register([file]);
     expect(collectionOverIds([file.id]).isEmpty()).toBe(true);
   });
+
+  test("skips an id whose spec is not written yet, as the host does", () => {
+    const pending = gid("pending");
+    installStubRegistry(getCfgRenderCtx(), {
+      [pending]: { spec: spec("pending"), specHasData: false },
+    });
+    const collection = collectionOverIds([pending]);
+    expect(collection.getColumnIds()).toEqual([]);
+    expect(collection.isEmpty()).toBe(true);
+  });
 });
 
 describe("ColumnsCollection.isFinal", () => {
@@ -169,6 +181,15 @@ describe("ColumnsCollection driver getColumns", () => {
     handle.register([column, file]);
     const collection = handle.driver.create([
       { kind: "ids", ids: [column.id, file.id], isFinal: true },
+    ]);
+    expect(handle.driver.getColumns(collection)).toEqual([column.id]);
+  });
+
+  test("drops ids that are not in the registry", () => {
+    const column = { id: gid("c1"), spec: spec("col1") };
+    handle.register([column]);
+    const collection = handle.driver.create([
+      { kind: "ids", ids: [column.id, gid("gone")], isFinal: true },
     ]);
     expect(handle.driver.getColumns(collection)).toEqual([column.id]);
   });

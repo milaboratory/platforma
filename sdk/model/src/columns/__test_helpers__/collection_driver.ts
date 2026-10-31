@@ -22,7 +22,7 @@ import type {
   PObjectSpec,
   ServiceName,
 } from "@milaboratories/pl-model-common";
-import { extractPObjectId, Services } from "@milaboratories/pl-model-common";
+import { extractPObjectId, isPColumnSpec, Services } from "@milaboratories/pl-model-common";
 import { ColumnsCollectionDriverImpl } from "@milaboratories/columns-collection-driver";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
 import type { GlobalCfgRenderCtx } from "../../render/internal";
@@ -82,7 +82,13 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
     },
     getUpstreamBlockCtxes: () => [],
     getSpecDriver: () => specDriver,
-    resolveSpec: (id) => specMap.get(extractPObjectId(id)),
+    resolveSpec: (id) => {
+      const spec = specMap.get(extractPObjectId(id));
+      if (spec === undefined || !isPColumnSpec(spec)) {
+        return undefined;
+      }
+      return spec;
+    },
   };
 
   const driver: ColumnsCollectionDriverModel = {

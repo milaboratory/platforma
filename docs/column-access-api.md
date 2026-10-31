@@ -185,19 +185,15 @@ handle on the host; the receiver is unchanged.
 `getColumnIds()` is the fast path when the ids are all you need — and they
 usually are, because the id-accepting consumers take them directly.
 
-`getColumns()` builds a recipe per id. Two consequences worth knowing:
+`getColumns()` builds a recipe per id and drops ids whose column is absent.
 
-- Ids that are still resolving are **dropped**, so the result can be shorter
-  than `getColumnIds()`.
-- Ids whose column is provably absent are **dropped** too. Use
-  `ColumnRecipe.getStatus(id)` on `getColumnIds()` if absence should be
-  surfaced rather than silently yielding a shorter list.
-
-A collection holds columns only: exports that are not columns, such as a
-`kind: "File"` library, are left out. A desktop built before its driver
-dropped them still returns them, so there `isEmpty()` and `getColumnIds()`
-check each id's status in the sandbox, which reads its spec, and drop ids
-whose column is absent.
+A collection holds columns only: the host drops every id without a readable
+column spec. That covers exports that are not columns, such as a
+`kind: "File"` library, ids that have left the result pool, and ids whose spec
+is not written yet. A desktop built before this change returns such ids, so
+there `isEmpty()` and `getColumnIds()` read each id's status in the sandbox
+and keep only `"present"` ids. On such a desktop `getColumnIds()` costs a spec
+read per id.
 
 ```ts
 // only the current block's own outputs/prerun

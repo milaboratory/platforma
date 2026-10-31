@@ -82,7 +82,7 @@ export class ColumnsCollectionImpl {
     if (this.hostSkipsNonColumns()) return this.driver.isEmpty(this.handle);
     return !this.driver
       .getColumns(this.handle)
-      .some((id) => ColumnRecipe.getStatus(id, { ctx: this.ctx }) !== "absent");
+      .some((id) => ColumnRecipe.getStatus(id, { ctx: this.ctx }) === "present");
   }
 
   isFinal(): boolean {
@@ -92,7 +92,7 @@ export class ColumnsCollectionImpl {
   getColumnIds(): ColumnUniversalId[] {
     const ids = this.driver.getColumns(this.handle);
     if (this.hostSkipsNonColumns()) return ids;
-    return ids.filter((id) => ColumnRecipe.getStatus(id, { ctx: this.ctx }) !== "absent");
+    return ids.filter((id) => ColumnRecipe.getStatus(id, { ctx: this.ctx }) === "present");
   }
 
   getColumns(): ColumnRecipe[] {
