@@ -81,13 +81,14 @@ export class ColumnAbsentError extends Error {
  * through the {@link DataColumnRecipe} dispatcher.
  */
 export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
+  private specCache?: { readonly value: PColumnSpec };
   private dataCache?: { readonly value: ColumnData };
   private dataStatusCache?: { readonly value: ColumnFieldStatus };
 
   private constructor(
     public readonly id: PObjectId,
     private readonly options: {
-      spec: PColumnSpec;
+      getSpec: () => PColumnSpec;
       getData: () => ColumnData;
       getDataStatus: () => ColumnFieldStatus;
     },
@@ -99,7 +100,10 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
   }
 
   getSpec(): PColumnSpec {
-    return this.options.spec;
+    if (this.specCache === undefined) {
+      this.specCache = { value: this.options.getSpec() };
+    }
+    return this.specCache.value;
   }
 
   /** Leaf-shaped — points straight at `this.id`. */
@@ -154,7 +158,7 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
     if (spec === undefined) return undefined;
     if (!isPColumnSpec(spec)) throw new ColumnAbsentError(id);
     return new DataColumnImpl(id, {
-      spec,
+      getSpec: () => spec,
       getData: () => readDataAccessor(leaf),
       getDataStatus: () => readDataStatus(leaf),
     });
@@ -168,8 +172,8 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
   /**
    * Bind directly to an accessor-backed {@link LeafEntry} — no registry.
    * Throws {@link ColumnAbsentError} if the leaf has no spec field and its
-   * accessor is `inputsLocked`. Returns `undefined` while still resolving, and
-   * for an export that is not a column.
+   * accessor is `inputsLocked`, or if it names an export that is not a column.
+   * Returns `undefined` while still resolving.
    */
   static fromAccessor(entry: LeafEntry<TreeNodeAccessor>): undefined | DataColumnRecipe<PObjectId> {
     if (isNil(readSpecAccessor(entry))) {
@@ -177,9 +181,10 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
       return undefined;
     }
     const spec = readSpec(entry);
-    if (spec === undefined || !isPColumnSpec(spec)) return undefined;
+    if (spec === undefined) return undefined;
+    if (!isPColumnSpec(spec)) throw new ColumnAbsentError(entry.id);
     return new DataColumnImpl(entry.id, {
-      spec,
+      getSpec: () => spec,
       getData: () => readDataAccessor(entry),
       getDataStatus: () => readDataStatus(entry),
     });
@@ -199,7 +204,7 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
     // reaching here is a materialised `PColumn`.
     const pColumn = column as PColumn<ColumnData>;
     return new DataColumnImpl(pColumn.id, {
-      spec: pColumn.spec,
+      getSpec: () => pColumn.spec,
       getData: () => pColumn.data,
       getDataStatus: () => "present",
     });

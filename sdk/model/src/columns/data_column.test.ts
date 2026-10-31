@@ -169,10 +169,10 @@ describe("DataColumnImpl resolution: fromId / fromAccessor / getStatus", () => {
     expect(DataColumnImpl.fromAccessor(entry)).toBeUndefined();
   });
 
-  test("an export that is not a column: fromId throws, fromAccessor skips, status is absent", () => {
+  test("an export that is not a column: fromId and fromAccessor throw, status is absent", () => {
     installStubRegistry(mockCtx, { [baseLeaf]: { spec: fileSpec } });
     expect(() => DataColumnImpl.fromId(baseLeaf)).toThrow(ColumnAbsentError);
-    expect(DataColumnImpl.fromAccessor(pluckLeafEntry(baseLeaf))).toBeUndefined();
+    expect(() => DataColumnImpl.fromAccessor(pluckLeafEntry(baseLeaf))).toThrow(ColumnAbsentError);
     expect(DataColumnImpl.getStatusById(baseLeaf)).toBe("absent");
   });
 

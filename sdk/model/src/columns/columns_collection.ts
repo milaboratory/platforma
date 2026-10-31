@@ -50,7 +50,7 @@ export function ColumnsCollection(
   const serialized: SerializedColumnsSource[] = sources
     ? sources.flatMap((s) => toSerializedSources(s, deps?.ctx))
     : defaultCtxSources(deps?.ctx);
-  return new ColumnsCollectionImpl(driver.create(serialized), driver, deps?.ctx);
+  return new ColumnsCollectionImpl(driver.create(serialized), driver, deps);
 }
 
 export function isColumnsCollection(value: unknown): value is ColumnsCollection {
@@ -63,7 +63,7 @@ export function isColumnsCollection(value: unknown): value is ColumnsCollection 
  * {@link CollectionHandle} plus a reference to the driver service.
  *
  * Construct via {@link ColumnsCollection} — the bare constructor is a
- * trivial `(handle, driver)` pair so that `addSource` / `discover` / `filter`
+ * trivial `(handle, driver, options)` triple so that `addSource` / `discover` / `filter`
  * can rebind a freshly-minted handle without going through source
  * serialisation again.
  *
@@ -75,14 +75,14 @@ export class ColumnsCollectionImpl {
   constructor(
     public readonly handle: CollectionHandle,
     private readonly driver: ColumnsCollectionDriverModel,
-    private readonly ctx?: GlobalCfgRenderCtx,
+    private readonly options: Pick<ColumnsCollectionDeps, "ctx"> = {},
   ) {}
 
   isEmpty(): boolean {
     if (this.hostSkipsNonColumns()) return this.driver.isEmpty(this.handle);
     return !this.driver
       .getColumns(this.handle)
-      .some((id) => ColumnRecipe.getStatus(id, { ctx: this.ctx }) === "present");
+      .some((id) => ColumnRecipe.getStatus(id, this.options) === "present");
   }
 
   isFinal(): boolean {
@@ -92,21 +92,21 @@ export class ColumnsCollectionImpl {
   getColumnIds(): ColumnUniversalId[] {
     const ids = this.driver.getColumns(this.handle);
     if (this.hostSkipsNonColumns()) return ids;
-    return ids.filter((id) => ColumnRecipe.getStatus(id, { ctx: this.ctx }) === "present");
+    return ids.filter((id) => ColumnRecipe.getStatus(id, this.options) === "present");
   }
 
   getColumns(): ColumnRecipe[] {
     return this.driver
       .getColumns(this.handle)
-      .map((id) => buildUnlessAbsent(id, this.ctx))
+      .map((id) => buildUnlessAbsent(id, this.options))
       .filter((recipe) => recipe !== undefined);
   }
 
   addSource(source: ColumnsSource | ColumnsCollection): ColumnsCollection {
     return new ColumnsCollectionImpl(
-      this.driver.addSource(this.handle, toSerializedSources(source, this.ctx)),
+      this.driver.addSource(this.handle, toSerializedSources(source, this.options.ctx)),
       this.driver,
-      this.ctx,
+      this.options,
     );
   }
 
@@ -114,7 +114,7 @@ export class ColumnsCollectionImpl {
     return new ColumnsCollectionImpl(
       this.driver.discover(this.handle, options),
       this.driver,
-      this.ctx,
+      this.options,
     );
   }
 
@@ -122,22 +122,25 @@ export class ColumnsCollectionImpl {
     return new ColumnsCollectionImpl(
       this.driver.filter(this.handle, options),
       this.driver,
-      this.ctx,
+      this.options,
     );
   }
 
   private hostSkipsNonColumns(): boolean {
     // Drop the sandbox-side filter once no supported desktop lacks this flag.
-    return (this.ctx ?? getCfgRenderCtx()).featureFlags?.columnsCollectionSkipsNonColumns === true;
+    return (
+      (this.options.ctx ?? getCfgRenderCtx()).featureFlags?.columnsCollectionSkipsNonColumns ===
+      true
+    );
   }
 }
 
 function buildUnlessAbsent(
   id: ColumnUniversalId,
-  ctx: GlobalCfgRenderCtx | undefined,
+  options: Pick<ColumnsCollectionDeps, "ctx">,
 ): ColumnRecipe | undefined {
   try {
-    return ColumnRecipe(id, { ctx });
+    return ColumnRecipe(id, options);
   } catch (error) {
     if (error instanceof ColumnAbsentError) return undefined;
     throw error;

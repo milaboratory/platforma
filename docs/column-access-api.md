@@ -407,7 +407,8 @@ DataColumn.fromAccessor(leafEntry);
 `resolving` — retry on the next render pass, more accessor inputs may arrive.
 Every factory throws `ColumnAbsentError` when the column is `absent` — every
 relevant accessor reports `inputsLocked` and the column did not appear, so it
-never will in this ctx. Always check for `undefined` before chaining.
+never will in this ctx, or the id names an export that is not a column (a
+`kind: "File"` library, for example). Always check for `undefined` before chaining.
 
 `ColumnRecipe(id)` additionally throws for an id variant it cannot build (e.g. a
 legacy `AnchoredPColumnId`, which needs an anchor map to resolve).

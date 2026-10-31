@@ -1,6 +1,7 @@
 import {
   AccessorEntriesProvider,
   ResultPoolEntriesProvider,
+  type LeafEntry,
   type PColumn,
   type PObjectId,
   type UpstreamBlockCtx,
@@ -129,9 +130,9 @@ export class AccessorColumnsProviderImpl
 
   getColumns(): DataColumnRecipe<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
-    return (this.cachedColumns = Array.from(this.entries.values())
-      .map((e) => DataColumn.fromAccessor(e))
-      .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v)));
+    return (this.cachedColumns = Array.from(this.entries.values(), columnUnlessAbsent).filter(
+      (column) => column !== undefined,
+    ));
   }
 }
 
@@ -173,14 +174,22 @@ export class ResultPoolColumnsProviderImpl
 
   getColumns(): DataColumnRecipe<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
-    return (this.cachedColumns = Array.from(this.getPObjectEntries().values())
-      .map((e) => DataColumn.fromAccessor(e))
-      .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v)));
+    return (this.cachedColumns = Array.from(
+      this.getPObjectEntries().values(),
+      columnUnlessAbsent,
+    ).filter((column) => column !== undefined));
   }
 }
 
 /** Public type alias — value of the same name is the memoised factory above. */
 export type ResultPoolColumnsProvider = ResultPoolColumnsProviderImpl;
+
+function columnUnlessAbsent(
+  entry: LeafEntry<TreeNodeAccessor>,
+): DataColumnRecipe<PObjectId> | undefined {
+  if (DataColumn.getStatusByAccessor(entry) === "absent") return undefined;
+  return DataColumn.fromAccessor(entry);
+}
 
 function hashRawPool(rawPool: ReadonlyArray<UpstreamBlockCtx<AccessorHandle>>): string {
   return rawPool

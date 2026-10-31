@@ -72,6 +72,7 @@ function buildStubProvider(
     getColumns: () =>
       entries
         .values()
+        .filter((entry) => DataColumn.getStatusByAccessor(entry) !== "absent")
         .map((entry) => DataColumn.fromAccessor(entry))
         .filter((column) => column !== undefined)
         .toArray(),
