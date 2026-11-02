@@ -167,6 +167,8 @@ collection queries against.
 `isFinal` says whether the visible column set can still grow. While upstream
 blocks are running it keeps growing across render passes. Built-in sources
 compute it; you supply it only with the `{ columns, isFinal }` shape.
+`isFinal` covers which exports exist: a column whose spec is not readable yet
+appears on a later pass, even when `isFinal` is true.
 
 **Instance surface.** Every method that returns a collection mints a fresh
 handle on the host; the receiver is unchanged.
@@ -185,16 +187,13 @@ handle on the host; the receiver is unchanged.
 `getColumnIds()` is the fast path when the ids are all you need — and they
 usually are, because the id-accepting consumers take them directly.
 
-`getColumns()` builds a recipe per id. Two consequences worth knowing:
+`getColumns()` builds a recipe per id.
 
-- Ids that are still resolving are **dropped**, so the result can be shorter
-  than `getColumnIds()`.
-- An id whose column is provably absent makes recipe construction throw
-  `ColumnAbsentError`. Catch it at the boundary if partial absence should be
-  surfaced rather than silently yielding an empty table.
-
-A collection holds columns only: the driver drops every id whose spec is not a
-column spec, such as a `kind: "File"` library export.
+A collection holds columns only: the driver keeps an id only after it has read
+its spec and found a column spec. It drops ids whose spec is not readable in
+this render and exports that are not columns, such as a `kind: "File"` library
+export. So every id from `getColumnIds()` has a readable column spec, and
+`getColumns()` returns one recipe per id.
 
 ```ts
 // only the current block's own outputs/prerun

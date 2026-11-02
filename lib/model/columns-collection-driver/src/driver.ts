@@ -96,13 +96,13 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
             c.provider
               .getPObjectEntries()
               .keys()
-              .some((id) => mayBeColumn(id, host))
+              .some((id) => isColumn(id, host))
           ) {
             return false;
           }
           break;
         case "ids":
-          if (c.ids.some((id) => mayBeColumn(id, host))) return false;
+          if (c.ids.some((id) => isColumn(id, host))) return false;
           break;
       }
     }
@@ -125,8 +125,8 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
   }
 
   /**
-   * Returns the deduplicated id list for `handle`, without exports that are
-   * not columns. Dedup semantics are shared with sandbox-side
+   * Returns the deduplicated id list for `handle`: only ids whose spec is
+   * readable and is a column spec. Dedup semantics are shared with sandbox-side
    * `extractColumns` via {@link dedupColumns} — the same physical column
    * reached via outputs vs. result_pool collapses to one (provider order
    * decides which id is canonical).
@@ -144,8 +144,9 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     const columns = all
       .map((id) => {
         const spec = host.resolveSpec(extractPObjectId(id));
-        if (spec === undefined) return { id, spec };
-        if (!isPColumnSpec(spec)) return undefined;
+        if (spec === undefined || !isPColumnSpec(spec)) {
+          return undefined;
+        }
         return { id, spec: reconstructSpecFromId(spec, id) };
       })
       .filter((column) => column !== undefined);
@@ -507,10 +508,10 @@ function findById(
   return specs.has(needle) ? needle : undefined;
 }
 
-function mayBeColumn<A extends AccessorLike<A>>(
+function isColumn<A extends AccessorLike<A>>(
   id: ColumnUniversalId,
   host: ColumnsCollectionDriverHost<A>,
 ): boolean {
   const spec = host.resolveSpec(extractPObjectId(id));
-  return spec === undefined || isPColumnSpec(spec);
+  return spec !== undefined && isPColumnSpec(spec);
 }

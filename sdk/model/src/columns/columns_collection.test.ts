@@ -87,10 +87,13 @@ describe("ColumnsCollection.isEmpty", () => {
     expect(handle.driver.isEmpty(collection)).toBe(true);
   });
 
-  test("driver: keeps an id whose spec is not readable", () => {
-    const gone = gid("gone");
-    const collection = handle.driver.create([{ kind: "ids", ids: [gone], isFinal: true }]);
-    expect(handle.driver.getColumns(collection)).toEqual([gone]);
+  test("driver: lists an id only once its spec is readable", () => {
+    const late = { id: gid("late"), spec: spec("late") };
+    const collection = handle.driver.create([{ kind: "ids", ids: [late.id], isFinal: true }]);
+    expect(handle.driver.getColumns(collection)).toEqual([]);
+    expect(handle.driver.isEmpty(collection)).toBe(true);
+    handle.register([late]);
+    expect(handle.driver.getColumns(collection)).toEqual([late.id]);
     expect(handle.driver.isEmpty(collection)).toBe(false);
   });
 });
