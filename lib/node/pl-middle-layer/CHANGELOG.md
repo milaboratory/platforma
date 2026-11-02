@@ -1,5 +1,27 @@
 # @milaboratories/pl-middle-layer
 
+## 1.74.14
+
+### Patch Changes
+
+- 9cff344: `ColumnsCollection` holds columns only: its driver lists an id only once it has read a column spec for it, so it skips ids whose spec is not readable in the current render and exports that are not columns, such as the `kind: "File"` library of MiXCR Clonotyping. `AccessorColumnsProvider`, `ResultPoolColumnsProvider` and `buildDatasetOptions` skip them too. For such an export, `Column(id)`, `DataColumn.fromId`, `DataColumn.fromPlRef` and `DataColumn.fromAccessor` throw `ColumnAbsentError`; the status getters still report `present`, since status tells only whether the spec is readable. The driver ships with the desktop app; the rest reaches a block when it is rebuilt with this SDK. `ColumnsCollectionDriverHost.resolveSpec` now returns any `PObjectSpec`, and `ColumnsCollectionDriver.isEmpty` takes the host.
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-model-common@1.54.2
+  - @milaboratories/columns-collection-driver@0.2.12
+  - @platforma-sdk/model@1.86.5
+  - @milaboratories/pl-model-middle-layer@1.34.6
+  - @milaboratories/pf-spec-driver@1.5.12
+  - @milaboratories/pf-driver@1.9.12
+  - @milaboratories/pl-client@3.19.3
+  - @milaboratories/pl-crash-recorder@0.3.8
+  - @milaboratories/pl-deployments@3.0.24
+  - @milaboratories/pl-drivers@1.16.38
+  - @platforma-sdk/block-tools@2.17.1
+  - @milaboratories/pl-model-backend@1.4.40
+  - @milaboratories/pl-errors@1.4.55
+  - @milaboratories/pl-tree@1.16.7
+  - @platforma-sdk/workflow-tengo@6.17.3
+
 ## 1.74.13
 
 ### Patch Changes
