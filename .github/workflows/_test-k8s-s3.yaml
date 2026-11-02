@@ -12,7 +12,8 @@ env:
 jobs:
   test-k8s-s3:
     name: monorepo tests (k8s)
-    runs-on: hz-ubuntu-dind
+    # Runner pool on the dedicated e2e nodes, next to the backend.
+    runs-on: hz-ubuntu-dind-e2e
     timeout-minutes: 120
     permissions:
       id-token: write
@@ -75,16 +76,27 @@ jobs:
             --from-literal=htpasswd="testuser1:${HASH}" \
             --dry-run=client -o yaml | kubectl apply -f -
 
+      # The runner, the backend, its jobs and the run's NFS workspace must share a
+      # location: the test client is chatty, and the e2e nodes (Helsinki) are 35 ms
+      # from the CI nodes (FSN). A runner on a CI node keeps the whole run there;
+      # anywhere else the overlay is empty and the values file decides.
+      - name: Place the release on the runner's node
+        id: slot
+        uses: milaboratory/github-ci/actions/k8s/platforma-e2e-slot@v4
+
       - name: Helm deploy
         env:
           HELM_DRIVER: configmap
+          SLOT_VALUES: ${{ steps.slot.outputs.values-file }}
         run: |
           helm upgrade --install "${HELM_RELEASE_NAME}" _helm/charts/platforma \
             --values .github/k8s-e2e/values_ci_k8s-s3.yaml \
+            --values "${SLOT_VALUES}" \
             --set image.repository="${PL_IMAGE_REPOSITORY}" \
             --set image.tag="${PL_IMAGE_TAG}" \
             --set auth.htpasswd.secretName="${HTPASSWD_SECRET}" \
             --set "app.extraArgs[2]=--k8s-job-name-prefix=${HELM_RELEASE_NAME}-" \
+            --set storage.main.s3.prefix="${HELM_RELEASE_NAME}" \
             --atomic \
             --timeout 5m0s \
             --namespace "${NAMESPACE}"
@@ -101,15 +113,12 @@ jobs:
           kubectl get svc,endpoints,pods -n "${NAMESPACE}" -l app.kubernetes.io/instance="${HELM_RELEASE_NAME}" -o wide
           exit 1
 
-      # The API server keeps events for about an hour, less than a test run. The loop restarts
-      # the watch when the server closes it; each start lists the current events again, so the
-      # gap is covered and the file can repeat lines.
+      # The file stays outside the diagnostics folder, so redaction works on a static copy.
       - name: Record namespace events
         run: |
-          D="${RUNNER_TEMP}/k8s-diagnostics"; mkdir -p "$D"
           COLS="LAST:.lastTimestamp,EVENT:.eventTime,FIRST:.metadata.creationTimestamp,COUNT:.count,TYPE:.type,REASON:.reason,OBJECT:.involvedObject.name,MESSAGE:.message"
           nohup bash -c "while :; do kubectl get events -n '${NAMESPACE}' --watch -o custom-columns='${COLS}'; sleep 5; done" \
-            >> "$D/events-watch.txt" 2>&1 < /dev/null &
+            >> "${RUNNER_TEMP}/events-watch.txt" 2>&1 < /dev/null &
 
       - name: Run tests
         env:
@@ -154,13 +163,33 @@ jobs:
           kubectl logs -n "${NAMESPACE}" -l "$SEL" --all-containers --tail=-1 2>&1 | grep -v '"level":"debug"' > "$D/backend.log" || true
           kubectl logs -n "${NAMESPACE}" -l "$SEL" --all-containers --tail=10000 > "$D/backend-debug-tail.log" 2>&1 || true
           kubectl get events -n "${NAMESPACE}" --sort-by=.lastTimestamp > "$D/events.txt" 2>&1 || true
+          cp "${RUNNER_TEMP}/events-watch.txt" "$D/" || true
           kubectl get jobs,workloads -n "${NAMESPACE}" -o wide 2>&1 | grep -e NAME -e "${HELM_RELEASE_NAME}" > "$D/jobs.txt" || true
           for P in $(kubectl get pods -n "${NAMESPACE}" --no-headers -o custom-columns=N:.metadata.name | grep "^${HELM_RELEASE_NAME}-" || true); do
             kubectl logs "$P" -n "${NAMESPACE}" --all-containers --tail=500 > "$D/job-$P.log" 2>&1 || true
           done
 
-      - name: Upload diagnostics
+      # This repo is public, so anyone can download its artifacts. At debug level the
+      # backend logs its whole config and every job spec, which carry the license and the
+      # S3 keys. Replace every secret value of the namespace; upload nothing if one remains.
+      - name: Redact secrets from diagnostics
+        id: redact
         if: failure() || cancelled()
+        run: |
+          set -o pipefail
+          D="${RUNNER_TEMP}/k8s-diagnostics"
+          VALUES=$(kubectl get secrets -n "${NAMESPACE}" -o json \
+            | jq -r '.items[] | select(.type == "Opaque") | (.data // {})[] | @base64d' \
+            | awk 'length >= 8' | sort -u)
+          if [ -z "$VALUES" ]; then echo "could not read the secret values"; exit 1; fi
+          while IFS= read -r V; do
+            echo "::add-mask::${V}"
+            V="$V" perl -pi -e 's/\Q$ENV{V}\E/<redacted>/g' "$D"/*
+            if grep -rqF -- "$V" "$D"; then echo "a secret value is still in the diagnostics"; exit 1; fi
+          done <<< "$VALUES"
+
+      - name: Upload diagnostics
+        if: (failure() || cancelled()) && steps.redact.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: k8s-diagnostics-${{ github.run_id }}

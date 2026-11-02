@@ -1,5 +1,61 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.17.3
+
+### Patch Changes
+
+- 1cb516a: pt.run() sends the ptabler workflow as gzip-compressed JSON. A workflow with many steps (for example, one frame for each sample) can be larger than the 4 MiB gRPC message limit of the platform. Before this change, such a workflow failed with "grpc: received message larger than max". On a backend without gzipEncode, pt.run() sends plain JSON as before. ptabler reads a workflow file with a ".gz" suffix (for example, "workflow.json.gz") as gzip-compressed.
+- Updated dependencies [1cb516a]
+  - @platforma-open/milaboratories.software-ptabler@2.3.0
+
+## 6.17.2
+
+### Patch Changes
+
+- 089402e: Write the keys of a Json column's `.jdata` file in axis value order: numbers as numbers (so `[9]` comes before `[10]`, and `[-10]` before `[-1]`) and strings in byte order. Writing the file is also faster than with `canonical.encode`, which `writeFile` used before: 0.55 s instead of 14.8 s for 70,000 rows. The file bytes change, so ptabler steps that read such a column run again once after the update.
+- 79f8dbc: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.2.0. JsonPartitioned parts are sorted by axes on read, so a part written in another key order no longer gives wrong join rows. Same-axes outer joins no longer re-sort. pframes-rs-node requires Node 24. Bump runenv-python-3 to 1.16.1, which bundles polars-pf 1.2.0 for ptabler.
+- Updated dependencies [79f8dbc]
+  - @platforma-open/milaboratories.software-ptabler@2.2.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.6
+
+## 6.17.1
+
+### Patch Changes
+
+- 2157f48: Fix `slices.quickSort` and `slices.quickSortFn` overflowing the Tengo stack on sorted input. The sort used the last element as the pivot, so a sorted list of about 290 elements failed with `index out of range [2048] with length 2048`. `resolveAst` sorts the already sorted input file list of every exec with a resource formula, so a ptabler run with about 283 or more input files failed. The sort now uses Hoare partitioning around the middle element and recurses only into the smaller part, so the recursion depth is at most log2(n).
+
+## 6.17.0
+
+### Minor Changes
+
+- 48fd5df: Add a DuckDB engine for Parquet PColumn imports, lifting the row ceilings that kept
+  large long-format columns from importing at all (MILAB-7195).
+
+  Polars indexes rows with a u32, so the step chain the SDK emits for a Parquet import
+  refuses any file over 2^32 rows. The new `import_parquet_frame` step does the
+  projection, cast, null filter and sort in one out-of-core DuckDB pass and hands the
+  result to `polars_pf.convert`, which `write_frame` already used for the write. Opt in
+  per import with `importEngine: "duckdb"`; it covers plain projection-and-cast specs,
+  and anything using preProcess, naRegex, filterOutRegex or an index axis keeps the
+  Polars chain.
+
+  Two further limits sit behind that one and are also addressed. DuckDB's sort keeps
+  per-thread buffers, so the thread count is now derived from the memory budget rather
+  than the core count. Parquet stores a row group's ordinal as an i16, capping a file
+  at 32767 groups, so the row group size is derived from the row count; frames that fit
+  the default are unchanged. Because sorting at this size is expensive in scratch, the
+  step first checks whether the input is already ordered by its axes and streams
+  straight through when it is.
+
+  The sort tuning is scoped to the new step. `write_frame` issues the same ORDER BY
+  and has the same exposure, but only at a row count no caller has reached, and capping
+  its threads would slow every PFrame the platform writes.
+
+### Patch Changes
+
+- Updated dependencies [48fd5df]
+  - @platforma-open/milaboratories.software-ptabler@2.2.0
+
 ## 6.16.0
 
 ### Minor Changes

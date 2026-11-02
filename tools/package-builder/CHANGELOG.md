@@ -1,5 +1,12 @@
 # @platforma-sdk/package-builder
 
+## 3.16.2
+
+### Patch Changes
+
+- Updated dependencies [91af6ad]
+  - @platforma-sdk/package-builder-lib@1.4.2
+
 ## 3.16.1
 
 ### Patch Changes

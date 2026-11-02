@@ -11,6 +11,8 @@
 // ensure*/remove*/require*/prune/enforce*/transform; YAML catalog
 // management + workspace module paths; gitignore line management.
 
+import { gte, minVersion, validRange } from "semver";
+import { isMap, isSeq } from "yaml";
 import { registerInnerWhenHandler, tryGetActiveRunContext } from "./builders";
 import type { RunContext, Scope } from "./api";
 import type { ManagedBody, TriggerContext, TriggerFn } from "./ir";
@@ -283,6 +285,13 @@ export function requireField(jsonPath: string, message?: string): void {
   const obj = requireJson("requireField").obj;
   if (!hasAtPath(obj, jsonPath)) {
     throw new Error(message ?? `requireField: missing field '${jsonPath}'`);
+  }
+}
+
+/** Throw `message` when the field at `jsonPath` exists. No mutation. */
+export function forbidField(jsonPath: string, message: string): void {
+  if (hasAtPath(requireJson("forbidField").obj, jsonPath)) {
+    throw new Error(message);
   }
 }
 
@@ -608,11 +617,62 @@ export function pinCatalogToDependencyOf(
   state.doc.setIn(["catalog", catalogEntry], version);
 }
 
+/** Raise `catalog.<name>` to `range` when its lowest version is lower; add it when absent.
+ *  An entry that is not a semver range stays. */
+export function ensureCatalogAtLeast(name: string, range: string): void {
+  const state = requireYaml("ensureCatalogAtLeast");
+  const current = readCatalogString(state, name);
+  const floor = minVersion(range);
+  const currentMin =
+    current !== undefined && validRange(current) !== null ? minVersion(current) : null;
+  if (current !== undefined && (floor === null || currentMin === null || gte(currentMin, floor))) {
+    return;
+  }
+  state.doc.setIn(["catalog", name], range);
+}
+
 /** Remove `catalog.<name>` if present; no-op when absent. */
 export function ensureCatalogAbsent(name: string): void {
   const state = requireYaml("ensureCatalogAbsent");
   if (!state.doc.hasIn(["catalog", name])) return;
   state.doc.deleteIn(["catalog", name]);
+}
+
+/** Set each `entries` key under the top-level map `key`; other keys stay.
+ *  With `keepExisting`, a key the map already has keeps its value. */
+export function ensureWorkspaceMapEntries(
+  key: string,
+  entries: Record<string, unknown>,
+  { keepExisting = false } = {},
+): void {
+  const state = requireYaml("ensureWorkspaceMapEntries");
+  if (!isMap(state.doc.get(key))) {
+    state.doc.delete(key);
+  }
+  const changed = Object.entries(entries).filter(([name, value]) =>
+    keepExisting ? !state.doc.hasIn([key, name]) : state.doc.getIn([key, name]) !== value,
+  );
+  for (const [name, value] of changed) {
+    state.doc.setIn([key, name], value);
+  }
+}
+
+/** Append each missing `items` entry to the top-level list `key`. */
+export function ensureWorkspaceListItems(key: string, items: readonly string[]): void {
+  const state = requireYaml("ensureWorkspaceListItems");
+  const current = state.doc.toJSON()?.[key];
+  const present = new Set(Array.isArray(current) ? current : []);
+  const missing = items.filter((item) => !present.has(item));
+  if (missing.length === 0) {
+    return;
+  }
+  if (!isSeq(state.doc.get(key))) {
+    state.doc.set(key, missing);
+    return;
+  }
+  for (const item of missing) {
+    state.doc.addIn([key], item);
+  }
 }
 
 // ============================================================

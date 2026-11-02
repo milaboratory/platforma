@@ -1,5 +1,48 @@
 # @platforma-sdk/pl-cli
 
+## 0.10.6
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.13
+
+## 0.10.5
+
+### Patch Changes
+
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [79f8dbc]
+- Updated dependencies [615bd8c]
+  - @milaboratories/pl-client@3.19.2
+  - @milaboratories/pl-middle-layer@1.74.12
+
+## 0.10.4
+
+### Patch Changes
+
+- Updated dependencies [1472a5b]
+  - @milaboratories/pl-middle-layer@1.74.11
+
+## 0.10.3
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.10
+
+## 0.10.2
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.19.1
+- @milaboratories/pl-middle-layer@1.74.9
+
+## 0.10.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.8
+
 ## 0.10.0
 
 ### Minor Changes

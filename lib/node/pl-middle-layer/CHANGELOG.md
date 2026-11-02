@@ -1,5 +1,89 @@
 # @milaboratories/pl-middle-layer
 
+## 1.74.13
+
+### Patch Changes
+
+- Updated dependencies [1cb516a]
+  - @platforma-sdk/workflow-tengo@6.17.3
+
+## 1.74.12
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- 79f8dbc: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.2.0. JsonPartitioned parts are sorted by axes on read, so a part written in another key order no longer gives wrong join rows. Same-axes outer joins no longer re-sort. pframes-rs-node requires Node 24. Bump runenv-python-3 to 1.16.1, which bundles polars-pf 1.2.0 for ptabler.
+- 615bd8c: Replace `decompress` (path traversal advisories, no fixed release) with `yauzl` for zip archives and `tar` for the block boilerplate. Zip extraction now fails on entries and symlinks that lead outside the target folder, on entries written through a symlink, and on duplicate entries.
+- Updated dependencies [39a9676]
+- Updated dependencies [91af6ad]
+- Updated dependencies [089402e]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [79f8dbc]
+- Updated dependencies [615bd8c]
+  - @platforma-sdk/block-tools@2.17.0
+  - @milaboratories/computable@2.9.9
+  - @milaboratories/pf-driver@1.9.11
+  - @milaboratories/pl-client@3.19.2
+  - @milaboratories/pl-deployments@3.0.23
+  - @milaboratories/pl-drivers@1.16.37
+  - @milaboratories/pl-http@1.2.5
+  - @platforma-sdk/workflow-tengo@6.17.2
+  - @milaboratories/pl-tree@1.16.6
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/helpers@1.14.6
+  - @milaboratories/pf-spec-driver@1.5.11
+  - @milaboratories/pl-model-backend@1.4.39
+  - @milaboratories/columns-collection-driver@0.2.11
+  - @milaboratories/pl-model-common@1.54.1
+  - @milaboratories/pl-model-middle-layer@1.34.5
+  - @milaboratories/pl-crash-recorder@0.3.7
+  - @milaboratories/pl-errors@1.4.54
+  - @platforma-sdk/model@1.86.3
+
+## 1.74.11
+
+### Patch Changes
+
+- 1472a5b: Trim the download, downloadToURL and frontend cache dirs to their size limits on startup, so files from earlier sessions no longer pile up.
+- Updated dependencies [1472a5b]
+  - @milaboratories/pl-drivers@1.16.36
+
+## 1.74.10
+
+### Patch Changes
+
+- Updated dependencies [2157f48]
+  - @platforma-sdk/workflow-tengo@6.17.1
+
+## 1.74.9
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @milaboratories/pl-model-common@1.54.0
+  - @platforma-sdk/model@1.86.0
+  - @milaboratories/columns-collection-driver@0.2.10
+  - @milaboratories/pl-model-middle-layer@1.34.4
+  - @milaboratories/pf-spec-driver@1.5.10
+  - @milaboratories/pf-driver@1.9.10
+  - @milaboratories/pl-client@3.19.1
+  - @milaboratories/pl-crash-recorder@0.3.6
+  - @milaboratories/pl-deployments@3.0.22
+  - @milaboratories/pl-drivers@1.16.35
+  - @platforma-sdk/block-tools@2.16.17
+  - @milaboratories/pl-model-backend@1.4.38
+  - @milaboratories/pl-errors@1.4.53
+  - @milaboratories/pl-tree@1.16.5
+  - @platforma-sdk/workflow-tengo@6.17.0
+
+## 1.74.8
+
+### Patch Changes
+
+- Updated dependencies [48fd5df]
+  - @platforma-sdk/workflow-tengo@6.17.0
+
 ## 1.74.7
 
 ### Patch Changes

@@ -3,6 +3,7 @@ import { computed } from "vue";
 import CheckboxUncheckedSvg from "../assets/images/24_checkbox-light-enabled-unchecked.svg?raw";
 import CheckboxCheckedSvg from "../assets/images/24_checkbox-light-enabled-checked.svg?raw";
 import type { ListOptionNormalized } from "../types";
+import { PlColumnLabel } from "./PlColumnLabel";
 
 const props = withDefaults(
   defineProps<{
@@ -58,7 +59,7 @@ const checkboxSvg = computed(() => (props.isSelected ? CheckboxCheckedSvg : Chec
     <!--eslint-enable-->
     <div class="dropdown-list-item__title-container">
       <div class="dropdown-list-item__title text-s" data-testid="pl-dropdown-list-item-title">
-        {{ option.label }}
+        <PlColumnLabel :option="option" />
       </div>
       <div
         v-if="option.description"
