@@ -1,0 +1,20 @@
+// An auto workflow (rendered with isProduction false) that uses prepare(): resolves args.source in
+// prepare and reports in the body what reached it.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+
+wf.prepare(func(args) {
+	return { prepared: wf.resolve(args.source) }
+})
+
+wf.body(func(args) {
+	return {
+		outputs: {
+			isProduction: wf.isProduction(),
+			preparedSpecName: args.prepared.spec.name,
+			preparedData: args.prepared.data,
+			preparedRef: args.prepared.ref
+		},
+		exports: ex.collection({})
+	}
+})
