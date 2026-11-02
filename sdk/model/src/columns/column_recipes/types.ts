@@ -24,9 +24,10 @@ export type ColumnRecipeId = ColumnUniversalId;
  * overrides/discovery).
  *
  * "All or nothing" semantics: spec/query built from a recipe are meaningful
- * only when every referenced column is `present`.
+ * only when every referenced column is `present`. `errored` means a data
+ * field carries an error; the collection's `getErrors()` gives the message.
  */
-export type ColumnFieldStatus = "resolving" | "absent" | "present";
+export type ColumnFieldStatus = "resolving" | "absent" | "present" | "errored";
 
 /**
  * Resolution status of a recipe — whether the recipe is meaningful in the
@@ -38,12 +39,29 @@ export type ColumnFieldStatus = "resolving" | "absent" | "present";
  *  - `absent`:   every relevant accessor is `inputsLocked`; nothing more will
  *                appear. Used at boundaries to throw early instead of silently
  *                producing an empty/broken recipe.
+ *  - `errored`:  a spec or data field, or the source the column lives in,
+ *                carries an error; the column will not become readable.
  *
  * Distinct from {@link ColumnFieldStatus}: that one is the leaf's data field
  * status only. {@link ColumnResolutionStatus} also folds in spec/registry
  * readiness, so the recipe interface exposes both.
  */
-export type ColumnResolutionStatus = "present" | "resolving" | "absent";
+export type ColumnResolutionStatus = "present" | "resolving" | "absent" | "errored";
+
+/**
+ * The worse of two statuses: `errored ▸ absent ▸ resolving ▸ present`.
+ * Folds the statuses of every column a recipe references into one.
+ */
+export function worseStatus<S extends ColumnResolutionStatus>(a: S, b: S): S {
+  return STATUS_RANK[a] >= STATUS_RANK[b] ? a : b;
+}
+
+const STATUS_RANK: Record<ColumnResolutionStatus, number> = {
+  present: 0,
+  resolving: 1,
+  absent: 2,
+  errored: 3,
+};
 
 /**
  * Base contract of a column recipe — an immutable description of HOW to

@@ -128,6 +128,18 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     return undefined;
   }
 
+  getAccessorErrorByName(name: string): string | undefined {
+    const lambda =
+      name === "staging"
+        ? this.blockCtx.stagingError
+        : name === "main"
+          ? this.blockCtx.prodError
+          : undefined;
+    const entry = lambda?.(this.requireComputableCtx);
+    if (entry === undefined) return undefined;
+    return this.wrapAccessor(this.requireComputableCtx.accessor(entry).node({ ignoreError: true }));
+  }
+
   //
   // Accessors
   //
@@ -166,6 +178,10 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
   getError(handle: string): string | undefined {
     return this.wrapAccessor(this.getAccessor(handle).getError());
+  }
+
+  getFieldError(handle: string, field: string): string | undefined {
+    return this.wrapAccessor(this.getAccessor(handle).getField(field)?.error);
   }
 
   listInputFields(handle: string): string[] {
@@ -733,6 +749,17 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
 
       exportCtxFunction("getError", (handle) => {
         return parent.exportSingleValue(this.getError(vm.getString(handle)), undefined);
+      });
+
+      exportCtxFunction("getAccessorErrorByName", (name) => {
+        return parent.exportSingleValue(this.getAccessorErrorByName(vm.getString(name)), undefined);
+      });
+
+      exportCtxFunction("getFieldError", (handle, field) => {
+        return parent.exportSingleValue(
+          this.getFieldError(vm.getString(handle), vm.getString(field)),
+          undefined,
+        );
       });
 
       exportCtxFunction("listInputFields", (handle) => {

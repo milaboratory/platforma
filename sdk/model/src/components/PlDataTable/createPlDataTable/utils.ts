@@ -117,6 +117,7 @@ export function evaluateRules<R extends { match: ColumnSelector }>(
  *
  * Mapping `ColumnFieldStatus` × actual byte-presence → `AnnotationDataStatus`:
  *   - `absent`                       → `"absent"`
+ *   - `errored`                      → `"error"`
  *   - `resolving`                    → `"computing"`
  *   - `present` + `hasColumnData()`  → `"ready"`
  *   - `present` + no bytes yet       → `"computing"`
@@ -140,6 +141,7 @@ function deriveDataStatus(
 ): AnnotationDataStatus {
   const field = column.getDataStatus();
   if (field === "absent") return "absent";
+  if (field === "errored") return "error";
   if (field === "resolving") return "computing";
   return hasColumnData(column, opts) ? "ready" : "computing";
 }
