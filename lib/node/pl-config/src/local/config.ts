@@ -115,7 +115,7 @@ export async function generateLocalPlConfigs(
   const host = "127.0.0.1";
   const ports = await getPorts(opts.portsMode);
 
-  const storages = await createDefaultLocalStorages(workdir, `http://${host}:${ports.http}`);
+  const storages = await createDefaultLocalStorages(workdir);
   const htpasswdFile = await createLocalHtpasswdFile(workdir, [{ user, password }]);
   const licenseFile = await localLicenseFile(workdir, await getLicense(opts.licenseMode));
 
@@ -166,12 +166,11 @@ export async function generateLocalPlConfigs(
     plUser: user,
     plPassword: password,
 
-    localStorageProjections: storages.storages
-      .filter((s) => s.main.downloadable && s.localPath !== undefined)
-      .map((s) => ({
-        storageId: s.storage.id,
-        localPath: s.localPath!,
-      })),
+    localStorageProjections: [
+      // The host data library: accepts absolute paths and operates inside the same OS.
+      { storageId: "root", localPath: "" },
+      { storageId: "main", localPath: storages.mainStoragePath },
+    ],
   };
 }
 

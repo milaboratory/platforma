@@ -1,6 +1,5 @@
 import fs from "node:fs/promises";
 import upath from "upath";
-import type { PlAuthDriver } from "./types";
 
 /** A line in a users.htpasswd config */
 export interface HtpasswdLine {
@@ -34,17 +33,4 @@ export function newHtpasswdFile(dir: string, config: HtpasswdConfig): Htpasswd {
 
 export function stringifyHtpasswdConfig(lines: HtpasswdConfig): string {
   return lines.map((line) => `${line.user}:${line.password}`).join("\n");
-}
-
-export function getDefaultAuthMethods(htpasswdAuth: string, jwtKey: string): PlAuthDriver[] {
-  return [
-    {
-      driver: "jwt",
-      key: jwtKey,
-    },
-    {
-      driver: "htpasswd",
-      path: htpasswdAuth,
-    },
-  ];
 }

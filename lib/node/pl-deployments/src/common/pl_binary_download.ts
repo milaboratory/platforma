@@ -26,37 +26,6 @@ export type DownloadBinaryResult = {
   baseName: string;
 };
 
-export async function downloadBinaryNoExtract({
-  logger,
-  baseDir,
-  softwareName,
-  tgzName,
-  arch,
-  platform,
-  dispatcher,
-}: {
-  logger: MiLogger;
-  baseDir: string;
-  softwareName: string;
-  tgzName: string;
-  arch: string;
-  platform: string;
-  dispatcher?: Dispatcher;
-}): Promise<DownloadBinaryResult> {
-  const opts = getPathsForDownload(softwareName, tgzName, baseDir, newArch(arch), newOs(platform));
-  const { archiveUrl, alternativeArchiveGAUrl, archivePath } = opts;
-
-  try {
-    await downloadArchive({ logger, archiveUrl, archivePath, dispatcher });
-    opts.wasDownloadedFrom = archiveUrl;
-  } catch {
-    await downloadArchive({ logger, archiveUrl: alternativeArchiveGAUrl, archivePath, dispatcher });
-    opts.wasDownloadedFrom = alternativeArchiveGAUrl;
-  }
-
-  return opts;
-}
-
 export async function downloadBinary({
   logger,
   baseDir,
