@@ -79,6 +79,23 @@ describe("ColumnsCollection.isEmpty", () => {
     const c = { id: gid("c1"), spec: spec("col1") };
     expect(makeCollection([c]).isEmpty()).toBe(false);
   });
+
+  test("driver: true when the only export is not a column", () => {
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([file]);
+    const collection = handle.driver.create([{ kind: "ids", ids: [file.id], isFinal: true }]);
+    expect(handle.driver.isEmpty(collection)).toBe(true);
+  });
+
+  test("driver: lists an id only once its spec is readable", () => {
+    const late = { id: gid("late"), spec: spec("late") };
+    const collection = handle.driver.create([{ kind: "ids", ids: [late.id], isFinal: true }]);
+    expect(handle.driver.getColumns(collection)).toEqual([]);
+    expect(handle.driver.isEmpty(collection)).toBe(true);
+    handle.register([late]);
+    expect(handle.driver.getColumns(collection)).toEqual([late.id]);
+    expect(handle.driver.isEmpty(collection)).toBe(false);
+  });
 });
 
 describe("ColumnsCollection.isFinal", () => {
@@ -111,6 +128,28 @@ describe("ColumnsCollection.getColumnIds", () => {
       { driver: handle.driver },
     ).getColumnIds();
     expect(ids).toEqual([id]);
+  });
+});
+
+describe("ColumnsCollection driver getColumns", () => {
+  test("drops ids whose spec is not a column", () => {
+    const column = { id: gid("c1"), spec: spec("col1") };
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([column, file]);
+    const collection = handle.driver.create([
+      { kind: "ids", ids: [column.id, file.id], isFinal: true },
+    ]);
+    expect(handle.driver.getColumns(collection)).toEqual([column.id]);
+  });
+
+  test("filter over a collection with a file export returns only columns", () => {
+    const column = { id: gid("c1"), spec: spec("col1") };
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([column, file]);
+    const collection = handle.driver.create([
+      { kind: "ids", ids: [column.id, file.id], isFinal: true },
+    ]);
+    expect(handle.driver.getColumns(handle.driver.filter(collection, {}))).toEqual([column.id]);
   });
 });
 

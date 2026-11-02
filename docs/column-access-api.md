@@ -167,6 +167,8 @@ collection queries against.
 `isFinal` says whether the visible column set can still grow. While upstream
 blocks are running it keeps growing across render passes. Built-in sources
 compute it; you supply it only with the `{ columns, isFinal }` shape.
+`isFinal` covers which exports exist: a column whose spec is not readable yet
+appears on a later pass, even when `isFinal` is true.
 
 **Instance surface.** Every method that returns a collection mints a fresh
 handle on the host; the receiver is unchanged.
@@ -185,13 +187,13 @@ handle on the host; the receiver is unchanged.
 `getColumnIds()` is the fast path when the ids are all you need — and they
 usually are, because the id-accepting consumers take them directly.
 
-`getColumns()` builds a recipe per id. Two consequences worth knowing:
+`getColumns()` builds a recipe per id.
 
-- Ids that are still resolving are **dropped**, so the result can be shorter
-  than `getColumnIds()`.
-- An id whose column is provably absent makes recipe construction throw
-  `ColumnAbsentError`. Catch it at the boundary if partial absence should be
-  surfaced rather than silently yielding an empty table.
+A collection holds columns only: the driver keeps an id only after it has read
+its spec and found a column spec. It drops ids whose spec is not readable in
+this render and exports that are not columns, such as a `kind: "File"` library
+export. So every id from `getColumnIds()` has a readable column spec, and
+`getColumns()` returns one recipe per id.
 
 ```ts
 // only the current block's own outputs/prerun
@@ -405,7 +407,10 @@ DataColumn.fromAccessor(leafEntry);
 `resolving` — retry on the next render pass, more accessor inputs may arrive.
 Every factory throws `ColumnAbsentError` when the column is `absent` — every
 relevant accessor reports `inputsLocked` and the column did not appear, so it
-never will in this ctx. Always check for `undefined` before chaining.
+never will in this ctx. Every factory also throws `ColumnAbsentError` for an
+export that is not a column (a `kind: "File"` library, for example), though its
+status is `present`: the status tells only whether the spec is readable. Always
+check for `undefined` before chaining.
 
 `ColumnRecipe(id)` additionally throws for an id variant it cannot build (e.g. a
 legacy `AnchoredPColumnId`, which needs an anchor map to resolve).
@@ -421,7 +426,9 @@ DataColumn.getStatusByAccessor(entry);
 ```
 
 Inside a loop over known ids, one `getStatus` up front beats a try/catch around
-the factory.
+the factory. The status tells whether the spec is readable, not what kind of
+object it describes: an export that is not a column reports `present`, and its
+factory throws `ColumnAbsentError`.
 
 | Type                     | Means                                                                                                                                         |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -659,7 +666,7 @@ What crosses the sandbox bridge, and when.
 | `ColumnsCollection(...)`, `.discover`, `.filter`, `.addSource`    | one host call, returns a handle                  |
 | `.isEmpty()`, `.isFinal()`                                        | one host call, no payload                        |
 | `.getColumnIds()`                                                 | one host call, N id strings                      |
-| `.getColumns()`                                                   | ids + per-id registry resolution (no spec bytes) |
+| `.getColumns()`                                                   | ids + per-id registry resolution and spec read   |
 | `recipe.id`, `.getQuery()`, `.getReferencedIds()`, `.withSpecs()` | none                                             |
 | `recipe.getSpec()`                                                | one round-trip per recipe, memoised per instance |
 | `recipe.getData()`                                                | one round-trip, memoised per instance            |

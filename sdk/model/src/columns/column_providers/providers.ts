@@ -1,12 +1,13 @@
 import {
   AccessorEntriesProvider,
   ResultPoolEntriesProvider,
+  type LeafEntry,
   type PColumn,
   type PObjectId,
   type UpstreamBlockCtx,
 } from "@milaboratories/pl-model-common";
 import { AccessorHandle, PColumnDataUniversal, TreeNodeAccessor } from "../../render";
-import { DataColumn, DataColumnRecipe } from "../data_column";
+import { ColumnAbsentError, DataColumn, DataColumnRecipe } from "../data_column";
 import { getCfgRenderCtx } from "../../internal";
 import { isNil } from "es-toolkit";
 import { LRUCache } from "lru-cache";
@@ -129,9 +130,9 @@ export class AccessorColumnsProviderImpl
 
   getColumns(): DataColumnRecipe<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
-    return (this.cachedColumns = Array.from(this.entries.values())
-      .map((e) => DataColumn.fromAccessor(e))
-      .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v)));
+    return (this.cachedColumns = Array.from(this.entries.values(), columnUnlessAbsent).filter(
+      (column) => column !== undefined,
+    ));
   }
 }
 
@@ -173,14 +174,26 @@ export class ResultPoolColumnsProviderImpl
 
   getColumns(): DataColumnRecipe<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
-    return (this.cachedColumns = Array.from(this.getPObjectEntries().values())
-      .map((e) => DataColumn.fromAccessor(e))
-      .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v)));
+    return (this.cachedColumns = Array.from(
+      this.getPObjectEntries().values(),
+      columnUnlessAbsent,
+    ).filter((column) => column !== undefined));
   }
 }
 
 /** Public type alias — value of the same name is the memoised factory above. */
 export type ResultPoolColumnsProvider = ResultPoolColumnsProviderImpl;
+
+function columnUnlessAbsent(
+  entry: LeafEntry<TreeNodeAccessor>,
+): DataColumnRecipe<PObjectId> | undefined {
+  try {
+    return DataColumn.fromAccessor(entry);
+  } catch (error) {
+    if (error instanceof ColumnAbsentError) return undefined;
+    throw error;
+  }
+}
 
 function hashRawPool(rawPool: ReadonlyArray<UpstreamBlockCtx<AccessorHandle>>): string {
   return rawPool
