@@ -1,6 +1,5 @@
 import { BlockPackId, SemVer, Sha256Schema } from "@milaboratories/pl-model-middle-layer";
-// @todo: don't use zod
-import { z } from "zod";
+import * as v from "valibot";
 import { parsePackageName } from "../source_package";
 
 /**
@@ -83,22 +82,18 @@ export function npmNameToKindPath(npmName: string): KindPathLocation {
  * npm name via {@link npmNameToKindPath}, so the content publisher and the
  * overview reconciler resolve to the same folder.
  */
-export const KindManifestIdentity = z
-  .object({
-    name: z.string(),
-    version: SemVer,
-  })
-  .passthrough();
-export type KindManifestIdentity = z.infer<typeof KindManifestIdentity>;
+export const KindManifestIdentity = v.looseObject({
+  name: v.string(),
+  version: SemVer,
+});
+export type KindManifestIdentity = v.InferOutput<typeof KindManifestIdentity>;
 
-export const KindManifestFileInfo = z
-  .object({
-    name: z.string(),
-    size: z.number(),
-    sha256: Sha256Schema,
-  })
-  .passthrough();
-export type KindManifestFileInfo = z.infer<typeof KindManifestFileInfo>;
+export const KindManifestFileInfo = v.looseObject({
+  name: v.string(),
+  size: v.number(),
+  sha256: Sha256Schema,
+});
+export type KindManifestFileInfo = v.InferOutput<typeof KindManifestFileInfo>;
 
 /**
  * Kind content manifest, as produced by `build_kind_dist.ts` and stored (LAST,
@@ -109,49 +104,43 @@ export type KindManifestFileInfo = z.infer<typeof KindManifestFileInfo>;
  * source-hash immutability guard. `firstUploadTimestamp` is stamped by
  * `publishKind` when the manifest is first written to the registry.
  */
-export const KindManifest = z
-  .object({
-    schema: z.literal("v1"),
-    kind: KindManifestIdentity,
-    sourceHash: z.string(),
-    files: z.array(KindManifestFileInfo),
-    /** Build-time timestamp carried from `build_kind_dist.ts`. */
-    timestamp: z.number().optional(),
-    /** Stamped by `publishKind` on first upload to the registry. */
-    firstUploadTimestamp: z.number().optional(),
-  })
-  .passthrough();
-export type KindManifest = z.infer<typeof KindManifest>;
+export const KindManifest = v.looseObject({
+  schema: v.literal("v1"),
+  kind: KindManifestIdentity,
+  sourceHash: v.string(),
+  files: v.array(KindManifestFileInfo),
+  /** Build-time timestamp carried from `build_kind_dist.ts`. */
+  timestamp: v.optional(v.number()),
+  /** Stamped by `publishKind` on first upload to the registry. */
+  firstUploadTimestamp: v.optional(v.number()),
+});
+export type KindManifest = v.InferOutput<typeof KindManifest>;
 
 /**
  * One implementing block version for some kind version. Flat and
  * RMW-friendly: the reconciler filters this list by `(id)` to drop stale
  * entries before re-adding fresh ones.
  */
-export const KindImplementer = z
-  .object({
-    /** Full id of the implementing block, incl. its version. */
-    id: BlockPackId,
-    /** Kind version this block implements. */
-    kindVersion: SemVer,
-    /** Channels the block version is published to. */
-    channels: z.array(z.string()).default(() => []),
-  })
-  .passthrough();
-export type KindImplementer = z.infer<typeof KindImplementer>;
+export const KindImplementer = v.looseObject({
+  /** Full id of the implementing block, incl. its version. */
+  id: BlockPackId,
+  /** Kind version this block implements. */
+  kindVersion: SemVer,
+  /** Channels the block version is published to. */
+  channels: v.optional(v.array(v.string()), () => []),
+});
+export type KindImplementer = v.InferOutput<typeof KindImplementer>;
 
 /**
  * Per-kind-version projection: the newest implementing block per channel,
  * including the derived `any` channel. Mirrors the package overview's
  * `latestByChannel` + `AnyChannel` computation.
  */
-export const KindVersionOverview = z
-  .object({
-    kindVersion: SemVer,
-    latestByChannel: z.record(z.string(), BlockPackId),
-  })
-  .passthrough();
-export type KindVersionOverview = z.infer<typeof KindVersionOverview>;
+export const KindVersionOverview = v.looseObject({
+  kindVersion: SemVer,
+  latestByChannel: v.record(v.string(), BlockPackId),
+});
+export type KindVersionOverview = v.InferOutput<typeof KindVersionOverview>;
 
 /**
  * Reconciler-maintained projection at `kinds/{org}/{name}/overview.json`.
@@ -159,11 +148,9 @@ export type KindVersionOverview = z.infer<typeof KindVersionOverview>;
  * `implementers` is the flat, RMW source of truth; `kindVersions` is the
  * derived, reader-facing view (kind versions × newest implementer per channel).
  */
-export const KindOverview = z
-  .object({
-    schema: z.literal("v1"),
-    implementers: z.array(KindImplementer),
-    kindVersions: z.array(KindVersionOverview),
-  })
-  .passthrough();
-export type KindOverview = z.infer<typeof KindOverview>;
+export const KindOverview = v.looseObject({
+  schema: v.literal("v1"),
+  implementers: v.array(KindImplementer),
+  kindVersions: v.array(KindVersionOverview),
+});
+export type KindOverview = v.InferOutput<typeof KindOverview>;

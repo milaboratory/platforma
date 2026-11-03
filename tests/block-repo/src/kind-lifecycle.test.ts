@@ -14,6 +14,7 @@ import { BlockPointer } from "@milaboratories/milaboratories.test-block-table";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import * as v from "valibot";
 import { regTest } from "./test_utils";
 
 /**
@@ -35,7 +36,8 @@ regTest(
     // package.json with the direct kind dependency).
     const packDir = fileURLToPath(BlockPointer.packUrl);
     const facadeDir = fileURLToPath(BlockPointer.rootUrl);
-    const manifest = BlockPackManifest.parse(
+    const manifest = v.parse(
+      BlockPackManifest,
       JSON.parse(await fsp.readFile(path.join(packDir, "manifest.json"), { encoding: "utf-8" })),
     );
 
@@ -58,7 +60,7 @@ regTest(
     const overviewPath = kindOverviewPath(npmNameToKindPath(kindNpmName));
     const overviewRaw = await storage.getFile(overviewPath);
     expect(overviewRaw, `kind overview missing at ${overviewPath}`).toBeDefined();
-    const overview = KindOverview.parse(JSON.parse(overviewRaw!.toString()));
+    const overview = v.parse(KindOverview, JSON.parse(overviewRaw!.toString()));
     expect(overview.implementers).toHaveLength(1);
     expect(overview.implementers[0].id).toStrictEqual(manifest.description.id);
     expect(overview.implementers[0].channels).toStrictEqual([StableChannel]);

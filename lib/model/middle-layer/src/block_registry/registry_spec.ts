@@ -1,38 +1,38 @@
-import { z } from "zod";
+import * as v from "valibot";
 
-export const LocalDevFolder = z.object({
-  type: z.literal("local-dev"),
-  path: z.string(),
+export const LocalDevFolder = v.object({
+  type: v.literal("local-dev"),
+  path: v.string(),
 });
-export type LocalDevFolder = z.infer<typeof LocalDevFolder>;
+export type LocalDevFolder = v.InferOutput<typeof LocalDevFolder>;
 
 /** @deprecated don't use */
-export const RemoteRegistryV1Spec = z.object({
-  type: z.literal("remote-v1"),
-  url: z.string().url(),
+export const RemoteRegistryV1Spec = v.object({
+  type: v.literal("remote-v1"),
+  url: v.pipe(v.string(), v.url()),
 });
 /** @deprecated don't use */
-export type RemoteRegistryV1Spec = z.infer<typeof RemoteRegistryV1Spec>;
+export type RemoteRegistryV1Spec = v.InferOutput<typeof RemoteRegistryV1Spec>;
 
-export const RemoteRegistryV2Spec = z.object({
-  type: z.literal("remote-v2"),
-  url: z.string().url(),
+export const RemoteRegistryV2Spec = v.object({
+  type: v.literal("remote-v2"),
+  url: v.pipe(v.string(), v.url()),
 });
-export type RemoteRegistryV2Spec = z.infer<typeof RemoteRegistryV2Spec>;
+export type RemoteRegistryV2Spec = v.InferOutput<typeof RemoteRegistryV2Spec>;
 
-export const RegistrySpec = z.discriminatedUnion("type", [
+export const RegistrySpec = v.variant("type", [
   RemoteRegistryV1Spec,
   RemoteRegistryV2Spec,
   LocalDevFolder,
 ]);
-export type RegistrySpec = z.infer<typeof RegistrySpec>;
+export type RegistrySpec = v.InferOutput<typeof RegistrySpec>;
 
-export const RegistryEntry = z.object({
-  id: z.string(),
-  title: z.string().optional(),
+export const RegistryEntry = v.object({
+  id: v.string(),
+  title: v.optional(v.string()),
   spec: RegistrySpec,
 });
-export type RegistryEntry = z.infer<typeof RegistryEntry>;
+export type RegistryEntry = v.InferOutput<typeof RegistryEntry>;
 
-export const RegistryList = z.array(RegistryEntry);
-export type RegistryList = z.infer<typeof RegistryList>;
+export const RegistryList = v.array(RegistryEntry);
+export type RegistryList = v.InferOutput<typeof RegistryList>;

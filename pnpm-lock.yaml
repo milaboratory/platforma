@@ -2773,9 +2773,9 @@ importers:
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
-      zod:
+      valibot:
         specifier: 'catalog:'
-        version: 3.25.76
+        version: 1.5.0(typescript@7.0.2)
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -4279,6 +4279,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@7.0.2)
       vitest:
         specifier: 'catalog:'
         version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
@@ -4718,12 +4721,12 @@ importers:
       undici:
         specifier: 'catalog:'
         version: 7.30.1
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@7.0.2)
       yaml:
         specifier: 'catalog:'
         version: 2.9.1
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
