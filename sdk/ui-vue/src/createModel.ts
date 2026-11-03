@@ -1,7 +1,8 @@
+import { deepClone, isJsonEqual } from "@milaboratories/helpers";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { reactive, computed, ref, watch, unref } from "vue";
 import type { ModelOptions, Model } from "./types";
-import { deepClone, isJsonEqual } from "@milaboratories/helpers";
-import { identity, ensureError, isZodError, formatZodError } from "./utils";
+import { identity, ensureError, formatSchemaIssues } from "./utils";
 
 export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<M> {
   const validate = options.validate ?? identity;
@@ -35,11 +36,8 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
 
   const setError = (cause: unknown) => {
     const err = ensureError(cause);
-    if (isZodError(err)) {
-      error.value = Error(formatZodError(err)); // @todo temp
-    } else {
-      error.value = err;
-    }
+    const issues = schemaIssues(err);
+    error.value = issues === undefined ? err : Error(formatSchemaIssues(issues));
   };
 
   const setValue = (v: M) => {
@@ -92,4 +90,16 @@ export function createModel<M, V = unknown>(options: ModelOptions<M, V>): Model<
     revert,
     setError,
   });
+}
+
+function schemaIssues(err: Error): readonly StandardSchemaV1.Issue[] | undefined {
+  if (
+    !("issues" in err) ||
+    !Array.isArray(err.issues) ||
+    err.issues.length === 0 ||
+    !err.issues.every((issue) => typeof issue?.message === "string")
+  ) {
+    return undefined;
+  }
+  return err.issues;
 }
