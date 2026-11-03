@@ -30,7 +30,7 @@
   },
   "dependencies": {
     "json-stringify-safe": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
