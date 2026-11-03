@@ -349,11 +349,13 @@ function describeRejection(e: unknown): string {
     .join("; ");
 }
 
-/** `["numbers", 0]` → `numbers[0]` — how the params are written, not how they parse. */
+/** `["numbers", 0]` or `[{ key: "numbers" }, { key: 0 }]` → `numbers[0]` — how the params are written. */
 function formatPath(path: readonly unknown[]): string {
   return path.reduce<string>((acc, segment) => {
-    if (typeof segment === "number") return `${acc}[${segment}]`;
-    return acc === "" ? String(segment) : `${acc}.${String(segment)}`;
+    const key =
+      typeof segment === "object" && segment !== null && "key" in segment ? segment.key : segment;
+    if (typeof key === "number") return `${acc}[${key}]`;
+    return acc === "" ? String(key) : `${acc}.${String(key)}`;
   }, "");
 }
 
