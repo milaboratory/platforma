@@ -1,27 +1,24 @@
-import { z } from "zod";
-import { base32Encode } from "./base32_encode";
 import { Branded } from "@milaboratories/helpers";
+import * as v from "valibot";
+import { base32Encode } from "./base32_encode";
 
 /** Number of raw bytes in the PlId. */
 export const PlIdBytes = 15;
 /** Characters in string representation */
 export const PlIdLength = 24; // = 15 bytes * 8 bits / 5 bits per char in base32
 
-export const PlId = z
-  .string()
-  .length(PlIdLength)
-  .regex(/[ABCDEFGHIJKLMNOPQRSTUVWXYZ234567]/); // RFC4648
-export type PlId = Branded<z.infer<typeof PlId>, "PlId">;
+export const PlId = v.pipe(v.string(), v.regex(/^[A-Z2-7]{24}$/)); // RFC4648
+export type PlId = Branded<v.InferOutput<typeof PlId>, "PlId">;
 
 export function uniquePlId(): PlId {
   const data = new Uint8Array(PlIdBytes);
   crypto.getRandomValues(data);
-  return PlId.parse(base32Encode(data, "RFC4648")) as PlId;
+  return v.parse(PlId, base32Encode(data, "RFC4648")) as PlId;
 }
 
 export function plId(bytes: Uint8Array): PlId {
   if (bytes.length !== PlIdBytes) throw new Error(`Wrong number of bytes: ${bytes.length}`);
-  return PlId.parse(base32Encode(bytes, "RFC4648")) as PlId;
+  return v.parse(PlId, base32Encode(bytes, "RFC4648")) as PlId;
 }
 
 export async function digestPlId(data: string): Promise<PlId> {
