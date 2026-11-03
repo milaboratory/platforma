@@ -1,9 +1,9 @@
 import type { BlobHandleAndSize } from "@platforma-sdk/model";
 import { getRawPlatformaInstance } from "@platforma-sdk/model";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import { LRUCache } from "lru-cache";
 import type { ComputedRef, ShallowRef, EffectScope } from "vue";
 import { computed, shallowRef, getCurrentScope, onScopeDispose, effectScope } from "vue";
-import type { ZodSchema, SafeParseReturnType } from "zod";
 import { Fetcher } from "@milaboratories/helpers";
 
 type FileHandle = BlobHandleAndSize["handle"];
@@ -22,8 +22,7 @@ const DefaultReactiveFileContentOps: ReactiveFileContentOps = {
 class FileContentData {
   private _str: string | undefined = undefined;
   private _rawJson: unknown | undefined = undefined;
-  private _zodSchema: ZodSchema | undefined = undefined;
-  private _validatedJson: SafeParseReturnType<unknown, unknown> | undefined = undefined;
+  private _validated: { schema: ContentSchema<unknown>; value: unknown } | undefined = undefined;
 
   constructor(public readonly bytes: Uint8Array) {}
 
@@ -37,13 +36,35 @@ class FileContentData {
     return this._rawJson;
   }
 
-  public validatedJson<T>(schema: ZodSchema<T>): T | undefined {
-    if (this._zodSchema !== schema) {
-      this._validatedJson = schema.safeParse(this.rawJson);
-      this._zodSchema = schema;
+  public validatedJson<T>(schema: ContentSchema<T>): T | undefined {
+    if (this._validated?.schema !== schema) {
+      this._validated = { schema, value: validate(schema, this.rawJson) };
     }
-    return this._validatedJson?.success ? (this._validatedJson.data as T) : undefined;
+    return this._validated.value as T | undefined;
   }
+}
+
+/** A Zod schema from a release before 3.24, which has no Standard Schema support. */
+type LegacyZodSchema<T> = {
+  safeParse(value: unknown): { success: true; data: T } | { success: false };
+};
+
+/** A schema `getContentJson` validates with: any Standard Schema, or a Zod schema before 3.24. */
+export type ContentSchema<T> = StandardSchemaV1<unknown, T> | LegacyZodSchema<T>;
+
+function validate<T>(schema: ContentSchema<T>, value: unknown): T | undefined {
+  if (!("~standard" in schema)) {
+    const result = schema.safeParse(value);
+    return result.success ? result.data : undefined;
+  }
+  const result = schema["~standard"].validate(value);
+  if (result instanceof Promise) {
+    result.catch(() => {});
+    throw new TypeError(
+      "getContentJson needs a synchronous schema: validation returned a Promise (an async check, or a check that threw)",
+    );
+  }
+  return result.issues === undefined ? result.value : undefined;
 }
 
 const scopes = new WeakMap<EffectScope, Map<FileHandle, ShallowRef<FileContentData | undefined>>>();
@@ -213,10 +234,13 @@ export class ReactiveFileContent {
     return computed(() => dataRef.value?.str);
   }
 
-  public getContentJson<T>(handle: FileHandle, schema: ZodSchema<T>): ComputedRef<T | undefined>;
+  public getContentJson<T>(
+    handle: FileHandle,
+    schema: ContentSchema<T>,
+  ): ComputedRef<T | undefined>;
   public getContentJson<T>(
     handle: FileHandle | undefined,
-    schema: ZodSchema<T>,
+    schema: ContentSchema<T>,
   ): ComputedRef<T | undefined> | undefined;
   public getContentJson<T = unknown>(handle: FileHandle): ComputedRef<T | undefined>;
   public getContentJson<T = unknown>(
@@ -224,11 +248,11 @@ export class ReactiveFileContent {
   ): ComputedRef<T | undefined> | undefined;
   public getContentJson<T>(
     handle: FileHandle | undefined,
-    schema?: ZodSchema<T>,
+    schema?: ContentSchema<T>,
   ): ComputedRef<T | undefined> | undefined;
   public getContentJson<T>(
     handle: FileHandle | undefined,
-    schema?: ZodSchema<T>,
+    schema?: ContentSchema<T>,
   ): ComputedRef<T | undefined> | undefined {
     if (handle === undefined) return undefined;
     const dataRef = this.getDataRef(handle);
