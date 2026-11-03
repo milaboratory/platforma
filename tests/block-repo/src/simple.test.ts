@@ -12,6 +12,7 @@ import {
 } from "@milaboratories/pl-model-middle-layer";
 import { BlockPointer } from "@milaboratories/milaboratories.test-enter-numbers";
 import fsp from "fs/promises";
+import * as v from "valibot";
 import { regTest } from "./test_utils";
 import path from "path";
 import { fileURLToPath } from "node:url";
@@ -40,7 +41,8 @@ regTest("simple repo test", async ({ expect, tmpFolder }) => {
   // facade `exports` deliberately don't expose `block-pack/` as a subpath.
   // packUrl is a file: URL; convert to a path at this edge.
   const manifestPath = path.join(fileURLToPath(BlockPointer.packUrl), "manifest.json");
-  const manifest1 = BlockPackManifest.parse(
+  const manifest1 = v.parse(
+    BlockPackManifest,
     JSON.parse(await fsp.readFile(manifestPath, { encoding: "utf-8" })),
   );
   const manifestRoot = path.dirname(manifestPath);

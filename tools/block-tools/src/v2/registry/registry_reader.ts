@@ -31,7 +31,7 @@ import type { BlockComponentsAbsoluteUrl } from "../model";
 import { blockComponentsManifestToAbsoluteUrl, embedBlockPackMetaBytes } from "../model";
 import { LRUCache } from "lru-cache";
 import * as semver from "semver";
-import { calculateSha256 } from "../../util";
+import { calculateSha256, parseSchema } from "../../util";
 import { retry, Retry2TimesWithDelay } from "@milaboratories/ts-helpers";
 
 export type RegistryV2ReaderOps = {
@@ -228,7 +228,10 @@ export class RegistryV2Reader {
       const manifestContent = await this.v2RootFolderReader.readFile(
         packageContentPrefixInsideV2(id) + ManifestSuffix,
       );
-      const overview = BlockPackManifest.parse(JSON.parse(Buffer.from(manifestContent).toString()));
+      const overview = parseSchema(
+        BlockPackManifest,
+        JSON.parse(Buffer.from(manifestContent).toString()),
+      );
       return {
         id: id,
         meta: await this.embedMetaContent(
@@ -254,7 +257,8 @@ export class RegistryV2Reader {
         const packageFolderReader = this.v2RootFolderReader.relativeReader(
           packageContentPrefixInsideV2(id),
         );
-        const manifest = BlockPackManifest.parse(
+        const manifest = parseSchema(
+          BlockPackManifest,
           JSON.parse(Buffer.from(await packageFolderReader.readFile(ManifestFileName)).toString()),
         );
         return blockComponentsManifestToAbsoluteUrl(
@@ -288,7 +292,7 @@ export class RegistryV2Reader {
         const bytes = await this.kindsRootFolderReader.readFile(relPath, {
           signal: options?.signal,
         });
-        return KindOverview.parse(JSON.parse(Buffer.from(bytes).toString()));
+        return parseSchema(KindOverview, JSON.parse(Buffer.from(bytes).toString()));
       }, Retry2TimesWithDelay);
     } catch {
       // Absent overview (or unreadable) → treat as "no such kind projection".

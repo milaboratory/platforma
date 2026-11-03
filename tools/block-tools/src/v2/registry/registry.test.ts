@@ -1,4 +1,5 @@
 import { test, expect } from "vitest";
+import * as v from "valibot";
 import { RegistryStorage, storageByUrl } from "../../io";
 import { randomUUID } from "crypto";
 import path from "path";
@@ -280,7 +281,7 @@ function kindImplementingManifest(
   kindVersion: string,
   kindNpmName: string = kindTestKindNpmName,
 ): BlockPackManifest {
-  return BlockPackManifest.parse({
+  return v.parse(BlockPackManifest, {
     schema: "v2",
     description: {
       id: { organization: "testorg", name: "kindblk", version },
@@ -340,7 +341,7 @@ test.each(testStorages)(
     const readKindOverview = async (): Promise<KindOverview> => {
       const content = await storage.getFile(ovPath);
       expect(content).toBeDefined();
-      return KindOverview.parse(JSON.parse(content!.toString()));
+      return v.parse(KindOverview, JSON.parse(content!.toString()));
     };
     const channelsOf = (overview: KindOverview, version: string): string[] => {
       const entry = overview.implementers.find((i) => i.id.version === version);
@@ -451,7 +452,9 @@ test.each(testStorages)(
     const ovPathB = kindOverviewPath(npmNameToKindPath(kindTestOtherKindNpmName));
     const readOverview = async (ovPath: string): Promise<KindOverview | undefined> => {
       const content = await storage.getFile(ovPath);
-      return content === undefined ? undefined : KindOverview.parse(JSON.parse(content.toString()));
+      return content === undefined
+        ? undefined
+        : v.parse(KindOverview, JSON.parse(content.toString()));
     };
     const implementerVersions = (overview: KindOverview | undefined): string[] =>
       (overview?.implementers ?? []).map((i) => i.id.version).sort();
