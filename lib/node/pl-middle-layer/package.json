@@ -59,6 +59,7 @@
     "semver": "catalog:",
     "undici": "catalog:",
     "utility-types": "catalog:",
+    "valibot": "catalog:",
     "yaml": "catalog:",
     "zod": "catalog:"
   },
