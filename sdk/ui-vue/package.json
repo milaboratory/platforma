@@ -42,8 +42,8 @@
     "fast-json-patch": "catalog:",
     "immer": "catalog:",
     "lru-cache": "catalog:",
-    "vue": "catalog:",
-    "zod": "catalog:"
+    "valibot": "catalog:",
+    "vue": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",
@@ -61,7 +61,6 @@
     "semver": "catalog:",
     "shx": "catalog:",
     "typescript": "catalog:",
-    "valibot": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   }
