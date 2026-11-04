@@ -1,4 +1,8 @@
-import type { PlClient, PlTransaction, SignedResourceId } from "@milaboratories/pl-client";
+import type {
+  KeyValueString,
+  OptionalSignedResourceId,
+  SignedResourceId,
+} from "@milaboratories/pl-client";
 import { isNullSignedResourceId, parseSignedResourceId } from "@milaboratories/pl-client";
 import { projectFieldName } from "../model/project_model";
 
@@ -61,8 +65,28 @@ const childFieldPrefix = "child/";
  * @returns undefined when the block has no action context: it was not rendered yet, or the backend
  *          does not support block action context.
  */
+/**
+ * The part of a read transaction the reader uses: a {@link PlTransaction} satisfies it, and a test
+ * can serve it without a backend.
+ */
+export interface ActionContextReadTx {
+  getResourceData(
+    rId: SignedResourceId,
+    loadFields: true,
+  ): Promise<{
+    readonly data?: Uint8Array;
+    readonly fields: readonly { readonly name: string; readonly value: OptionalSignedResourceId }[];
+  }>;
+  listKeyValuesString(rId: SignedResourceId): Promise<KeyValueString[]>;
+}
+
+/** The part of a client the reader uses: a {@link PlClient} satisfies it. */
+export interface ActionContextReader {
+  withReadTx<T>(name: string, body: (tx: ActionContextReadTx) => Promise<T>): Promise<T>;
+}
+
 export async function readBlockActionContextTree(
-  pl: PlClient,
+  pl: ActionContextReader,
   projectRid: SignedResourceId,
   blockId: string,
   mode: BlockActionContextMode,
@@ -82,7 +106,7 @@ export async function readBlockActionContextTree(
 }
 
 async function readActionContextNode(
-  tx: PlTransaction,
+  tx: ActionContextReadTx,
   contextRef: SignedResourceId,
 ): Promise<BlockActionContextNode> {
   const [context, kvs] = await Promise.all([

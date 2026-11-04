@@ -1,7 +1,8 @@
-import type { PlClient, PlTransaction, SignedResourceId } from "@milaboratories/pl-client";
+import type { SignedResourceId } from "@milaboratories/pl-client";
 import { createSignedResourceId, parseSignedResourceId } from "@milaboratories/pl-client";
 import { describe, expect, test } from "vitest";
 import { projectFieldName } from "../model/project_model";
+import type { ActionContextReader, ActionContextReadTx } from "./block_action_context";
 import { readBlockActionContextTree } from "./block_action_context";
 
 type FakeResource = {
@@ -11,17 +12,17 @@ type FakeResource = {
 };
 
 function signedId(globalId: number): SignedResourceId {
-  return createSignedResourceId(BigInt(globalId), new Uint8Array([1]) as never);
+  return createSignedResourceId(BigInt(globalId));
 }
 
 /** A client whose read transaction serves the given resources by global ID. */
-function fakeClient(resources: Map<string, FakeResource>): PlClient {
+function fakeClient(resources: Map<string, FakeResource>): ActionContextReader {
   const lookup = (ref: SignedResourceId) => {
     const resource = resources.get(String(parseSignedResourceId(ref).globalId));
     if (resource === undefined) throw new Error(`no resource ${ref}`);
     return resource;
   };
-  const tx = {
+  const tx: ActionContextReadTx = {
     getResourceData: async (ref: SignedResourceId) => {
       const resource = lookup(ref);
       return {
@@ -30,12 +31,12 @@ function fakeClient(resources: Map<string, FakeResource>): PlClient {
       };
     },
     listKeyValuesString: async (ref: SignedResourceId) => lookup(ref).kvs,
-  } as unknown as PlTransaction;
+  };
 
   return {
-    withReadTx: async (_name: string, body: (tx: PlTransaction) => Promise<unknown>) =>
+    withReadTx: async <T>(_name: string, body: (tx: ActionContextReadTx) => Promise<T>) =>
       await body(tx),
-  } as unknown as PlClient;
+  };
 }
 
 const project = signedId(1);
