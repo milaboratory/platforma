@@ -1,5 +1,13 @@
 # @platforma-open/software-ptabler.types
 
+## 1.15.31
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+
 ## 1.15.30
 
 ### Patch Changes
