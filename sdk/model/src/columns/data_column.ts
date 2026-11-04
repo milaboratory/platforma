@@ -6,7 +6,6 @@ import {
   isPlRef,
   PlRef,
   PObjectId,
-  type ColumnUniversalId,
   type LeafEntry,
   type PColumn,
   type PColumnSpec,
@@ -51,24 +50,6 @@ export interface DataColumnRecipe<
 > extends ColumnRecipe<ID> {
   /** Column data, consistent with {@link ColumnRecipe.getSpec}. */
   getData(): ColumnData;
-}
-
-/**
- * Thrown by leaf-recipe factories when the requested column is provably
- * absent in the active render ctx — i.e. every relevant accessor reports
- * `inputsLocked` and the column did not appear. Distinct from the
- * `undefined` return that the factories still use for the "resolving" case
- * (the column may still appear later).
- *
- * Catch at the boundary (resolver / filter+sort wiring / data-table assembly)
- * when partial absence should be surfaced to the user rather than silently
- * producing an empty result.
- */
-export class ColumnAbsentError extends Error {
-  constructor(public readonly id: ColumnUniversalId) {
-    super(`Column is absent in the active render ctx and will not appear: ${id}`);
-    this.name = "ColumnAbsentError";
-  }
 }
 
 /**
@@ -134,22 +115,17 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
 
   /**
    * Resolve via the ambient {@link ColumnRegistry}. Spec is resolved eagerly:
-   * returns `undefined` if the leaf isn't reachable yet (resolving). Throws
-   * {@link ColumnAbsentError} when every relevant accessor is `inputsLocked`
-   * and the column did not appear, or when the id names an export that is not
-   * a column (a `kind: "File"` object, for example) — the column will not
-   * exist in this ctx. Data and dataStatus stay lazy.
+   * returns `undefined` unless the id names a column whose spec is readable in
+   * this ctx — while it is resolving, when it is absent, and when the id names
+   * an export that is not a column (a `kind: "File"` object, for example).
+   * Data and dataStatus stay lazy.
    */
   static fromId(
     id: PObjectId,
     { ctx }: { ctx?: GlobalCfgRenderCtx } = {},
   ): undefined | DataColumnRecipe<PObjectId> {
-    const registry = new ColumnRegistry(getCtxProviders({ ctx }));
-    const leaf = registry.resolve(id);
-    if (isNil(leaf)) {
-      if (registry.isFinal()) throw new ColumnAbsentError(id);
-      return undefined;
-    }
+    const leaf = new ColumnRegistry(getCtxProviders({ ctx })).resolve(id);
+    if (isNil(leaf)) return undefined;
     return DataColumnImpl.fromAccessor(leaf);
   }
 
@@ -160,18 +136,13 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
 
   /**
    * Bind directly to an accessor-backed {@link LeafEntry} — no registry.
-   * Throws {@link ColumnAbsentError} if the leaf has no spec field and its
-   * accessor is `inputsLocked`, or if it names an export that is not a column.
-   * Returns `undefined` while still resolving.
+   * Returns `undefined` unless the leaf's spec is readable and is a column
+   * spec: while the spec is resolving, when it is absent, and for an export
+   * that is not a column.
    */
   static fromAccessor(entry: LeafEntry<TreeNodeAccessor>): undefined | DataColumnRecipe<PObjectId> {
-    if (isNil(readSpecAccessor(entry))) {
-      if (entry.accessor.getInputsLocked()) throw new ColumnAbsentError(entry.id);
-      return undefined;
-    }
     const spec = readSpec(entry);
-    if (spec === undefined) return undefined;
-    if (!isPColumnSpec(spec)) throw new ColumnAbsentError(entry.id);
+    if (spec === undefined || !isPColumnSpec(spec)) return undefined;
     return new DataColumnImpl(entry.id, {
       getSpec: () => spec,
       getData: () => readDataAccessor(entry),
@@ -204,8 +175,8 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
    * in the active render ctx. Falls back to the registry's `isFinal()`
    * when the id has no entry — only then we can say `absent` instead of
    * `resolving`. The status tells only whether the spec is readable: for an
-   * export that is not a column it is `present`, and the factories throw
-   * {@link ColumnAbsentError}.
+   * export that is not a column it is `present`, and the factories return
+   * `undefined`.
    */
   static getStatusById(
     id: PObjectId,

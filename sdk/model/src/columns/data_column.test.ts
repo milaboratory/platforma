@@ -7,7 +7,7 @@ import {
   type PObjectId,
   type PObjectSpec,
 } from "@milaboratories/pl-model-common";
-import { ColumnAbsentError, DataColumnImpl } from "./data_column";
+import { DataColumnImpl } from "./data_column";
 import { _ctxProvidersCache } from "./column_providers";
 import { installStubRegistry } from "./__test_helpers__/stub_registry";
 
@@ -86,10 +86,9 @@ describe("DataColumnImpl.spec — applySpecOverrides", () => {
     expect(c.getSpec()).toBe(stubSpec);
   });
 
-  test("fromId throws ColumnAbsentError when ctx has no handles", () => {
-    // Empty registry — `isFinal()` returns true vacuously, so the leaf is
-    // provably absent (no provider will ever supply it).
-    expect(() => DataColumnImpl.fromId(baseLeaf)).toThrow(ColumnAbsentError);
+  test("fromId returns undefined when ctx has no handles", () => {
+    // Empty registry — `isFinal()` returns true vacuously, so the leaf is absent.
+    expect(DataColumnImpl.fromId(baseLeaf)).toBeUndefined();
   });
 
   test("appends axes at indices past base.axesSpec.length", () => {
@@ -130,7 +129,7 @@ describe("DataColumnImpl.spec — applySpecOverrides", () => {
   });
 });
 
-// --- resolution status / absent throw --------------------------------------
+// --- resolution status / absent column --------------------------------------
 
 describe("DataColumnImpl resolution: fromId / fromAccessor / getStatus", () => {
   test("fromId returns undefined when registry is unfinalized and id not found", () => {
@@ -139,10 +138,10 @@ describe("DataColumnImpl resolution: fromId / fromAccessor / getStatus", () => {
     expect(DataColumnImpl.fromId(baseLeaf)).toBeUndefined();
   });
 
-  test("fromId throws ColumnAbsentError when leaf has no spec field on locked accessor", () => {
-    // Leaf entry present, no spec field, accessor locked → absent forever.
+  test("fromId returns undefined when leaf has no spec field on locked accessor", () => {
+    // Leaf entry present, no spec field, accessor locked → absent.
     installStubRegistry(mockCtx, { [baseLeaf]: { accessorLocked: true } });
-    expect(() => DataColumnImpl.fromId(baseLeaf)).toThrow(ColumnAbsentError);
+    expect(DataColumnImpl.fromId(baseLeaf)).toBeUndefined();
   });
 
   test("fromId returns undefined when leaf has no spec field on unlocked accessor", () => {
@@ -157,10 +156,10 @@ describe("DataColumnImpl resolution: fromId / fromAccessor / getStatus", () => {
     expect(DataColumnImpl.fromId(baseLeaf)).toBeUndefined();
   });
 
-  test("fromAccessor throws ColumnAbsentError when accessor is locked without spec", () => {
+  test("fromAccessor returns undefined when accessor is locked without spec", () => {
     installStubRegistry(mockCtx, { [baseLeaf]: { accessorLocked: true } });
     const entry = pluckLeafEntry(baseLeaf);
-    expect(() => DataColumnImpl.fromAccessor(entry)).toThrow(ColumnAbsentError);
+    expect(DataColumnImpl.fromAccessor(entry)).toBeUndefined();
   });
 
   test("fromAccessor returns undefined when accessor is unlocked without spec", () => {
@@ -169,10 +168,10 @@ describe("DataColumnImpl resolution: fromId / fromAccessor / getStatus", () => {
     expect(DataColumnImpl.fromAccessor(entry)).toBeUndefined();
   });
 
-  test("an export that is not a column: fromId and fromAccessor throw, status tracks only resolution", () => {
+  test("an export that is not a column: fromId and fromAccessor return undefined, status tracks only resolution", () => {
     installStubRegistry(mockCtx, { [baseLeaf]: { spec: fileSpec } });
-    expect(() => DataColumnImpl.fromId(baseLeaf)).toThrow(ColumnAbsentError);
-    expect(() => DataColumnImpl.fromAccessor(pluckLeafEntry(baseLeaf))).toThrow(ColumnAbsentError);
+    expect(DataColumnImpl.fromId(baseLeaf)).toBeUndefined();
+    expect(DataColumnImpl.fromAccessor(pluckLeafEntry(baseLeaf))).toBeUndefined();
     expect(DataColumnImpl.getStatusById(baseLeaf)).toBe("present");
   });
 

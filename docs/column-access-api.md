@@ -87,13 +87,12 @@ you cannot import them.
 | `hasColumnData(recipe, opts?)` | boolean                               | Do the underlying data resources actually carry bytes? |
 | `isLeafColumn`                 | deprecated alias                      | Same as `hasSingleDataColumn`.                         |
 
-### Status and Errors
+### Status
 
 | Export                   | Kind  | One-liner                                                                                |
 | ------------------------ | ----- | ---------------------------------------------------------------------------------------- |
 | `ColumnFieldStatus`      | type  | `"present" \| "resolving" \| "absent"` — data-field status, worst across referenced ids. |
 | `ColumnResolutionStatus` | type  | Same value space; folds spec + registry readiness.                                       |
-| `ColumnAbsentError`      | class | Thrown by factories when a column provably will not appear.                              |
 
 ### Utilities
 
@@ -403,14 +402,13 @@ DataColumn.fromColumn(pColumn);
 DataColumn.fromAccessor(leafEntry);
 ```
 
-**Return contract.** Every factory returns `undefined` while the column is still
-`resolving` — retry on the next render pass, more accessor inputs may arrive.
-Every factory throws `ColumnAbsentError` when the column is `absent` — every
-relevant accessor reports `inputsLocked` and the column did not appear, so it
-never will in this ctx. Every factory also throws `ColumnAbsentError` for an
-export that is not a column (a `kind: "File"` library, for example), though its
-status is `present`: the status tells only whether the spec is readable. Always
-check for `undefined` before chaining.
+**Return contract.** Every factory returns `undefined` unless the column's spec
+is readable in this ctx: while the column is `resolving`, when it is `absent`,
+and for an export that is not a column (a `kind: "File"` library, for example).
+A missing column is an ordinary state — the upstream block has not run, or a
+reference points at a block that no longer provides it — so no factory throws
+for it. Always check for `undefined` before chaining; ask the status when the
+reason matters.
 
 `ColumnRecipe(id)` additionally throws for an id variant it cannot build (e.g. a
 legacy `AnchoredPColumnId`, which needs an anchor map to resolve).
@@ -425,10 +423,10 @@ DataColumn.getStatusByPlRef(ref, opts?);
 DataColumn.getStatusByAccessor(entry);
 ```
 
-Inside a loop over known ids, one `getStatus` up front beats a try/catch around
-the factory. The status tells whether the spec is readable, not what kind of
-object it describes: an export that is not a column reports `present`, and its
-factory throws `ColumnAbsentError`.
+The factory's `undefined` does not say why the column is missing; the status
+does. The status tells whether the spec is readable, not what kind of object it
+describes: an export that is not a column reports `present`, and its factory
+returns `undefined`.
 
 | Type                     | Means                                                                                                                                         |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
