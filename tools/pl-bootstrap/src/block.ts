@@ -23,10 +23,35 @@ const CreateBlockOptions = z.object({
 });
 export type CreateBlockOptions = z.infer<typeof CreateBlockOptions>;
 
-/** Creates a block by cloning block-boilerplate repository. */
-export async function createBlock(logger: winston.Logger) {
-  const { npmOrgName, orgName, blockName, softwarePlatforms } = askForOptions();
-  const targetPath = path.join(process.cwd(), blockName);
+/** Anything with `info`, so callers outside the CLI do not need winston. */
+export type CreateBlockLogger = Pick<winston.Logger, "info">;
+
+/** Options the CLI may receive as flags; any one that is missing is asked for. */
+export type CreateBlockPartialOptions = Partial<CreateBlockOptions>;
+
+/**
+ * Creates a block by cloning block-boilerplate repository into `<cwd>/<blockName>`.
+ * Asks for every option not given in `given`; with all of them given it never prompts.
+ */
+export async function createBlock(
+  logger: CreateBlockLogger,
+  given: CreateBlockPartialOptions = {},
+) {
+  const options = askForOptions(given);
+  await createBlockFromOptions(options, path.join(process.cwd(), options.blockName), logger);
+}
+
+/**
+ * Non-interactive core of `create-block`: downloads the boilerplate into `targetPath`
+ * (which must not exist yet) and renames it for the given npm org, org and block.
+ * Safe to call from a server or a function: no prompts, no use of `process.cwd()`.
+ */
+export async function createBlockFromOptions(
+  given: CreateBlockOptions,
+  targetPath: string,
+  logger: CreateBlockLogger,
+) {
+  const { npmOrgName, orgName, blockName, softwarePlatforms } = parseOptions(given);
 
   logger.info(`Downloading boilerplate code...`);
   await downloadAndUnpack(
@@ -50,7 +75,7 @@ export async function createBlock(logger: winston.Logger) {
   }
 
   logger.info(`Replace everything in the template with provided options...`);
-  replaceRegexInAllFiles(targetPath, [
+  await replaceRegexInAllFiles(targetPath, [
     // '@' literal ensures only npm org name will be renamed,
     // as public registry for software also is called platforma-open, but without '@'.
     // Also, don't rename an organization for runenv-python-3 package.
@@ -62,44 +87,56 @@ export async function createBlock(logger: winston.Logger) {
   ]);
 }
 
-function askForOptions(): CreateBlockOptions {
-  let npmOrgName = readlineSync.question(
-    'Write an organization name for npm. Default is "platforma-open": ',
-  );
-  if (npmOrgName === "") {
-    npmOrgName = "platforma-open";
+function askForOptions(given: CreateBlockPartialOptions): CreateBlockOptions {
+  let npmOrgName = given.npmOrgName;
+  if (npmOrgName === undefined) {
+    npmOrgName = readlineSync.question(
+      'Write an organization name for npm. Default is "platforma-open": ',
+    );
+    if (npmOrgName === "") {
+      npmOrgName = "platforma-open";
+    }
   }
 
-  let orgName = "";
+  let orgName = given.orgName ?? "";
   while (orgName.length < 1)
     orgName = readlineSync.question('Write an organization name, e.g. "my-org": ');
 
-  let blockName = "";
+  let blockName = given.blockName ?? "";
   while (blockName.length < 1)
     blockName = readlineSync.question('Write a name of the block, e.g. "hello-world": ');
 
-  const needSoftware = readlineSync.keyInYN("Create package for block's software?");
-  let softwarePlatforms = ["Tengo"];
-  if (needSoftware) {
-    while (softwarePlatforms.length < allPlatforms.length) {
-      const index = readlineSync.keyInSelect(blockPlatformsToChoose, "Choose software platform:");
-      if (index < 0) break;
-      softwarePlatforms.push(blockPlatformsToChoose[index]);
+  let softwarePlatforms: string[] = given.softwarePlatforms ?? ["Tengo"];
+  if (given.softwarePlatforms === undefined) {
+    const needSoftware = readlineSync.keyInYN("Create package for block's software?");
+    if (needSoftware) {
+      while (softwarePlatforms.length < allPlatforms.length) {
+        const index = readlineSync.keyInSelect(blockPlatformsToChoose, "Choose software platform:");
+        if (index < 0) break;
+        softwarePlatforms.push(blockPlatformsToChoose[index]);
+      }
     }
   }
-  softwarePlatforms = Array.from(new Set(softwarePlatforms)).sort();
 
+  return parseOptions({ npmOrgName, orgName, blockName, softwarePlatforms });
+}
+
+/** Validates options; Tengo is always kept, the platform list is de-duplicated and sorted. */
+function parseOptions(raw: {
+  npmOrgName: string;
+  orgName: string;
+  blockName: string;
+  softwarePlatforms: string[];
+}): CreateBlockOptions {
   const result = CreateBlockOptions.safeParse({
-    npmOrgName,
-    orgName,
-    blockName,
-    softwarePlatforms,
+    ...raw,
+    softwarePlatforms: Array.from(new Set(["Tengo", ...raw.softwarePlatforms])).sort(),
   });
-  if (!result.success && result.error.issues.length) {
+  if (!result.success) {
     throw new Error(result.error.issues.map((i) => i.message).join("; "));
   }
 
-  return result.data!;
+  return result.data;
 }
 
 async function downloadAndUnpack(url: string, pathInArchive: string, outputPath: string) {

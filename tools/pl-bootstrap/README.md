@@ -90,3 +90,29 @@ To create new block skeleton, run
 ```bash
 pl-dev create-block
 ```
+
+It asks for the npm organization, the organization, the block name and the software
+platforms. Pass them as flags to skip the questions, e.g. in CI:
+
+```bash
+pl-dev create-block --npm-org platforma-open --org my-org --block-name hello-world --software none
+```
+
+`--software` takes `python` or `none` (Tengo is always included).
+
+From code, without prompts and without `process.cwd()`:
+
+```ts
+import { createBlockFromOptions } from "@platforma-sdk/bootstrap/block";
+
+await createBlockFromOptions(
+  {
+    npmOrgName: "platforma-open",
+    orgName: "my-org",
+    blockName: "hello-world",
+    softwarePlatforms: ["Tengo"],
+  },
+  "/tmp/hello-world", // must not exist yet
+  console,
+);
+```
