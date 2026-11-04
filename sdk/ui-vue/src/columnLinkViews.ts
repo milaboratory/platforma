@@ -9,9 +9,7 @@ import {
   type ColumnUniversalId,
   type ColumnValue,
   type DependencyEntry,
-  type DependencyStatus,
-  type DependentStatus,
-  type UncheckedReason,
+  type LinkCheck,
 } from "@platforma-sdk/model";
 
 /**
@@ -19,20 +17,6 @@ import {
  * `uses` — this block's args reference an output of another block.
  */
 export type LinkSide = "usedBy" | "uses";
-
-/**
- * State of a link. An output that is not exported is `unavailable` on the
- * `uses` side — the other block does not export it — and `notExported` on the `usedBy` side —
- * this block does not export it. An output of a block that has no last run yet is not exported
- * either: whether the block provides it is known only once it is run.
- */
-export type LinkStatus =
-  | { type: "ok" }
-  | { type: "pending" }
-  | { type: "unchecked"; reason: UncheckedReason }
-  | { type: "unavailable" }
-  | { type: "notExported" }
-  | { type: "missingValues"; values: string[] };
 
 /**
  * What one other block uses of one output, or what this block uses of one output of another
@@ -50,7 +34,7 @@ export type LinkRow = {
   columnLabel: null | string;
   /** Distinct picked values as strings; `null` when the block uses the column as a whole. */
   values: null | string[];
-  status: LinkStatus;
+  status: LinkCheck;
 };
 
 /** The links of one side. */
@@ -100,7 +84,7 @@ export function linkSections(
           output: item.output,
           columnLabel: item.columnLabel,
           values: item.values,
-          status: fromDependentStatus(item.status),
+          status: item.status,
         })),
       ),
     },
@@ -113,7 +97,7 @@ export function linkSections(
           output: item.output,
           columnLabel: item.columnLabel,
           values: item.values,
-          status: fromDependencyStatus(item.status),
+          status: item.status,
         })),
       ),
     },
@@ -200,20 +184,20 @@ function selectedReference(
 }
 
 function missingValueCauseText(
-  status: DependencyStatus,
+  status: LinkCheck,
   column: string,
   picked: ColumnValue | undefined,
 ): string | undefined {
   switch (status.type) {
     case "ok":
-    case "unchecked":
+    case "unreadable":
       return undefined;
     case "pending":
       return `is still computing ${column}.`;
     case "notRun":
+    case "unavailable":
       return `does not provide ${column}.`;
-    case "broken":
-      if (status.reason === "unavailable") return `does not provide ${column}.`;
+    case "missingValues":
       return picked !== undefined && status.values.includes(picked)
         ? `has no “${picked}” in ${column}.`
         : undefined;
@@ -229,23 +213,21 @@ function waitsForOtherInputs(
   if (!providesPick(entry.status, picked)) return false;
   return dependencies.items.some(
     (item) =>
-      item.ref !== entry.ref && item.status.type !== "ok" && item.status.type !== "unchecked",
+      item.ref !== entry.ref && item.status.type !== "ok" && item.status.type !== "unreadable",
   );
 }
 
 /** Whether a column is provided with the picked value, as far as it was checked. */
-function providesPick(status: DependencyStatus, picked: ColumnValue | undefined): boolean {
+function providesPick(status: LinkCheck, picked: ColumnValue | undefined): boolean {
   switch (status.type) {
     case "ok":
       return true;
-    case "broken":
-      return (
-        status.reason === "missingValues" &&
-        (picked === undefined || !status.values.includes(picked))
-      );
-    case "unchecked":
+    case "missingValues":
+      return picked === undefined || !status.values.includes(picked);
+    case "unreadable":
     case "pending":
     case "notRun":
+    case "unavailable":
       return false;
   }
 }
@@ -255,30 +237,8 @@ type LinkSource = {
   output: string;
   columnLabel: null | string;
   values: null | ColumnValue[];
-  status: LinkStatus;
+  status: LinkCheck;
 };
-
-function fromDependentStatus(status: DependentStatus): LinkStatus {
-  switch (status.type) {
-    case "broken":
-    case "notRun":
-      return { type: "notExported" };
-    case "missingValues":
-      return { type: "missingValues", values: status.values };
-    case "ok":
-    case "pending":
-    case "unchecked":
-      return status;
-  }
-}
-
-function fromDependencyStatus(status: DependencyStatus): LinkStatus {
-  if (status.type === "notRun") return { type: "unavailable" };
-  if (status.type !== "broken") return status;
-  return status.reason === "unavailable"
-    ? { type: "unavailable" }
-    : { type: "missingValues", values: status.values.map(String) };
-}
 
 function groupLinks(labels: Record<string, string>, sources: LinkSource[]): LinkRow[] {
   const rows = sources.map((source): LinkRow => {
@@ -307,20 +267,20 @@ function mergeRows(a: LinkRow, b: LinkRow): LinkRow {
 }
 
 /** The status of merged references: the one that needs attention most. */
-function mergeStatus(a: LinkStatus, b: LinkStatus): LinkStatus {
+function mergeStatus(a: LinkCheck, b: LinkCheck): LinkCheck {
   if (a.type === "missingValues" && b.type === "missingValues") {
     return { type: "missingValues", values: uniq([...a.values, ...b.values]) };
   }
   return STATUS_RANK[b.type] > STATUS_RANK[a.type] ? b : a;
 }
 
-const STATUS_RANK: Record<LinkStatus["type"], number> = {
+const STATUS_RANK: Record<LinkCheck["type"], number> = {
   ok: 0,
-  unchecked: 1,
+  unreadable: 1,
   pending: 2,
   missingValues: 3,
+  notRun: 4,
   unavailable: 4,
-  notExported: 4,
 };
 
 const ALERTS: Record<LinkSide, Pick<LinkAlert, "type" | "label" | "hint">> = {
@@ -339,22 +299,19 @@ const ALERTS: Record<LinkSide, Pick<LinkAlert, "type" | "label" | "hint">> = {
 /** A link whose status needs attention: it breaks a block, or lacks picked values. */
 type AttentionLink = { row: LinkRow; status: AttentionStatus };
 
-type AttentionStatus = Extract<
-  LinkStatus,
-  { type: "unavailable" | "notExported" | "missingValues" }
->;
+type AttentionStatus = Extract<LinkCheck, { type: "notRun" | "unavailable" | "missingValues" }>;
 
 /** The row as a link needing attention; `undefined` when it does not. */
 function attentionLink(row: LinkRow): undefined | AttentionLink {
   const { status } = row;
   switch (status.type) {
+    case "notRun":
     case "unavailable":
-    case "notExported":
     case "missingValues":
       return { row, status };
     case "ok":
     case "pending":
-    case "unchecked":
+    case "unreadable":
       return undefined;
   }
 }
@@ -387,7 +344,7 @@ function issueKey(link: AttentionLink, index: number): string {
 /** A link to an output that is not exported and has no known label. */
 function isUnlabeled(link: AttentionLink): boolean {
   const { type } = link.status;
-  return link.row.columnLabel === null && (type === "unavailable" || type === "notExported");
+  return link.row.columnLabel === null && (type === "notRun" || type === "unavailable");
 }
 
 function toIssue(side: LinkSide, group: Issue): LinkIssue {
@@ -428,8 +385,8 @@ function describeUnlabeled(side: LinkSide, count: number): string {
 function describeIssue(side: LinkSide, { row, status }: AttentionLink): string {
   const column = row.columnLabel === null ? null : `"${row.columnLabel}"`;
   switch (status.type) {
+    case "notRun":
     case "unavailable":
-    case "notExported":
       if (column === null) return describeUnlabeled(side, 1);
       return side === "uses"
         ? `does not provide ${column}`

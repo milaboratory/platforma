@@ -31,7 +31,7 @@ const links: BlockColumnLinks = {
         ref: PATH,
         values: null,
         columnLabel: "Path",
-        status: { type: "broken", reason: "notExported" },
+        status: { type: "unavailable" },
       },
     ],
     labels: { enrichment: "Enrichment" },

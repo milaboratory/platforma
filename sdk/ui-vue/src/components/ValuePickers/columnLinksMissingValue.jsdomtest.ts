@@ -23,7 +23,7 @@ const dependencies: BlockDependencies = {
       ref: PATH,
       values: ["Ty1"],
       columnLabel: "Path",
-      status: { type: "broken", reason: "unavailable" },
+      status: { type: "unavailable" },
     },
   ],
   labels: { samples: "Samples" },

@@ -229,7 +229,7 @@ describe("computeDependencies", () => {
     ]);
     expect(statuses(linksOf(pick("treated"), SPEC))).toEqual([unreadable]);
     expect(statuses(linksOf(pick("control"), listed))).toEqual([
-      { type: "broken", reason: "missingValues", values: ["control"] },
+      { type: "missingValues", values: ["control"] },
     ]);
   });
 
@@ -251,7 +251,7 @@ describe("computeDependencies", () => {
           ref: condition,
           values: ["treated", "control"],
           columnLabel: "Condition",
-          status: { type: "broken", reason: "missingValues", values: ["control"] },
+          status: { type: "missingValues", values: ["control"] },
         },
       ],
     });
@@ -302,9 +302,7 @@ describe("computeDependencies", () => {
     ]);
 
     expect(statuses(links.x)).toEqual([unavailable]);
-    expect(statuses(links.samples, "dependents")).toEqual([
-      { type: "broken", reason: "notExported" },
-    ]);
+    expect(statuses(links.samples, "dependents")).toEqual([{ type: "unavailable" }]);
   });
 
   test("the args of no other block are read", () => {
@@ -327,7 +325,7 @@ describe("computeDependencies", () => {
     expect(new Set(reads)).toEqual(new Set(["x"]));
   });
 
-  test("values of a column whose data is not JSON are unchecked as unreadable", () => {
+  test("values of a column whose data is not JSON are unreadable", () => {
     const { links } = run([
       { id: "samples", args: {}, prodCtx: frame({ condition: binaryColumn() }) },
       { id: "x", args: { condition: pick("treated") } },
@@ -390,15 +388,13 @@ describe("computeDependents", () => {
     expect(links.samples.dependents).toEqual({ items: [] });
   });
 
-  test("a reference to an output the block does not export is broken as notExported", () => {
+  test("a reference to an output the block does not export is unavailable", () => {
     const { links } = run([
       { id: "samples", args: {}, prodCtx: frame({}) },
       { id: "below", args: { condition: pick("treated") } },
     ]);
 
-    expect(statuses(links.samples, "dependents")).toEqual([
-      { type: "broken", reason: "notExported" },
-    ]);
+    expect(statuses(links.samples, "dependents")).toEqual([{ type: "unavailable" }]);
   });
 
   test("an output the block's run does not export takes its label from the prepared results", () => {
@@ -408,11 +404,11 @@ describe("computeDependents", () => {
     ]);
 
     expect(links.samples.dependents.items).toMatchObject([
-      { columnLabel: "Condition", status: { type: "broken", reason: "notExported" } },
+      { columnLabel: "Condition", status: { type: "unavailable" } },
     ]);
   });
 
-  test("a reference to values that cannot be read is unchecked as unreadable", () => {
+  test("a reference to values that cannot be read is unreadable", () => {
     const { links } = run([
       { id: "samples", args: {}, prodCtx: frame({ condition: binaryColumn() }) },
       { id: "below", args: { condition: pick("treated") } },
@@ -580,8 +576,8 @@ describe("labelColumnLinks", () => {
 // Internals
 
 const ok = { type: "ok" };
-const unavailable = { type: "broken", reason: "unavailable" };
-const unreadable = { type: "unchecked", reason: "unreadable" };
+const unavailable = { type: "unavailable" };
+const unreadable = { type: "unreadable" };
 const gone = createGlobalPObjectId("deleted", "condition");
 
 const SPEC: PColumnSpec = {

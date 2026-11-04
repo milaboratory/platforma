@@ -6,9 +6,8 @@ import {
   type BlockDependents,
   type ColumnValue,
   type DependencyEntry,
-  type DependencyStatus,
+  type LinkCheck,
   type DependentEntry,
-  type DependentStatus,
 } from "@platforma-sdk/model";
 import {
   blockName,
@@ -53,7 +52,7 @@ describe("linkSections", () => {
     const [, uses] = linkSections({
       dependents: dependents([]),
       dependencies: dependencies([
-        dependency("p1", "out1", null, { type: "broken", reason: "unavailable" }),
+        dependency("p1", "out1", null, { type: "unavailable" }),
         dependency("p1", "out2", null, { type: "ok" }, "Condition"),
       ]),
     });
@@ -79,13 +78,13 @@ describe("linkSections", () => {
       dependents: dependents([]),
       dependencies: dependencies([
         dependency("p1", "out", ["a"], { type: "ok" }),
-        dependency("p1", "out", ["b"], { type: "unchecked", reason: "unreadable" }),
+        dependency("p1", "out", ["b"], { type: "unreadable" }),
         dependency("p1", "out", ["c"], { type: "pending" }),
         dependency("p2", "out", ["a"], missingValues(["1"])),
         dependency("p2", "out", ["b"], missingValues(["1", "b"])),
         dependency("p2", "out", ["c"], { type: "ok" }),
         dependency("p3", "out", ["a"], missingValues(["a"])),
-        dependency("p3", "out", ["b"], { type: "broken", reason: "unavailable" }),
+        dependency("p3", "out", ["b"], { type: "unavailable" }),
       ]),
     });
     expect(uses.rows.map((row) => row.status)).toEqual([
@@ -110,30 +109,26 @@ describe("linkSections", () => {
       dependents: dependents([dependent("b1", "out", ["a"], notExported())]),
       dependencies: dependencies([]),
     });
-    expect(usedBy.rows.map((row) => row.status)).toEqual([{ type: "notExported" }]);
+    expect(usedBy.rows.map((row) => row.status)).toEqual([{ type: "unavailable" }]);
   });
 
   test("keeps the reason a link was not checked on both sides", () => {
     const [usedBy, uses] = linkSections({
-      dependents: dependents([
-        dependent("b1", "out", ["a"], { type: "unchecked", reason: "unreadable" }),
-      ]),
-      dependencies: dependencies([
-        dependency("p1", "out", ["a"], { type: "unchecked", reason: "unreadable" }),
-      ]),
+      dependents: dependents([dependent("b1", "out", ["a"], { type: "unreadable" })]),
+      dependencies: dependencies([dependency("p1", "out", ["a"], { type: "unreadable" })]),
     });
-    const statuses = [{ type: "unchecked", reason: "unreadable" }];
+    const statuses = [{ type: "unreadable" }];
     expect(usedBy.rows.map((row) => row.status)).toEqual(statuses);
     expect(uses.rows.map((row) => row.status)).toEqual(statuses);
   });
 
-  test("an output of a block not run is not provided, as one it does not export", () => {
+  test("an output of a block not run keeps that state on both sides", () => {
     const [usedBy, uses] = linkSections({
       dependents: dependents([dependent("b1", "out", ["a"], { type: "notRun" })]),
       dependencies: dependencies([dependency("p1", "out", ["a"], { type: "notRun" })]),
     });
-    expect(usedBy.rows.map((row) => row.status)).toEqual([{ type: "notExported" }]);
-    expect(uses.rows.map((row) => row.status)).toEqual([{ type: "unavailable" }]);
+    expect(usedBy.rows.map((row) => row.status)).toEqual([{ type: "notRun" }]);
+    expect(uses.rows.map((row) => row.status)).toEqual([{ type: "notRun" }]);
   });
 });
 
@@ -143,10 +138,10 @@ describe("linkAlerts", () => {
       dependents: dependents([
         dependent("b1", "out", ["x", "y"], { type: "missingValues", values: ["x", "y"] }),
         dependent("b1", "other", ["x"], notExported()),
-        dependent("b1", "third", ["x"], { type: "unchecked", reason: "unreadable" }),
+        dependent("b1", "third", ["x"], { type: "unreadable" }),
       ]),
       dependencies: dependencies([
-        dependency("p1", "out1", null, { type: "broken", reason: "unavailable" }),
+        dependency("p1", "out1", null, { type: "unavailable" }),
         dependency("p1", "out2", ["a"], missingValues(["a"]), "Condition"),
         dependency("p1", "out3", ["a"], { type: "pending" }),
         dependency("p1", "out4", null, { type: "ok" }),
@@ -187,7 +182,7 @@ describe("linkAlerts", () => {
           dependent("b1", "other", ["x"], { type: "missingValues", values: ["x"] }, "Samples"),
         ]),
         dependencies: dependencies([
-          dependency("p1", "out", null, { type: "broken", reason: "unavailable" }, "Condition"),
+          dependency("p1", "out", null, { type: "unavailable" }, "Condition"),
           dependency("p1", "other", ["a"], missingValues(["a"]), "Condition"),
         ]),
       }),
@@ -223,7 +218,7 @@ describe("linkAlerts", () => {
           dependent("b1", "pf.metadata.Y", ["a"], { type: "missingValues", values: ["a"] }),
         ]),
         dependencies: dependencies([
-          dependency("p1", "pf.dataset.X", null, { type: "broken", reason: "unavailable" }),
+          dependency("p1", "pf.dataset.X", null, { type: "unavailable" }),
           dependency("p1", "pf.metadata.Y", ["a"], missingValues(["a"])),
         ]),
       }),
@@ -249,8 +244,8 @@ describe("linkAlerts", () => {
           dependent("b1", "out3", null, notExported(), "Clonotypes"),
         ]),
         dependencies: dependencies([
-          dependency("p1", "out1", null, { type: "broken", reason: "unavailable" }),
-          dependency("p1", "out2", ["a"], { type: "broken", reason: "unavailable" }),
+          dependency("p1", "out1", null, { type: "unavailable" }),
+          dependency("p1", "out2", ["a"], { type: "unavailable" }),
         ]),
       }),
     );
@@ -371,10 +366,7 @@ const ty1 = createColumnValueId({ column: PATH, value: "Ty1" });
 
 describe("describeMissingValue", () => {
   test("names the block that does not provide the column", () => {
-    const cause = describeMissingValue(
-      pathDependencies([pathEntry({ type: "broken", reason: "unavailable" })]),
-      ty1,
-    );
+    const cause = describeMissingValue(pathDependencies([pathEntry({ type: "unavailable" })]), ty1);
     expect(cause).toEqual({
       type: "source",
       name: "Ty1",
@@ -386,7 +378,7 @@ describe("describeMissingValue", () => {
 
   test("names the block whose column lacks the value", () => {
     const cause = describeMissingValue(
-      pathDependencies([pathEntry({ type: "broken", reason: "missingValues", values: ["Ty1"] })]),
+      pathDependencies([pathEntry({ type: "missingValues", values: ["Ty1"] })]),
       ty1,
     );
     expect(cause?.text).toBe("has no “Ty1” in “Path”.");
@@ -394,7 +386,7 @@ describe("describeMissingValue", () => {
 
   test("tells nothing of a value the column still has", () => {
     const cause = describeMissingValue(
-      pathDependencies([pathEntry({ type: "broken", reason: "missingValues", values: ["Ty2"] })]),
+      pathDependencies([pathEntry({ type: "missingValues", values: ["Ty2"] })]),
       ty1,
     );
     expect(cause).toBeUndefined();
@@ -411,10 +403,7 @@ describe("describeMissingValue", () => {
   });
 
   test("tells nothing of a column that is fine or was not checked", () => {
-    for (const status of [
-      { type: "ok" },
-      { type: "unchecked", reason: "unreadable" },
-    ] satisfies DependencyStatus[]) {
+    for (const status of [{ type: "ok" }, { type: "unreadable" }] satisfies LinkCheck[]) {
       expect(describeMissingValue(pathDependencies([pathEntry(status)]), ty1)).toBeUndefined();
     }
   });
@@ -423,8 +412,8 @@ describe("describeMissingValue", () => {
     for (const status of [
       { type: "notRun" },
       { type: "pending" },
-      { type: "broken", reason: "unavailable" },
-    ] satisfies DependencyStatus[]) {
+      { type: "unavailable" },
+    ] satisfies LinkCheck[]) {
       const dependencies = pathDependencies([pathEntry({ type: "ok" }), abundanceEntry(status)]);
       const text = "Waiting for the other inputs of this block.";
       expect(describeMissingValue(dependencies, PATH)).toEqual({
@@ -442,18 +431,18 @@ describe("describeMissingValue", () => {
 
   test("does not tell a column waits while it lacks the value or was not checked", () => {
     const abundance = abundanceEntry({ type: "notRun" });
-    const lacking = pathEntry({ type: "broken", reason: "missingValues", values: ["Ty1"] });
+    const lacking = pathEntry({ type: "missingValues", values: ["Ty1"] });
     expect(describeMissingValue(pathDependencies([lacking, abundance]), ty1)?.text).toBe(
       "has no “Ty1” in “Path”.",
     );
-    const unchecked = pathEntry({ type: "unchecked", reason: "unreadable" });
+    const unchecked = pathEntry({ type: "unreadable" });
     expect(describeMissingValue(pathDependencies([unchecked, abundance]), ty1)).toBeUndefined();
   });
 
   test("does not tell a column waits while every other input is fine", () => {
     const dependencies = pathDependencies([
       pathEntry({ type: "ok" }),
-      abundanceEntry({ type: "unchecked", reason: "unreadable" }),
+      abundanceEntry({ type: "unreadable" }),
     ]);
     expect(describeMissingValue(dependencies, ty1)).toBeUndefined();
   });
@@ -473,7 +462,7 @@ describe("describeMissingValue", () => {
   });
 
   test("names the block that does not provide a column selected as a whole, by id or ref", () => {
-    const deps = pathDependencies([pathEntry({ type: "broken", reason: "unavailable" })]);
+    const deps = pathDependencies([pathEntry({ type: "unavailable" })]);
     expect(describeMissingValue(deps, PATH)?.text).toBe("does not provide “Path”.");
     expect(describeMissingValue(deps, PATH)?.name).toBe("Path");
     expect(
@@ -483,14 +472,12 @@ describe("describeMissingValue", () => {
   });
 
   test("tells nothing of a column selected as a whole that lacks values picked elsewhere", () => {
-    const deps = pathDependencies([
-      pathEntry({ type: "broken", reason: "missingValues", values: ["Ty1"] }),
-    ]);
+    const deps = pathDependencies([pathEntry({ type: "missingValues", values: ["Ty1"] })]);
     expect(describeMissingValue(deps, PATH)).toBeUndefined();
   });
 
   test("tells nothing of a value that is not a column value id, or of another column", () => {
-    const deps = pathDependencies([pathEntry({ type: "broken", reason: "unavailable" })]);
+    const deps = pathDependencies([pathEntry({ type: "unavailable" })]);
     expect(describeMissingValue(deps, "Ty1")).toBeUndefined();
     expect(describeMissingValue(deps, { ref: PATH })).toBeUndefined();
     const other = createColumnValueId({
@@ -509,7 +496,7 @@ function dependent(
   dependentBlockId: string,
   output: string,
   values: null | ColumnValue[],
-  status: DependentStatus = { type: "ok" },
+  status: LinkCheck = { type: "ok" },
   columnLabel: null | string = null,
 ): DependentEntry {
   return { dependentBlockId, output, ref: REF, values, columnLabel, status };
@@ -519,25 +506,25 @@ function dependency(
   producerBlockId: string,
   output: string,
   values: null | ColumnValue[],
-  status: DependencyStatus,
+  status: LinkCheck,
   columnLabel: null | string = null,
 ): DependencyEntry {
   return { producerBlockId, output, ref: REF, values, columnLabel, status };
 }
 
-function missingValues(values: ColumnValue[]): DependencyStatus {
-  return { type: "broken", reason: "missingValues", values };
+function missingValues(values: ColumnValue[]): LinkCheck {
+  return { type: "missingValues", values };
 }
 
-function notExported(): DependentStatus {
-  return { type: "broken", reason: "notExported" };
+function notExported(): LinkCheck {
+  return { type: "unavailable" };
 }
 
 function pathDependencies(items: DependencyEntry[]): BlockDependencies {
   return { items, labels: { samples: "Samples" } };
 }
 
-function abundanceEntry(status: DependencyStatus): DependencyEntry {
+function abundanceEntry(status: LinkCheck): DependencyEntry {
   return {
     producerBlockId: "mixcr",
     output: "abundance",
@@ -548,7 +535,7 @@ function abundanceEntry(status: DependencyStatus): DependencyEntry {
   };
 }
 
-function pathEntry(status: DependencyStatus, columnLabel: null | string = "Path"): DependencyEntry {
+function pathEntry(status: LinkCheck, columnLabel: null | string = "Path"): DependencyEntry {
   return {
     producerBlockId: "samples",
     output: "metadata.path",

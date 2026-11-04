@@ -11,13 +11,10 @@ import { createPlRef } from "../ref";
 import {
   checkExport,
   collectOutgoingReferences,
-  dependencyStatus,
-  dependentStatus,
   producerRunState,
   missingValues,
   readBlockLabels,
   readExportValues,
-  type ExportCheck,
   type ExportLookup,
   type ExportData,
   type ExportValues,
@@ -165,73 +162,32 @@ describe("checkExport", () => {
     ).toEqual({ type: "pending" });
   });
 
-  test("values that cannot be read are unchecked as unreadable", () => {
+  test("values that cannot be read are unreadable", () => {
     expect(
       checkExport(() => present({ readValues: () => ({ type: "unreadable" }) }), ["a"]).check,
-    ).toEqual({ type: "unchecked", reason: "unreadable" });
+    ).toEqual({ type: "unreadable" });
   });
 
-  test("a failing lookup is unchecked as unreadable", () => {
+  test("a failing lookup is unreadable", () => {
     const lookup = (): ExportLookup => {
       throw new Error("boom");
     };
 
     expect(checkExport(lookup, ["a"])).toEqual({
-      check: { type: "unchecked", reason: "unreadable" },
+      check: { type: "unreadable" },
       columnLabel: null,
     });
   });
 
-  test("failing to read values is unchecked as unreadable and keeps the column label", () => {
+  test("failing to read values is unreadable and keeps the column label", () => {
     const readValues = (): ExportValues => {
       throw new Error("out of memory");
     };
 
     expect(checkExport(() => present({ readValues, columnLabel: "Condition" }), ["a"])).toEqual({
-      check: { type: "unchecked", reason: "unreadable" },
+      check: { type: "unreadable" },
       columnLabel: "Condition",
     });
-  });
-});
-
-describe("dependencyStatus", () => {
-  test("an unavailable export breaks the reference", () => {
-    expect(dependencyStatus({ type: "unavailable" })).toEqual({
-      type: "broken",
-      reason: "unavailable",
-    });
-  });
-
-  test("missing values break the reference", () => {
-    expect(dependencyStatus({ type: "missingValues", values: ["a"] })).toEqual({
-      type: "broken",
-      reason: "missingValues",
-      values: ["a"],
-    });
-  });
-
-  test.each(NEUTRAL_CHECKS)("%j stays as it is", (check) => {
-    expect(dependencyStatus(check)).toEqual(check);
-  });
-});
-
-describe("dependentStatus", () => {
-  test("an output this block does not export breaks the reference as notExported", () => {
-    expect(dependentStatus({ type: "unavailable" })).toEqual({
-      type: "broken",
-      reason: "notExported",
-    });
-  });
-
-  test("missing values are reported as they are", () => {
-    expect(dependentStatus({ type: "missingValues", values: ["1"] })).toEqual({
-      type: "missingValues",
-      values: ["1"],
-    });
-  });
-
-  test.each(NEUTRAL_CHECKS)("%j stays as it is", (check) => {
-    expect(dependentStatus(check)).toEqual(check);
   });
 });
 
@@ -287,7 +243,7 @@ describe("readExportValues", () => {
     expect(getDataAsJson).not.toHaveBeenCalled();
   });
 
-  test("JSON data that failed to compute leaves picked values unchecked as unreadable", () => {
+  test("JSON data that failed to compute leaves picked values unreadable", () => {
     const data: JsonDataNode = {
       resourceType: { name: "PColumnData/Json" },
       getIsReadyOrError: () => true,
@@ -297,10 +253,7 @@ describe("readExportValues", () => {
     const readValues = () =>
       readExportValues(specWith({}), () => ({ type: "present", node: data }));
 
-    expect(checkExport(() => present({ readValues }), ["a"]).check).toEqual({
-      type: "unchecked",
-      reason: "unreadable",
-    });
+    expect(checkExport(() => present({ readValues }), ["a"]).check).toEqual({ type: "unreadable" });
   });
 
   test("JSON data of an unexpected shape is unreadable", () => {
@@ -368,14 +321,6 @@ function present(
       : (): ExportValues => ({ type: "known", cells: props.cells });
   return { type: "present", columnLabel: props.columnLabel ?? null, readValues };
 }
-
-/** Checks that read the same for the block holding the reference and the block exporting it. */
-const NEUTRAL_CHECKS: ExportCheck[] = [
-  { type: "ok" },
-  { type: "pending" },
-  { type: "notRun" },
-  { type: "unchecked", reason: "unreadable" },
-];
 
 function specWith(props: {
   discreteValues?: (string | number)[];

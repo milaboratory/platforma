@@ -49,7 +49,7 @@ describe("blockDependencies and blockDependents", () => {
           ref: condition,
           values: ["treated", "control"],
           columnLabel: "Condition",
-          status: { type: "broken", reason: "missingValues", values: ["control"] },
+          status: { type: "missingValues", values: ["control"] },
         },
       ],
     });
@@ -96,10 +96,10 @@ describe("blockDependencies and blockDependents", () => {
     const tree = prj.tree();
 
     expect((await dependenciesOf(tree, "x")).items).toMatchObject([
-      { status: { type: "broken", reason: "unavailable" } },
+      { status: { type: "unavailable" } },
     ]);
     expect((await dependentsOf(tree, "samples")).items).toMatchObject([
-      { status: { type: "broken", reason: "notExported" } },
+      { status: { type: "unavailable" } },
     ]);
   });
 
@@ -131,11 +131,11 @@ describe("blockDependencies and blockDependents", () => {
 
     expect(await dependencies.getFullValue()).toMatchObject({
       stable: true,
-      value: { items: [{ status: { type: "broken", reason: "unavailable" } }] },
+      value: { items: [{ status: { type: "unavailable" } }] },
     });
     expect(await dependents.getFullValue()).toMatchObject({
       stable: true,
-      value: { items: [{ status: { type: "broken", reason: "notExported" } }] },
+      value: { items: [{ status: { type: "unavailable" } }] },
     });
   });
 
@@ -208,7 +208,7 @@ describe("blockDependencies and blockDependents", () => {
     const dependencies = blockDependencies(tree.entry(), "x", env);
 
     expect((await dependencies.getValue())?.items).toMatchObject([
-      { status: { type: "broken", reason: "missingValues", values: ["control"] } },
+      { status: { type: "missingValues", values: ["control"] } },
     ]);
 
     prj.block("x", { currentArgs: prj.args({ target: pick("treated") }) });

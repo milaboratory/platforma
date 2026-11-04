@@ -3,14 +3,12 @@ import { ExportPool, type ExportNode, type ExportSource } from "./export_pool";
 import {
   checkExport,
   collectOutgoingReferences,
-  dependencyStatus,
-  dependentStatus,
   readBlockLabels,
-  type ExportCheck,
   type OutgoingReference,
 } from "./status";
 import type {
   BlockColumnLinks,
+  LinkCheck,
   UnlabeledColumnLinks,
   UnlabeledDependencies,
   UnlabeledDependents,
@@ -49,10 +47,10 @@ export function computeDependencies<A extends ExportNode<A>>(
       const { producer, ref, values } = reference;
       const entry = { producerBlockId: producer.blockId, output: producer.name, ref, values };
       if (!above.has(producer.blockId)) {
-        return { ...entry, columnLabel: null, status: dependencyStatus({ type: "unavailable" }) };
+        return { ...entry, columnLabel: null, status: { type: "unavailable" } };
       }
       const { check, columnLabel } = checkReference(pool, reference);
-      return { ...entry, columnLabel, status: dependencyStatus(check) };
+      return { ...entry, columnLabel, status: check };
     }),
   };
 }
@@ -79,7 +77,7 @@ export function computeDependents<A extends ExportNode<A>>(
           ref: reference.ref,
           values: reference.values,
           columnLabel,
-          status: dependentStatus(check),
+          status: check,
         };
       });
   });
@@ -144,7 +142,7 @@ function outgoingReferences<A extends ExportNode<A>>(
 function checkReference<A extends ExportNode<A>>(
   pool: ExportPool<A>,
   reference: Pick<OutgoingReference, "producer" | "values">,
-): { check: ExportCheck; columnLabel: null | string } {
+): { check: LinkCheck; columnLabel: null | string } {
   const { producer, values } = reference;
   const result = checkExport(() => pool.lookup(producer), values);
   if (result.columnLabel !== null) return result;

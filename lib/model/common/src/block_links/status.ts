@@ -8,32 +8,17 @@ import {
   type PColumnSpec,
 } from "../drivers";
 import type { BlockOutput } from "../ref";
-import type { DependencyStatus, DependentStatus, UncheckedReason } from "./types";
+import type { LinkCheck } from "./types";
 
 /** What the last run of a block exports under one output name. */
 export type ExportLookup =
-  | { type: "unavailable" }
-  | { type: "pending" }
-  | { type: "notRun" }
+  | Extract<LinkCheck, { type: "unavailable" | "pending" | "notRun" }>
   | { type: "present"; columnLabel: null | string; readValues: () => ExportValues };
 
 /** Cell values of an exported column, as far as they can be read. */
 export type ExportValues =
   | { type: "known"; cells: readonly unknown[] }
-  | { type: "pending" }
-  | { type: "unreadable" };
-
-/**
- * How a reference fares against the export it points at. The same outcome reads differently for
- * the block holding the reference and for the block exporting the column.
- */
-export type ExportCheck =
-  | { type: "ok" }
-  | { type: "pending" }
-  | { type: "notRun" }
-  | { type: "unchecked"; reason: UncheckedReason }
-  | { type: "unavailable" }
-  | { type: "missingValues"; values: ColumnValue[] };
+  | Extract<LinkCheck, { type: "pending" | "unreadable" }>;
 
 /** A column another block exports, referenced from args, with the values picked from it. */
 export interface OutgoingReference extends ColumnReference {
@@ -93,66 +78,27 @@ export function producerRunState<A>(
 /**
  * Checks `picked` values against the export `lookup` finds. `null` picks the column as a whole,
  * so only the export's presence matters. Any error while looking up or reading leaves the
- * reference `unchecked` as `unreadable`: one unreadable column does not hide the state of the
- * others.
+ * reference `unreadable`: one unreadable column does not hide the state of the others.
  */
 export function checkExport(
   lookup: () => ExportLookup,
   picked: null | readonly ColumnValue[],
-): { check: ExportCheck; columnLabel: null | string } {
+): { check: LinkCheck; columnLabel: null | string } {
   let columnLabel: null | string = null;
   try {
     const found = lookup();
-    if (found.type !== "present") return { check: { type: found.type }, columnLabel };
+    if (found.type !== "present") return { check: found, columnLabel };
     columnLabel = found.columnLabel;
     if (picked === null) return { check: { type: "ok" }, columnLabel };
 
     const values = found.readValues();
-    if (values.type === "pending") return { check: { type: "pending" }, columnLabel };
-    if (values.type === "unreadable") {
-      return { check: { type: "unchecked", reason: "unreadable" }, columnLabel };
-    }
+    if (values.type !== "known") return { check: values, columnLabel };
 
     const missing = missingValues(picked, values.cells);
     if (missing.length === 0) return { check: { type: "ok" }, columnLabel };
     return { check: { type: "missingValues", values: missing }, columnLabel };
   } catch {
-    return { check: { type: "unchecked", reason: "unreadable" }, columnLabel };
-  }
-}
-
-/** A reference a block holds: a column its producer does not export is broken. */
-export function dependencyStatus(check: ExportCheck): DependencyStatus {
-  switch (check.type) {
-    case "unavailable":
-      return { type: "broken", reason: "unavailable" };
-    case "missingValues":
-      return { type: "broken", reason: "missingValues", values: check.values };
-    case "unchecked":
-      return { type: "unchecked", reason: check.reason };
-    case "ok":
-    case "pending":
-    case "notRun":
-      return { type: check.type };
-  }
-}
-
-/**
- * A reference to a block's output: an output the block does not export breaks the block holding
- * the reference.
- */
-export function dependentStatus(check: ExportCheck): DependentStatus {
-  switch (check.type) {
-    case "unavailable":
-      return { type: "broken", reason: "notExported" };
-    case "missingValues":
-      return { type: "missingValues", values: check.values };
-    case "unchecked":
-      return { type: "unchecked", reason: check.reason };
-    case "ok":
-    case "pending":
-    case "notRun":
-      return { type: check.type };
+    return { check: { type: "unreadable" }, columnLabel };
   }
 }
 

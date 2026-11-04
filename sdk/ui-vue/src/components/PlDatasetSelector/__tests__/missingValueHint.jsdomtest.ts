@@ -43,7 +43,7 @@ function links(producerBlockId: string, output: string): BlockColumnLinks {
           ref: createGlobalPObjectId(producerBlockId, output),
           values: null,
           columnLabel: "Abundance",
-          status: { type: "broken", reason: "unavailable" },
+          status: { type: "unavailable" },
         },
       ],
       labels: { mixcr: "MiXCR Clonotyping", labeling: "Repertoire Labeling" },
