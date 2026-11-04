@@ -548,7 +548,13 @@ describe("a run the user stopped", () => {
       id: "root",
       transitions: [
         { namespace: "render", atMs: ms(0), state: "Running" },
-        { namespace: "core", reporter: "root", atMs: ms(90_000), state: "Terminated", reason: "cancelled" },
+        {
+          namespace: "core",
+          reporter: "root",
+          atMs: ms(90_000),
+          state: "Terminated",
+          reason: "cancelled",
+        },
       ],
       children: [
         {
@@ -569,7 +575,9 @@ describe("a run the user stopped", () => {
 
   it("keeps the counters, to say where each node was when it stopped", () => {
     expect(foldBlockStatus(stopped()).byState).toEqual(
-      expect.arrayContaining([expect.objectContaining({ state: "Running", onMachine: true, nodes: 1 })]),
+      expect.arrayContaining([
+        expect.objectContaining({ state: "Running", onMachine: true, nodes: 1 }),
+      ]),
     );
   });
 
