@@ -1,7 +1,10 @@
 import { TestHelpers } from "@milaboratories/pl-client";
 import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import { describe, expect, it, test } from "vitest";
-import { InstanceStatsWatch, parseInstanceStats } from "./instance_stats";
+import type { BackendCapability, SignedResourceId } from "@milaboratories/pl-client";
+import { createSignedResourceId } from "@milaboratories/pl-client";
+import type { InstanceStatsClient } from "./instance_stats";
+import { InstanceStatsCapability, InstanceStatsWatch, parseInstanceStats } from "./instance_stats";
 
 const kv = (key: string, value: unknown) => ({ key, value: JSON.stringify(value) });
 
@@ -41,7 +44,7 @@ describe("parseInstanceStats", () => {
   });
 });
 
-test("the watch settles on a sample, or on unsupported without the context", async () => {
+test("the watch reads a sample where the capability is advertised, and nothing elsewhere", async () => {
   const pl = await TestHelpers.getTestClient();
   const watch = new InstanceStatsWatch(pl, new ConsoleLoggerAdapter());
   try {
@@ -50,9 +53,72 @@ test("the watch settles on a sample, or on unsupported without the context", asy
       await new Promise((r) => setTimeout(r, 100));
       stats = await watch.stats.getValue();
     }
-    expect(["read", "unsupported"]).toContain(stats?.availability);
+    expect(stats?.availability).toEqual(
+      pl.hasCapability(InstanceStatsCapability) ? "read" : "unsupported",
+    );
   } finally {
     await watch.terminate();
     await pl.close();
   }
 }, 30_000);
+
+/** A client that advertises `capabilities` and serves one context with `kvs`, or none. */
+function fakeClient(opts: {
+  capabilities: BackendCapability[];
+  context?: { key: string; value: string }[];
+}): InstanceStatsClient & { listed: number } {
+  const ref = createSignedResourceId(7n);
+  const client = {
+    listed: 0,
+    hasCapability: (c: BackendCapability) => opts.capabilities.includes(c),
+    listSharedResourcesByType: async (_name: string): Promise<SignedResourceId[]> => {
+      client.listed++;
+      return opts.context === undefined ? [] : [ref];
+    },
+    withReadTx: async <T>(
+      _name: string,
+      body: (tx: {
+        listKeyValuesString(rId: SignedResourceId): Promise<{ key: string; value: string }[]>;
+      }) => Promise<T>,
+    ) => await body({ listKeyValuesString: async () => opts.context ?? [] }),
+  };
+  return client;
+}
+
+async function firstSample(client: InstanceStatsClient) {
+  const watch = new InstanceStatsWatch(client, new ConsoleLoggerAdapter());
+  try {
+    for (let i = 0; i < 50; i++) {
+      const stats = await watch.stats.getValue();
+      if (stats !== undefined) return stats;
+      await new Promise((r) => setTimeout(r, 20));
+    }
+    return undefined;
+  } finally {
+    await watch.terminate();
+  }
+}
+
+describe("InstanceStatsWatch", () => {
+  it("does nothing on a backend that does not advertise the capability", async () => {
+    const client = fakeClient({ capabilities: [] });
+    expect(await firstSample(client)).toEqual({ availability: "unsupported" });
+    expect(client.listed).toBe(0);
+  });
+
+  it("reports unsupported when the capability is advertised but the context is missing", async () => {
+    const client = fakeClient({ capabilities: [InstanceStatsCapability] });
+    expect(await firstSample(client)).toEqual({ availability: "unsupported" });
+    expect(client.listed).toBe(1);
+  });
+
+  it("reads the context's readings, and nothing when its writer is off", async () => {
+    const sample = [kv("reading/instance/jobs", { running: 1, queued: 2 })];
+    expect(
+      await firstSample(fakeClient({ capabilities: [InstanceStatsCapability], context: sample })),
+    ).toEqual({ availability: "read", jobs: { running: 1, queued: 2 } });
+    expect(
+      await firstSample(fakeClient({ capabilities: [InstanceStatsCapability], context: [] })),
+    ).toEqual({ availability: "read" });
+  });
+});

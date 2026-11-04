@@ -1,6 +1,7 @@
 /**
  * The load of the whole Platforma instance, read from the backend's instance statistics context.
  *
+ * A backend that advertises `instanceStats:v1` keeps one such context; without it nothing is read.
  * Core creates one context per instance and grants every user read access; the executor runner
  * writes its readings as `reading/instance/<key>` every few seconds, all keys of a sample in one
  * transaction. The middle layer finds the context once, then reads its key-values on the same
@@ -9,13 +10,20 @@
  * Contract: pl `plapi/plapi/instance_stats_context.go` (MILAB-7312).
  */
 
-import type { PlClient, SignedResourceId } from "@milaboratories/pl-client";
+import type {
+  BackendCapability,
+  KeyValueString,
+  SignedResourceId,
+} from "@milaboratories/pl-client";
 import type { Computable } from "@milaboratories/computable";
 import { Computable as ComputableFactory, WatchableValue } from "@milaboratories/computable";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import type { InstanceStats, InstanceStatsCapacity } from "@milaboratories/pl-model-middle-layer";
 import { UnsupportedInstanceStats } from "@milaboratories/pl-model-middle-layer";
 import { setTimeout } from "node:timers/promises";
+
+/** The backend capability that says the instance statistics context exists. */
+export const InstanceStatsCapability = "instanceStats:v1";
 
 /** The resource type name of the instance statistics context. */
 export const InstanceStatsContextTypeName = "InstanceStatsContext";
@@ -71,7 +79,28 @@ export function parseInstanceStats(kvs: readonly { key: string; value: string }[
   };
 }
 
-/** Reads the instance statistics while the middle layer lives. */
+/**
+ * The part of a client the watch uses: a `PlClient` satisfies it, and a test can serve it without a
+ * backend.
+ */
+export interface InstanceStatsClient {
+  hasCapability(capability: BackendCapability): boolean;
+  listSharedResourcesByType(resourceTypeName: string): Promise<SignedResourceId[]>;
+  withReadTx<T>(
+    name: string,
+    body: (tx: {
+      listKeyValuesString(rId: SignedResourceId): Promise<KeyValueString[]>;
+    }) => Promise<T>,
+  ): Promise<T>;
+}
+
+/**
+ * Reads the instance statistics while the middle layer lives.
+ *
+ * Reports `unsupported` without `instanceStats:v1`, and also when the backend advertises it but has
+ * no context (the deployment turned it off): it looks again every few minutes. A context whose
+ * writer is off yields a sample without readings.
+ */
 export class InstanceStatsWatch {
   private readonly value = new WatchableValue<InstanceStats | undefined>(undefined);
   private readonly abortController = new AbortController();
@@ -81,7 +110,7 @@ export class InstanceStatsWatch {
   public readonly stats: Computable<InstanceStats | undefined>;
 
   constructor(
-    private readonly pl: PlClient,
+    private readonly pl: InstanceStatsClient,
     private readonly logger: MiLogger,
   ) {
     this.stats = ComputableFactory.make((ctx) => this.value.getValue(ctx));
@@ -112,6 +141,12 @@ export class InstanceStatsWatch {
   }
 
   private async run(): Promise<void> {
+    // A backend that does not advertise the context has none to find: nothing is listed or read.
+    if (!this.pl.hasCapability(InstanceStatsCapability)) {
+      this.publish(UnsupportedInstanceStats);
+      return;
+    }
+
     let context: SignedResourceId | undefined;
     let pollsSinceDiscovery = RediscoverEveryPolls;
 

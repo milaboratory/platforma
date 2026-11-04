@@ -1850,7 +1850,8 @@ export class MiddleLayer {
   /**
    * The load of the whole instance: allocated CPU and RAM out of its capacity, and running and
    * queued jobs. Read from the backend's instance statistics context every few seconds, starting on
-   * first access; undefined until the first read, `unsupported` on a backend without the context.
+   * first access; undefined until the first read, `unsupported` on a backend that does not advertise
+   * `instanceStats:v1`.
    */
   public get instanceStats(): Computable<InstanceStats | undefined> {
     this.instanceStatsWatch ??= new InstanceStatsWatch(this.pl, this.env.logger);
