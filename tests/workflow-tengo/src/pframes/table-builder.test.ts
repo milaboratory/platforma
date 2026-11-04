@@ -541,7 +541,7 @@ async function runQuerySpecConsumer(
     { csv: multiMatchCsv, spec: multiMatchSpec },
     { blockId: producerBlockId },
   );
-  const ctx = await awaitStableState(producer.context());
+  const ctx = await awaitStableState(producer.context(), Timeout);
 
   const consumer = await helper.renderWorkflow(
     "pframes.table-builder-multi-consumer",

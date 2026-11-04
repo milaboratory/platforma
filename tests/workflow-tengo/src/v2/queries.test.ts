@@ -1,4 +1,5 @@
 import { Annotation, Pl } from "@milaboratories/pl-middle-layer";
+import { getLongTestTimeout } from "@milaboratories/test-helpers";
 import { awaitStableState, tplTest } from "@platforma-sdk/test";
 import dedent from "dedent";
 import { vi } from "vitest";
@@ -11,7 +12,7 @@ import {
   type V2Render,
 } from "./render-v2";
 
-const TIMEOUT = 60_000;
+const TIMEOUT = getLongTestTimeout(60_000);
 vi.setConfig({ testTimeout: 4 * TIMEOUT });
 
 /** A ref to a value a v2 block's main workflow exports. */
