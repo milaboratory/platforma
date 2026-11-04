@@ -179,7 +179,7 @@ describe("collectColumnReferences", () => {
 
 describe("columnProducer", () => {
   test("a global leaf is its own producer", () => {
-    expect(columnProducer(condition)).toEqual(createPlRef("samples", "metadata.condition"));
+    expect(columnProducer(condition)).toEqual({ blockId: "samples", name: "metadata.condition" });
   });
 
   test("a local leaf belongs to the block holding it and has no producer", () => {
@@ -189,7 +189,7 @@ describe("columnProducer", () => {
   test("a filtered column's producer is its leaf", () => {
     const column = createColumnFilteredId({ source: condition, axisFilters: [[0, "IGH"]] });
 
-    expect(columnProducer(column)).toEqual(createPlRef("samples", "metadata.condition"));
+    expect(columnProducer(column)).toEqual({ blockId: "samples", name: "metadata.condition" });
   });
 
   test("a discovered column's producer is the column it discovered, not a linker", () => {
@@ -198,7 +198,7 @@ describe("columnProducer", () => {
       path: [{ type: "linker", column: leafId("linker", "cell-to-sample") }],
     });
 
-    expect(columnProducer(column)).toEqual(createPlRef("samples", "metadata.condition"));
+    expect(columnProducer(column)).toEqual({ blockId: "samples", name: "metadata.condition" });
   });
 
   test("an overridden column's producer is its leaf", () => {
@@ -207,7 +207,7 @@ describe("columnProducer", () => {
       specOverrides: { annotations: { "pl7.app/label": "Condition" } },
     });
 
-    expect(columnProducer(column)).toEqual(createPlRef("samples", "metadata.condition"));
+    expect(columnProducer(column)).toEqual({ blockId: "samples", name: "metadata.condition" });
   });
 
   test("a wrapper with no usable leaf inside has no producer", () => {

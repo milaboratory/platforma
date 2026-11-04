@@ -4,10 +4,10 @@ import {
   columnProducer,
   readAnnotationJson,
   type ColumnReference,
-  type ColumnUniversalId,
   type ColumnValue,
   type PColumnSpec,
 } from "../drivers";
+import type { BlockOutput } from "../ref";
 import type { DependencyStatus, DependentStatus, UncheckedReason } from "./types";
 
 /** What the last run of a block exports under one output name. */
@@ -36,11 +36,8 @@ export type ExportCheck =
   | { type: "missingValues"; values: ColumnValue[] };
 
 /** A column another block exports, referenced from args, with the values picked from it. */
-export interface OutgoingReference {
-  producerBlockId: string;
-  output: string;
-  ref: ColumnUniversalId;
-  values: null | ColumnValue[];
+export interface OutgoingReference extends ColumnReference {
+  producer: BlockOutput;
 }
 
 /** Args a block's references are read from, and where they come from. */
@@ -69,7 +66,7 @@ export function collectOutgoingReferences(
   for (const { ref, values } of references) {
     const producer = columnProducer(ref);
     if (producer === undefined) continue;
-    outgoing.push({ producerBlockId: producer.blockId, output: producer.name, ref, values });
+    outgoing.push({ producer, ref, values });
   }
   return outgoing;
 }

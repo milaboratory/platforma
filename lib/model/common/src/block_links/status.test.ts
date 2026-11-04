@@ -65,14 +65,12 @@ describe("collectOutgoingReferences", () => {
 
     expect(collectOutgoingReferences(collectColumnReferences(args))).toEqual([
       {
-        producerBlockId: "samples",
-        output: "metadata.condition",
+        producer: { blockId: "samples", name: "metadata.condition" },
         ref: condition,
         values: ["treated", "1"],
       },
       {
-        producerBlockId: "mixcr",
-        output: "clones",
+        producer: { blockId: "mixcr", name: "clones" },
         ref: createGlobalPObjectId("mixcr", "clones"),
         values: null,
       },
@@ -83,7 +81,11 @@ describe("collectOutgoingReferences", () => {
     const filtered = createColumnFilteredId({ source: condition, axisFilters: [[0, "s1"]] });
 
     expect(collectOutgoingReferences(collectColumnReferences({ filtered }))).toEqual([
-      { producerBlockId: "samples", output: "metadata.condition", ref: filtered, values: null },
+      {
+        producer: { blockId: "samples", name: "metadata.condition" },
+        ref: filtered,
+        values: null,
+      },
     ]);
   });
 

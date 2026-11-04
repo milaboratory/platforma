@@ -1,11 +1,7 @@
 import { isString } from "es-toolkit";
 import { parseJsonSafely } from "../../../json";
-import {
-  createPObjectId,
-  isGlobalPObjectKey,
-  isPObjectKey,
-  type GlobalPObjectKey,
-} from "../../../pool";
+import { createPObjectId, isGlobalPObjectKey, isPObjectKey } from "../../../pool";
+import type { BlockOutput } from "../../../ref";
 import { isColumnValueKey, type ColumnValue } from "./column_value";
 import {
   extractPObjectId,
@@ -56,7 +52,7 @@ export function collectColumnReferences(args: unknown): ColumnReference[] {
  * local column belongs to the block that holds the id, not to another block; an unresolvable one
  * — a wrapper with no usable leaf inside — names no block at all.
  */
-export function columnProducer(id: ColumnUniversalId): GlobalPObjectKey | undefined {
+export function columnProducer(id: ColumnUniversalId): BlockOutput | undefined {
   let leafId: string;
   try {
     leafId = extractPObjectId(id);
@@ -66,7 +62,7 @@ export function columnProducer(id: ColumnUniversalId): GlobalPObjectKey | undefi
   const leaf = parseJsonSafely(leafId);
   if (!isGlobalPObjectKey(leaf)) return undefined;
   if (!isString(leaf.blockId) || !isString(leaf.name)) return undefined;
-  return leaf;
+  return { blockId: leaf.blockId, name: leaf.name };
 }
 
 // Internals

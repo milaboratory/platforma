@@ -55,15 +55,13 @@ export function computeDependencies<A extends ExportNode<A>>(
   return {
     argsSource: chosen.source,
     items: references.map((reference) => {
-      if (!above.has(reference.producerBlockId)) {
-        return {
-          ...reference,
-          columnLabel: null,
-          status: dependencyStatus({ type: "unavailable" }),
-        };
+      const { producer, ref, values } = reference;
+      const entry = { producerBlockId: producer.blockId, output: producer.name, ref, values };
+      if (!above.has(producer.blockId)) {
+        return { ...entry, columnLabel: null, status: dependencyStatus({ type: "unavailable" }) };
       }
       const { check, columnLabel } = checkReference(pool, reference);
-      return { ...reference, columnLabel, status: dependencyStatus(check) };
+      return { ...entry, columnLabel, status: dependencyStatus(check) };
     }),
   };
 }
@@ -83,12 +81,12 @@ export function computeDependents<A extends ExportNode<A>>(
     const chosen = chooseArgs(argsReads(source, dependentBlockId));
     if (chosen.source === "none") return [];
     return collectOutgoingReferences(source.referencesOf(dependentBlockId, chosen.source))
-      .filter((reference) => reference.producerBlockId === blockId)
+      .filter((reference) => reference.producer.blockId === blockId)
       .map((reference) => {
         const { check, columnLabel } = checkReference(pool, reference);
         return {
           dependentBlockId,
-          output: reference.output,
+          output: reference.producer.name,
           ref: reference.ref,
           values: reference.values,
           columnLabel,
@@ -150,16 +148,16 @@ function argsReads<A extends ExportNode<A>>(source: ColumnLinksSource<A>, blockI
  */
 function checkReference<A extends ExportNode<A>>(
   pool: ExportPool<A>,
-  reference: Pick<OutgoingReference, "producerBlockId" | "output" | "values">,
+  reference: Pick<OutgoingReference, "producer" | "values">,
 ): { check: ExportCheck; columnLabel: null | string } {
-  const { producerBlockId, output, values } = reference;
-  const result = checkExport(() => pool.lookup(producerBlockId, output), values);
+  const { producer, values } = reference;
+  const result = checkExport(() => pool.lookup(producer), values);
   if (result.columnLabel !== null) return result;
   switch (result.check.type) {
     case "unavailable":
     case "pending":
     case "notRun":
-      return { ...result, columnLabel: pool.stagingLabel(producerBlockId, output) };
+      return { ...result, columnLabel: pool.stagingLabel(producer) };
     default:
       return result;
   }
