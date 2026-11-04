@@ -122,7 +122,10 @@ export interface ProjectField {
     | "stagingOutput"
     | "stagingCtxPrevious"
     | "stagingUiCtxPrevious"
-    | "stagingOutputPrevious";
+    | "stagingOutputPrevious"
+    // Root action context of the current render. The project holds it so it outlives the render.
+    | "prodActionContext"
+    | "stagingActionContext";
 }
 
 export const FieldsToDuplicate: Set<ProjectField["fieldName"]> = new Set([
@@ -142,7 +145,7 @@ export function projectFieldName(blockId: string, fieldName: ProjectField["field
 }
 
 const projectFieldPattern =
-  /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodChainCtx|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
+  /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodChainCtx|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious|prodActionContext|stagingActionContext)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);
