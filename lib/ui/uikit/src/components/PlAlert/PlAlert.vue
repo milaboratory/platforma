@@ -18,6 +18,13 @@ defineEmits<{
   (e: "update:modelValue", value: boolean): void;
 }>();
 
+defineSlots<{
+  /** The alert text; the alert is the label alone without it. */
+  default?: () => unknown;
+  /** Content in place of the `label` text, such as a control that folds the alert. */
+  label?: () => unknown;
+}>();
+
 withDefaults(
   defineProps<{
     /**
@@ -89,8 +96,12 @@ const iconMap = {
       <div :class="`icon-24 icon-${iconMap[type]}`" />
     </div>
     <div class="pl-alert__main">
-      <label v-if="label" data-testid="pl-alert-label">{{ label }}</label>
-      <div data-testid="pl-alert-message" class="pl-alert__main__text"><slot /></div>
+      <label v-if="label || $slots.label" data-testid="pl-alert-label">
+        <slot name="label">{{ label }}</slot>
+      </label>
+      <div v-if="$slots.default" data-testid="pl-alert-message" class="pl-alert__main__text">
+        <slot />
+      </div>
     </div>
     <PlCloseModalBtn
       v-if="closeable"

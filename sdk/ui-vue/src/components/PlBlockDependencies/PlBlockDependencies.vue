@@ -1,7 +1,6 @@
 <script lang="ts" setup>
-import type { LinkAlert } from "@platforma-sdk/model";
 import { linkAlerts, linkSections } from "@platforma-sdk/model";
-import { PlAlert } from "@milaboratories/uikit";
+import { PlAlert, PlMaskIcon16 } from "@milaboratories/uikit";
 import { uniq } from "es-toolkit";
 import { computed, inject } from "vue";
 import { columnLinksKey } from "../../columnLinks";
@@ -24,18 +23,19 @@ const usedByFold = useAlertFold({
   issues: usedByIssues,
 });
 
-const isFolded = (alert: LinkAlert) =>
-  alert.side === "usedBy" && usedByFold.state.value.type === "folded";
+const isFolded = computed(() => usedByFold.state.value.type === "folded");
 
 const isUpdated = computed(() => {
   const state = usedByFold.state.value;
   return state.type === "folded" && state.updated;
 });
 
-const showText = computed(() => {
+const blockCount = computed(() => {
   const count = uniq(usedByIssues.value.map((issue) => issue.blockId)).length;
-  return `Show ${count} ${count === 1 ? "block" : "blocks"}`;
+  return `${count} ${count === 1 ? "block" : "blocks"}`;
 });
+
+const toggleUsedBy = () => (isFolded.value ? usedByFold.open() : usedByFold.fold());
 </script>
 
 <template>
@@ -46,19 +46,28 @@ const showText = computed(() => {
     :type="alert.type"
     :label="alert.label"
   >
-    <button
-      v-if="isFolded(alert)"
-      type="button"
-      data-testid="pl-block-dependencies-show"
-      :class="$style.toggle"
-      @click="usedByFold.open()"
-    >
-      <span v-if="isUpdated" data-testid="pl-block-dependencies-updated" :class="$style.updated">
-        <span :class="$style.dot" />Updated ·
-      </span>
-      {{ showText }}
-    </button>
-    <template v-else>
+    <template v-if="alert.side === 'usedBy'" #label>
+      <button
+        type="button"
+        data-testid="pl-block-dependencies-toggle"
+        :class="$style.title"
+        :aria-expanded="!isFolded"
+        @click="toggleUsedBy"
+      >
+        <PlMaskIcon16
+          name="chevron-right"
+          :class="[$style.chevron, { [$style.open]: !isFolded }]"
+        />
+        {{ alert.label }}
+        <span v-if="isFolded" data-testid="pl-block-dependencies-count" :class="$style.meta">
+          {{ blockCount }}
+        </span>
+        <span v-if="isUpdated" data-testid="pl-block-dependencies-updated" :class="$style.meta">
+          <span :class="$style.dot" />Updated
+        </span>
+      </button>
+    </template>
+    <template v-if="alert.side !== 'usedBy' || !isFolded" #default>
       <ul :class="$style.issues">
         <li v-for="issue in alert.issues" :key="issue.key" :title="issue.outputs.join(', ')">
           <PlBlockName :block-id="issue.blockId" :name="issue.blockName" />
@@ -66,15 +75,6 @@ const showText = computed(() => {
         </li>
       </ul>
       <div v-if="alert.hint !== null" :class="$style.hint">{{ alert.hint }}</div>
-      <button
-        v-if="alert.side === 'usedBy'"
-        type="button"
-        data-testid="pl-block-dependencies-hide"
-        :class="[$style.toggle, $style.hide]"
-        @click="usedByFold.fold()"
-      >
-        Hide
-      </button>
     </template>
   </PlAlert>
 </template>
@@ -87,21 +87,37 @@ const showText = computed(() => {
 .hint {
   margin-top: 8px;
 }
-.toggle {
+.title {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
   padding: 0;
   border: none;
   background: none;
-  color: var(--txt-link);
+  color: inherit;
   font: inherit;
+  letter-spacing: inherit;
+  text-align: inherit;
   cursor: pointer;
 }
-.hide {
-  margin-top: 8px;
+.title:focus-visible {
+  outline: 2px solid var(--border-color-focus);
+  outline-offset: 2px;
 }
-.updated {
+.chevron {
+  transition-duration: 50ms;
+}
+.open {
+  transform: rotate(90deg);
+}
+.meta {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  font-size: 14px;
+  line-height: 20px;
+  color: var(--txt-03);
 }
 .dot {
   width: 6px;

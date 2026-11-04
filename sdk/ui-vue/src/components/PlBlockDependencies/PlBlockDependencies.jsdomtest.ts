@@ -57,32 +57,30 @@ describe("PlBlockDependencies", () => {
   test("folds the warning to one line, and keeps it folded when the block opens again", async () => {
     const folded = { ...links, blockId: "folded" };
     const wrapper = mountWith(computed(() => folded));
-    await wrapper.find("[data-testid='pl-block-dependencies-hide']").trigger("click");
+    await wrapper.find("[data-testid='pl-block-dependencies-toggle']").trigger("click");
 
-    const show = wrapper.find("[data-testid='pl-block-dependencies-show']");
-    expect(show.text()).toBe("Show 1 block");
+    expect(wrapper.find("[data-testid='pl-block-dependencies-count']").text()).toBe("1 block");
+    expect(wrapper.find("[data-testid='pl-alert-message']").exists()).toBe(false);
     expect(wrapper.text()).not.toContain("Enrichment");
 
     const reopened = mountWith(computed(() => folded));
-    expect(reopened.find("[data-testid='pl-block-dependencies-show']").exists()).toBe(true);
+    expect(reopened.find("[data-testid='pl-block-dependencies-count']").exists()).toBe(true);
     expect(reopened.find("[data-testid='pl-block-dependencies-updated']").exists()).toBe(false);
   });
 
   test("marks a folded warning updated once it says something else, until it is read", async () => {
     const current = shallowRef<BlockColumnLinks>({ ...links, blockId: "updated" });
     const wrapper = mountWith(current);
-    await wrapper.find("[data-testid='pl-block-dependencies-hide']").trigger("click");
+    await wrapper.find("[data-testid='pl-block-dependencies-toggle']").trigger("click");
 
     current.value = withDependent(current.value, "dca", "DCA");
     await nextTick();
     expect(wrapper.find("[data-testid='pl-block-dependencies-updated']").exists()).toBe(true);
-    expect(wrapper.find("[data-testid='pl-block-dependencies-show']").text()).toContain(
-      "Show 2 blocks",
-    );
+    expect(wrapper.find("[data-testid='pl-block-dependencies-count']").text()).toBe("2 blocks");
 
-    await wrapper.find("[data-testid='pl-block-dependencies-show']").trigger("click");
+    await wrapper.find("[data-testid='pl-block-dependencies-toggle']").trigger("click");
     expect(wrapper.text()).toContain("DCA");
-    await wrapper.find("[data-testid='pl-block-dependencies-hide']").trigger("click");
+    await wrapper.find("[data-testid='pl-block-dependencies-toggle']").trigger("click");
     expect(wrapper.find("[data-testid='pl-block-dependencies-updated']").exists()).toBe(false);
   });
 });
