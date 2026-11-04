@@ -36,7 +36,6 @@ function links(producerBlockId: string, output: string): BlockColumnLinks {
   return {
     blockId: "enrichment",
     dependencies: {
-      argsSource: "current",
       items: [
         {
           producerBlockId,

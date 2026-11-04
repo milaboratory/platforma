@@ -16,7 +16,6 @@ const ty1 = createColumnValueId({ column: PATH, value: "Ty1" });
 const OTHER = createGlobalPObjectId("mixcr", "abundance");
 
 const dependencies: BlockDependencies = {
-  argsSource: "current",
   items: [
     {
       producerBlockId: "samples",

@@ -263,17 +263,18 @@ export class ProjectHelper {
 
   /**
    * Columns referenced by a block's args, with the values of them the args picked, read from the
-   * args resource `argsRid`. `args` returns `undefined` while the resource data is not loaded yet;
-   * nothing is remembered for such a read, so the references are found once the data arrives.
+   * args resource `argsRid`. `undefined` while the resource data is not loaded yet: `args`
+   * returns `undefined` then, and nothing is remembered for such a read, so the references are
+   * found once the data arrives.
    */
   public getColumnReferences(
     argsRid: SignedResourceId,
     args: () => unknown,
-  ): readonly ColumnReference[] {
+  ): undefined | readonly ColumnReference[] {
     const cached = this.columnReferencesCache.get(argsRid);
     if (cached !== undefined) return cached;
     const data = args();
-    if (data === undefined) return [];
+    if (data === undefined) return undefined;
     const references = collectColumnReferences(data);
     this.columnReferencesCache.set(argsRid, references);
     return references;

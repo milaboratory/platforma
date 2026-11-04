@@ -15,6 +15,7 @@ export {
   computeDependencies,
   computeDependents,
   labelColumnLinks,
+  type ArgsKind,
   type ColumnLinksSource,
 } from "./compute";
 export type { ProducerRun } from "./status";

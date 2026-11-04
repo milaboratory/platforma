@@ -86,12 +86,10 @@ export interface DependencyEntry {
 }
 
 /**
- * Outputs of other blocks a block's args reference. `argsSource` says which args were read:
- * `current` — derived from the current data; `lastRun` — those of the last run, read when the
- * block has no current ones; `none` when it has neither.
+ * Outputs of other blocks a block's args reference: its current args, else those of its last
+ * run.
  */
 export interface UnlabeledDependencies {
-  argsSource: "current" | "lastRun" | "none";
   items: DependencyEntry[];
 }
 

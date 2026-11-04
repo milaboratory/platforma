@@ -42,7 +42,6 @@ describe("blockDependencies and blockDependents", () => {
     const tree = prj.tree();
 
     expect(await dependenciesOf(tree, "x")).toEqual({
-      argsSource: "current",
       items: [
         {
           producerBlockId: "samples",
@@ -171,7 +170,6 @@ describe("blockDependencies and blockDependents", () => {
     prj.block("x", { prodArgs: prj.args({ target: pick("treated") }) });
 
     expect(await dependenciesOf(prj.tree(), "x")).toMatchObject({
-      argsSource: "lastRun",
       items: [{ status: { type: "ok" } }],
     });
   });
@@ -191,7 +189,6 @@ describe("blockDependencies and blockDependents", () => {
     const tree = prj.tree();
 
     expect(await dependenciesOf(tree, "x")).toMatchObject({
-      argsSource: "current",
       items: [{ producerBlockId: "samples", ref: condition, status: { type: "ok" } }],
     });
     expect((await dependentsOf(tree, "samples")).items).toMatchObject([
@@ -309,7 +306,6 @@ describe("what the column links of a block watch", () => {
 
 describe("labelBlockColumnLinks", () => {
   const dependencies: UnlabeledDependencies = {
-    argsSource: "current",
     items: [
       {
         producerBlockId: "samples",

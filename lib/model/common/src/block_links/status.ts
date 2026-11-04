@@ -40,21 +40,6 @@ export interface OutgoingReference extends ColumnReference {
   producer: BlockOutput;
 }
 
-/** Args a block's references are read from, and where they come from. */
-export type ChosenArgs = { source: "current" | "lastRun"; args: unknown } | { source: "none" };
-
-/**
- * A block's current args, else the args of its last run; the last run's are read only when the
- * block has no current args.
- */
-export function chooseArgs(reads: { current: () => unknown; lastRun: () => unknown }): ChosenArgs {
-  const current = reads.current();
-  if (current !== undefined) return { source: "current", args: current };
-  const lastRun = reads.lastRun();
-  if (lastRun !== undefined) return { source: "lastRun", args: lastRun };
-  return { source: "none" };
-}
-
 /**
  * Every column of another block among `references`, in their order. A column local to the
  * block, or one whose id names no producer, is not a reference to another block and is skipped.

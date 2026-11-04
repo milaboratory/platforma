@@ -460,7 +460,7 @@ describe("describeMissingValue", () => {
 
   test("falls back to generic names without labels", () => {
     const cause = describeMissingValue(
-      { argsSource: "current", items: [pathEntry({ type: "pending" }, null)], labels: {} },
+      { items: [pathEntry({ type: "pending" }, null)], labels: {} },
       ty1,
     );
     expect(cause).toEqual({
@@ -501,11 +501,8 @@ describe("describeMissingValue", () => {
   });
 });
 
-function dependencies(
-  items: DependencyEntry[],
-  argsSource: BlockDependencies["argsSource"] = "current",
-): BlockDependencies {
-  return { argsSource, items, labels: { p1: "Samples" } };
+function dependencies(items: DependencyEntry[]): BlockDependencies {
+  return { items, labels: { p1: "Samples" } };
 }
 
 function dependent(
@@ -537,7 +534,7 @@ function notExported(): DependentStatus {
 }
 
 function pathDependencies(items: DependencyEntry[]): BlockDependencies {
-  return { argsSource: "current", items, labels: { samples: "Samples" } };
+  return { items, labels: { samples: "Samples" } };
 }
 
 function abundanceEntry(status: DependencyStatus): DependencyEntry {

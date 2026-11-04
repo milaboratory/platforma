@@ -10,7 +10,6 @@ import { createGlobalPObjectId, createLocalPObjectId } from "../pool";
 import { createPlRef } from "../ref";
 import {
   checkExport,
-  chooseArgs,
   collectOutgoingReferences,
   dependencyStatus,
   dependentStatus,
@@ -26,31 +25,6 @@ import {
 } from "./status";
 
 const condition = createGlobalPObjectId("samples", "metadata.condition");
-
-describe("chooseArgs", () => {
-  const nothing = () => undefined;
-
-  test("current args win and the last run's are not read", () => {
-    const lastRun = vi.fn(() => ({ old: true }));
-
-    expect(chooseArgs({ current: () => ({ now: true }), lastRun })).toEqual({
-      source: "current",
-      args: { now: true },
-    });
-    expect(lastRun).not.toHaveBeenCalled();
-  });
-
-  test("without current args the last run's are read", () => {
-    expect(chooseArgs({ current: nothing, lastRun: () => ({ old: true }) })).toEqual({
-      source: "lastRun",
-      args: { old: true },
-    });
-  });
-
-  test("with neither there are no args", () => {
-    expect(chooseArgs({ current: nothing, lastRun: nothing })).toEqual({ source: "none" });
-  });
-});
 
 describe("collectOutgoingReferences", () => {
   test("names the producer and output of each referenced column, with the picked values", () => {

@@ -1,15 +1,13 @@
 import type { ColumnReference } from "../drivers";
-import { ExportPool, type ExportNode } from "./export_pool";
+import { ExportPool, type ExportNode, type ExportSource } from "./export_pool";
 import {
   checkExport,
-  chooseArgs,
   collectOutgoingReferences,
   dependencyStatus,
   dependentStatus,
   readBlockLabels,
   type ExportCheck,
   type OutgoingReference,
-  type ProducerRun,
 } from "./status";
 import type {
   BlockColumnLinks,
@@ -18,21 +16,20 @@ import type {
   UnlabeledDependents,
 } from "./types";
 
-/** What the column links of a block are computed from. */
-export interface ColumnLinksSource<A extends ExportNode<A>> {
+/** Args of a block: `current` — derived from its current data; `lastRun` — those of its last run. */
+export type ArgsKind = "current" | "lastRun";
+
+/**
+ * What the column links of a block are computed from: the blocks of the project, the columns
+ * their args reference, and their runs. A last run is read for the blocks whose exports a
+ * reference is checked against; prepared results only to label a column the last run does not
+ * export.
+ */
+export interface ColumnLinksSource<A extends ExportNode<A>> extends ExportSource<A> {
   /** Blocks of the project, in project order. */
   blockIds: readonly string[];
-  /** Args of a block: `current` — derived from its current data; `lastRun` — those of its last run. */
-  argsOf(blockId: string, which: "current" | "lastRun"): unknown;
-  /** Columns that the given args of a block reference. */
-  referencesOf(blockId: string, which: "current" | "lastRun"): readonly ColumnReference[];
-  /** The last run of a block. Read for the blocks whose exports a reference is checked against. */
-  lastRunOf(blockId: string): ProducerRun<A>;
-  /**
-   * The results a block prepares before it is run; `undefined` while it has none. Read only to
-   * label a column its last run does not export.
-   */
-  stagingOf(blockId: string): undefined | A;
+  /** Columns that the given args of a block reference; `undefined` while it has no such args. */
+  referencesOf(blockId: string, kind: ArgsKind): undefined | readonly ColumnReference[];
 }
 
 /**
@@ -47,14 +44,8 @@ export function computeDependencies<A extends ExportNode<A>>(
 ): UnlabeledDependencies {
   const pool = new ExportPool(source);
   const above = new Set(blocksAround(source.blockIds, blockId).above);
-  const chosen = chooseArgs(argsReads(source, blockId));
-  const references =
-    chosen.source === "none"
-      ? []
-      : collectOutgoingReferences(source.referencesOf(blockId, chosen.source));
   return {
-    argsSource: chosen.source,
-    items: references.map((reference) => {
+    items: outgoingReferences(source, blockId).map((reference) => {
       const { producer, ref, values } = reference;
       const entry = { producerBlockId: producer.blockId, output: producer.name, ref, values };
       if (!above.has(producer.blockId)) {
@@ -78,9 +69,7 @@ export function computeDependents<A extends ExportNode<A>>(
 ): UnlabeledDependents {
   const pool = new ExportPool(source);
   const items = blocksAround(source.blockIds, blockId).below.flatMap((dependentBlockId) => {
-    const chosen = chooseArgs(argsReads(source, dependentBlockId));
-    if (chosen.source === "none") return [];
-    return collectOutgoingReferences(source.referencesOf(dependentBlockId, chosen.source))
+    return outgoingReferences(source, dependentBlockId)
       .filter((reference) => reference.producer.blockId === blockId)
       .map((reference) => {
         const { check, columnLabel } = checkReference(pool, reference);
@@ -134,11 +123,17 @@ function blocksAround(
   return { above: blockIds.slice(0, index), below: blockIds.slice(index + 1) };
 }
 
-function argsReads<A extends ExportNode<A>>(source: ColumnLinksSource<A>, blockId: string) {
-  return {
-    current: () => source.argsOf(blockId, "current"),
-    lastRun: () => source.argsOf(blockId, "lastRun"),
-  };
+/**
+ * Columns of other blocks that the args of `blockId` reference: its current args, else those of
+ * its last run. The last run's are read only when the block has no current args.
+ */
+function outgoingReferences<A extends ExportNode<A>>(
+  source: ColumnLinksSource<A>,
+  blockId: string,
+): OutgoingReference[] {
+  return collectOutgoingReferences(
+    source.referencesOf(blockId, "current") ?? source.referencesOf(blockId, "lastRun") ?? [],
+  );
 }
 
 /**

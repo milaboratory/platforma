@@ -28,7 +28,6 @@ const ty1 = createColumnValueId({ column: PATH, value: "Ty1" });
 const links: BlockColumnLinks = {
   blockId: "enrichment",
   dependencies: {
-    argsSource: "current",
     items: [
       {
         producerBlockId: "samples",

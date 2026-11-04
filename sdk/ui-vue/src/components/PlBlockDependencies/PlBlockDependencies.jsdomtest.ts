@@ -22,7 +22,7 @@ const PATH = createGlobalPObjectId("samples", "metadata.path");
 
 const links: BlockColumnLinks = {
   blockId: "samples",
-  dependencies: { argsSource: "current", items: [], labels: {} },
+  dependencies: { items: [], labels: {} },
   dependents: {
     items: [
       {

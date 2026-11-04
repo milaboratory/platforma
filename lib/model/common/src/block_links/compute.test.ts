@@ -15,6 +15,7 @@ import {
   computeDependencies,
   computeDependents,
   labelColumnLinks,
+  type ArgsKind,
   type ColumnLinksSource,
 } from "./compute";
 import type { ColumnFieldStep, ExportNode } from "./export_pool";
@@ -37,12 +38,12 @@ describe("computeDependencies", () => {
     expect(links).toEqual({
       samples: {
         blockId: "samples",
-        dependencies: { argsSource: "current", items: [] },
+        dependencies: { items: [] },
         dependents: { items: [] },
       },
       empty: {
         blockId: "empty",
-        dependencies: { argsSource: "none", items: [] },
+        dependencies: { items: [] },
         dependents: { items: [] },
       },
     });
@@ -64,7 +65,6 @@ describe("computeDependencies", () => {
     ]);
 
     expect(links.x.dependencies).toMatchObject({
-      argsSource: "lastRun",
       items: [{ producerBlockId: "samples", status: { type: "ok" } }],
     });
   });
@@ -244,7 +244,6 @@ describe("computeDependencies", () => {
     ]);
 
     expect(links.x.dependencies).toEqual({
-      argsSource: "current",
       items: [
         {
           producerBlockId: "samples",
@@ -317,10 +316,6 @@ describe("computeDependencies", () => {
     const reads: string[] = [];
     const counted: ColumnLinksSource<FakeNode> = {
       ...source,
-      argsOf: (blockId, which) => {
-        reads.push(blockId);
-        return source.argsOf(blockId, which);
-      },
       referencesOf: (blockId, which) => {
         reads.push(blockId);
         return source.referencesOf(blockId, which);
@@ -382,7 +377,6 @@ describe("computeDependents", () => {
     const args = { condition: pick("a") };
     const gone: ColumnLinksSource<FakeNode> = {
       ...source,
-      argsOf: () => args,
       referencesOf: () => collectColumnReferences(args),
     };
 
@@ -733,15 +727,14 @@ function run(blocks: FakeBlock[]): {
     if (block === undefined) throw new Error(`Block ${blockId} is not in the project`);
     return block;
   };
-  const argsOf = (blockId: string, which: "current" | "lastRun") =>
-    which === "current" ? blockOf(blockId).args : blockOf(blockId).lastRunArgs;
+  const argsOf = (blockId: string, kind: ArgsKind) =>
+    kind === "current" ? blockOf(blockId).args : blockOf(blockId).lastRunArgs;
   const source: ColumnLinksSource<FakeNode> = {
     blockIds: blocks.map((block) => block.id),
-    argsOf,
-    referencesOf: (blockId, which) => {
-      reads.push(`${blockId}:references:${which}`);
-      const args = argsOf(blockId, which);
-      return args === undefined ? [] : collectColumnReferences(args);
+    referencesOf: (blockId, kind) => {
+      reads.push(`${blockId}:references:${kind}`);
+      const args = argsOf(blockId, kind);
+      return args === undefined ? undefined : collectColumnReferences(args);
     },
     lastRunOf: (blockId) => {
       reads.push(`${blockId}:prod`);

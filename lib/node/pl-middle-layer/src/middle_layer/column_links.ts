@@ -6,6 +6,7 @@ import {
   computeDependents,
   labelColumnLinks,
   type BlockColumnLinks,
+  type ArgsKind,
   type ColumnLinksSource,
   type ProducerRun,
   type UnlabeledDependencies,
@@ -96,10 +97,9 @@ function columnLinksSource(
   const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
   return {
     blockIds: [...allBlocks(structure)].map(({ id }) => id),
-    argsOf: (blockId, which) => readArgs(prj, blockId, which)?.getDataAsJson(),
-    referencesOf: (blockId, which) => {
-      const args = readArgs(prj, blockId, which);
-      if (args === undefined) return [];
+    referencesOf: (blockId, kind) => {
+      const args = readArgs(prj, blockId, kind);
+      if (args === undefined) return undefined;
       return env.projectHelper.getColumnReferences(args.id, () => args.getDataAsJson());
     },
     lastRunOf: (blockId) => readLastRun(prj, blockId),
@@ -108,15 +108,18 @@ function columnLinksSource(
 }
 
 /** The project field holding a block's args of each kind. */
-const ARGS_FIELD = { current: "currentArgs", lastRun: "prodArgs" } as const;
+const ARGS_FIELD = { current: "currentArgs", lastRun: "prodArgs" } as const satisfies Record<
+  ArgsKind,
+  string
+>;
 
 function readArgs(
   prj: PlTreeNodeAccessor,
   blockId: string,
-  which: "current" | "lastRun",
+  kind: ArgsKind,
 ): undefined | PlTreeNodeAccessor {
   return prj.traverse({
-    field: projectFieldName(blockId, ARGS_FIELD[which]),
+    field: projectFieldName(blockId, ARGS_FIELD[kind]),
     assertFieldType: "Dynamic",
     stableIfNotFound: true,
   });
