@@ -27,7 +27,7 @@ import { setTimeout } from "node:timers/promises";
 import type { ActionContextNode } from "./block_status_fold";
 import { foldBlockStatus } from "./block_status_fold";
 import type { BlockActionContextMode } from "./block_action_context";
-import { ActionContextLinkCapabilities } from "../mutator/template/render_block";
+import { ActionContextLinkCapability } from "../mutator/template/render_block";
 import { projectFieldName } from "../model/project_model";
 import type { MiddleLayerEnvironment } from "./middle_layer";
 
@@ -60,7 +60,7 @@ const statusTreeFieldFilter = treeFilter.resourceTypeEq(ResourceTypeName.ActionC
  * creating a context on: without it a block has no context and nothing is ever reported.
  */
 export function backendSupportsActionContext(pl: PlClient): boolean {
-  return ActionContextLinkCapabilities.some((c) => pl.hasCapability(c));
+  return pl.hasCapability(ActionContextLinkCapability);
 }
 
 /**
