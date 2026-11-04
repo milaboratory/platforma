@@ -41,7 +41,7 @@ const links: BlockColumnLinks = {
     ],
     labels: { samples: "Samples" },
   },
-  dependents: { items: [], hasUnrunChanges: false, labels: {} },
+  dependents: { items: [], labels: {} },
 };
 
 describe("value pickers", () => {

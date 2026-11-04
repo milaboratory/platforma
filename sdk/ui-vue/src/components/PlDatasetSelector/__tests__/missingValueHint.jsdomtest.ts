@@ -49,7 +49,7 @@ function links(producerBlockId: string, output: string): BlockColumnLinks {
       ],
       labels: { mixcr: "MiXCR Clonotyping", labeling: "Repertoire Labeling" },
     },
-    dependents: { items: [], hasUnrunChanges: false, labels: {} },
+    dependents: { items: [], labels: {} },
   };
 }
 

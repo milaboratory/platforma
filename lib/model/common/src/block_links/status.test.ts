@@ -17,7 +17,6 @@ import {
   producerRunState,
   missingValues,
   readBlockLabels,
-  hasUnrunChanges,
   readExportValues,
   type ExportCheck,
   type ExportLookup,
@@ -27,29 +26,6 @@ import {
 } from "./status";
 
 const condition = createGlobalPObjectId("samples", "metadata.condition");
-
-describe("hasUnrunChanges", () => {
-  const reads = (current: unknown, lastRun: unknown) => ({
-    current: () => current,
-    lastRun: () => lastRun,
-  });
-
-  test("args equal to the last run's, in any key order, are run", () => {
-    expect(hasUnrunChanges(reads({ a: 1, b: [2] }, { b: [2], a: 1 }))).toBe(false);
-  });
-
-  test("args that differ from the last run's are not run", () => {
-    expect(hasUnrunChanges(reads({ a: 1 }, { a: 2 }))).toBe(true);
-  });
-
-  test("a block never run has its args unrun", () => {
-    expect(hasUnrunChanges(reads({ a: 1 }, undefined))).toBe(true);
-  });
-
-  test("a block without current args has nothing to run", () => {
-    expect(hasUnrunChanges(reads(undefined, { a: 1 }))).toBe(false);
-  });
-});
 
 describe("chooseArgs", () => {
   const nothing = () => undefined;

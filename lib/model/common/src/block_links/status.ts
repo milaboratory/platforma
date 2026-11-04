@@ -1,4 +1,4 @@
-import { isEqual, isPlainObject, isString, uniq } from "es-toolkit";
+import { isPlainObject, isString, uniq } from "es-toolkit";
 import {
   Annotation,
   columnProducer,
@@ -56,21 +56,6 @@ export function chooseArgs(reads: { current: () => unknown; lastRun: () => unkno
   const lastRun = reads.lastRun();
   if (lastRun !== undefined) return { source: "lastRun", args: lastRun };
   return { source: "none" };
-}
-
-/**
- * Whether a block has changes its last run does not include: its current args differ from those
- * of the last run, or it was never run. A block without current args cannot be run as it is, so
- * it has none.
- */
-export function hasUnrunChanges(reads: {
-  current: () => unknown;
-  lastRun: () => unknown;
-}): boolean {
-  const current = reads.current();
-  if (current === undefined) return false;
-  const lastRun = reads.lastRun();
-  return lastRun === undefined || !isEqual(current, lastRun);
 }
 
 /**

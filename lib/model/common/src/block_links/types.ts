@@ -95,13 +95,9 @@ export interface UnlabeledDependencies {
   items: DependencyEntry[];
 }
 
-/**
- * Blocks whose args reference a block's outputs. `hasUnrunChanges`: whether the block has changes
- * its last run does not include; the references are checked against that run.
- */
+/** Blocks whose args reference a block's outputs, each reference checked against its last run. */
 export interface UnlabeledDependents {
   items: DependentEntry[];
-  hasUnrunChanges: boolean;
 }
 
 /** Column links of block `blockId` before the blocks they name are labelled. */

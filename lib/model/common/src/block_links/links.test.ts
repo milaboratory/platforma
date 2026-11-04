@@ -162,7 +162,8 @@ describe("linkAlerts", () => {
       [
         "usedBy",
         "Some blocks are missing data from this block",
-        "Add the missing data to this block, or reconfigure those blocks.",
+        "Checked against the last run of this block. Add the missing data and run it, or " +
+          "reconfigure those blocks.",
         [
           'Enrichment uses "x", "y", which this block\'s data no longer has',
           "Enrichment uses data this block does not export",
@@ -199,24 +200,18 @@ describe("linkAlerts", () => {
     ]);
   });
 
-  test("says the links are checked against the last run while this block has changes not run", () => {
-    const hints = (hasUnrunChanges: boolean) =>
-      linkAlerts(
-        linkSections({
-          dependents: dependents([dependent("b1", "out", ["a"], notExported())], {
-            hasUnrunChanges,
-          }),
-          dependencies: dependencies([]),
-        }),
-      ).map((alert) => alert.hint);
+  test("says the links are checked against the last run of this block", () => {
+    const [usedBy] = linkAlerts(
+      linkSections({
+        dependents: dependents([dependent("b1", "out", ["a"], notExported())]),
+        dependencies: dependencies([]),
+      }),
+    );
 
-    expect(hints(false)).toEqual([
-      "Add the missing data to this block, or reconfigure those blocks.",
-    ]);
-    expect(hints(true)).toEqual([
-      "This block has changes that have not been run yet, and the check uses its last run. " +
-        "Run the block to see whether they fix these links.",
-    ]);
+    expect(usedBy?.hint).toBe(
+      "Checked against the last run of this block. Add the missing data and run it, or " +
+        "reconfigure those blocks.",
+    );
   });
 
   test("never names an output by its name, which is kept for a hint", () => {
@@ -299,7 +294,8 @@ describe("linkAlerts", () => {
     );
     expect([usedBy.type, usedBy.hint]).toEqual([
       "warn",
-      "Add the missing data to this block, or reconfigure those blocks.",
+      "Checked against the last run of this block. Add the missing data and run it, or " +
+        "reconfigure those blocks.",
     ]);
     expect(usedBy.issues.map((issue) => issue.text)).toEqual([
       'uses "Path", which this block does not export',
@@ -365,11 +361,8 @@ describe("blockName", () => {
 
 // Internals
 
-function dependents(
-  items: DependentEntry[],
-  options: { hasUnrunChanges: boolean } = { hasUnrunChanges: false },
-): BlockDependents {
-  return { items, labels: { b1: "Enrichment" }, ...options };
+function dependents(items: DependentEntry[]): BlockDependents {
+  return { items, labels: { b1: "Enrichment" } };
 }
 
 const PATH = createGlobalPObjectId("samples", "metadata.path");

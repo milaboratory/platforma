@@ -65,7 +65,6 @@ describe("blockDependencies and blockDependents", () => {
           status: { type: "missingValues", values: ["control"] },
         },
       ],
-      hasUnrunChanges: false,
     });
   });
 
@@ -84,7 +83,6 @@ describe("blockDependencies and blockDependents", () => {
     ]);
     expect(await dependentsOf(tree, "samples")).toMatchObject({
       items: [{ dependentBlockId: "x", status: { type: "notRun" } }],
-      hasUnrunChanges: true,
     });
   });
 
@@ -334,7 +332,6 @@ describe("labelBlockColumnLinks", () => {
         status: { type: "ok" },
       },
     ],
-    hasUnrunChanges: false,
   };
 
   test("labels the blocks the links name by their titles in the overview", () => {

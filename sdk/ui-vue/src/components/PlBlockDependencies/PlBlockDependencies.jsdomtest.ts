@@ -34,7 +34,6 @@ const links: BlockColumnLinks = {
         status: { type: "broken", reason: "notExported" },
       },
     ],
-    hasUnrunChanges: false,
     labels: { enrichment: "Enrichment" },
   },
 };

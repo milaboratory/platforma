@@ -38,12 +38,12 @@ describe("computeDependencies", () => {
       samples: {
         blockId: "samples",
         dependencies: { argsSource: "current", items: [] },
-        dependents: { items: [], hasUnrunChanges: true },
+        dependents: { items: [] },
       },
       empty: {
         blockId: "empty",
         dependencies: { argsSource: "none", items: [] },
-        dependents: { items: [], hasUnrunChanges: false },
+        dependents: { items: [] },
       },
     });
   });
@@ -393,16 +393,7 @@ describe("computeDependents", () => {
   test("a block nobody references has no dependents", () => {
     const { links } = run([{ id: "samples", args: {}, lastRunArgs: {}, prodCtx: frame({}) }]);
 
-    expect(links.samples.dependents).toEqual({ items: [], hasUnrunChanges: false });
-  });
-
-  test("changes of the block its last run does not include are reported", () => {
-    const unrun = (args: unknown, lastRunArgs: unknown) =>
-      run([{ id: "samples", args, lastRunArgs }]).links.samples.dependents.hasUnrunChanges;
-
-    expect(unrun({ metadata: ["treated"] }, { metadata: ["treated"] })).toBe(false);
-    expect(unrun({ metadata: ["treated", "control"] }, { metadata: ["treated"] })).toBe(true);
-    expect(unrun(undefined, { metadata: ["treated"] })).toBe(false);
+    expect(links.samples.dependents).toEqual({ items: [] });
   });
 
   test("a reference to an output the block does not export is broken as notExported", () => {
@@ -476,7 +467,6 @@ describe("computeDependents", () => {
           status: ok,
         },
       ],
-      hasUnrunChanges: false,
     });
   });
 

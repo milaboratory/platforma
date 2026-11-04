@@ -6,7 +6,6 @@ import {
   collectOutgoingReferences,
   dependencyStatus,
   dependentStatus,
-  hasUnrunChanges,
   readBlockLabels,
   type ExportCheck,
   type OutgoingReference,
@@ -97,7 +96,7 @@ export function computeDependents<A extends ExportNode<A>>(
         };
       });
   });
-  return { items, hasUnrunChanges: hasUnrunChanges(argsReads(source, blockId)) };
+  return { items };
 }
 
 /** `links` with the blocks they name labelled by `labelOf`; a block it throws for stays unlabelled. */
