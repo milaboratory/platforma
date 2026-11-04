@@ -24,7 +24,7 @@ tplTest.concurrent(
       { blockId: "b1" },
     );
 
-    const ctx = await awaitStableState(wf1.context());
+    const ctx = await awaitStableState(wf1.context(), Timeout);
 
     const wf2 = await helper.renderWorkflow(
       "pt.frameFromBundle.exports",
