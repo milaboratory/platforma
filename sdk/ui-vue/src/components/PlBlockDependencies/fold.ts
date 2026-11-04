@@ -1,7 +1,7 @@
-import type { LinkIssue } from "@platforma-sdk/model";
 import { isPlainObject } from "es-toolkit";
 import type { ComputedRef, MaybeRefOrGetter } from "vue";
 import { computed, shallowRef, toValue, watch } from "vue";
+import type { LinkIssue } from "../../columnLinkViews";
 
 /**
  * Whether the alert is shown in full, or folded to one line. A folded alert tells whether it

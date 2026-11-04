@@ -1,9 +1,9 @@
 <script lang="ts" setup>
-import { linkAlerts, linkSections } from "@platforma-sdk/model";
 import { PlAlert, PlMaskIcon16 } from "@milaboratories/uikit";
 import { uniq } from "es-toolkit";
 import { computed, inject } from "vue";
 import { columnLinksKey } from "../../columnLinks";
+import { linkAlerts, linkSections } from "../../columnLinkViews";
 import { PlBlockName } from "../PlBlockName";
 import { useAlertFold } from "./fold";
 

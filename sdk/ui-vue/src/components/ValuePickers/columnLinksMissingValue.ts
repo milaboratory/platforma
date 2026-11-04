@@ -1,8 +1,8 @@
 import type { BlockDependencies } from "@platforma-sdk/model";
-import { describeMissingValue } from "@platforma-sdk/model";
 import type { FunctionalComponent } from "vue";
 import { h, inject } from "vue";
 import { columnLinksKey } from "../../columnLinks";
+import { describeMissingValue } from "../../columnLinkViews";
 import { PlBlockName } from "../PlBlockName";
 
 /**

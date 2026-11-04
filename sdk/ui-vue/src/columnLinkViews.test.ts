@@ -1,21 +1,22 @@
 import { describe, expect, test } from "vitest";
-import { createColumnValueId, type ColumnValue } from "../drivers";
-import { createGlobalPObjectId } from "../pool";
+import {
+  createColumnValueId,
+  createGlobalPObjectId,
+  type BlockDependencies,
+  type BlockDependents,
+  type ColumnValue,
+  type DependencyEntry,
+  type DependencyStatus,
+  type DependentEntry,
+  type DependentStatus,
+} from "@platforma-sdk/model";
 import {
   blockName,
   describeMissingValue,
   linkAlerts,
   linkSections,
   type LinkSection,
-} from "./links";
-import type {
-  BlockDependencies,
-  BlockDependents,
-  DependencyEntry,
-  DependencyStatus,
-  DependentEntry,
-  DependentStatus,
-} from "./types";
+} from "./columnLinkViews";
 
 const REF = createGlobalPObjectId("producer", "out");
 

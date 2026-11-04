@@ -4,17 +4,15 @@ import {
   isColumnUniversalId,
   isColumnUniversalKey,
   isColumnValueId,
+  type BlockColumnLinks,
+  type BlockDependencies,
   type ColumnUniversalId,
   type ColumnValue,
-} from "../drivers";
-import type {
-  BlockColumnLinks,
-  BlockDependencies,
-  DependencyEntry,
-  DependencyStatus,
-  DependentStatus,
-  UncheckedReason,
-} from "./types";
+  type DependencyEntry,
+  type DependencyStatus,
+  type DependentStatus,
+  type UncheckedReason,
+} from "@platforma-sdk/model";
 
 /**
  * Which way a link goes: `usedBy` — another block's args reference an output of this block;
@@ -88,7 +86,9 @@ export type LinkAlert = {
 };
 
 /** The links of both sides: `usedBy`, then `uses`. */
-export function linkSections(links: BlockColumnLinks): LinkSection[] {
+export function linkSections(
+  links: Pick<BlockColumnLinks, "dependencies" | "dependents">,
+): LinkSection[] {
   const { dependents, dependencies } = links;
   return [
     {
