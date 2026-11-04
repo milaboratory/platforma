@@ -1,4 +1,5 @@
-import type { ColumnUniversalId, ColumnValue } from "../drivers";
+import type { ColumnReference, ColumnValue } from "../drivers";
+import type { BlockOutput } from "../ref";
 
 /**
  * How a reference an args holds fares against what the last run of the producing block exports:
@@ -19,81 +20,37 @@ export type LinkCheck =
   | { type: "unavailable" }
   | { type: "missingValues"; values: ColumnValue[] };
 
-/** A block whose args reference an output of a block. */
-export interface DependentEntry {
-  /** The block whose args hold the reference. */
-  dependentBlockId: string;
-  /** Name of the referenced block's output. */
-  output: string;
-  /** The column as the dependent block referenced it. */
-  ref: ColumnUniversalId;
-  /** Values of the column the dependent block picked; `null` when it uses the column as a whole. */
-  values: null | ColumnValue[];
-  /**
-   * `pl7.app/label` of the exported column. When the last run of the producer does not export the
-   * column, the label of the column the producer prepares before it is run; `null` when neither
-   * has one.
-   */
-  columnLabel: null | string;
-  status: LinkCheck;
-}
-
-/** An output of another block that a block's args reference. */
-export interface DependencyEntry {
-  /** The block the referenced column comes from. */
-  producerBlockId: string;
-  /** Name of the producer's output. */
-  output: string;
-  /** The column as the block's args reference it. */
-  ref: ColumnUniversalId;
-  /** Values of the column the block picked; `null` when it uses the column as a whole. */
-  values: null | ColumnValue[];
-  /**
-   * `pl7.app/label` of the exported column. When the last run of the producer does not export the
-   * column, the label of the column the producer prepares before it is run; `null` when neither
-   * has one.
-   */
-  columnLabel: null | string;
-  status: LinkCheck;
+/** A column of another block that a block's args reference, with the values picked from it. */
+export interface OutgoingReference extends ColumnReference {
+  /** The block output the column is computed from. */
+  producer: BlockOutput;
 }
 
 /**
- * Outputs of other blocks a block's args reference: its current args, else those of its last
- * run.
+ * How a reference fares against the last run of its producer, with the label of the column:
+ * `pl7.app/label` of the exported column, or, when the last run does not export it, of the
+ * column the producer prepares before it is run; `null` when neither has one.
  */
-export interface UnlabeledDependencies {
-  items: DependencyEntry[];
+export interface ExportVerdict {
+  check: LinkCheck;
+  columnLabel: null | string;
 }
 
-/** Blocks whose args reference a block's outputs, each reference checked against its last run. */
-export interface UnlabeledDependents {
-  items: DependentEntry[];
-}
-
-/** Column links of block `blockId` before the blocks they name are labelled. */
-export interface UnlabeledColumnLinks {
-  blockId: string;
-  dependencies: UnlabeledDependencies;
-  dependents: UnlabeledDependents;
-}
-
-/** `labels` maps a producer block id the entries name to its label, for the blocks that have one. */
-export interface BlockDependencies extends UnlabeledDependencies {
-  labels: Record<string, string>;
-}
-
-/** `labels` maps a dependent block id the entries name to its label, for the blocks that have one. */
-export interface BlockDependents extends UnlabeledDependents {
-  labels: Record<string, string>;
+/** A reference one block's args hold to a column another block exports, as it was checked. */
+export interface ColumnLink extends OutgoingReference, ExportVerdict {
+  /** The block whose args hold the reference. */
+  holderBlockId: string;
 }
 
 /**
- * Column links of block `blockId`: outputs of other blocks its args reference, and blocks whose
- * args reference its outputs, each reference checked against the last run of the block exporting
- * the column.
+ * Column links of block `blockId`: `dependencies` — outputs of other blocks its args reference,
+ * its current args, else those of its last run; `dependents` — references the args of other
+ * blocks hold to its outputs. Each is checked against the last run of the block exporting the
+ * column. `labels` maps the other blocks the links name to their labels, for those that have one.
  */
 export interface BlockColumnLinks {
   blockId: string;
-  dependencies: BlockDependencies;
-  dependents: BlockDependents;
+  dependencies: ColumnLink[];
+  dependents: ColumnLink[];
+  labels: Record<string, string>;
 }

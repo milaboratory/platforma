@@ -3,8 +3,7 @@ import {
   createColumnValueId,
   createGlobalPObjectId,
   type PColumnSpec,
-  type UnlabeledDependencies,
-  type UnlabeledDependents,
+  type ColumnLink,
 } from "@milaboratories/pl-model-common";
 import type { PlTreeState } from "@milaboratories/pl-tree";
 import { mapValues } from "es-toolkit";
@@ -41,30 +40,16 @@ describe("blockDependencies and blockDependents", () => {
     prj.block("x", { currentArgs: prj.args({ levels: [pick("treated"), pick("control")] }) });
     const tree = prj.tree();
 
-    expect(await dependenciesOf(tree, "x")).toEqual({
-      items: [
-        {
-          producerBlockId: "samples",
-          output: "condition",
-          ref: condition,
-          values: ["treated", "control"],
-          columnLabel: "Condition",
-          status: { type: "missingValues", values: ["control"] },
-        },
-      ],
-    });
-    expect(await dependentsOf(tree, "samples")).toEqual({
-      items: [
-        {
-          dependentBlockId: "x",
-          output: "condition",
-          ref: condition,
-          values: ["treated", "control"],
-          columnLabel: "Condition",
-          status: { type: "missingValues", values: ["control"] },
-        },
-      ],
-    });
+    const link: ColumnLink = {
+      producer: { blockId: "samples", name: "condition" },
+      holderBlockId: "x",
+      ref: condition,
+      values: ["treated", "control"],
+      columnLabel: "Condition",
+      check: { type: "missingValues", values: ["control"] },
+    };
+    expect(await dependenciesOf(tree, "x")).toEqual([link]);
+    expect(await dependentsOf(tree, "samples")).toEqual([link]);
   });
 
   test("a producer with no last run is not run, labelled from what it prepares", async () => {
@@ -77,12 +62,12 @@ describe("blockDependencies and blockDependents", () => {
     prj.block("x", { currentArgs: prj.args({ target: pick("treated") }) });
     const tree = prj.tree();
 
-    expect((await dependenciesOf(tree, "x")).items).toMatchObject([
-      { columnLabel: "Condition", status: { type: "notRun" } },
+    expect(await dependenciesOf(tree, "x")).toMatchObject([
+      { columnLabel: "Condition", check: { type: "notRun" } },
     ]);
-    expect(await dependentsOf(tree, "samples")).toMatchObject({
-      items: [{ dependentBlockId: "x", status: { type: "notRun" } }],
-    });
+    expect(await dependentsOf(tree, "samples")).toMatchObject([
+      { holderBlockId: "x", check: { type: "notRun" } },
+    ]);
   });
 
   test("a producer with a last run whose results failed to render is unavailable", async () => {
@@ -95,12 +80,8 @@ describe("blockDependencies and blockDependents", () => {
     prj.block("x", { currentArgs: prj.args({ target: pick("treated") }) });
     const tree = prj.tree();
 
-    expect((await dependenciesOf(tree, "x")).items).toMatchObject([
-      { status: { type: "unavailable" } },
-    ]);
-    expect((await dependentsOf(tree, "samples")).items).toMatchObject([
-      { status: { type: "unavailable" } },
-    ]);
+    expect(await dependenciesOf(tree, "x")).toMatchObject([{ check: { type: "unavailable" } }]);
+    expect(await dependentsOf(tree, "samples")).toMatchObject([{ check: { type: "unavailable" } }]);
   });
 
   test("a producer with a last run whose results are not there yet is pending", async () => {
@@ -112,9 +93,7 @@ describe("blockDependencies and blockDependents", () => {
     });
     prj.block("x", { currentArgs: prj.args({ target: pick("treated") }) });
 
-    expect((await dependenciesOf(prj.tree(), "x")).items).toMatchObject([
-      { status: { type: "pending" } },
-    ]);
+    expect(await dependenciesOf(prj.tree(), "x")).toMatchObject([{ check: { type: "pending" } }]);
   });
 
   test("a failed result list that never locks settles the links", async () => {
@@ -131,11 +110,11 @@ describe("blockDependencies and blockDependents", () => {
 
     expect(await dependencies.getFullValue()).toMatchObject({
       stable: true,
-      value: { items: [{ status: { type: "unavailable" } }] },
+      value: [{ check: { type: "unavailable" } }],
     });
     expect(await dependents.getFullValue()).toMatchObject({
       stable: true,
-      value: { items: [{ status: { type: "unavailable" } }] },
+      value: [{ check: { type: "unavailable" } }],
     });
   });
 
@@ -149,7 +128,7 @@ describe("blockDependencies and blockDependents", () => {
 
     expect(await dependencies.getFullValue()).toMatchObject({
       stable: false,
-      value: { items: [{ status: { type: "pending" } }] },
+      value: [{ check: { type: "pending" } }],
     });
 
     prj.extend(frame, { condition: { spec: SPEC, cells: ["treated"] } }, { state: "locked" });
@@ -157,7 +136,7 @@ describe("blockDependencies and blockDependents", () => {
 
     expect(await dependencies.getFullValue()).toMatchObject({
       stable: true,
-      value: { items: [{ status: { type: "ok" } }] },
+      value: [{ check: { type: "ok" } }],
     });
   });
 
@@ -169,9 +148,7 @@ describe("blockDependencies and blockDependents", () => {
     });
     prj.block("x", { prodArgs: prj.args({ target: pick("treated") }) });
 
-    expect(await dependenciesOf(prj.tree(), "x")).toMatchObject({
-      items: [{ status: { type: "ok" } }],
-    });
+    expect(await dependenciesOf(prj.tree(), "x")).toMatchObject([{ check: { type: "ok" } }]);
   });
 
   test("a block whose argsIssues found errors keeps its links, read from its current args", async () => {
@@ -188,11 +165,11 @@ describe("blockDependencies and blockDependents", () => {
     });
     const tree = prj.tree();
 
-    expect(await dependenciesOf(tree, "x")).toMatchObject({
-      items: [{ producerBlockId: "samples", ref: condition, status: { type: "ok" } }],
-    });
-    expect((await dependentsOf(tree, "samples")).items).toMatchObject([
-      { dependentBlockId: "x", ref: condition, status: { type: "ok" } },
+    expect(await dependenciesOf(tree, "x")).toMatchObject([
+      { producer: { blockId: "samples" }, ref: condition, check: { type: "ok" } },
+    ]);
+    expect(await dependentsOf(tree, "samples")).toMatchObject([
+      { holderBlockId: "x", ref: condition, check: { type: "ok" } },
     ]);
   });
 
@@ -207,14 +184,14 @@ describe("blockDependencies and blockDependents", () => {
     const tree = prj.tree();
     const dependencies = blockDependencies(tree.entry(), "x", env);
 
-    expect((await dependencies.getValue())?.items).toMatchObject([
-      { status: { type: "missingValues", values: ["control"] } },
+    expect(await dependencies.getValue()).toMatchObject([
+      { check: { type: "missingValues", values: ["control"] } },
     ]);
 
     prj.block("x", { currentArgs: prj.args({ target: pick("treated") }) });
     tree.updateFromResourceData(prj.changes());
 
-    expect((await dependencies.getValue())?.items).toMatchObject([{ status: { type: "ok" } }]);
+    expect(await dependencies.getValue()).toMatchObject([{ check: { type: "ok" } }]);
   });
 });
 
@@ -305,30 +282,26 @@ describe("what the column links of a block watch", () => {
 });
 
 describe("labelBlockColumnLinks", () => {
-  const dependencies: UnlabeledDependencies = {
-    items: [
-      {
-        producerBlockId: "samples",
-        output: "condition",
-        ref: condition,
-        values: null,
-        columnLabel: null,
-        status: { type: "ok" },
-      },
-    ],
-  };
-  const dependents: UnlabeledDependents = {
-    items: [
-      {
-        dependentBlockId: "untitled",
-        output: "condition",
-        ref: condition,
-        values: null,
-        columnLabel: null,
-        status: { type: "ok" },
-      },
-    ],
-  };
+  const dependencies: ColumnLink[] = [
+    {
+      producer: { blockId: "samples", name: "condition" },
+      holderBlockId: "x",
+      ref: condition,
+      values: null,
+      columnLabel: null,
+      check: { type: "ok" },
+    },
+  ];
+  const dependents: ColumnLink[] = [
+    {
+      producer: { blockId: "x", name: "condition" },
+      holderBlockId: "untitled",
+      ref: condition,
+      values: null,
+      columnLabel: null,
+      check: { type: "ok" },
+    },
+  ];
 
   test("labels the blocks the links name by their titles in the overview", () => {
     const blocks = [
@@ -338,8 +311,9 @@ describe("labelBlockColumnLinks", () => {
 
     expect(labelBlockColumnLinks({ blockId: "x", dependencies, dependents }, blocks)).toEqual({
       blockId: "x",
-      dependencies: { ...dependencies, labels: { samples: "Samples & data" } },
-      dependents: { ...dependents, labels: {} },
+      dependencies,
+      dependents,
+      labels: { samples: "Samples & data" },
     });
   });
 

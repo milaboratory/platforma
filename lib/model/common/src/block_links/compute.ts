@@ -1,18 +1,7 @@
 import type { ColumnReference } from "../drivers";
 import { ExportPool, type ExportNode, type ExportSource } from "./export_pool";
-import {
-  checkExport,
-  collectOutgoingReferences,
-  readBlockLabels,
-  type OutgoingReference,
-} from "./status";
-import type {
-  BlockColumnLinks,
-  LinkCheck,
-  UnlabeledColumnLinks,
-  UnlabeledDependencies,
-  UnlabeledDependents,
-} from "./types";
+import { checkExport, collectOutgoingReferences } from "./status";
+import type { ColumnLink, ExportVerdict, OutgoingReference } from "./types";
 
 /** Args of a block: `current` — derived from its current data; `lastRun` — those of its last run. */
 export type ArgsKind = "current" | "lastRun";
@@ -39,20 +28,14 @@ export interface ColumnLinksSource<A extends ExportNode<A>> extends ExportSource
 export function computeDependencies<A extends ExportNode<A>>(
   source: ColumnLinksSource<A>,
   blockId: string,
-): UnlabeledDependencies {
+): ColumnLink[] {
   const pool = new ExportPool(source);
   const above = new Set(blocksAround(source.blockIds, blockId).above);
-  return {
-    items: outgoingReferences(source, blockId).map((reference) => {
-      const { producer, ref, values } = reference;
-      const entry = { producerBlockId: producer.blockId, output: producer.name, ref, values };
-      if (!above.has(producer.blockId)) {
-        return { ...entry, columnLabel: null, status: { type: "unavailable" } };
-      }
-      const { check, columnLabel } = checkReference(pool, reference);
-      return { ...entry, columnLabel, status: check };
-    }),
-  };
+  return outgoingReferences(source, blockId).map((reference): ColumnLink => ({
+    ...reference,
+    holderBlockId: blockId,
+    ...(above.has(reference.producer.blockId) ? checkReference(pool, reference) : NOT_ABOVE),
+  }));
 }
 
 /**
@@ -64,52 +47,23 @@ export function computeDependencies<A extends ExportNode<A>>(
 export function computeDependents<A extends ExportNode<A>>(
   source: ColumnLinksSource<A>,
   blockId: string,
-): UnlabeledDependents {
+): ColumnLink[] {
   const pool = new ExportPool(source);
-  const items = blocksAround(source.blockIds, blockId).below.flatMap((dependentBlockId) => {
-    return outgoingReferences(source, dependentBlockId)
+  return blocksAround(source.blockIds, blockId).below.flatMap((holderBlockId) =>
+    outgoingReferences(source, holderBlockId)
       .filter((reference) => reference.producer.blockId === blockId)
-      .map((reference) => {
-        const { check, columnLabel } = checkReference(pool, reference);
-        return {
-          dependentBlockId,
-          output: reference.producer.name,
-          ref: reference.ref,
-          values: reference.values,
-          columnLabel,
-          status: check,
-        };
-      });
-  });
-  return { items };
-}
-
-/** `links` with the blocks they name labelled by `labelOf`; a block it throws for stays unlabelled. */
-export function labelColumnLinks(
-  links: UnlabeledColumnLinks,
-  labelOf: (blockId: string) => string,
-): BlockColumnLinks {
-  const { blockId, dependencies, dependents } = links;
-  return {
-    blockId,
-    dependencies: {
-      ...dependencies,
-      labels: readBlockLabels(
-        dependencies.items.map((item) => item.producerBlockId),
-        labelOf,
-      ),
-    },
-    dependents: {
-      ...dependents,
-      labels: readBlockLabels(
-        dependents.items.map((item) => item.dependentBlockId),
-        labelOf,
-      ),
-    },
-  };
+      .map((reference): ColumnLink => ({
+        ...reference,
+        holderBlockId,
+        ...checkReference(pool, reference),
+      })),
+  );
 }
 
 // Internals
+
+/** A reference to a block that is not above the block holding it: it cannot run against it. */
+const NOT_ABOVE: ExportVerdict = { check: { type: "unavailable" }, columnLabel: null };
 
 /** The blocks above `blockId` and those below it, in project order; none when it is not there. */
 function blocksAround(
@@ -142,7 +96,7 @@ function outgoingReferences<A extends ExportNode<A>>(
 function checkReference<A extends ExportNode<A>>(
   pool: ExportPool<A>,
   reference: Pick<OutgoingReference, "producer" | "values">,
-): { check: LinkCheck; columnLabel: null | string } {
+): ExportVerdict {
   const { producer, values } = reference;
   const result = checkExport(() => pool.lookup(producer), values);
   if (result.columnLabel !== null) return result;

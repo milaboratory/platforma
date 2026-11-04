@@ -35,20 +35,18 @@ const options: DatasetOption[] = [
 function links(producerBlockId: string, output: string): BlockColumnLinks {
   return {
     blockId: "enrichment",
-    dependencies: {
-      items: [
-        {
-          producerBlockId,
-          output,
-          ref: createGlobalPObjectId(producerBlockId, output),
-          values: null,
-          columnLabel: "Abundance",
-          status: { type: "unavailable" },
-        },
-      ],
-      labels: { mixcr: "MiXCR Clonotyping", labeling: "Repertoire Labeling" },
-    },
-    dependents: { items: [], labels: {} },
+    dependencies: [
+      {
+        producer: { blockId: producerBlockId, name: output },
+        holderBlockId: "enrichment",
+        ref: createGlobalPObjectId(producerBlockId, output),
+        values: null,
+        columnLabel: "Abundance",
+        check: { type: "unavailable" },
+      },
+    ],
+    dependents: [],
+    labels: { mixcr: "MiXCR Clonotyping", labeling: "Repertoire Labeling" },
   };
 }
 

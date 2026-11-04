@@ -1,4 +1,4 @@
-import type { BlockDependencies } from "@platforma-sdk/model";
+import type { BlockColumnLinks } from "@platforma-sdk/model";
 import type { FunctionalComponent } from "vue";
 import { h, inject } from "vue";
 import { columnLinksKey } from "../../columnLinks";
@@ -22,22 +22,22 @@ export type ColumnLinksMissingValue = {
 export function useColumnLinksMissingValue(): ColumnLinksMissingValue | undefined {
   const links = inject(columnLinksKey, undefined);
   if (links === undefined) return undefined;
-  return columnLinksMissingValue(() => links.value?.dependencies);
+  return columnLinksMissingValue(() => links.value);
 }
 
 /**
- * How a picker shows a missing value by the dependencies `readDependencies` gives. The text is
+ * How a picker shows a missing value by the column links `readLinks` gives. The text is
  * the picked value or the label of the column selected as a whole: alone while it waits for the
  * other inputs of the block, marked as not available otherwise. The tooltip names the block meant
  * to provide it, as a link to that block, and what went wrong; or that it waits for the other
  * inputs.
  */
 export function columnLinksMissingValue(
-  readDependencies: () => BlockDependencies | undefined,
+  readLinks: () => Pick<BlockColumnLinks, "dependencies" | "labels"> | undefined,
 ): ColumnLinksMissingValue {
   const causeOf = (value: unknown) => {
-    const dependencies = readDependencies();
-    return dependencies === undefined ? undefined : describeMissingValue(dependencies, value);
+    const links = readLinks();
+    return links === undefined ? undefined : describeMissingValue(links, value);
   };
   return {
     label: (value) => {

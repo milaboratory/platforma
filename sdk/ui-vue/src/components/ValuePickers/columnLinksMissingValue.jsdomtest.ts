@@ -1,8 +1,8 @@
 import {
   createColumnValueId,
   createGlobalPObjectId,
-  type BlockDependencies,
-  type DependencyEntry,
+  type BlockColumnLinks,
+  type ColumnLink,
 } from "@platforma-sdk/model";
 import { mount } from "@vue/test-utils";
 import { describe, expect, test, vi } from "vitest";
@@ -15,15 +15,15 @@ const ty1 = createColumnValueId({ column: PATH, value: "Ty1" });
 
 const OTHER = createGlobalPObjectId("mixcr", "abundance");
 
-const dependencies: BlockDependencies = {
-  items: [
+const links: Pick<BlockColumnLinks, "dependencies" | "labels"> = {
+  dependencies: [
     {
-      producerBlockId: "samples",
-      output: "metadata.path",
+      producer: { blockId: "samples", name: "metadata.path" },
+      holderBlockId: "enrichment",
       ref: PATH,
       values: ["Ty1"],
       columnLabel: "Path",
-      status: { type: "unavailable" },
+      check: { type: "unavailable" },
     },
   ],
   labels: { samples: "Samples" },
@@ -31,7 +31,7 @@ const dependencies: BlockDependencies = {
 
 describe("columnLinksMissingValue", () => {
   test("links the block that does not provide the column", () => {
-    const missing = columnLinksMissingValue(() => dependencies);
+    const missing = columnLinksMissingValue(() => links);
     const tooltip = missing.tooltip(ty1);
     if (tooltip === undefined) throw new Error("expected a tooltip");
     const wrapper = mount(tooltip);
@@ -44,10 +44,10 @@ describe("columnLinksMissingValue", () => {
 
   test("says a block that has not been run does not provide the column", () => {
     const tooltip = columnLinksMissingValue(() => ({
-      ...dependencies,
-      items: dependencies.items.map((item): DependencyEntry => ({
-        ...item,
-        status: { type: "notRun" },
+      ...links,
+      dependencies: links.dependencies.map((link): ColumnLink => ({
+        ...link,
+        check: { type: "notRun" },
       })),
     })).tooltip(ty1);
     if (tooltip === undefined) throw new Error("expected a tooltip");
@@ -57,13 +57,13 @@ describe("columnLinksMissingValue", () => {
 
   test("says a provided column waits for the other inputs of the block", () => {
     const missing = columnLinksMissingValue(() => ({
-      ...dependencies,
-      items: [
-        ...dependencies.items.map((item): DependencyEntry => ({ ...item, status: { type: "ok" } })),
-        ...dependencies.items.map((item): DependencyEntry => ({
-          ...item,
+      ...links,
+      dependencies: [
+        ...links.dependencies.map((link): ColumnLink => ({ ...link, check: { type: "ok" } })),
+        ...links.dependencies.map((link): ColumnLink => ({
+          ...link,
           ref: OTHER,
-          status: { type: "notRun" },
+          check: { type: "notRun" },
         })),
       ],
     }));

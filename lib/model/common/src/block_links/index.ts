@@ -1,18 +1,13 @@
 export type {
   BlockColumnLinks,
-  BlockDependencies,
-  BlockDependents,
-  DependencyEntry,
-  DependentEntry,
+  ColumnLink,
+  ExportVerdict,
   LinkCheck,
-  UnlabeledColumnLinks,
-  UnlabeledDependencies,
-  UnlabeledDependents,
+  OutgoingReference,
 } from "./types";
 export {
   computeDependencies,
   computeDependents,
-  labelColumnLinks,
   type ArgsKind,
   type ColumnLinksSource,
 } from "./compute";

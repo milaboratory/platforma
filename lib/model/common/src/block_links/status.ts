@@ -1,4 +1,4 @@
-import { isPlainObject, isString, uniq } from "es-toolkit";
+import { isPlainObject, isString } from "es-toolkit";
 import {
   Annotation,
   columnProducer,
@@ -7,8 +7,7 @@ import {
   type ColumnValue,
   type PColumnSpec,
 } from "../drivers";
-import type { BlockOutput } from "../ref";
-import type { LinkCheck } from "./types";
+import type { ExportVerdict, LinkCheck, OutgoingReference } from "./types";
 
 /** What the last run of a block exports under one output name. */
 export type ExportLookup =
@@ -19,11 +18,6 @@ export type ExportLookup =
 export type ExportValues =
   | { type: "known"; cells: readonly unknown[] }
   | Extract<LinkCheck, { type: "pending" | "unreadable" }>;
-
-/** A column another block exports, referenced from args, with the values picked from it. */
-export interface OutgoingReference extends ColumnReference {
-  producer: BlockOutput;
-}
 
 /**
  * Every column of another block among `references`, in their order. A column local to the
@@ -83,7 +77,7 @@ export function producerRunState<A>(
 export function checkExport(
   lookup: () => ExportLookup,
   picked: null | readonly ColumnValue[],
-): { check: LinkCheck; columnLabel: null | string } {
+): ExportVerdict {
   let columnLabel: null | string = null;
   try {
     const found = lookup();
@@ -163,24 +157,6 @@ export function readExportValues(
         ? readJsonData(data.node)
         : { type: "unreadable" };
   }
-}
-
-/**
- * Labels of the given blocks, by block id. A block that cannot be labelled is left out.
- */
-export function readBlockLabels(
-  blockIds: readonly string[],
-  labelOf: (blockId: string) => string,
-): Record<string, string> {
-  const labels: Record<string, string> = {};
-  for (const blockId of uniq(blockIds)) {
-    try {
-      labels[blockId] = labelOf(blockId);
-    } catch {
-      continue;
-    }
-  }
-  return labels;
 }
 
 // Internals

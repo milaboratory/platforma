@@ -22,20 +22,18 @@ const PATH = createGlobalPObjectId("samples", "metadata.path");
 
 const links: BlockColumnLinks = {
   blockId: "samples",
-  dependencies: { items: [], labels: {} },
-  dependents: {
-    items: [
-      {
-        dependentBlockId: "enrichment",
-        output: "metadata.path",
-        ref: PATH,
-        values: null,
-        columnLabel: "Path",
-        status: { type: "unavailable" },
-      },
-    ],
-    labels: { enrichment: "Enrichment" },
-  },
+  dependencies: [],
+  dependents: [
+    {
+      producer: { blockId: "samples", name: "metadata.path" },
+      holderBlockId: "enrichment",
+      ref: PATH,
+      values: null,
+      columnLabel: "Path",
+      check: { type: "unavailable" },
+    },
+  ],
+  labels: { enrichment: "Enrichment" },
 };
 
 describe("PlBlockDependencies", () => {
@@ -93,14 +91,11 @@ function mountWith(columnLinks: { readonly value: BlockColumnLinks }) {
 }
 
 function withDependent(of: BlockColumnLinks, blockId: string, label: string): BlockColumnLinks {
-  const [item] = of.dependents.items;
-  if (item === undefined) throw new Error("The links have no dependent to copy");
+  const [link] = of.dependents;
+  if (link === undefined) throw new Error("The links have no dependent to copy");
   return {
     ...of,
-    dependents: {
-      ...of.dependents,
-      items: [...of.dependents.items, { ...item, dependentBlockId: blockId }],
-      labels: { ...of.dependents.labels, [blockId]: label },
-    },
+    dependents: [...of.dependents, { ...link, holderBlockId: blockId }],
+    labels: { ...of.labels, [blockId]: label },
   };
 }

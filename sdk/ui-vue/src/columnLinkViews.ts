@@ -5,10 +5,9 @@ import {
   isColumnUniversalKey,
   isColumnValueId,
   type BlockColumnLinks,
-  type BlockDependencies,
+  type ColumnLink,
   type ColumnUniversalId,
   type ColumnValue,
-  type DependencyEntry,
   type LinkCheck,
 } from "@platforma-sdk/model";
 
@@ -71,34 +70,22 @@ export type LinkAlert = {
 
 /** The links of both sides: `usedBy`, then `uses`. */
 export function linkSections(
-  links: Pick<BlockColumnLinks, "dependencies" | "dependents">,
+  links: Pick<BlockColumnLinks, "dependencies" | "dependents" | "labels">,
 ): LinkSection[] {
-  const { dependents, dependencies } = links;
+  const { dependents, dependencies, labels } = links;
   return [
     {
       side: "usedBy",
       rows: groupLinks(
-        dependents.labels,
-        dependents.items.map((item) => ({
-          blockId: item.dependentBlockId,
-          output: item.output,
-          columnLabel: item.columnLabel,
-          values: item.values,
-          status: item.status,
-        })),
+        labels,
+        dependents.map((link) => linkSource(link, link.holderBlockId)),
       ),
     },
     {
       side: "uses",
       rows: groupLinks(
-        dependencies.labels,
-        dependencies.items.map((item) => ({
-          blockId: item.producerBlockId,
-          output: item.output,
-          columnLabel: item.columnLabel,
-          values: item.values,
-          status: item.status,
-        })),
+        labels,
+        dependencies.map((link) => linkSource(link, link.producer.blockId)),
       ),
     },
   ];
@@ -143,23 +130,24 @@ export type MissingValueCause =
  * wrong with it while every other input is provided too.
  */
 export function describeMissingValue(
-  dependencies: BlockDependencies,
+  links: Pick<BlockColumnLinks, "dependencies" | "labels">,
   value: unknown,
 ): MissingValueCause | undefined {
+  const { dependencies, labels } = links;
   const reference = selectedReference(value);
   if (reference === undefined) return undefined;
-  const entry = dependencies.items.find((item) => item.ref === reference.ref);
+  const entry = dependencies.find((link) => link.ref === reference.ref);
   if (entry === undefined) return undefined;
 
   const column = entry.columnLabel === null ? "the column" : `“${entry.columnLabel}”`;
-  const text = missingValueCauseText(entry.status, column, reference.picked);
+  const text = missingValueCauseText(entry.check, column, reference.picked);
   const name = reference.picked ?? entry.columnLabel;
   if (text !== undefined) {
     return {
       type: "source",
       name,
-      blockId: entry.producerBlockId,
-      blockName: blockName(dependencies.labels, entry.producerBlockId),
+      blockId: entry.producer.blockId,
+      blockName: blockName(labels, entry.producer.blockId),
       text,
     };
   }
@@ -206,14 +194,14 @@ function missingValueCauseText(
 
 /** Whether a selected column is provided, with the picked value, while another input is not. */
 function waitsForOtherInputs(
-  dependencies: BlockDependencies,
-  entry: DependencyEntry,
+  dependencies: readonly ColumnLink[],
+  entry: ColumnLink,
   picked: ColumnValue | undefined,
 ): boolean {
-  if (!providesPick(entry.status, picked)) return false;
-  return dependencies.items.some(
-    (item) =>
-      item.ref !== entry.ref && item.status.type !== "ok" && item.status.type !== "unreadable",
+  if (!providesPick(entry.check, picked)) return false;
+  return dependencies.some(
+    (link) =>
+      link.ref !== entry.ref && link.check.type !== "ok" && link.check.type !== "unreadable",
   );
 }
 
@@ -239,6 +227,17 @@ type LinkSource = {
   values: null | ColumnValue[];
   status: LinkCheck;
 };
+
+/** A link as a row source, seen from the side whose other block is `blockId`. */
+function linkSource(link: ColumnLink, blockId: string): LinkSource {
+  return {
+    blockId,
+    output: link.producer.name,
+    columnLabel: link.columnLabel,
+    values: link.values,
+    status: link.check,
+  };
+}
 
 function groupLinks(labels: Record<string, string>, sources: LinkSource[]): LinkRow[] {
   const rows = sources.map((source): LinkRow => {

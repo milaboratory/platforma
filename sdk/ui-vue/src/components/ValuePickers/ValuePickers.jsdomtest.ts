@@ -27,20 +27,18 @@ const ty1 = createColumnValueId({ column: PATH, value: "Ty1" });
 
 const links: BlockColumnLinks = {
   blockId: "enrichment",
-  dependencies: {
-    items: [
-      {
-        producerBlockId: "samples",
-        output: "metadata.path",
-        ref: PATH,
-        values: ["Ty1"],
-        columnLabel: "Path",
-        status: { type: "notRun" },
-      },
-    ],
-    labels: { samples: "Samples" },
-  },
-  dependents: { items: [], labels: {} },
+  dependencies: [
+    {
+      producer: { blockId: "samples", name: "metadata.path" },
+      holderBlockId: "enrichment",
+      ref: PATH,
+      values: ["Ty1"],
+      columnLabel: "Path",
+      check: { type: "notRun" },
+    },
+  ],
+  dependents: [],
+  labels: { samples: "Samples" },
 };
 
 describe("value pickers", () => {

@@ -13,7 +13,6 @@ import {
   collectOutgoingReferences,
   producerRunState,
   missingValues,
-  readBlockLabels,
   readExportValues,
   type ExportLookup,
   type ExportData,
@@ -290,21 +289,6 @@ describe("readExportValues", () => {
     expect(readExportValues(specWith({}), () => ({ type: "absent" }))).toEqual({
       type: "unreadable",
     });
-  });
-});
-
-describe("readBlockLabels", () => {
-  test("labels each block once and leaves out the ones that cannot be labelled", () => {
-    const labelOf = vi.fn((blockId: string) => {
-      if (blockId === "gone") throw new Error(`Block ${blockId} not found.`);
-      return `Label of ${blockId}`;
-    });
-
-    expect(readBlockLabels(["a", "gone", "a", "b"], labelOf)).toEqual({
-      a: "Label of a",
-      b: "Label of b",
-    });
-    expect(labelOf).toHaveBeenCalledTimes(3);
   });
 });
 

@@ -573,8 +573,12 @@ test(
       });
 
       const beforeRun = await prj.getBlockState(block2Id).awaitStableValue();
-      expect(beforeRun.columnLinks?.dependencies.items).toMatchObject([
-        { producerBlockId: block1Id, output: "numbers", status: { type: "notRun" } },
+      expect(beforeRun.columnLinks?.dependencies).toMatchObject([
+        {
+          producer: { blockId: block1Id, name: "numbers" },
+          holderBlockId: block2Id,
+          check: { type: "notRun" },
+        },
       ]);
 
       await prj.runBlock(block2Id);
@@ -586,16 +590,15 @@ test(
       expect(block1Title).toBeDefined();
 
       const block2State = await prj.getBlockState(block2Id).awaitStableValue();
-      expect(block2State.columnLinks?.dependencies).toMatchObject({
-        argsSource: "current",
-        items: [{ producerBlockId: block1Id, output: "numbers" }],
+      expect(block2State.columnLinks).toMatchObject({
+        dependencies: [{ producer: { blockId: block1Id, name: "numbers" } }],
         labels: { [block1Id]: block1Title },
       });
-      expect(block2State.columnLinks?.dependencies.items[0].status.type).not.toEqual("notRun");
+      expect(block2State.columnLinks?.dependencies[0]?.check.type).not.toEqual("notRun");
 
       const block1State = await prj.getBlockState(block1Id).awaitStableValue();
-      expect(block1State.columnLinks?.dependents.items).toMatchObject([
-        { dependentBlockId: block2Id, output: "numbers" },
+      expect(block1State.columnLinks?.dependents).toMatchObject([
+        { producer: { blockId: block1Id, name: "numbers" }, holderBlockId: block2Id },
       ]);
     });
   },

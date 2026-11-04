@@ -62,7 +62,7 @@ import type {
   BlockSettings,
   BlockStateInternalV3,
 } from "@milaboratories/pl-model-middle-layer";
-import type { UnlabeledDependencies, UnlabeledDependents } from "@milaboratories/pl-model-common";
+import type { ColumnLink } from "@milaboratories/pl-model-common";
 import { activeConfigs } from "./active_cfg";
 import { NavigationStates } from "./navigation_states";
 import { checkBlockFlag, extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
@@ -76,8 +76,8 @@ import { cacheBlockPackTemplate } from "../mutator/template/template_cache";
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternalV3>;
   /** Column links of the block, nested into its full state. */
-  readonly dependencies: Computable<UnlabeledDependencies | undefined>;
-  readonly dependents: Computable<UnlabeledDependents | undefined>;
+  readonly dependencies: Computable<ColumnLink[] | undefined>;
+  readonly dependents: Computable<ColumnLink[] | undefined>;
 };
 
 function stringifyForDump(object: unknown): string {

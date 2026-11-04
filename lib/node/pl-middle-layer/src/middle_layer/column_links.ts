@@ -4,13 +4,11 @@ import { notEmpty } from "@milaboratories/ts-helpers";
 import {
   computeDependencies,
   computeDependents,
-  labelColumnLinks,
   type BlockColumnLinks,
   type ArgsKind,
   type ColumnLinksSource,
   type ProducerRun,
-  type UnlabeledDependencies,
-  type UnlabeledDependents,
+  type ColumnLink,
 } from "@milaboratories/pl-model-common";
 import type { BlockStateOverview } from "@milaboratories/pl-model-middle-layer";
 import type { ProjectStructure } from "../model/project_model";
@@ -33,7 +31,7 @@ export function blockDependencies(
   prjEntry: PlTreeEntry,
   blockId: string,
   env: ColumnLinksEnv,
-): Computable<UnlabeledDependencies | undefined> {
+): Computable<ColumnLink[] | undefined> {
   return Computable.make(
     (ctx) => computeDependencies(columnLinksSource(ctx.accessor(prjEntry).node(), env), blockId),
     { recover: forgetFailed(env, "dependencies") },
@@ -51,7 +49,7 @@ export function blockDependents(
   prjEntry: PlTreeEntry,
   blockId: string,
   env: ColumnLinksEnv,
-): Computable<UnlabeledDependents | undefined> {
+): Computable<ColumnLink[] | undefined> {
   return Computable.make(
     (ctx) => computeDependents(columnLinksSource(ctx.accessor(prjEntry).node(), env), blockId),
     { recover: forgetFailed(env, "dependents") },
@@ -66,18 +64,22 @@ export function blockDependents(
 export function labelBlockColumnLinks(
   links: {
     blockId: string;
-    dependencies: UnlabeledDependencies | undefined;
-    dependents: UnlabeledDependents | undefined;
+    dependencies: undefined | ColumnLink[];
+    dependents: undefined | ColumnLink[];
   },
   blocks: readonly Pick<BlockStateOverview, "id" | "title">[],
 ): BlockColumnLinks | undefined {
   const { blockId, dependencies, dependents } = links;
   if (dependencies === undefined || dependents === undefined) return undefined;
-  return labelColumnLinks({ blockId, dependencies, dependents }, (namedId) => {
-    const title = blocks.find((block) => block.id === namedId)?.title;
-    if (title === undefined) throw new Error(`No title for block ${namedId}`);
-    return title;
-  });
+  const named = new Set([
+    ...dependencies.map((link) => link.producer.blockId),
+    ...dependents.map((link) => link.holderBlockId),
+  ]);
+  const labels: Record<string, string> = {};
+  for (const { id, title } of blocks) {
+    if (named.has(id) && title !== undefined) labels[id] = title;
+  }
+  return { blockId, dependencies, dependents, labels };
 }
 
 // Internals

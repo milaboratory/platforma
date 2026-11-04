@@ -14,12 +14,14 @@ import { relocateBlockIds } from "../template";
 import {
   computeDependencies,
   computeDependents,
-  labelColumnLinks,
   type ArgsKind,
   type ColumnLinksSource,
 } from "./compute";
 import type { ColumnFieldStep, ExportNode } from "./export_pool";
-import type { UnlabeledColumnLinks } from "./types";
+import type { BlockColumnLinks } from "./types";
+
+/** Column links of a block before the blocks they name are labelled. */
+type ComputedLinks = Omit<BlockColumnLinks, "labels">;
 
 beforeEach(() => {
   jsonReads.count = 0;
@@ -38,13 +40,13 @@ describe("computeDependencies", () => {
     expect(links).toEqual({
       samples: {
         blockId: "samples",
-        dependencies: { items: [] },
-        dependents: { items: [] },
+        dependencies: [],
+        dependents: [],
       },
       empty: {
         blockId: "empty",
-        dependencies: { items: [] },
-        dependents: { items: [] },
+        dependencies: [],
+        dependents: [],
       },
     });
   });
@@ -64,9 +66,9 @@ describe("computeDependencies", () => {
       { id: "x", lastRunArgs: { condition: createPlRef("samples", "condition") } },
     ]);
 
-    expect(links.x.dependencies).toMatchObject({
-      items: [{ producerBlockId: "samples", status: { type: "ok" } }],
-    });
+    expect(links.x.dependencies).toMatchObject([
+      { producer: { blockId: "samples" }, check: { type: "ok" } },
+    ]);
   });
 
   test("the last run's references are not read for a block with current args", () => {
@@ -85,11 +87,11 @@ describe("computeDependencies", () => {
       { id: "samples", args: {}, prodCtx: frame({ condition: column() }) },
     ]);
 
-    expect(links.x.dependencies.items).toMatchObject([
-      { producerBlockId: "samples", columnLabel: null, status: unavailable },
-      { producerBlockId: "deleted", columnLabel: null, status: unavailable },
+    expect(links.x.dependencies).toMatchObject([
+      { producer: { blockId: "samples" }, columnLabel: null, check: unavailable },
+      { producer: { blockId: "deleted" }, columnLabel: null, check: unavailable },
     ]);
-    expect(links.samples.dependents.items).toEqual([]);
+    expect(links.samples.dependents).toEqual([]);
     expect(reads.filter((read) => read.endsWith(":prod"))).toEqual([]);
   });
 
@@ -102,8 +104,8 @@ describe("computeDependencies", () => {
       },
     ]);
 
-    expect(links.self.dependencies.items).toMatchObject([{ status: unavailable }]);
-    expect(links.self.dependents.items).toEqual([]);
+    expect(links.self.dependencies).toMatchObject([{ check: unavailable }]);
+    expect(links.self.dependents).toEqual([]);
   });
 
   test("a producer whose run results are still rendering is pending", () => {
@@ -121,11 +123,11 @@ describe("computeDependencies", () => {
       { id: "x", args: { condition: pick("a") } },
     ]);
 
-    expect(links.x.dependencies.items).toMatchObject([
-      { columnLabel: "Condition", status: { type: "notRun" } },
+    expect(links.x.dependencies).toMatchObject([
+      { columnLabel: "Condition", check: { type: "notRun" } },
     ]);
-    expect(links.samples.dependents.items).toMatchObject([
-      { dependentBlockId: "x", columnLabel: "Condition", status: { type: "notRun" } },
+    expect(links.samples.dependents).toMatchObject([
+      { holderBlockId: "x", columnLabel: "Condition", check: { type: "notRun" } },
     ]);
   });
 
@@ -140,8 +142,8 @@ describe("computeDependencies", () => {
       { id: "x", args: { condition: createPlRef("samples", "condition") } },
     ]);
 
-    expect(links.x.dependencies.items).toMatchObject([
-      { columnLabel: "Condition", status: { type: "pending" } },
+    expect(links.x.dependencies).toMatchObject([
+      { columnLabel: "Condition", check: { type: "pending" } },
     ]);
   });
 
@@ -157,7 +159,7 @@ describe("computeDependencies", () => {
       { id: "x", args: { condition: createPlRef("samples", "condition") } },
     ]);
 
-    expect(links.x.dependencies.items).toMatchObject([{ columnLabel: null, status: ok }]);
+    expect(links.x.dependencies).toMatchObject([{ columnLabel: null, check: ok }]);
     expect(reads).not.toContain("samples:staging");
   });
 
@@ -167,7 +169,7 @@ describe("computeDependencies", () => {
       { id: "x", args: { condition: createPlRef("samples", "condition") } },
     ]);
 
-    expect(links.x.dependencies.items).toMatchObject([{ columnLabel: null, status: unavailable }]);
+    expect(links.x.dependencies).toMatchObject([{ columnLabel: null, check: unavailable }]);
   });
 
   test("an output missing from a run whose result list is open is pending, else unavailable", () => {
@@ -221,8 +223,8 @@ describe("computeDependencies", () => {
         { id: "x", args: { condition: args } },
       ]).links.x;
 
-    expect(linksOf(createPlRef("samples", "condition"), SPEC).dependencies.items).toMatchObject([
-      { columnLabel: "Condition", status: ok },
+    expect(linksOf(createPlRef("samples", "condition"), SPEC).dependencies).toMatchObject([
+      { columnLabel: "Condition", check: ok },
     ]);
     expect(statuses(linksOf(pick("treated"), SPEC, { locked: false }))).toEqual([
       { type: "pending" },
@@ -243,18 +245,16 @@ describe("computeDependencies", () => {
       { id: "x", args: { levels: [pick("treated"), pick("control")] } },
     ]);
 
-    expect(links.x.dependencies).toEqual({
-      items: [
-        {
-          producerBlockId: "samples",
-          output: "condition",
-          ref: condition,
-          values: ["treated", "control"],
-          columnLabel: "Condition",
-          status: { type: "missingValues", values: ["control"] },
-        },
-      ],
-    });
+    expect(links.x.dependencies).toEqual([
+      {
+        producer: { blockId: "samples", name: "condition" },
+        holderBlockId: "x",
+        ref: condition,
+        values: ["treated", "control"],
+        columnLabel: "Condition",
+        check: { type: "missingValues", values: ["control"] },
+      },
+    ]);
   });
 
   test("a column several references of one block pick from is read once", () => {
@@ -277,7 +277,7 @@ describe("computeDependencies", () => {
       },
     };
 
-    expect(computeDependencies(counted, "x").items.map((item) => item.status)).toEqual([ok, ok]);
+    expect(computeDependencies(counted, "x").map((item) => item.check)).toEqual([ok, ok]);
     expect(jsonReads.count).toBe(1);
     expect(reads).toEqual(["samples"]);
   });
@@ -364,9 +364,7 @@ describe("computeDependents", () => {
       },
     };
 
-    expect(computeDependents(counted, "samples").items).toMatchObject([
-      { dependentBlockId: "below" },
-    ]);
+    expect(computeDependents(counted, "samples")).toMatchObject([{ holderBlockId: "below" }]);
     expect(reads).toEqual(["below"]);
   });
 
@@ -378,14 +376,14 @@ describe("computeDependents", () => {
       referencesOf: () => collectColumnReferences(args),
     };
 
-    expect(computeDependents(gone, "gone").items).toEqual([]);
-    expect(computeDependencies(gone, "gone").items).toMatchObject([{ status: unavailable }]);
+    expect(computeDependents(gone, "gone")).toEqual([]);
+    expect(computeDependencies(gone, "gone")).toMatchObject([{ check: unavailable }]);
   });
 
   test("a block nobody references has no dependents", () => {
     const { links } = run([{ id: "samples", args: {}, lastRunArgs: {}, prodCtx: frame({}) }]);
 
-    expect(links.samples.dependents).toEqual({ items: [] });
+    expect(links.samples.dependents).toEqual([]);
   });
 
   test("a reference to an output the block does not export is unavailable", () => {
@@ -403,8 +401,8 @@ describe("computeDependents", () => {
       { id: "below", args: { condition: pick("treated") } },
     ]);
 
-    expect(links.samples.dependents.items).toMatchObject([
-      { columnLabel: "Condition", status: { type: "unavailable" } },
+    expect(links.samples.dependents).toMatchObject([
+      { columnLabel: "Condition", check: { type: "unavailable" } },
     ]);
   });
 
@@ -438,26 +436,24 @@ describe("computeDependents", () => {
       { id: "other", args: { condition: createPlRef("samples", "condition") } },
     ]);
 
-    expect(links.samples.dependents).toEqual({
-      items: [
-        {
-          dependentBlockId: "below",
-          output: "condition",
-          ref: condition,
-          values: ["treated", "control"],
-          columnLabel: "Condition",
-          status: { type: "missingValues", values: ["control"] },
-        },
-        {
-          dependentBlockId: "other",
-          output: "condition",
-          ref: condition,
-          values: null,
-          columnLabel: "Condition",
-          status: ok,
-        },
-      ],
-    });
+    expect(links.samples.dependents).toEqual([
+      {
+        producer: { blockId: "samples", name: "condition" },
+        holderBlockId: "below",
+        ref: condition,
+        values: ["treated", "control"],
+        columnLabel: "Condition",
+        check: { type: "missingValues", values: ["control"] },
+      },
+      {
+        producer: { blockId: "samples", name: "condition" },
+        holderBlockId: "other",
+        ref: condition,
+        values: null,
+        columnLabel: "Condition",
+        check: ok,
+      },
+    ]);
   });
 
   test("dependents come in project order, then in the order the args hold them", () => {
@@ -472,7 +468,7 @@ describe("computeDependents", () => {
     ]);
 
     expect(
-      links.samples.dependents.items.map((item) => [item.dependentBlockId, item.ref, item.values]),
+      links.samples.dependents.map((item) => [item.holderBlockId, item.ref, item.values]),
     ).toEqual([
       ["a", donor, ["d1"]],
       ["a", condition, null],
@@ -488,16 +484,16 @@ describe("computeDependents", () => {
       { id: "x", args: { column: local, target: pick("x", local) } },
     ]);
 
-    expect(links.x.dependencies.items).toEqual([]);
-    expect(links.samples.dependents.items).toEqual([]);
+    expect(links.x.dependencies).toEqual([]);
+    expect(links.samples.dependents).toEqual([]);
   });
 
   test("a removed dependent block disappears", () => {
     const samples: FakeBlock = { id: "samples", args: {}, prodCtx: frame({ condition: column() }) };
     const below: FakeBlock = { id: "below", args: { target: pick("ctrl") } };
 
-    expect(run([samples, below]).links.samples.dependents.items).toHaveLength(1);
-    expect(run([samples]).links.samples.dependents.items).toEqual([]);
+    expect(run([samples, below]).links.samples.dependents).toHaveLength(1);
+    expect(run([samples]).links.samples.dependents).toEqual([]);
   });
 
   test("duplicated blocks with identical args are each listed, in project order", () => {
@@ -508,10 +504,7 @@ describe("computeDependents", () => {
       { id: "copy2", args: structuredClone(args) },
     ]);
 
-    expect(links.samples.dependents.items.map((item) => item.dependentBlockId)).toEqual([
-      "copy1",
-      "copy2",
-    ]);
+    expect(links.samples.dependents.map((item) => item.holderBlockId)).toEqual(["copy1", "copy2"]);
   });
 
   test("a malformed id in one block does not hide the references of another", () => {
@@ -528,9 +521,9 @@ describe("computeDependents", () => {
       { id: "enrichment", args: { target: pick("treated") } },
     ]);
 
-    expect(links.samples.dependents.items).toMatchObject([
-      { dependentBlockId: "broken", ref: donor, values: null },
-      { dependentBlockId: "enrichment", values: ["treated"] },
+    expect(links.samples.dependents).toMatchObject([
+      { holderBlockId: "broken", ref: donor, values: null },
+      { holderBlockId: "enrichment", values: ["treated"] },
     ]);
   });
 
@@ -545,31 +538,15 @@ describe("computeDependents", () => {
       { id: "enrichment", args },
     ]);
 
-    expect(links.samples.dependents.items).toMatchObject([
-      { dependentBlockId: "enrichment", output: "donor", ref: donor, values: null },
-      { dependentBlockId: "enrichment", output: "condition", ref: condition, values: ["ctrl"] },
+    expect(links.samples.dependents).toMatchObject([
+      { holderBlockId: "enrichment", producer: { name: "donor" }, ref: donor, values: null },
+      {
+        holderBlockId: "enrichment",
+        producer: { name: "condition" },
+        ref: condition,
+        values: ["ctrl"],
+      },
     ]);
-  });
-});
-
-describe("labelColumnLinks", () => {
-  test("labels the blocks each side names, leaving out those that cannot be labelled", () => {
-    const { links } = run([
-      { id: "samples", args: {}, prodCtx: frame({ condition: column({ cells: ["ctrl"] }) }) },
-      { id: "x", args: { target: pick("ctrl"), gone: pick("a", gone) } },
-      { id: "y", args: { target: pick("ctrl") } },
-    ]);
-    const labelOf = (blockId: string) => {
-      if (blockId === "y" || blockId === "deleted") throw new Error(`no label for ${blockId}`);
-      return `Label of ${blockId}`;
-    };
-
-    expect(labelColumnLinks(links.x, labelOf).dependencies.labels).toEqual({
-      samples: "Label of samples",
-    });
-    expect(labelColumnLinks(links.samples, labelOf).dependents.labels).toEqual({
-      x: "Label of x",
-    });
   });
 });
 
@@ -712,7 +689,7 @@ type FakeBlock = {
 
 /** Column links of a project holding `blocks` in this order, with what was read to get them. */
 function run(blocks: FakeBlock[]): {
-  links: Record<string, UnlabeledColumnLinks>;
+  links: Record<string, ComputedLinks>;
   source: ColumnLinksSource<FakeNode>;
   reads: string[];
 } {
@@ -746,7 +723,7 @@ function run(blocks: FakeBlock[]): {
     },
   };
   const links = Object.fromEntries(
-    blocks.map(({ id }): [string, UnlabeledColumnLinks] => [
+    blocks.map(({ id }): [string, ComputedLinks] => [
       id,
       {
         blockId: id,
@@ -759,8 +736,8 @@ function run(blocks: FakeBlock[]): {
 }
 
 function statuses(
-  links: UnlabeledColumnLinks,
+  links: ComputedLinks,
   side: "dependencies" | "dependents" = "dependencies",
 ): unknown[] {
-  return links[side].items.map((item) => item.status);
+  return links[side].map((link) => link.check);
 }

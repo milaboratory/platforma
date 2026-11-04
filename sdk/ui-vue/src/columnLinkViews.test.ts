@@ -2,12 +2,10 @@ import { describe, expect, test } from "vitest";
 import {
   createColumnValueId,
   createGlobalPObjectId,
-  type BlockDependencies,
-  type BlockDependents,
+  type BlockColumnLinks,
+  type ColumnLink,
   type ColumnValue,
-  type DependencyEntry,
   type LinkCheck,
-  type DependentEntry,
 } from "@platforma-sdk/model";
 import {
   blockName,
@@ -22,8 +20,9 @@ const REF = createGlobalPObjectId("producer", "out");
 describe("linkSections", () => {
   test("yields both sides, also when they have no links", () => {
     const sections = linkSections({
-      dependents: dependents([]),
-      dependencies: dependencies([]),
+      labels: LABELS,
+      dependents: [],
+      dependencies: [],
     });
     expect(sections.map((section) => [section.side, section.rows])).toEqual([
       ["usedBy", []],
@@ -33,13 +32,14 @@ describe("linkSections", () => {
 
   test("merges picks of one block from one output, keeping a whole-column use apart", () => {
     const [usedBy] = linkSections({
-      dependents: dependents([
+      labels: LABELS,
+      dependents: [
         dependent("b1", "out", ["1", "a"]),
         dependent("b1", "out", ["1", "b"]),
         dependent("b1", "out", null),
         dependent("b2", "out", ["a"]),
-      ]),
-      dependencies: dependencies([]),
+      ],
+      dependencies: [],
     });
     expect(usedBy.rows.map((row) => [row.blockName, row.values])).toEqual([
       ["Enrichment", ["1", "a", "b"]],
@@ -50,11 +50,12 @@ describe("linkSections", () => {
 
   test("keeps the column label, and the output name apart from it", () => {
     const [, uses] = linkSections({
-      dependents: dependents([]),
-      dependencies: dependencies([
+      labels: LABELS,
+      dependents: [],
+      dependencies: [
         dependency("p1", "out1", null, { type: "unavailable" }),
         dependency("p1", "out2", null, { type: "ok" }, "Condition"),
-      ]),
+      ],
     });
     expect(uses.rows.map((row) => [row.output, row.columnLabel])).toEqual([
       ["out1", null],
@@ -64,19 +65,21 @@ describe("linkSections", () => {
 
   test("takes a label from any merged reference", () => {
     const [, uses] = linkSections({
-      dependents: dependents([]),
-      dependencies: dependencies([
+      labels: LABELS,
+      dependents: [],
+      dependencies: [
         dependency("p1", "out", ["a"], { type: "pending" }),
         dependency("p1", "out", ["b"], { type: "ok" }, "Condition"),
-      ]),
+      ],
     });
     expect(uses.rows[0].columnLabel).toBe("Condition");
   });
 
   test("merged references take the status needing attention most, uniting missing values", () => {
     const [, uses] = linkSections({
-      dependents: dependents([]),
-      dependencies: dependencies([
+      labels: LABELS,
+      dependents: [],
+      dependencies: [
         dependency("p1", "out", ["a"], { type: "ok" }),
         dependency("p1", "out", ["b"], { type: "unreadable" }),
         dependency("p1", "out", ["c"], { type: "pending" }),
@@ -85,7 +88,7 @@ describe("linkSections", () => {
         dependency("p2", "out", ["c"], { type: "ok" }),
         dependency("p3", "out", ["a"], missingValues(["a"])),
         dependency("p3", "out", ["b"], { type: "unavailable" }),
-      ]),
+      ],
     });
     expect(uses.rows.map((row) => row.status)).toEqual([
       { type: "pending" },
@@ -96,26 +99,27 @@ describe("linkSections", () => {
 
   test("missing values of a dependent block are listed as they are", () => {
     const [usedBy] = linkSections({
-      dependents: dependents([
-        dependent("b1", "out", ["a"], { type: "missingValues", values: ["2"] }),
-      ]),
-      dependencies: dependencies([]),
+      labels: LABELS,
+      dependents: [dependent("b1", "out", ["a"], { type: "missingValues", values: ["2"] })],
+      dependencies: [],
     });
     expect(usedBy.rows[0].status).toEqual({ type: "missingValues", values: ["2"] });
   });
 
   test("an output another block uses and this block does not export is not exported", () => {
     const [usedBy] = linkSections({
-      dependents: dependents([dependent("b1", "out", ["a"], notExported())]),
-      dependencies: dependencies([]),
+      labels: LABELS,
+      dependents: [dependent("b1", "out", ["a"], notExported())],
+      dependencies: [],
     });
     expect(usedBy.rows.map((row) => row.status)).toEqual([{ type: "unavailable" }]);
   });
 
   test("keeps the reason a link was not checked on both sides", () => {
     const [usedBy, uses] = linkSections({
-      dependents: dependents([dependent("b1", "out", ["a"], { type: "unreadable" })]),
-      dependencies: dependencies([dependency("p1", "out", ["a"], { type: "unreadable" })]),
+      labels: LABELS,
+      dependents: [dependent("b1", "out", ["a"], { type: "unreadable" })],
+      dependencies: [dependency("p1", "out", ["a"], { type: "unreadable" })],
     });
     const statuses = [{ type: "unreadable" }];
     expect(usedBy.rows.map((row) => row.status)).toEqual(statuses);
@@ -124,8 +128,9 @@ describe("linkSections", () => {
 
   test("an output of a block not run keeps that state on both sides", () => {
     const [usedBy, uses] = linkSections({
-      dependents: dependents([dependent("b1", "out", ["a"], { type: "notRun" })]),
-      dependencies: dependencies([dependency("p1", "out", ["a"], { type: "notRun" })]),
+      labels: LABELS,
+      dependents: [dependent("b1", "out", ["a"], { type: "notRun" })],
+      dependencies: [dependency("p1", "out", ["a"], { type: "notRun" })],
     });
     expect(usedBy.rows.map((row) => row.status)).toEqual([{ type: "notRun" }]);
     expect(uses.rows.map((row) => row.status)).toEqual([{ type: "notRun" }]);
@@ -135,17 +140,18 @@ describe("linkSections", () => {
 describe("linkAlerts", () => {
   test("lists only links that are broken or lack values, one alert per side", () => {
     const sections = linkSections({
-      dependents: dependents([
+      labels: LABELS,
+      dependents: [
         dependent("b1", "out", ["x", "y"], { type: "missingValues", values: ["x", "y"] }),
         dependent("b1", "other", ["x"], notExported()),
         dependent("b1", "third", ["x"], { type: "unreadable" }),
-      ]),
-      dependencies: dependencies([
+      ],
+      dependencies: [
         dependency("p1", "out1", null, { type: "unavailable" }),
         dependency("p1", "out2", ["a"], missingValues(["a"]), "Condition"),
         dependency("p1", "out3", ["a"], { type: "pending" }),
         dependency("p1", "out4", null, { type: "ok" }),
-      ]),
+      ],
     });
     expect(
       linkAlerts(sections).map((alert) => [
@@ -177,14 +183,15 @@ describe("linkAlerts", () => {
   test("names a column by its quoted label", () => {
     const alerts = linkAlerts(
       linkSections({
-        dependents: dependents([
+        labels: LABELS,
+        dependents: [
           dependent("b1", "out", ["x"], notExported(), "Clonotypes"),
           dependent("b1", "other", ["x"], { type: "missingValues", values: ["x"] }, "Samples"),
-        ]),
-        dependencies: dependencies([
+        ],
+        dependencies: [
           dependency("p1", "out", null, { type: "unavailable" }, "Condition"),
           dependency("p1", "other", ["a"], missingValues(["a"]), "Condition"),
-        ]),
+        ],
       }),
     );
     expect(alerts.map((alert) => alert.issues.map((issue) => issue.text))).toEqual([
@@ -199,8 +206,9 @@ describe("linkAlerts", () => {
   test("says the links are checked against the last run of this block", () => {
     const [usedBy] = linkAlerts(
       linkSections({
-        dependents: dependents([dependent("b1", "out", ["a"], notExported())]),
-        dependencies: dependencies([]),
+        labels: LABELS,
+        dependents: [dependent("b1", "out", ["a"], notExported())],
+        dependencies: [],
       }),
     );
 
@@ -213,14 +221,15 @@ describe("linkAlerts", () => {
   test("never names an output by its name, which is kept for a hint", () => {
     const [usedBy, uses] = linkAlerts(
       linkSections({
-        dependents: dependents([
+        labels: LABELS,
+        dependents: [
           dependent("b1", "pf.dataset.X", null, notExported()),
           dependent("b1", "pf.metadata.Y", ["a"], { type: "missingValues", values: ["a"] }),
-        ]),
-        dependencies: dependencies([
+        ],
+        dependencies: [
           dependency("p1", "pf.dataset.X", null, { type: "unavailable" }),
           dependency("p1", "pf.metadata.Y", ["a"], missingValues(["a"])),
-        ]),
+        ],
       }),
     );
     const issues = [...usedBy.issues, ...uses.issues];
@@ -236,17 +245,18 @@ describe("linkAlerts", () => {
   test("outputs of one block that are not exported and have no label share a line", () => {
     const [usedBy, uses] = linkAlerts(
       linkSections({
-        dependents: dependents([
+        labels: LABELS,
+        dependents: [
           dependent("b1", "out1", ["a"], notExported()),
           dependent("b1", "out1", null, notExported()),
           dependent("b2", "out1", null, notExported()),
           dependent("b1", "out2", null, notExported()),
           dependent("b1", "out3", null, notExported(), "Clonotypes"),
-        ]),
-        dependencies: dependencies([
+        ],
+        dependencies: [
           dependency("p1", "out1", null, { type: "unavailable" }),
           dependency("p1", "out2", ["a"], { type: "unavailable" }),
-        ]),
+        ],
       }),
     );
     expect(usedBy.issues.map((issue) => [issue.blockName, issue.text, issue.outputs])).toEqual([
@@ -262,8 +272,9 @@ describe("linkAlerts", () => {
   test("issues name the other block by id, for opening it", () => {
     const [usedBy] = linkAlerts(
       linkSections({
-        dependents: dependents([dependent("b1", "out", ["a"], notExported())]),
-        dependencies: dependencies([]),
+        labels: LABELS,
+        dependents: [dependent("b1", "out", ["a"], notExported())],
+        dependencies: [],
       }),
     );
     expect(usedBy.issues.map((issue) => [issue.blockId, issue.blockName])).toEqual([
@@ -274,8 +285,9 @@ describe("linkAlerts", () => {
   test("a side with no links needing attention has no alert", () => {
     const alerts = linkAlerts(
       linkSections({
-        dependents: dependents([dependent("b1", "out", ["a"], { type: "pending" })]),
-        dependencies: dependencies([dependency("p1", "out", null, { type: "ok" })]),
+        labels: LABELS,
+        dependents: [dependent("b1", "out", ["a"], { type: "pending" })],
+        dependencies: [dependency("p1", "out", null, { type: "ok" })],
       }),
     );
     expect(alerts).toEqual([]);
@@ -284,8 +296,9 @@ describe("linkAlerts", () => {
   test("links to a block that has not run say it does not provide the data", () => {
     const [usedBy, uses] = linkAlerts(
       linkSections({
-        dependents: dependents([dependent("b1", "out", ["a"], { type: "notRun" }, "Path")]),
-        dependencies: dependencies([dependency("p1", "out", null, { type: "notRun" }, "Path")]),
+        labels: LABELS,
+        dependents: [dependent("b1", "out", ["a"], { type: "notRun" }, "Path")],
+        dependencies: [dependency("p1", "out", null, { type: "notRun" }, "Path")],
       }),
     );
     expect([usedBy.type, usedBy.hint]).toEqual([
@@ -303,8 +316,9 @@ describe("linkAlerts", () => {
   test("broken links this block uses are an error", () => {
     const [uses] = linkAlerts(
       linkSections({
-        dependents: dependents([]),
-        dependencies: dependencies([dependency("p1", "out", ["a"], missingValues(["a"]))]),
+        labels: LABELS,
+        dependents: [],
+        dependencies: [dependency("p1", "out", ["a"], missingValues(["a"]))],
       }),
     );
     expect([uses.side, uses.type]).toEqual(["uses", "error"]);
@@ -313,11 +327,12 @@ describe("linkAlerts", () => {
   test("blocks using an output this block does not export are a warning", () => {
     const [usedBy] = linkAlerts(
       linkSections({
-        dependents: dependents([
+        labels: LABELS,
+        dependents: [
           dependent("b1", "out", ["a"], { type: "missingValues", values: ["a"] }),
           dependent("b2", "out", ["a"], notExported()),
-        ]),
-        dependencies: dependencies([]),
+        ],
+        dependencies: [],
       }),
     );
     expect([usedBy.side, usedBy.type]).toEqual(["usedBy", "warn"]);
@@ -326,10 +341,9 @@ describe("linkAlerts", () => {
   test("blocks picking values this block's output lacks are a warning", () => {
     const [usedBy] = linkAlerts(
       linkSections({
-        dependents: dependents([
-          dependent("b1", "out", ["a"], { type: "missingValues", values: ["a"] }),
-        ]),
-        dependencies: dependencies([]),
+        labels: LABELS,
+        dependents: [dependent("b1", "out", ["a"], { type: "missingValues", values: ["a"] })],
+        dependencies: [],
       }),
     );
     expect([usedBy.side, usedBy.type]).toEqual(["usedBy", "warn"]);
@@ -337,10 +351,9 @@ describe("linkAlerts", () => {
 
   test("keys are unique across sides", () => {
     const sections: LinkSection[] = linkSections({
-      dependents: dependents([
-        dependent("p1", "out", ["a"], { type: "missingValues", values: ["a"] }),
-      ]),
-      dependencies: dependencies([dependency("p1", "out", ["a"], missingValues(["a"]))]),
+      labels: LABELS,
+      dependents: [dependent("p1", "out", ["a"], { type: "missingValues", values: ["a"] })],
+      dependencies: [dependency("p1", "out", ["a"], missingValues(["a"]))],
     });
     const keys = linkAlerts(sections).flatMap((alert) => alert.issues.map((issue) => issue.key));
     expect(keys).toHaveLength(2);
@@ -357,9 +370,11 @@ describe("blockName", () => {
 
 // Internals
 
-function dependents(items: DependentEntry[]): BlockDependents {
-  return { items, labels: { b1: "Enrichment" } };
-}
+/** Labels of the other blocks the links name. */
+const LABELS = { b1: "Enrichment", p1: "Samples" };
+
+/** The block whose links these are. */
+const THIS = "this";
 
 const PATH = createGlobalPObjectId("samples", "metadata.path");
 const ty1 = createColumnValueId({ column: PATH, value: "Ty1" });
@@ -449,7 +464,7 @@ describe("describeMissingValue", () => {
 
   test("falls back to generic names without labels", () => {
     const cause = describeMissingValue(
-      { items: [pathEntry({ type: "pending" }, null)], labels: {} },
+      { dependencies: [pathEntry({ type: "pending" }, null)], labels: {} },
       ty1,
     );
     expect(cause).toEqual({
@@ -488,28 +503,38 @@ describe("describeMissingValue", () => {
   });
 });
 
-function dependencies(items: DependencyEntry[]): BlockDependencies {
-  return { items, labels: { p1: "Samples" } };
-}
-
 function dependent(
-  dependentBlockId: string,
+  holderBlockId: string,
   output: string,
   values: null | ColumnValue[],
-  status: LinkCheck = { type: "ok" },
+  check: LinkCheck = { type: "ok" },
   columnLabel: null | string = null,
-): DependentEntry {
-  return { dependentBlockId, output, ref: REF, values, columnLabel, status };
+): ColumnLink {
+  return {
+    producer: { blockId: THIS, name: output },
+    holderBlockId,
+    ref: REF,
+    values,
+    columnLabel,
+    check,
+  };
 }
 
 function dependency(
   producerBlockId: string,
   output: string,
   values: null | ColumnValue[],
-  status: LinkCheck,
+  check: LinkCheck,
   columnLabel: null | string = null,
-): DependencyEntry {
-  return { producerBlockId, output, ref: REF, values, columnLabel, status };
+): ColumnLink {
+  return {
+    producer: { blockId: producerBlockId, name: output },
+    holderBlockId: THIS,
+    ref: REF,
+    values,
+    columnLabel,
+    check,
+  };
 }
 
 function missingValues(values: ColumnValue[]): LinkCheck {
@@ -520,28 +545,30 @@ function notExported(): LinkCheck {
   return { type: "unavailable" };
 }
 
-function pathDependencies(items: DependencyEntry[]): BlockDependencies {
-  return { items, labels: { samples: "Samples" } };
+function pathDependencies(
+  dependencies: ColumnLink[],
+): Pick<BlockColumnLinks, "dependencies" | "labels"> {
+  return { dependencies, labels: { samples: "Samples" } };
 }
 
-function abundanceEntry(status: LinkCheck): DependencyEntry {
+function abundanceEntry(check: LinkCheck): ColumnLink {
   return {
-    producerBlockId: "mixcr",
-    output: "abundance",
+    producer: { blockId: "mixcr", name: "abundance" },
+    holderBlockId: THIS,
     ref: REF,
     values: null,
     columnLabel: "Abundance",
-    status,
+    check,
   };
 }
 
-function pathEntry(status: LinkCheck, columnLabel: null | string = "Path"): DependencyEntry {
+function pathEntry(check: LinkCheck, columnLabel: null | string = "Path"): ColumnLink {
   return {
-    producerBlockId: "samples",
-    output: "metadata.path",
+    producer: { blockId: "samples", name: "metadata.path" },
+    holderBlockId: THIS,
     ref: PATH,
     values: ["Ty1"],
     columnLabel,
-    status,
+    check,
   };
 }
