@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 1.74.16
+
+### Patch Changes
+
+- c8a246e: Make `MiddleLayer.init` issue its round trips concurrently: the init transaction's field reads, the six initial tree loads and the driver kit setup. Connecting to a remote backend at ~140 ms RTT drops from ~2.5 s to ~0.57 s.
+
 ## 1.74.15
 
 ### Patch Changes
