@@ -1,5 +1,5 @@
 import type { PlClient, SignedResourceId } from "@milaboratories/pl-client";
-import { ActionContextLinkCapabilities } from "./template/render_block";
+import { ActionContextLinkCapability } from "./template/render_block";
 import {
   ContinuePolling,
   field,
@@ -114,7 +114,7 @@ test("block action context outlives its renderer and is replaced on re-render", 
     });
 
     // 3. Read the action context through prodActionContext and check its baggage.
-    if (!ActionContextLinkCapabilities.some((c) => pl.hasCapability(c))) {
+    if (!pl.hasCapability(ActionContextLinkCapability)) {
       expect(await readActionContext(pl, prj, "block1")).toBeUndefined();
       return;
     }

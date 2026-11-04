@@ -42,18 +42,8 @@ export type BlockActionContextBaggage = {
 /** Resource type of a block action context. See ActionContextV1Type in the backend. */
 export const ActionContextType: ResourceType = { name: "ActionContext", version: "1" };
 
-/**
- * The capabilities under which the backend accepts the "actionContext" link on a render. The
- * capability is being renamed, so both names count during the transition.
- */
-export const ActionContextLinkCapabilities = [
-  "optionalServiceField:v1",
-  "optionalFieldsInSchemas:v1",
-] as const;
-
-function backendTakesActionContextLink(tx: PlTransaction): boolean {
-  return ActionContextLinkCapabilities.some((c) => tx.hasCapability(c));
-}
+/** The capability under which the backend accepts the "actionContext" link on a render. */
+export const ActionContextLinkCapability = "optionalFieldsInSchemas:v1";
 
 /**
  * Creates the root action context of a block render: an ActionContext resource carrying the
@@ -64,7 +54,7 @@ function createBlockActionContext(
   tx: PlTransaction,
   baggage: BlockActionContextBaggage | undefined,
 ): ResourceRef | undefined {
-  if (baggage === undefined || !backendTakesActionContextLink(tx)) return undefined;
+  if (baggage === undefined || !tx.hasCapability(ActionContextLinkCapability)) return undefined;
   return tx.createEphemeral(
     ActionContextType,
     JSON.stringify({
