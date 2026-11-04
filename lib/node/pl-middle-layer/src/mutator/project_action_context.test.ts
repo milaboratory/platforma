@@ -124,15 +124,22 @@ test("block action context outlives its render and is replaced on re-render", as
     expect(JSON.parse(first.baggage["block-pack"])).toBeTypeOf("object");
     expect(first.baggage["run-id"]).toMatch(/^[0-9a-f-]{36}$/);
 
-    // 4. The Running transition names the render; the context outlives it.
+    // 4. The Running transition names the render; the context outlives it. The render's own end is
+    //    awaited through its Completed report, which every reader can see: reading the render
+    //    itself needs a signed reference that no field of the project holds once it is done.
     const firstRender = await contextRender(pl, first.contextRef);
-    await poll(pl, async (tx) => {
-      const render = await tx.tx.getResourceDataIfExists(BigInt(firstRender) as never, false);
-      expect(render).toBeUndefined();
+    await poll(pl, async ({ tx }) => {
+      const kv = await tx.listKeyValuesString(first.contextRef);
+      const completed = kv.some(
+        (e) =>
+          e.key.startsWith(`transition/render/${firstRender}/`) &&
+          JSON.parse(e.value).state === "Completed",
+      );
+      if (!completed) throw new ContinuePolling();
     });
-    const afterGc = (await readActionContext(pl, prj, "block1"))!;
-    expect(afterGc.contextId).toEqual(first.contextId);
-    expect(afterGc.baggage).toEqual(first.baggage);
+    const afterRenderEnd = (await readActionContext(pl, prj, "block1"))!;
+    expect(afterRenderEnd.contextId).toEqual(first.contextId);
+    expect(afterRenderEnd.baggage).toEqual(first.baggage);
 
     // 5. Re-render production: prodActionContext must point at a new context with a new run-id.
     await renderBlock([4, 5, 6], false);
