@@ -1,10 +1,4 @@
-export type {
-  BlockColumnLinks,
-  ColumnLink,
-  ExportVerdict,
-  LinkCheck,
-  OutgoingReference,
-} from "./types";
+export type { BlockColumnLinks, ColumnLink, LinkCheck } from "./types";
 export {
   computeDependencies,
   computeDependents,
