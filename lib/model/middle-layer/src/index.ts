@@ -12,3 +12,4 @@ export * from "./block_registry";
 export * from "./pframe";
 export * from "./json";
 export * from "./storage_debug_view";
+export * from "./block_action_summary";

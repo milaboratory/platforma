@@ -869,3 +869,21 @@ test("dropping a root keeps a child that is another root, and a child shared wit
   expect(t.dumpState().map((r) => r.id)).not.toContain(S);
   expect(t.isValid).toBe(true);
 });
+
+test("listing key-values watches added and changed keys", async () => {
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
+  const kv = (key: string, value: string) => ({ key, value: Buffer.from(value) });
+  const c = Computable.make((ctx) => ctx.accessor(tree.entry()).node().listKeyValuesAsString());
+
+  tree.updateFromResourceData([{ ...TestDynamicRootState1, fields: [], kv: [kv("a", "1")] }]);
+  expect(await c.getValue()).toEqual([{ key: "a", value: "1" }]);
+
+  tree.updateFromResourceData([
+    { ...TestDynamicRootState1, fields: [], kv: [kv("a", "2"), kv("b", "1")] },
+  ]);
+  expect(c.isChanged()).toBeTruthy();
+  expect(await c.getValue()).toEqual([
+    { key: "a", value: "2" },
+    { key: "b", value: "1" },
+  ]);
+});

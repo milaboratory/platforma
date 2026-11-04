@@ -15,9 +15,11 @@ export type {
   TemplateId,
   TemplateListEntry,
 } from "./template_list";
+export { blockActionContextTree } from "./block_action_context";
 export type {
   BlockActionReading,
   BlockActionContextMode,
   BlockActionContextNode,
   BlockActionTransition,
 } from "./block_action_context";
+export { summarizeBlockActionContext } from "./block_action_summary";

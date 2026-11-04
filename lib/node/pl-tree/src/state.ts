@@ -149,7 +149,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   outputFieldListChanged? = new ChangeSource();
   dynamicFieldListChanged? = new ChangeSource();
 
-  // kvChangedGlobal? = new ChangeSource();
+  kvChangedGlobal? = new ChangeSource();
   kvChangedPerKey? = new KeyedChangeSource();
 
   readonly id: SignedResourceId;
@@ -372,6 +372,11 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     return this.kv.get(key);
   }
 
+  public listKeyValuesString(watcher: Watcher): { key: string; value: string }[] {
+    this.kvChangedGlobal?.attachWatcher(watcher);
+    return Array.from(this.kv, ([key, value]) => ({ key, value: cachedDecode(value) }));
+  }
+
   public getKeyValueString(watcher: Watcher, key: string): string | undefined {
     const bytes = this.getKeyValue(watcher, key);
     if (bytes === undefined) return undefined;
@@ -443,6 +448,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.inputAndServiceFieldListChanged?.markChanged("marked final");
     this.outputFieldListChanged?.markChanged("marked final");
     this.dynamicFieldListChanged?.markChanged("marked final");
+    this.kvChangedGlobal?.markChanged("marked final");
     this.kvChangedPerKey?.markAllChanged("marked final");
     this.finalChanged = undefined;
     this.resourceStateChange = undefined;
@@ -450,7 +456,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.inputAndServiceFieldListChanged = undefined;
     this.outputFieldListChanged = undefined;
     this.lockedChange = undefined;
-    // this.kvChangedGlobal = undefined;
+    this.kvChangedGlobal = undefined;
     this.kvChangedPerKey = undefined;
   }
 
@@ -463,7 +469,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.inputAndServiceFieldListChanged?.markChanged("marked all changed");
     this.outputFieldListChanged?.markChanged("marked all changed");
     this.dynamicFieldListChanged?.markChanged("marked all changed");
-    // this.kvChangedGlobal?.markChanged('marked all changed');
+    this.kvChangedGlobal?.markChanged("marked all changed");
     this.kvChangedPerKey?.markAllChanged("marked all changed");
     this.resourceRemoved.markChanged("marked all changed");
   }
@@ -883,6 +889,7 @@ export class PlTreeState {
         // arrive in a stable order and are freshly decoded strings. The walk is only set up
         // when there is something to compare against, so a resource with no kv allocates no
         // iterator.
+        let kvChanged = false;
         let kvWalk: MapIterator<[string, Uint8Array]> | undefined =
           rd.kv.length > 0 ? resource.kv.entries() : undefined;
         for (const kv of rd.kv) {
@@ -900,7 +907,7 @@ export class PlTreeState {
               kv.key,
               `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
             );
-            changed = true;
+            changed = kvChanged = true;
             if (stat) stat.kvChanged++;
           } else if (Buffer.compare(current, kv.value) !== 0) {
             resource.kv.set(kv.key, kv.value);
@@ -908,7 +915,7 @@ export class PlTreeState {
               kv.key,
               `kv changed for ${resourceIdToString(resource.id)}: ${kv.key}`,
             );
-            changed = true;
+            changed = kvChanged = true;
             if (stat) stat.kvChanged++;
           }
         }
@@ -925,11 +932,16 @@ export class PlTreeState {
                 key,
                 `kv deleted for ${resourceIdToString(resource!.id)}: ${key}`,
               );
-              changed = true;
+              changed = kvChanged = true;
               if (stat) stat.kvChanged++;
             }
           });
         }
+
+        if (kvChanged)
+          resource.kvChangedGlobal?.markChanged(
+            `kv changed for ${resourceIdToString(resource.id)}`,
+          );
 
         if (changed) {
           // if resource was changed, updating resource data version
