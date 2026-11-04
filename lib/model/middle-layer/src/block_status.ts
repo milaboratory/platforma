@@ -80,16 +80,6 @@ export function blockStatusTaskCount(nodes: number): string {
 }
 
 /**
- * How long a state must have held before the surface shows it, in milliseconds.
- *
- * Not from the spec: without it a run flashes states it passed through in milliseconds, which
- * nobody can read. Applied by the Desktop App rather than the middle layer, because it is a
- * comparison against the current time and the middle layer has no clock tick to recompute on. The
- * middle layer supplies {@link BlockStatusLine.heldSince}; the Desktop App compares it with now.
- */
-export const BlockStatusQuietThresholdMs = 5_000;
-
-/**
  * How many live nodes sit in one state.
  *
  * These are the spec's "counters by state over live nodes", and the surface renders them as one
