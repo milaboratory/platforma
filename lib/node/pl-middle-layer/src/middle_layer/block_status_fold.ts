@@ -18,11 +18,9 @@ import {
   BlockStatusCancelledPhrase,
   BlockStatusOnMachinePhrase,
   blockStatusPhrases,
-  blockStatusStates,
+  isBlockStatusState,
   isTerminalBlockStatusState,
 } from "@milaboratories/pl-model-middle-layer";
-
-const knownStates = new Set<string>(blockStatusStates);
 
 /** The part of an action context a fold reads. A tree node accessor satisfies it. */
 export interface ActionContextNode {
@@ -155,14 +153,14 @@ function readTransitions(node: ActionContextNode): ContextReports {
     } catch {
       continue;
     }
-    if (typeof parsed.state !== "string" || !knownStates.has(parsed.state)) continue;
+    const state = parsed.state;
+    if (!isBlockStatusState(state)) continue;
 
     out.known.push({
       namespace,
       reporter,
       ns,
-      // Checked against knownStates, which is built from the state names themselves.
-      state: parsed.state as BlockStatusState,
+      state,
       detail: typeof parsed.detail === "string" ? parsed.detail : "",
       reason: typeof parsed.reason === "string" ? parsed.reason : "",
     });

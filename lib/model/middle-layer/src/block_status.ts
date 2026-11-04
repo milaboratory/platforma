@@ -38,6 +38,13 @@ export type BlockStatusState = (typeof blockStatusStates)[number];
 /** A state a node cannot leave. A node in any other state is live. */
 export type BlockStatusTerminalState = Extract<BlockStatusState, "Terminated" | "Completed">;
 
+const blockStatusStateSet: ReadonlySet<string> = new Set(blockStatusStates);
+
+/** True for a state name this build knows, as a reporter writes it into a transition value. */
+export function isBlockStatusState(value: unknown): value is BlockStatusState {
+  return typeof value === "string" && blockStatusStateSet.has(value);
+}
+
 /** True for a state a node cannot leave. */
 export function isTerminalBlockStatusState(state: BlockStatusState): boolean {
   return state === "Terminated" || state === "Completed";
