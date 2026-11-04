@@ -1,7 +1,6 @@
 import { isPlainObject } from "es-toolkit";
 import type { ComputedRef, MaybeRefOrGetter } from "vue";
 import { computed, shallowRef, toValue, watch } from "vue";
-import type { LinkIssue } from "../../columnLinkViews";
 
 /**
  * Whether the alert is shown in full, or folded to one line. A folded alert tells whether it
@@ -10,13 +9,13 @@ import type { LinkIssue } from "../../columnLinkViews";
 export type AlertFoldState = { type: "open" } | { type: "folded"; updated: boolean };
 
 /**
- * The fold of the alert of block `blockId`, which says `issues`. The fold is the reader's own:
+ * The fold of the alert of block `blockId`, which says `saying` now. The fold is the reader's own:
  * it is kept in the browser storage, not with the block, so it does not change the block. An
  * alert is open until the reader folds it.
  */
 export function useAlertFold(options: {
   blockId: MaybeRefOrGetter<string | undefined>;
-  issues: MaybeRefOrGetter<readonly LinkIssue[]>;
+  saying: MaybeRefOrGetter<string>;
 }): { state: ComputedRef<AlertFoldState>; fold: () => void; open: () => void } {
   const stored = shallowRef<StoredFold>(OPEN);
   watch(
@@ -26,7 +25,7 @@ export function useAlertFold(options: {
     },
     { immediate: true },
   );
-  const saying = computed(() => sayingOf(toValue(options.issues)));
+  const saying = computed(() => toValue(options.saying));
 
   const state = computed((): AlertFoldState => {
     const fold = stored.value;
@@ -52,10 +51,6 @@ export function useAlertFold(options: {
 type StoredFold = { type: "open" } | { type: "folded"; seen: string };
 
 const OPEN: StoredFold = { type: "open" };
-
-function sayingOf(issues: readonly LinkIssue[]): string {
-  return JSON.stringify(issues.map((issue) => [issue.key, issue.text]));
-}
 
 function storageKey(blockId: string): string {
   return `pl-block-dependencies/${blockId}`;

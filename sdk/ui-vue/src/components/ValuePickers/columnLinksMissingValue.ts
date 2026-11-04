@@ -2,7 +2,7 @@ import type { BlockColumnLinks } from "@platforma-sdk/model";
 import type { FunctionalComponent } from "vue";
 import { h, inject } from "vue";
 import { columnLinksKey } from "../../columnLinks";
-import { describeMissingValue } from "../../columnLinkViews";
+import { blockName, describeMissingValue } from "../../columnLinkViews";
 import { PlBlockName } from "../PlBlockName";
 
 /**
@@ -37,7 +37,7 @@ export function columnLinksMissingValue(
 ): ColumnLinksMissingValue {
   const causeOf = (value: unknown) => {
     const links = readLinks();
-    return links === undefined ? undefined : describeMissingValue(links, value);
+    return links === undefined ? undefined : describeMissingValue(links.dependencies, value);
   };
   return {
     label: (value) => {
@@ -49,11 +49,8 @@ export function columnLinksMissingValue(
       const cause = causeOf(value);
       if (cause === undefined) return undefined;
       if (cause.type === "waiting") return () => cause.text;
-      return () =>
-        h("span", [
-          h(PlBlockName, { blockId: cause.blockId, name: cause.blockName }),
-          ` ${cause.text}`,
-        ]);
+      const name = blockName(readLinks()?.labels ?? {}, cause.blockId);
+      return () => h("span", [h(PlBlockName, { blockId: cause.blockId, name }), ` ${cause.text}`]);
     },
   };
 }

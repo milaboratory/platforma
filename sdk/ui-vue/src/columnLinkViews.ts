@@ -5,6 +5,7 @@ import {
   isColumnUniversalKey,
   isColumnValueId,
   type BlockColumnLinks,
+  type BlockOutput,
   type ColumnLink,
   type ColumnUniversalId,
   type ColumnValue,
@@ -19,21 +20,16 @@ export type LinkSide = "usedBy" | "uses";
 
 /**
  * What one other block uses of one output, or what this block uses of one output of another
- * block. All references of that block to the output that pick values are merged into one link,
- * and its use of the output as a whole is a link of its own.
+ * block. All references of that block to the output that pick values are merged into one row,
+ * with their distinct picked values and the check that needs attention most; its use of the
+ * output as a whole is a row of its own.
  */
-export type LinkRow = {
+export type LinkRow = Pick<ColumnLink, "columnLabel" | "values" | "check"> & {
   key: string;
   /** The other block: the one using this block's output, or the one producing the output. */
   blockId: string;
-  blockName: string;
-  /** Name of the output. It is not meant for reading, so it is shown only as a hint. */
-  output: string;
-  /** `pl7.app/label` of the column; `null` when it is not known. */
-  columnLabel: null | string;
-  /** Distinct picked values as strings; `null` when the block uses the column as a whole. */
-  values: null | string[];
-  status: LinkCheck;
+  /** The output. Its name is not meant for reading, so it is shown only as a hint. */
+  column: BlockOutput;
 };
 
 /** The links of one side. */
@@ -50,43 +46,49 @@ export type LinkSection = { side: LinkSide; rows: LinkRow[] };
 export type LinkIssue = {
   key: string;
   blockId: string;
-  blockName: string;
   text: string;
   outputs: string[];
 };
 
+/** The links of one side that need attention, shown as its {@link ALERTS} entry says. */
+export type LinkAlert = { side: LinkSide; issues: LinkIssue[] };
+
 /**
- * The links of one side that need attention. `error` on the `uses` side: this block cannot run
- * against them. `warn` on the `usedBy` side: the other blocks are the ones to fix, by getting
- * the data back here or by being reconfigured; `hint` says so.
+ * How the alert of each side shows. `error` on the `uses` side: this block cannot run against
+ * the links. `warn` on the `usedBy` side: the other blocks are the ones to fix, by getting the
+ * data back here or by being reconfigured; `hint` says so.
  */
-export type LinkAlert = {
-  side: LinkSide;
-  type: "error" | "warn";
-  label: string;
-  hint: null | string;
-  issues: LinkIssue[];
-};
+export const ALERTS = {
+  uses: {
+    type: "error",
+    label: "Links to blocks this block takes data from are broken",
+    hint: null,
+  },
+  usedBy: {
+    type: "warn",
+    label: "Some blocks are missing data from this block",
+    hint:
+      "Checked against the last run of this block. Add the missing data and run it, or " +
+      "reconfigure those blocks.",
+  },
+} as const satisfies Record<
+  LinkSide,
+  { type: "error" | "warn"; label: string; hint: null | string }
+>;
 
 /** The links of both sides: `usedBy`, then `uses`. */
 export function linkSections(
-  links: Pick<BlockColumnLinks, "dependencies" | "dependents" | "labels">,
+  links: Pick<BlockColumnLinks, "dependencies" | "dependents">,
 ): LinkSection[] {
-  const { dependents, dependencies, labels } = links;
+  const { dependents, dependencies } = links;
   return [
     {
       side: "usedBy",
-      rows: groupLinks(
-        labels,
-        dependents.map((link) => linkSource(link, link.holderBlockId)),
-      ),
+      rows: groupRows(dependents.map((link) => toRow(link, link.holderBlockId))),
     },
     {
       side: "uses",
-      rows: groupLinks(
-        labels,
-        dependencies.map((link) => linkSource(link, link.producer.blockId)),
-      ),
+      rows: groupRows(dependencies.map((link) => toRow(link, link.producer.blockId))),
     },
   ];
 }
@@ -102,7 +104,7 @@ export function linkAlerts(sections: LinkSection[]): LinkAlert[] {
     const links = section.rows.flatMap((row) => attentionLink(row) ?? []);
     if (links.length === 0) return [];
     const issues = groupIssues(links).map((group) => toIssue(section.side, group));
-    return [{ side: section.side, ...ALERTS[section.side], issues }];
+    return [{ side: section.side, issues }];
   });
 }
 
@@ -113,13 +115,13 @@ export function blockName(labels: Record<string, string>, blockId: string): stri
 
 /**
  * Why a selected column or column value is missing. `source`: the block meant to provide it, and
- * what went wrong, as a sentence that follows the block name. `waiting`: its column is provided,
+ * what went wrong, as a sentence that follows the block's name. `waiting`: its column is provided,
  * while other inputs of the block are not, and the options of one input may be made from another.
  * `name`: what the selection is called — the picked value, or the label of a column selected as a
  * whole; `null` when the column has no known label.
  */
 export type MissingValueCause =
-  | { type: "source"; name: string | null; blockId: string; blockName: string; text: string }
+  | { type: "source"; name: string | null; blockId: string; text: string }
   | { type: "waiting"; name: string | null; text: string };
 
 /**
@@ -130,10 +132,9 @@ export type MissingValueCause =
  * wrong with it while every other input is provided too.
  */
 export function describeMissingValue(
-  links: Pick<BlockColumnLinks, "dependencies" | "labels">,
+  dependencies: readonly ColumnLink[],
   value: unknown,
 ): MissingValueCause | undefined {
-  const { dependencies, labels } = links;
   const reference = selectedReference(value);
   if (reference === undefined) return undefined;
   const entry = dependencies.find((link) => link.ref === reference.ref);
@@ -143,13 +144,7 @@ export function describeMissingValue(
   const text = missingValueCauseText(entry.check, column, reference.picked);
   const name = reference.picked ?? entry.columnLabel;
   if (text !== undefined) {
-    return {
-      type: "source",
-      name,
-      blockId: entry.producer.blockId,
-      blockName: blockName(labels, entry.producer.blockId),
-      text,
-    };
+    return { type: "source", name, blockId: entry.producer.blockId, text };
   }
   return waitsForOtherInputs(dependencies, entry, reference.picked)
     ? { type: "waiting", name, text: "Waiting for the other inputs of this block." }
@@ -172,11 +167,11 @@ function selectedReference(
 }
 
 function missingValueCauseText(
-  status: LinkCheck,
+  check: LinkCheck,
   column: string,
   picked: ColumnValue | undefined,
 ): string | undefined {
-  switch (status.type) {
+  switch (check.type) {
     case "ok":
     case "unreadable":
       return undefined;
@@ -186,7 +181,7 @@ function missingValueCauseText(
     case "unavailable":
       return `does not provide ${column}.`;
     case "missingValues":
-      return picked !== undefined && status.values.includes(picked)
+      return picked !== undefined && check.values.includes(picked)
         ? `has no “${picked}” in ${column}.`
         : undefined;
   }
@@ -206,12 +201,12 @@ function waitsForOtherInputs(
 }
 
 /** Whether a column is provided with the picked value, as far as it was checked. */
-function providesPick(status: LinkCheck, picked: ColumnValue | undefined): boolean {
-  switch (status.type) {
+function providesPick(check: LinkCheck, picked: ColumnValue | undefined): boolean {
+  switch (check.type) {
     case "ok":
       return true;
     case "missingValues":
-      return picked === undefined || !status.values.includes(picked);
+      return picked === undefined || !check.values.includes(picked);
     case "unreadable":
     case "pending":
     case "notRun":
@@ -220,38 +215,21 @@ function providesPick(status: LinkCheck, picked: ColumnValue | undefined): boole
   }
 }
 
-type LinkSource = {
-  blockId: string;
-  output: string;
-  columnLabel: null | string;
-  values: null | ColumnValue[];
-  status: LinkCheck;
-};
-
-/** A link as a row source, seen from the side whose other block is `blockId`. */
-function linkSource(link: ColumnLink, blockId: string): LinkSource {
+/** A link as a row, seen from the side whose other block is `blockId`. */
+function toRow(link: ColumnLink, blockId: string): LinkRow {
+  const { producer: column, columnLabel, values, check } = link;
   return {
+    key: JSON.stringify([blockId, column.name, values === null]),
     blockId,
-    output: link.producer.name,
-    columnLabel: link.columnLabel,
-    values: link.values,
-    status: link.check,
+    column,
+    columnLabel,
+    values: values === null ? null : uniq(values),
+    check,
   };
 }
 
-function groupLinks(labels: Record<string, string>, sources: LinkSource[]): LinkRow[] {
-  const rows = sources.map((source): LinkRow => {
-    const key = JSON.stringify([source.blockId, source.output, source.values === null]);
-    return {
-      key,
-      blockId: source.blockId,
-      blockName: blockName(labels, source.blockId),
-      output: source.output,
-      columnLabel: source.columnLabel,
-      values: source.values === null ? null : uniq(source.values.map(String)),
-      status: source.status,
-    };
-  });
+/** Rows of one key merged into one, in the place of the first. */
+function groupRows(rows: LinkRow[]): LinkRow[] {
   return Object.values(groupBy(rows, (row) => row.key)).map((group) => group.reduce(mergeRows));
 }
 
@@ -261,19 +239,19 @@ function mergeRows(a: LinkRow, b: LinkRow): LinkRow {
     ...a,
     columnLabel: a.columnLabel ?? b.columnLabel,
     values: a.values !== null && b.values !== null ? uniq([...a.values, ...b.values]) : a.values,
-    status: mergeStatus(a.status, b.status),
+    check: mergeCheck(a.check, b.check),
   };
 }
 
-/** The status of merged references: the one that needs attention most. */
-function mergeStatus(a: LinkCheck, b: LinkCheck): LinkCheck {
+/** The check of merged references: the one that needs attention most. */
+function mergeCheck(a: LinkCheck, b: LinkCheck): LinkCheck {
   if (a.type === "missingValues" && b.type === "missingValues") {
     return { type: "missingValues", values: uniq([...a.values, ...b.values]) };
   }
-  return STATUS_RANK[b.type] > STATUS_RANK[a.type] ? b : a;
+  return CHECK_RANK[b.type] > CHECK_RANK[a.type] ? b : a;
 }
 
-const STATUS_RANK: Record<LinkCheck["type"], number> = {
+const CHECK_RANK: Record<LinkCheck["type"], number> = {
   ok: 0,
   unreadable: 1,
   pending: 2,
@@ -282,32 +260,19 @@ const STATUS_RANK: Record<LinkCheck["type"], number> = {
   unavailable: 4,
 };
 
-const ALERTS: Record<LinkSide, Pick<LinkAlert, "type" | "label" | "hint">> = {
-  uses: {
-    type: "error",
-    label: "Links to blocks this block takes data from are broken",
-    hint: null,
-  },
-  usedBy: {
-    type: "warn",
-    label: "Some blocks are missing data from this block",
-    hint: "Checked against the last run of this block. Add the missing data and run it, or reconfigure those blocks.",
-  },
-};
+/** A link whose check needs attention: it breaks a block, or lacks picked values. */
+type AttentionLink = { row: LinkRow; check: AttentionCheck };
 
-/** A link whose status needs attention: it breaks a block, or lacks picked values. */
-type AttentionLink = { row: LinkRow; status: AttentionStatus };
-
-type AttentionStatus = Extract<LinkCheck, { type: "notRun" | "unavailable" | "missingValues" }>;
+type AttentionCheck = Extract<LinkCheck, { type: "notRun" | "unavailable" | "missingValues" }>;
 
 /** The row as a link needing attention; `undefined` when it does not. */
 function attentionLink(row: LinkRow): undefined | AttentionLink {
-  const { status } = row;
-  switch (status.type) {
+  const { check } = row;
+  switch (check.type) {
     case "notRun":
     case "unavailable":
     case "missingValues":
-      return { row, status };
+      return { row, check };
     case "ok":
     case "pending":
     case "unreadable":
@@ -319,7 +284,7 @@ function attentionLink(row: LinkRow): undefined | AttentionLink {
 type SingleIssue = { type: "single"; link: AttentionLink };
 
 /** Every link to one block whose output is not exported and has no known label. */
-type UnlabeledIssue = { type: "unlabeled"; blockId: string; blockName: string; outputs: string[] };
+type UnlabeledIssue = { type: "unlabeled"; blockId: string; outputs: string[] };
 
 type Issue = SingleIssue | UnlabeledIssue;
 
@@ -328,10 +293,9 @@ function groupIssues(links: AttentionLink[]): Issue[] {
   const keyed = links.map((link, index) => ({ link, key: issueKey(link, index) }));
   return Object.values(groupBy(keyed, ({ key }) => key)).map((group): Issue => {
     const [{ link }] = group;
-    const { blockId, blockName } = link.row;
     if (!isUnlabeled(link)) return { type: "single", link };
-    const outputs = uniq(group.map((item) => item.link.row.output));
-    return { type: "unlabeled", blockId, blockName, outputs };
+    const outputs = uniq(group.map((item) => item.link.row.column.name));
+    return { type: "unlabeled", blockId: link.row.blockId, outputs };
   });
 }
 
@@ -342,7 +306,7 @@ function issueKey(link: AttentionLink, index: number): string {
 
 /** A link to an output that is not exported and has no known label. */
 function isUnlabeled(link: AttentionLink): boolean {
-  const { type } = link.status;
+  const { type } = link.check;
   return link.row.columnLabel === null && (type === "notRun" || type === "unavailable");
 }
 
@@ -351,7 +315,6 @@ function toIssue(side: LinkSide, group: Issue): LinkIssue {
     return {
       key: `${side}/${JSON.stringify([group.blockId])}`,
       blockId: group.blockId,
-      blockName: group.blockName,
       text: describeUnlabeled(side, group.outputs.length),
       outputs: group.outputs,
     };
@@ -360,9 +323,8 @@ function toIssue(side: LinkSide, group: Issue): LinkIssue {
   return {
     key: `${side}/${row.key}`,
     blockId: row.blockId,
-    blockName: row.blockName,
     text: describeIssue(side, group.link),
-    outputs: [row.output],
+    outputs: [row.column.name],
   };
 }
 
@@ -381,9 +343,9 @@ function describeUnlabeled(side: LinkSide, count: number): string {
  * What is wrong with one link, as words that follow the other block's name and a space. The
  * column is named by its label, quoted; a column with no known label is named by its role.
  */
-function describeIssue(side: LinkSide, { row, status }: AttentionLink): string {
+function describeIssue(side: LinkSide, { row, check }: AttentionLink): string {
   const column = row.columnLabel === null ? null : `"${row.columnLabel}"`;
-  switch (status.type) {
+  switch (check.type) {
     case "notRun":
     case "unavailable":
       if (column === null) return describeUnlabeled(side, 1);
@@ -391,7 +353,7 @@ function describeIssue(side: LinkSide, { row, status }: AttentionLink): string {
         ? `does not provide ${column}`
         : `uses ${column}, which this block does not export`;
     case "missingValues": {
-      const values = quoteValues(status.values);
+      const values = quoteValues(check.values);
       if (side === "uses") return `has no ${values} in ${column ?? "data this block uses"}`;
       return column === null
         ? `uses ${values}, which this block's data no longer has`

@@ -3,7 +3,7 @@ import { PlAlert, PlMaskIcon16 } from "@milaboratories/uikit";
 import { uniq } from "es-toolkit";
 import { computed, inject } from "vue";
 import { columnLinksKey } from "../../columnLinks";
-import { linkAlerts, linkSections } from "../../columnLinkViews";
+import { ALERTS, blockName, linkAlerts, linkSections } from "../../columnLinkViews";
 import { PlBlockName } from "../PlBlockName";
 import { useAlertFold } from "./fold";
 
@@ -20,8 +20,10 @@ const usedByIssues = computed(
 );
 const usedByFold = useAlertFold({
   blockId: () => links?.value?.blockId,
-  issues: usedByIssues,
+  saying: () => JSON.stringify(usedByIssues.value.map((issue) => [issue.key, issue.text])),
 });
+
+const nameOf = (blockId: string) => blockName(links?.value?.labels ?? {}, blockId);
 
 const isFolded = computed(() => usedByFold.state.value.type === "folded");
 
@@ -43,8 +45,8 @@ const toggleUsedBy = () => (isFolded.value ? usedByFold.open() : usedByFold.fold
     v-for="alert in alerts"
     :key="alert.side"
     :data-testid="`pl-block-dependencies-alert-${alert.side}`"
-    :type="alert.type"
-    :label="alert.label"
+    :type="ALERTS[alert.side].type"
+    :label="ALERTS[alert.side].label"
   >
     <template v-if="alert.side === 'usedBy'" #label>
       <button
@@ -58,7 +60,7 @@ const toggleUsedBy = () => (isFolded.value ? usedByFold.open() : usedByFold.fold
           name="chevron-right"
           :class="[$style.chevron, { [$style.open]: !isFolded }]"
         />
-        {{ alert.label }}
+        {{ ALERTS[alert.side].label }}
         <span v-if="isFolded" data-testid="pl-block-dependencies-count" :class="$style.meta">
           {{ blockCount }}
         </span>
@@ -70,11 +72,13 @@ const toggleUsedBy = () => (isFolded.value ? usedByFold.open() : usedByFold.fold
     <template v-if="alert.side !== 'usedBy' || !isFolded" #default>
       <ul :class="$style.issues">
         <li v-for="issue in alert.issues" :key="issue.key" :title="issue.outputs.join(', ')">
-          <PlBlockName :block-id="issue.blockId" :name="issue.blockName" />
+          <PlBlockName :block-id="issue.blockId" :name="nameOf(issue.blockId)" />
           {{ issue.text }}
         </li>
       </ul>
-      <div v-if="alert.hint !== null" :class="$style.hint">{{ alert.hint }}</div>
+      <div v-if="ALERTS[alert.side].hint !== null" :class="$style.hint">
+        {{ ALERTS[alert.side].hint }}
+      </div>
     </template>
   </PlAlert>
 </template>
