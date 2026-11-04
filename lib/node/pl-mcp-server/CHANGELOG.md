@@ -1,5 +1,17 @@
 # @milaboratories/pl-mcp-server
 
+## 37.0.0
+
+### Minor Changes
+
+- f7a9989: Read the block action context tree. `Project.getBlockActionContext(blockId, mode)` returns the action context of a block render with its baggage, transitions, readings and child renders, read in one transaction. The MCP server exposes it as the `get_block_action_context` tool, cut to `maxDepth` levels and the latest `maxTransitions` per node, with `contextId` to read a subtree.
+
+### Patch Changes
+
+- Updated dependencies [f7a9989]
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-middle-layer@1.76.0
+
 ## 36.0.0
 
 ### Patch Changes

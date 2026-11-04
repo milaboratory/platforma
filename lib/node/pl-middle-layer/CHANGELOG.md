@@ -1,5 +1,23 @@
 # @milaboratories/pl-middle-layer
 
+## 1.76.0
+
+### Minor Changes
+
+- f7a9989: Read the block action context tree. `Project.getBlockActionContext(blockId, mode)` returns the action context of a block render with its baggage, transitions, readings and child renders, read in one transaction. The MCP server exposes it as the `get_block_action_context` tool, cut to `maxDepth` levels and the latest `maxTransitions` per node, with `contextId` to read a subtree.
+- 9089e12: Create the action context of a heavy block render. The middle layer creates an `ActionContext` resource with `name`, `block-pack`, `block-id` and a new random `run-id` in the transaction that creates the render, points the render's optional `actionContext` service field to it, and keeps it in the `prodActionContext`/`stagingActionContext` block fields, because the render is garbage collected once its outputs resolve. It does this only when the backend advertises `optionalFieldsInSchemas:v1`, so older backends are not affected. `PlTransaction.hasCapability` tells which capabilities the backend of a transaction advertises.
+
+### Patch Changes
+
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-client@3.20.0
+  - @milaboratories/pl-model-backend@1.4.42
+  - @milaboratories/pl-drivers@1.16.40
+  - @milaboratories/pl-errors@1.4.57
+  - @milaboratories/pl-tree@1.16.9
+  - @platforma-sdk/block-tools@2.17.4
+  - @platforma-sdk/workflow-tengo@6.20.0
+
 ## 1.75.0
 
 ### Minor Changes
