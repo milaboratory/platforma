@@ -76,6 +76,90 @@ export class S3Storage implements RegistryStorage {
   }
 }
 
+type GcsBucket = import("@google-cloud/storage").Bucket;
+
+/** How many single-object deletes run in parallel: GCS has no multi-object delete call. */
+const GcsDeleteConcurrency = 16;
+
+/**
+ * Registry storage on Google Cloud Storage, addressed as `gs://<bucket>/<prefix>`.
+ *
+ * Authenticates with Application Default Credentials (gcloud ADC, a service account key in
+ * GOOGLE_APPLICATION_CREDENTIALS, Workload Identity, or GitHub OIDC via google-github-actions/auth).
+ *
+ * Objects are written with `Cache-Control: no-cache`. Registry overviews and channel markers are
+ * overwritten in place, and GCS serves publicly readable objects with `max-age=3600` by default,
+ * so without it readers would see a stale registry for up to an hour.
+ */
+export class GcsStorage implements RegistryStorage {
+  private bucketPromise?: Promise<GcsBucket>;
+
+  constructor(
+    public readonly bucketName: string,
+    public readonly root: string,
+    bucket?: GcsBucket,
+  ) {
+    if (bucket) this.bucketPromise = Promise.resolve(bucket);
+  }
+
+  /** The client library is loaded on first use, so that readers of this module never load it. */
+  private bucket(): Promise<GcsBucket> {
+    this.bucketPromise ??= import("@google-cloud/storage").then(({ Storage }) =>
+      new Storage().bucket(this.bucketName),
+    );
+    return this.bucketPromise;
+  }
+
+  private key(file: string): string {
+    return pathPosix.join(this.root, file);
+  }
+
+  async getFile(file: string): Promise<Buffer | undefined> {
+    try {
+      const [content] = await (await this.bucket()).file(this.key(file)).download();
+      return content;
+    } catch (e: unknown) {
+      if (isGcsNotFound(e)) return undefined;
+      throw e;
+    }
+  }
+
+  async listFiles(prefix: string): Promise<string[]> {
+    const listRoot = pathPosix.join(this.root, prefix);
+    const [files] = await (await this.bucket()).getFiles({ prefix: listRoot, autoPaginate: true });
+    return files.map((f) => pathPosix.relative(listRoot, f.name));
+  }
+
+  async putFile(file: string, buffer: Buffer): Promise<void> {
+    await (await this.bucket()).file(this.key(file)).save(buffer, {
+      resumable: false,
+      metadata: { cacheControl: "no-cache" },
+    });
+  }
+
+  async deleteFiles(...files: string[]): Promise<void> {
+    const bucket = await this.bucket();
+    const errors: string[] = [];
+    for (let i = 0; i < files.length; i += GcsDeleteConcurrency) {
+      const results = await Promise.allSettled(
+        files
+          .slice(i, i + GcsDeleteConcurrency)
+          // A missing object is not an error, same as S3 DeleteObjects.
+          .map((file) => bucket.file(this.key(file)).delete({ ignoreNotFound: true })),
+      );
+      for (const r of results)
+        if (r.status === "rejected")
+          errors.push(r.reason instanceof Error ? r.reason.message : String(r.reason));
+    }
+    if (errors.length > 0)
+      throw new Error(`Errors encountered while deleting files: ${errors.join("\n")}`);
+  }
+}
+
+function isGcsNotFound(e: unknown): boolean {
+  return typeof e === "object" && e !== null && "code" in e && e.code === 404;
+}
+
 export class FSStorage implements RegistryStorage {
   /** Absolute path */
   public readonly root: string;
@@ -141,6 +225,8 @@ export function storageByUrl(address: string): RegistryStorage {
       const bucket = url.hostname;
       return new S3Storage(new S3(options), bucket, url.pathname.replace(/^\//, ""));
     }
+    case "gs:":
+      return new GcsStorage(url.hostname, url.pathname.replace(/^\//, ""));
     default:
       throw new Error(`Unknown protocol: ${url.protocol}`);
   }

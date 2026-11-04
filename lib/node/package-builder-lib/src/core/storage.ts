@@ -4,14 +4,17 @@ import { Upload } from "@aws-sdk/lib-storage";
 import path from "node:path";
 import * as util from "./util";
 import type { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 
-export const supportedTypes = ["S3"] as const; // add other types when we support them
+export const supportedTypes = ["S3", "GCS"] as const; // add other types when we support them
 export type storageType = (typeof supportedTypes)[number];
 
 export function typeToURLScheme(sType: storageType): string {
   switch (sType) {
     case "S3":
       return "s3";
+    case "GCS":
+      return "gs";
     default:
       util.assertNever(sType);
       throw new Error("no schema defined for storage type"); // just to calm down TS type analyzer
@@ -86,6 +89,51 @@ export class S3Storage implements RegistryStorage {
   }
 }
 
+type GcsBucket = import("@google-cloud/storage").Bucket;
+
+/**
+ * Software registry storage on Google Cloud Storage (`gs://<bucket>/<prefix>`).
+ * Authenticates with Application Default Credentials.
+ */
+export class GcsStorage implements RegistryStorage {
+  constructor(
+    public readonly bucket: GcsBucket,
+    public readonly root: string = "",
+  ) {}
+
+  async exists(file: string): Promise<boolean> {
+    try {
+      const [exists] = await this.bucket.file(pathPosix.join(this.root, file)).exists();
+      return exists;
+    } catch (e) {
+      throw util.wrapErr(e, `failed to check if object exists in GCS bucket ${this.bucket.name}`);
+    }
+  }
+
+  async putFile(file: string, data: Buffer | Readable): Promise<void> {
+    const object = this.bucket.file(pathPosix.join(this.root, file));
+    try {
+      if (Buffer.isBuffer(data)) await object.save(data, { resumable: false });
+      else await pipeline(data, object.createWriteStream({ resumable: true }));
+    } catch (e) {
+      throw util.wrapErr(e, `failed to put object into GCS bucket ${this.bucket.name}`);
+    }
+  }
+}
+
+async function newGcsBucket(bucketName: string): Promise<GcsBucket> {
+  const { Storage } = await import("@google-cloud/storage");
+  const bucket = new Storage().bucket(bucketName);
+  try {
+    await bucket.file("/").exists();
+  } catch (error) {
+    throw util.CLIError(
+      `credentials given to package builder do not have access to GCS bucket '${bucketName}': ${error}`,
+    );
+  }
+  return bucket;
+}
+
 export async function initByUrl(address: string, pkgRoot: string): Promise<RegistryStorage> {
   if (address === "") {
     throw util.CLIError(`Empty registry storage address`);
@@ -104,15 +152,29 @@ export async function initByUrl(address: string, pkgRoot: string): Promise<Regis
         return new S3Storage(s3Client, s3Bucket, s3KeyPrefix);
       }
       case "s3e:": {
-        const s3eOptions: NonNullable<ConstructorParameters<typeof S3>[0]> = {};
+        // s3e://[user:password@]<endpoint>/<bucket>/<keyPrefix>?region=<name>, endpoint over http,
+        // the same form pl-bootstrap uses for the backend's MinIO storages.
+        const s3eOptions: NonNullable<ConstructorParameters<typeof S3>[0]> = {
+          endpoint: `http://${url.host}`,
+          forcePathStyle: true,
+        };
         const s3eRegion = url.searchParams.get("region");
         if (s3eRegion) s3eOptions.region = s3eRegion;
+        if (url.username)
+          s3eOptions.credentials = {
+            accessKeyId: decodeURIComponent(url.username),
+            secretAccessKey: decodeURIComponent(url.password),
+          };
 
         const s3ePath = url.pathname.split("/").slice(1); // '/bucket/keyPrefix' -> ['', 'bucket', 'keyPrefix'] -> ['bucket', 'keyPrefix']
         const s3eBucket = s3ePath[0];
-        const s3eKeyPrefix = s3ePath.length > 1 ? util.trimPrefix(s3ePath[1], "/") : "";
+        const s3eKeyPrefix = s3ePath.slice(1).join("/");
         const s3eClient = await newS3(s3eOptions, s3eBucket);
         return new S3Storage(s3eClient, s3eBucket, s3eKeyPrefix);
+      }
+      case "gs:": {
+        const gsBucket = await newGcsBucket(url.hostname);
+        return new GcsStorage(gsBucket, util.trimPrefix(url.pathname, "/"));
       }
       default:
         throw util.CLIError(

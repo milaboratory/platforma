@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { test, expect } from "vitest";
-import { S3Storage, storageByUrl } from "./storage";
+import { GcsStorage, S3Storage, storageByUrl } from "./storage";
 import path from "node:path";
 import * as fs from "node:fs";
 
@@ -92,5 +92,45 @@ if (testS3Address) {
         ],
       },
     });
+  });
+}
+
+test("gs url maps to GcsStorage", () => {
+  const storage = storageByUrl("gs://some-bucket/some/prefix");
+  expect(storage).toBeInstanceOf(GcsStorage);
+  expect((storage as GcsStorage).bucketName).toEqual("some-bucket");
+  expect((storage as GcsStorage).root).toEqual("some/prefix");
+});
+
+// Runs against a real bucket with Application Default Credentials, e.g.
+// TEST_GCS_ADDRESS=gs://<bucket>/tests pnpm test
+const testGcsAddress = process.env.TEST_GCS_ADDRESS;
+if (testGcsAddress) {
+  const gcsStorage = () => {
+    const url = new URL(testGcsAddress);
+    url.pathname = `${url.pathname.replace(/\/$/, "")}/${randomUUID()}`;
+    return storageByUrl(url.toString());
+  };
+
+  test("test gcs read write delete", async () => {
+    const storage = gcsStorage();
+    expect(await storage.getFile("some/deep/file.txt")).toBeUndefined();
+    await storage.putFile("some/deep/file.txt", Buffer.from("test1"));
+    expect((await storage.getFile("some/deep/file.txt"))?.toString()).toEqual("test1");
+    await storage.deleteFiles("some/deep/file.txt", "some/deep/never-existed.txt");
+    expect(await storage.getFile("some/deep/file.txt")).toBeUndefined();
+  });
+
+  test("test gcs list", async () => {
+    const storage = gcsStorage();
+    expect(await storage.listFiles("not_existing_folder")).toEqual([]);
+    await storage.putFile("some/deep1/file_1.txt", Buffer.from("test1"));
+    await storage.putFile("some/deep1/file_2.txt", Buffer.from("test1"));
+    await storage.putFile("some/deep2/file_1.txt", Buffer.from("test1"));
+    const result = await storage.listFiles("some");
+    result.sort();
+    expect(result).toEqual(["deep1/file_1.txt", "deep1/file_2.txt", "deep2/file_1.txt"]);
+    await storage.deleteFiles(...result.map((f) => `some/${f}`));
+    expect(await storage.listFiles("some")).toEqual([]);
   });
 }

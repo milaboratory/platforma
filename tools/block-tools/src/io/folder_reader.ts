@@ -27,6 +27,11 @@ class HttpFolderReader implements FolderReader {
       dispatcher: this.httpDispatcher,
       signal: options?.signal,
     });
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      // Release the connection; the error body (S3/GCS XML, an HTML page) is not registry content.
+      await response.body.dump();
+      throw new Error(`Failed to read ${targetUrl.toString()}: HTTP ${response.statusCode}`);
+    }
     return Buffer.from(await response.body.arrayBuffer());
   }
 
