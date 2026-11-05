@@ -50,7 +50,7 @@ describe("listKeyValues", () => {
 
   test("with no prefix returns everything", async () => {
     const t = rootWith([kv("a", "1"), kv("b", "2")]);
-    const all = Computable.make((ctx) => ctx.accessor(t.entry()).node().listKeyValues());
+    const all = Computable.make((ctx) => ctx.accessor(t.entry()).node().listKeyValuesAsString());
 
     expect((await all.getValue()).map((e) => e.key)).toEqual(["a", "b"]);
   });
@@ -237,11 +237,10 @@ describe("listKeyValues", () => {
     let escaped: PlTreeNodeAccessor | undefined;
     const c = Computable.make((ctx) => {
       escaped = ctx.accessor(entry).node();
-      return escaped.listKeyValues().length;
+      return escaped.listKeyValuesAsString().length;
     });
     expect(await c.getValue()).toBe(1);
 
-    expect(() => escaped!.listKeyValues()).toThrow();
     expect(() => escaped!.listKeyValuesAsString()).toThrow();
     expect(() => escaped!.listFields()).toThrow();
   });

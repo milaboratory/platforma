@@ -7,8 +7,6 @@
  * and every report into it is a KV write.
  *
  * One tree per watched block, held while anyone watches, terminated when the last holder lets go.
- *
- * Source: docs/text/work/projects/sdk/block-status/README_teo.md, "Backend <-> Middle layer".
  */
 
 import type { PlClient, SignedResourceId } from "@milaboratories/pl-client";
@@ -56,14 +54,6 @@ const StatusTreeInitialLoadTimeoutMs = 30_000;
 const statusTreeFieldFilter = treeFilter.resourceTypeEq(ResourceTypeName.ActionContext);
 
 /**
- * True when the backend takes the `actionContext` link, which is what the middle layer gates
- * creating a context on: without it a block has no context and nothing is ever reported.
- */
-export function backendSupportsActionContext(pl: PlClient): boolean {
-  return pl.hasCapability(ActionContextLinkCapability);
-}
-
-/**
  * The root action context of a block render, read once from the project.
  *
  * Undefined when the block has no context: it was never rendered, or it ran against a backend or a
@@ -104,20 +94,6 @@ export function actionContextNode(acc: PlTreeNodeAccessor): ActionContextNode {
 }
 
 /**
- * The folded summary of the status tree rooted at `entry`.
- *
- * `reportsSupported` only labels an empty result: without the capability no transition will ever
- * be written, and the surface should say so rather than imply the run is silent.
- */
-export function blockStatusSummary(
-  entry: PlTreeEntry,
-  reportsSupported: boolean,
-  onError: (err: unknown) => void,
-): Computable<BlockStatusSummary> {
-  return Computable.make((ctx) => foldEntry(ctx, entry, reportsSupported, onError));
-}
-
-/**
  * Folds the context an entry points at, or reports that it could not be read.
  *
  * A context that is gone is the ordinary case, not a fault: an ephemeral context is dropped as
@@ -126,7 +102,7 @@ export function blockStatusSummary(
  * that would be worse than saying nothing. The result is still distinguishable from a run that has
  * reported nothing, and the cause is logged, so a genuine fault here is not silent.
  */
-function foldEntry(
+export function foldEntry(
   ctx: ComputableCtx,
   entry: PlTreeEntry,
   reportsSupported: boolean,
@@ -182,7 +158,8 @@ export class BlockStatusWatch {
     /** The project tree's change generation, the trigger for looking for a new render. */
     private readonly projectGeneration: () => number,
   ) {
-    const reportsSupported = backendSupportsActionContext(env.pl);
+    // Without the `actionContext` link a block has no context and nothing is ever reported.
+    const reportsSupported = env.pl.hasCapability(ActionContextLinkCapability);
     // One computable for the life of the watch, reading whichever tree is seeded now, so a caller
     // keeps its handle across a re-run of the block.
     this.summary = Computable.make((ctx) => {

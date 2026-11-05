@@ -22,13 +22,14 @@ import {
   TestHelpers,
   toGlobalResourceId,
 } from "@milaboratories/pl-client";
+import { Computable } from "@milaboratories/computable";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 import { expect, test } from "vitest";
 import { projectFieldName } from "../model/project_model";
 import { ActionContextType } from "../mutator/template/render_block";
-import { blockStatusSummary, readBlockActionContextRoot } from "./block_status_tree";
+import { foldEntry, readBlockActionContextRoot } from "./block_status_tree";
 import { MiddleLayer } from "./middle_layer";
 import type { Project } from "./project";
 
@@ -87,9 +88,11 @@ test("a real action-context tree folds into the summary and follows its reports"
       rootsNeverFinal: true,
     });
     try {
-      const summary = blockStatusSummary(tree.entry(), true, (err) => {
-        throw err;
-      });
+      const summary = Computable.make((ctx) =>
+        foldEntry(ctx, tree.entry(), true, (err) => {
+          throw err;
+        }),
+      );
       const settled = async (until: (s: Awaited<ReturnType<typeof summary.getValue>>) => boolean) =>
         await poll(pl, async () => {
           await tree.refreshState();
@@ -100,7 +103,7 @@ test("a real action-context tree folds into the summary and follows its reports"
 
       // Four contexts, nothing reported yet: all live, no state named.
       const initial = await settled((s) => s.totalNodes === 4);
-      expect(initial).toMatchObject({ liveNodes: 4, byState: [], done: false });
+      expect(initial).toMatchObject({ liveNodes: 4, done: false });
 
       // Two children wait for a machine, one stages files.
       const at = Date.now();
@@ -110,12 +113,8 @@ test("a real action-context tree folds into the summary and follows its reports"
         record(tx, ids.children[2], "workdir", "3", at + 2, "PopulatingWorkdir", "12 files");
         await tx.commit();
       });
-      const waiting = await settled((s) => s.byState.length === 2);
-      expect(waiting.byState.map((g) => [g.phrase, g.nodes])).toEqual([
-        ["waiting for a machine to start", 2],
-        ["copying input files", 1],
-      ]);
-      expect(waiting.line).toMatchObject({ state: "WaitingForMachine", nodes: 2, ofNodes: 4 });
+      const waiting = await settled((s) => s.jobs.total === 3);
+      expect(waiting.jobs).toMatchObject({ pending: 2, copying: 1 });
 
       // Every render reports its own end: the run is done.
       await pl.withWriteTx("Finish", async (tx) => {
@@ -128,7 +127,6 @@ test("a real action-context tree folds into the summary and follows its reports"
       });
       const finished = await settled((s) => s.done);
       expect(finished).toMatchObject({ liveNodes: 0, totalNodes: 4, done: true });
-      expect(finished.line).toBeUndefined();
     } finally {
       await tree.terminate();
     }
