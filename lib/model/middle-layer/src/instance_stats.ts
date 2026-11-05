@@ -42,8 +42,6 @@ export type InstanceStats = {
   readonly jobs?: { readonly running: number; readonly queued: number };
   /** Where the numbers come from, `scheduler` or `kueue`. A label only. */
   readonly source?: string;
-  /** True when the Kueue budget is shared with other installs, so `total` is not ours alone. */
-  readonly kueueShared?: boolean;
 };
 
 /** Stats for a backend without the instance statistics context. */

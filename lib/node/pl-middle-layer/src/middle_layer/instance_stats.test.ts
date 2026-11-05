@@ -16,7 +16,6 @@ describe("parseInstanceStats", () => {
         kv("reading/instance/ram", { total: 64e9, current: 41e9 }),
         kv("reading/instance/jobs", { running: 12, queued: 14 }),
         kv("reading/instance/source", "scheduler"),
-        kv("reading/instance/kueue-shared", false),
       ]),
     ).toEqual({
       availability: "read",
@@ -24,7 +23,6 @@ describe("parseInstanceStats", () => {
       ram: { total: 64e9, current: 41e9 },
       jobs: { running: 12, queued: 14 },
       source: "scheduler",
-      kueueShared: false,
     });
   });
 

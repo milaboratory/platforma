@@ -34,9 +34,6 @@ const ReadingPrefix = "reading/instance/";
 /** How often the readings are read: the writer's default interval. */
 const PollIntervalMs = 10_000;
 
-/** How many polls pass before a backend without the context is asked again. */
-const RediscoverEveryPolls = 30;
-
 function asCapacity(v: unknown): InstanceStatsCapacity | undefined {
   if (typeof v !== "object" || v === null) return undefined;
   const { total, current } = v as { total?: unknown; current?: unknown };
@@ -68,7 +65,6 @@ export function parseInstanceStats(kvs: readonly { key: string; value: string }[
   }
 
   const source = readings.get("source");
-  const kueueShared = readings.get("kueue-shared");
   return {
     availability: "read",
     cpu: asCapacity(readings.get("cpu")),
@@ -77,7 +73,6 @@ export function parseInstanceStats(kvs: readonly { key: string; value: string }[
     gpuMemory: asCapacity(readings.get("gpu-memory")),
     jobs: asJobs(readings.get("jobs")),
     source: typeof source === "string" ? source : undefined,
-    kueueShared: typeof kueueShared === "boolean" ? kueueShared : undefined,
   };
 }
 
@@ -99,9 +94,8 @@ export interface InstanceStatsClient {
 /**
  * Reads the instance statistics while the middle layer lives.
  *
- * Reports `unsupported` without `instanceStats:v1`, and also when the backend advertises it but has
- * no context (the deployment turned it off): it looks again every few minutes. A context whose
- * writer is off yields a sample without readings.
+ * Reports `unsupported` without `instanceStats:v1`, and while the context cannot be found. A
+ * context whose writer is off yields a sample without readings.
  */
 export class InstanceStatsWatch {
   private readonly value = new WatchableValue<InstanceStats | undefined>(undefined);
@@ -150,17 +144,11 @@ export class InstanceStatsWatch {
     }
 
     let context: SignedResourceId | undefined;
-    let pollsSinceDiscovery = RediscoverEveryPolls;
-
     while (!this.abortController.signal.aborted) {
       try {
-        if (context === undefined && pollsSinceDiscovery >= RediscoverEveryPolls) {
-          pollsSinceDiscovery = 0;
-          const found = await this.pl.listSharedResourcesByType(InstanceStatsContextTypeName);
-          context = found[0];
-          if (context === undefined) this.publish(UnsupportedInstanceStats);
-        }
-        if (context !== undefined) {
+        context ??= (await this.pl.listSharedResourcesByType(InstanceStatsContextTypeName))[0];
+        if (context === undefined) this.publish(UnsupportedInstanceStats);
+        else {
           const ref = context;
           const kvs = await this.pl.withReadTx("instanceStats", (tx) =>
             tx.listKeyValuesString(ref),
@@ -169,15 +157,12 @@ export class InstanceStatsWatch {
         }
       } catch (err: unknown) {
         if (this.abortController.signal.aborted) return;
-        // A listing the backend does not implement means no context to find; anything else is
-        // retried on the next tick, and the context looked up again in case it was replaced.
+        // Retried on the next tick, with the context looked up again in case it was replaced.
         this.logger.warn(new Error("instance stats read failed", { cause: err }));
         context = undefined;
-        pollsSinceDiscovery = RediscoverEveryPolls;
         this.publish({ availability: "unreadable" });
       }
 
-      pollsSinceDiscovery++;
       try {
         await setTimeout(PollIntervalMs, undefined, { signal: this.abortController.signal });
       } catch {
