@@ -1,5 +1,17 @@
 # @milaboratories/pl-tree
 
+## 1.17.0
+
+### Minor Changes
+
+- f7d4c98: Expose the canonical id of a resource as `BasicResourceData.canonicalId`, and pin with a regression test that a committed pure resource reports a non-empty one.
+
+### Patch Changes
+
+- Updated dependencies [f7d4c98]
+  - @milaboratories/pl-client@3.21.0
+  - @milaboratories/pl-errors@1.4.58
+
 ## 1.16.9
 
 ### Patch Changes
