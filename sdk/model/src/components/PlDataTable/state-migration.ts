@@ -1,6 +1,8 @@
 import type {
   AxisId,
+  AxisQualification,
   CanonicalizedJson,
+  ColumnUniversalId,
   PObjectId,
   PTableColumnId,
   PTableColumnSpec,
@@ -10,16 +12,20 @@ import type {
 import {
   canonicalizeJson,
   getPTableColumnId,
+  isColumnUniversalKey,
   parseJsonSafely,
+  stringifyColumnDiscoveredId,
 } from "@milaboratories/pl-model-common";
 import { distillFilterSpec } from "../../filters";
 import type { PlDataTableFilterState, PlTableFilter } from "./typesV4";
 import type {
   PlDataTableFilters,
   PlDataTableFiltersWithMeta,
+  PlDataTableGridStateCore,
   PlDataTableSheetState,
   PlDataTableStateV2CacheEntry,
   PlDataTableStateV2Normalized,
+  PlTableColumnIdJson as PlTableColumnIdJsonV8,
   PTableParamsV2,
 } from "./typesV8";
 import type {
@@ -155,8 +161,16 @@ export type PlDataTableStateV2 =
   // v7 still had filter leaves serialised as `CanonicalizedJson<PTableColumnId>`
   // strings and `sorting: []` for the "untouched" case.
   | PlDataTableStateV2V7
+  // v8 has the current shape but may still hold column ids written before the
+  // column-access rework (see `upgradeLegacyColumnId`).
+  | PlDataTableStateV2V8
   // Normalized state
   | PlDataTableStateV2Normalized;
+
+/** v8 state: the current shape, column ids not yet checked for the pre-rework form. */
+export type PlDataTableStateV2V8 = Omit<PlDataTableStateV2Normalized, "version"> & {
+  version: 8;
+};
 
 /** Upgrade PlDataTableStateV2 to the latest version */
 export function upgradePlDataTableStateV2(
@@ -205,6 +219,10 @@ export function upgradePlDataTableStateV2(
   // form; translate `sorting: []` into `sorting: null`.
   if (state.version === 7) {
     state = migrateV7toV8(state);
+  }
+  // v8 -> v9: rewrite column ids written before the column-access rework.
+  if (state.version === 8) {
+    state = migrateV8toV9(state);
   }
   return state;
 }
@@ -442,7 +460,7 @@ export function createDefaultPTableParams(): PTableParamsV2 {
 
 export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
   return {
-    version: 8,
+    version: 9,
     stateCache: [],
     pTableParams: createDefaultPTableParams(),
   };
@@ -454,7 +472,7 @@ export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
 // are dropped; cache entries whose tree fully prunes get filtersState: null.
 // Also translates `sorting: []` (legacy "untouched") into `sorting: null`.
 
-function migrateV7toV8(state: PlDataTableStateV2V7): PlDataTableStateV2Normalized {
+function migrateV7toV8(state: PlDataTableStateV2V7): PlDataTableStateV2V8 {
   const newCache: PlDataTableStateV2CacheEntry[] = state.stateCache.map((entry) => ({
     sourceId: entry.sourceId,
     gridState: entry.gridState,
@@ -547,4 +565,193 @@ function parseLegacyLeafColumn(s: unknown): PTableColumnId | undefined {
   const t = (parsed as { type: unknown }).type;
   if (t !== "axis" && t !== "column") return undefined;
   return parsed as PTableColumnId;
+}
+
+// --- v8 -> v9 migration ----------------------------------------------------
+// The column-access rework (July 2026) marked discovered column ids with
+// `__isDiscovered`. Ids saved before it — user sorting, hidden columns, column
+// order, filter leaves — came through the v6 -> v8 steps unchanged, and the
+// current id parser rejects them. Legacy discovered ids are rewritten to the
+// current form, so the user's choices survive. Legacy anchored and filtered
+// ids name a column relative to an anchor the state does not hold; entries
+// using them are dropped.
+
+function migrateV8toV9(state: PlDataTableStateV2V8): PlDataTableStateV2Normalized {
+  return {
+    version: 9,
+    stateCache: state.stateCache.map(
+      (entry): PlDataTableStateV2CacheEntry => ({
+        ...entry,
+        gridState: upgradeGridStateColumnIds(entry.gridState),
+        filtersState: upgradeFilterColumnIds(entry.filtersState),
+        defaultFiltersState: upgradeFilterColumnIds(entry.defaultFiltersState),
+      }),
+    ),
+    pTableParams: upgradeParamsColumnIds(state.pTableParams),
+  };
+}
+
+/** Keys a pre-rework discovered column id could carry; it had no marker. */
+const LEGACY_DISCOVERED_KEYS = new Set([
+  "column",
+  "path",
+  "columnQualifications",
+  "queriesQualifications",
+]);
+
+type LegacyDiscoveredKey = {
+  column: string;
+  path?: { type: "linker"; column: string }[];
+  columnQualifications?: AxisQualification[];
+  queriesQualifications?: Record<PObjectId, AxisQualification[]>;
+};
+
+function isLegacyDiscoveredKey(value: unknown): value is LegacyDiscoveredKey {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
+  if (!Object.keys(value).every((key) => LEGACY_DISCOVERED_KEYS.has(key))) return false;
+  const { column, path } = value as { column?: unknown; path?: unknown };
+  if (typeof column !== "string") return false;
+  if (path === undefined) return true;
+  return (
+    Array.isArray(path) &&
+    path.every(
+      (item: unknown) =>
+        typeof item === "object" &&
+        item !== null &&
+        (item as { type?: unknown }).type === "linker" &&
+        typeof (item as { column?: unknown }).column === "string",
+    )
+  );
+}
+
+/**
+ * A stored column id in its current form: unchanged when already current,
+ * rewritten when it is a pre-rework discovered id, `undefined` when it cannot be
+ * carried over (a pre-rework anchored or filtered id, or not an id at all).
+ */
+export function upgradeLegacyColumnId(id: string): ColumnUniversalId | undefined {
+  const key: unknown = parseJsonSafely(id);
+  if (isColumnUniversalKey(key)) return id as ColumnUniversalId;
+  if (!isLegacyDiscoveredKey(key)) return undefined;
+
+  const column = upgradeLegacyColumnId(key.column);
+  if (column === undefined) return undefined;
+  const path: { type: "linker"; column: ColumnUniversalId }[] = [];
+  for (const item of key.path ?? []) {
+    const linker = upgradeLegacyColumnId(item.column);
+    if (linker === undefined) return undefined;
+    path.push({ type: "linker", column: linker });
+  }
+  // Discovery names a hit reached with no linker and no qualifications by its own id
+  // and wraps only the rest; the pre-rework form wrapped every hit.
+  const hasQualifications =
+    (key.columnQualifications?.length ?? 0) > 0 ||
+    Object.keys(key.queriesQualifications ?? {}).length > 0;
+  if (path.length === 0 && !hasQualifications) return column;
+  return stringifyColumnDiscoveredId({
+    column,
+    path,
+    columnQualifications: key.columnQualifications,
+    queriesQualifications: key.queriesQualifications,
+  });
+}
+
+function upgradeColumnRef(ref: PTableColumnId): PTableColumnId | undefined {
+  if (ref.type !== "column") return ref;
+  const id = upgradeLegacyColumnId(ref.id);
+  return id === undefined ? undefined : { type: "column", id };
+}
+
+function upgradeParamsColumnIds(params: PTableParamsV2): PTableParamsV2 {
+  if (params.sourceId === null) return params;
+
+  const hiddenColIds =
+    params.hiddenColIds === null
+      ? null
+      : params.hiddenColIds.flatMap((ref) => upgradeColumnRef(ref) ?? []);
+
+  return {
+    ...params,
+    hiddenColIds,
+    sorting: params.sorting === null ? null : upgradeSorting(params.sorting),
+    filters: upgradeFilterColumnIds(params.filters),
+    defaultFilters: upgradeFilterColumnIds(params.defaultFilters),
+  };
+}
+
+/** `[]` is the user's cleared sorting and stays. A sorting emptied by dropped
+ *  entries falls back to the default (`null`) instead of reading as cleared. */
+function upgradeSorting(sorting: PTableSorting[]): null | PTableSorting[] {
+  if (sorting.length === 0) return sorting;
+  const kept = sorting.flatMap((entry): PTableSorting[] => {
+    const column = upgradeColumnRef(entry.column);
+    return column === undefined ? [] : [{ ...entry, column }];
+  });
+  return kept.length === 0 ? null : kept;
+}
+
+function upgradeGridColId(colId: PlTableColumnIdJsonV8): PlTableColumnIdJsonV8 | undefined {
+  const parsed: unknown = parseJsonSafely(colId);
+  // Not a column id: the row-number sentinel passes through unchanged.
+  if (typeof parsed !== "object" || parsed === null || !("type" in parsed) || !("id" in parsed)) {
+    return colId;
+  }
+  const ref = upgradeColumnRef(parsed as PTableColumnId);
+  if (ref === undefined) return undefined;
+  return ref === parsed ? colId : canonicalizeJson<PTableColumnId>(ref);
+}
+
+function upgradeGridStateColumnIds(gridState: PlDataTableGridStateCore): PlDataTableGridStateCore {
+  const upgradeAll = (colIds: PlTableColumnIdJsonV8[]) =>
+    colIds.flatMap((colId) => upgradeGridColId(colId) ?? []);
+  return {
+    ...gridState,
+    ...(gridState.columnOrder && {
+      columnOrder: { orderedColIds: upgradeAll(gridState.columnOrder.orderedColIds) },
+    }),
+    ...(gridState.sort && {
+      sort: {
+        sortModel: gridState.sort.sortModel.flatMap((s) => {
+          const colId = upgradeGridColId(s.colId);
+          return colId === undefined ? [] : [{ ...s, colId }];
+        }),
+      },
+    }),
+    ...(gridState.columnVisibility && {
+      columnVisibility: { hiddenColIds: upgradeAll(gridState.columnVisibility.hiddenColIds) },
+    }),
+  };
+}
+
+function upgradeFilterColumnIds<T extends PlDataTableFilters | PlDataTableFiltersWithMeta>(
+  node: null | T,
+): null | T {
+  if (node === null) return null;
+  const result = upgradeFilterNode(node);
+  return result === undefined ? null : (result as T);
+}
+
+/** Rewrites the column ids in a filter tree. A leaf whose id cannot be carried
+ *  over is dropped, and a group left empty with it. */
+function upgradeFilterNode(node: unknown): unknown | undefined {
+  if (!node || typeof node !== "object") return undefined;
+  const n = node as { type?: unknown };
+  if (n.type === "and" || n.type === "or") {
+    const filters = (n as { filters?: unknown[] }).filters ?? [];
+    const kept = filters.map(upgradeFilterNode).filter((f): f is object => f !== undefined);
+    if (kept.length === 0) return undefined;
+    return { ...n, filters: kept };
+  }
+  if (n.type === "not") {
+    const inner = upgradeFilterNode((n as { filter?: unknown }).filter);
+    return inner === undefined ? undefined : { ...n, filter: inner };
+  }
+  const leaf: Record<string, unknown> = { ...n };
+  for (const field of ["column", "rhs"]) {
+    if (!(field in leaf)) continue;
+    const ref = upgradeColumnRef(leaf[field] as PTableColumnId);
+    if (ref === undefined) return undefined;
+    leaf[field] = ref;
+  }
+  return leaf;
 }
