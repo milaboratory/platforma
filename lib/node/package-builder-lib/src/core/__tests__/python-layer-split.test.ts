@@ -11,8 +11,8 @@ import * as paths from "../paths";
 const hasPython = spawnSync("python3", ["--version"]).status === 0;
 const script = fs.readFileSync(paths.assets("python-layer-split.py"), "utf-8");
 
-function runSplit(root: string, out: string, bins: number, minTarget: number) {
-  const result = spawnSync("python3", ["-", root, out, String(bins), String(minTarget)], {
+function runSplit(root: string, out: string, bins: number, minTarget: number, keep: string[] = []) {
+  const result = spawnSync("python3", ["-", root, out, String(bins), String(minTarget), ...keep], {
     input: script,
     encoding: "utf-8",
   });
@@ -133,6 +133,19 @@ describe.skipIf(!hasPython)("python-layer-split.py", () => {
     const bin0 = path.join(out, "0") + root;
     expect(fs.readlinkSync(path.join(bin0, "bin/python3"))).toBe("python3.12");
     expect(fs.statSync(path.join(bin0, "share/empty")).isDirectory()).toBe(true);
+  });
+
+  it("leaves the kept stdlib in place but moves its site-packages", () => {
+    const stdlib = path.join(root, "lib/python3.12");
+    writeFile(path.join(stdlib, "os.py"), 100);
+    writeFile(path.join(stdlib, "site-packages/numpy/core.so"), 500);
+    writeFile(path.join(root, "bin/f2py"), 10);
+
+    runSplit(root, out, 2, 1000, [stdlib, path.join(stdlib, "site-packages")]);
+
+    expect(fs.existsSync(path.join(stdlib, "os.py"))).toBe(true);
+    expect(fs.existsSync(path.join(stdlib, "site-packages"))).toBe(false);
+    expect(mergedFiles(2)).toEqual(["bin/f2py", "lib/python3.12/site-packages/numpy/core.so"]);
   });
 
   it("copies directory modes of split parents", () => {

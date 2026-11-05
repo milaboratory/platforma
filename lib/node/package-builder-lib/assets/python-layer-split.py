@@ -5,8 +5,12 @@
 # client's wait for that request (containerd >= 2.3 gives up after 30 s). Keeping every
 # layer around TARGET bytes avoids that whatever the registry or client.
 #
-# Usage: python3 - <root> <out> <bins> <min_target_bytes>
-#   Moves everything under <root> into <out>/<i><root>/..., i in [0, bins).
+# Usage: python3 - <root> <out> <bins> <min_target_bytes> [<keep> [<inside_keep>...]]
+#   Moves everything under <root> into <out>/<i><root>/..., i in [0, bins), except <keep>:
+#   it stays where it is, apart from the <inside_keep> paths, which are moved like the rest.
+#   Defaults: <keep> = this interpreter's stdlib, <inside_keep> = its purelib and platlib
+#   (site-packages). The stdlib is already in the base image and is never changed by pip,
+#   and the script must not move modules it may still import.
 #   All <out>/<i> directories exist afterwards, even when empty.
 #
 # Layout rules:
@@ -23,6 +27,7 @@ import os
 import shutil
 import stat
 import sys
+import sysconfig
 
 
 def tree_size(path):
@@ -40,16 +45,24 @@ def tree_size(path):
     return total
 
 
-def units(path, target):
-    size = tree_size(path)
-    if size <= target or os.path.islink(path) or not os.path.isdir(path):
+def units(path, target, keep, inside_keep):
+    if path == keep:
+        result = []
+        for inner in inside_keep:
+            if os.path.lexists(inner):
+                result.extend(units(inner, target, keep, inside_keep))
+        return result
+    is_dir = os.path.isdir(path) and not os.path.islink(path)
+    contains_keep = is_dir and keep.startswith(path + os.sep)
+    size = 0 if contains_keep else tree_size(path)
+    if not contains_keep and (size <= target or not is_dir):
         return [(size, path)]
-    children = sorted(os.listdir(path))
+    children = sorted(os.listdir(path)) if is_dir else []
     if not children:
         return [(size, path)]
     result = []
     for name in children:
-        result.extend(units(os.path.join(path, name), target))
+        result.extend(units(os.path.join(path, name), target, keep, inside_keep))
     return result
 
 
@@ -68,12 +81,19 @@ def ensure_parents(src_path, dst_path):
 def main():
     root, out, bins, min_target = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
     root = os.path.abspath(root)
-    total = tree_size(root)
-    target = max(min_target, -(-total // bins))
+    if len(sys.argv) > 5:
+        keep = os.path.abspath(sys.argv[5])
+        inside_keep = [os.path.abspath(p) for p in sys.argv[6:]]
+    else:
+        paths = sysconfig.get_paths()
+        keep = os.path.abspath(paths["stdlib"])
+        inside_keep = sorted({os.path.abspath(paths["purelib"]), os.path.abspath(paths["platlib"])})
+    inside_keep = [p for p in inside_keep if p.startswith(keep + os.sep)]
 
-    placed = []  # list of (size, path), largest first, stable by name
-    for name in sorted(os.listdir(root)):
-        placed.extend(units(os.path.join(root, name), target))
+    # Sizes first with a target no unit can reach, to learn the total; then the real units.
+    total = sum(size for size, _ in units(root, float("inf"), keep, inside_keep))
+    target = max(min_target, -(-total // bins))
+    placed = units(root, target, keep, inside_keep)
     placed.sort(key=lambda u: (-u[0], u[1]))
 
     loads = [0] * bins
@@ -103,10 +123,10 @@ def main():
     for i, path in assignment:
         dst = os.path.join(out, str(i)) + path
         ensure_parents(path, dst)
-        shutil.move(path, dst)  # falls back to copy+delete across overlay layers
+        shutil.move(path, dst)  # a rename when the file was written in the same RUN step
 
     gib = 1024 ** 3
-    print(f"layer split: {total / gib:.2f} GiB under {root}, target {target / gib:.2f} GiB")
+    print(f"layer split: {total / gib:.2f} GiB under {root} (kept in place: {keep}), target {target / gib:.2f} GiB")
     for i in range(bins):
         print(f"  layer {i}: {loads[i] / gib:.2f} GiB")
 

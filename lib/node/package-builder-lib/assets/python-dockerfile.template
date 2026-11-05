@@ -10,13 +10,14 @@ ${RUNENV_ENVS}
 # Always keep basic python packaging tools fresh to avoid CVEs even in old python versions
 RUN ${TOOLSET} install --upgrade pip wheel setuptools
 
-# Install dependencies to leverage Docker cache
+# Install dependencies to leverage Docker cache, then split what was installed into
+# directories of about ${DEPS_LAYER_TARGET_BYTES} bytes, one image layer each, so no single
+# layer is too big for the registry to finalize in time. Both happen in one RUN: the new
+# files are still in this step's own layer, so the split moves them instead of copying.
+# The heredoc needs BuildKit (Docker >= 23 default) or buildah/podman >= 1.33.
 COPY ${REQUIREMENTS_PATH} .
-RUN ${TOOLSET} install --no-cache-dir -r ${REQUIREMENTS_FILENAME}
-
-# One install -> several layers of about ${DEPS_LAYER_TARGET_BYTES} bytes each, so no single
-# layer is too big for the registry to finalize in time.
-RUN python3 - ${DEPS_ROOT} /layers ${DEPS_LAYERS} ${DEPS_LAYER_TARGET_BYTES} <<'LAYER_SPLIT_EOF'
+RUN ${TOOLSET} install --no-cache-dir -r ${REQUIREMENTS_FILENAME} \
+    && python3 - ${DEPS_ROOT} /layers ${DEPS_LAYERS} ${DEPS_LAYER_TARGET_BYTES} <<'LAYER_SPLIT_EOF'
 ${LAYER_SPLIT_SCRIPT}
 LAYER_SPLIT_EOF
 
@@ -29,7 +30,9 @@ ${RUNENV_ENVS}
 
 # Start from an empty site-packages, so files that pip removed in stage 1 (e.g. the
 # base image's old pip) do not come back from the base layer.
-RUN rm -rf "$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"
+RUN purelib="$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')" \
+    && test -n "$purelib" \
+    && rm -rf "$purelib"
 
 ${DEPS_LAYER_COPIES}
 

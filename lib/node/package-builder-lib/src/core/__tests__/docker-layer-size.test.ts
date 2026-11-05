@@ -28,9 +28,10 @@ describe("parseImageHistory", () => {
     ]);
   });
 
-  it("treats an unparsable size as 0", () => {
-    expect(docker.parseImageHistory("N/A\tADD file")).toEqual([
-      { bytes: 0, createdBy: "ADD file" },
+  it("leaves a non-numeric size unread instead of guessing", () => {
+    expect(docker.parseImageHistory("N/A\tADD file\n8.59GB\tRUN big")).toEqual([
+      { bytes: undefined, createdBy: "ADD file" },
+      { bytes: undefined, createdBy: "RUN big" },
     ]);
   });
 });
@@ -80,6 +81,19 @@ describe("checkLayerSizes", () => {
     vi.stubEnv("PL_DOCKER_MAX_LAYER_BYTES", String(10 * GiB));
     mockHistory([`${8 * GiB}\tRUN big`]);
     expect(() => docker.checkLayerSizes("local:tag", vi.fn())).not.toThrow();
+  });
+
+  it("warns about unreadable sizes when the limit is not enforced", () => {
+    mockHistory(["8.59GB\tRUN big"]);
+    const warn = vi.fn();
+    docker.checkLayerSizes("local:tag", warn);
+    expect(String(warn.mock.calls[0]?.[0])).toContain("Could not read the size of 1 layer(s)");
+  });
+
+  it("fails on unreadable sizes when the limit is enforced", () => {
+    vi.stubEnv("PL_DOCKER_MAX_LAYER_BYTES", String(GiB));
+    mockHistory(["8.59GB\tRUN big"]);
+    expect(() => docker.checkLayerSizes("local:tag", vi.fn())).toThrow(/Could not read the size/);
   });
 
   it("rejects a non-numeric PL_DOCKER_MAX_LAYER_BYTES", () => {
