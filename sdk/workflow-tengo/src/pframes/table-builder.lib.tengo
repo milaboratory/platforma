@@ -5,8 +5,6 @@
  * specs (when workflow context is available). The actual resolution, PFrame assembly,
  * filter-join, and file export run inside the `:pframes.build-table` ephemeral template.
  *
- * Spec: docs/text/work/projects/pframes-api/05-filter-column-api.md (R9–R14).
- *
  * @example
  *   wf := import("@platforma-sdk/workflow-tengo:workflow")
  *   file := import("@platforma-sdk/workflow-tengo:file")
@@ -146,6 +144,29 @@ isQuerySpec := func(q) {
 	return !isUnresolved(q) && !isResolvedColumn(q) && !isEnrichmentRef(q)
 }
 
+// Returns true if `value` holds a ref by `isRef` anywhere in its structure, outside resolved columns
+// (a query result `{ref, spec, data}` is resolved although its `ref` is a ref).
+holdsRef := func(value, isRef) {
+	stack := [value]
+	si := 0
+	for si < len(stack) {
+		v := stack[si]
+		si += 1
+		if isRef(v) { return true }
+		if ll.isMap(v) {
+			if isResolvedColumn(v) { continue }
+			for _, child in v {
+				stack = append(stack, child)
+			}
+		} else if is_array(v) {
+			for _, child in v {
+				stack = append(stack, child)
+			}
+		}
+	}
+	return false
+}
+
 /**
  * Creates a table builder.
  *
@@ -157,7 +178,16 @@ isQuerySpec := func(q) {
  * @return TableBuilder with .addPrimary / .addColumn / .addColumns / .setJoinMode /
  *         .setColumnJoin / .setAxisHeader / .cpu / .mem / .cacheInputs / .build
  */
-tableBuilder := func(format, ...ctxArg) {
+tableBuilderWith := func(q, format, ...ctxArg) {
+	// a query API whose refs carry no marker (bquery.forFamily(2)) says what a ref is
+	unresolved := isUnresolved
+	if maps.containsKey(q, "isRef") {
+		unresolved = func(value) { return holdsRef(value, q.isRef) }
+	}
+	querySpec := func(v) {
+		return !unresolved(v) && !isResolvedColumn(v) && !isEnrichmentRef(v)
+	}
+
 	ll.assert(!is_undefined(VALID_FORMATS[format]),
 		"format must be one of [tsv, csv, parquet, ndjson], got '%s'", format)
 
@@ -194,7 +224,7 @@ tableBuilder := func(format, ...ctxArg) {
 				header = opts[0].header
 			}
 
-			unresolved := isUnresolved(value)
+			unresolved := unresolved(value)
 			if !unresolved {
 				ll.assert(
 					isResolvedColumn(value) ||
@@ -232,7 +262,7 @@ tableBuilder := func(format, ...ctxArg) {
 				header = opts[0].header
 			}
 			join := columnJoinOpt(opts)
-			if isUnresolved(query) || isEnrichmentRef(query) {
+			if unresolved(query) || isEnrichmentRef(query) {
 				_hasUnresolved = true
 			}
 			_columns = append(_columns, {
@@ -283,7 +313,7 @@ tableBuilder := func(format, ...ctxArg) {
 						entrySuffix = undefined
 					}
 
-					if isUnresolved(entryQuery) || isEnrichmentRef(entryQuery) {
+					if unresolved(entryQuery) || isEnrichmentRef(entryQuery) {
 						_hasUnresolved = true
 					}
 					_columns = append(_columns, {
@@ -298,7 +328,7 @@ tableBuilder := func(format, ...ctxArg) {
 				return self
 			}
 
-			if isUnresolved(query) || isEnrichmentRef(query) {
+			if unresolved(query) || isEnrichmentRef(query) {
 				_hasUnresolved = true
 			}
 			_columns = append(_columns, {
@@ -406,7 +436,7 @@ tableBuilder := func(format, ...ctxArg) {
 			// Determine whether ctx is needed: any unresolved PlRef, or any column query spec.
 			hasQuerySpec := false
 			for _, c in _columns {
-				if isQuerySpec(c.query) {
+				if querySpec(c.query) {
 					hasQuerySpec = true
 					break
 				}
@@ -421,15 +451,18 @@ tableBuilder := func(format, ...ctxArg) {
 			// Accepts: PObjectId string | PlRef map | resolved {spec, data}.
 			resolveColumn := func(value) {
 				if is_string(value) {
+					if maps.containsKey(q, "isRef") {
+						ll.panic("serialized value ids are not supported by this query API; pass a ref {block, workflow, name}, got %v", value)
+					}
 					ref := decodeGlobalPObjectId(value)
-					r := bquery.resolve(ref, _ctx)
+					r := q.resolve(ref, _ctx)
 					return {
 						spec: r.getFutureInputField("spec"),
 						data: r.getFutureInputField("data")
 					}
 				}
-				if isUnresolved(value) {
-					r := bquery.resolve(value, _ctx)
+				if unresolved(value) {
+					r := q.resolve(value, _ctx)
 					return {
 						spec: r.getFutureInputField("spec"),
 						data: r.getFutureInputField("data")
@@ -462,7 +495,7 @@ tableBuilder := func(format, ...ctxArg) {
 					data: resolvedCol.data,
 					filters: []
 				}
-				if isUnresolved(column) {
+				if unresolved(column) {
 					primaryPlRefs[p.name] = column
 				}
 
@@ -480,14 +513,14 @@ tableBuilder := func(format, ...ctxArg) {
 				primaryEntries = append(primaryEntries, entry)
 			}
 
-			// Run anchored query for column query specs (spec R11):
+			// Run anchored query for column query specs:
 			//   addColumn  → expectSingle   (panics on zero, asserts exactly one).
 			//   addColumns → expectMultiple (returns all matches; empty set OK).
 			singleQueryByIdx := {}
 			multiQueryResultByIdx := {}
 			qMap := {}
 			for idx, c in _columns {
-				if isQuerySpec(c.query) {
+				if querySpec(c.query) {
 					strategy := "expectSingle"
 					if c.mode == "multi" { strategy = "expectMultiple" }
 					qMap["q" + string(idx)] = maps.deepMerge(c.query, {
@@ -500,9 +533,9 @@ tableBuilder := func(format, ...ctxArg) {
 					"column query specs require at least one primary added as a PlRef " +
 					"or PrimaryRef (pre-resolved primaries cannot anchor column queries)")
 
-				qResult := bquery.anchoredQuery(_ctx, primaryPlRefs, qMap)
+				qResult := q.anchoredQuery(_ctx, primaryPlRefs, qMap)
 				for idx, c in _columns {
-					if isQuerySpec(c.query) {
+					if querySpec(c.query) {
 						r := qResult.getResult("q" + string(idx))
 						if c.mode == "multi" {
 							// Template iterates this resource via
@@ -552,7 +585,7 @@ tableBuilder := func(format, ...ctxArg) {
 				} else if isResolvedColumn(c.query) {
 					entry.spec = c.query.spec
 					entry.data = c.query.data
-				} else if isUnresolved(c.query) {
+				} else if unresolved(c.query) {
 					resolved := resolveColumn(c.query)
 					entry.spec = resolved.spec
 					entry.data = resolved.data
@@ -646,6 +679,14 @@ tableBuilder := func(format, ...ctxArg) {
 	return ll.toStrict(self)
 }
 
+/**
+ * `tableBuilderWith(bquery, format, ...ctxArg)`: unresolved inputs resolve with the family-1 query API.
+ */
+tableBuilder := func(format, ...ctxArg) {
+	return tableBuilderWith(bquery, format, ctxArg...)
+}
+
 export ll.toStrict({
-	tableBuilder: tableBuilder
+	tableBuilder: tableBuilder,
+	tableBuilderWith: tableBuilderWith
 })

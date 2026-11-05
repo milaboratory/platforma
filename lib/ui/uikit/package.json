@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/uikit",
-  "version": "2.16.1",
+  "version": "2.17.1",
   "type": "module",
   "main": "dist/index.js",
   "exports": {
@@ -47,7 +47,6 @@
     "d3-axis": "catalog:",
     "d3-scale": "catalog:",
     "d3-selection": "catalog:",
-    "resize-observer-polyfill": "catalog:",
     "sortablejs": "catalog:",
     "vue": "catalog:"
   },

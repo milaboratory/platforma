@@ -1,0 +1,21 @@
+// sinkhole-root: renders sinkhole with a new action context, as the middle layer does for the root render of a block
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+self.defineOutputs(["context", "info", "done"])
+
+self.body(func(inputs) {
+	inner := render.createEphemeral(
+		assets.importTemplate(":action-context.sinkhole"),
+		{},
+		{ actionContext: { "name": "root", "run-id": "run-2" } }
+	)
+
+	return {
+		context: inner.output("context"),
+		info: inner.output("info"),
+		done: inner.output("done")
+	}
+})

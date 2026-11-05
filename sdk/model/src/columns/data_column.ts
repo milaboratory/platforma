@@ -2,13 +2,14 @@ import {
   ColumnRegistry,
   createGlobalPObjectId,
   isPColumn,
+  isPColumnSpec,
   isPlRef,
   PlRef,
   PObjectId,
-  type ColumnUniversalId,
   type LeafEntry,
   type PColumn,
   type PColumnSpec,
+  type PObjectSpec,
   type SpecOverrides,
   type SpecQuery,
 } from "@milaboratories/pl-model-common";
@@ -49,24 +50,6 @@ export interface DataColumnRecipe<
 > extends ColumnRecipe<ID> {
   /** Column data, consistent with {@link ColumnRecipe.getSpec}. */
   getData(): ColumnData;
-}
-
-/**
- * Thrown by leaf-recipe factories when the requested column is provably
- * absent in the active render ctx — i.e. every relevant accessor reports
- * `inputsLocked` and the column did not appear. Distinct from the
- * `undefined` return that the factories still use for the "resolving" case
- * (the column may still appear later).
- *
- * Catch at the boundary (resolver / filter+sort wiring / data-table assembly)
- * when partial absence should be surfaced to the user rather than silently
- * producing an empty result.
- */
-export class ColumnAbsentError extends Error {
-  constructor(public readonly id: ColumnUniversalId) {
-    super(`Column is absent in the active render ctx and will not appear: ${id}`);
-    this.name = "ColumnAbsentError";
-  }
 }
 
 /**
@@ -132,32 +115,18 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
 
   /**
    * Resolve via the ambient {@link ColumnRegistry}. Spec is resolved eagerly:
-   * returns `undefined` if the leaf isn't reachable yet (resolving). Throws
-   * {@link ColumnAbsentError} when every relevant accessor is `inputsLocked`
-   * and the column did not appear — the column will not exist in this ctx.
+   * returns `undefined` unless the id names a column whose spec is readable in
+   * this ctx — while it is resolving, when it is absent, and when the id names
+   * an export that is not a column (a `kind: "File"` object, for example).
    * Data and dataStatus stay lazy.
    */
   static fromId(
     id: PObjectId,
     { ctx }: { ctx?: GlobalCfgRenderCtx } = {},
   ): undefined | DataColumnRecipe<PObjectId> {
-    const registry = new ColumnRegistry(getCtxProviders({ ctx }));
-    const leaf = registry.resolve(id);
-    if (isNil(leaf)) {
-      if (registry.isFinal()) throw new ColumnAbsentError(id);
-      return undefined;
-    }
-    const spec = readSpecAccessor(leaf);
-    if (isNil(spec)) {
-      if (leaf.accessor.getInputsLocked()) throw new ColumnAbsentError(id);
-      return undefined;
-    }
-    if (!spec.hasData()) return undefined;
-    return new DataColumnImpl(id, {
-      getSpec: () => spec.getDataAsJson<PColumnSpec>(),
-      getData: () => readDataAccessor(leaf),
-      getDataStatus: () => readDataStatus(leaf),
-    });
+    const leaf = new ColumnRegistry(getCtxProviders({ ctx })).resolve(id);
+    if (isNil(leaf)) return undefined;
+    return DataColumnImpl.fromAccessor(leaf);
   }
 
   /** {@link PlRef} wrapper over {@link fromId}. */
@@ -167,18 +136,15 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
 
   /**
    * Bind directly to an accessor-backed {@link LeafEntry} — no registry.
-   * Throws {@link ColumnAbsentError} if the leaf has no spec field and its
-   * accessor is `inputsLocked`. Returns `undefined` while still resolving.
+   * Returns `undefined` unless the leaf's spec is readable and is a column
+   * spec: while the spec is resolving, when it is absent, and for an export
+   * that is not a column.
    */
   static fromAccessor(entry: LeafEntry<TreeNodeAccessor>): undefined | DataColumnRecipe<PObjectId> {
-    const spec = readSpecAccessor(entry);
-    if (isNil(spec)) {
-      if (entry.accessor.getInputsLocked()) throw new ColumnAbsentError(entry.id);
-      return undefined;
-    }
-    if (!spec.hasData()) return undefined;
+    const spec = readSpec(entry);
+    if (spec === undefined || !isPColumnSpec(spec)) return undefined;
     return new DataColumnImpl(entry.id, {
-      getSpec: () => spec.getDataAsJson<PColumnSpec>(),
+      getSpec: () => spec,
       getData: () => readDataAccessor(entry),
       getDataStatus: () => readDataStatus(entry),
     });
@@ -208,7 +174,9 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
    * Distinguishes `present` / `resolving` / `absent` for a {@link PObjectId}
    * in the active render ctx. Falls back to the registry's `isFinal()`
    * when the id has no entry — only then we can say `absent` instead of
-   * `resolving`.
+   * `resolving`. The status tells only whether the spec is readable: for an
+   * export that is not a column it is `present`, and the factories return
+   * `undefined`.
    */
   static getStatusById(
     id: PObjectId,
@@ -305,6 +273,13 @@ const readSpecAccessor = memoizeByEntry(
   ({ accessor, name }: LeafEntry<TreeNodeAccessor>): undefined | TreeNodeAccessor =>
     accessor.traverse({ field: `${name}.spec`, assertFieldType: "Input", ignoreError: true }),
 );
+
+/** The leaf's spec, or `undefined` until the spec resource has data. */
+const readSpec = memoizeByEntry((entry: LeafEntry<TreeNodeAccessor>): undefined | PObjectSpec => {
+  const spec = readSpecAccessor(entry);
+  if (isNil(spec) || !spec.hasData()) return undefined;
+  return spec.getDataAsJson<PObjectSpec>();
+});
 
 /**
  * Per-entry counterpart to {@link readDataStatus}: tells whether the leaf's

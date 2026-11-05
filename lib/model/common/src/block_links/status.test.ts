@@ -1,0 +1,326 @@
+import { describe, expect, test, vi } from "vitest";
+import {
+  Annotation,
+  collectColumnReferences,
+  createColumnFilteredId,
+  createColumnValueId,
+  type PColumnSpec,
+} from "../drivers";
+import { createGlobalPObjectId, createLocalPObjectId } from "../pool";
+import { createPlRef } from "../ref";
+import {
+  checkExport,
+  collectOutgoingReferences,
+  producerRunState,
+  missingValues,
+  readExportValues,
+  type ExportLookup,
+  type ExportData,
+  type ExportValues,
+  type JsonDataNode,
+} from "./status";
+
+const condition = createGlobalPObjectId("samples", "metadata.condition");
+
+describe("collectOutgoingReferences", () => {
+  test("names the producer and output of each referenced column, with the picked values", () => {
+    const args = {
+      condition: createPlRef("samples", "metadata.condition", true),
+      levels: [
+        createColumnValueId({ column: condition, value: "treated" }),
+        createColumnValueId({ column: condition, value: "1" }),
+      ],
+      dataset: createPlRef("mixcr", "clones"),
+    };
+
+    expect(collectOutgoingReferences(collectColumnReferences(args))).toEqual([
+      {
+        producer: { blockId: "samples", name: "metadata.condition" },
+        ref: condition,
+        values: ["treated", "1"],
+      },
+      {
+        producer: { blockId: "mixcr", name: "clones" },
+        ref: createGlobalPObjectId("mixcr", "clones"),
+        values: null,
+      },
+    ]);
+  });
+
+  test("a filtered column is produced by the block exporting its leaf", () => {
+    const filtered = createColumnFilteredId({ source: condition, axisFilters: [[0, "s1"]] });
+
+    expect(collectOutgoingReferences(collectColumnReferences({ filtered }))).toEqual([
+      {
+        producer: { blockId: "samples", name: "metadata.condition" },
+        ref: filtered,
+        values: null,
+      },
+    ]);
+  });
+
+  test("a column local to the block is not a reference to another block", () => {
+    const local = createLocalPObjectId(["main", "outputs"], "table");
+
+    expect(collectOutgoingReferences(collectColumnReferences({ local }))).toEqual([]);
+  });
+});
+
+describe("producerRunState", () => {
+  const locked = (ctx: string) => ctx === "locked";
+
+  test("a block with no last run has not run", () => {
+    expect(producerRunState({ type: "notRun" }, locked)).toBe("notRun");
+  });
+
+  test("a run whose results are still rendering may export more", () => {
+    expect(producerRunState({ type: "rendering" }, locked)).toBe("open");
+  });
+
+  test("a run whose results failed to render exports nothing more", () => {
+    expect(producerRunState({ type: "failed" }, locked)).toBe("final");
+  });
+
+  test("a run whose result list is open may export more", () => {
+    expect(producerRunState({ type: "rendered", ctx: "open" }, locked)).toBe("open");
+  });
+
+  test("a run whose result list is locked is settled", () => {
+    expect(producerRunState({ type: "rendered", ctx: "locked" }, locked)).toBe("final");
+  });
+});
+
+describe("checkExport", () => {
+  test("a missing export is unavailable", () => {
+    expect(checkExport(() => ({ type: "unavailable" }), ["a"])).toEqual({
+      check: { type: "unavailable" },
+      columnLabel: null,
+    });
+  });
+
+  test("an export of a block with no last run is not run", () => {
+    expect(checkExport(() => ({ type: "notRun" }), ["a"])).toEqual({
+      check: { type: "notRun" },
+      columnLabel: null,
+    });
+  });
+
+  test("an export still computing is pending", () => {
+    expect(checkExport(() => ({ type: "pending" }), null)).toEqual({
+      check: { type: "pending" },
+      columnLabel: null,
+    });
+  });
+
+  test("a column used as a whole is ok without reading its values", () => {
+    const readValues = vi.fn((): ExportValues => ({ type: "unreadable" }));
+
+    expect(checkExport(() => present({ readValues, columnLabel: "Condition" }), null)).toEqual({
+      check: { type: "ok" },
+      columnLabel: "Condition",
+    });
+    expect(readValues).not.toHaveBeenCalled();
+  });
+
+  test("picked values all present are ok", () => {
+    expect(checkExport(() => present({ cells: ["a", "b"] }), ["b", "a"]).check).toEqual({
+      type: "ok",
+    });
+  });
+
+  test("a value picked from a number cell matches the cell", () => {
+    expect(checkExport(() => present({ cells: [1, "2"] }), ["1", "2"]).check).toEqual({
+      type: "ok",
+    });
+  });
+
+  test("a string spelling a number differently is a different value", () => {
+    expect(checkExport(() => present({ cells: [1] }), ["1.0"]).check).toEqual({
+      type: "missingValues",
+      values: ["1.0"],
+    });
+  });
+
+  test("null cells hold no value, not even the string null", () => {
+    expect(checkExport(() => present({ cells: [null, "a"] }), ["null", "a"]).check).toEqual({
+      type: "missingValues",
+      values: ["null"],
+    });
+  });
+
+  test("missing values come in picked order", () => {
+    expect(checkExport(() => present({ cells: ["b"] }), ["c", "b", "a"]).check).toEqual({
+      type: "missingValues",
+      values: ["c", "a"],
+    });
+  });
+
+  test("values still loading are pending", () => {
+    expect(
+      checkExport(() => present({ readValues: () => ({ type: "pending" }) }), ["a"]).check,
+    ).toEqual({ type: "pending" });
+  });
+
+  test("values that cannot be read are unreadable", () => {
+    expect(
+      checkExport(() => present({ readValues: () => ({ type: "unreadable" }) }), ["a"]).check,
+    ).toEqual({ type: "unreadable" });
+  });
+
+  test("a failing lookup is unreadable", () => {
+    const lookup = (): ExportLookup => {
+      throw new Error("boom");
+    };
+
+    expect(checkExport(lookup, ["a"])).toEqual({
+      check: { type: "unreadable" },
+      columnLabel: null,
+    });
+  });
+
+  test("failing to read values is unreadable and keeps the column label", () => {
+    const readValues = (): ExportValues => {
+      throw new Error("out of memory");
+    };
+
+    expect(checkExport(() => present({ readValues, columnLabel: "Condition" }), ["a"])).toEqual({
+      check: { type: "unreadable" },
+      columnLabel: "Condition",
+    });
+  });
+});
+
+describe("missingValues", () => {
+  test("cells of other types hold no pickable value", () => {
+    expect(missingValues(["true", "1"], [true, { v: 1 }, Number.NaN])).toEqual(["true", "1"]);
+  });
+});
+
+describe("readExportValues", () => {
+  test("discrete values in the spec are used without touching the data", () => {
+    const readData = vi.fn((): ExportData => ({ type: "absent" }));
+
+    expect(readExportValues(specWith({ discreteValues: ["a", "b"] }), readData)).toEqual({
+      type: "known",
+      cells: ["a", "b"],
+    });
+    expect(readData).not.toHaveBeenCalled();
+  });
+
+  test("JSON data yields its cells", () => {
+    const data = jsonNode({
+      resourceType: "PColumnData/Json",
+      content: { keyLength: 1, data: { '["s1"]': "a", '["s2"]': 2, '["s3"]': null } },
+    });
+
+    expect(readExportValues(specWith({}), () => ({ type: "present", node: data }))).toEqual({
+      type: "known",
+      cells: ["a", 2, null],
+    });
+  });
+
+  test("JSON data not yet computed is pending", () => {
+    const data = jsonNode({ resourceType: "PColumnData/Json", content: undefined });
+
+    expect(readExportValues(specWith({}), () => ({ type: "present", node: data }))).toEqual({
+      type: "pending",
+    });
+  });
+
+  test("JSON data whose resource is not ready is pending, without reading it", () => {
+    const getDataAsJson = vi.fn(() => ({ data: {} }));
+    const data: JsonDataNode = {
+      resourceType: { name: "PColumnData/Json" },
+      getIsReadyOrError: () => false,
+      getError: () => undefined,
+      getDataAsJson,
+    };
+
+    expect(readExportValues(specWith({}), () => ({ type: "present", node: data }))).toEqual({
+      type: "pending",
+    });
+    expect(getDataAsJson).not.toHaveBeenCalled();
+  });
+
+  test("JSON data that failed to compute leaves picked values unreadable", () => {
+    const data: JsonDataNode = {
+      resourceType: { name: "PColumnData/Json" },
+      getIsReadyOrError: () => true,
+      getError: () => ({ message: "failed" }),
+      getDataAsJson: () => undefined,
+    };
+    const readValues = () =>
+      readExportValues(specWith({}), () => ({ type: "present", node: data }));
+
+    expect(checkExport(() => present({ readValues }), ["a"]).check).toEqual({ type: "unreadable" });
+  });
+
+  test("JSON data of an unexpected shape is unreadable", () => {
+    const data = jsonNode({ resourceType: "PColumnData/Json", content: [1, 2] });
+
+    expect(readExportValues(specWith({}), () => ({ type: "present", node: data }))).toEqual({
+      type: "unreadable",
+    });
+  });
+
+  test("partitioned JSON data is unreadable: its parts are files", () => {
+    const data = jsonNode({ resourceType: "PColumnData/JsonPartitioned", content: undefined });
+
+    expect(readExportValues(specWith({}), () => ({ type: "present", node: data }))).toEqual({
+      type: "unreadable",
+    });
+  });
+
+  test("binary data is unreadable", () => {
+    const data = jsonNode({ resourceType: "PColumnData/BinaryPartitioned", content: undefined });
+
+    expect(readExportValues(specWith({}), () => ({ type: "present", node: data }))).toEqual({
+      type: "unreadable",
+    });
+  });
+
+  test("data not yet attached is pending", () => {
+    expect(readExportValues(specWith({}), () => ({ type: "pending" }))).toEqual({
+      type: "pending",
+    });
+  });
+
+  test("data the run left out of the results block UIs read is unreadable", () => {
+    expect(readExportValues(specWith({}), () => ({ type: "absent" }))).toEqual({
+      type: "unreadable",
+    });
+  });
+});
+
+// Internals
+
+function present(
+  props:
+    | { cells: readonly unknown[]; columnLabel?: string }
+    | { readValues: () => ExportValues; columnLabel?: string },
+): ExportLookup {
+  const readValues =
+    "readValues" in props
+      ? props.readValues
+      : (): ExportValues => ({ type: "known", cells: props.cells });
+  return { type: "present", columnLabel: props.columnLabel ?? null, readValues };
+}
+
+function specWith(props: {
+  discreteValues?: (string | number)[];
+}): Pick<PColumnSpec, "annotations"> {
+  const annotations: Record<string, string> = {};
+  if (props.discreteValues !== undefined) {
+    annotations[Annotation.DiscreteValues] = JSON.stringify(props.discreteValues);
+  }
+  return { annotations };
+}
+
+function jsonNode(props: { resourceType: string; content: unknown }): JsonDataNode {
+  return {
+    resourceType: { name: props.resourceType },
+    getIsReadyOrError: () => true,
+    getError: () => undefined,
+    getDataAsJson: () => props.content,
+  };
+}

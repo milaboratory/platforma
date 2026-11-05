@@ -1,0 +1,8 @@
+// Imports the V1 entry, then the v2 one.
+v1 := import("@platforma-sdk/workflow-tengo:workflow")
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+
+wf.body(func(args) {
+	return { outputs: { ran: true }, exports: ex.collection({}) }
+})

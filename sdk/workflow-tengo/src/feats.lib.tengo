@@ -64,6 +64,9 @@ export ll.toStrict({
 	// true when backend supports blob size retrieval via ll.getBlobSize()
 	hasBlobSize:            ll.methodExists(plapi, "getBlobSize"),
 
+	// true when backend supports gzip compression via ll.gzipEncode()
+	hasGzip:                ll.methodExists(plapi, "gzipEncode"),
+
 	// true when backend supports docker packages
 	isDockerAvailable:        _isEnabled("dockerSupport"),
 
@@ -103,5 +106,13 @@ export ll.toStrict({
 	// and later) already give final canonical IDs.
 	canonicalIdExposure:      _isEnabled("canonicalIDExposure") ||
 		_isEnabled("supportsScratchSpaceRequests") ||
-		_isEnabled("scratchSpace")
+		_isEnabled("scratchSpace"),
+
+	// true when tx.resourceKeyValueSetAsync is available: a resource metadata set applied after the commit.
+	kvAsync:                  _isEnabled("kvAsync"),
+
+	// true when a resource schema can declare fields optional, so templates create them in the transaction
+	// that creates the resource, before an explicit lock (e.g. the "actionContext" link of block action
+	// context). "optionalServiceField" is its former name.
+	optionalFieldsInSchemas:  _isEnabled("optionalFieldsInSchemas") || _isEnabled("optionalServiceField")
 })

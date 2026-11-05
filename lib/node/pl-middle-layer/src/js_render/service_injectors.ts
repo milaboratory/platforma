@@ -18,6 +18,7 @@ import type {
   PColumnSpec,
   PColumnValues,
   PObjectId,
+  PObjectSpec,
   PTableColumnId,
   PTableColumnSpec,
   PTableRecordFilter,
@@ -208,7 +209,7 @@ export function getServiceInjectors(): ServiceInjectorMap {
             assertFieldType: "Input",
             ignoreError: true,
           });
-          return specNode?.getDataAsJson<PColumnSpec>();
+          return specNode?.getDataAsJson<PObjectSpec>();
         },
       };
 
@@ -227,7 +228,9 @@ export function getServiceInjectors(): ServiceInjectorMap {
           ),
 
         isEmpty: (handle: QuickJSHandle) =>
-          vm.exportSingleValue(driver.isEmpty(vm.vm.getString(handle) as CollectionHandle)),
+          vm.exportSingleValue(
+            driver.isEmpty(vm.vm.getString(handle) as CollectionHandle, bindings),
+          ),
 
         isFinal: (handle: QuickJSHandle) =>
           vm.exportSingleValue(driver.isFinal(vm.vm.getString(handle) as CollectionHandle)),

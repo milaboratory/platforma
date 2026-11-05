@@ -1,0 +1,21 @@
+// tree-root: renders tree with a new action context, as the middle layer does for the root render of a block
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+self.defineOutputs(["context", "child", "childBaggage"])
+
+self.body(func(inputs) {
+	inner := render.createEphemeral(
+		assets.importTemplate(":action-context.tree"),
+		{},
+		{ actionContext: { "name": "root", "block-id": "block-1", "run-id": "run-1" } }
+	)
+
+	return {
+		context: inner.output("context"),
+		child: inner.output("child"),
+		childBaggage: inner.output("childBaggage")
+	}
+})

@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder-lib
 
+## 1.4.3
+
+### Patch Changes
+
+- 0c111b5: The conda Dockerfile retries the yq download instead of hanging up to 15 minutes on one stalled connection.
+
 ## 1.4.2
 
 ### Patch Changes

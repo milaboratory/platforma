@@ -1,0 +1,38 @@
+// The UI export of one collection (`PFrame/1`) of a platforma2 workflow's exports: once the
+// collection is input-locked and its specs are ready, the frame `:pframes.export-pframe` makes of it.
+// Data already resolved to the no-result marker (a value passed on without data) is left out, so the
+// value is exported as spec-only. A resolver writes a value's spec and the marker in one transaction,
+// so by the time the specs are ready such data has resolved; data still pending is linked as is.
+//
+// Unstable, as every `:v2.*` module.
+
+text := import("text")
+smart := import(":smart")
+constants := import(":constants")
+exportPFrame := import(":pframes.export-pframe")
+rules := import(":v2.node-rules")
+self := import(":tpl")
+
+self.awaitState("pf", "InputsLocked")
+self.awaitState("pf", { match: "\\.spec$" }, "ResourceReady")
+
+self.body(func(_) {
+	collection := self.rawInputs().pf.getValue()
+
+	b := smart.structBuilder(rules.COLLECTION_TYPE)
+	for name, field in collection.inputs() {
+		if !field.isSet() || field.isErrorSet() {
+			b.createInputField(name).set(field)
+			continue
+		}
+		value := field.getValue()
+		if text.has_suffix(name, ".data") && value.checkResourceType(constants.RTYPE_BRESOLVE_NO_RESULT) {
+			continue
+		}
+		b.createInputField(name).set(value)
+	}
+
+	return {
+		result: exportPFrame.exportPFrame(b.lockAndBuild(), true)
+	}
+})
