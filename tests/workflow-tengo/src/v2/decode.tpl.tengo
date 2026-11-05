@@ -1,0 +1,31 @@
+// Receives query results as inputs (decoded by the template framework) and describes each decoded
+// value as JSON: its keys, its ref, its spec name and the state of its data.
+//
+// It awaits only what decoding needs, never the data itself, so data that is still pending reaches
+// the decoder as it is: for a single result (resolve) its spec and ref; for a multi result (query)
+// its spec and that its data map, when requested, is set (the decoder reads the map's entries).
+//
+// Inputs:  items   — map of label to a single query result
+//          choices — map of label to a multi query result
+// Outputs: out     — JSON { <label>: description | [description...] | "none" }
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+describe := import(":v2.describe")
+
+self.awaitState("items", { wildcard: "*" }, "spec", "ResourceReady")
+self.awaitState("items", { wildcard: "*" }, { match: "^ref$" }, "ResourceReady")
+self.awaitState("choices", { wildcard: "*" }, "spec", "ResourceReady")
+self.awaitState("choices", { wildcard: "*" }, { match: "^data$" }, "Set")
+
+self.body(func(inputs) {
+	out := {}
+	for label, value in inputs.items {
+		out[label] = describe.value(value)
+	}
+	for label, value in inputs.choices {
+		out[label] = describe.value(value)
+	}
+	return { out: smart.createJsonResource(out) }
+})

@@ -1,0 +1,17 @@
+// Both entries and a prepare step: the body is never reached, so the check runs before it.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+v1 := import("@platforma-sdk/workflow-tengo:workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+wf.prepare(func(args) {
+	if args.never {
+		// a field nothing ever sets: the prepare step never completes
+		return { x: smart.ephemeralMapBuilder().buildUnlocked().getFutureInputField("never") }
+	}
+	return { x: smart.createJsonResource(1) }
+})
+
+wf.body(func(args) {
+	return { outputs: { ran: true }, exports: ex.collection({}) }
+})

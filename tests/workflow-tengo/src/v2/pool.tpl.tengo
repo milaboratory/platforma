@@ -1,0 +1,54 @@
+// A producer of a pool of values for queries: every spec carries the producing block's id as the
+// domain "pl7.app/test/set", so a query can select this producer's values.
+//   numbers      — has data (args.numbers)
+//   label        — spec only
+//   humanCounts  — has data [1], context domain species=human
+//   mouseCounts  — has data [2], context domain species=mouse
+//   pending      — (args.withPending) data that never resolves: a field of an unlocked resource
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+columnSpec := func(set, name, valueType, ...contextDomain) {
+	s := {
+		kind: "PColumn",
+		name: name,
+		valueType: valueType,
+		domain: { "pl7.app/test/set": set },
+		axesSpec: [{ name: "pl7.app/test/index", type: "Int" }]
+	}
+	if len(contextDomain) > 0 {
+		s.contextDomain = contextDomain[0]
+	}
+	return s
+}
+
+wf.body(func(args) {
+	set := wf.getBlockId()
+	items := {
+		numbers: {
+			spec: columnSpec(set, "pl7.app/test/numbers", "Int"),
+			data: smart.createJsonResource(args.numbers)
+		},
+		label: { spec: columnSpec(set, "pl7.app/test/label", "String") },
+		humanCounts: {
+			spec: columnSpec(set, "pl7.app/test/counts", "Int", { species: "human" }),
+			data: smart.createJsonResource([1])
+		},
+		mouseCounts: {
+			spec: columnSpec(set, "pl7.app/test/counts", "Int", { species: "mouse" }),
+			data: smart.createJsonResource([2])
+		}
+	}
+	if args.withPending == true {
+		holder := smart.ephemeralBuilder({ Name: "TestPendingHolder", Version: "1" }).buildUnlocked()
+		items.pending = {
+			spec: columnSpec(set, "pl7.app/test/pending", "Int"),
+			data: holder.getFutureInputField("never")
+		}
+	}
+	return {
+		outputs: {},
+		exports: ex.collection(items)
+	}
+})

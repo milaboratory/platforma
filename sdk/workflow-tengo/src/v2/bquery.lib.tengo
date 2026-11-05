@@ -1,0 +1,9 @@
+/*
+ * The query API of the BContext/2 family (platforma2): `{create, resolve, anchoredQuery}`, the same
+ * functions as `:workflow.bquery`, creating BResolveSingle/2 and BResolveChoice/2. See
+ * `:workflow.bquery`'s `forFamily` and `resultUnmarshaller`.
+ */
+
+bquery := import(":workflow.bquery")
+
+export bquery.forFamily(2)

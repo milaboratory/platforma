@@ -40,6 +40,12 @@
 
   &__icon {
     width: 24px;
+    height: 24px;
+    --icon-color: var(--ic-01);
+
+    &--text {
+      margin-top: -2px;
+    }
   }
 
   &__main {
