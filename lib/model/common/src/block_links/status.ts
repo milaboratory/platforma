@@ -1,0 +1,183 @@
+import { isPlainObject, isString } from "es-toolkit";
+import {
+  Annotation,
+  columnProducer,
+  readAnnotationJson,
+  type ColumnReference,
+  type ColumnValue,
+  type PColumnSpec,
+} from "../drivers";
+import type { ExportVerdict, LinkCheck, OutgoingReference } from "./types";
+
+/** What the last run of a block exports under one output name. */
+export type ExportLookup =
+  | Extract<LinkCheck, { type: "unavailable" | "pending" | "notRun" }>
+  | { type: "present"; columnLabel: null | string; readValues: () => ExportValues };
+
+/** Cell values of an exported column, as far as they can be read. */
+export type ExportValues =
+  | { type: "known"; cells: readonly unknown[] }
+  | Extract<LinkCheck, { type: "pending" | "unreadable" }>;
+
+/**
+ * Every column of another block among `references`, in their order. A column local to the
+ * block, or one whose id names no producer, is not a reference to another block and is skipped.
+ */
+export function collectOutgoingReferences(
+  references: readonly ColumnReference[],
+): OutgoingReference[] {
+  const outgoing: OutgoingReference[] = [];
+  for (const { ref, values } of references) {
+    const producer = columnProducer(ref);
+    if (producer === undefined) continue;
+    outgoing.push({ producer, ref, values });
+  }
+  return outgoing;
+}
+
+/**
+ * The last run of a block, as far as what it exports goes:
+ * - `notRun` — the block has no last run;
+ * - `rendering` — the block has a last run whose results are not there yet;
+ * - `failed` — the results of the last run failed to render, so the run exports nothing;
+ * - `rendered` — `ctx` holds the results of the last run.
+ */
+export type ProducerRun<A> =
+  | { type: "notRun" }
+  | { type: "rendering" }
+  | { type: "failed" }
+  | { type: "rendered"; ctx: A };
+
+/**
+ * How far the last run of a block has listed its exports: `notRun` — the block has no last run,
+ * so it exports nothing until it runs; `open` — its results are still being rendered, or their
+ * list is still open, so it may export more; `final` — it has listed everything it exports.
+ */
+export function producerRunState<A>(
+  run: ProducerRun<A>,
+  inputsLocked: (ctx: A) => boolean,
+): "notRun" | "open" | "final" {
+  switch (run.type) {
+    case "notRun":
+      return "notRun";
+    case "rendering":
+      return "open";
+    case "failed":
+      return "final";
+    case "rendered":
+      return inputsLocked(run.ctx) ? "final" : "open";
+  }
+}
+
+/**
+ * Checks `picked` values against the export `lookup` finds. `null` picks the column as a whole,
+ * so only the export's presence matters. Any error while looking up or reading leaves the
+ * reference `unreadable`: one unreadable column does not hide the state of the others.
+ */
+export function checkExport(
+  lookup: () => ExportLookup,
+  picked: null | readonly ColumnValue[],
+): ExportVerdict {
+  let columnLabel: null | string = null;
+  try {
+    const found = lookup();
+    if (found.type !== "present") return { check: found, columnLabel };
+    columnLabel = found.columnLabel;
+    if (picked === null) return { check: { type: "ok" }, columnLabel };
+
+    const values = found.readValues();
+    if (values.type !== "known") return { check: values, columnLabel };
+
+    const missing = missingValues(picked, values.cells);
+    if (missing.length === 0) return { check: { type: "ok" }, columnLabel };
+    return { check: { type: "missingValues", values: missing }, columnLabel };
+  } catch {
+    return { check: { type: "unreadable" }, columnLabel };
+  }
+}
+
+/**
+ * Picked values the cells do not hold, in picked order. A number cell holds its decimal string,
+ * the form a value is picked in. Null cells, and cells other than strings and finite numbers,
+ * hold no value that can be picked.
+ */
+export function missingValues(
+  picked: readonly ColumnValue[],
+  cells: readonly unknown[],
+): ColumnValue[] {
+  const present = new Set<string>();
+  for (const cell of cells) {
+    const key = valueKey(cell);
+    if (key !== undefined) present.add(key);
+  }
+  return picked.filter((value) => !present.has(value));
+}
+
+/** The data node surface {@link readExportValues} reads. */
+export interface JsonDataNode {
+  readonly resourceType: { readonly name: string };
+  /** Whether the resource is ready or failed; a computation that reads it re-runs when this changes. */
+  getIsReadyOrError(): boolean;
+  /** The error of a failed resource; `undefined` when it has none. */
+  getError(): unknown;
+  /** `undefined` while the resource holds no data. */
+  getDataAsJson(): unknown;
+}
+
+/**
+ * The data of an exported column as a run holds it: still to arrive, left out of the results
+ * block UIs read, or there.
+ */
+export type ExportData =
+  | { type: "pending" }
+  | { type: "absent" }
+  | { type: "present"; node: JsonDataNode };
+
+/**
+ * Cell values of an exported column: those the `pl7.app/discreteValues` annotation lists, when
+ * the spec has it, else those read from the data. Only data stored inline as JSON
+ * (`PColumnData/Json`) is read. Partitioned JSON keeps its parts in files, and binary and parquet
+ * data cannot be read here either.
+ */
+export function readExportValues(
+  spec: Pick<PColumnSpec, "annotations">,
+  readData: () => ExportData,
+): ExportValues {
+  const discrete = readAnnotationJson(spec, Annotation.DiscreteValues);
+  if (discrete !== undefined) return { type: "known", cells: discrete };
+
+  const data = readData();
+  switch (data.type) {
+    case "pending":
+      return { type: "pending" };
+    case "absent":
+      return { type: "unreadable" };
+    case "present":
+      return data.node.resourceType.name === RT_JSON
+        ? readJsonData(data.node)
+        : { type: "unreadable" };
+  }
+}
+
+// Internals
+
+const RT_JSON = "PColumnData/Json";
+
+function valueKey(cell: unknown): string | undefined {
+  if (isString(cell)) return cell;
+  if (typeof cell === "number" && Number.isFinite(cell)) return String(cell);
+  return undefined;
+}
+
+/**
+ * A JSON data resource holds its cells under `data`, keyed by the serialized axis values. Its
+ * data is there once the resource is ready; a failed resource has none to read.
+ */
+function readJsonData(node: JsonDataNode): ExportValues {
+  if (!node.getIsReadyOrError()) return { type: "pending" };
+  if (node.getError() !== undefined) throw new Error("The column data failed to compute");
+  const content = node.getDataAsJson();
+  if (content === undefined) return { type: "pending" };
+  if (!isPlainObject(content) || !isPlainObject(content.data)) return { type: "unreadable" };
+  return { type: "known", cells: Object.values(content.data) };
+}

@@ -129,9 +129,9 @@ export class AccessorColumnsProviderImpl
 
   getColumns(): DataColumnRecipe<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
-    return (this.cachedColumns = Array.from(this.entries.values())
-      .map((e) => DataColumn.fromAccessor(e))
-      .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v)));
+    return (this.cachedColumns = Array.from(this.entries.values(), DataColumn.fromAccessor).filter(
+      (column) => column !== undefined,
+    ));
   }
 }
 
@@ -173,9 +173,10 @@ export class ResultPoolColumnsProviderImpl
 
   getColumns(): DataColumnRecipe<PObjectId>[] {
     if (this.cachedColumns !== undefined) return this.cachedColumns;
-    return (this.cachedColumns = Array.from(this.getPObjectEntries().values())
-      .map((e) => DataColumn.fromAccessor(e))
-      .filter((v): v is DataColumnRecipe<PObjectId> => !isNil(v)));
+    return (this.cachedColumns = Array.from(
+      this.getPObjectEntries().values(),
+      DataColumn.fromAccessor,
+    ).filter((column) => column !== undefined));
   }
 }
 

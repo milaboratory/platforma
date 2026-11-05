@@ -152,21 +152,26 @@ export const foldersFieldFilter: Filter = treeFilter.resourceTypeEq(FoldersResou
 export async function createFolderList(
   pl: PlClient,
   rid: SignedResourceId,
-  projectsTree: SynchronizedTreeState,
-  templatesTree: SynchronizedTreeState,
+  projectsTreeP: Promise<SynchronizedTreeState>,
+  templatesTreeP: Promise<SynchronizedTreeState>,
   openedProjects: WatchableValue<ProjectId[]>,
   env: MiddleLayerEnvironment,
 ): Promise<TreeAndComputableU<FoldersListing>> {
-  const tree = await SynchronizedTreeState.init(
-    pl,
-    rid,
-    {
-      ...env.ops.defaultTreeOptions,
-      pruning: FoldersTreePruningFunction,
-      fieldFilter: foldersFieldFilter,
-    },
-    env.logger,
-  );
+  // The other two trees are promises so the folder tree loads alongside them, not after them.
+  const [tree, projectsTree, templatesTree] = await Promise.all([
+    SynchronizedTreeState.init(
+      pl,
+      rid,
+      {
+        ...env.ops.defaultTreeOptions,
+        pruning: FoldersTreePruningFunction,
+        fieldFilter: foldersFieldFilter,
+      },
+      env.logger,
+    ),
+    projectsTreeP,
+    templatesTreeP,
+  ]);
 
   const c = Computable.make((ctx) => {
     const projectsNode = ctx.accessor(projectsTree.entry()).node();

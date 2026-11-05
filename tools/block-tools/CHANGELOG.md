@@ -1,5 +1,43 @@
 # @platforma-sdk/block-tools
 
+## 2.17.5
+
+### Patch Changes
+
+- Updated dependencies [0c111b5]
+  - @platforma-sdk/package-builder-lib@1.4.3
+
+## 2.17.4
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.42
+
+## 2.17.3
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+  - @milaboratories/pl-model-middle-layer@1.35.0
+  - @milaboratories/pl-model-backend@1.4.41
+
+## 2.17.2
+
+### Patch Changes
+
+- 6a0d1d0: Fix `structure init`, which failed in 2.17.0 with `ENOENT` on `templates/static/root/.gitignore`. pnpm 11+ leaves every `.gitignore` file out of a packed package, so 2.17.0 was published without this template. The template is now named `gitignore` (no dot). `structure init` still writes `.gitignore` in the new block.
+
+## 2.17.1
+
+### Patch Changes
+
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-model-common@1.54.2
+  - @milaboratories/pl-model-middle-layer@1.34.6
+  - @milaboratories/pl-model-backend@1.4.40
+
 ## 2.17.0
 
 ### Minor Changes

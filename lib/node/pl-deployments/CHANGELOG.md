@@ -1,5 +1,20 @@
 # @milaboratories/pl-local
 
+## 3.0.25
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+
+## 3.0.24
+
+### Patch Changes
+
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-model-common@1.54.2
+
 ## 3.0.23
 
 ### Patch Changes

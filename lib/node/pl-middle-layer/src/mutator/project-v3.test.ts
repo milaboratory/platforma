@@ -1,7 +1,9 @@
-import { field, poll, TestHelpers, toGlobalResourceId } from "@milaboratories/pl-client";
+import { field, Pl, poll, TestHelpers, toGlobalResourceId } from "@milaboratories/pl-client";
+import { canonicalJsonBytes } from "@milaboratories/ts-helpers";
 import { getQuickJS } from "quickjs-emscripten";
 import { expect, test } from "vitest";
 import { outputRef } from "../model/args";
+import { argsFingerprint } from "../model/args_derivation";
 import { ProjectHelper } from "../model/project_helper";
 import { blockArgsAuthorKey, projectFieldName } from "../model/project_model";
 import { TestBPPreparer } from "../test/block_packs";
@@ -622,3 +624,105 @@ test("v3 blocks: migrateBlockPack does not crash when args() returns undefined",
     });
   });
 });
+
+test("v3 blocks: every args derivation records the errors found in the args, none when there are none", async () => {
+  const quickJs = await getQuickJS();
+
+  await TestHelpers.withTempRoot(async (pl) => {
+    const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
+      const prjRef = await createProject(tx);
+      tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
+      await tx.commit();
+      return await toGlobalResourceId(prjRef);
+    });
+
+    await pl.withWriteTx("AddBlock", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.addBlock(
+        { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
+        { storageMode: "fromModel", blockPack: await TestBPPreparer.prepare(BPSpecEnterV3) },
+      );
+      mut.setStates([
+        {
+          modelAPIVersion: 2,
+          blockId: "enter1",
+          payload: { operation: "update-block-data", value: { numbers: [3, 1, 2] } },
+        },
+      ]);
+      mut.save();
+      await tx.commit();
+    });
+
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+      const record = await prjR.get(projectFieldName("enter1", "inputsValid"));
+      expect(jsonOf(record.data.data)).toStrictEqual({
+        argsFingerprint: argsFingerprint({ numbers: [1, 2, 3] }),
+        errors: [],
+      });
+    });
+  });
+});
+
+test("v3 blocks: args without an args errors record of their own are kept and run, as before the record", async () => {
+  const quickJs = await getQuickJS();
+
+  await TestHelpers.withTempRoot(async (pl) => {
+    const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
+      const prjRef = await createProject(tx);
+      tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
+      await tx.commit();
+      return await toGlobalResourceId(prjRef);
+    });
+
+    await pl.withWriteTx("AddBlock", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.addBlock(
+        { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
+        { storageMode: "fromModel", blockPack: await TestBPPreparer.prepare(BPSpecEnterV3) },
+      );
+      mut.setStates([
+        {
+          modelAPIVersion: 2,
+          blockId: "enter1",
+          payload: { operation: "update-block-data", value: { numbers: [3, 1, 2] } },
+        },
+      ]);
+      mut.save();
+      await tx.commit();
+    });
+
+    // What a middle layer that does not record args errors leaves behind: current args it wrote
+    // itself, and no record of their args errors.
+    await pl.withWriteTx("WriteArgsWithoutRecord", async (tx) => {
+      tx.removeField(field(prj, projectFieldName("enter1", "inputsValid")));
+      tx.setField(
+        field(prj, projectFieldName("enter1", "currentArgs")),
+        tx.createValue(Pl.JsonObject, canonicalJsonBytes({ numbers: [9] })),
+      );
+      await tx.commit();
+    });
+
+    await pl.withWriteTx("Run", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.renderProduction(["enter1"]);
+      mut.save();
+      await tx.commit();
+    });
+
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+      const currentArgs = await prjR.get(projectFieldName("enter1", "currentArgs"));
+      expect(jsonOf(currentArgs.data.data)).toStrictEqual({ numbers: [9] });
+      const prodArgs = await prjR.get(projectFieldName("enter1", "prodArgs"));
+      expect(jsonOf(prodArgs.data.data)).toStrictEqual({ numbers: [9] });
+    });
+  });
+});
+
+// Internals
+
+function jsonOf(data: Uint8Array | undefined): unknown {
+  if (data === undefined) throw new Error("The field holds no data");
+  return JSON.parse(Buffer.from(data).toString());
+}
