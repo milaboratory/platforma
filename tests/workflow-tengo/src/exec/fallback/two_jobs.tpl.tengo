@@ -1,0 +1,35 @@
+/**
+ * Two execs with different roots sharing one handler builder (exec fallbacks, AC2.5): each keeps
+ * its own history.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["outA", "outB", "attemptsA", "attemptsB"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	shell := func(script) {
+		return exec.builder().
+			cpu(1).ram("50Mi").
+			software(shellSw).
+			arg("-c").
+			arg(script + " # " + inputs.nonce).
+			inLightQueue().
+			saveFileContent("out.txt")
+	}
+
+	ok := shell("echo ok > out.txt")
+	a := shell("echo a > out.txt; exit 2").fallbacks({ SoftwareError: [{ exitCode: 2, name: "ok", builder: ok }] }).run()
+	b := shell("echo b > out.txt; exit 2").fallbacks({ SoftwareError: [{ exitCode: 2, name: "ok", builder: ok }] }).run()
+
+	return {
+		outA: a.getFileContent("out.txt"),
+		outB: b.getFileContent("out.txt"),
+		attemptsA: a.getAttempts(),
+		attemptsB: b.getAttempts()
+	}
+})

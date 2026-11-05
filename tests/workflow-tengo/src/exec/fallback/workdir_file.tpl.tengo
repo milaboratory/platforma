@@ -1,0 +1,31 @@
+/**
+ * An exec saving a file named `workdir`, the key WorkdirSave v3 reserves for the directory's own
+ * outcome: saved directly, it saves with WorkdirSave v1; matched by a file set, it is saved under
+ * another key and mapped back. Both work as before.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["out", "set"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	res := exec.builder().
+		cpu(1).ram("50Mi").
+		software(shellSw).
+		arg("-c").arg("echo named > workdir # " + inputs.nonce).
+		inLightQueue().
+		saveFileContent("workdir").
+		run()
+	files := exec.builder().
+		cpu(1).ram("50Mi").
+		software(shellSw).
+		arg("-c").arg("echo named > workdir; echo a > a.txt # " + inputs.nonce).
+		inLightQueue().
+		saveFileSet("set", "^(workdir|a\\.txt)$").
+		run()
+	return { out: res.getFileContent("workdir"), set: files.getFileSet("set") }
+})

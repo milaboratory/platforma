@@ -7,13 +7,30 @@ import type { MiLogger } from "@milaboratories/ts-helpers";
 import type { DownloadDriver } from "./download_blob/download_blob";
 import { isLiveLogHandle } from "./helpers/logs_handle";
 import { isNotFoundError } from "@milaboratories/pl-client";
+import { isCompositeLogHandle } from "@milaboratories/pl-model-common";
+import {
+  CompositeLogReader,
+  getCompositeLogHandle,
+  isStreamCollection,
+  isNotWrittenStandIn,
+  isStreamWorkdir,
+} from "./logs_composite";
 
 export class LogsDriver implements sdk.LogsDriver {
+  private readonly compositeReader: CompositeLogReader;
+
   constructor(
     private readonly logger: MiLogger,
     private readonly logsStreamDriver: LogsStreamDriver,
     private readonly downloadDriver: DownloadDriver,
-  ) {}
+  ) {
+    this.compositeReader = new CompositeLogReader({
+      lastLines: (handle, lineCount, offsetBytes, searchStr) =>
+        this.singleLastLines(handle, lineCount, offsetBytes, searchStr),
+      readText: (handle, lineCount, offsetBytes, searchStr) =>
+        this.singleReadText(handle, lineCount, offsetBytes, searchStr),
+    });
+  }
 
   /** Returns all logs and schedules a job that reads remain logs.
    * Notifies when a new portion of the log appeared. */
@@ -31,6 +48,7 @@ export class LogsDriver implements sdk.LogsDriver {
       ctx.markUnstable("no stream in stream manager");
       return undefined;
     }
+    if (isNotWrittenStandIn(stream)) return undefined;
 
     if (isBlob(stream)) return this.downloadDriver.getLastLogs(stream, lines, ctx);
 
@@ -62,6 +80,7 @@ export class LogsDriver implements sdk.LogsDriver {
       ctx.markUnstable("no stream in stream manager");
       return undefined;
     }
+    if (isNotWrittenStandIn(stream)) return undefined;
 
     if (isBlob(stream)) return this.downloadDriver.getProgressLog(stream, patternToSearch, ctx);
 
@@ -102,6 +121,7 @@ export class LogsDriver implements sdk.LogsDriver {
       ctx.markUnstable("no stream in stream manager");
       return undefined;
     }
+    if (isNotWrittenStandIn(stream)) return undefined;
 
     if (isBlob(stream)) {
       const log = this.downloadDriver.getProgressLog(stream, patternToSearch, ctx);
@@ -129,7 +149,8 @@ export class LogsDriver implements sdk.LogsDriver {
   }
 
   /** Returns an Id of a smart object, that can read logs directly from
-   * the platform. */
+   * the platform. For a `StreamCollection` (an exec with fallbacks) the handle is
+   * composite: the logs of all its attempts read as one text. */
   getLogHandle(res: ResourceInfo | PlTreeEntry): Computable<sdk.AnyLogHandle | undefined>;
   getLogHandle(res: PlTreeEntry, ctx: ComputableCtx): sdk.AnyLogHandle | undefined;
   getLogHandle(
@@ -138,11 +159,17 @@ export class LogsDriver implements sdk.LogsDriver {
   ): Computable<sdk.AnyLogHandle | undefined> | sdk.AnyLogHandle | undefined {
     if (ctx === undefined) return Computable.make((ctx) => this.getLogHandle(res, ctx));
 
-    const stream = streamManagerGetStream(ctx, res);
+    const node = ctx.accessor(res).node();
+    if (isStreamCollection(node.resourceType)) return getCompositeLogHandle(ctx, node);
+
+    const stream = node.traverse("stream")?.resourceInfo;
     if (stream === undefined) {
       ctx.markUnstable("no stream in stream manager");
       return undefined;
     }
+
+    // the workflow SDK's stand-in for a streamed file the run never wrote: no log
+    if (isNotWrittenStandIn(stream)) return undefined;
 
     if (isBlob(stream)) return this.downloadDriver.getLogHandle(stream, ctx);
 
@@ -155,12 +182,34 @@ export class LogsDriver implements sdk.LogsDriver {
     offsetBytes?: number,
     searchStr?: string,
   ): Promise<sdk.StreamingApiResponse> {
+    if (isCompositeLogHandle(handle))
+      return await this.compositeReader.lastLines(handle, lineCount, offsetBytes, searchStr);
+    return await this.singleLastLines(handle, lineCount, offsetBytes, searchStr);
+  }
+
+  async readText(
+    handle: sdk.AnyLogHandle,
+    lineCount: number,
+    offsetBytes?: number,
+    searchStr?: string,
+  ): Promise<sdk.StreamingApiResponse> {
+    if (isCompositeLogHandle(handle))
+      return await this.compositeReader.readText(handle, lineCount, offsetBytes, searchStr);
+    return await this.singleReadText(handle, lineCount, offsetBytes, searchStr);
+  }
+
+  private async singleLastLines(
+    handle: sdk.AnyLogHandle,
+    lineCount: number,
+    offsetBytes?: number,
+    searchStr?: string,
+  ): Promise<sdk.StreamingApiResponse> {
     if (isLiveLogHandle(handle))
       return await this.logsStreamDriver.lastLines(handle, lineCount, offsetBytes, searchStr);
     return await this.downloadDriver.lastLines(handle, lineCount, offsetBytes, searchStr);
   }
 
-  async readText(
+  private async singleReadText(
     handle: sdk.AnyLogHandle,
     lineCount: number,
     offsetBytes?: number,
@@ -173,7 +222,7 @@ export class LogsDriver implements sdk.LogsDriver {
 }
 
 function isBlob(rInfo: ResourceInfo) {
-  return !rInfo.type.name.startsWith("StreamWorkdir");
+  return !isStreamWorkdir(rInfo.type);
 }
 
 function streamManagerGetStream(ctx: ComputableCtx, manager: PlTreeEntry) {

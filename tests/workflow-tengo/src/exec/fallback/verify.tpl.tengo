@@ -1,0 +1,47 @@
+/**
+ * Fallback trees that verify() refuses (exec fallbacks, AC2.4); run() fails before any render.
+ *
+ * inputs.case: string - "cycle" | "missingFile" | "extraFile" | "extraStream" | "processor"
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+self.defineOutputs(["out"])
+
+procTpl := assets.importTemplate(":exec.fallback.read_out")
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	base := func() {
+		return exec.builder().
+			cpu(1).ram("50Mi").
+			software(shellSw).
+			arg("-c").arg("echo x > out.tsv").
+			inLightQueue().
+			saveFile("out.tsv").
+			saveStdoutStream()
+	}
+
+	root := base()
+	if inputs.case == "cycle" {
+		root.fallbacks({ OOM: root })
+	} else if inputs.case == "missingFile" {
+		h := exec.builder().cpu(1).ram("50Mi").software(shellSw).arg("-c").arg("true").inLightQueue().saveStdoutStream()
+		root.fallbacks({ OOM: h })
+	} else if inputs.case == "extraFile" {
+		root.fallbacks({ OOM: base().saveFile("more.tsv") })
+	} else if inputs.case == "extraStream" {
+		root.fallbacks({ OOM: base().streamFile("err.log") })
+	} else if inputs.case == "processor" {
+		root.processWorkdir("p", procTpl, { mode: "a" })
+		root.fallbacks({ OOM: base().processWorkdir("p", procTpl, { mode: "b" }) })
+	} else {
+		ll.panic("unknown case %q", inputs.case)
+	}
+
+	res := root.run()
+	return { out: res.getFile("out.tsv") }
+})

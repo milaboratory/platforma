@@ -1,0 +1,33 @@
+/**
+ * One RunCommand v3, rendered directly (exec fallbacks, AC1.1-AC1.3): the outcome and the post-run
+ * working directory are its outputs. The command is the test `shell` software, so it runs on any
+ * executor (a plain command needs a docker image on Kubernetes).
+ *
+ * inputs.args: string[] - the shell's arguments
+ * inputs.errorLines: number - options.errorLines
+ * inputs.badExpression: bool, optional - adds an argument with an expression the backend cannot
+ *                       evaluate: a failure before the process starts, not a software failure
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+render := import("@platforma-sdk/workflow-tengo:render")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+loadSoftware := import("@platforma-sdk/workflow-tengo:exec.load-software")
+
+self.defineOutputs(["outcome", "workdirOut"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+implTpl := assets.importTemplate(":exec.fallback.run_v3_impl")
+
+self.body(func(inputs) {
+	r := render.createEphemeral(implTpl, {
+		plan: loadSoftware.loadSoftware(shellSw),
+		args: inputs.args,
+		errorLines: inputs.errorLines,
+		badExpression: inputs.badExpression == true
+	})
+	return {
+		outcome: r.output("outcome"),
+		workdirOut: r.output("workdirOut")
+	}
+})

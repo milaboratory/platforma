@@ -9,6 +9,7 @@ validation := import(":validation")
 
 smart := import(":smart")
 render := import(":render")
+assets := import(":assets")
 workdir := import(":workdir")
 stream := import(":exec.stream")
 pkg := import(":exec.package")
@@ -19,8 +20,15 @@ maps := import(":maps")
 runcmd := import(":exec.runcmd")
 feats := import(":feats")
 R := import(":exec.R")
+limits := import(":exec.limits")
+execConstants := import(":exec.constants")
+saveChain := import(":exec.save-chain")
 
 delayedCompAlloc := import(":exec.delayed-compute-allocation")
+tplutil := import(":tpl.util")
+
+routerTpl := assets.importTemplate(":exec.outcome-router")
+v2AttemptsTpl := assets.importTemplate(":exec.v2-attempts")
 
 self.defineOutputs(
 	"files",
@@ -29,7 +37,10 @@ self.defineOutputs(
 	"fileSetsContent",
 	"progress",
 	"fileStreams",
-	"wdProcessors"
+	"wdProcessors",
+	"attempts",
+	// RunCommand v3 only: the attempt's final streamed files (the outcome router's streamOwn)
+	"streamOwn"
 )
 
 EXTENDED_PLAN_OPTIONS_SCHEMA := maps.merge(runcmd.RUN_CMD_PLAN_OPTIONS_SCHEMA, {
@@ -82,6 +93,21 @@ inputSchema := {
 		"assetCache,?": { any: "number" }
 	},
 
+	// Exec fallbacks, RunCommand v3 only (spec §10.2): the plans and the policy of this attempt's
+	// plan, the attempt context (absent on attempt 0), the stream collections of the exec, and
+	// this template itself, for the router to render the next attempt with.
+	"fallbackPlans,?": "any",
+	"fallbackPolicy,?": "any",
+	"attemptCtx,?": {
+		attempt: "number",
+		jobId: "string",
+		plan: "string",
+		restart: "number",
+		history: ["any"]
+	},
+	"streamCollections,?": "any",
+	"execImplTpl,?": "any",
+
 	// Meta inputs
 	"quota": {
 		queue: "string",
@@ -92,7 +118,98 @@ inputSchema := {
 	}
 }
 
+inputSchema[execConstants.META_INPUT_FORCE_RUN_COMMAND_V2 + ",?"] = "any"
+inputSchema[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1 + ",?"] = "any"
+
 self.validateInputs(inputSchema)
+
+/**
+ * The RunCommand v2 path, as before exec fallbacks: a software failure is an error of the
+ * command, propagated through the save chain to the outputs. `attempts` is the one entry a
+ * successful exec has, resolved once the save is done, so getAttempts() resolves on such a backend
+ * as the other outputs do, and errors as they do.
+ */
+_runV2 := func(inputs, mainRunBuilder, wdBefore) {
+	settings := inputs.settings
+	run := mainRunBuilder.build()
+
+	// get the workdir containing all the files, including produced by the run command
+	wdAfter := run.workdir
+
+	//
+	// Run workdir processors
+	//
+
+	wdProcessorsResults := {}
+	if !is_undefined(inputs.wdProcessors) {
+		for name, p in inputs.wdProcessors {
+			tpl := p.tpl
+			tplInputs := {
+				workdir: wdAfter,
+				args: p.tplArgs
+			}
+
+			// render template & get results
+			r := render.createEphemeral(tpl, tplInputs)
+
+			wdProcessorsResults[name] = r.output("result")
+			wdAfter = r.output("workdir")
+		}
+	}
+
+	//
+	// Save data from the workdir
+	//
+
+	// saver resource
+	wdSaver := workdir.save(wdAfter)
+	// save files
+	if !is_undefined(settings.filesToSave) {
+		for fName in settings.filesToSave {
+			wdSaver.saveFile(fName)
+		}
+	}
+	// save files content
+	if !is_undefined(settings.filesContentToSave) {
+		for fName in settings.filesContentToSave {
+			wdSaver.saveFileContent(fName)
+		}
+	}
+	// save file sets
+	if !is_undefined(settings.fileSetsToSave) {
+		for name, regex in settings.fileSetsToSave {
+			wdSaver.saveFileSet(name, regex)
+		}
+	}
+	// save file sets content
+	if !is_undefined(settings.fileSetsContentToSave) {
+		for name, regex in settings.fileSetsContentToSave {
+			wdSaver.saveFileSetContent(name, regex)
+		}
+	}
+
+	// resulting wd
+	wdResult := wdSaver.build()
+
+	// create streams for all requested file streams.
+	streams := smart.mapBuilder()
+	if !is_undefined(settings.filesToStream) {
+		for fName in settings.filesToStream {
+			streams.add(fName, stream.create(wdBefore, wdResult, fName))
+		}
+	}
+
+	return {
+		files: wdResult.files,
+		filesContent: wdResult.filesContent,
+		fileSets: wdResult.fileSets,
+		fileSetsContent: wdResult.fileSetsContent,
+		fileStreams: streams.build(),
+		wdProcessors: wdProcessorsResults,
+		progress: wdResult.progress,
+		attempts: render.createEphemeral(v2AttemptsTpl, { workdir: wdResult.workdir }).output("attempts")
+	}
+}
 
 self.body(func(inputs) {
 	settings := inputs.settings
@@ -241,81 +358,78 @@ self.body(func(inputs) {
 	mainRunBuilder.stdout(runOptions.stdout)
 	mainRunBuilder.stderr(runOptions.stderr)
 	mainRunBuilder.nErrorLines(runOptions.nErrorLines)
+	queue := runOptions.queue
+	// The outcome router serves fallbacks and the restart of a lost working directory. An exec
+	// with neither, on a backend without WorkdirSave v3, keeps the RunCommand v2 path: the router
+	// would only add renders between the command and its save, and their latency (an existing
+	// exec-heavy pframes test timed out on it in CI).
+	routed := !is_undefined(inputs.fallbackPlans) || !is_undefined(inputs.attemptCtx) ||
+		(is_undefined(inputs[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1]) &&
+			saveChain.hasWorkdirSaveV3(queue, settings))
+	useV3 := is_undefined(inputs[execConstants.META_INPUT_FORCE_RUN_COMMAND_V2]) &&
+		!is_undefined(limits.getRunCommandV3Type(queue)) && routed
+	if !useV3 {
+		return _runV2(inputs, mainRunBuilder, wdBefore)
+	}
+
+	//
+	// RunCommand v3 (exec fallbacks): a software failure is an outcome, read by the outcome
+	// router, which saves the results, renders a fallback plan, or raises the error.
+	//
+
+	ctx := inputs.attemptCtx // undefined on attempt 0
+	attempt := is_undefined(ctx) ? 0 : ctx.attempt
+	// attempt 0 leaves jobId unset: the backend takes the RunCommand's own id
+	mainRunBuilder.v3(attempt, is_undefined(ctx) ? undefined : ctx.jobId)
 	run := mainRunBuilder.build()
 
-	// get the workdir containing all the files, including produced by the run command
-	wdAfter := run.workdir
+	raw := self.rawInputs()
 
-	//
-	// Run workdir processors
-	//
+	// this attempt's own exec-impl inputs, for a restart of the same plan (spec §14.3): the inputs
+	// map of this render itself, pure and meta inputs; a restart replaces attemptCtx
+	implInputs := self.renderer().get(tplutil.INPUTS_MAP_FIELD)
 
-	wdProcessorsResults := {}
-	if !is_undefined(inputs.wdProcessors) {
-		for name, p in inputs.wdProcessors {
-			tpl := p.tpl
-			tplInputs := {
-				workdir: wdAfter,
-				args: p.tplArgs
-			}
-
-			// render template & get results
-			r := render.createEphemeral(tpl, tplInputs)
-
-			wdProcessorsResults[name] = r.output("result")
-			wdAfter = r.output("workdir")
+	routerInputs := {
+		outcome: run.outcome,
+		workdir: run.workdir,
+		settings: raw.settings.getValue(),
+		implInputs: implInputs
+	}
+	for name in ["wdProcessors", "fallbackPlans", "fallbackPolicy", "attemptCtx", "streamCollections", "execImplTpl"] {
+		if !is_undefined(raw[name]) {
+			routerInputs[name] = raw[name].getValue()
 		}
 	}
-
-	//
-	// Save data from the workdir
-	//
-
-	// saver resource
-	wdSaver := workdir.save(wdAfter)
-	// save files
-	if !is_undefined(settings.filesToSave) {
-		for fName in settings.filesToSave {
-			wdSaver.saveFile(fName)
-		}
+	if !is_undefined(inputs[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1]) {
+		routerInputs.forceWorkdirSaveV1 = true
 	}
-	// save files content
-	if !is_undefined(settings.filesContentToSave) {
-		for fName in settings.filesContentToSave {
-			wdSaver.saveFileContent(fName)
-		}
-	}
-	// save file sets
-	if !is_undefined(settings.fileSetsToSave) {
-		for name, regex in settings.fileSetsToSave {
-			wdSaver.saveFileSet(name, regex)
-		}
-	}
-	// save file sets content
-	if !is_undefined(settings.fileSetsContentToSave) {
-		for name, regex in settings.fileSetsContentToSave {
-			wdSaver.saveFileSetContent(name, regex)
-		}
-	}
+	router := render.createEphemeral(routerTpl, routerInputs)
 
-	// resulting wd
-	wdResult := wdSaver.build()
-
-	// create streams for all requested file streams.
-	streams := smart.mapBuilder()
+	// one manager per streamed file, live on this attempt's workdir, ending on this attempt's own
+	// file, which the router saves on success and on a failure alike
+	managers := smart.mapBuilder()
+	streams := {}
 	if !is_undefined(settings.filesToStream) {
 		for fName in settings.filesToStream {
-			streams.add(fName, stream.create(wdBefore, wdResult, fName))
+			streams[fName] = stream.createWithLive(wdBefore, fName, router.output("streamOwn").getFutureInputField(fName))
+			managers.addRef(fName, streams[fName].manager)
 		}
+	}
+	if !is_undefined(inputs.streamCollections) {
+		// attempt 0 of a job, not a restart of it: no attempt context
+		stream.attemptStarted(inputs.streamCollections, attempt, streams, is_undefined(ctx))
 	}
 
 	return {
-		files: wdResult.files,
-		filesContent: wdResult.filesContent,
-		fileSets: wdResult.fileSets,
-		fileSetsContent: wdResult.fileSetsContent,
-		fileStreams: streams.build(),
-		wdProcessors: wdProcessorsResults,
-		progress: wdResult.progress
+		files: router.output("files"),
+		filesContent: router.output("filesContent"),
+		fileSets: router.output("fileSets"),
+		fileSetsContent: router.output("fileSetsContent"),
+		fileStreams: managers.build(),
+		wdProcessors: router.output("wdProcessors"),
+		progress: router.output("progress"),
+		attempts: router.output("attempts"),
+		// this attempt's final streamed files; a restart hands them to the lost attempt's managers
+		streamOwn: router.output("streamOwn")
 	}
 })
