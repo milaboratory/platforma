@@ -1,5 +1,12 @@
 # @platforma-sdk/block-tools
 
+## 2.17.5
+
+### Patch Changes
+
+- Updated dependencies [0c111b5]
+  - @platforma-sdk/package-builder-lib@1.4.3
+
 ## 2.17.4
 
 ### Patch Changes
