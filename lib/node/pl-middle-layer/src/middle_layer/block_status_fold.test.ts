@@ -589,3 +589,86 @@ describe("a run the user stopped", () => {
     expect(foldBlockStatus(running).cancelled).toBeUndefined();
   });
 });
+
+describe("the run's jobs", () => {
+  const job = (id: string, ...transitions: TransitionFixture[]): ContextFixture => ({
+    id,
+    transitions: [{ namespace: "render", atMs: ms(0), state: "Running" }, ...transitions],
+  });
+  const exec = (atMs: number, state: string): TransitionFixture => ({
+    namespace: "exec",
+    reporter: "cmd",
+    atMs,
+    state,
+  });
+  const workdir = (atMs: number, state: string): TransitionFixture => ({
+    namespace: "workdir",
+    reporter: "wd",
+    atMs,
+    state,
+  });
+
+  const summary = foldBlockStatus(
+    context({
+      id: "root",
+      transitions: [{ namespace: "render", atMs: ms(0), state: "Running" }],
+      children: [
+        // A template render that only prepares jobs is not one.
+        { id: "prepare", transitions: [{ namespace: "render", atMs: ms(1), state: "Running" }] },
+        {
+          ...job("copy-1", workdir(ms(5), "PopulatingWorkdir")),
+          kv: { "reading/workdir/wd/progress": '{"done":3,"total":4}' },
+        },
+        {
+          ...job("copy-2", workdir(ms(6), "PopulatingWorkdir")),
+          kv: { "reading/workdir/wd/progress": '{"done":1,"total":2}' },
+        },
+        job("queued-late", exec(ms(30), "WaitingSubmissionGate")),
+        job("queued-early", exec(ms(20), "WaitingSubmissionGate")),
+        job("pending", exec(ms(40), "WaitingForScheduler")),
+        job("running", exec(ms(50), "Running")),
+        job("saving", workdir(ms(60), "CollectingOutputs")),
+        job("done", exec(ms(70), "Completed"), renderCompleted(ms(71))),
+        job("failed", exec(ms(80), "Terminated"), {
+          namespace: "render",
+          atMs: ms(81),
+          state: "Terminated",
+          reason: "exit 137",
+        }),
+      ],
+    }),
+  );
+
+  it("counts each job once, by where it is now", () => {
+    expect(summary.jobs).toMatchObject({
+      total: 9,
+      copying: 2,
+      queued: 2,
+      pending: 1,
+      running: 1,
+      saving: 1,
+      done: 1,
+      failed: 1,
+    });
+  });
+
+  it("sums the files copied by the jobs copying now", () => {
+    expect(summary.jobs.files).toEqual({ done: 4, total: 6 });
+  });
+
+  it("dates each wait from the earliest job still in it", () => {
+    expect(summary.jobs.queuedSince).toBe(ms(20));
+    expect(summary.jobs.pendingSince).toBe(ms(40));
+  });
+
+  it("has no jobs before any command or work folder reports", () => {
+    const empty = foldBlockStatus(
+      context({
+        id: "root",
+        transitions: [{ namespace: "render", atMs: ms(0), state: "Running" }],
+      }),
+    );
+    expect(empty.jobs).toMatchObject({ total: 0 });
+    expect(empty.jobs.files).toBeUndefined();
+  });
+});

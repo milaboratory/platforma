@@ -9,6 +9,7 @@
  */
 
 import type {
+  BlockStatusJobs,
   BlockStatusLine,
   BlockStatusState,
   BlockStatusStateCount,
@@ -61,6 +62,12 @@ const CreatorNamespace = "core";
 
 /** The namespace a command reports under; its `Running` means a job executing on a machine. */
 const ExecNamespace = "exec";
+
+/** The namespace a job's work folder reports under: staging inputs, saving results. */
+export const WorkdirNamespace = "workdir";
+
+/** Prefix of a work folder's readings: `reading/workdir/<resource>/<key>`. */
+const WorkdirReadingPrefix = "reading/workdir/";
 
 /** One transition, as stored under `transition/<namespace>/<resource>/<ns>`. */
 type Transition = {
@@ -247,7 +254,120 @@ type Accumulator = {
   root?: FoldedNode;
   /** When the creator marked the run cancelled on the root. */
   cancelledNs?: string;
+  jobs: JobAccumulator;
 };
+
+/** {@link BlockStatusJobs} being accumulated, the earliest entries still in nanoseconds. */
+type JobAccumulator = {
+  -readonly [K in Exclude<keyof BlockStatusJobs, "queuedSince" | "pendingSince" | "files">]: number;
+} & {
+  queuedSinceNs?: string;
+  pendingSinceNs?: string;
+  filesDone: number;
+  filesTotal: number;
+  /** Whether any copying job has reported its progress. */
+  filesKnown: boolean;
+};
+
+function emptyJobAccumulator(): JobAccumulator {
+  return {
+    total: 0,
+    done: 0,
+    failed: 0,
+    running: 0,
+    copying: 0,
+    queued: 0,
+    pending: 0,
+    saving: 0,
+    filesDone: 0,
+    filesTotal: 0,
+    filesKnown: false,
+  };
+}
+
+/** True for a context a command or its work folder reports in: one job. */
+function isJob(reports: ContextReports): boolean {
+  return reports.known.some(
+    (t) => t.namespace === ExecNamespace || t.namespace === WorkdirNamespace,
+  );
+}
+
+function earlier(a: string | undefined, b: string): string {
+  return a === undefined || compareNs(b, a) < 0 ? b : a;
+}
+
+/** The progress readings of the work folders in a context, summed: files done of all. */
+function readWorkdirProgress(node: ActionContextNode): { done: number; total: number } | undefined {
+  let done = 0;
+  let total = 0;
+  let known = false;
+  for (const { key, value } of node.listKeyValuesAsString(WorkdirReadingPrefix)) {
+    if (!key.endsWith("/progress")) continue;
+    let parsed: { done?: unknown; total?: unknown };
+    try {
+      parsed = JSON.parse(value) as { done?: unknown; total?: unknown };
+    } catch {
+      continue;
+    }
+    if (typeof parsed.done !== "number" || typeof parsed.total !== "number") continue;
+    done += parsed.done;
+    total += parsed.total;
+    known = true;
+  }
+  return known ? { done, total } : undefined;
+}
+
+/** Counts one job where it is now. */
+function noteJob(jobs: JobAccumulator, node: ActionContextNode, folded: FoldedNode): void {
+  jobs.total++;
+  if (folded.terminal) {
+    if (folded.termination !== undefined) jobs.failed++;
+    else jobs.done++;
+    return;
+  }
+  switch (folded.state) {
+    case "Running":
+      // The render's own Running only evaluates template code; the job has not started yet.
+      if (folded.onMachine) jobs.running++;
+      return;
+    case "WaitingWorkdirGate":
+    case "PopulatingWorkdir": {
+      jobs.copying++;
+      const progress = readWorkdirProgress(node);
+      if (progress === undefined) return;
+      jobs.filesDone += progress.done;
+      jobs.filesTotal += progress.total;
+      jobs.filesKnown = true;
+      return;
+    }
+    case "WaitingSubmissionGate":
+      jobs.queued++;
+      if (folded.since !== undefined)
+        jobs.queuedSinceNs = earlier(jobs.queuedSinceNs, folded.since);
+      return;
+    case "WaitingForScheduler":
+    case "WaitingForMachine":
+      jobs.pending++;
+      if (folded.since !== undefined)
+        jobs.pendingSinceNs = earlier(jobs.pendingSinceNs, folded.since);
+      return;
+    case "CollectingOutputs":
+      jobs.saving++;
+      return;
+    default:
+      return;
+  }
+}
+
+function finishJobs(jobs: JobAccumulator): BlockStatusJobs {
+  const { queuedSinceNs, pendingSinceNs, filesDone, filesTotal, filesKnown, ...counts } = jobs;
+  return {
+    ...counts,
+    queuedSince: queuedSinceNs === undefined ? undefined : nsToMs(queuedSinceNs),
+    pendingSince: pendingSinceNs === undefined ? undefined : nsToMs(pendingSinceNs),
+    files: filesKnown ? { done: filesDone, total: filesTotal } : undefined,
+  };
+}
 
 function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): void {
   const reports = readTransitions(node);
@@ -268,6 +388,7 @@ function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): void 
           acc.cancelledNs = t.ns;
   }
   acc.totalNodes++;
+  if (isJob(reports)) noteJob(acc.jobs, node, folded);
 
   if (folded.terminal) return;
   acc.liveNodes++;
@@ -327,7 +448,12 @@ function phraseOf(group: { state: BlockStatusState; onMachine: boolean }): strin
  * render is live, what holds the block is whatever its live nodes are doing.
  */
 export function foldBlockStatus(root: ActionContextNode): BlockStatusSummary {
-  const acc: Accumulator = { totalNodes: 0, liveNodes: 0, groups: new Map() };
+  const acc: Accumulator = {
+    totalNodes: 0,
+    liveNodes: 0,
+    groups: new Map(),
+    jobs: emptyJobAccumulator(),
+  };
   walk(root, acc, new Set(), 0);
 
   const data = root.getData();
@@ -355,6 +481,7 @@ export function foldBlockStatus(root: ActionContextNode): BlockStatusSummary {
       detail: group.detail,
     }));
 
+  const jobs = finishJobs(acc.jobs);
   const rootFolded = acc.root;
   const failure =
     rootFolded?.terminal === true && rootFolded.termination !== undefined
@@ -370,6 +497,7 @@ export function foldBlockStatus(root: ActionContextNode): BlockStatusSummary {
       liveNodes: acc.liveNodes,
       totalNodes: acc.totalNodes,
       byState,
+      jobs,
       line: {
         state: "Terminated",
         onMachine: false,
@@ -390,6 +518,7 @@ export function foldBlockStatus(root: ActionContextNode): BlockStatusSummary {
     liveNodes: acc.liveNodes,
     totalNodes: acc.totalNodes,
     byState,
+    jobs,
     line: deriveLine(acc, byState, failure),
     startedAt: acc.firstNs === undefined ? undefined : nsToMs(acc.firstNs),
     lastChangeAt: acc.lastNs === undefined ? undefined : nsToMs(acc.lastNs),
