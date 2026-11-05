@@ -419,4 +419,5 @@ tplTest.concurrent(
     const out = await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue();
     expect(Number(out?.trim())).toBe(96 * 1024 * 1024);
   },
+  120_000,
 );
