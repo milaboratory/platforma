@@ -3,13 +3,7 @@
  *
  * The backend keeps a tree of status contexts, one per render, and writes each reporter's
  * transitions into the context of the render it belongs to. The middle layer folds that tree into
- * a {@link BlockStatusSummary}; the Desktop App renders the summary and computes nothing beyond
- * reading its own clock.
- *
- * Source: docs/text/work/projects/sdk/block-status/README_teo.md. The spec asks for two things of
- * the user-facing line: it "names the operation that holds this block", and it is "the summary's
- * counters as one sentence". So the summary carries every live counter, and names which one holds
- * the block; the surface renders them.
+ * a {@link BlockStatusSummary}.
  */
 
 /**
@@ -35,9 +29,6 @@ export const blockStatusStates = [
 /** A node state name, e.g. `"PopulatingWorkdir"`. */
 export type BlockStatusState = (typeof blockStatusStates)[number];
 
-/** A state a node cannot leave. A node in any other state is live. */
-export type BlockStatusTerminalState = Extract<BlockStatusState, "Terminated" | "Completed">;
-
 const blockStatusStateSet: ReadonlySet<string> = new Set(blockStatusStates);
 
 /** True for a state name this build knows, as a reporter writes it into a transition value. */
@@ -49,87 +40,6 @@ export function isBlockStatusState(value: unknown): value is BlockStatusState {
 export function isTerminalBlockStatusState(state: BlockStatusState): boolean {
   return state === "Terminated" || state === "Completed";
 }
-
-/**
- * The phrase shown to the user for each state.
- *
- * Written for scientists, not for whoever runs the backend: no engine terms, and each phrase reads
- * after a count of tasks ("5 tasks being prepared"), which is how the surface uses it.
- * `Completed` is never shown: the line reports live nodes, and a completed node is not one.
- * `Terminated` is shown with the reason the engine reported appended.
- */
-export const blockStatusPhrases: Record<BlockStatusState, string> = {
-  WaitingForInputs: "waiting for inputs",
-  Running: "being prepared",
-  WaitingWorkdirGate: "waiting to set up",
-  WaitingSubmissionGate: "waiting for compute quota",
-  PopulatingWorkdir: "copying input files",
-  CollectingOutputs: "saving results",
-  WaitingForScheduler: "queued for a machine",
-  WaitingForMachine: "waiting for a machine to start",
-  Terminated: "failed",
-  Completed: "",
-};
-
-/**
- * The phrase for `Running` reported by a command (namespace `exec`): the job is executing on a
- * machine. `Running` from the render itself means only that template code is being evaluated, and
- * keeps {@link blockStatusPhrases}.
- */
-export const BlockStatusOnMachinePhrase = "computing";
-
-/** The phrase for a run the user stopped. */
-export const BlockStatusCancelledPhrase = "cancelled";
-
-/** What one live node is, to the user: "1 task", "5 tasks". */
-export function blockStatusTaskCount(nodes: number): string {
-  return `${nodes} ${nodes === 1 ? "task" : "tasks"}`;
-}
-
-/**
- * How many live nodes sit in one state.
- *
- * These are the spec's "counters by state over live nodes", and the surface renders them as one
- * sentence.
- */
-export type BlockStatusStateCount = {
-  readonly state: BlockStatusState;
-  /** True for `Running` reported by a command executing on a machine, so the two `Running` groups
-   * (that, and the render evaluating template code) stay distinct. False for every other state. */
-  readonly onMachine: boolean;
-  /** {@link blockStatusPhrases} for the state, so the renderer does not look it up. */
-  readonly phrase: string;
-  readonly nodes: number;
-  /**
-   * The earliest time any node still in this group entered the state, ms since the epoch, and
-   * never later than it was in an earlier summary of the same run.
-   */
-  readonly since: number;
-  /** The detail of the most recent transition into the state, e.g. `"staging 12 files"`. */
-  readonly detail?: string;
-};
-
-/**
- * Which operation holds the block: the state with the most live nodes, or the failure when the run
- * has ended in one.
- */
-export type BlockStatusLine = {
-  readonly state: BlockStatusState;
-  /** As {@link BlockStatusStateCount.onMachine}. */
-  readonly onMachine: boolean;
-  /** {@link blockStatusPhrases} for the state. For `Terminated`, append {@link reason}. */
-  readonly phrase: string;
-  /** Live nodes in this state, or terminated nodes when the state is `Terminated`. */
-  readonly nodes: number;
-  /** Live nodes in the whole tree, both here and in the `Terminated` case. */
-  readonly ofNodes: number;
-  /** The earliest time a counted node entered the state, ms since the epoch. */
-  readonly heldSince: number;
-  /** The detail of the most recent transition into the state. */
-  readonly detail?: string;
-  /** The reason the engine reported, set only when the state is `Terminated`. */
-  readonly reason?: string;
-};
 
 /**
  * The block's jobs: the commands it runs on a machine, each counted once by where it is now.
@@ -180,12 +90,8 @@ export type BlockStatusSummary = {
   readonly liveNodes: number;
   /** Every node of the tree, live or finished. */
   readonly totalNodes: number;
-  /** Live nodes by state, the largest group first: the spec's counters by state. */
-  readonly byState: readonly BlockStatusStateCount[];
   /** The run's jobs, counted apart from the template renders that only prepare them. */
   readonly jobs: BlockStatusJobs;
-  /** The operation holding the block, or undefined when nothing is live. */
-  readonly line?: BlockStatusLine;
   /** The first transition anywhere in the tree, ms since the epoch. */
   readonly startedAt?: number;
   /** The most recent transition anywhere in the tree, ms since the epoch. */
@@ -218,7 +124,6 @@ export const EmptyBlockStatusSummary: BlockStatusSummary = {
   availability: "read",
   liveNodes: 0,
   totalNodes: 0,
-  byState: [],
   jobs: EmptyBlockStatusJobs,
   done: false,
 };

@@ -70,8 +70,7 @@ describe("foldBlockStatus", () => {
   it("reports a context that has not reported as live with no state", () => {
     const summary = foldBlockStatus(context({ id: "r1" }));
 
-    expect(summary).toMatchObject({ liveNodes: 1, totalNodes: 1, byState: [], done: false });
-    expect(summary.line).toBeUndefined();
+    expect(summary).toMatchObject({ liveNodes: 1, totalNodes: 1, done: false });
     expect(summary.startedAt).toBeUndefined();
   });
 
@@ -79,27 +78,6 @@ describe("foldBlockStatus", () => {
     const summary = foldBlockStatus(context({ id: "r1", data: { "run-id": "run-7" } }));
 
     expect(summary.runId).toBe("run-7");
-  });
-
-  it("names the state holding a single render", () => {
-    const summary = foldBlockStatus(
-      context({
-        id: "r1",
-        transitions: [{ namespace: "workdir", atMs: ms(0), state: "PopulatingWorkdir" }],
-      }),
-    );
-
-    expect(summary.byState).toEqual([
-      {
-        state: "PopulatingWorkdir",
-        onMachine: false,
-        phrase: "copying input files",
-        nodes: 1,
-        since: ms(0),
-        detail: undefined,
-      },
-    ]);
-    expect(summary.line).toMatchObject({ state: "PopulatingWorkdir", nodes: 1, ofNodes: 1 });
   });
 });
 
@@ -119,7 +97,7 @@ describe("the state holding a node", () => {
       }),
     );
 
-    expect(summary.line).toMatchObject({ state: "WaitingForMachine", heldSince: ms(100) });
+    expect(summary.jobs).toMatchObject({ pending: 1, pendingSince: ms(100) });
   });
 
   it("lets a command running on a machine outrank the render's heartbeat", () => {
@@ -133,33 +111,7 @@ describe("the state holding a node", () => {
       }),
     );
 
-    expect(summary.line).toMatchObject({
-      state: "Running",
-      onMachine: true,
-      phrase: "computing",
-    });
-  });
-
-  it("keeps a command's Running apart from the render's Running", () => {
-    // Two nodes evaluating template code, one with a job on a machine: two groups, two phrases.
-    const summary = foldBlockStatus(
-      context({
-        id: "r1",
-        transitions: [{ namespace: "render", atMs: ms(0), state: "Running" }],
-        children: [
-          { id: "a", transitions: [{ namespace: "render", atMs: ms(10), state: "Running" }] },
-          {
-            id: "b",
-            transitions: [{ namespace: "exec", reporter: "cmd", atMs: ms(20), state: "Running" }],
-          },
-        ],
-      }),
-    );
-
-    expect(summary.byState.map((g) => [g.phrase, g.nodes])).toEqual([
-      ["being prepared", 2],
-      ["computing", 1],
-    ]);
+    expect(summary.jobs).toMatchObject({ running: 1 });
   });
 
   it("takes the latest transition of a reporter, not the first", () => {
@@ -167,14 +119,13 @@ describe("the state holding a node", () => {
       context({
         id: "r1",
         transitions: [
-          { namespace: "workdir", atMs: ms(0), state: "WaitingWorkdirGate" },
-          { namespace: "workdir", atMs: ms(50), state: "PopulatingWorkdir", detail: "12 files" },
+          { namespace: "exec", reporter: "cmd1", atMs: ms(0), state: "WaitingForScheduler" },
+          { namespace: "exec", reporter: "cmd1", atMs: ms(50), state: "Running" },
         ],
       }),
     );
 
-    expect(summary.byState).toHaveLength(1);
-    expect(summary.line).toMatchObject({ state: "PopulatingWorkdir", detail: "12 files" });
+    expect(summary.jobs).toMatchObject({ running: 1, pending: 0 });
   });
 });
 
@@ -194,7 +145,6 @@ describe("a node that has ended", () => {
     );
 
     expect(summary).toMatchObject({ liveNodes: 0, totalNodes: 1, done: true });
-    expect(summary.line).toBeUndefined();
   });
 
   it("stays live while a command it started is still running after its outputs are set", () => {
@@ -209,8 +159,7 @@ describe("a node that has ended", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ liveNodes: 1, done: false });
-    expect(summary.line).toMatchObject({ state: "WaitingForScheduler" });
+    expect(summary).toMatchObject({ liveNodes: 1, done: false, jobs: { pending: 1 } });
   });
 
   it("stays live while only its commands have finished", () => {
@@ -226,7 +175,6 @@ describe("a node that has ended", () => {
     );
 
     expect(summary).toMatchObject({ liveNodes: 1, done: false });
-    expect(summary.line).toMatchObject({ state: "Running", onMachine: false });
   });
 
   it("counts a deduplicated render as done", () => {
@@ -265,8 +213,7 @@ describe("a node that has ended", () => {
     );
 
     // The root's own outputs are set, but work under it still runs: not done.
-    expect(summary).toMatchObject({ liveNodes: 1, done: false });
-    expect(summary.line).toMatchObject({ state: "WaitingForMachine" });
+    expect(summary).toMatchObject({ liveNodes: 1, done: false, jobs: { pending: 1 } });
   });
 });
 
@@ -285,11 +232,6 @@ describe("a run that ended in a failure", () => {
     );
 
     expect(summary).toMatchObject({ done: true, failure: "template error" });
-    expect(summary.line).toMatchObject({
-      state: "Terminated",
-      phrase: "failed",
-      reason: "template error",
-    });
   });
 
   it("leaves the reason out when the render ended without one", () => {
@@ -300,12 +242,10 @@ describe("a run that ended in a failure", () => {
       }),
     );
 
-    expect(summary.line).toMatchObject({ state: "Terminated" });
-    expect(summary.line?.reason).toBeUndefined();
-    expect(summary.failure).toBeUndefined();
+    expect(summary).toMatchObject({ done: true, failure: undefined });
   });
 
-  it("does not take the line for a command the run recovered from", () => {
+  it("does not report a failure for a command the run recovered from", () => {
     const summary = foldBlockStatus(
       context({
         id: "r1",
@@ -328,8 +268,7 @@ describe("a run that ended in a failure", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ done: false, failure: undefined });
-    expect(summary.line).toMatchObject({ state: "WaitingForMachine" });
+    expect(summary).toMatchObject({ done: false, failure: undefined, jobs: { pending: 1 } });
   });
 
   it("does not report a failure when the render completed despite a terminated command", () => {
@@ -350,32 +289,6 @@ describe("a run that ended in a failure", () => {
     );
 
     expect(summary).toMatchObject({ done: true, liveNodes: 0, failure: undefined });
-    expect(summary.line).toBeUndefined();
-  });
-
-  it("keeps the line consistent with the counters it ships with", () => {
-    const summary = foldBlockStatus(
-      context({
-        id: "r1",
-        transitions: [{ namespace: "render", atMs: ms(0), state: "Running" }],
-        children: [
-          {
-            id: "a",
-            transitions: [{ namespace: "exec", atMs: ms(100), state: "WaitingForMachine" }],
-          },
-          {
-            id: "b",
-            transitions: [{ namespace: "exec", atMs: ms(150), state: "WaitingForMachine" }],
-          },
-        ],
-      }),
-    );
-
-    const named = summary.byState.find(
-      (g) => g.state === summary.line?.state && g.onMachine === summary.line?.onMachine,
-    );
-    expect(summary.line?.nodes).toBe(named?.nodes);
-    expect(summary.line?.ofNodes).toBe(summary.liveNodes);
   });
 });
 
@@ -390,7 +303,7 @@ describe("aggregation over a tree", () => {
     }));
   }
 
-  it("leads with the state holding the most nodes", () => {
+  it("counts every node and job of a fanned-out run", () => {
     const summary = foldBlockStatus(
       context({
         id: "r1",
@@ -403,51 +316,7 @@ describe("aggregation over a tree", () => {
     );
 
     expect(summary).toMatchObject({ totalNodes: 400, liveNodes: 400 });
-    expect(summary.line).toMatchObject({ state: "WaitingForMachine", nodes: 382, ofNodes: 400 });
-  });
-
-  it("breaks a tie in favour of the group held longest, then by name", () => {
-    const summary = foldBlockStatus(
-      context({
-        id: "r1",
-        children: [
-          ...fanOut(2, "WaitingForMachine", ms(2000)),
-          ...fanOut(2, "WaitingForScheduler", ms(1000)),
-        ],
-      }),
-    );
-
-    expect(summary.byState.map((g) => g.state)).toEqual([
-      "WaitingForScheduler",
-      "WaitingForMachine",
-    ]);
-  });
-
-  it("orders groups less than a millisecond apart by their nanosecond stamps", () => {
-    const a = context({
-      id: "a",
-      kv: {
-        "transition/exec/1/1000000000000000100": JSON.stringify({ state: "WaitingForMachine" }),
-      },
-    });
-    const b = context({
-      id: "b",
-      kv: {
-        "transition/exec/2/1000000000000000050": JSON.stringify({ state: "WaitingForScheduler" }),
-      },
-    });
-    const root: ActionContextNode = {
-      id: "r1",
-      getData: () => undefined,
-      listKeyValuesAsString: () => [],
-      listFields: () => ["child/a", "child/b"],
-      traverse: (f) => (f === "child/a" ? a : b),
-    };
-
-    expect(foldBlockStatus(root).byState.map((g) => g.state)).toEqual([
-      "WaitingForScheduler",
-      "WaitingForMachine",
-    ]);
+    expect(summary.jobs).toMatchObject({ total: 399, pending: 382, copying: 17 });
   });
 
   it("walks nested children and spans the whole tree in its timestamps", () => {
@@ -486,7 +355,7 @@ describe("malformed input", () => {
       }),
     );
 
-    expect(summary.line).toMatchObject({ state: "PopulatingWorkdir" });
+    expect(summary.jobs).toMatchObject({ copying: 1 });
   });
 
   it("skips a state this build does not know, but still advances the clock", () => {
@@ -505,7 +374,7 @@ describe("malformed input", () => {
       }),
     );
 
-    expect(summary.line).toMatchObject({ state: "PopulatingWorkdir" });
+    expect(summary.jobs).toMatchObject({ copying: 1 });
     expect(summary.lastChangeAt).toBe(ms(90_000));
   });
 
@@ -569,16 +438,10 @@ describe("a run the user stopped", () => {
 
     expect(summary).toMatchObject({ done: true, cancelled: true, lastChangeAt: ms(90_000) });
     expect(summary.failure).toBeUndefined();
-    expect(summary.line).toMatchObject({ state: "Terminated", phrase: "cancelled" });
-    expect(summary.line?.reason).toBeUndefined();
   });
 
   it("keeps the counters, to say where each node was when it stopped", () => {
-    expect(foldBlockStatus(stopped()).byState).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ state: "Running", onMachine: true, nodes: 1 }),
-      ]),
-    );
+    expect(foldBlockStatus(stopped()).jobs).toMatchObject({ running: 1 });
   });
 
   it("is not cancelled while only the backend has reported", () => {

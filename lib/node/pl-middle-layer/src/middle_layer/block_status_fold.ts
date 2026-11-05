@@ -4,21 +4,14 @@
  * The fold is a pure function over {@link ActionContextNode}, which both a synchronized tree
  * accessor and a test fixture satisfy. Everything it reads registers a watcher on the tree, so the
  * computable holding it re-runs when any context in the tree reports.
- *
- * Source: docs/text/work/projects/sdk/block-status/README_teo.md.
  */
 
 import type {
   BlockStatusJobs,
-  BlockStatusLine,
   BlockStatusState,
-  BlockStatusStateCount,
   BlockStatusSummary,
 } from "@milaboratories/pl-model-middle-layer";
 import {
-  BlockStatusCancelledPhrase,
-  BlockStatusOnMachinePhrase,
-  blockStatusPhrases,
   isBlockStatusState,
   isTerminalBlockStatusState,
 } from "@milaboratories/pl-model-middle-layer";
@@ -95,15 +88,14 @@ type ContextReports = {
 type FoldedNode = {
   /** True when the render of this context has ended and nothing it started is still running. */
   terminal: boolean;
-  /** Set when the render itself ended in a termination rather than a completion. */
-  termination?: { ns: string; reason: string };
+  /** The reason, set when the render itself ended in a termination rather than a completion. */
+  failure?: string;
   /** The state holding this node, undefined when it is terminal or has not reported. */
   state?: BlockStatusState;
   /** True when {@link FoldedNode.state} is `Running` reported by a command. */
   onMachine: boolean;
   /** When the node entered its state, nanoseconds as a decimal string. */
   since?: string;
-  detail?: string;
 };
 
 /** Compares non-negative decimal integers given as strings, shorter is smaller. */
@@ -114,11 +106,6 @@ function compareNs(a: string, b: string): number {
 /** Nanoseconds since the epoch, as the key carries them, to milliseconds. */
 function nsToMs(ns: string): number {
   return Number(BigInt(ns) / 1_000_000n);
-}
-
-/** True for `Running` reported by a command executing on a machine. */
-function isOnMachine(t: Transition): boolean {
-  return t.state === "Running" && t.namespace === ExecNamespace;
 }
 
 /**
@@ -217,37 +204,22 @@ function foldNode(transitions: readonly Transition[]): FoldedNode {
     return {
       terminal: true,
       onMachine: false,
-      termination:
-        render.state === "Terminated" ? { ns: render.ns, reason: render.reason } : undefined,
+      failure: render.state === "Terminated" ? render.reason : undefined,
     };
 
   if (holding === undefined) return { terminal: false, onMachine: false };
   return {
     terminal: false,
     state: holding.state,
-    onMachine: isOnMachine(holding),
+    onMachine: holding.state === "Running" && holding.namespace === ExecNamespace,
     since: holding.ns,
-    detail: holding.detail === "" ? undefined : holding.detail,
   };
 }
-
-/** A live group being accumulated. */
-type Group = {
-  state: BlockStatusState;
-  onMachine: boolean;
-  nodes: number;
-  /** Earliest entry among the nodes currently in the group. */
-  since: string;
-  detailNs?: string;
-  detail?: string;
-};
 
 /** What the walk accumulates across the whole tree. */
 type Accumulator = {
   totalNodes: number;
   liveNodes: number;
-  /** Keyed by state and onMachine, so the two `Running` groups stay apart. */
-  groups: Map<string, Group>;
   firstNs?: string;
   lastNs?: string;
   /** The root's own fold, kept by the walk so the root is read once. */
@@ -321,7 +293,7 @@ function readWorkdirProgress(node: ActionContextNode): { done: number; total: nu
 function noteJob(jobs: JobAccumulator, node: ActionContextNode, folded: FoldedNode): void {
   jobs.total++;
   if (folded.terminal) {
-    if (folded.termination !== undefined) jobs.failed++;
+    if (folded.failure !== undefined) jobs.failed++;
     else jobs.done++;
     return;
   }
@@ -390,33 +362,7 @@ function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): void 
   acc.totalNodes++;
   if (isJob(reports)) noteJob(acc.jobs, node, folded);
 
-  if (folded.terminal) return;
-  acc.liveNodes++;
-  if (folded.state === undefined || folded.since === undefined) return;
-
-  const key = `${folded.state}/${folded.onMachine}`;
-  const group = acc.groups.get(key);
-  if (group === undefined) {
-    acc.groups.set(key, {
-      state: folded.state,
-      onMachine: folded.onMachine,
-      nodes: 1,
-      since: folded.since,
-      detailNs: folded.detail === undefined ? undefined : folded.since,
-      detail: folded.detail,
-    });
-    return;
-  }
-
-  group.nodes++;
-  if (compareNs(folded.since, group.since) < 0) group.since = folded.since;
-  if (
-    folded.detail !== undefined &&
-    (group.detailNs === undefined || compareNs(folded.since, group.detailNs) > 0)
-  ) {
-    group.detailNs = folded.since;
-    group.detail = folded.detail;
-  }
+  if (!folded.terminal) acc.liveNodes++;
 }
 
 /** Walks the context and everything under it, depth first, each context counted once. */
@@ -435,131 +381,31 @@ function walk(node: ActionContextNode, acc: Accumulator, seen: Set<string>, dept
   }
 }
 
-function phraseOf(group: { state: BlockStatusState; onMachine: boolean }): string {
-  return group.onMachine ? BlockStatusOnMachinePhrase : blockStatusPhrases[group.state];
-}
-
-/**
- * The summary of a block run, from the root action context of its render.
- *
- * The counters are by state over live nodes, which is what the surface renders as one sentence.
- * The line names which of them holds the block, or reports the failure once the root render has
- * ended in one. A command that was terminated and retried does not take the line: while the root
- * render is live, what holds the block is whatever its live nodes are doing.
- */
+/** The summary of a block run, from the root action context of its render. */
 export function foldBlockStatus(root: ActionContextNode): BlockStatusSummary {
-  const acc: Accumulator = {
-    totalNodes: 0,
-    liveNodes: 0,
-    groups: new Map(),
-    jobs: emptyJobAccumulator(),
-  };
+  const acc: Accumulator = { totalNodes: 0, liveNodes: 0, jobs: emptyJobAccumulator() };
   walk(root, acc, new Set(), 0);
 
-  const data = root.getData();
-  const runId = typeof data?.["run-id"] === "string" ? data["run-id"] : undefined;
-
-  const byState: BlockStatusStateCount[] = [...acc.groups.values()]
-    // Most nodes first, since that is what holds most of the run. Then real work ahead of the
-    // render's evaluation heartbeat, because on a tie the work is the more informative answer.
-    // Then the group held longest, compared in nanoseconds because nsToMs truncates. Then the
-    // state name, so the order is a function of the data and never of the walk's order.
-    .sort(
-      (a, b) =>
-        b.nodes - a.nodes ||
-        groupRank(b) - groupRank(a) ||
-        compareNs(a.since, b.since) ||
-        a.state.localeCompare(b.state) ||
-        Number(a.onMachine) - Number(b.onMachine),
-    )
-    .map((group) => ({
-      state: group.state,
-      onMachine: group.onMachine,
-      phrase: phraseOf(group),
-      nodes: group.nodes,
-      since: nsToMs(group.since),
-      detail: group.detail,
-    }));
-
-  const jobs = finishJobs(acc.jobs);
-  const rootFolded = acc.root;
-  const failure =
-    rootFolded?.terminal === true && rootFolded.termination !== undefined
-      ? rootFolded.termination
-      : undefined;
+  const runId = root.getData()?.["run-id"];
+  const summary = {
+    availability: "read" as const,
+    runId: typeof runId === "string" ? runId : undefined,
+    liveNodes: acc.liveNodes,
+    totalNodes: acc.totalNodes,
+    jobs: finishJobs(acc.jobs),
+    startedAt: acc.firstNs === undefined ? undefined : nsToMs(acc.firstNs),
+  };
 
   // A stopped run: its render is gone and reports nothing more, so the tree is frozen where it
   // stopped. The counters stay, to say where each node was; the run itself is over.
   if (acc.cancelledNs !== undefined)
-    return {
-      availability: "read",
-      runId,
-      liveNodes: acc.liveNodes,
-      totalNodes: acc.totalNodes,
-      byState,
-      jobs,
-      line: {
-        state: "Terminated",
-        onMachine: false,
-        phrase: BlockStatusCancelledPhrase,
-        nodes: 1,
-        ofNodes: acc.liveNodes,
-        heldSince: nsToMs(acc.cancelledNs),
-      },
-      startedAt: acc.firstNs === undefined ? undefined : nsToMs(acc.firstNs),
-      lastChangeAt: nsToMs(acc.cancelledNs),
-      done: true,
-      cancelled: true,
-    };
+    return { ...summary, lastChangeAt: nsToMs(acc.cancelledNs), done: true, cancelled: true };
 
   return {
-    availability: "read",
-    runId,
-    liveNodes: acc.liveNodes,
-    totalNodes: acc.totalNodes,
-    byState,
-    jobs,
-    line: deriveLine(acc, byState, failure),
-    startedAt: acc.firstNs === undefined ? undefined : nsToMs(acc.firstNs),
+    ...summary,
     lastChangeAt: acc.lastNs === undefined ? undefined : nsToMs(acc.lastNs),
     // The root's outputs can be set while work it started still runs, so done needs both.
-    done: (rootFolded?.terminal ?? false) && acc.liveNodes === 0,
-    failure: failure === undefined || failure.reason === "" ? undefined : failure.reason,
-  };
-}
-
-/** {@link rank} for a group: only the render's own `Running` is the heartbeat. */
-function groupRank(group: { state: BlockStatusState; onMachine: boolean }): number {
-  return group.state === "Running" && !group.onMachine ? 0 : 1;
-}
-
-/** The operation holding the block: the failure the run ended in, else the largest live group. */
-function deriveLine(
-  acc: Accumulator,
-  byState: readonly BlockStatusStateCount[],
-  failure: { ns: string; reason: string } | undefined,
-): BlockStatusLine | undefined {
-  if (failure !== undefined)
-    return {
-      state: "Terminated",
-      onMachine: false,
-      phrase: blockStatusPhrases.Terminated,
-      nodes: 1,
-      ofNodes: acc.liveNodes,
-      heldSince: nsToMs(failure.ns),
-      reason: failure.reason === "" ? undefined : failure.reason,
-    };
-
-  const leading = byState[0];
-  if (leading === undefined) return undefined;
-
-  return {
-    state: leading.state,
-    onMachine: leading.onMachine,
-    phrase: leading.phrase,
-    nodes: leading.nodes,
-    ofNodes: acc.liveNodes,
-    heldSince: leading.since,
-    detail: leading.detail,
+    done: (acc.root?.terminal ?? false) && acc.liveNodes === 0,
+    failure: acc.root?.failure || undefined,
   };
 }
