@@ -131,6 +131,34 @@ export type BlockStatusLine = {
   readonly reason?: string;
 };
 
+/**
+ * The block's jobs: the commands it runs on a machine, each counted once by where it is now.
+ *
+ * A job is a context that a command or its work folder reports in. Jobs the run has not created yet
+ * are not counted, so `total` grows while the run fans out.
+ */
+export type BlockStatusJobs = {
+  readonly total: number;
+  readonly done: number;
+  readonly failed: number;
+  /** Executing on a machine. */
+  readonly running: number;
+  /** Getting their input files. */
+  readonly copying: number;
+  /** Input files copied so far by the jobs copying now, when their work folders report it. */
+  readonly files?: { readonly done: number; readonly total: number };
+  /** Waiting for CPU or memory on the server. */
+  readonly queued: number;
+  /** When the earliest job still queued entered the queue, ms since the epoch. */
+  readonly queuedSince?: number;
+  /** Held by the cluster (Kubernetes, Batch): it has the job and has not started it. */
+  readonly pending: number;
+  /** When the earliest job still held by the cluster was handed to it, ms since the epoch. */
+  readonly pendingSince?: number;
+  /** Saving their results. */
+  readonly saving: number;
+};
+
 /** Why a summary carries no counters. */
 export type BlockStatusAvailability =
   /** The tree was read and the run has reported what the summary holds. */
@@ -154,6 +182,8 @@ export type BlockStatusSummary = {
   readonly totalNodes: number;
   /** Live nodes by state, the largest group first: the spec's counters by state. */
   readonly byState: readonly BlockStatusStateCount[];
+  /** The run's jobs, counted apart from the template renders that only prepare them. */
+  readonly jobs: BlockStatusJobs;
   /** The operation holding the block, or undefined when nothing is live. */
   readonly line?: BlockStatusLine;
   /** The first transition anywhere in the tree, ms since the epoch. */
@@ -171,12 +201,25 @@ export type BlockStatusSummary = {
   readonly cancelled?: boolean;
 };
 
+/** No jobs yet. */
+export const EmptyBlockStatusJobs: BlockStatusJobs = {
+  total: 0,
+  done: 0,
+  failed: 0,
+  running: 0,
+  copying: 0,
+  queued: 0,
+  pending: 0,
+  saving: 0,
+};
+
 /** A summary for a block whose run has not reported anything yet. */
 export const EmptyBlockStatusSummary: BlockStatusSummary = {
   availability: "read",
   liveNodes: 0,
   totalNodes: 0,
   byState: [],
+  jobs: EmptyBlockStatusJobs,
   done: false,
 };
 
