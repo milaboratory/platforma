@@ -3880,9 +3880,6 @@ importers:
       d3-selection:
         specifier: 'catalog:'
         version: 3.0.0
-      resize-observer-polyfill:
-        specifier: 'catalog:'
-        version: 1.5.1
       sortablejs:
         specifier: 'catalog:'
         version: 1.15.7
