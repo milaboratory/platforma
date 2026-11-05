@@ -133,6 +133,16 @@ async function listedEntry(render: V2Render, source: string) {
   }
 }
 
+/** The step names of the progress map listed for `source`, once stable. */
+async function progressSteps(render: V2Render, source: string) {
+  return await awaitStableState(
+    render.computeOutput("effect", (a) =>
+      input(input(input(a, "imports"), source), "progress")?.listInputFields(),
+    ),
+    OUTPUT_TIMEOUT,
+  );
+}
+
 const MAP = { type: "EphStdMap/1", inputsLocked: true, ready: true };
 
 tplTest.concurrent.for([{ isProduction: true }, { isProduction: false }])(
@@ -182,6 +192,7 @@ tplTest.concurrent.for([{ isProduction: true }, { isProduction: false }])(
       targets: { file: "Blob/1", progress: "std/map/1" },
     });
     expect(layout.entries[source].targets.upload).toMatch(/^BlobUpload\/[^/]+\/1$/);
+    expect(await progressSteps(render, source)).toStrictEqual(["01"]);
     expect(await resultFileContent(render, "file0", driverKit)).eq(ASSET_CONTENT);
   },
 );
@@ -206,17 +217,19 @@ tplTest.concurrent(
       fields: ["file", "progress"],
       targets: { file: "Blob/1", progress: "std/map/1" },
     });
+    expect((await progressSteps(render, source))?.length).toBeGreaterThan(0);
     expect(await resultFileContent(render, "file0", driverKit)).eq(ASSET_CONTENT);
   },
 );
 
 tplTest.concurrent(
-  "a source imported twice is listed once, and both imports give the same file",
+  "a source imported twice is listed once and both imports give the same file; another source gives another file",
   async ({ helper, pl, driverKit, expect, skip }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
     const upload = await uploadSource(driverKit);
-    const library = await librarySource(driverKit);
+    // a library file whose content differs from the uploaded one's
+    const library = await librarySource(driverKit, "another_answer_to_the_ultimate_question.txt");
     const render = await renderWorkflowV2(helper, "v2.effect-import", {
       blockId: "effect-twice",
       args: { sources: [upload, library, upload] },
@@ -227,15 +240,14 @@ tplTest.concurrent(
     expect(layout.imports.fields).toStrictEqual([library, upload].sort());
     const files = await awaitStableState(
       render.computeOutput("result", (a) => {
-        const ids = ["file0", "file2"].map((name) => {
-          const download = input(a, name);
-          return download?.traverse("blob")?.id;
-        });
+        const ids = ["file0", "file1", "file2"].map((name) => input(a, name)?.id);
         return ids.includes(undefined) ? undefined : ids;
       }),
       OUTPUT_TIMEOUT,
     );
-    expect(files?.[0]).eq(files?.[1]);
+    expect(files).toHaveLength(3);
+    expect(files?.[0]).eq(files?.[2]);
+    expect(files?.[1]).not.eq(files?.[0]);
   },
 );
 
@@ -296,7 +308,7 @@ tplTest.concurrent.for([
 );
 
 tplTest.concurrent(
-  "importing through the effect after the body has returned fails the render",
+  "importing through the effect after the body has returned fails the render, even a source the body imported",
   async ({ helper, pl, driverKit, expect, skip }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
