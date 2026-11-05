@@ -1,4 +1,4 @@
-// A workflow with a prepare step imports args.source in its body: the effect is the re-render's.
+// A workflow with a prepare step imports args.source in its body; its effect output lists that import.
 wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
 ex := import("@platforma-sdk/workflow-tengo:v2.exports")
 file := import("@platforma-sdk/workflow-tengo:file")

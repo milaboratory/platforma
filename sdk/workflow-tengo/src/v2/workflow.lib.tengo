@@ -10,8 +10,8 @@
  *  - `result`: a map of the body's `outputs`;
  *  - `exports`: the node the body returned as `exports` (see `:v2.exports`), set directly; the
  *    project builds the block's context around it;
- *  - `effect`: the work the engine carries out for the workflow, which block code never reads (see
- *    `body`).
+ *  - `effect`: the files the workflow imports, listed for the engine — the client-side runtime that
+ *    sends uploads and reports import progress — and never read by block code (see `body`).
  *
  * A ref names a value another block's workflow exports:
  *
@@ -59,11 +59,12 @@ _INPUT_CONTEXT := "context"
 // the effect's section listing the files the workflow imports, one field per source
 _IMPORTS_SECTION := "imports"
 
-// one file the workflow imports, as the effect lists it: Input fields `upload` (uploads only),
-// `progress` and `file`
+// one file the workflow imports, as the effect lists it: Input fields `upload` (upload grants
+// only), `progress` and `file`
 _RTYPE_IMPORT_ENTRY := { Name: "ImportEntry", Version: "1" }
 
-// the prefix of a source the client uploads; any other accepted source the backend imports alone
+// the prefix of a source the client uploads; the backend imports any other accepted source without
+// the client
 _UPLOAD_SOURCE_PREFIX := "upload://upload/"
 
 // a field name prefix of the inputs that 'prepare()' requested
@@ -187,7 +188,8 @@ anchoredQuery := func(anchors, queryMap, ...opts) {
  * Requests resources the body needs resolved: `cb(args)` returns a map of references; the body runs
  * once they are ready, with each under its name in `args`. Applies to run and auto workflows alike.
  * Files are imported in the body, not here (see `body`): an upload grant imported here with `:file`'s
- * `importFile` is never uploaded, so the body never runs.
+ * `importFile` is not listed for the engine, so unless something else uploads it, it never resolves
+ * and the body never runs.
  *
  * @param cb: func(args) map
  */
@@ -317,6 +319,8 @@ _buildOutputs := func(results, effect) {
  * `effect` imports files and lists them for the engine, which reports each import and, for an
  * upload grant, sends the upload:
  *
+ *     file := import("@platforma-sdk/workflow-tengo:file")
+ *
  *     wf.body(func(args, effect) {
  *         reads := effect.importFile(args.reads)
  *         return { outputs: { reads: file.exportFile(reads) }, exports: ex.collection({}) }
@@ -324,17 +328,19 @@ _buildOutputs := func(results, effect) {
  *
  * `effect.importFile(source)` takes what `:file`'s `importFile` takes, parsed and validated by it —
  * an upload grant (`upload://upload/…`, a local file or a URL the client uploads) or a library file
- * (`index://index/…`, which the backend imports alone) — and returns a reference to the imported
- * file; no output of the block has to start or report the import. Sources are compared as strings:
- * the same string again returns the same file, and two spellings of one record are two imports. The
- * whole source string becomes a field name, so it must fit the backend's limit of 65,535 bytes. A
- * failed import is an error on that file and on the render's `effect`.
+ * (`index://index/…`, which the backend imports without the client) — and returns a reference to
+ * the imported file; no output of the block has to start or report the import. Sources are compared
+ * as strings: the same string again returns the same file, and two different strings naming the
+ * same file are imported and listed twice. The whole source string becomes a field name, so it must
+ * fit the backend's limit of 65,535 bytes. A failed import puts its error on the imported file; the
+ * backend reports it on the entry, the `imports` map and `effect` once all inputs of each are
+ * final, so another import still running delays it there.
  *
- * Only the workflow body imports this way: `effect` exists only as this argument, and calling it
- * after the body has returned panics. `prepare` gets no effect, and neither does a sub-template:
- * import in the body and pass the file on. A file imported with `:file`'s `importFile` anywhere
- * else is not listed, so the engine does not report it, and an upload grant imported that way is
- * never uploaded and its file never becomes ready.
+ * Only the workflow body imports this way: `effect` exists only as this argument, and calling
+ * `effect.importFile` after the body has returned panics. `prepare` gets no effect, and neither
+ * does a sub-template: import in the body and pass the file on. A file imported with `:file`'s
+ * `importFile` anywhere else is not listed, so the engine neither reports it nor uploads it: unless
+ * something else uploads an upload grant imported that way, its file never becomes ready.
  *
  * Once the body has returned, the render's `effect` output is an ephemeral map with inputs locked:
  * its field `imports` is an ephemeral map, inputs locked and empty when nothing was imported, with

@@ -22,7 +22,7 @@ vi.setConfig({ testTimeout: 240_000 });
  *   effect: EphStdMap/1, inputs locked
  *   └─ imports: EphStdMap/1, inputs locked
  *      └─ <source>: ImportEntry/1, inputs locked
- *         ├─ upload: the storage-side upload a client sends parts to (uploads only)
+ *         ├─ upload: the storage-side upload a client sends parts to (upload grants only)
  *         ├─ progress: the import's map of progress steps
  *         └─ file: the imported file
  *
@@ -106,7 +106,8 @@ async function settledEffect(render: V2Render): Promise<EffectLayout> {
   );
 }
 
-/** Starts the upload the effect lists for `source`, as the engine would, and waits for it to end. */
+/** Starts the upload the effect lists for `source`, as the engine (the client that sends uploads) would,
+ *  and waits for it to end. */
 async function runUpload(render: V2Render, source: string, driverKit: MiddleLayerDriverKit) {
   const progress = render
     .computeOutput("effect", (a, ctx) => {
@@ -267,7 +268,7 @@ tplTest.concurrent(
 );
 
 tplTest.concurrent(
-  "a failed import fails the effect with the import's error, reached through its entry",
+  "a failed import fails the effect: reading its entry under imports gives the import's error",
   async ({ helper, pl, expect, skip }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
