@@ -149,24 +149,20 @@ const readers: Reader[] = [
   { name: "listDynamic", read: (t, w) => t.get(new W(), R).listDynamicFields(w).sort().join() },
   { name: "listFields", read: (t, w) => t.get(new W(), R).listFields(w).sort().join() },
   // "" sees every key, "k1" straddles the k1/k11 boundary, "z" never matches anything.
-  ...["", "k1", "k11", "z"].map(
-    (prefix): Reader => ({
-      name: "listKv:" + (prefix === "" ? "*" : prefix),
-      read: (t, w) =>
-        t
-          .get(new W(), R)
-          .listKeyValuesString(w, prefix)
-          .map((e) => `${e.key}=${e.value}`)
-          .sort()
-          .join(),
-    }),
-  ),
-  ...["k1", "k11", "k2"].map(
-    (k): Reader => ({
-      name: "kv:" + k,
-      read: (t, w) => String(t.get(new W(), R).getKeyValueString(w, k)),
-    }),
-  ),
+  ...["", "k1", "k11", "z"].map((prefix): Reader => ({
+    name: "listKv:" + (prefix === "" ? "*" : prefix),
+    read: (t, w) =>
+      t
+        .get(new W(), R)
+        .listKeyValuesString(w, prefix)
+        .map((e) => `${e.key}=${e.value}`)
+        .sort()
+        .join(),
+  })),
+  ...["k1", "k11", "k2"].map((k): Reader => ({
+    name: "kv:" + k,
+    read: (t, w) => String(t.get(new W(), R).getKeyValueString(w, k)),
+  })),
   ...NAMES.flatMap((n): Reader[] => [
     {
       name: "get:" + n,
