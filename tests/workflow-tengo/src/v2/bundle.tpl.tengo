@@ -11,7 +11,7 @@ render := import("@platforma-sdk/workflow-tengo:render")
 
 decodeTpl := assets.importTemplate(":v2.decode-bundle")
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	b := wf.createPBundleBuilder()
 	singles := {}
 	multis := {}

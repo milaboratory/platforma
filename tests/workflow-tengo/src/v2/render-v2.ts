@@ -17,7 +17,7 @@ export function hasValuesTree(pl: PlClient): boolean {
   return pl.serverInfo.capabilities?.includes(VALUES_TREE_CAPABILITY) ?? false;
 }
 
-export type V2Render = TestRenderResults<"result" | "exports">;
+export type V2Render = TestRenderResults<"result" | "exports" | "effect">;
 
 /** A block whose rendered exports a downstream render reads, through a BContext/2 it is linked into. */
 export type Upstream = {
@@ -72,7 +72,7 @@ export async function renderWorkflowV2(
   template: string,
   ops: RenderV2Options,
 ): Promise<V2Render> {
-  return await helper.renderTemplate(true, template, ["result", "exports"], (tx) => ({
+  return await helper.renderTemplate(true, template, ["result", "exports", "effect"], (tx) => ({
     args: tx.createValue(Pl.JsonObject, JSON.stringify(ops.args ?? {})),
     blockId: tx.createValue(Pl.JsonString, JSON.stringify(ops.blockId)),
     isProduction: tx.createValue(Pl.JsonBool, JSON.stringify(ops.isProduction ?? true)),

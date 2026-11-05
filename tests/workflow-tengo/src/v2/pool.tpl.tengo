@@ -23,7 +23,7 @@ columnSpec := func(set, name, valueType, ...contextDomain) {
 	return s
 }
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	set := wf.getBlockId()
 	items := {
 		numbers: {

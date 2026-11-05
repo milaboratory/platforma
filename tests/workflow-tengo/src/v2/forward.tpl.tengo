@@ -5,7 +5,7 @@ render := import("@platforma-sdk/workflow-tengo:render")
 
 frameTpl := assets.importTemplate(":v2.frame")
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	frame := render.create(frameTpl, { ids: args.ids })
 	return {
 		outputs: {},

@@ -4,6 +4,6 @@ wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
 v1 := import("@platforma-sdk/workflow-tengo:workflow")
 ex := import("@platforma-sdk/workflow-tengo:v2.exports")
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	return { outputs: { ran: true }, exports: ex.collection({}) }
 })

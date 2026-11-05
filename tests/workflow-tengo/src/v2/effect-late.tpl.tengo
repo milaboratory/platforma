@@ -1,0 +1,14 @@
+// Keeps the body's effect argument and imports through it after the body has returned.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+
+kept := undefined
+
+wf.body(func(args, effect) {
+	kept = effect
+	return { outputs: { ran: true }, exports: ex.collection({}) }
+})
+
+if !is_undefined(kept) {
+	kept.importFile(wf.args().source)
+}
