@@ -1,0 +1,57 @@
+---
+"@milaboratories/biowasm-tools": minor
+"@milaboratories/build-configs": minor
+"@milaboratories/columns-collection-driver": minor
+"@milaboratories/computable": minor
+"@milaboratories/helpers": minor
+"@milaboratories/milaboratories.monetization-test": minor
+"@milaboratories/milaboratories.pool-explorer": minor
+"@milaboratories/milaboratories.ui-examples": minor
+"@milaboratories/node-streams": minor
+"@milaboratories/pf-driver": minor
+"@milaboratories/pf-spec": minor
+"@milaboratories/pf-spec-driver": minor
+"@milaboratories/pl-client": minor
+"@milaboratories/pl-config": minor
+"@milaboratories/pl-crash-recorder": minor
+"@milaboratories/pl-deployments": minor
+"@milaboratories/pl-drivers": minor
+"@milaboratories/pl-error-like": minor
+"@milaboratories/pl-errors": minor
+"@milaboratories/pl-healthcheck": minor
+"@milaboratories/pl-http": minor
+"@milaboratories/pl-mcp-server": minor
+"@milaboratories/pl-middle-layer": minor
+"@milaboratories/pl-model-backend": minor
+"@milaboratories/pl-model-common": minor
+"@milaboratories/pl-model-middle-layer": minor
+"@milaboratories/pl-tree": minor
+"@milaboratories/ptabler-expression-js": minor
+"@milaboratories/resolve-helper": minor
+"@milaboratories/sequences": minor
+"@milaboratories/strings": minor
+"@milaboratories/test-helpers": minor
+"@milaboratories/ts-builder": minor
+"@milaboratories/ts-configs": minor
+"@milaboratories/ts-helpers": minor
+"@milaboratories/ts-helpers-winston": minor
+"@milaboratories/uikit": minor
+"@platforma-open/milaboratories.software-ptabler": minor
+"@platforma-open/milaboratories.software-ptabler.schema": minor
+"@platforma-open/milaboratories.software-ptexter": minor
+"@platforma-sdk/block-kind": minor
+"@platforma-sdk/block-tools": minor
+"@platforma-sdk/blocks-deps-updater": minor
+"@platforma-sdk/bootstrap": minor
+"@platforma-sdk/model": minor
+"@platforma-sdk/package-builder": minor
+"@platforma-sdk/package-builder-lib": minor
+"@platforma-sdk/pl-cli": minor
+"@platforma-sdk/r-builder": minor
+"@platforma-sdk/tengo-builder": minor
+"@platforma-sdk/test": minor
+"@platforma-sdk/ui-vue": minor
+"@platforma-sdk/workflow-tengo": minor
+---
+
+Release every package through npm trusted publishing (OIDC) so each package's trusted publisher is used before it expires.
