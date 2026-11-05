@@ -16,9 +16,9 @@
  * template again as stage 2 (awaitOutcome "saveOutcome") on the main save's outcomes. Without
  * processors there is one stage.
  *
- * Only an outcome saying the directory's content is lost (WorkdirMissing, FileMissing) restarts;
- * any other failed entry (reason Error) is about its own file, which carries the error as with
- * WorkdirSave v1. The save chain's outputs come in `outputs`, a resource the input unmarshaller
+ * Only an outcome saying the working directory is lost (WorkdirMissing) restarts; any other
+ * failed entry (reason Error, a missing file included) is about its own file, which carries the
+ * error as with WorkdirSave v1. The save chain's outputs come in `outputs`, a resource the input unmarshaller
  * hands over unopened, and go out as references into it: the body never reads them.
  */
 

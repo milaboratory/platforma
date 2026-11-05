@@ -50,8 +50,8 @@ async function firstRender(helper: Helper, deleteWorkdir: boolean | "file") {
   expect(dir.startsWith(path.resolve(WORK_ROOT!) + path.sep)).toBe(true);
   expect(fs.existsSync(dir)).toBe(true);
   if (deleteWorkdir === true) fs.rmSync(dir, { recursive: true, force: true });
-  // only a file the command wrote and the plan saves as a file (a content rule has no outcome:
-  // a lost content is an error, as with v1): a FileMissing outcome
+  // only a file the command wrote and the plan saves as a file, the directory kept: an Error
+  // outcome, not a restart
   if (deleteWorkdir === "file") fs.rmSync(path.join(dir, "extra.txt"));
   return wd!.id;
 }
@@ -168,16 +168,21 @@ tplTest.skipIf(WORK_ROOT === undefined)(
   120_000,
 );
 
+// Only a lost working directory restarts. A saved file gone from a directory that is still there
+// is the software's or the block's problem: the job fails with the file's error, as with v1 (its
+// sibling outputs fail with it, decision D12), and nothing runs again.
 tplTest.skipIf(WORK_ROOT === undefined)(
-  "exec restart: a saved file gone from a kept directory restarts too (FileMissing)",
+  "exec restart: a saved file gone from a kept directory fails the job, no restart",
   async ({ helper, expect, skip }) => {
     const r = await secondRender(helper, await firstRender(helper, "file"), {
       restartLimit: 3,
       saveOutFile: true,
     });
     if (r === undefined) return skip("no WorkdirSave v3 on the backend");
-    expect(r.out).toBe("restarted\n");
-    expect(r.attempts?.map((a) => a.result)).toEqual(["workdirMissing", "success"]);
+    expect(r.out).toBeInstanceOf(Error);
+    expect((r.out as Error).message).toContain("extra.txt");
+    expect((r.out as Error).message).toContain("not found");
+    expect((r.out as Error).message).not.toContain("restarted");
   },
   120_000,
 );

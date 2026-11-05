@@ -18,9 +18,10 @@ _OUTCOME_FIELD := "outcome"
 // WorkdirSave v3 (exec fallbacks, spec §14.4, decision D2): v1's inputs and outputs plus one output
 // `outcome`, a locked std/map with `workdir` -> {result: "success"} | {result: "fail", reason:
 // "WorkdirMissing", message} and one entry per file or archive rule key -> the index task's
-// outcome of the same shape (reason "FileMissing" or "WorkdirMissing"), each a
-// `workdir-save/outcome` value. A missing working directory or file is an outcome, not an error:
-// on a missing directory only `outcome` is set. Everything about the v3 contract the SDK relies on
+// outcome of the same shape (reason "WorkdirMissing" or "Error"), each a `workdir-save/outcome`
+// value. A missing working directory is an outcome, not an error: on a missing directory only
+// `outcome` is set. A missing file in a directory that is still there is an Error entry, and its
+// blob carries the error as with v1. Everything about the v3 contract the SDK relies on
 // is here and in :exec.save-chain.
 RTYPE_WORKDIR_SAVE_V3 := { Name: "WorkdirSave", Version: "3" }
 

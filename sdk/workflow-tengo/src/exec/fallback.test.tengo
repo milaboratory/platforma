@@ -132,9 +132,13 @@ Test_lostWorkdir := func() {
 	test.isEqual("workdir: working directory \"x\" does not exist", saveChain.lostWorkdir({
 		workdir: { result: "fail", reason: "WorkdirMissing", message: "working directory \"x\" does not exist" }
 	}))
-	test.isEqual("out.tsv: FileMissing", saveChain.lostWorkdir({
+	test.isEqual("out.tsv: working directory \"x\" does not exist", saveChain.lostWorkdir({
 		workdir: { result: "success" },
-		"out.tsv": { result: "fail", reason: "FileMissing" }
+		"out.tsv": { result: "fail", reason: "WorkdirMissing", message: "working directory \"x\" does not exist" }
+	}))
+	test.isEqual(undefined, saveChain.lostWorkdir({
+		workdir: { result: "success" },
+		"out.tsv": { result: "fail", reason: "Error", message: "cannot index file: not found" }
 	}))
 }
 

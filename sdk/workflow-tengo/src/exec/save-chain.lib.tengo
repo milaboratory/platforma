@@ -19,7 +19,7 @@ maps := import(":maps")
 _OUTCOME_WORKDIR := "workdir"
 
 // Outcome reasons of WorkdirSave v3 that mean the working directory's content is lost.
-_LOST_REASONS := { WorkdirMissing: true, FileMissing: true }
+_LOST_REASONS := { WorkdirMissing: true }
 
 /**
  * @param queue: string - the exec's queue
@@ -160,9 +160,9 @@ run := func(wdAfter, settings, wdProcessors, opts) {
 /**
  * Reads the save outcomes of WorkdirSave v3 (decision D2): `workdir` -> the directory's outcome,
  * and one entry per file or archive rule -> its index task's outcome, each
- * { result: "success" } or { result: "fail", reason: "WorkdirMissing" | "FileMissing", message }.
- * Either reason means the working directory's content is lost; every other save failure is an
- * error of the save, not an outcome.
+ * { result: "success" } or { result: "fail", reason: "WorkdirMissing" | "Error", message }.
+ * Only WorkdirMissing means the working directory's content is lost; an Error entry is about its
+ * own file, which carries the error as with WorkdirSave v1, so it restarts nothing.
  *
  * @param outcomes: map - key -> outcome JSON
  * @return string | undefined - what was lost, or undefined when everything was saved
