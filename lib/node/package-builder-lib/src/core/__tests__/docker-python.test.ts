@@ -227,7 +227,11 @@ describe("Docker Python Functions", () => {
 
       expect(content).toContain("FROM python:3.12-slim AS deps");
       expect(content).toContain(
-        `RUN pip install --no-cache-dir -r requirements.txt \\\n    && python3 - /usr/local /layers 8 ${2 * 1024 ** 3} <<'LAYER_SPLIT_EOF'`,
+        `RUN pip install --no-compile --no-cache-dir -r requirements.txt \\\n` +
+          `    && python3 -m compileall -q -f -j 0 --invalidation-mode unchecked-hash \\\n`,
+      );
+      expect(content).toContain(
+        `    && python3 - /usr/local /layers 16 ${2 * 1024 ** 3} <<'LAYER_SPLIT_EOF'`,
       );
       // the split script is inlined between the heredoc markers
       expect(content).toMatch(
@@ -236,14 +240,14 @@ describe("Docker Python Functions", () => {
 
       const copies = content.match(/^COPY --from=deps \/layers\/\d+\/ \/$/gm) ?? [];
       expect(copies).toEqual(
-        Array.from({ length: 8 }, (_, i) => `COPY --from=deps /layers/${i}/ /`),
+        Array.from({ length: 16 }, (_, i) => `COPY --from=deps /layers/${i}/ /`),
       );
 
       // dependency layers come after the site-packages reset and before the package source
       const reset = content.indexOf('RUN purelib="$(python3 -c');
       expect(reset).toBeGreaterThan(content.indexOf("FROM python:3.12-slim\n"));
       expect(reset).toBeLessThan(content.indexOf("COPY --from=deps /layers/0/ /"));
-      expect(content.indexOf("COPY --from=deps /layers/7/ /")).toBeLessThan(
+      expect(content.indexOf("COPY --from=deps /layers/15/ /")).toBeLessThan(
         content.indexOf("COPY . /app"),
       );
 
@@ -265,7 +269,9 @@ describe("Docker Python Functions", () => {
 
       const dockerfileContent = fs.readFileSync(result.dockerfile, "utf-8");
       expect(dockerfileContent).toContain("COPY");
-      expect(dockerfileContent).toContain("RUN pip install --no-cache-dir -r requirements.txt");
+      expect(dockerfileContent).toContain(
+        "RUN pip install --no-compile --no-cache-dir -r requirements.txt",
+      );
 
       // Check that empty requirements.txt was created in context directory (src)
       const emptyRequirementsPath = path.join(testPackageRoot, "src", "requirements.txt");
