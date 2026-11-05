@@ -28,6 +28,19 @@ describe("parseInstanceStats", () => {
     });
   });
 
+  it("reads the GPU devices and GPU memory, and no GPU count from a null reading", () => {
+    const stats = parseInstanceStats([
+      kv("reading/instance/gpu", { total: 8, current: 3 }),
+      kv("reading/instance/gpu-memory", null),
+    ]);
+    expect(stats.gpu).toEqual({ total: 8, current: 3 });
+    expect(stats.gpuMemory).toBeUndefined();
+    expect(
+      parseInstanceStats([kv("reading/instance/gpu-memory", { total: 24e9, current: 12e9 })])
+        .gpuMemory,
+    ).toEqual({ total: 24e9, current: 12e9 });
+  });
+
   it("keeps a capacity whose total the source does not know", () => {
     expect(parseInstanceStats([kv("reading/instance/cpu", { current: 4000 })]).cpu).toEqual({
       current: 4000,

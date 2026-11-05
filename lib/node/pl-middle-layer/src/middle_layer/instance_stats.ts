@@ -73,6 +73,8 @@ export function parseInstanceStats(kvs: readonly { key: string; value: string }[
     availability: "read",
     cpu: asCapacity(readings.get("cpu")),
     ram: asCapacity(readings.get("ram")),
+    gpu: asCapacity(readings.get("gpu")),
+    gpuMemory: asCapacity(readings.get("gpu-memory")),
     jobs: asJobs(readings.get("jobs")),
     source: typeof source === "string" ? source : undefined,
     kueueShared: typeof kueueShared === "boolean" ? kueueShared : undefined,

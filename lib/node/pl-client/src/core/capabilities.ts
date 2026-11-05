@@ -39,7 +39,7 @@ export type BackendCapability =
   // explicit input lock.
   | "optionalFieldsInSchemas:v1"
   // The instance statistics context: one per instance, readable by every user, its readings
-  // written by the executor runner (CPU, RAM, jobs).
+  // written by the executor runner (CPU, RAM, GPU, jobs).
   | "instanceStats:v1";
 
 /** True iff `capabilities` advertises the requested token. */

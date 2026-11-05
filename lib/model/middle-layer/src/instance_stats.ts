@@ -30,6 +30,14 @@ export type InstanceStats = {
   readonly cpu?: InstanceStatsCapacity;
   /** In bytes. */
   readonly ram?: InstanceStatsCapacity;
+  /**
+   * GPUs. On Kueue, devices held by jobs out of the quota. Locally, jobs that use a GPU on the
+   * detected cards; jobs share cards, so `current` can exceed `total`. Undefined when no GPU count
+   * is known: a local install without a GPU, or Kubernetes without a GPU pool.
+   */
+  readonly gpu?: InstanceStatsCapacity;
+  /** GPU memory allocated to jobs, in bytes. Set only on a local install with a detected GPU. */
+  readonly gpuMemory?: InstanceStatsCapacity;
   /** Jobs holding an allocation, and jobs waiting for one. */
   readonly jobs?: { readonly running: number; readonly queued: number };
   /** Where the numbers come from, `scheduler` or `kueue`. A label only. */
