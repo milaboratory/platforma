@@ -7,7 +7,9 @@ export default {
 <script lang="ts" setup>
 import "./pl-alert.scss";
 
+import type { MaskIconName24 } from "../../types";
 import PlCloseModalBtn from "../../utils/PlCloseModalBtn.vue";
+import { PlIcon24 } from "../PlIcon24";
 
 defineEmits<{
   /**
@@ -76,7 +78,7 @@ withDefaults(
   },
 );
 
-const iconMap = {
+const iconMap: Record<"success" | "warn" | "info" | "error", MaskIconName24> = {
   success: "success",
   warn: "warning",
   info: "edit",
@@ -93,7 +95,7 @@ const iconMap = {
     :class="[{ monospace, whiteSpacePre }, type ? `pl-alert__${type}` : '']"
   >
     <div v-if="icon && type" data-testid="pl-alert-icon" class="pl-alert__icon">
-      <div :class="`icon-24 icon-${iconMap[type]}`" />
+      <PlIcon24 :name="iconMap[type]" />
     </div>
     <div class="pl-alert__main">
       <label v-if="label || $slots.label" data-testid="pl-alert-label">
