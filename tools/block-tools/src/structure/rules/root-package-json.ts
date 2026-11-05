@@ -76,7 +76,7 @@ export function rootPackageJsonInitial(): Record<string, unknown> {
   };
 }
 
-export function rootPackageJsonRules(): void {
+export function rootPackageJsonToolchainRules(): void {
   ensureField("packageManager", PACKAGE_MANAGER);
   ensureField("devEngines.runtime", NODE_RUNTIME);
   removeField(
@@ -92,6 +92,10 @@ export function rootPackageJsonRules(): void {
     "pnpm",
     'pnpm 11+ ignores the "pnpm" field in package.json. Move its settings to pnpm-workspace.yaml: overrides as is, onlyBuiltDependencies as allowBuilds true, neverBuiltDependencies as allowBuilds false.',
   );
+}
+
+export function rootPackageJsonRules(): void {
+  rootPackageJsonToolchainRules();
 
   // Root is never published — it carries no `name`; delete any stray one.
   removeField("name");

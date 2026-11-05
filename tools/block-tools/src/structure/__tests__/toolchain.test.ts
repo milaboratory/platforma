@@ -31,11 +31,18 @@ const VARS: BlockVars = {
 const readMonorepoFile = (relativePath: string) =>
   readFileSync(new URL(`../../../../../${relativePath}`, import.meta.url), "utf-8");
 
-function refresh(fs: MemoryFileSystem) {
-  return engineRun(STRUCTURE, fs, discoverRunContext({ fs, isSdkInternal: false }), {
-    templates: defaultTemplateProvider(),
-    rediscover: () => discoverRunContext({ fs, isSdkInternal: false, dryRun: true }),
-  });
+const REFRESH_MODES = ["default", "update-deps-only"] as const;
+
+function refresh(fs: MemoryFileSystem, mode: (typeof REFRESH_MODES)[number] = "default") {
+  return engineRun(
+    STRUCTURE,
+    fs,
+    discoverRunContext({ fs, isSdkInternal: false, updateDepsOnly: mode === "update-deps-only" }),
+    {
+      templates: defaultTemplateProvider(),
+      rediscover: () => discoverRunContext({ fs, isSdkInternal: false, dryRun: true }),
+    },
+  );
 }
 
 function editJson(fs: MemoryFileSystem, edit: (json: Record<string, unknown>) => void) {
@@ -67,7 +74,7 @@ describe("block toolchain", () => {
     expect(workspace.allowBuilds).toMatchObject({ ...REQUIRED_BUILDS, ...SKIPPED_BUILDS });
   });
 
-  test("refresh moves an old block to the SDK pnpm and Node", () => {
+  test.each(REFRESH_MODES)("refresh (%s) moves an old block to the SDK pnpm and Node", (mode) => {
     const { fs } = simulateInit({ vars: VARS });
     editJson(fs, (json) => {
       json.packageManager = "pnpm@9.12.0";
@@ -80,7 +87,7 @@ describe("block toolchain", () => {
       doc.setIn(["catalog", "turbo"], "~2.8.11");
     });
 
-    refresh(fs);
+    refresh(fs, mode);
 
     const pkg = JSON.parse(fs.read("package.json"));
     expect(pkg.packageManager).toBe(PACKAGE_MANAGER);
@@ -146,11 +153,14 @@ describe("block toolchain", () => {
     expect(workspace.allowBuilds).toEqual({ ...SKIPPED_BUILDS, ...REQUIRED_BUILDS });
   });
 
-  test("refresh refuses a package.json pnpm field with settings", () => {
-    const { fs } = simulateInit({ vars: VARS });
-    editJson(fs, (json) => {
-      json.pnpm = { overrides: { zod: "~3.25.76" } };
-    });
-    expect(() => refresh(fs)).toThrow(/pnpm-workspace\.yaml/);
-  });
+  test.each(REFRESH_MODES)(
+    "refresh (%s) refuses a package.json pnpm field with settings",
+    (mode) => {
+      const { fs } = simulateInit({ vars: VARS });
+      editJson(fs, (json) => {
+        json.pnpm = { overrides: { zod: "~3.25.76" } };
+      });
+      expect(() => refresh(fs, mode)).toThrow(/pnpm-workspace\.yaml/);
+    },
+  );
 });
