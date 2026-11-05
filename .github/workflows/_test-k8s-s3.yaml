@@ -113,12 +113,16 @@ jobs:
           kubectl get svc,endpoints,pods -n "${NAMESPACE}" -l app.kubernetes.io/instance="${HELM_RELEASE_NAME}" -o wide
           exit 1
 
-      # The file stays outside the diagnostics folder, so redaction works on a static copy.
-      - name: Record namespace events
+      # The files stay outside the diagnostics folder, so redaction works on a static copy.
+      # `kubectl logs` returns only the current log file, about a minute at debug level, so stream it.
+      - name: Record namespace events and backend log
         run: |
           COLS="LAST:.lastTimestamp,EVENT:.eventTime,FIRST:.metadata.creationTimestamp,COUNT:.count,TYPE:.type,REASON:.reason,OBJECT:.involvedObject.name,MESSAGE:.message"
-          nohup bash -c "while :; do kubectl get events -n '${NAMESPACE}' --watch -o custom-columns='${COLS}'; sleep 5; done" \
+          bash -c "while :; do kubectl get events -n '${NAMESPACE}' --watch -o custom-columns='${COLS}'; sleep 5; done" \
             >> "${RUNNER_TEMP}/events-watch.txt" 2>&1 < /dev/null &
+          SEL="app.kubernetes.io/instance=${HELM_RELEASE_NAME}"
+          bash -c "while :; do echo \"--- stream (re)start \$(date -u +%FT%TZ)\"; kubectl logs -f --tail=-1 -n '${NAMESPACE}' -l '${SEL}' --all-containers | grep -a --line-buffered -v '\"level\":\"debug\"'; sleep 5; done" \
+            >> "${RUNNER_TEMP}/backend.log" 2>&1 < /dev/null &
 
       - name: Run tests
         env:
@@ -160,10 +164,11 @@ jobs:
           D="${RUNNER_TEMP}/k8s-diagnostics"; mkdir -p "$D"
           SEL="app.kubernetes.io/instance=${HELM_RELEASE_NAME}"
           kubectl describe pods -n "${NAMESPACE}" -l "$SEL" > "$D/pod-describe.txt" 2>&1 || true
-          kubectl logs -n "${NAMESPACE}" -l "$SEL" --all-containers --tail=-1 2>&1 | grep -v '"level":"debug"' > "$D/backend.log" || true
           kubectl logs -n "${NAMESPACE}" -l "$SEL" --all-containers --tail=10000 > "$D/backend-debug-tail.log" 2>&1 || true
           kubectl get events -n "${NAMESPACE}" --sort-by=.lastTimestamp > "$D/events.txt" 2>&1 || true
-          cp "${RUNNER_TEMP}/events-watch.txt" "$D/" || true
+          for F in events-watch.txt backend.log; do
+            head -n "$(wc -l < "${RUNNER_TEMP}/$F")" "${RUNNER_TEMP}/$F" > "$D/$F" || true
+          done
           kubectl get jobs,workloads -n "${NAMESPACE}" -o wide 2>&1 | grep -e NAME -e "${HELM_RELEASE_NAME}" > "$D/jobs.txt" || true
           for P in $(kubectl get pods -n "${NAMESPACE}" --no-headers -o custom-columns=N:.metadata.name | grep "^${HELM_RELEASE_NAME}-" || true); do
             kubectl logs "$P" -n "${NAMESPACE}" --all-containers --tail=500 > "$D/job-$P.log" 2>&1 || true
