@@ -186,6 +186,8 @@ anchoredQuery := func(anchors, queryMap, ...opts) {
 /**
  * Requests resources the body needs resolved: `cb(args)` returns a map of references; the body runs
  * once they are ready, with each under its name in `args`. Applies to run and auto workflows alike.
+ * Files are imported in the body, not here (see `body`): an upload grant imported here with `:file`'s
+ * `importFile` is never uploaded, so the body never runs.
  *
  * @param cb: func(args) map
  */
@@ -249,6 +251,7 @@ _newEffect := func() {
 	built := false
 
 	importFile := func(source) {
+		ll.assert(is_string(source), "effect.importFile takes a source string, got %v", source)
 		if built {
 			ll.panic("effect.importFile(%q) was called after the workflow body returned; " +
 				"import every file inside the body", source)
@@ -270,10 +273,10 @@ _newEffect := func() {
 		built = true
 		imports := smart.ephemeralMapBuilder()
 		for source, i in imported {
-			imports.add(source, i.entry)
+			imports.addRef(source, i.entry)
 		}
 		effect := smart.ephemeralMapBuilder()
-		effect.add(_IMPORTS_SECTION, imports.build())
+		effect.addRef(_IMPORTS_SECTION, imports.build())
 		return effect.build()
 	}
 
@@ -311,29 +314,34 @@ _buildOutputs := func(results, effect) {
  * Defines the workflow's body: `fn(args, effect)` returns `{outputs, exports}`, where `outputs` is
  * a map and `exports` is one node (`:v2.exports`). Runs for run and auto workflows alike.
  *
- * `effect` imports files for the engine to run and report:
+ * `effect` imports files and lists them for the engine, which reports each import and, for an
+ * upload grant, sends the upload:
  *
  *     wf.body(func(args, effect) {
  *         reads := effect.importFile(args.reads)
  *         return { outputs: { reads: file.exportFile(reads) }, exports: ex.collection({}) }
  *     })
  *
- * `effect.importFile(source)` takes what `:file`'s `importFile` takes — an upload grant
- * (`upload://upload/…`, a local file or a URL the client uploads) or a library file
+ * `effect.importFile(source)` takes what `:file`'s `importFile` takes, parsed and validated by it —
+ * an upload grant (`upload://upload/…`, a local file or a URL the client uploads) or a library file
  * (`index://index/…`, which the backend imports alone) — and returns a reference to the imported
- * file. The engine starts and reports the import; no output of the block has to. Importing the same
- * source string again returns the same file. A failed import is an error on that file.
+ * file; no output of the block has to start or report the import. Sources are compared as strings:
+ * the same string again returns the same file, and two spellings of one record are two imports. The
+ * whole source string becomes a field name, so it must fit the backend's limit of 65,535 bytes. A
+ * failed import is an error on that file and on the render's `effect`.
  *
- * Only the top-level workflow imports this way: `effect` exists only as this argument, and calling
- * it after the body has returned panics. A sub-template must receive the imported file as an input;
- * a file it imports itself with `:file`'s `importFile` is never listed, so the engine neither runs
- * nor reports it.
+ * Only the workflow body imports this way: `effect` exists only as this argument, and calling it
+ * after the body has returned panics. `prepare` gets no effect, and neither does a sub-template:
+ * import in the body and pass the file on. A file imported with `:file`'s `importFile` anywhere
+ * else is not listed, so the engine does not report it, and an upload grant imported that way is
+ * never uploaded and its file never becomes ready.
  *
- * The render's `effect` output is an ephemeral map with inputs locked: its field `imports` is an
- * ephemeral map, inputs locked and empty when nothing was imported, with one field per imported
- * source string, named by it, to an ImportEntry/1 resource whose Input fields are `upload` (the
- * storage-side upload a client sends parts to, present for an upload grant only), `progress` (the
- * import's map of progress steps) and `file` (the imported file).
+ * Once the body has returned, the render's `effect` output is an ephemeral map with inputs locked:
+ * its field `imports` is an ephemeral map, inputs locked and empty when nothing was imported, with
+ * one field per imported source string, named by it, to an ephemeral ImportEntry/1 with inputs
+ * locked, whose Input fields are `upload` (the storage-side upload a client sends parts to, present
+ * for an upload grant only), `progress` (the import's map of progress steps) and `file` (the imported
+ * file). A body that fails sets no output.
  *
  * @param fn: func(args, effect) {outputs, exports}
  */

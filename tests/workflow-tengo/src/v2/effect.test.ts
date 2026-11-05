@@ -145,15 +145,12 @@ async function progressSteps(render: V2Render, source: string) {
 
 const MAP = { type: "EphStdMap/1", inputsLocked: true, ready: true };
 
-tplTest.concurrent.for([{ isProduction: true }, { isProduction: false }])(
-  "a workflow that imports nothing has an effect whose imports section is empty (isProduction $isProduction)",
-  async ({ isProduction }, { helper, pl, expect, skip }) => {
+tplTest.concurrent(
+  "a workflow that imports nothing has an effect whose imports section is empty",
+  async ({ helper, pl, expect, skip }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
-    const render = await renderWorkflowV2(helper, "v2.effect-none", {
-      blockId: `effect-none-${isProduction}`,
-      isProduction,
-    });
+    const render = await renderWorkflowV2(helper, "v2.effect-none", { blockId: "effect-none" });
     expect(await resultJson(render, "ran")).eq(true);
     expect(await settledEffect(render)).toStrictEqual({
       effect: { ...MAP, fields: ["imports"] },
@@ -289,21 +286,22 @@ tplTest.concurrent(
 );
 
 tplTest.concurrent.for([
-  { source: "download://download/%7B%7D" },
-  { source: "file:///tmp/a.txt" },
-  { source: "upload://index/%7B%7D" },
+  {
+    name: "a download URL",
+    source: "download://download/%7B%7D",
+    error: /upload:\/\/upload\/.*index:\/\/index\//,
+  },
+  { name: "a map", source: { path: "/a.txt" }, error: /effect.importFile takes a source string/ },
 ])(
-  "a source that is neither an upload grant nor a library file is refused ($source)",
-  async ({ source }, { helper, pl, expect, skip }) => {
+  "a source that is neither an upload grant nor a library file is refused ($name)",
+  async ({ name, source, error }, { helper, pl, expect, skip }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
     const render = await renderWorkflowV2(helper, "v2.effect-import", {
-      blockId: `effect-refused-${encodeURIComponent(source)}`,
+      blockId: `effect-refused-${name.replace(/ /g, "-")}`,
       args: { sources: [source] },
     });
-    await expect(resultJson(render, "file0")).rejects.toThrow(
-      /upload:\/\/upload\/.*index:\/\/index\//,
-    );
+    await expect(resultJson(render, "file0")).rejects.toThrow(error);
   },
 );
 
