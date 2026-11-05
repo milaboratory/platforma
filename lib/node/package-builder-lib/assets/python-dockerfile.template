@@ -1,5 +1,7 @@
 # Auto-generated Dockerfile for Python package
-FROM ${BASE_IMAGE_TAG}
+
+# Stage 1: install dependencies, then split the installed tree into layer-sized directories.
+FROM ${BASE_IMAGE_TAG} AS deps
 
 WORKDIR ${PKG}
 
@@ -11,6 +13,25 @@ RUN ${TOOLSET} install --upgrade pip wheel setuptools
 # Install dependencies to leverage Docker cache
 COPY ${REQUIREMENTS_PATH} .
 RUN ${TOOLSET} install --no-cache-dir -r ${REQUIREMENTS_FILENAME}
+
+# One install -> several layers of about ${DEPS_LAYER_TARGET_BYTES} bytes each, so no single
+# layer is too big for the registry to finalize in time.
+RUN python3 - ${DEPS_ROOT} /layers ${DEPS_LAYERS} ${DEPS_LAYER_TARGET_BYTES} <<'LAYER_SPLIT_EOF'
+${LAYER_SPLIT_SCRIPT}
+LAYER_SPLIT_EOF
+
+# Stage 2: the base image plus the installed tree, one COPY (= one layer) per directory.
+FROM ${BASE_IMAGE_TAG}
+
+WORKDIR ${PKG}
+
+${RUNENV_ENVS}
+
+# Start from an empty site-packages, so files that pip removed in stage 1 (e.g. the
+# base image's old pip) do not come back from the base layer.
+RUN rm -rf "$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"
+
+${DEPS_LAYER_COPIES}
 
 # Copy package source
 COPY . ${PKG}
