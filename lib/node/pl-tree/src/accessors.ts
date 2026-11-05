@@ -436,17 +436,11 @@ export class PlTreeNodeAccessor {
   }
 
   /**
-   * Every KV entry whose key starts with `prefix`, for a reader that does not know the keys in
-   * advance. Watches the key set under `prefix` and every entry returned, so an entry under the
-   * prefix appearing, disappearing or changing value re-runs the reader, and one outside it does
-   * not. See {@link PlTreeResource.listKeyValues} on ordering and on stability.
+   * Every KV entry whose key starts with `prefix`, values as UTF-8 text. Watches the key set under
+   * `prefix` and every entry returned, so an entry under the prefix appearing, disappearing or
+   * changing value re-runs the reader, and one outside it does not. See
+   * {@link PlTreeResource.listKeyValues} on ordering and on stability.
    */
-  public listKeyValues(prefix: string = ""): { key: string; value: Uint8Array }[] {
-    this.instanceData.guard();
-    return this.resource.listKeyValues(this.instanceData.ctx.watcher, prefix);
-  }
-
-  /** {@link listKeyValues} with the values decoded as UTF-8 text. */
   public listKeyValuesAsString(prefix: string = ""): { key: string; value: string }[] {
     this.instanceData.guard();
     return this.resource.listKeyValuesString(this.instanceData.ctx.watcher, prefix);
