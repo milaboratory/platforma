@@ -78,12 +78,12 @@ withDefaults(
   },
 );
 
-const iconMap: Record<"success" | "warn" | "info" | "error", MaskIconName24> = {
+const iconMap = {
   success: "success",
   warn: "warning",
   info: "edit",
   error: "error",
-};
+} satisfies Record<string, MaskIconName24>;
 </script>
 
 <template>
