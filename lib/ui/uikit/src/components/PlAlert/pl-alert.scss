@@ -38,13 +38,11 @@
     background: var(--notification-neutral);
   }
 
-  // The text colour, not the alert's tone: the background already says the tone.
   &__icon {
     width: 24px;
     height: 24px;
     --icon-color: var(--ic-01);
 
-    // Without a label the first row is the 20px text line; centre the 24px icon on it.
     &--text {
       margin-top: -2px;
     }
