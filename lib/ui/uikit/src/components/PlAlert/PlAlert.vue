@@ -94,7 +94,12 @@ const iconMap: Record<"success" | "warn" | "info" | "error", MaskIconName24> = {
     :style="{ maxHeight }"
     :class="[{ monospace, whiteSpacePre }, type ? `pl-alert__${type}` : '']"
   >
-    <div v-if="icon && type" data-testid="pl-alert-icon" class="pl-alert__icon">
+    <div
+      v-if="icon && type"
+      data-testid="pl-alert-icon"
+      class="pl-alert__icon"
+      :class="{ 'pl-alert__icon--text': !label && !$slots.label }"
+    >
       <PlIcon24 :name="iconMap[type]" />
     </div>
     <div class="pl-alert__main">

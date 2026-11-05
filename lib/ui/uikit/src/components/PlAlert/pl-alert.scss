@@ -38,10 +38,6 @@
     background: var(--notification-neutral);
   }
 
-  &__icon {
-    width: 24px;
-  }
-
   &__main {
     display: flex;
     flex-direction: column;
@@ -75,4 +71,16 @@
     top: 4px;
     right: 12px;
   }
+}
+
+/* The text colour, not the alert's tone: the background already says the tone. */
+.pl-alert__icon {
+  width: 24px;
+  height: 24px;
+  --icon-color: var(--ic-01);
+}
+
+/* Without a label the first row is the 20px text line; centre the 24px icon on it. */
+.pl-alert__icon--text {
+  margin-top: -2px;
 }
