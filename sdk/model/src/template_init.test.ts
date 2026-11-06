@@ -339,6 +339,20 @@ describe("how a rejection reads", () => {
     expect(result.error).toContain("steps[2].name: Required");
   });
 
+  test("Standard Schema path segments are read by their key", () => {
+    const result = validateTemplateParams({}, () => {
+      throw Object.assign(new Error("x"), {
+        name: "ValiError",
+        issues: [
+          { path: [{ key: "steps" }, { key: 2 }, { key: "name" }], message: "Invalid key" },
+          { path: ["meta", { key: "label" }], message: "Too short" },
+        ],
+      });
+    });
+
+    expect(result.error).toContain("steps[2].name: Invalid key; meta.label: Too short");
+  });
+
   test("a plain error keeps its own words", () => {
     const result = validateTemplateParams({}, () => {
       throw new Error("numbers must not be empty");
