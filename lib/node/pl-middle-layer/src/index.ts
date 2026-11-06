@@ -1,6 +1,5 @@
 export * from "@platforma-sdk/model";
 export * from "@milaboratories/pl-model-middle-layer";
-export * from "@milaboratories/pl-deployments";
 
 export * from "./block_registry";
 export * from "./middle_layer";

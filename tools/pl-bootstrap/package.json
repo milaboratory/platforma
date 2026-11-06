@@ -26,7 +26,6 @@
     "fmt": "ts-builder format"
   },
   "dependencies": {
-    "@milaboratories/pl-deployments": "workspace:*",
     "commander": "catalog:",
     "readline-sync": "catalog:",
     "tar": "catalog:",
@@ -41,5 +40,6 @@
     "@types/node": "catalog:",
     "@types/readline-sync": "catalog:",
     "typescript": "catalog:"
-  }
+  },
+  "pl-version": "3.5.0"
 }
