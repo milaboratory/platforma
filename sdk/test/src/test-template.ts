@@ -160,10 +160,13 @@ export class TplTestHelpers {
           tx.lock(ctx);
         }
 
+        // Same input types as the middle layer (`renderProductionFor`): a `json/object`
+        // input is unmarshalled to a plain value before the workflow body runs, so
+        // `wf.blockId().getDataAsJson()` needs `json/string`.
         return {
           args: this.createObject(tx, args),
-          blockId: this.createObject(tx, blockId),
-          isProduction: this.createObject(tx, !preRun),
+          blockId: Pl.createPlString(tx, blockId),
+          isProduction: Pl.createPlBool(tx, !preRun),
           context: ctx,
         };
       },
