@@ -431,9 +431,9 @@ export function failureHeadline(reason: string): string {
 }
 
 /** The render's own latest transition in a context. */
-function latestRender(known: readonly Transition[]): Transition | undefined {
-  let latest: Transition | undefined;
-  for (const t of known)
+export function latestRender<T extends RawTransition>(transitions: readonly T[]): T | undefined {
+  let latest: T | undefined;
+  for (const t of transitions)
     if (t.namespace === RenderNamespace && (latest === undefined || compareNs(t.ns, latest.ns) > 0))
       latest = t;
   return latest;

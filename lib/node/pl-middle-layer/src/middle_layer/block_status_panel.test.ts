@@ -168,3 +168,28 @@ describe("foldBlockStatusPanel", () => {
     expect(panel.summary.jobs).toMatchObject({ total: 1, running: 1 });
   });
 });
+
+describe("firstFailurePath", () => {
+  it("leads from the root to the render that terminated first", () => {
+    const failed = (id: string, atMs: number): ContextFixture => ({
+      id,
+      transitions: [{ namespace: "render", atMs, state: "Terminated", reason: "boom" }],
+    });
+    const panel = foldBlockStatusPanel(
+      context({
+        id: "root",
+        children: [
+          { id: "a", children: [failed("late", ms(900))] },
+          { id: "b", children: [{ id: "b1", children: [failed("early", ms(100))] }] },
+        ],
+      }),
+      none,
+    );
+
+    expect(panel.firstFailurePath).toEqual(["root", "b", "b1", "early"]);
+  });
+
+  it("is undefined while nothing has terminated", () => {
+    expect(foldBlockStatusPanel(context({ id: "root" }), none).firstFailurePath).toBeUndefined();
+  });
+});
