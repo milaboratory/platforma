@@ -372,6 +372,39 @@ function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): void 
   if (!folded.terminal) acc.liveNodes++;
 }
 
+/** Where the backend nests the error of an input inside the error of what consumes it. */
+const InputErrorMarker = "has input errors:";
+
+/** Wrappers the workflow controller puts in front of a template's own error. */
+const TemplateErrorPrefix = /^(cannot eval code: |cannot eval template: |tengo template error: )+/;
+
+/** Longest headline, in characters. */
+const MaxHeadlineLength = 200;
+
+/**
+ * The innermost message of a termination reason, for a title: the backend wraps the error of each
+ * input in the error of its consumer, and tengo appends stack frames, so a reason can run to pages.
+ */
+export function failureHeadline(reason: string): string {
+  const marker = reason.lastIndexOf(InputErrorMarker);
+  const lines = reason
+    .slice(marker < 0 ? 0 : marker + InputErrorMarker.length)
+    .split("\n")
+    .map((line) => line.trim())
+    // Stack frames: `@platforma-sdk/workflow-tengo:tpl.base:595:5`.
+    .filter((line) => line !== "" && !/^@\S+:\d+:\d+$/.test(line));
+
+  const error = lines.find((line) => line.startsWith("Error: "));
+  const command = lines.find((line) => line.startsWith("Command name: "));
+  const headline =
+    error !== undefined && command !== undefined
+      ? `${command.slice("Command name: ".length).replaceAll('"', "")} failed: ${error.slice("Error: ".length)}`
+      : lines.join(" ").replace(TemplateErrorPrefix, "");
+  return headline.length > MaxHeadlineLength
+    ? `${headline.slice(0, MaxHeadlineLength - 1)}…`
+    : headline;
+}
+
 /** The render's own latest transition in a context. */
 function latestRender(known: readonly Transition[]): Transition | undefined {
   let latest: Transition | undefined;
@@ -428,6 +461,6 @@ export function foldBlockStatus(root: ActionContextNode): BlockStatusSummary {
     done:
       ((acc.root?.terminal ?? false) && acc.liveNodes === 0) ||
       (acc.failure !== undefined && working === 0),
-    failure: acc.failure?.reason,
+    failure: acc.failure === undefined ? undefined : failureHeadline(acc.failure.reason),
   };
 }

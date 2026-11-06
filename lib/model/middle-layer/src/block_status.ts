@@ -102,8 +102,9 @@ export type BlockStatusSummary = {
    */
   readonly done: boolean;
   /**
-   * Set when any render of the run terminated: the reason of the earliest one, empty when it gave
-   * none. Commands that fail are counted in {@link BlockStatusJobs.failed} instead.
+   * Set when any render of the run terminated: the innermost message of the earliest one's reason,
+   * one line, empty when it gave none. The full reason stays on the node's transitions. Commands
+   * that fail are counted in {@link BlockStatusJobs.failed} instead.
    */
   readonly failure?: string;
   /**
