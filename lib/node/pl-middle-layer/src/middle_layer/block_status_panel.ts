@@ -15,7 +15,10 @@ import type {
   BlockStatusPanelNode,
   BlockStatusPanelTransition,
 } from "@milaboratories/pl-model-middle-layer";
-import { BlockStatusPanelHeaviestCount } from "@milaboratories/pl-model-middle-layer";
+import {
+  BlockStatusPanelHeaviestCount,
+  blockStatusStatesRecord,
+} from "@milaboratories/pl-model-middle-layer";
 import type { ActionContextNode, FoldedNode, RawTransition } from "./block_status_fold";
 import {
   ChildFieldPrefix,
@@ -83,7 +86,7 @@ function firstFailurePath(root: Read): string[] | undefined {
     const path = [...above, read.node.id];
     const render = latestRender(read.all);
     if (
-      render?.state === "Terminated" &&
+      render?.state === blockStatusStatesRecord.Terminated &&
       (first === undefined || compareNs(render.ns, first.ns) < 0)
     )
       first = { ns: render.ns, path };
@@ -136,7 +139,7 @@ function computeIntervals(all: readonly RawTransition[]): { closed: bigint; open
   for (const list of byReporter.values()) {
     list.sort((a, b) => compareNs(a.ns, b.ns));
     for (let i = 0; i < list.length; i++) {
-      if (list[i].state !== "Running") continue;
+      if (list[i].state !== blockStatusStatesRecord.Running) continue;
       const next = list[i + 1];
       if (next === undefined) open.push(list[i].ns);
       else closed += BigInt(next.ns) - BigInt(list[i].ns);
