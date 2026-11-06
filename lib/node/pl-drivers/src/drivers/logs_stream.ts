@@ -24,6 +24,8 @@ export type LogsStreamDriverOps = PollingOps & {
   nConcurrentGetLogs: number;
 };
 
+export type LogsStreamClient = Pick<ClientLogs, "lastLines" | "readText">;
+
 export class LogsStreamDriver implements sdk.LogsDriver {
   /** Holds a map of StreamManager Resource Id to all logs of this stream. */
   private readonly idToLastLines: Map<SignedResourceId, LogGetter> = new Map();
@@ -36,7 +38,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
 
   constructor(
     private readonly logger: MiLogger,
-    private readonly clientLogs: ClientLogs,
+    private readonly clientLogs: LogsStreamClient,
     private readonly opts: LogsStreamDriverOps = {
       nConcurrentGetLogs: 10,
       pollingInterval: 1000,
@@ -194,6 +196,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
         lineCount,
         BigInt(offsetBytes ?? 0),
         searchStr,
+        { abort: this.terminating.signal },
       ),
     );
   }
@@ -210,6 +213,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
         lineCount,
         BigInt(offsetBytes ?? 0),
         searchStr,
+        { abort: this.terminating.signal },
       ),
     );
   }
@@ -254,11 +258,13 @@ export class LogsStreamDriver implements sdk.LogsDriver {
   private scheduledOnNextState: ScheduledRefresh[] = [];
 
   private scheduleOnNextState(resolve: () => void, reject: (err: any) => void): void {
+    if (this.terminating.signal.aborted) return resolve();
     this.scheduledOnNextState.push({ resolve, reject });
   }
 
   /** Called from observer */
   private startUpdating(): void {
+    if (this.terminating.signal.aborted) return;
     this.keepRunning = true;
     if (this.currentLoop === undefined) this.currentLoop = this.mainLoop();
   }
@@ -268,12 +274,16 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     this.keepRunning = false;
   }
 
-  /** Stops polling loop and waits for it to finish */
+  private readonly terminating = new AbortController();
+
+  /** Stops polling loop, cancels running requests and waits for the loop to finish */
   public async terminate(): Promise<void> {
     this.stopUpdating();
+    this.terminating.abort();
     if (this.currentLoop !== undefined) {
       await this.currentLoop;
     }
+    this.scheduledOnNextState.splice(0).forEach((n) => n.resolve());
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
@@ -294,7 +304,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
         const logs = this.getAllLogs();
         await asyncPool(
           this.opts.nConcurrentGetLogs,
-          logs.map((getter) => async () => await getter.update()),
+          logs.map((getter) => async () => await getter.update(this.terminating.signal)),
         );
 
         toNotify.forEach((n) => n.resolve());
@@ -304,7 +314,11 @@ export class LogsStreamDriver implements sdk.LogsDriver {
       }
 
       if (!this.keepRunning) break;
-      await scheduler.wait(this.opts.pollingInterval);
+      try {
+        await scheduler.wait(this.opts.pollingInterval, { signal: this.terminating.signal });
+      } catch {
+        break;
+      }
     }
 
     this.currentLoop = undefined;
@@ -327,7 +341,7 @@ class LogGetter {
 
   constructor(
     private readonly logger: MiLogger,
-    private readonly clientLogs: ClientLogs,
+    private readonly clientLogs: LogsStreamClient,
     private readonly rInfo: ResourceInfo,
     private readonly lines: number,
     private readonly patternToSearch?: string,
@@ -352,13 +366,14 @@ class LogGetter {
     return this.counter.dec(callerId);
   }
 
-  async update() {
+  async update(signal: AbortSignal) {
     try {
       const resp = await this.clientLogs.lastLines(
         this.rInfo,
         this.lines,
         0n,
         this.patternToSearch,
+        { abort: signal },
       );
 
       const newLogs = new TextDecoder().decode(resp.data);
@@ -369,6 +384,7 @@ class LogGetter {
 
       return;
     } catch (e: any) {
+      if (signal.aborted) return;
       if (isNotFoundError(e)) {
         // No resource
         this.logs = "";

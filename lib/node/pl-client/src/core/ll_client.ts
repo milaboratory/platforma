@@ -23,6 +23,7 @@ import {
 } from "./config";
 import type { GrpcOptions } from "@protobuf-ts/grpc-transport";
 import { GrpcTransport } from "@protobuf-ts/grpc-transport";
+import { callAbortSignal } from "./driver";
 import { LLPlTransaction } from "./ll_transaction";
 import { setResourceSignaturesRequired } from "./types";
 import { parsePlJwt } from "../util/pl";
@@ -1057,15 +1058,13 @@ export class LLPlClient implements WireClientProviderFactory {
       throw new Error("ListUserResources requires gRPC wire protocol; REST is not supported");
     }
 
-    opts.abortSignal?.throwIfAborted();
     const call = cl.listUserResources(
       {
         login: opts.login ?? "",
         startFrom: opts.startFrom ?? 0n,
         limit: opts.limit ?? 0,
       },
-      // protobuf-ts never removes its abort listener, so each call gets a signal of its own.
-      { ...(opts.abortSignal !== undefined && { abort: AbortSignal.any([opts.abortSignal]) }) },
+      { abort: callAbortSignal(opts.abortSignal) },
     );
     const responses: grpcTypes.AuthAPI_ListUserResources_Response[] = [];
     for await (const msg of call.responses) {

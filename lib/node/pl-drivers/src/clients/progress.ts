@@ -6,6 +6,7 @@ import type {
 } from "@milaboratories/pl-client";
 import {
   addRTypeToMetadata,
+  callAbortSignal,
   createRTypeRoutingHeader,
   RestAPI,
   parseSignedResourceId,
@@ -60,9 +61,7 @@ export class ClientProgress {
     const client = this.wire.get();
 
     const { globalId, signature } = parseSignedResourceId(id);
-    options?.abort?.throwIfAborted();
-    // protobuf-ts never removes its abort listener, so each call gets a signal of its own.
-    const abort = AbortSignal.any(options?.abort === undefined ? [] : [options.abort]);
+    const abort = callAbortSignal(options?.abort);
     let report: ProgressAPI_Report;
     if (client instanceof ProgressClient) {
       report = notEmpty(
