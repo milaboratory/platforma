@@ -31,6 +31,7 @@ import {
 import type { ConnectionInfo, SshPlPorts } from "./connection_info";
 import { newConnectionInfo, parseConnectionInfo, stringifyConnectionInfo } from "./connection_info";
 import type { PlBinarySourceDownload } from "../common/pl_binary";
+import { stringifyRedacted } from "../common/redact";
 
 const minRequiredGlibcVersion = 2.28;
 
@@ -179,7 +180,7 @@ export class SshPl {
 
       return state.connectionInfo!;
     } catch (e: unknown) {
-      const msg = `SshPl.platformaInit: ${e}, state: ${JSON.stringify(this.removeSensitiveData(state))}`;
+      const msg = platformaInitErrorMessage(e, state);
       this.logger.error(msg);
 
       throw new Error(msg);
@@ -197,15 +198,6 @@ export class SshPl {
 
     await onProgress?.("Stopping services...");
     await this.stop();
-  }
-
-  private removeSensitiveData(state: PlatformaInitState): PlatformaInitState {
-    const stateCopy = { ...state };
-    stateCopy.generatedConfig = {
-      ...stateCopy.generatedConfig,
-      filesToCreate: { skipped: "sanitized" },
-    } as SshPlConfigGenerationResult;
-    return stateCopy;
   }
 
   private async doStepStartPlatforma(
@@ -920,7 +912,21 @@ type PlatformaInitStep =
   | "saveNewConnectionInfo"
   | "startPlatforma";
 
-type PlatformaInitState = {
+/** Builds the message of the error `platformaInit` throws and logs.
+ * The init state carries generated credentials, so it is sanitized first. */
+export function platformaInitErrorMessage(e: unknown, state: PlatformaInitState): string {
+  const sanitized = {
+    ...state,
+    generatedConfig: state.generatedConfig && {
+      ...state.generatedConfig,
+      // contents of config.yaml and htpasswd: secrets inside are not keyed
+      filesToCreate: { skipped: "sanitized" },
+    },
+  };
+  return `SshPl.platformaInit: ${e}, state: ${stringifyRedacted(sanitized)}`;
+}
+
+export type PlatformaInitState = {
   step: PlatformaInitStep;
   localWorkdir?: string;
   plBinaryOps?: PlBinarySourceDownload;
