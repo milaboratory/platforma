@@ -68,10 +68,7 @@ describe("redactString", () => {
     ["MINIO_ROOT_PASSWORD=s3cret", `MINIO_ROOT_PASSWORD=${REDACTED}`],
     ["run --auth-token=s3cret --port=1", `run --auth-token=${REDACTED} --port=1`],
     ['{"plPassword": "s3cret", "plUser": "u"}', `{"plPassword": "${REDACTED}", "plUser": "u"}`],
-    [
-      '"{"plPassword": s3cret}" is not valid JSON',
-      `"{"plPassword": "${REDACTED}"}" is not valid JSON`,
-    ],
+    ['"{"plPassword": s3cret}" is not valid JSON', `"{"plPassword": ${REDACTED} is not valid JSON`],
     ["Authorization: Bearer abc.def-ghi", `Authorization: Bearer ${REDACTED}`],
   ])("%s", (input, expected) => {
     expect(redactString(input)).toBe(expected);
@@ -99,9 +96,9 @@ describe("redactSecrets on strings, toJSON and references", () => {
     });
   });
 
-  test("redacts what toJSON returns", () => {
-    const input = { nested: { toJSON: () => ({ password: "s3cret", user: "u" }) } };
-    expect(stringifyRedacted(input)).toBe(`{"nested":{"password":"${REDACTED}","user":"u"}}`);
+  test("does not call a custom toJSON, redacts own properties instead", () => {
+    const input = { nested: { user: "u", toJSON: () => ({ password: "s3cret" }) } };
+    expect(stringifyRedacted(input)).toBe(`{"nested":{"user":"u"}}`);
   });
 
   test("survives a throwing or self-returning toJSON", () => {
@@ -116,7 +113,7 @@ describe("redactSecrets on strings, toJSON and references", () => {
         throw new Error("no");
       },
     };
-    expect(stringifyRedacted({ throwing })).toBe('{"throwing":"[toJSON failed]"}');
+    expect(stringifyRedacted({ throwing })).toBe('{"throwing":{}}');
   });
 
   test("keeps shared non-cyclic references", () => {
@@ -129,5 +126,48 @@ describe("redactSecrets on strings, toJSON and references", () => {
 
   test("keeps Dates as JSON strings", () => {
     expect(stringifyRedacted({ at: new Date(0) })).toBe('{"at":"1970-01-01T00:00:00.000Z"}');
+  });
+});
+
+describe("second review cases", () => {
+  test.each([
+    ["http://u:abc@def@proxy:3128/x", `http://u:${REDACTED}@proxy:3128/x`],
+    ["https://host/x?token=abc,def&b=2#frag", `https://host/x?token=${REDACTED}&b=2#frag`],
+    ['TOKEN="s3cret value" next', `TOKEN="${REDACTED}" next`],
+    ["TOKEN='s3cret value' next", `TOKEN='${REDACTED}' next`],
+    ['TOKEN="s3\\"cret" next', `TOKEN="${REDACTED}" next`],
+    ["TOKEN=s3cret;next", `TOKEN=${REDACTED};next`],
+    ['password: "s3cret value"', `password: "${REDACTED}"`],
+    ["jwt: s3cret, user: u", `jwt: ${REDACTED}, user: u`],
+  ])("%s", (input, expected) => {
+    expect(redactString(input)).toBe(expected);
+  });
+
+  test("toJSON is never allowed to change the original", () => {
+    const obj = {
+      password: "s3cret",
+      toJSON() {
+        this.password = "changed";
+        return this;
+      },
+    };
+    const out = stringifyRedacted({ obj });
+    expect(obj.password).toBe("s3cret");
+    expect(out).not.toContain("s3cret");
+  });
+
+  test("a throwing toJSON getter falls back to own properties", () => {
+    const obj = Object.defineProperty({ user: "u", password: "s3cret" }, "toJSON", {
+      get() {
+        throw new Error("getter");
+      },
+    });
+    expect(stringifyRedacted({ obj })).toBe(`{"obj":{"user":"u","password":"${REDACTED}"}}`);
+  });
+
+  test("URL objects are serialized with user info masked", () => {
+    expect(stringifyRedacted({ proxy: new URL("http://u:s3cret@proxy:3128/") })).toBe(
+      `{"proxy":"http://u:${REDACTED}@proxy:3128/"}`,
+    );
   });
 });
