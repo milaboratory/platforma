@@ -96,9 +96,15 @@ export type BlockStatusSummary = {
   readonly startedAt?: number;
   /** The most recent transition anywhere in the tree, ms since the epoch. */
   readonly lastChangeAt?: number;
-  /** True once the root render has ended and nothing in the tree is still running. */
+  /**
+   * True once the root render has ended and nothing in the tree is still running, or once a render
+   * failed and no job is still working.
+   */
   readonly done: boolean;
-  /** The reason the run ended in, set only when the root render terminated. */
+  /**
+   * Set when any render of the run terminated: the reason of the earliest one, empty when it gave
+   * none. Commands that fail are counted in {@link BlockStatusJobs.failed} instead.
+   */
   readonly failure?: string;
   /**
    * True when the user stopped the run. The tree is kept as it was when it stopped, so the counters
