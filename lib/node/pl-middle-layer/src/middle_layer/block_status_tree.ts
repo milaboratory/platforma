@@ -123,6 +123,16 @@ export function foldEntry(
   return { ...summary, availability: "unsupported" };
 }
 
+/** What {@link BlockStatusWatch.start} watches. */
+export type BlockStatusWatchParams = {
+  readonly env: MiddleLayerEnvironment;
+  readonly projectRid: SignedResourceId;
+  readonly blockId: string;
+  readonly mode: BlockActionContextMode;
+  /** The project tree's change generation, the trigger for looking for a new render. */
+  readonly projectGeneration: () => number;
+};
+
 /**
  * The live status of one block render.
  *
@@ -150,14 +160,24 @@ export class BlockStatusWatch {
 
   public readonly summary: Computable<BlockStatusSummary>;
 
-  private constructor(
-    private readonly env: MiddleLayerEnvironment,
-    private readonly projectRid: SignedResourceId,
-    private readonly blockId: string,
-    private readonly mode: BlockActionContextMode,
-    /** The project tree's change generation, the trigger for looking for a new render. */
-    private readonly projectGeneration: () => number,
-  ) {
+  private readonly env: MiddleLayerEnvironment;
+  private readonly projectRid: SignedResourceId;
+  private readonly blockId: string;
+  private readonly mode: BlockActionContextMode;
+  private readonly projectGeneration: () => number;
+
+  private constructor({
+    env,
+    projectRid,
+    blockId,
+    mode,
+    projectGeneration,
+  }: BlockStatusWatchParams) {
+    this.env = env;
+    this.projectRid = projectRid;
+    this.blockId = blockId;
+    this.mode = mode;
+    this.projectGeneration = projectGeneration;
     // Without the `actionContext` link a block has no context and nothing is ever reported.
     const reportsSupported = env.pl.hasCapability(ActionContextLinkCapability);
     // One computable for the life of the watch, reading whichever tree is seeded now, so a caller
@@ -182,26 +202,26 @@ export class BlockStatusWatch {
    * The refetch loop is started only once that first seed has settled. Starting it in the
    * constructor would leave it running with nobody holding a reference to stop it if this throws.
    */
-  public static async start(
-    env: MiddleLayerEnvironment,
-    projectRid: SignedResourceId,
-    blockId: string,
-    mode: BlockActionContextMode,
-    projectGeneration: () => number,
-  ): Promise<BlockStatusWatch> {
-    const watch = new BlockStatusWatch(env, projectRid, blockId, mode, projectGeneration);
+  public static async start(params: BlockStatusWatchParams): Promise<BlockStatusWatch> {
+    const watch = new BlockStatusWatch(params);
     try {
       await watch.reseed();
     } catch (err: unknown) {
       await watch.terminateNow();
       throw err;
     }
-    watch.holders = 1;
-    watch.loop = watch.refetchLoop();
-    watch.loop.catch((loopErr: unknown) => {
-      env.logger.warn(new Error("block status refetch loop failed", { cause: loopErr }));
-    });
+    watch.begin();
     return watch;
+  }
+
+  /** Takes the first holder and starts looking for new renders, once the first seed settled. */
+  private begin(): void {
+    this.holders = 1;
+    // The loop handles its own errors; this catch is only a backstop, so the promise kept here
+    // never rejects and can be awaited as is.
+    this.loop = this.refetchLoop().catch((err: unknown) => {
+      this.env.logger.warn(new Error("block status refetch loop failed", { cause: err }));
+    });
   }
 
   /** Records one more caller holding this watch. */
@@ -232,11 +252,7 @@ export class BlockStatusWatch {
   /** Stops the loop, terminates the tree and releases the computable's holders. */
   private async terminateNow(): Promise<void> {
     this.abortController.abort();
-    try {
-      await this.loop;
-    } catch {
-      // already logged where it was raised
-    }
+    await this.loop;
     const held = this.current;
     this.current = undefined;
     this.source.setValue(undefined, "block status watch terminated");

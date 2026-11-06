@@ -440,6 +440,25 @@ describe("malformed input", () => {
     expect(summary.jobs).toMatchObject({ copying: 1 });
   });
 
+  it("skips JSON that is not an object, in transitions and readings", () => {
+    const key = (offset: number) =>
+      `transition/workdir/r1/${String(BigInt(ms(offset)) * 1_000_000n)}`;
+    const summary = foldBlockStatus(
+      context({
+        id: "r1",
+        transitions: [{ namespace: "workdir", atMs: ms(0), state: "PopulatingWorkdir" }],
+        kv: {
+          [key(100)]: "null",
+          [key(200)]: "42",
+          [key(300)]: '["Completed"]',
+          "reading/workdir/wd/progress": "null",
+        },
+      }),
+    );
+
+    expect(summary.jobs).toMatchObject({ copying: 1 });
+  });
+
   it("skips a state this build does not know, but still advances the clock", () => {
     const summary = foldBlockStatus(
       context({

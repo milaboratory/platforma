@@ -871,9 +871,13 @@ export class Project {
       return watch.summary;
     }
 
-    const started = BlockStatusWatch.start(this.env, this.rid, blockId, mode, () =>
-      this.destroyed ? -1 : this.projectTree.changeGeneration,
-    );
+    const started = BlockStatusWatch.start({
+      env: this.env,
+      projectRid: this.rid,
+      blockId,
+      mode,
+      projectGeneration: () => (this.destroyed ? -1 : this.projectTree.changeGeneration),
+    });
     this.blockStatusWatches.set(key, started);
     // A failed start must not leave a rejected promise in the map for every later caller. Only
     // this start's own entry is dropped: by the time a late rejection lands, the key may already
