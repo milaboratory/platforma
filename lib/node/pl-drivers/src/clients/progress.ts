@@ -60,13 +60,16 @@ export class ClientProgress {
     const client = this.wire.get();
 
     const { globalId, signature } = parseSignedResourceId(id);
+    options?.abort?.throwIfAborted();
+    // protobuf-ts never removes its abort listener, so each call gets a signal of its own.
+    const abort = AbortSignal.any(options?.abort === undefined ? [] : [options.abort]);
     let report: ProgressAPI_Report;
     if (client instanceof ProgressClient) {
       report = notEmpty(
         (
           await client.getStatus(
             { resourceId: globalId, resourceSignature: signature },
-            addRTypeToMetadata(type, options),
+            addRTypeToMetadata(type, { ...options, abort }),
           ).response
         ).report,
       );
@@ -78,6 +81,10 @@ export class ClientProgress {
             resourceSignature: signatureToBase64Url(signature),
           },
           headers: { ...createRTypeRoutingHeader(type) },
+          signal:
+            typeof options?.timeout === "number"
+              ? AbortSignal.any([abort, AbortSignal.timeout(options.timeout)])
+              : abort,
         })
       ).data!.report;
       report = {

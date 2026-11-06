@@ -296,7 +296,11 @@ export class Project {
           (prj) => {
             prj.doRefresh();
           },
-          { name: "doRefresh", lockId: this.projectLockId },
+          {
+            name: "doRefresh",
+            lockId: this.projectLockId,
+            abortSignal: this.abortController.signal,
+          },
         );
         await this.activeConfigs.getValue();
         await setTimeout(this.env.ops.projectRefreshInterval, undefined, {

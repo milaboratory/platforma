@@ -569,8 +569,14 @@ export class LLPlClient implements WireClientProviderFactory {
     return (options, nextCall) => {
       return new InterceptingCall(nextCall(options), {
         start: (metadata, listener, next) => {
+          let ended = false;
           next(metadata, {
+            // grpc-js can pass headers after a cancelled call's status, and protobuf-ts throws on them.
+            onReceiveMetadata: (headers, next) => {
+              if (!ended) next(headers);
+            },
             onReceiveStatus: (status, next) => {
+              ended = true;
               if (status.code == GrpcStatus.OK && this._status !== "OK") this.updateStatus("OK");
               if (status.code == GrpcStatus.UNAUTHENTICATED)
                 // (!!!) don't change to "==="
@@ -1043,7 +1049,7 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   public async listUserResources(
-    opts: { login?: string; startFrom?: bigint; limit?: number } = {},
+    opts: { login?: string; startFrom?: bigint; limit?: number; abortSignal?: AbortSignal } = {},
   ): Promise<grpcTypes.AuthAPI_ListUserResources_Response[]> {
     const cl = this.clientProvider.get();
 
@@ -1051,11 +1057,16 @@ export class LLPlClient implements WireClientProviderFactory {
       throw new Error("ListUserResources requires gRPC wire protocol; REST is not supported");
     }
 
-    const call = cl.listUserResources({
-      login: opts.login ?? "",
-      startFrom: opts.startFrom ?? 0n,
-      limit: opts.limit ?? 0,
-    });
+    opts.abortSignal?.throwIfAborted();
+    const call = cl.listUserResources(
+      {
+        login: opts.login ?? "",
+        startFrom: opts.startFrom ?? 0n,
+        limit: opts.limit ?? 0,
+      },
+      // protobuf-ts never removes its abort listener, so each call gets a signal of its own.
+      { ...(opts.abortSignal !== undefined && { abort: AbortSignal.any([opts.abortSignal]) }) },
+    );
     const responses: grpcTypes.AuthAPI_ListUserResources_Response[] = [];
     for await (const msg of call.responses) {
       responses.push(msg);

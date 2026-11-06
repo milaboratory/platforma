@@ -53,7 +53,7 @@ import {
   deepFreeze,
   notEmpty,
 } from "@milaboratories/ts-helpers";
-import { isNotFoundError } from "./errors";
+import { isAbortedError, isNotFoundError } from "./errors";
 import type { FinalResourceDataPredicate } from "./final";
 import type { LRUCache } from "lru-cache";
 import type { ResourceDataCacheRecord } from "./cache";
@@ -312,7 +312,7 @@ export class PlTransaction {
 
     // To avoid floating promise
     this.globalTxId.catch((err) => {
-      if (!this.globalTxIdWasAwaited) {
+      if (!this.globalTxIdWasAwaited && !isAbortedError(err)) {
         console.warn(err);
       }
     });
@@ -701,33 +701,33 @@ export class PlTransaction {
   }
 
   /** This method may return stale resource state from cache if resource was removed */
-  public async getResourceData(rId: AnyResourceRef, loadFields: true): Promise<ResourceData>;
+  public getResourceData(rId: AnyResourceRef, loadFields: true): Promise<ResourceData>;
   /** This method may return stale resource state from cache if resource was removed */
-  public async getResourceData(rId: AnyResourceRef, loadFields: false): Promise<BasicResourceData>;
+  public getResourceData(rId: AnyResourceRef, loadFields: false): Promise<BasicResourceData>;
   /** This method may return stale resource state from cache if resource was removed */
-  public async getResourceData(
+  public getResourceData(
     rId: AnyResourceRef,
     loadFields: boolean,
   ): Promise<BasicResourceData | ResourceData>;
   /** This method may return stale resource state from cache if ignoreCache == false if resource was removed */
-  public async getResourceData(
+  public getResourceData(
     rId: AnyResourceRef,
     loadFields: true,
     ignoreCache: boolean,
   ): Promise<ResourceData>;
   /** This method may return stale resource state from cache if ignoreCache == false if resource was removed */
-  public async getResourceData(
+  public getResourceData(
     rId: AnyResourceRef,
     loadFields: false,
     ignoreCache: boolean,
   ): Promise<BasicResourceData>;
   /** This method may return stale resource state from cache if ignoreCache == false if resource was removed */
-  public async getResourceData(
+  public getResourceData(
     rId: AnyResourceRef,
     loadFields: boolean,
     ignoreCache: boolean,
   ): Promise<BasicResourceData | ResourceData>;
-  public async getResourceData(
+  public getResourceData(
     rId: AnyResourceRef,
     loadFields: boolean = true,
     ignoreCache: boolean = false,
@@ -802,19 +802,19 @@ export class PlTransaction {
     });
   }
 
-  public async getResourceDataIfExists(
+  public getResourceDataIfExists(
     rId: AnyResourceRef,
     loadFields: true,
   ): Promise<ResourceData | undefined>;
-  public async getResourceDataIfExists(
+  public getResourceDataIfExists(
     rId: AnyResourceRef,
     loadFields: false,
   ): Promise<BasicResourceData | undefined>;
-  public async getResourceDataIfExists(
+  public getResourceDataIfExists(
     rId: AnyResourceRef,
     loadFields: boolean,
   ): Promise<BasicResourceData | ResourceData | undefined>;
-  public async getResourceDataIfExists(
+  public getResourceDataIfExists(
     rId: AnyResourceRef,
     loadFields: boolean = true,
   ): Promise<BasicResourceData | ResourceData | undefined> {
@@ -839,7 +839,7 @@ export class PlTransaction {
    * Use `after` and `limit` to read a long list page by page: give the ID of the
    * last resource of the previous page as `after` for the next page.
    */
-  public async listResourcesByType(
+  public listResourcesByType(
     type: ResourceType,
     opts: {
       /** Maximum number of resources to return. 0 (the default) returns all resources. */
@@ -1038,7 +1038,7 @@ export class PlTransaction {
     );
   }
 
-  public async getFieldIfExists(fId: AnyFieldRef): Promise<FieldData | undefined> {
+  public getFieldIfExists(fId: AnyFieldRef): Promise<FieldData | undefined> {
     return this.track(notFoundToUndefined(async () => await this.getField(fId)));
   }
 
@@ -1060,7 +1060,7 @@ export class PlTransaction {
   // KV
   //
 
-  public async listKeyValues(rId: AnyResourceRef): Promise<KeyValue[]> {
+  public listKeyValues(rId: AnyResourceRef): Promise<KeyValue[]> {
     return this.track(async () => {
       const result = await this.sendMultiAndParse(
         {
@@ -1084,7 +1084,7 @@ export class PlTransaction {
     });
   }
 
-  public async listKeyValuesString(rId: AnyResourceRef): Promise<KeyValueString[]> {
+  public listKeyValuesString(rId: AnyResourceRef): Promise<KeyValueString[]> {
     return this.track(async () =>
       (await this.listKeyValues(rId)).map(({ key, value }) => ({
         key,
@@ -1093,11 +1093,11 @@ export class PlTransaction {
     );
   }
 
-  public async listKeyValuesIfResourceExists(rId: AnyResourceRef): Promise<KeyValue[] | undefined> {
+  public listKeyValuesIfResourceExists(rId: AnyResourceRef): Promise<KeyValue[] | undefined> {
     return this.track(notFoundToUndefined(async () => await this.listKeyValues(rId)));
   }
 
-  public async listKeyValuesStringIfResourceExists(
+  public listKeyValuesStringIfResourceExists(
     rId: AnyResourceRef,
   ): Promise<KeyValueString[] | undefined> {
     return this.track(notFoundToUndefined(async () => await this.listKeyValuesString(rId)));
@@ -1131,7 +1131,7 @@ export class PlTransaction {
     });
   }
 
-  public async getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
+  public getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
     return this.track(async () => {
       const result = await this.sendSingleAndParse(
         {
@@ -1151,18 +1151,15 @@ export class PlTransaction {
     });
   }
 
-  public async getKValueString(rId: AnyResourceRef, key: string): Promise<string> {
+  public getKValueString(rId: AnyResourceRef, key: string): Promise<string> {
     return this.track(async () => Buffer.from(await this.getKValue(rId, key)).toString());
   }
 
-  public async getKValueJson<T>(rId: AnyResourceRef, key: string): Promise<T> {
+  public getKValueJson<T>(rId: AnyResourceRef, key: string): Promise<T> {
     return this.track(async () => JSON.parse(await this.getKValueString(rId, key)) as T);
   }
 
-  public async getKValueIfExists(
-    rId: AnyResourceRef,
-    key: string,
-  ): Promise<Uint8Array | undefined> {
+  public getKValueIfExists(rId: AnyResourceRef, key: string): Promise<Uint8Array | undefined> {
     return this.track(async () => {
       const result = await this.sendSingleAndParse(
         {
@@ -1183,17 +1180,14 @@ export class PlTransaction {
     });
   }
 
-  public async getKValueStringIfExists(
-    rId: AnyResourceRef,
-    key: string,
-  ): Promise<string | undefined> {
+  public getKValueStringIfExists(rId: AnyResourceRef, key: string): Promise<string | undefined> {
     return this.track(async () => {
       const data = await this.getKValueIfExists(rId, key);
       return data === undefined ? undefined : Buffer.from(data).toString();
     });
   }
 
-  public async getKValueJsonIfExists<T>(rId: AnyResourceRef, key: string): Promise<T | undefined> {
+  public getKValueJsonIfExists<T>(rId: AnyResourceRef, key: string): Promise<T | undefined> {
     return this.track(async () => {
       const str = await this.getKValueStringIfExists(rId, key);
       if (str === undefined) return undefined;
@@ -1238,8 +1232,8 @@ export class PlTransaction {
    * which the token cannot express itself. Opaque: never parse one, and never compare across
    * instances.
    */
-  public async getNextSinceToken(): Promise<Uint8Array | undefined> {
-    return (await this.txOpen).sinceToken;
+  public getNextSinceToken(): Promise<Uint8Array | undefined> {
+    return this.track(async () => (await this.txOpen).sinceToken);
   }
 
   /** Closes output event stream */

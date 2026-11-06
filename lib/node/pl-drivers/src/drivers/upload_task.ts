@@ -113,10 +113,14 @@ export class UploadTask {
     }
   }
 
-  public async updateStatus() {
+  public async updateStatus(signal?: AbortSignal) {
     try {
+      signal?.throwIfAborted();
       // we do it with timeout in case we have slow internet.
-      const status = await this.clientProgress.getStatus(this.res, { timeout: 10000 });
+      const status = await this.clientProgress.getStatus(this.res, {
+        timeout: 10000,
+        abort: signal,
+      });
 
       const oldStatus = this.progress.status;
       const newStatus = doneProgressIfExisted(this.alreadyExisted, protoToStatus(status));
@@ -127,6 +131,7 @@ export class UploadTask {
         this.change.markChanged(`upload status for ${resourceIdToString(this.res.id)} changed`);
       }
     } catch (e: any) {
+      if (signal?.aborted) return;
       this.setRetriableError(e);
 
       if (isTimeoutError(e)) {

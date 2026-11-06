@@ -597,7 +597,9 @@ export class SynchronizedTreeState {
       let ids: SignedResourceId[];
       try {
         // match by name only (permissive; ignores version, so it survives schema bumps)
-        ids = await this.pl.userResources.listSharedResourcesByType(seed.resourceType.name);
+        ids = await this.pl.userResources.listSharedResourcesByType(seed.resourceType.name, {
+          abortSignal: this.abortController.signal,
+        });
       } catch (e: unknown) {
         if (isUnimplementedError(e)) continue;
         throw e;
@@ -661,7 +663,7 @@ export class SynchronizedTreeState {
         const changesBefore = countedChanges(stat);
 
         // actual tree synchronization
-        await this.refresh(stat);
+        await this.refresh(stat, { abortSignal: this.abortController.signal });
 
         const changed = countedChanges(stat) > changesBefore;
         if (changed) this.changeGenerationCounter++;
@@ -688,6 +690,8 @@ export class SynchronizedTreeState {
 
         // notifying that we failed to refresh the state
         if (toNotify !== undefined) for (const n of toNotify) n.reject(e);
+
+        if (this.abortController.signal.aborted) break;
 
         // catching tree update errors, as they may leave our tree in inconsistent state
         if (e instanceof TreeStateUpdateError) {
