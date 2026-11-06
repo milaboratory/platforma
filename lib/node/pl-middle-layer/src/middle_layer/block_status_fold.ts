@@ -224,6 +224,8 @@ type Accumulator = {
   lastNs?: string;
   /** The root's own fold, kept by the walk so the root is read once. */
   root?: FoldedNode;
+  /** The earliest render anywhere in the tree whose latest report is a termination. */
+  failure?: { reason: string; ns: string };
   /** When the creator marked the run cancelled on the root. */
   cancelledNs?: string;
   jobs: JobAccumulator;
@@ -362,7 +364,21 @@ function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): void 
   acc.totalNodes++;
   if (isJob(reports)) noteJob(acc.jobs, node, folded);
 
+  const render = latestRender(reports.known);
+  if (render?.state === "Terminated")
+    if (acc.failure === undefined || compareNs(render.ns, acc.failure.ns) < 0)
+      acc.failure = { reason: render.reason, ns: render.ns };
+
   if (!folded.terminal) acc.liveNodes++;
+}
+
+/** The render's own latest transition in a context. */
+function latestRender(known: readonly Transition[]): Transition | undefined {
+  let latest: Transition | undefined;
+  for (const t of known)
+    if (t.namespace === RenderNamespace && (latest === undefined || compareNs(t.ns, latest.ns) > 0))
+      latest = t;
+  return latest;
 }
 
 /** Walks the context and everything under it, depth first, each context counted once. */
@@ -401,11 +417,17 @@ export function foldBlockStatus(root: ActionContextNode): BlockStatusSummary {
   if (acc.cancelledNs !== undefined)
     return { ...summary, lastChangeAt: nsToMs(acc.cancelledNs), done: true, cancelled: true };
 
+  // A terminated render fails the run. Renders waiting on its outputs never report again, so once
+  // no job is working the run is over even though they still look live.
+  const { jobs } = summary;
+  const working = jobs.running + jobs.copying + jobs.queued + jobs.pending + jobs.saving;
   return {
     ...summary,
     lastChangeAt: acc.lastNs === undefined ? undefined : nsToMs(acc.lastNs),
     // The root's outputs can be set while work it started still runs, so done needs both.
-    done: (acc.root?.terminal ?? false) && acc.liveNodes === 0,
-    failure: acc.root?.failure || undefined,
+    done:
+      ((acc.root?.terminal ?? false) && acc.liveNodes === 0) ||
+      (acc.failure !== undefined && working === 0),
+    failure: acc.failure?.reason,
   };
 }

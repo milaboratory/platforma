@@ -234,7 +234,7 @@ describe("a run that ended in a failure", () => {
     expect(summary).toMatchObject({ done: true, failure: "template error" });
   });
 
-  it("leaves the reason out when the render ended without one", () => {
+  it("fails without a reason when the render ended without one", () => {
     const summary = foldBlockStatus(
       context({
         id: "r1",
@@ -242,7 +242,56 @@ describe("a run that ended in a failure", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ done: true, failure: undefined });
+    expect(summary).toMatchObject({ done: true, failure: "" });
+  });
+
+  it("fails on a terminated sub-render, and ends once nothing is working", () => {
+    const summary = foldBlockStatus(
+      context({
+        id: "root",
+        transitions: [renderCompleted(ms(100))],
+        children: [
+          {
+            id: "process",
+            transitions: [
+              { namespace: "render", atMs: ms(200), state: "Running" },
+              { namespace: "render", atMs: ms(900), state: "Terminated", reason: "late" },
+            ],
+          },
+          {
+            id: "prep",
+            transitions: [
+              { namespace: "render", atMs: ms(300), state: "Terminated", reason: "axesSpec" },
+            ],
+          },
+          // Waits on the failed render's outputs and never reports again.
+          {
+            id: "export",
+            transitions: [{ namespace: "render", atMs: ms(400), state: "WaitingForInputs" }],
+          },
+        ],
+      }),
+    );
+
+    expect(summary).toMatchObject({ done: true, failure: "axesSpec", liveNodes: 1 });
+  });
+
+  it("is not done after a failure while a job still runs", () => {
+    const summary = foldBlockStatus(
+      context({
+        id: "root",
+        transitions: [renderCompleted(ms(100))],
+        children: [
+          { id: "bad", transitions: [{ namespace: "render", atMs: ms(200), state: "Terminated" }] },
+          {
+            id: "job",
+            transitions: [{ namespace: "exec", reporter: "cmd", atMs: ms(300), state: "Running" }],
+          },
+        ],
+      }),
+    );
+
+    expect(summary).toMatchObject({ done: false, failure: "", jobs: { running: 1 } });
   });
 
   it("does not report a failure for a command the run recovered from", () => {
