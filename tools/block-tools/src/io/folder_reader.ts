@@ -15,6 +15,16 @@ export interface FolderReader {
   getContentReader(relativePath?: string): RelativeContentReader;
 }
 
+/** URL without userinfo and query (basic-auth credentials, signed-URL tokens), for error messages. */
+export function redactUrl(url: URL): string {
+  const safe = new URL(url);
+  safe.username = "";
+  safe.password = "";
+  safe.search = "";
+  safe.hash = "";
+  return safe.toString();
+}
+
 class HttpFolderReader implements FolderReader {
   constructor(
     public readonly rootUrl: URL,
@@ -30,7 +40,7 @@ class HttpFolderReader implements FolderReader {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       // Release the connection; the error body (S3/GCS XML, an HTML page) is not registry content.
       await response.body.dump();
-      throw new Error(`Failed to read ${targetUrl.toString()}: HTTP ${response.statusCode}`);
+      throw new Error(`Failed to read ${redactUrl(targetUrl)}: HTTP ${response.statusCode}`);
     }
     return Buffer.from(await response.body.arrayBuffer());
   }

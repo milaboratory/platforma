@@ -151,11 +151,14 @@ export async function initByUrl(address: string, pkgRoot: string): Promise<Regis
         const s3Client = await newS3(s3Options, s3Bucket);
         return new S3Storage(s3Client, s3Bucket, s3KeyPrefix);
       }
-      case "s3e:": {
-        // s3e://[user:password@]<endpoint>/<bucket>/<keyPrefix>?region=<name>, endpoint over http,
-        // the same form pl-bootstrap uses for the backend's MinIO storages.
+      case "s3e:":
+      case "s3es:": {
+        // s3e[s]://[user:password@]<endpoint>/<bucket>/<keyPrefix>?region=<name>: the same forms
+        // pl-bootstrap uses for the backend's storages. s3e talks to the endpoint over http (a local
+        // MinIO), s3es over https; use s3es whenever credentials leave the machine.
+        const scheme = url.protocol === "s3es:" ? "https" : "http";
         const s3eOptions: NonNullable<ConstructorParameters<typeof S3>[0]> = {
-          endpoint: `http://${url.host}`,
+          endpoint: `${scheme}://${url.host}`,
           forcePathStyle: true,
         };
         const s3eRegion = url.searchParams.get("region");
