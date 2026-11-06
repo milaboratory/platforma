@@ -1,6 +1,5 @@
 import type { ErrorLike, OutputWithStatus } from "@platforma-sdk/model";
 import type { StandardSchemaV1 } from "@standard-schema/spec";
-import type { ZodError } from "zod";
 import type { OptionalResult } from "./types";
 
 export class UnresolvedError extends Error {
@@ -79,12 +78,15 @@ export const ensureError = (cause: unknown) => {
 };
 
 /** @deprecated Errors from any Standard Schema library are formatted by `createModel`. */
-export const isZodError = (err: Error): err is ZodError => {
+export const isZodError = (
+  err: Error,
+): err is Error & { issues: readonly StandardSchemaV1.Issue[] } => {
   return err.name === "ZodError";
 };
 
 /** @deprecated Use {@link formatSchemaIssues}. */
-export const formatZodError = (err: ZodError) => formatSchemaIssues(err.issues);
+export const formatZodError = (err: { issues: readonly StandardSchemaV1.Issue[] }) =>
+  formatSchemaIssues(err.issues);
 
 /** Formats Standard Schema issues as `form errors; field:message,message`, grouped by the first path key. */
 export const formatSchemaIssues = (issues: readonly StandardSchemaV1.Issue[]): string => {
