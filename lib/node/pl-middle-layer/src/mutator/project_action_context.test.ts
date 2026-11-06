@@ -70,7 +70,8 @@ test("block action context outlives its renderer and is replaced on re-render", 
   //  4. The context has the Running transition of the render. Wait until the render is garbage
   //     collected; the context must stay readable.
   //  5. Re-render production: prodActionContext must point at a new context with a new run-id.
-  //  6. Render and stop production in one transaction: prodActionContext must be removed.
+  //  6. Render and stop production in one transaction: the stopped run keeps its context, marked
+  //     cancelled.
   //
 
   const quickJs = await getQuickJS();
@@ -162,7 +163,8 @@ test("block action context outlives its renderer and is replaced on re-render", 
     expect(second.baggage["run-id"]).not.toEqual(first.baggage["run-id"]);
     expect(await contextRender(pl, second.contextRef)).not.toEqual(firstRender);
 
-    // 6. Render and stop production in one transaction: prodActionContext must be removed.
+    // 6. Render and stop production in one transaction: the stopped run keeps its new context, so
+    //    its status tree stays readable, and the context is marked cancelled by its creator.
     await pl.withWriteTx("RenderAndStop", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.setStates([
@@ -173,6 +175,14 @@ test("block action context outlives its renderer and is replaced on re-render", 
       mut.save();
       await tx.commit();
     });
-    expect(await readActionContext(pl, prj, "block1")).toBeUndefined();
+    const stopped = (await readActionContext(pl, prj, "block1"))!;
+    expect(stopped).toBeDefined();
+    expect(stopped.contextId).not.toEqual(second.contextId);
+    const cancelled = await poll(pl, async ({ tx }) =>
+      (await tx.listKeyValuesString(stopped.contextRef))
+        .filter((e) => e.key.startsWith("transition/core/"))
+        .map((e) => JSON.parse(e.value)),
+    );
+    expect(cancelled).toEqual([{ state: "Terminated", detail: "", reason: "cancelled" }]);
   });
 });
