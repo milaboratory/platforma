@@ -1,4 +1,5 @@
 import type { MiLogger } from "@milaboratories/ts-helpers";
+import { stringifyRedacted } from "../common/redact";
 
 /** Records all inputs and outputs of one's choice, so if the error happened
  * one can check how it was by just printing this structure. */
@@ -24,7 +25,7 @@ export async function withTrace<T>(
     const result = await fn((k: string, v: any) => trace(t, k, v), t);
     return result;
   } catch (e: any) {
-    logger.error(`error ${e} while doing traced operation, state: ${JSON.stringify(t)}`);
+    logger.error(`error ${e} while doing traced operation, state: ${stringifyRedacted(t)}`);
     throw e;
   }
 }
