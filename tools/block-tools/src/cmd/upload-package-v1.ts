@@ -1,4 +1,5 @@
 import { Command, Option } from "commander";
+import { parseSchema } from "../util";
 import { getConfig } from "../registry_v1/config";
 import { targetFileOption } from "../registry_v1/flags";
 import fs from "node:fs";
@@ -42,7 +43,10 @@ export function uploadPackageV1Command(): Command {
 
   cmd.action(async (flags) => {
     const logger = new ConsoleLoggerAdapter();
-    const configFromFlags: PlRegPackageConfigDataShard = PlRegPackageConfigDataShard.parse({});
+    const configFromFlags: PlRegPackageConfigDataShard = parseSchema(
+      PlRegPackageConfigDataShard,
+      {},
+    );
 
     for (const field of BasicConfigFields) if (flags[field]) configFromFlags[field] = flags[field];
 

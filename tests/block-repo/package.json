@@ -18,6 +18,7 @@
     "@platforma-sdk/block-tools": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "valibot": "catalog:",
     "vitest": "catalog:"
   },
   "//": {
