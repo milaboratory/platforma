@@ -132,12 +132,16 @@ export function rootPnpmWorkspaceInitial(ctx: RunContext): Record<string, unknow
   };
 }
 
-export function rootPnpmWorkspaceRules(): void {
-  ensureWorkspaceModulePaths();
+export function rootPnpmWorkspaceToolchainRules(): void {
   ensureWorkspaceListItems("minimumReleaseAgeExclude", MINIMUM_RELEASE_AGE_EXCLUDE);
   ensureWorkspaceMapEntries("allowBuilds", SKIPPED_BUILDS, { keepExisting: true });
   ensureWorkspaceMapEntries("allowBuilds", REQUIRED_BUILDS);
   ensureCatalogAtLeast("turbo", TURBO_VERSION);
+}
+
+export function rootPnpmWorkspaceRules(): void {
+  ensureWorkspaceModulePaths();
+  rootPnpmWorkspaceToolchainRules();
   // Catalog side of the retired-dep cleanup — the per-package side sheds the
   // matching `catalog:` references.
   for (const name of RETIRED_TOOLCHAIN_DEPS) ensureCatalogAbsent(name);

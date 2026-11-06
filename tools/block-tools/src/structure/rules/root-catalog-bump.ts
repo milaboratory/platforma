@@ -14,6 +14,10 @@
 // migrated block that never carried `@milaboratories/ts-builder` etc. now
 // gets them ADDED on `--update-deps-only`, no manual catalog seed required.
 //
+// The same frame also applies the toolchain rules (SDK pnpm and Node, pnpm 12
+// workspace settings), so `upgrade-sdk` runs its first `pnpm i` on the SDK
+// pnpm with its release-age check.
+//
 // Wrapped in the same root-scope `when(!isSdkInternal)` guard as the rest of
 // the root rules — internal blocks get their catalog from the parent
 // monorepo, so catalog resolution never applies there.
@@ -27,9 +31,13 @@ import {
   ensureCatalogLatest,
   ensureCatalogVersion,
   pinCatalogToDependencyOf,
+  enforceFieldOrder,
 } from "../engine/api";
+import { rootPackageJsonInitial, rootPackageJsonToolchainRules } from "./root-package-json";
+import { canonicalPackageJsonOrder } from "./shared/key-order";
 import {
   rootPnpmWorkspaceInitial,
+  rootPnpmWorkspaceToolchainRules,
   SDK_CATALOG_PACKAGES,
   INFRA_CATALOG_FLOOR,
   DERIVED_CATALOG_PINS,
@@ -43,6 +51,14 @@ export function rootCatalogBumpRules(): void {
       when(
         ({ ctx }) => !ctx.isSdkInternal,
         () => {
+          managed(
+            "package.json",
+            generate(() => rootPackageJsonInitial()),
+            () => {
+              rootPackageJsonToolchainRules();
+              enforceFieldOrder([...canonicalPackageJsonOrder]);
+            },
+          );
           // On init, the default root rules create pnpm-workspace.yaml from
           // this same generator (the curated SDK placeholders + infra
           // floor); this leaf then overwrites the SDK entries with npm
@@ -78,6 +94,7 @@ export function rootCatalogBumpRules(): void {
               if (ctx.modules.some((m) => m.scope === "software")) {
                 ensureCatalogVersion(RUNENV_PYTHON, RUNENV_PYTHON_VERSION);
               }
+              rootPnpmWorkspaceToolchainRules();
             },
           );
         },
