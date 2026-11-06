@@ -21,3 +21,4 @@ export type {
   BlockActionContextNode,
   BlockActionTransition,
 } from "./block_action_context";
+export { InstanceStatsContextTypeName, parseInstanceStats } from "./instance_stats";

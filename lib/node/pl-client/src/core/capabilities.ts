@@ -37,7 +37,10 @@ export type BackendCapability =
   | "txListGrants:v1" // list grants inside a transaction (batched recipient reads)
   // Optional fields declared in resource schemas, created in the creating transaction before any
   // explicit input lock.
-  | "optionalFieldsInSchemas:v1";
+  | "optionalFieldsInSchemas:v1"
+  // The instance statistics context: one per instance, readable by every user, its readings
+  // written by the executor runner (CPU, RAM, GPU, jobs).
+  | "instanceStats:v1";
 
 /** True iff `capabilities` advertises the requested token. */
 export function hasCapability(
