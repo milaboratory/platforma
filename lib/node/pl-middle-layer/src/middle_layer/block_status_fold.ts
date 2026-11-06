@@ -343,7 +343,11 @@ function finishJobs(jobs: JobAccumulator): BlockStatusJobs {
   };
 }
 
-function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): void {
+/**
+ * Notes one context. Returns whether its render terminated, so the walk can tell a render that
+ * failed on its own from one that only passes up the error of something under it.
+ */
+function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): NotedContext {
   const reports = readTransitions(node);
 
   if (reports.firstNs !== undefined)
@@ -365,11 +369,13 @@ function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): void 
   if (isJob(reports)) noteJob(acc.jobs, node, folded);
 
   const render = latestRender(reports.known);
-  if (render?.state === "Terminated")
+  const terminated = render?.state === "Terminated";
+  if (terminated)
     if (acc.failure === undefined || compareNs(render.ns, acc.failure.ns) < 0)
       acc.failure = { reason: render.reason, ns: render.ns };
 
   if (!folded.terminal) acc.liveNodes++;
+  return { terminated, job: isJob(reports) };
 }
 
 /** Where the backend nests the error of an input inside the error of what consumes it. */
@@ -415,20 +421,39 @@ function latestRender(known: readonly Transition[]): Transition | undefined {
   return latest;
 }
 
-/** Walks the context and everything under it, depth first, each context counted once. */
-function walk(node: ActionContextNode, acc: Accumulator, seen: Set<string>, depth: number): void {
-  if (depth > MaxDepth) return;
-  if (seen.has(node.id)) return;
+type NotedContext = { terminated: boolean; job: boolean };
+
+/**
+ * Walks the context and everything under it, depth first, each context counted once. Returns
+ * whether a render in the subtree terminated.
+ */
+function walk(
+  node: ActionContextNode,
+  acc: Accumulator,
+  seen: Set<string>,
+  depth: number,
+): boolean {
+  if (depth > MaxDepth) return false;
+  if (seen.has(node.id)) return false;
   seen.add(node.id);
 
-  note(acc, node, depth === 0);
+  const own = note(acc, node, depth === 0);
 
+  let below = false;
   for (const fieldName of node.listFields()) {
     if (!fieldName.startsWith(ChildFieldPrefix)) continue;
     const child = node.traverse(fieldName);
     if (child === undefined) continue;
-    walk(child, acc, seen, depth + 1);
+    if (walk(child, acc, seen, depth + 1)) below = true;
   }
+
+  // A render that failed on its own, e.g. one whose command could not start, is a failed job too;
+  // one that only passes up the failure under it is not counted again.
+  if (own.terminated && !below && !own.job) {
+    acc.jobs.total++;
+    acc.jobs.failed++;
+  }
+  return own.terminated || below;
 }
 
 /** The summary of a block run, from the root action context of its render. */

@@ -50,6 +50,10 @@ export function isTerminalBlockStatusState(state: BlockStatusState): boolean {
 export type BlockStatusJobs = {
   readonly total: number;
   readonly done: number;
+  /**
+   * Jobs that failed, and renders that failed on their own (not by passing up a failure under
+   * them), e.g. one whose command could not start.
+   */
   readonly failed: number;
   /** Executing on a machine. */
   readonly running: number;

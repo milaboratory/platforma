@@ -276,6 +276,39 @@ describe("a run that ended in a failure", () => {
     expect(summary).toMatchObject({ done: true, failure: "axesSpec", liveNodes: 1 });
   });
 
+  it("counts a render that failed on its own as a failed job, not the renders passing it up", () => {
+    const failedAt = (atMs: number) => ({
+      namespace: "render",
+      atMs,
+      state: "Terminated",
+      reason: "docker is not set",
+    });
+    const summary = foldBlockStatus(
+      context({
+        id: "root",
+        transitions: [renderCompleted(ms(100))],
+        children: [
+          {
+            id: "process",
+            transitions: [failedAt(ms(400))],
+            children: [
+              { id: "save", transitions: [failedAt(ms(300))] },
+              {
+                id: "cmd",
+                transitions: [
+                  { namespace: "exec", reporter: "c", atMs: ms(200), state: "Completed" },
+                  renderCompleted(ms(250)),
+                ],
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(summary.jobs).toMatchObject({ total: 2, done: 1, failed: 1 });
+  });
+
   it("is not done after a failure while a job still runs", () => {
     const summary = foldBlockStatus(
       context({
