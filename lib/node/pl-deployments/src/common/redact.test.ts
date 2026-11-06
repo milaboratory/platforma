@@ -171,3 +171,38 @@ describe("second review cases", () => {
     );
   });
 });
+
+describe("third review cases", () => {
+  test("query values end at JSON delimiters, commas stay inside", () => {
+    expect(redactString('{"url":"https://h?token=abc","status":503}')).toBe(
+      `{"url":"https://h?token=${REDACTED}","status":503}`,
+    );
+    expect(redactString("https://h?token=abc,def")).toBe(`https://h?token=${REDACTED}`);
+  });
+
+  test("Date and URL subclasses with overridden toJSON are not called", () => {
+    class SneakyDate extends Date {
+      public password = "s3cret";
+      override toJSON() {
+        this.password = "changed";
+        return this.password;
+      }
+    }
+    class ThrowingUrl extends URL {
+      override toJSON(): string {
+        throw new Error("no");
+      }
+    }
+    const date = new SneakyDate(0);
+    const out = stringifyRedacted({
+      date,
+      url: new ThrowingUrl("http://u:s3cret@proxy/"),
+    });
+    expect(date.password).toBe("s3cret");
+    expect(out).toBe(`{"date":"1970-01-01T00:00:00.000Z","url":"http://u:${REDACTED}@proxy/"}`);
+  });
+
+  test("an invalid Date does not throw", () => {
+    expect(stringifyRedacted({ at: new Date(Number.NaN) })).toBe('{"at":"[unserializable]"}');
+  });
+});

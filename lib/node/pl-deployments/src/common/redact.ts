@@ -16,8 +16,9 @@ const quoted = String.raw`"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'`;
 const stringRules: [RegExp, string | ((...m: string[]) => string)][] = [
   // scheme://user:password@host, the password running to the last `@` (it may hold `@`)
   [/\b([a-z][a-z0-9+.-]*:\/\/[^\s:@/]*):[^\s/]*@/gi, `$1:${REDACTED}@`],
-  // ?token=… &password=…, the value running to `&`, `#` or whitespace
-  [new RegExp(String.raw`([?&]${secretName})=[^&#\s]*`, "gi"), `$1=${REDACTED}`],
+  // ?token=… &password=…, the value running to `&`, `#`, whitespace, a quote or `}`/`]`
+  // (commas stay inside the value)
+  [new RegExp(String.raw`([?&]${secretName})=[^&#\s"'}\]]*`, "gi"), `$1=${REDACTED}`],
   // Authorization: Bearer …
   [/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/-]+=*/g, `$1 ${REDACTED}`],
   // TOKEN=…, --jwt=…, password: …, "plPassword": … (env entries, CLI flags, YAML, JSON);
@@ -73,9 +74,10 @@ function redact(value: unknown, ancestors: Set<object>): unknown {
   try {
     if (Array.isArray(value)) return value.map((v) => redact(v, ancestors));
 
-    // Built-ins whose toJSON is known to be pure; any other toJSON is not called,
-    // as it may change the original or throw: own properties are redacted instead.
-    if (value instanceof Date || value instanceof URL) return redact(value.toJSON(), ancestors);
+    // No method of the value is called, as an override may change the original or
+    // throw: Date and URL go through the built-in prototype methods, other objects
+    // through their own properties.
+    if (value instanceof Date || value instanceof URL) return serializeBuiltin(value);
 
     const result: Record<string, unknown> = {};
     for (const k of Object.keys(value)) {
@@ -93,6 +95,16 @@ function redact(value: unknown, ancestors: Set<object>): unknown {
     return result;
   } finally {
     ancestors.delete(value);
+  }
+}
+
+function serializeBuiltin(value: Date | URL): string {
+  try {
+    return value instanceof Date
+      ? Date.prototype.toISOString.call(value)
+      : redactString(URL.prototype.toString.call(value));
+  } catch {
+    return "[unserializable]";
   }
 }
 
