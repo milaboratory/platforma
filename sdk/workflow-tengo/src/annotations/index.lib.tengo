@@ -45,7 +45,7 @@ computeAnnotations := func(inputs) {
 	anchorRef := inputs.anchorRef
 	defaultValue := inputs.defaultValue
 	resultAxesSpec := inputs.resultAxesSpec
-	resultColumnSpec := util.prepareResultColumnSpec(inputs)
+	resultColumnSpec := util.prepareResultColumnSpec(inputs, wf.getBlockId())
 	shouldComputeFilters := is_bool(inputs.shouldComputeFilters) ? inputs.shouldComputeFilters : false
 	
 	columnsFromExpressions := util.extractColumnsFromExpressions(slices.map(steps, func(step) { return step.value }))
