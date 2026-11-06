@@ -12,9 +12,25 @@ import type {
   BlockStatusSummary,
 } from "@milaboratories/pl-model-middle-layer";
 import {
+  blockStatusStatesRecord,
   isBlockStatusState,
   isTerminalBlockStatusState,
 } from "@milaboratories/pl-model-middle-layer";
+
+/**
+ * A key-value written as a JSON object, with its fields unchecked; undefined for anything else.
+ * A reporter may write any JSON, so `null` or a bare number must not reach a field read.
+ */
+function parseJsonObject(value: string): Record<string, unknown> | undefined {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(value);
+  } catch {
+    return undefined;
+  }
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return undefined;
+  return Object.fromEntries(Object.entries(parsed));
+}
 
 /** The part of an action context a fold reads. A tree node accessor satisfies it. */
 export interface ActionContextNode {
@@ -117,7 +133,7 @@ function nsToMs(ns: string): number {
  * command's `Running`, which is real work. Recency decides only between equal ranks.
  */
 function rank(state: BlockStatusState, namespace: string): number {
-  return state === "Running" && namespace === RenderNamespace ? 0 : 1;
+  return state === blockStatusStatesRecord.Running && namespace === RenderNamespace ? 0 : 1;
 }
 
 /**
@@ -141,12 +157,8 @@ function readTransitions(node: ActionContextNode): ContextReports {
     if (out.firstNs === undefined || compareNs(ns, out.firstNs) < 0) out.firstNs = ns;
     if (out.lastNs === undefined || compareNs(ns, out.lastNs) > 0) out.lastNs = ns;
 
-    let parsed: { state?: unknown; detail?: unknown; reason?: unknown };
-    try {
-      parsed = JSON.parse(value) as { state?: unknown; detail?: unknown; reason?: unknown };
-    } catch {
-      continue;
-    }
+    const parsed = parseJsonObject(value);
+    if (parsed === undefined) continue;
     const state = parsed.state;
     if (!isBlockStatusState(state)) continue;
 
@@ -204,14 +216,15 @@ function foldNode(transitions: readonly Transition[]): FoldedNode {
     return {
       terminal: true,
       onMachine: false,
-      failure: render.state === "Terminated" ? render.reason : undefined,
+      failure: render.state === blockStatusStatesRecord.Terminated ? render.reason : undefined,
     };
 
   if (holding === undefined) return { terminal: false, onMachine: false };
   return {
     terminal: false,
     state: holding.state,
-    onMachine: holding.state === "Running" && holding.namespace === ExecNamespace,
+    onMachine:
+      holding.state === blockStatusStatesRecord.Running && holding.namespace === ExecNamespace,
     since: holding.ns,
   };
 }
@@ -277,12 +290,8 @@ function readWorkdirProgress(node: ActionContextNode): { done: number; total: nu
   let known = false;
   for (const { key, value } of node.listKeyValuesAsString(WorkdirReadingPrefix)) {
     if (!key.endsWith("/progress")) continue;
-    let parsed: { done?: unknown; total?: unknown };
-    try {
-      parsed = JSON.parse(value) as { done?: unknown; total?: unknown };
-    } catch {
-      continue;
-    }
+    const parsed = parseJsonObject(value);
+    if (parsed === undefined) continue;
     if (typeof parsed.done !== "number" || typeof parsed.total !== "number") continue;
     done += parsed.done;
     total += parsed.total;
@@ -300,12 +309,12 @@ function noteJob(jobs: JobAccumulator, node: ActionContextNode, folded: FoldedNo
     return;
   }
   switch (folded.state) {
-    case "Running":
+    case blockStatusStatesRecord.Running:
       // The render's own Running only evaluates template code; the job has not started yet.
       if (folded.onMachine) jobs.running++;
       return;
-    case "WaitingWorkdirGate":
-    case "PopulatingWorkdir": {
+    case blockStatusStatesRecord.WaitingWorkdirGate:
+    case blockStatusStatesRecord.PopulatingWorkdir: {
       jobs.copying++;
       const progress = readWorkdirProgress(node);
       if (progress === undefined) return;
@@ -314,18 +323,18 @@ function noteJob(jobs: JobAccumulator, node: ActionContextNode, folded: FoldedNo
       jobs.filesKnown = true;
       return;
     }
-    case "WaitingSubmissionGate":
+    case blockStatusStatesRecord.WaitingSubmissionGate:
       jobs.queued++;
       if (folded.since !== undefined)
         jobs.queuedSinceNs = earlier(jobs.queuedSinceNs, folded.since);
       return;
-    case "WaitingForScheduler":
-    case "WaitingForMachine":
+    case blockStatusStatesRecord.WaitingForScheduler:
+    case blockStatusStatesRecord.WaitingForMachine:
       jobs.pending++;
       if (folded.since !== undefined)
         jobs.pendingSinceNs = earlier(jobs.pendingSinceNs, folded.since);
       return;
-    case "CollectingOutputs":
+    case blockStatusStatesRecord.CollectingOutputs:
       jobs.saving++;
       return;
     default:
@@ -361,7 +370,7 @@ function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): Noted
   if (isRoot) {
     acc.root = folded;
     for (const t of reports.known)
-      if (t.namespace === CreatorNamespace && t.state === "Terminated")
+      if (t.namespace === CreatorNamespace && t.state === blockStatusStatesRecord.Terminated)
         if (acc.cancelledNs === undefined || compareNs(t.ns, acc.cancelledNs) > 0)
           acc.cancelledNs = t.ns;
   }
@@ -369,7 +378,7 @@ function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): Noted
   if (isJob(reports)) noteJob(acc.jobs, node, folded);
 
   const render = latestRender(reports.known);
-  const terminated = render?.state === "Terminated";
+  const terminated = render?.state === blockStatusStatesRecord.Terminated;
   if (terminated)
     if (acc.failure === undefined || compareNs(render.ns, acc.failure.ns) < 0)
       acc.failure = { reason: render.reason, ns: render.ns };

@@ -13,18 +13,21 @@
  *
  * States are lossy by design: they exist for the user, and no logic may depend on them.
  */
-export const blockStatusStates = [
-  "WaitingForInputs",
-  "Running",
-  "WaitingWorkdirGate",
-  "WaitingSubmissionGate",
-  "PopulatingWorkdir",
-  "CollectingOutputs",
-  "WaitingForScheduler",
-  "WaitingForMachine",
-  "Terminated",
-  "Completed",
-] as const;
+export const blockStatusStatesRecord = {
+  WaitingForInputs: "WaitingForInputs",
+  Running: "Running",
+  WaitingWorkdirGate: "WaitingWorkdirGate",
+  WaitingSubmissionGate: "WaitingSubmissionGate",
+  PopulatingWorkdir: "PopulatingWorkdir",
+  CollectingOutputs: "CollectingOutputs",
+  WaitingForScheduler: "WaitingForScheduler",
+  WaitingForMachine: "WaitingForMachine",
+  Terminated: "Terminated",
+  Completed: "Completed",
+} as const;
+
+/** Every state, in the order above. */
+export const blockStatusStates = Object.values(blockStatusStatesRecord);
 
 /** A node state name, e.g. `"PopulatingWorkdir"`. */
 export type BlockStatusState = (typeof blockStatusStates)[number];
@@ -38,7 +41,9 @@ export function isBlockStatusState(value: unknown): value is BlockStatusState {
 
 /** True for a state a node cannot leave. */
 export function isTerminalBlockStatusState(state: BlockStatusState): boolean {
-  return state === "Terminated" || state === "Completed";
+  return (
+    state === blockStatusStatesRecord.Terminated || state === blockStatusStatesRecord.Completed
+  );
 }
 
 /**
