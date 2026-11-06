@@ -35,6 +35,7 @@
   "dependencies": {
     "@aws-sdk/client-ecr-public": "catalog:",
     "@aws-sdk/client-s3": "catalog:",
+    "@google-cloud/storage": "catalog:",
     "@inquirer/prompts": "catalog:",
     "@milaboratories/pl-http": "workspace:*",
     "@milaboratories/pl-model-backend": "workspace:*",

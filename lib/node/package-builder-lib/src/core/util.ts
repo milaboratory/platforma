@@ -14,6 +14,15 @@ export function assertNever(_a: never): never {
   throw new Error(`code logic error: assertNever() call for ${JSON.stringify(_a)}`);
 }
 
+/** The URL with its password masked, for logs. Non-URL strings (local paths) are returned as is. */
+export function redactUrl(address: string): string {
+  if (!URL.canParse(address)) return address;
+  const url = new URL(address);
+  if (url.password === "") return address;
+  url.password = "***";
+  return url.toString();
+}
+
 export function trimPrefix(str: string, prefix: string): string {
   if (str.startsWith(prefix)) {
     return str.slice(prefix.length);

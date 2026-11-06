@@ -230,6 +230,7 @@ catalog:
   "@aws-sdk/client-s3": &aws-sdk-version 3.1157.0
   "@aws-sdk/lib-storage": *aws-sdk-version
   "@aws-sdk/client-ecr-public": *aws-sdk-version
+  "@google-cloud/storage": ^8.4.0
 
   # Util & other libs
 

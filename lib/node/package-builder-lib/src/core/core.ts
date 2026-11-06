@@ -770,7 +770,7 @@ export class Core {
     this.logger.info(
       `Publishing package '${artifactName}' for platform '${platform}' into registry '${registry.name}'`,
     );
-    this.logger.debug(`  registry storage URL: '${storageURL}'`);
+    this.logger.debug(`  registry storage URL: '${util.redactUrl(storageURL)}'`);
     this.logger.debug(`  archive to publish: '${archivePath}'`);
     this.logger.debug(`  target package name: '${dstName}'`);
 
