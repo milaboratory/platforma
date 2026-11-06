@@ -296,6 +296,9 @@ export class LLPlClient implements WireClientProviderFactory {
     const clientOptions: ClientOptions = {
       "grpc.keepalive_time_ms": 30_000, // 30 seconds
       "grpc.service_config_disable_resolution": 1, // Disable DNS TXT lookups for service config
+      // A new client must not share a subchannel, and its reconnect backoff, with another client.
+      "grpc.use_local_subchannel_pool": 1,
+      "grpc.max_reconnect_backoff_ms": 10_000,
       // Raises the per-stream and connection-level HTTP/2 windows. Node's 64 KB default
       // caps a big single-stream read (project open) at window/RTT rather than link speed,
       // and a lost WINDOW_UPDATE can deadlock it under packet loss.
@@ -459,7 +462,7 @@ export class LLPlClient implements WireClientProviderFactory {
 
   private updateStatus(newStatus: PlConnectionStatus) {
     process.nextTick(() => {
-      if (this._status !== newStatus) {
+      if (this._status !== newStatus && this._status !== "Unauthenticated") {
         this._status = newStatus;
         if (this.statusListener !== undefined) this.statusListener(this._status);
         if (newStatus === "Unauthenticated" && this.onAuthError !== undefined) this.onAuthError();
@@ -475,7 +478,7 @@ export class LLPlClient implements WireClientProviderFactory {
    * authProbeInFlight so a burst of failures costs one probe.
    */
   private async verifyThenMaybeEscalateUnauthenticated(): Promise<void> {
-    if (this._status !== "OK" || this.authProbeInFlight) return;
+    if (this._status === "Unauthenticated" || this.authProbeInFlight) return;
     this.authProbeInFlight = true;
     try {
       await this.getSessionInfo();
@@ -538,6 +541,7 @@ export class LLPlClient implements WireClientProviderFactory {
           this.updateStatus("Disconnected");
           return new Response(body, { ...resOptions, status: response.status });
         }
+        if (response.status < 400 && this._status !== "OK") this.updateStatus("OK");
 
         const respErr = await parseResponseError(response);
         if (!respErr.error) {
@@ -567,6 +571,7 @@ export class LLPlClient implements WireClientProviderFactory {
         start: (metadata, listener, next) => {
           next(metadata, {
             onReceiveStatus: (status, next) => {
+              if (status.code == GrpcStatus.OK && this._status !== "OK") this.updateStatus("OK");
               if (status.code == GrpcStatus.UNAUTHENTICATED)
                 // (!!!) don't change to "==="
                 void this.verifyThenMaybeEscalateUnauthenticated();
