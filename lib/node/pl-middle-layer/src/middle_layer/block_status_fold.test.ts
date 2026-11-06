@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ActionContextNode } from "./block_status_fold";
-import { foldBlockStatus } from "./block_status_fold";
+import { failureHeadline, foldBlockStatus } from "./block_status_fold";
 import type { BlockStatusState } from "@milaboratories/pl-model-middle-layer";
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
@@ -582,5 +582,34 @@ describe("the run's jobs", () => {
     );
     expect(empty.jobs).toMatchObject({ total: 0 });
     expect(empty.jobs.files).toBeUndefined();
+  });
+});
+
+describe("failureHeadline", () => {
+  it("keeps the innermost error of a nested chain, without stack frames", () => {
+    const reason = [
+      'cannot eval code: cannot eval template: tengo template error: input resource has errors: "[I] "NG:0x1/data": has input errors: [O] "NG:0x2/outputs/binPath": has input errors: Command ID: "NG:0x3"',
+      'Working directory: "workdirs/0x4"',
+      'Command name: "python"',
+      "Failed to start.",
+      'Command: "python" "-c" "import platform"',
+      "Error: docker is not set",
+      "@platforma-sdk/workflow-tengo:exec.exec-impl:97:1",
+    ].join("\n");
+
+    expect(failureHeadline(reason)).toBe("python failed: docker is not set");
+  });
+
+  it("drops the template wrappers of a template's own error", () => {
+    const reason =
+      'cannot eval code: cannot eval template: cannot get element from strictMap: key "axesSpec" not found\n@platforma-open/milaboratories.mixcr-clonotyping-2.workflow:process:80:32';
+
+    expect(failureHeadline(reason)).toBe(
+      'cannot get element from strictMap: key "axesSpec" not found',
+    );
+  });
+
+  it("caps a long message", () => {
+    expect(failureHeadline("x".repeat(500))).toHaveLength(200);
   });
 });
