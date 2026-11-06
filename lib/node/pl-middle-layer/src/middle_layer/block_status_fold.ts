@@ -394,12 +394,13 @@ export function failureHeadline(reason: string): string {
     // Stack frames: `@platforma-sdk/workflow-tengo:tpl.base:595:5`.
     .filter((line) => line !== "" && !/^@\S+:\d+:\d+$/.test(line));
 
-  const error = lines.find((line) => line.startsWith("Error: "));
-  const command = lines.find((line) => line.startsWith("Command name: "));
+  const text = lines.join(" ");
+  // A command that failed: `Command ID: … Command name: "python" … Error: docker is not set`.
+  const command = /Command name: "([^"]*)".*\bError: (.+)$/.exec(text);
   const headline =
-    error !== undefined && command !== undefined
-      ? `${command.slice("Command name: ".length).replaceAll('"', "")} failed: ${error.slice("Error: ".length)}`
-      : lines.join(" ").replace(TemplateErrorPrefix, "");
+    command !== null
+      ? `${command[1]} failed: ${command[2]}`
+      : text.replace(TemplateErrorPrefix, "");
   return headline.length > MaxHeadlineLength
     ? `${headline.slice(0, MaxHeadlineLength - 1)}…`
     : headline;

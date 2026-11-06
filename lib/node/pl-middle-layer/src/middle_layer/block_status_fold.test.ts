@@ -600,6 +600,13 @@ describe("failureHeadline", () => {
     expect(failureHeadline(reason)).toBe("python failed: docker is not set");
   });
 
+  it("reads a command failure written on one line", () => {
+    const reason =
+      'cannot eval code: input resource has errors: "[O] "NG:0x1/outputs/binDir": has input errors: Command ID: "NG:0x2" Working directory: "workdirs/0x3" Command name: "python" Failed to start. Command: "python" "-c" "x" Error: docker is not set\n@platforma-sdk/workflow-tengo:ll:24:2';
+
+    expect(failureHeadline(reason)).toBe("python failed: docker is not set");
+  });
+
   it("drops the template wrappers of a template's own error", () => {
     const reason =
       'cannot eval code: cannot eval template: cannot get element from strictMap: key "axesSpec" not found\n@platforma-open/milaboratories.mixcr-clonotyping-2.workflow:process:80:32';
