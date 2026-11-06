@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.21.1
+
+### Patch Changes
+
+- fe4ff52: exec: `cache()` is deprecated. Use `cacheMillis`, `cacheSeconds`, `cacheMinutes`, `cacheHours` or `cacheDays`. The `cache()` doc comment now tells to build the duration with the 'times' library constants
+
 ## 6.21.0
 
 ### Minor Changes
