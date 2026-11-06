@@ -52,10 +52,10 @@ export interface ActionContextNode {
  * A stack guard, not a correctness device: the `seen` set already makes a cycle terminate, and the
  * depth of a real tree is the nesting depth of the templates, far below this.
  */
-const MaxDepth = 256;
+export const MaxDepth = 256;
 
 /** Prefix of the field names holding child contexts. */
-const ChildFieldPrefix = "child/";
+export const ChildFieldPrefix = "child/";
 
 /** Prefix of the transition keys: `transition/<namespace>/<resource>/<ns>`. */
 const TransitionPrefix = "transition/";
@@ -70,7 +70,7 @@ const RenderNamespace = "render";
 const CreatorNamespace = "core";
 
 /** The namespace a command reports under; its `Running` means a job executing on a machine. */
-const ExecNamespace = "exec";
+export const ExecNamespace = "exec";
 
 /** The namespace a job's work folder reports under: staging inputs, saving results. */
 export const WorkdirNamespace = "workdir";
@@ -79,7 +79,7 @@ export const WorkdirNamespace = "workdir";
 const WorkdirReadingPrefix = "reading/workdir/";
 
 /** One transition, as stored under `transition/<namespace>/<resource>/<ns>`. */
-type Transition = {
+export type Transition = {
   namespace: string;
   /** The resource that reported: the render itself, or a command or work dir it created. */
   reporter: string;
@@ -90,10 +90,15 @@ type Transition = {
   reason: string;
 };
 
+/** A transition whatever its state, for display: a state this build does not know stays a string. */
+export type RawTransition = Omit<Transition, "state"> & { state: string };
+
 /** What one context reported. */
-type ContextReports = {
+export type ContextReports = {
   /** Transitions this build understands. */
   known: Transition[];
+  /** Every transition whose key and value parse, including states this build does not know. */
+  all: RawTransition[];
   /** The earliest and latest timestamp of ANY transition key, including states this build does
    * not know: the clock is state-independent, so an unknown state still means the run moved. */
   firstNs?: string;
@@ -101,7 +106,7 @@ type ContextReports = {
 };
 
 /** A node of the tree, reduced to what the summary needs. */
-type FoldedNode = {
+export type FoldedNode = {
   /** True when the render of this context has ended and nothing it started is still running. */
   terminal: boolean;
   /** The reason, set when the render itself ended in a termination rather than a completion. */
@@ -115,12 +120,12 @@ type FoldedNode = {
 };
 
 /** Compares non-negative decimal integers given as strings, shorter is smaller. */
-function compareNs(a: string, b: string): number {
+export function compareNs(a: string, b: string): number {
   return a.length !== b.length ? a.length - b.length : a < b ? -1 : a > b ? 1 : 0;
 }
 
 /** Nanoseconds since the epoch, as the key carries them, to milliseconds. */
-function nsToMs(ns: string): number {
+export function nsToMs(ns: string): number {
   return Number(BigInt(ns) / 1_000_000n);
 }
 
@@ -144,8 +149,8 @@ function rank(state: BlockStatusState, namespace: string): number {
  * added after this release must not break the surface. Its timestamp still counts, because a report
  * arriving is evidence the run moved whatever the state means.
  */
-function readTransitions(node: ActionContextNode): ContextReports {
-  const out: ContextReports = { known: [] };
+export function readTransitions(node: ActionContextNode): ContextReports {
+  const out: ContextReports = { known: [], all: [] };
 
   for (const { key, value } of node.listKeyValuesAsString(TransitionPrefix)) {
     const parts = key.split("/");
@@ -160,6 +165,10 @@ function readTransitions(node: ActionContextNode): ContextReports {
     const parsed = parseJsonObject(value);
     if (parsed === undefined) continue;
     const state = parsed.state;
+    if (typeof state !== "string") continue;
+    const detail = typeof parsed.detail === "string" ? parsed.detail : "";
+    const reason = typeof parsed.reason === "string" ? parsed.reason : "";
+    out.all.push({ namespace, reporter, ns, state, detail, reason });
     if (!isBlockStatusState(state)) continue;
 
     out.known.push({
@@ -167,8 +176,8 @@ function readTransitions(node: ActionContextNode): ContextReports {
       reporter,
       ns,
       state,
-      detail: typeof parsed.detail === "string" ? parsed.detail : "",
-      reason: typeof parsed.reason === "string" ? parsed.reason : "",
+      detail,
+      reason,
     });
   }
 
@@ -188,7 +197,7 @@ function readTransitions(node: ActionContextNode): ContextReports {
  * reporter in the context has ended too: the render's outputs being set does not stop a command it
  * started, and that command's report must stay visible.
  */
-function foldNode(transitions: readonly Transition[]): FoldedNode {
+export function foldNode(transitions: readonly Transition[]): FoldedNode {
   const latestPerReporter = new Map<string, Transition>();
   for (const t of transitions) {
     const reporterKey = `${t.namespace}/${t.reporter}`;
@@ -422,9 +431,9 @@ export function failureHeadline(reason: string): string {
 }
 
 /** The render's own latest transition in a context. */
-function latestRender(known: readonly Transition[]): Transition | undefined {
-  let latest: Transition | undefined;
-  for (const t of known)
+export function latestRender<T extends RawTransition>(transitions: readonly T[]): T | undefined {
+  let latest: T | undefined;
+  for (const t of transitions)
     if (t.namespace === RenderNamespace && (latest === undefined || compareNs(t.ns, latest.ns) > 0))
       latest = t;
   return latest;
