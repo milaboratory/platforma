@@ -34,7 +34,12 @@ export async function withMl(
   });
 }
 
-export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 2000) {
+/**
+ * The timeout covers the whole wait, not one change notification: the block is
+ * fetched from the remote registry and then run, so the budget must fit a cold
+ * download on a CI runner.
+ */
+export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 10_000) {
   const abortSignal = AbortSignal.timeout(timeout);
   const overview = prj.overview;
   const state = prj.getBlockState(blockId);
@@ -52,8 +57,12 @@ export async function awaitBlockDone(prj: Project, blockId: string, timeout: num
     try {
       await overview.awaitChange(abortSignal);
     } catch (e: any) {
+      console.dir(blockOverview, { depth: 5 });
       console.dir(await state.getValue(), { depth: 5 });
-      throw new Error("Aborted.", { cause: e });
+      throw new Error(
+        `Block ${blockId} was still ${blockOverview.calculationStatus} after ${timeout}ms.`,
+        { cause: e },
+      );
     }
   }
 }
