@@ -1,5 +1,104 @@
 # @platforma-sdk/block-tools
 
+## 2.17.6
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.43
+
+## 2.17.5
+
+### Patch Changes
+
+- Updated dependencies [0c111b5]
+  - @platforma-sdk/package-builder-lib@1.4.3
+
+## 2.17.4
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.42
+
+## 2.17.3
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+  - @milaboratories/pl-model-middle-layer@1.35.0
+  - @milaboratories/pl-model-backend@1.4.41
+
+## 2.17.2
+
+### Patch Changes
+
+- 6a0d1d0: Fix `structure init`, which failed in 2.17.0 with `ENOENT` on `templates/static/root/.gitignore`. pnpm 11+ leaves every `.gitignore` file out of a packed package, so 2.17.0 was published without this template. The template is now named `gitignore` (no dot). `structure init` still writes `.gitignore` in the new block.
+
+## 2.17.1
+
+### Patch Changes
+
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-model-common@1.54.2
+  - @milaboratories/pl-model-middle-layer@1.34.6
+  - @milaboratories/pl-model-backend@1.4.40
+
+## 2.17.0
+
+### Minor Changes
+
+- 39a9676: `structure refresh` (and so `upgrade-sdk`) moves a block to the SDK toolchain: Node 24.22.1 and pnpm 12.16.1.
+
+  - Root `package.json`: `packageManager` is the SDK's pnpm, and `devEngines.runtime` is Node 24.22.1 with `onFail: download`, so pnpm runs the block scripts on that Node. Refresh overwrites `packageManager` and `devEngines.runtime`. It keeps other `devEngines` entries and `engines`.
+  - CI workflows: `node-version` is `24.22.1`.
+  - `pnpm-workspace.yaml`: `minimumReleaseAgeExclude` lists our scopes, so `upgrade-sdk` can install an SDK release less than a day old. `allowBuilds` lists the install scripts in the SDK dependency tree: `@milaboratories/pframes-rs-node` is always `true` (it downloads the native addon), and the others default to `false`. The `turbo` catalog entry is raised to at least `~2.11.10`: older turbo cannot read a pnpm 12 lockfile.
+  - pnpm 11+ ignores the `pnpm` field in `package.json`. Refresh removes an empty one and stops with an error when it holds settings; move them to `pnpm-workspace.yaml`.
+
+  After `upgrade-sdk`, a block needs pnpm 12 locally. pnpm downloads Node 24.22.1 for the block scripts.
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/pl-http@1.2.5
+  - @platforma-sdk/blocks-deps-updater@2.2.1
+  - @platforma-sdk/package-builder-lib@1.4.2
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/pl-model-backend@1.4.39
+  - @milaboratories/pl-model-common@1.54.1
+  - @milaboratories/pl-model-middle-layer@1.34.5
+
+## 2.16.17
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @milaboratories/pl-model-common@1.54.0
+  - @milaboratories/pl-model-middle-layer@1.34.4
+  - @milaboratories/pl-model-backend@1.4.38
+
+## 2.16.16
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.37
+
+## 2.16.15
+
+### Patch Changes
+
+- Updated dependencies [5d27046]
+  - @milaboratories/pl-model-middle-layer@1.34.3
+
+## 2.16.14
+
+### Patch Changes
+
+- 6635396: `structure refresh` adds a changesets `fixed` group of the block, model, ui and workflow packages, so a change in any sibling now releases a new block version.
+
 ## 2.16.13
 
 ### Patch Changes

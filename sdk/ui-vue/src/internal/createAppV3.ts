@@ -2,6 +2,7 @@ import { deepClone, delay, uniqueId } from "@milaboratories/helpers";
 import type { Mutable } from "@milaboratories/helpers";
 import type {
   NavigationState,
+  BlockColumnLinks,
   BlockOutputsBase,
   BlockStateV3,
   PlatformaV3,
@@ -122,10 +123,12 @@ export function createAppV3<
     outputs: Partial<Readonly<Outputs>>;
     blockStorage: unknown;
     navigationState: NavigationState<Href>;
+    columnLinks: BlockColumnLinks | undefined;
   }>(state.value) as Ref<{
     outputs: Partial<Readonly<Outputs>>;
     blockStorage: unknown;
     navigationState: NavigationState<Href>;
+    columnLinks: BlockColumnLinks | undefined;
   }>;
 
   const updateData = async (value: Data) => {
@@ -442,7 +445,9 @@ export function createAppV3<
     globalThis.__block_app__ = app;
   }
 
-  return { app, pluginAccess };
+  const columnLinks = computed(() => snapshot.value.columnLinks);
+
+  return { app, pluginAccess, columnLinks };
 }
 
 export type BaseAppV3<

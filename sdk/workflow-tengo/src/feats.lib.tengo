@@ -64,6 +64,9 @@ export ll.toStrict({
 	// true when backend supports blob size retrieval via ll.getBlobSize()
 	hasBlobSize:            ll.methodExists(plapi, "getBlobSize"),
 
+	// true when backend supports gzip compression via ll.gzipEncode()
+	hasGzip:                ll.methodExists(plapi, "gzipEncode"),
+
 	// true when backend supports docker packages
 	isDockerAvailable:        _isEnabled("dockerSupport"),
 
@@ -94,5 +97,22 @@ export ll.toStrict({
 	// true when backend populates the multi-step 'progress' map output field
 	// on Blob* import/upload resources. When false, the SDK synthesizes the
 	// same map shape locally (single entry "01" → handle).
-	multiStepProgress:        _isEnabled("multiStepProgress")
+	multiStepProgress:        _isEnabled("multiStepProgress"),
+
+	// true when the backend gives final canonical IDs: a canonical ID is empty until the backend
+	// sets it, and it does not change after that. Older backends can give a canonical ID that
+	// changes later, or an empty one forever. Backends before 'canonicalIDExposure' do not report
+	// it, but all backends that report 'supportsScratchSpaceRequests' or 'scratchSpace' (v4.4.0
+	// and later) already give final canonical IDs.
+	canonicalIdExposure:      _isEnabled("canonicalIDExposure") ||
+		_isEnabled("supportsScratchSpaceRequests") ||
+		_isEnabled("scratchSpace"),
+
+	// true when tx.resourceKeyValueSetAsync is available: a resource metadata set applied after the commit.
+	kvAsync:                  _isEnabled("kvAsync"),
+
+	// true when a resource schema can declare fields optional, so templates create them in the transaction
+	// that creates the resource, before an explicit lock (e.g. the "actionContext" link of block action
+	// context). "optionalServiceField" is its former name.
+	optionalFieldsInSchemas:  _isEnabled("optionalFieldsInSchemas") || _isEnabled("optionalServiceField")
 })

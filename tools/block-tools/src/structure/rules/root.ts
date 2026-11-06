@@ -44,15 +44,17 @@ export function rootRules(): void {
           },
         );
 
-        managed(".gitignore", file("root/.gitignore"), () => {
+        // The template has no dot: `pnpm pack` (pnpm 11+) leaves every
+        // `.gitignore` out of the published package.
+        managed(".gitignore", file("root/gitignore"), () => {
           rootGitignoreRules();
         });
 
         managed(
           ".changeset/config.json",
-          generate(() => rootChangesetConfigInitial()),
-          () => {
-            rootChangesetConfigRules();
+          generate((ctx) => rootChangesetConfigInitial(ctx)),
+          (ctx) => {
+            rootChangesetConfigRules(ctx);
           },
         );
         seed(".changeset/scaffold.md", text(EMPTY_CHANGESET_SEED));

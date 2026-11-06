@@ -334,7 +334,8 @@ function createStreamManager(
   tx.setField({ resourceId: streamId, fieldName: "filePath" }, filePathId);
   const streamFId = { resourceId: streamId, fieldName: "stream" };
 
-  const streamManagerId = tx.createEphemeral({
+  // StreamManager is structural, as the workflow SDK creates it: a backend schema can require that kind.
+  const streamManagerId = tx.createStruct({
     name: "StreamManager",
     version: "2",
   });

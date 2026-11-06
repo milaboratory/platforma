@@ -62,6 +62,30 @@ tplTest.concurrent("pt simple test", async ({ helper, expect, driverKit }) => {
   expect(normalizeTsv(outputTsvContent)).toEqual(normalizeTsv(expectedOutputTsvData));
 });
 
+// The workflow JSON is larger than the gRPC message limit of the platform (4 MiB).
+// pt.run() must send it compressed, and ptabler must read the compressed file.
+tplTest.concurrent("pt large workflow test", async ({ helper, expect, driverKit }) => {
+  const inputTsvData = dedent`
+      a	b
+      1	X
+      4	Y
+    `;
+  // The last of 1000 steps sets "filler" to 5000 characters plus the step index 999.
+  const expectedOutputTsvData = dedent`
+      a	n
+      1	5003
+      4	5003
+    `;
+
+  const result = await helper.renderTemplate(false, "pt.large_workflow", ["out"], (tx) => ({
+    inputTsv: tx.createValue(Pl.JsonObject, JSON.stringify(inputTsvData)),
+  }));
+
+  const outputTsvContent = await getFileContent(result, "out", driverKit);
+
+  expect(normalizeTsv(outputTsvContent)).toEqual(normalizeTsv(expectedOutputTsvData));
+});
+
 tplTest.concurrent("pt write frame test", async ({ helper, expect, driverKit }) => {
   const workflow = await helper.renderWorkflow("pt.write_frame", false, {
     inputCsv: dedent`

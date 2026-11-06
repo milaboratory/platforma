@@ -1,5 +1,6 @@
 import type { ResultOrError, BlockConfig, BlockStorage, PlRef } from "@platforma-sdk/model";
-import type { StringifiedJson } from "@milaboratories/pl-model-common";
+import type { ColumnReference, StringifiedJson } from "@milaboratories/pl-model-common";
+import { collectColumnReferences } from "@milaboratories/pl-model-common";
 import {
   extractCodeWithInfo,
   ensureError,
@@ -11,8 +12,8 @@ import type { QuickJSWASMModule } from "quickjs-emscripten";
 import { executeSingleLambda } from "../js_render";
 import type { SignedResourceId } from "@milaboratories/pl-client";
 import { ConsoleLoggerAdapter, type MiLogger } from "@milaboratories/ts-helpers";
-import type { StorageDebugView } from "@milaboratories/pl-model-middle-layer";
 import { getDebugFlags } from "../debug";
+import { parseArgsDeriveResult, type DerivedArgs } from "./args_derivation";
 
 type EnrichmentTargetsRequest = {
   blockConfig: () => BlockConfig;
@@ -35,10 +36,11 @@ export type MigrationResult =
   | { error?: undefined; newStorageJson: StringifiedJson<BlockStorage>; info: string };
 
 /**
- * Result of args derivation from storage.
- * Returned by __pl_args_derive and __pl_prerunArgs_derive VM callbacks.
+ * Result of a derivation from storage that either produced a value or failed.
+ * Returned by the __pl_prerunArgs_derive and __pl_initializationParams_derive VM callbacks; a
+ * newer model adds the issues found in the prerun args, which are not read here.
  */
-type ArgsDeriveResult = { error: string } | { error?: undefined; value: unknown };
+type DeriveResult = { error: string } | { error?: undefined; value: unknown };
 
 /**
  * Result of building initial storage from params.
@@ -66,6 +68,12 @@ export class ProjectHelper {
     },
   });
 
+  // An args resource never changes, so its id alone identifies the columns found in it.
+  private readonly columnReferencesCache = new LRUCache<
+    SignedResourceId,
+    readonly ColumnReference[]
+  >({ max: 1024 });
+
   constructor(
     private readonly quickJs: QuickJSWASMModule,
     public readonly logger: MiLogger = new ConsoleLoggerAdapter(),
@@ -77,39 +85,37 @@ export class ProjectHelper {
 
   /**
    * Derives args directly from storage JSON using VM callback.
-   * The VM extracts data from storage and calls the block's args() function.
+   * The VM extracts data from storage, calls the block's args() function and then its argsIssues().
    *
    * This allows the middle layer to work only with storage JSON,
    * without needing to know the underlying data structure.
    *
    * @param blockConfig The block configuration (provides the model code)
    * @param storageJson Storage as JSON string
-   * @returns The derived args object, or error if derivation fails
+   * @returns The derived args and whether the block may run with them, or why there are none
    */
-  public deriveArgsFromStorage(
-    blockConfig: BlockConfig,
-    storageJson: string,
-  ): ResultOrError<unknown> {
+  public deriveArgsFromStorage(blockConfig: BlockConfig, storageJson: string): DerivedArgs {
     if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
       return {
+        type: "absent",
         error: new Error("deriveArgsFromStorage is only supported for model API version 2"),
       };
     }
 
     try {
-      const result = executeSingleLambda(
-        this.quickJs,
-        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.ArgsDerive],
-        extractCodeWithInfo(blockConfig),
-        storageJson,
-      ) as ArgsDeriveResult;
-
-      if (result.error !== undefined) {
-        return { error: new Error(result.error) };
-      }
-      return { value: result.value };
+      return parseArgsDeriveResult(
+        executeSingleLambda(
+          this.quickJs,
+          blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.ArgsDerive],
+          extractCodeWithInfo(blockConfig),
+          storageJson,
+        ),
+      );
     } catch (e) {
-      return { error: new Error("Args derivation from storage failed", { cause: ensureError(e) }) };
+      return {
+        type: "absent",
+        error: new Error("Args derivation from storage failed", { cause: ensureError(e) }),
+      };
     }
   }
 
@@ -117,9 +123,13 @@ export class ProjectHelper {
    * Derives prerunArgs directly from storage JSON using VM callback.
    * Falls back to args() if prerunArgs is not defined in the block model.
    *
+   * Errors the block's `prerunArgsIssues()` finds in its prerun args, or for a block without its
+   * own prerunArgs, the errors its `argsIssues()` finds in its args, come back as an `error` and
+   * skip staging the same way.
+   *
    * @param blockConfig The block configuration (provides the model code)
    * @param storageJson Storage as JSON string
-   * @returns The derived prerunArgs, or undefined if derivation fails
+   * @returns The derived prerunArgs, or undefined if derivation fails or found errors
    */
   public derivePrerunArgsFromStorage(blockConfig: BlockConfig, storageJson: string): unknown {
     if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
@@ -132,7 +142,7 @@ export class ProjectHelper {
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.PrerunArgsDerive],
         extractCodeWithInfo(blockConfig),
         storageJson,
-      ) as ArgsDeriveResult;
+      ) as DeriveResult;
 
       if (result.error !== undefined) {
         // Return undefined if derivation fails (skip block in staging)
@@ -208,7 +218,7 @@ export class ProjectHelper {
         callback,
         extractCodeWithInfo(blockConfig),
         storageJson,
-      ) as ArgsDeriveResult;
+      ) as DeriveResult;
 
       if (result.error !== undefined) {
         return { error: new Error(result.error) };
@@ -249,6 +259,25 @@ export class ProjectHelper {
     if (key === undefined) return this.calculateEnrichmentTargets(req);
     const cacheKey = `${key.argsRid}:${key.blockPackRid}`;
     return this.enrichmentTargetsCache.memo(cacheKey, { context: req }).value;
+  }
+
+  /**
+   * Columns referenced by a block's args, with the values of them the args picked, read from the
+   * args resource `argsRid`. `undefined` while the resource data is not loaded yet: `args`
+   * returns `undefined` then, and nothing is remembered for such a read, so the references are
+   * found once the data arrives.
+   */
+  public getColumnReferences(
+    argsRid: SignedResourceId,
+    args: () => unknown,
+  ): undefined | readonly ColumnReference[] {
+    const cached = this.columnReferencesCache.get(argsRid);
+    if (cached !== undefined) return cached;
+    const data = args();
+    if (data === undefined) return undefined;
+    const references = collectColumnReferences(data);
+    this.columnReferencesCache.set(argsRid, references);
+    return references;
   }
 
   // =============================================================================
@@ -474,40 +503,6 @@ export class ProjectHelper {
         ),
       );
       throw new Error(`Block storage update failed: ${e}`);
-    }
-  }
-
-  /**
-   * Gets storage debug view from raw storage data by calling the VM's __pl_storage_debugView callback.
-   * Returns structured debug info about the storage (e.g., dataVersion).
-   *
-   * @param blockConfig Block configuration
-   * @param rawStorageJson Raw storage as JSON string (or undefined)
-   * @returns Storage debug view as JSON string (e.g., '{"dataVersion": "v1"}')
-   */
-  public getStorageDebugViewInVM(
-    blockConfig: BlockConfig,
-    rawStorageJson: string | undefined,
-  ): StringifiedJson<StorageDebugView> | undefined {
-    if (blockConfig.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION) {
-      throw new Error("getStorageDebugViewInVM is only supported for model API version 2");
-    }
-
-    try {
-      const result = executeSingleLambda(
-        this.quickJs,
-        blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageDebugView],
-        extractCodeWithInfo(blockConfig),
-        rawStorageJson,
-      ) as StringifiedJson<StorageDebugView>;
-      return result;
-    } catch (e) {
-      this.logger.error(
-        new Error("[ProjectHelper.getStorageDebugViewInVM] Get storage debug view failed", {
-          cause: e,
-        }),
-      );
-      return undefined;
     }
   }
 

@@ -1,5 +1,67 @@
 # @milaboratories/pl-tree
 
+## 1.17.0
+
+### Minor Changes
+
+- f7d4c98: Expose the canonical id of a resource as `BasicResourceData.canonicalId`, and pin with a regression test that a committed pure resource reports a non-empty one.
+
+### Patch Changes
+
+- Updated dependencies [f7d4c98]
+  - @milaboratories/pl-client@3.21.0
+  - @milaboratories/pl-errors@1.4.58
+
+## 1.16.9
+
+### Patch Changes
+
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-client@3.20.0
+  - @milaboratories/pl-errors@1.4.57
+
+## 1.16.8
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.19.4
+- @milaboratories/pl-errors@1.4.56
+
+## 1.16.7
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.19.3
+- @milaboratories/pl-errors@1.4.55
+
+## 1.16.6
+
+### Patch Changes
+
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/computable@2.9.9
+  - @milaboratories/pl-client@3.19.2
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/pl-errors@1.4.54
+
+## 1.16.5
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.19.1
+- @milaboratories/pl-errors@1.4.53
+
+## 1.16.4
+
+### Patch Changes
+
+- Updated dependencies [7d9925e]
+  - @milaboratories/pl-client@3.19.0
+  - @milaboratories/pl-errors@1.4.52
+
 ## 1.16.3
 
 ### Patch Changes

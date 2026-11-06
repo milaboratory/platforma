@@ -1,5 +1,158 @@
 # @platforma-sdk/test
 
+## 1.88.4
+
+### Patch Changes
+
+- Updated dependencies [f7d4c98]
+  - @milaboratories/pl-client@3.21.0
+  - @milaboratories/pl-tree@1.17.0
+  - @milaboratories/pl-middle-layer@1.76.2
+
+## 1.88.2
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.1
+
+## 1.88.1
+
+### Patch Changes
+
+- Updated dependencies [f7a9989]
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-middle-layer@1.76.0
+  - @milaboratories/pl-client@3.20.0
+  - @milaboratories/pl-tree@1.16.9
+
+## 1.88.0
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @platforma-sdk/model@1.88.0
+  - @milaboratories/pl-middle-layer@1.75.0
+  - @milaboratories/pl-client@3.19.4
+  - @milaboratories/pl-tree@1.16.8
+
+## 1.87.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.19
+
+## 1.87.0
+
+### Patch Changes
+
+- Updated dependencies [e813654]
+  - @platforma-sdk/model@1.87.0
+  - @milaboratories/pl-middle-layer@1.74.18
+
+## 1.86.8
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.17
+
+## 1.86.7
+
+### Patch Changes
+
+- Updated dependencies [c8a246e]
+  - @milaboratories/pl-middle-layer@1.74.16
+
+## 1.86.6
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.15
+
+## 1.86.5
+
+### Patch Changes
+
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-middle-layer@1.74.14
+  - @platforma-sdk/model@1.86.5
+  - @milaboratories/pl-client@3.19.3
+  - @milaboratories/pl-tree@1.16.7
+
+## 1.86.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.13
+
+## 1.86.3
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- 615bd8c: Replace `decompress` (path traversal advisories, no fixed release) with `yauzl` for zip archives and `tar` for the block boilerplate. Zip extraction now fails on entries and symlinks that lead outside the target folder, on entries written through a symlink, and on duplicate entries.
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [79f8dbc]
+- Updated dependencies [615bd8c]
+  - @milaboratories/computable@2.9.9
+  - @milaboratories/pl-client@3.19.2
+  - @milaboratories/pl-middle-layer@1.74.12
+  - @milaboratories/pl-tree@1.16.6
+  - @platforma-sdk/model@1.86.3
+
+## 1.86.2
+
+### Patch Changes
+
+- Updated dependencies [1472a5b]
+  - @milaboratories/pl-middle-layer@1.74.11
+
+## 1.86.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.10
+
+## 1.86.0
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @platforma-sdk/model@1.86.0
+  - @milaboratories/pl-client@3.19.1
+  - @milaboratories/pl-middle-layer@1.74.9
+  - @milaboratories/pl-tree@1.16.5
+
+## 1.85.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.8
+
+## 1.85.3
+
+### Patch Changes
+
+- Updated dependencies [7d9925e]
+  - @milaboratories/pl-client@3.19.0
+  - @milaboratories/pl-middle-layer@1.74.7
+  - @milaboratories/pl-tree@1.16.4
+
+## 1.85.2
+
+### Patch Changes
+
+- Updated dependencies [5d27046]
+  - @milaboratories/pl-middle-layer@1.74.6
+  - @platforma-sdk/model@1.85.2
+
+## 1.85.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.5
+
 ## 1.85.0
 
 ### Patch Changes

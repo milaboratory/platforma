@@ -2,6 +2,7 @@
 import {
   PlBtnGhost,
   PlBtnSecondary,
+  PlColumnLabel,
   PlElementList,
   PlIcon24,
   PlSearchField,
@@ -11,6 +12,7 @@ import {
 import { type GridApi } from "ag-grid-enterprise";
 import { computed, ref } from "vue";
 import { PlAgDataTableRowNumberColId } from "../PlAgDataTable/sources/row-number";
+import type { PlAgHeaderComponentParams } from "../PlAgColumnHeader/types";
 import { useFilteredItems } from "./useFilteredItems";
 import { useGridColumns } from "./useGridColumns";
 
@@ -35,11 +37,15 @@ const teleportTarget = usePlBlockPageTitleTeleportTarget("PlAgGridColumnManager"
 const columns = useGridColumns(props);
 
 const items = computed(() => {
-  return columns.value.map((col, i) => ({
-    column: col,
-    id: col.getId(),
-    label: col.getColDef().headerName ?? `Unnamed Column (${i + 1})`,
-  }));
+  return columns.value.map((col, i) => {
+    const header: PlAgHeaderComponentParams | undefined = col.getColDef().headerComponentParams;
+    return {
+      column: col,
+      id: col.getId(),
+      label: col.getColDef().headerName ?? `Unnamed Column (${i + 1})`,
+      linkHint: header?.linkHint,
+    };
+  });
 });
 
 const { filteredItems, segments } = useFilteredItems({
@@ -126,14 +132,16 @@ const toggleAllFiltered = () => {
       disable-removing
     >
       <template #item-title="{ item }">
-        <span data-testid="pl-ag-grid-column-manager-item">
-          <span
-            v-for="(segment, i) of segments.get(item.label)"
-            :key="i"
-            :class="{ [$style.match]: segment.match }"
-            >{{ segment.value }}</span
-          >
-        </span>
+        <PlColumnLabel :option="item">
+          <span data-testid="pl-ag-grid-column-manager-item">
+            <span
+              v-for="(segment, i) of segments.get(item.label)"
+              :key="i"
+              :class="{ [$style.match]: segment.match }"
+              >{{ segment.value }}</span
+            >
+          </span>
+        </PlColumnLabel>
       </template>
     </PlElementList>
   </PlSlideModal>
