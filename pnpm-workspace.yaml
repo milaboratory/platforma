@@ -260,6 +260,10 @@ catalog:
 
   "zod": ~3.25.76
 
+  "@standard-schema/spec": ^1.1.0
+
+  "valibot": ^1.5.0
+
   "archiver": ^7.0.1
 
   "@types/archiver": ^6.0.3
