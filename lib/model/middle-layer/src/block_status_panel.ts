@@ -108,4 +108,9 @@ export type BlockStatusPanel = {
   readonly heaviest: BlockStatusPanelHeaviest;
   /** The root context, undefined while the block has none. */
   readonly root?: BlockStatusPanelNode;
+  /**
+   * The context ids from the root down to the render that terminated first, so the panel can open
+   * the tree to it. Undefined while no render has terminated.
+   */
+  readonly firstFailurePath?: readonly string[];
 };

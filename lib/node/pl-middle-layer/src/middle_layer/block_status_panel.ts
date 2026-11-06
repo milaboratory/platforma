@@ -23,6 +23,7 @@ import {
   ExecNamespace,
   foldBlockStatus,
   foldNode,
+  latestRender,
   MaxDepth,
   nsToMs,
   readTransitions,
@@ -67,7 +68,29 @@ export function foldBlockStatusPanel(
   subtreeTotals(tree, lastNs, totals);
 
   const rootNode = panelNode(tree, totals, expanded, true);
-  return { summary, heaviest: heaviest(tree, totals), root: rootNode };
+  return {
+    summary,
+    heaviest: heaviest(tree, totals),
+    root: rootNode,
+    firstFailurePath: firstFailurePath(tree),
+  };
+}
+
+/** The context ids from the root down to the render that terminated first, if one did. */
+function firstFailurePath(root: Read): string[] | undefined {
+  let first: { ns: string; path: string[] } | undefined;
+  const visit = (read: Read, above: readonly string[]) => {
+    const path = [...above, read.node.id];
+    const render = latestRender(read.all);
+    if (
+      render?.state === "Terminated" &&
+      (first === undefined || compareNs(render.ns, first.ns) < 0)
+    )
+      first = { ns: render.ns, path };
+    for (const child of read.children) visit(child, path);
+  };
+  visit(root, []);
+  return first?.path;
 }
 
 function readTree(node: ActionContextNode, seen: Set<string>, depth: number): Read | undefined {
