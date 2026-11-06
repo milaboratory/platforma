@@ -1,6 +1,7 @@
 import { getTestAdminClient, getTestAdminClientConf } from "../test/test_config";
 import { PlClient } from "./client";
 import { PlDriver, PlDriverDefinition } from "./driver";
+import { setTimeout as sleep } from "node:timers/promises";
 import { Dispatcher, request } from "undici";
 import { GrpcClientProviderFactory } from "./grpc";
 import { test, expect } from "vitest";
@@ -28,6 +29,19 @@ interface SimpleDriver extends PlDriver {
   ping(): Promise<string>;
 }
 
+// The ping goes to a public URL. On CI, DNS, connect or the response can stop for some seconds.
+// The dispatcher timeouts (10-30 s) are longer than the test timeout. Thus each attempt has
+// a short deadline, and the sum of all attempts is less than the test timeout.
+const PING_ATTEMPTS = 3;
+const PING_ATTEMPT_TIMEOUT_MS = 2_000;
+const PING_RETRY_DELAY_MS = 250;
+// Time for the client init before the ping.
+const CLIENT_INIT_MARGIN_MS = 5_000;
+const PING_TEST_TIMEOUT_MS =
+  PING_ATTEMPTS * PING_ATTEMPT_TIMEOUT_MS +
+  (PING_ATTEMPTS - 1) * PING_RETRY_DELAY_MS +
+  CLIENT_INIT_MARGIN_MS;
+
 const SimpleDriverDefinition: PlDriverDefinition<SimpleDriver> = {
   name: "SimpleDriver",
   init(
@@ -37,21 +51,36 @@ const SimpleDriverDefinition: PlDriverDefinition<SimpleDriver> = {
   ): SimpleDriver {
     return {
       async ping(): Promise<string> {
-        const response = await request("https://cdn.milaboratory.com/ping", {
-          dispatcher: httpDispatcher,
-        });
-        return await response.body.text();
+        let lastError: unknown;
+        for (let attempt = 1; attempt <= PING_ATTEMPTS; attempt++) {
+          try {
+            // The signal also stops the body read.
+            const response = await request("https://cdn.milaboratory.com/ping", {
+              dispatcher: httpDispatcher,
+              signal: AbortSignal.timeout(PING_ATTEMPT_TIMEOUT_MS),
+            });
+            return await response.body.text();
+          } catch (err) {
+            lastError = err;
+            if (attempt < PING_ATTEMPTS) await sleep(PING_RETRY_DELAY_MS);
+          }
+        }
+        throw lastError;
       },
       close() {},
     };
   },
 };
 
-test("test driver", async () => {
-  const client = await getTestAdminClient();
-  const drv = client.getDriver(SimpleDriverDefinition);
-  expect(await drv.ping()).toEqual("pong");
-});
+test(
+  "test driver",
+  async () => {
+    const client = await getTestAdminClient();
+    const drv = client.getDriver(SimpleDriverDefinition);
+    expect(await drv.ping()).toEqual("pong");
+  },
+  PING_TEST_TIMEOUT_MS,
+);
 
 test("the transaction resource cache reuses a JSON value but refetches a tree-final StreamManager", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
