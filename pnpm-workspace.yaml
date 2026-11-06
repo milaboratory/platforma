@@ -26,13 +26,10 @@ packages:
   - lib/model/pf-spec-driver
   - lib/model/columns-collection-driver
   - lib/node/pl-client
-  - lib/node/pl-healthcheck
   - lib/node/pl-tree
   - lib/node/pl-drivers
   - lib/node/pl-middle-layer
   - lib/node/pl-mcp-server
-  - lib/node/pl-deployments
-  - lib/node/pl-config
   - lib/node/package-builder-lib
 
   - lib/ptabler/js
@@ -160,7 +157,6 @@ packages:
   - tests/software/venv-identity
   - tests/helper
   - tests/block-repo
-  - tests/config-local-ml-integration
   - tests/drivers-ml-blocks-integration
   - tests/mcp-server
 
@@ -243,7 +239,6 @@ catalog:
   "semver": ^7.7.2
   "jsonc-parser": 3.3.1
 
-  "upath": ^2.0.1
   "tar": ^7.5.22
   "tar-fs": ^3.1.3
   "yauzl": ^3.4.0
