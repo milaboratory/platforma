@@ -42,6 +42,8 @@ const PING_TEST_TIMEOUT_MS =
   (PING_ATTEMPTS - 1) * PING_RETRY_DELAY_MS +
   CLIENT_INIT_MARGIN_MS;
 
+// This driver checks the interface agreement: the client can init a valid driver
+// instance, and the driver can send requests through the dispatcher from the client.
 const SimpleDriverDefinition: PlDriverDefinition<SimpleDriver> = {
   name: "SimpleDriver",
   init(
@@ -59,6 +61,13 @@ const SimpleDriverDefinition: PlDriverDefinition<SimpleDriver> = {
               dispatcher: httpDispatcher,
               signal: AbortSignal.timeout(PING_ATTEMPT_TIMEOUT_MS),
             });
+            // undici does not throw on 4xx and 5xx responses. Thus check the status here,
+            // and try again when it is not 200.
+            if (response.statusCode !== 200) {
+              // Read the body to release the connection.
+              await response.body.dump();
+              throw new Error(`ping: unexpected HTTP status ${response.statusCode}`);
+            }
             return await response.body.text();
           } catch (err) {
             lastError = err;
