@@ -1,6 +1,7 @@
 /** We store all info about the connection on the server,
  * so that another client could read the file and connect from another machine. */
 import { z } from "zod";
+import { redactError } from "../common/redact";
 
 //
 // Types
@@ -73,7 +74,19 @@ export function newConnectionInfo(
 }
 
 export function parseConnectionInfo(content: string): ConnectionInfo {
-  return ConnectionInfo.parse(JSON.parse(content));
+  let json: unknown;
+  try {
+    json = JSON.parse(content);
+  } catch {
+    // JSON.parse quotes a cut-out of the input, which can hold a part of plPassword
+    // with its key cut off, so not even a redacted message is safe to pass on.
+    throw new Error("can not parse connection info: not a valid JSON");
+  }
+  try {
+    return ConnectionInfo.parse(json);
+  } catch (e: unknown) {
+    throw new Error(`can not parse connection info: ${redactError(e)}`);
+  }
 }
 
 export function stringifyConnectionInfo(conn: ConnectionInfo): string {

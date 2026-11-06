@@ -31,7 +31,7 @@ import {
 import type { ConnectionInfo, SshPlPorts } from "./connection_info";
 import { newConnectionInfo, parseConnectionInfo, stringifyConnectionInfo } from "./connection_info";
 import type { PlBinarySourceDownload } from "../common/pl_binary";
-import { stringifyRedacted } from "../common/redact";
+import { redactError, redactString, stringifyRedacted } from "../common/redact";
 
 const minRequiredGlibcVersion = 2.28;
 
@@ -85,14 +85,14 @@ export class SshPl {
         return await this.checkIsAliveWithInterval(shouldUseMinio);
       }
     } catch (e: unknown) {
-      let msg = `SshPl.start: ${e}`;
+      let msg = `SshPl.start: ${redactError(e)}`;
 
       let logs = "";
       try {
         logs = await this.sshClient.readFile(plpath.platformaCliLogs(remoteHome));
-        msg += `, platforma cli logs: ${logs}`;
+        msg += `, platforma cli logs: ${redactString(logs)}`;
       } catch (e: unknown) {
-        msg += `, Can not read platforma cli logs: ${e}`;
+        msg += `, Can not read platforma cli logs: ${redactError(e)}`;
       }
 
       this.logger.error(msg);
@@ -923,7 +923,7 @@ export function platformaInitErrorMessage(e: unknown, state: PlatformaInitState)
       filesToCreate: { skipped: "sanitized" },
     },
   };
-  return `SshPl.platformaInit: ${e}, state: ${stringifyRedacted(sanitized)}`;
+  return `SshPl.platformaInit: ${redactError(e)}, state: ${stringifyRedacted(sanitized)}`;
 }
 
 export type PlatformaInitState = {

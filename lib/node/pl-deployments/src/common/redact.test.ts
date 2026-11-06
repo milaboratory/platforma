@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { REDACTED, redactSecrets, stringifyRedacted } from "./redact";
+import { REDACTED, redactSecrets, redactString, stringifyRedacted } from "./redact";
 
 describe("redactSecrets", () => {
   test("replaces values of secret keys at any depth", () => {
@@ -53,5 +53,81 @@ describe("redactSecrets", () => {
     const input: Record<string, unknown> = { password: "p" };
     input.self = input;
     expect(stringifyRedacted(input)).toBe(`{"password":"${REDACTED}","self":"[Circular]"}`);
+  });
+});
+
+describe("redactString", () => {
+  test.each([
+    ["http://user:s3cret@proxy:3128", `http://user:${REDACTED}@proxy:3128`],
+    ["postgres://pl:s3cret@db/pl?sslmode=off", `postgres://pl:${REDACTED}@db/pl?sslmode=off`],
+    [
+      "https://host/x?a=1&access_token=s3cret&b=2",
+      `https://host/x?a=1&access_token=${REDACTED}&b=2`,
+    ],
+    ["http://host/?jwt=s3cret", `http://host/?jwt=${REDACTED}`],
+    ["MINIO_ROOT_PASSWORD=s3cret", `MINIO_ROOT_PASSWORD=${REDACTED}`],
+    ["run --auth-token=s3cret --port=1", `run --auth-token=${REDACTED} --port=1`],
+    ['{"plPassword": "s3cret", "plUser": "u"}', `{"plPassword": "${REDACTED}", "plUser": "u"}`],
+    [
+      '"{"plPassword": s3cret}" is not valid JSON',
+      `"{"plPassword": "${REDACTED}"}" is not valid JSON`,
+    ],
+    ["Authorization: Bearer abc.def-ghi", `Authorization: Bearer ${REDACTED}`],
+  ])("%s", (input, expected) => {
+    expect(redactString(input)).toBe(expected);
+  });
+
+  test("leaves text without credentials alone", () => {
+    const text =
+      "listening on http://127.0.0.1:40521, user default-user, MINIO_ADDRESS=127.0.0.1:9000";
+    expect(redactString(text)).toBe(text);
+  });
+});
+
+describe("redactSecrets on strings, toJSON and references", () => {
+  test("redacts inside string values, including env arrays and env records", () => {
+    expect(
+      redactSecrets({
+        proxy: { url: "http://u:s3cret@proxy" },
+        env: { HTTPS_PROXY: "http://u:s3cret@proxy", PL_TOKEN: "s3cret", HOME: "/home/u" },
+        envList: ["HOME=/home/u", "MINIO_ROOT_PASSWORD=s3cret"],
+      }),
+    ).toStrictEqual({
+      proxy: { url: `http://u:${REDACTED}@proxy` },
+      env: { HTTPS_PROXY: `http://u:${REDACTED}@proxy`, PL_TOKEN: REDACTED, HOME: "/home/u" },
+      envList: ["HOME=/home/u", `MINIO_ROOT_PASSWORD=${REDACTED}`],
+    });
+  });
+
+  test("redacts what toJSON returns", () => {
+    const input = { nested: { toJSON: () => ({ password: "s3cret", user: "u" }) } };
+    expect(stringifyRedacted(input)).toBe(`{"nested":{"password":"${REDACTED}","user":"u"}}`);
+  });
+
+  test("survives a throwing or self-returning toJSON", () => {
+    const self: Record<string, unknown> = { password: "s3cret" };
+    self.me = self;
+    self.toJSON = () => self;
+    expect(stringifyRedacted({ self })).toBe(
+      `{"self":{"password":"${REDACTED}","me":"[Circular]"}}`,
+    );
+    const throwing = {
+      toJSON: () => {
+        throw new Error("no");
+      },
+    };
+    expect(stringifyRedacted({ throwing })).toBe('{"throwing":"[toJSON failed]"}');
+  });
+
+  test("keeps shared non-cyclic references", () => {
+    const shared = { port: 1 };
+    expect(redactSecrets({ a: shared, b: shared })).toStrictEqual({
+      a: { port: 1 },
+      b: { port: 1 },
+    });
+  });
+
+  test("keeps Dates as JSON strings", () => {
+    expect(stringifyRedacted({ at: new Date(0) })).toBe('{"at":"1970-01-01T00:00:00.000Z"}');
   });
 });
