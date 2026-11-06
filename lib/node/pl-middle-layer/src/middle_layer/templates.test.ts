@@ -7,7 +7,7 @@ import type {
   ProjectTemplateV1,
   ProjectTemplateV1Entry,
 } from "@milaboratories/pl-model-common";
-import { PROJECT_TEMPLATE_SCHEMA_V1 } from "@milaboratories/pl-model-common";
+import { PROJECT_TEMPLATE_SCHEMA_V1, withTemplateMeta } from "@milaboratories/pl-model-common";
 import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import type { BlockPackProvider } from "../model/template_resolve";
 import type { ShareId } from "../model/sharing_model";
@@ -72,6 +72,50 @@ test("a rename changes the label and leaves the stored document byte-identical",
       blockCount: 2,
       sourceProjectLabel: "Source project",
     });
+  });
+});
+
+test("an imported template takes the file's description as its own, under a free name", async () => {
+  await withMl(async (ml) => {
+    const document = withTemplateMeta(documentOf(entry("a")), {
+      label: "Written in the file",
+      description: "What it builds",
+    });
+
+    const first = await ml.importTemplate(document, { label: " Imported " });
+    const second = await ml.importTemplate(document, { label: "Imported" });
+
+    // The description moves to the template's own, editable one, and the label is the one asked
+    // for: the stored document keeps only the blocks, so there is one name and one description,
+    // and nothing for an edit to leave behind.
+    expect((await ml.getTemplateData(first)).document).toStrictEqual(documentOf(entry("a")));
+
+    const list = await awaitTemplateList(ml, (l) => l.length === 2);
+    expect(list.find((t) => t.id === first)).toMatchObject({
+      label: "Imported",
+      description: "What it builds",
+      blockCount: 1,
+    });
+    expect(list.find((t) => t.id === second)?.label).not.toBe("Imported");
+  });
+});
+
+test("an import into a folder deleted meanwhile lands at the top level, under a name free there", async () => {
+  await withMl(async (ml) => {
+    const document = documentOf(entry("a"));
+    const topLevel = await ml.importTemplate(document, { label: "Imported" });
+
+    const folder = await ml.createFolder("Gone");
+    const planned = await ml.previewFolderDeletion(folder);
+    expect(planned.ok).toBe(true);
+    if (!planned.ok) return;
+    expect((await ml.deleteFolder(folder, planned.removal)).ok).toBe(true);
+
+    const orphan = await ml.importTemplate(document, { label: "Imported", folder });
+
+    const list = await awaitTemplateList(ml, (l) => l.length === 2);
+    expect(list.find((t) => t.id === topLevel)?.label).toBe("Imported");
+    expect(list.find((t) => t.id === orphan)?.label).not.toBe("Imported");
   });
 });
 
@@ -252,9 +296,9 @@ type StoredTemplate = { id: TemplateId; rid: SignedResourceId };
 /**
  * Stores one template through the mutator, on the same templates list the middle layer reads.
  *
- * The middle layer has no way to store an arbitrary document — it only saves a project — so a
- * test that needs a specific document writes it here, exactly as `saveProjectAsTemplate` and
- * `copyShare` do.
+ * The middle layer's own import stores a document with no provenance, so a test that needs a
+ * specific stored template — a source project label, a sender — writes it here, exactly as
+ * `saveProjectAsTemplate` and `copyShare` do.
  */
 async function storeTemplate(
   ml: MiddleLayer,

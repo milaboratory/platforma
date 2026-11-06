@@ -14,9 +14,9 @@ import { isEmpty } from "es-toolkit/compat";
  */
 export function distillFilterSpec<
   FS extends FilterSpec<FilterSpecLeaf<unknown>, unknown, unknown>,
-  R extends FS extends RootFilterSpec<FilterSpecLeaf<unknown>, unknown, unknown>
+  R extends (FS extends RootFilterSpec<FilterSpecLeaf<unknown>, unknown, unknown>
     ? RootFilterSpec<InferFilterSpecLeaf<FS>>
-    : FilterSpec<InferFilterSpecLeaf<FS>>,
+    : FilterSpec<InferFilterSpecLeaf<FS>>),
 >(filter: null | undefined | FS): null | R {
   if (filter == null) return null;
   return traverseFilterSpec<FS, null | R>(filter, {

@@ -303,7 +303,10 @@ describe("eviction", () => {
 
     // Age rootA's file so recency is unambiguous rather than dependent on write order timing.
     const old = new Date(Date.now() - 60 * 60 * 1000);
-    const rootAFile = path.join(dir, names.find((n) => n.endsWith(".1001.plts"))!);
+    const rootAFile = path.join(
+      dir,
+      names.find((n) => n.endsWith(".1001.plts"))!,
+    );
     await fsp.utimes(rootAFile, old, old);
 
     // Room for one file only.

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-tree",
-  "version": "1.15.5",
+  "version": "1.17.0",
   "description": "Reactive pl tree state",
   "files": [
     "./dist/**/*",
@@ -48,6 +48,6 @@
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=22.19.0"
+    "node": ">=24"
   }
 }

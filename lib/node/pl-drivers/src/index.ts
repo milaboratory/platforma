@@ -17,6 +17,7 @@ export * from "./drivers/ls";
 export * from "./drivers/virtual_storages";
 export * from "./drivers/helpers/helpers";
 export * from "./drivers/helpers/polling_ops";
+export * from "./drivers/helpers/trim_cache_dir";
 export * from "./helpers/download_errors";
 
 export * from "./drivers/types";

@@ -1,0 +1,17 @@
+// A V1 workflow whose PColumn bundle gets one column by a serialized value id (args.id) and reads
+// back that column's spec kind and data in a sub-template.
+wf := import("@platforma-sdk/workflow-tengo:workflow")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+readerTpl := assets.importTemplate(":workflow.bundle-serialized-reader")
+
+wf.body(func(args) {
+	b := wf.createPBundleBuilder()
+	b.addSingle(args.id)
+	reader := render.createEphemeral(readerTpl, { bundle: b.build(), key: args.id })
+	return {
+		outputs: { kind: reader.output("kind"), data: reader.output("data") },
+		exports: {}
+	}
+})

@@ -1,0 +1,27 @@
+// Receives a PColumn bundle as input (decoded by the template framework into its accessor) and
+// describes its columns as JSON: for each requested key, the column's keys, spec name and data state.
+// Awaits the specs and that each entry's data field is set (the decoder reads a multi result's data
+// map); a single entry's data is then its value or the no-result marker.
+//
+// Inputs:  bundle  — the bundle
+//          request — { singles: {label: key or ref}, multis: {label: key} }
+// Outputs: out     — JSON { <label>: description | [description...] }
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+describe := import(":v2.describe")
+
+self.awaitState("bundle", "PColumnBundle")
+self.awaitState("bundle", { wildcard: "*" }, { match: "^data$" }, "Set")
+self.awaitState("request", "ResourceReady")
+
+self.body(func(inputs) {
+	bundle := inputs.bundle
+	out := {}
+	for label, key in inputs.request.singles {
+		out[label] = describe.item(bundle.getColumn(key))
+	}
+	for label, key in inputs.request.multis {
+		out[label] = describe.value(bundle.getColumns(key))
+	}
+	return { out: smart.createJsonResource(out) }
+})

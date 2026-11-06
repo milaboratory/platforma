@@ -1,0 +1,20 @@
+// Returns as exports what args.kind names; every kind but "folder" is refused.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+spec := { kind: "PColumn", name: "pl7.app/test/x", valueType: "Int", axesSpec: [] }
+
+wf.body(func(args) {
+	exports := undefined
+	if args.kind == "folder" {
+		exports = ex.folder({})
+	} else if args.kind == "map" {
+		exports = { sum: { spec: spec, data: smart.createJsonResource(1) } }
+	} else if args.kind == "json" {
+		exports = smart.createJsonResource({ sum: 1 })
+	} else if args.kind == "wrongVersion" {
+		exports = smart.structBuilder({ Name: "PFrame", Version: "2" }).lockAndBuild()
+	}
+	return { outputs: {}, exports: exports }
+})

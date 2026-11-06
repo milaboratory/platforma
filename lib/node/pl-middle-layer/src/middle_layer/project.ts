@@ -17,17 +17,22 @@ import {
   parseSignedResourceId,
   Pl,
   resourceIdToString,
-  ResourceTypeName,
-  ResourceTypePrefix,
   treeFilter,
+  TreeFinality,
 } from "@milaboratories/pl-client";
+import { finalityStopRules } from "./finality_stop_rules";
 import type { ComputableStableDefined, ComputableValueOrErrors } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
 import { projectOverview } from "./project_overview";
+import { blockDependencies, blockDependents, labelBlockColumnLinks } from "./column_links";
 import type { BlockPackSpecAny } from "../model";
 import { randomUUID } from "node:crypto";
 import { withProject, withProjectAuthored } from "../mutator/project";
-import type { ExtendedResourceData, PruningFunction } from "@milaboratories/pl-tree";
+import type {
+  ExtendedResourceData,
+  PlTreeNodeAccessor,
+  PruningFunction,
+} from "@milaboratories/pl-tree";
 import {
   SynchronizedTreeState,
   treeDumpStats,
@@ -38,6 +43,9 @@ import { setTimeout } from "node:timers/promises";
 import { frontendData } from "./frontend_path";
 import type { NavigationState } from "@milaboratories/pl-model-common";
 import { getBlockParameters, blockOutputs } from "./block";
+import type { BlockActionContextMode, BlockActionContextNode } from "./block_action_context";
+import { readBlockActionContextTree } from "./block_action_context";
+import { getBlockPackInfo } from "./util";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectId, ProjectStructure } from "../model/project_model";
 import { projectFieldName } from "../model/project_model";
@@ -56,9 +64,10 @@ import type {
   BlockSettings,
   BlockStateInternalV3,
 } from "@milaboratories/pl-model-middle-layer";
+import type { ColumnLink } from "@milaboratories/pl-model-common";
 import { activeConfigs } from "./active_cfg";
 import { NavigationStates } from "./navigation_states";
-import { extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
+import { checkBlockFlag, extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
 import fs from "node:fs/promises";
 import canonicalize from "canonicalize";
 import type { ProjectOverviewLight } from "./project_overview_light";
@@ -68,6 +77,9 @@ import { cacheBlockPackTemplate } from "../mutator/template/template_cache";
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternalV3>;
+  /** Column links of the block, nested into its full state. */
+  readonly dependencies: Computable<ColumnLink[] | undefined>;
+  readonly dependents: Computable<ColumnLink[] | undefined>;
 };
 
 function stringifyForDump(object: unknown): string {
@@ -92,6 +104,13 @@ function stringifyForDump(object: unknown): string {
 
     return value;
   });
+}
+
+/** Releases what the computables of a block hold. */
+function resetBlockState(computables: BlockStateComputables): void {
+  computables.fullState.resetState();
+  computables.dependencies.resetState();
+  computables.dependents.resetState();
 }
 
 /** Data access object, to manipulate and read single opened (!) project data. */
@@ -292,8 +311,8 @@ export class Project {
         // Doing cleanup for deleted blocks
         for (const blockId of this.blockComputables.keys()) {
           if (!existingBlocks.has(blockId)) {
-            const computable = this.blockComputables.get(blockId);
-            if (computable !== undefined && computable !== null) computable.fullState.resetState();
+            const computables = this.blockComputables.get(blockId);
+            if (computables !== undefined && computables !== null) resetBlockState(computables);
             this.blockComputables.set(blockId, null);
           }
         }
@@ -749,20 +768,25 @@ export class Project {
     if (cached === undefined) {
       // state consists of inputs (args + ui state) and outputs
       const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
+      const dependencies = blockDependencies(this.projectTree.entry(), blockId, this.env);
+      const dependents = blockDependents(this.projectTree.entry(), blockId, this.env);
       const fullState = Computable.make(
         (ctx) => {
+          // Links are computed only for a block whose UI reads them.
+          const linked = readsColumnLinks(ctx.accessor(this.projectTree.entry()).node(), blockId);
           return {
             parameters: getBlockParameters(this.projectTree.entry(), blockId, ctx),
             outputs,
             navigationState: this.navigationStates.getState(blockId),
             overview: this.overview,
+            dependencies: linked ? dependencies : undefined,
+            dependents: linked ? dependents : undefined,
           };
         },
         {
           postprocessValue: (v) => {
             const blockOverview = v.overview?.blocks?.find((b) => b.id == blockId);
             const sdkVersion = blockOverview?.sdkVersion;
-            const storageDebugView = blockOverview?.storageDebugView;
             const toString = sdkVersion && shouldStillUseStringErrors(sdkVersion);
             const newOutputs =
               toString && v.outputs !== undefined ? convertErrorsToStrings(v.outputs) : v.outputs;
@@ -771,7 +795,9 @@ export class Project {
               ...v.parameters,
               outputs: newOutputs,
               navigationState: v.navigationState,
-              storageDebugView,
+              // The block state already nests the overview, so labelling by its titles adds
+              // nothing to watch.
+              columnLinks: labelBlockColumnLinks({ ...v, blockId }, v.overview?.blocks ?? []),
             } as BlockStateInternalV3;
           },
         },
@@ -779,6 +805,8 @@ export class Project {
 
       const computables: BlockStateComputables = {
         fullState: fullState.withPreCalculatedValueTree(),
+        dependencies,
+        dependents,
       };
 
       this.blockComputables.set(blockId, computables);
@@ -792,6 +820,17 @@ export class Project {
    * Returns a computable, that can be used to retrieve and watch full block state,
    * including outputs, arguments, ui state.
    * */
+  /**
+   * Reads the block action context tree of a block render (see readBlockActionContextTree): current state, not
+   * watched. Undefined when the block has no action context.
+   */
+  public async getBlockActionContext(
+    blockId: string,
+    mode: BlockActionContextMode = "prod",
+  ): Promise<BlockActionContextNode | undefined> {
+    return await readBlockActionContextTree(this.env.pl, this.rid, blockId, mode);
+  }
+
   public getBlockState(blockId: string): Computable<BlockStateInternalV3> {
     return this.getBlockComputables(blockId).fullState;
   }
@@ -841,7 +880,7 @@ export class Project {
     this.overview.resetState();
     this.blockFrontends.forEach((c) => c.resetState());
     this.blockComputables.forEach((c) => {
-      if (c !== null) c.fullState.resetState();
+      if (c !== null) resetBlockState(c);
     });
     this.activeConfigs.resetState();
   }
@@ -1018,148 +1057,16 @@ export function projectTreeFieldFilter(): Filter {
   );
 }
 
-/**
- * Stop-rules for the ResourceTree backend path.
- *
- * Mirrors every case of DefaultFinalResourceDataPredicate in the same order.
- * The mapping from BFS predicate logic to backend filter conditions:
- *
- *   BFS predicate always true
- *     → no readyOrDuplicateOrError guard; backend stops traversal unconditionally.
- *
- *   BFS predicate: readyOrDuplicateOrError(r)
- *     → readyOrDuplicateOrError(): stops when resource_ready_for_calculation,
- *       is_duplicate, or has_errors is true — exactly mirroring the BFS predicate.
- *
- *   BFS predicate: readyAndHasAllOutputsFilled(r)
- *     → isFinal(true) + allOutputsFinal(true).
- *
- *   BFS predicate always false (UserProject, Projects, ClientRoot)
- *     → no entry here; traversal always continues into them.
- */
+/** Stop rules for the project tree's ResourceTree walks: {@link TreeFinality}'s declared clauses,
+ * which may stop before the predicate calls a resource final where an entry declares so. */
 export function projectTreeTraverseStopRules(): Filter {
-  return treeFilter.or(
-    // BFS: readyOrDuplicateOrError(r) AND (fields===undefined OR error OR stream.value===downloadable.value).
-    // datactl sets stream field to point at the same resource as downloadable once processing
-    // is complete, so stream.value===downloadable.value is the "done" signal.
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.StreamManager),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    // BFS: readyOrDuplicateOrError(r)
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.StdMap),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.StdMapSlash),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.EphStdMap),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.PFrame),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.ParquetChunk),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BContext),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BlockPackCustom),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BinaryMap),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BinaryValue),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BlobMap),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BResolveSingle),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BResolveSingleNoResult),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BQueryResult),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.TengoTemplate),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.TengoLib),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.SoftwareInfo),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.Dummy),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    // BFS: r.type.version === "1" → always true → no state guard needed
-    treeFilter.resourceTypeEq(ResourceTypeName.JsonResourceError),
-    // BFS: return true (unconditionally) → no readyOrDuplicateOrError guard needed
-    treeFilter.resourceTypeEq(ResourceTypeName.JsonObject),
-    treeFilter.resourceTypeEq(ResourceTypeName.JsonGzObject),
-    treeFilter.resourceTypeEq(ResourceTypeName.JsonString),
-    treeFilter.resourceTypeEq(ResourceTypeName.JsonArray),
-    treeFilter.resourceTypeEq(ResourceTypeName.JsonNumber),
-    treeFilter.resourceTypeEq(ResourceTypeName.BContextEnd),
-    treeFilter.resourceTypeEq(ResourceTypeName.FrontendFromUrl),
-    treeFilter.resourceTypeEq(ResourceTypeName.FrontendFromFolder),
-    treeFilter.resourceTypeEq(ResourceTypeName.BObjectSpec),
-    treeFilter.resourceTypeEq(ResourceTypeName.Blob),
-    treeFilter.resourceTypeEq(ResourceTypeName.Null),
-    treeFilter.resourceTypeEq(ResourceTypeName.Binary),
-    treeFilter.resourceTypeEq(ResourceTypeName.LSProvider),
-    treeFilter.resourceTypeEq(ResourceTypeName.WorkingDirectory),
-    // BFS default branch: startsWith prefix → return true → no guard needed
-    treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.Blob),
-    treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.LS),
-    treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.WorkingDirectory),
-    treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.StorageSpaceAllocation),
-    // BFS default branch: readyAndHasAllOutputsFilled → readyOrDuplicateOrError() + outputsLocked(true) + allOutputsFinal(true)
-    treeFilter.and(
-      treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.BlobUpload),
-      treeFilter.readyOrDuplicateOrError(),
-      treeFilter.outputsLocked(true),
-      treeFilter.allOutputsFinal(true),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.BlobIndex),
-      treeFilter.readyOrDuplicateOrError(),
-      treeFilter.outputsLocked(true),
-      treeFilter.allOutputsFinal(true),
-    ),
-    // BFS default branch: readyOrDuplicateOrError
-    treeFilter.and(
-      treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.PColumnData),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.StreamWorkdir),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-  );
+  return finalityStopRules(TreeFinality);
+}
+
+/** Whether the block's model declares that its UI reads the column links of the block state. */
+function readsColumnLinks(prj: PlTreeNodeAccessor, blockId: string): boolean {
+  const info = getBlockPackInfo(prj, blockId);
+  return info !== undefined && checkBlockFlag(info.cfg.featureFlags, "supportsColumnLinks");
 }
 
 /** Returns true if sdk version of the block is old and we need to convert

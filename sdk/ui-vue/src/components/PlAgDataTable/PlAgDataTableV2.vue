@@ -610,7 +610,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div :class="$style.container">
+  <div data-testid="pl-ag-data-table" :class="$style.container">
     <PlAgGridColumnManager v-if="gridApi && !disableColumnsPanel" :api="gridApi" />
     <PlTableFiltersV2
       v-if="!disableFiltersPanel"
@@ -618,6 +618,7 @@ watchEffect(() => {
       :default-filters="defaultFiltersState"
       :pframe-handle="'model' in settings ? settings?.model?.fullPframeHandle : undefined"
       :columns="filterableColumns"
+      :columns-meta="getColumnsMeta()"
       @updateFilters="(v) => (filtersState = v)"
       @resetDefaultFilters="resetDefaultFilters"
       @updateDefaultFilters="(v) => (defaultFiltersState = v)"
@@ -640,6 +641,7 @@ watchEffect(() => {
     <PlTableFastSearch v-model="searchString" />
     <AgGridVue
       :key="reloadKey"
+      data-testid="pl-ag-data-table-grid"
       :theme="AgGridTheme"
       :class="$style.grid"
       :grid-options="gridOptions"

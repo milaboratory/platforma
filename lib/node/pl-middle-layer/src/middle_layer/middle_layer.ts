@@ -76,7 +76,7 @@ import {
 } from "../mutator/project";
 import type { ProjectTemplateExportOutcome } from "../model/template_serializer";
 import type { ProjectTemplateV1 } from "@milaboratories/pl-model-common";
-import { asProjectId, asTemplateId } from "@milaboratories/pl-model-common";
+import { asProjectId, asTemplateId, withTemplateMeta } from "@milaboratories/pl-model-common";
 import { extractConfig, ensureError } from "@platforma-sdk/model";
 import type { TemplateApplyProblem, TemplateApplyReport } from "../model/template_apply";
 import { TemplateEntryRejected, kindMismatch } from "../model/template_apply";
@@ -944,6 +944,68 @@ export class MiddleLayer {
   }
 
   /**
+   * Stores a template brought in from outside — a template file the user picked — so it can be
+   * seen, applied and shared like one saved from a project.
+   *
+   * The document's description becomes the template's own, which stays editable; the stored
+   * document keeps only the blocks, without the label and description it was written with, so
+   * there is one name and one description to edit and nothing to drift.
+   *
+   * The template lands in `folder`, or at the top level, under `label` made free among the
+   * templates already there. A folder deleted meanwhile costs the template its placement, not its
+   * existence.
+   *
+   * @param document the parsed template to store
+   * @param options.label the name to store it under — usually the document's own label, which
+   *   the caller weighs against whatever else it knows, such as the file's name; suffixed when a
+   *   template there carries it
+   * @param options.folder where it lands; the top level when absent
+   */
+  public async importTemplate(
+    document: ProjectTemplateV1,
+    options: { label: string; folder?: FolderId },
+  ): Promise<TemplateId> {
+    const { folder } = options;
+    const signedRid = await this.pl.withWriteTx("MLImportTemplate", async (tx) => {
+      const tree = await openFoldersTx(tx, this.foldersRids);
+      // The name is made free where the template actually lands: the top level when the folder
+      // asked for is gone.
+      const destination =
+        folder !== undefined && tree.view.folders.some((candidate) => candidate.id === folder)
+          ? folder
+          : undefined;
+      const name = foldersUniqueName(
+        options.label.trim(),
+        tree.namesTakenIn(destination, "template"),
+      );
+
+      const tpl = createTemplate(
+        tx,
+        this.templateListResourceId,
+        { label: name, description: document.description },
+        { schemaVersion: 1, document: withTemplateMeta(document, {}) },
+      );
+
+      const created = await tpl.globalId;
+      if (destination !== undefined)
+        tree.place(
+          [{ kind: "template", id: asTemplateId(resourceIdToString(created)) }],
+          destination,
+        );
+      await tx.commit();
+      return created;
+    });
+    await Promise.all([
+      this.templateListTree.refreshState(),
+      ...(folder === undefined ? [] : [this.foldersTree.refreshState()]),
+    ]);
+
+    const templateId = asTemplateId(resourceIdToString(signedRid));
+    this.templateIdCache.set(templateId, signedRid);
+    return templateId;
+  }
+
+  /**
    * Changes a template's label. The stored document is immutable and stays untouched —
    * improving a template means saving a new one.
    *
@@ -1216,12 +1278,10 @@ export class MiddleLayer {
     if (projectIds.length === 0) throw new Error("shareProjects: no projects given");
 
     const sources: EnvelopeProjectSource[] = await Promise.all(
-      projectIds.map(
-        async (id): Promise<EnvelopeProjectSource> => ({
-          projectId: id,
-          sourceRid: await this.resolveProjectId(id),
-        }),
-      ),
+      projectIds.map(async (id): Promise<EnvelopeProjectSource> => ({
+        projectId: id,
+        sourceRid: await this.resolveProjectId(id),
+      })),
     );
 
     return await this.shareEnvelope("MLShareProjects", options, { writable: true }, (tx, meta) =>
@@ -1838,54 +1898,64 @@ export class MiddleLayer {
     )
       ops.defaultTreeOptions.traversalMode = getDebugFlags().treeTraversalMode;
 
-    const { projects, templates, sharingOutbox, sharingState, folders } = await pl.withWriteTx(
-      "MLInitialization",
-      async (tx) => {
-        // Lazily create each clientRoot-attached singleton resource. Returns the existing
-        // resource id if the field is already populated, otherwise creates + locks + sets it.
-        // A created resource's id is known only once the transaction commits.
-        type Singleton = { existing: SignedResourceId } | { ref: ResourceRef };
-        const lazyInit = async (
-          fieldName: string,
-          type: { name: string; version: string },
-        ): Promise<Singleton> => {
-          const f = field(tx.clientRoot, fieldName);
-          tx.createField(f, "Dynamic");
-          const fData = await tx.getField(f);
-          if (isNullSignedResourceId(fData.value)) {
-            const ref = tx.createEphemeral(type);
-            tx.lock(ref);
-            tx.setField(f, ref);
-            return { ref };
-          }
-          return { existing: fData.value };
-        };
+    const initTxP = pl.withWriteTx("MLInitialization", async (tx) => {
+      // Lazily create each clientRoot-attached singleton resource. Returns the existing
+      // resource id if the field is already populated, otherwise creates + locks + sets it.
+      // A created resource's id is known only once the transaction commits.
+      type Singleton = { existing: SignedResourceId } | { ref: ResourceRef };
+      const lazyInit = async (
+        fieldName: string,
+        type: { name: string; version: string },
+      ): Promise<Singleton> => {
+        const f = field(tx.clientRoot, fieldName);
+        tx.createField(f, "Dynamic");
+        const fData = await tx.getField(f);
+        if (isNullSignedResourceId(fData.value)) {
+          const ref = tx.createEphemeral(type);
+          tx.lock(ref);
+          tx.setField(f, ref);
+          return { ref };
+        }
+        return { existing: fData.value };
+      };
 
-        const projectsR = await lazyInit(ProjectsField, ProjectsResourceType);
-        const templatesR = await lazyInit(TemplatesField, TemplatesResourceType);
-        const outboxR = await lazyInit(SharingOutboxField, SharingOutboxResourceType);
-        const stateR = await lazyInit(SharingStateField, SharingStateResourceType);
+      // All five in flight at once: the transaction pipelines its requests, so this costs one
+      // round trip instead of five.
+      const [projectsR, templatesR, outboxR, stateR, foldersR] = await Promise.all([
+        lazyInit(ProjectsField, ProjectsResourceType),
+        lazyInit(TemplatesField, TemplatesResourceType),
+        lazyInit(SharingOutboxField, SharingOutboxResourceType),
+        lazyInit(SharingStateField, SharingStateResourceType),
         // The folder tree gets its own root-attached singleton rather than a field on the
         // projects resource: an extra field there is walked by the released project-list reader
         // and dereferenced as a project, which takes the whole list down, not just the folders.
-        const foldersR = await lazyInit(FoldersField, FoldersResourceType);
+        lazyInit(FoldersField, FoldersResourceType),
+      ]);
 
-        await tx.commit();
+      await tx.commit();
 
-        const idOf = async (r: Singleton) => ("existing" in r ? r.existing : await r.ref.globalId);
-        return {
-          projects: await idOf(projectsR),
-          templates: await idOf(templatesR),
-          sharingState: await idOf(stateR),
-          sharingOutbox: await idOf(outboxR),
-          folders: await idOf(foldersR),
-        };
-      },
-    );
+      const idOf = async (r: Singleton) => ("existing" in r ? r.existing : await r.ref.globalId);
+      const [projects, templates, sharingState, sharingOutbox, folders] = await Promise.all([
+        idOf(projectsR),
+        idOf(templatesR),
+        idOf(stateR),
+        idOf(outboxR),
+        idOf(foldersR),
+      ]);
+      return { projects, templates, sharingState, sharingOutbox, folders };
+    });
+    // The driver kit needs nothing from the transaction, so it starts alongside it.
+    const driverKitP = initDriverKit(pl, workdir, ops.frontendDownloadPath, ops);
+    const [initTx, driverKitR] = await Promise.allSettled([initTxP, driverKitP]);
+    if (initTx.status === "rejected") {
+      if (driverKitR.status === "fulfilled") await driverKitR.value.dispose();
+      throw initTx.reason;
+    }
+    if (driverKitR.status === "rejected") throw driverKitR.reason;
+    const { projects, templates, sharingOutbox, sharingState, folders } = initTx.value;
+    const driverKit = driverKitR.value;
 
     const logger = ops.logger;
-
-    const driverKit = await initDriverKit(pl, workdir, ops.frontendDownloadPath, ops);
 
     // passed to components having no own retry logic
     const retryHttpDispatcher = new RetryAgent(pl.httpDispatcher);
@@ -1906,6 +1976,8 @@ export class MiddleLayer {
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 2);
     runtimeCapabilities.addSupportedRequirement("requiresCreatePTable", 2);
     runtimeCapabilities.addSupportedRequirement("requiresPFramesVersion", REQUIRES_PFRAMES_VERSION);
+    // The project overview and production rendering refuse to run args argsIssues found errors in
+    runtimeCapabilities.addSupportedRequirement("requiresArgsIssues");
     registerServiceCapabilities((flag, value) =>
       runtimeCapabilities.addSupportedRequirement(flag, value),
     );
@@ -1960,21 +2032,33 @@ export class MiddleLayer {
     };
 
     const openedProjects = new WatchableValue<ProjectId[]>([]);
-    const projectListTC = await createProjectList(pl, projects, openedProjects, env);
-    const templateListTC = await createTemplateList(pl, templates, env);
-    const foldersTC = await createFolderList(
-      pl,
-      folders,
-      projectListTC.tree,
-      templateListTC.tree,
-      openedProjects,
-      env,
-    );
-
-    // Project sharing trees and reactive views.
-    const outgoingTC = await createOutgoingShares(pl, sharingOutbox, env);
-    const sharingStateTree = await createSharingStateTree(pl, sharingState, env);
-    const availableSharesTree = await createAvailableSharesTree(pl, env);
+    // Each tree's first load is a round trip of its own; they are independent, so they all load
+    // at once rather than one after another.
+    const projectListP = createProjectList(pl, projects, openedProjects, env);
+    const templateListP = createTemplateList(pl, templates, env);
+    const [
+      projectListTC,
+      templateListTC,
+      foldersTC,
+      // Project sharing trees and reactive views.
+      outgoingTC,
+      sharingStateTree,
+      availableSharesTree,
+    ] = await Promise.all([
+      projectListP,
+      templateListP,
+      createFolderList(
+        pl,
+        folders,
+        projectListP.then((tc) => tc.tree),
+        templateListP.then((tc) => tc.tree),
+        openedProjects,
+        env,
+      ),
+      createOutgoingShares(pl, sharingOutbox, env),
+      createSharingStateTree(pl, sharingState, env),
+      createAvailableSharesTree(pl, env),
+    ]);
     const availableShares = createAvailableSharesComputable(
       availableSharesTree,
       sharingStateTree,

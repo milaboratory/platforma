@@ -325,8 +325,8 @@ const SharingOutboxPruningFunction: PruningFunction = (resource) => {
 
 // Server-side traversal scope (modern resourceTree path). Pruning is client-side ONLY and does
 // NOT stop the backend walk — without a fieldFilter the backend descends through the envelope's
-// project/{uuid} snapshots into the whole project graph (StreamManager etc.), whose field-driven
-// finality predicate then throws on the pruned-to-[] fields. Following fields only FROM the outbox
+// project/{uuid} snapshots into the whole project graph (StreamManager etc.), which the tree would
+// then hold, with its fields pruned to [], and re-poll for nothing. Following fields only FROM the outbox
 // and the envelope stops the walk at the project snapshots (UserProject), which we never traverse.
 const SharingOutboxFieldFilter: Filter = treeFilter.or(
   treeFilter.resourceTypeEq(SharingOutboxResourceType.name),

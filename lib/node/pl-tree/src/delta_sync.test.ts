@@ -56,6 +56,18 @@ function txReturning(responses: Frame[][]) {
   return { tx, calls };
 }
 
+/** Canned responses for a poll of `NG:0x1` that repoints it at a chain of `rounds` resources
+ * the mirror has never held: the poll answer, then one resolution round per link. */
+function referenceChain(prefix: string, rounds: number): Frame[][] {
+  const id = (i: number) => `NG:0x${prefix}${i}`;
+  return [
+    [frame("NG:0x1", { fields: [field("out", id(0))] })],
+    ...Array.from({ length: rounds }, (_, i) => [
+      frame(id(i), i < rounds - 1 ? { fields: [field("next", id(i + 1))] } : {}),
+    ]),
+  ];
+}
+
 function request(over: Partial<Record<keyof TreeLoadingRequest, unknown>> = {}) {
   return {
     seedResources: [],
@@ -336,15 +348,88 @@ describe("reference resolution", () => {
 
     expect(calls).toHaveLength(2);
     expect(calls[1]?.seeds).toEqual(["NG:0xNEW"]);
-    // Pinned, not just "deep": at 0 a newly attached subtree costs one sequential round trip
-    // per level, and the value is the whole trade the constant's comment argues.
-    expect(calls[1]?.opts.unconditionalDepth).toBe(32);
+    // The first resolution round of a poll asks with the initial depth.
+    expect(calls[1]?.opts.unconditionalDepth).toBe(1);
     // The token still rides the resolution round: what it returns is dated the same as the
     // poll it came with.
     expect(calls[1]?.opts.changedSinceToken).toEqual(new Uint8Array([7]));
     expect(result.map((r) => r.id).sort()).toEqual(["NG:0x1", "NG:0xNEW"]);
     expect(stats.deltaResolutionRounds).toBe(1);
     expect(stats.deltaSeedsSent).toBe(2);
+  });
+
+  test("each further round of a poll asks twice as deep, up to the cap", async () => {
+    // A chain the mirror has never held, each answer pointing one link further.
+    const link = (i: number) => frame(`NG:0xL${i}`, { fields: [field("next", `NG:0xL${i + 1}`)] });
+    const { tx, calls } = txReturning([
+      [frame("NG:0x1", { fields: [field("out", "NG:0xL0")] })],
+      ...[0, 1, 2, 3, 4, 5].map((i) => [link(i)]),
+      [frame("NG:0xL6")],
+    ]);
+    await loadDeltaTreeState(
+      tx,
+      request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
+    );
+    expect(calls.map((c) => c.opts.unconditionalDepth)).toEqual([
+      undefined,
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      32,
+    ]);
+  });
+
+  test("the depth counter starts over at every poll, though the stats keep accumulating", async () => {
+    const stats: TreeLoadingStat = initialTreeLoadingStat();
+    const req = request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) });
+    const { tx, calls } = txReturning([
+      ...referenceChain("A", 8),
+      // an unchanged poll in between
+      [],
+      ...referenceChain("B", 2),
+    ]);
+
+    await loadDeltaTreeState(tx, req, stats);
+    await loadDeltaTreeState(tx, req, stats);
+    await loadDeltaTreeState(tx, req, stats);
+
+    expect(calls.map((c) => c.opts.unconditionalDepth)).toEqual([
+      // first poll: the seed call, then eight resolution rounds
+      undefined,
+      1,
+      2,
+      4,
+      8,
+      16,
+      32,
+      32,
+      32,
+      // unchanged poll
+      undefined,
+      // third poll starts again at 1
+      undefined,
+      1,
+      2,
+    ]);
+    expect(stats.deltaResolutionRounds).toBe(10);
+  });
+
+  test("the depth cap holds after far more rounds than the doubling could represent", async () => {
+    // 2 ** (rounds - 1) overflows to Infinity past round 1024.
+    const ROUNDS = 1100;
+    const { tx, calls } = txReturning(referenceChain("C", ROUNDS));
+
+    const result = await loadDeltaTreeState(
+      tx,
+      request({ seedResources: ["NG:0x1"], knownResources: new Set(["NG:0x1"]) }),
+    );
+
+    expect(result).toHaveLength(ROUNDS + 1);
+    expect(calls.slice(1, 6).map((c) => c.opts.unconditionalDepth)).toEqual([1, 2, 4, 8, 16]);
+    expect(calls.slice(6).every((c) => c.opts.unconditionalDepth === 32)).toBe(true);
   });
 
   test("needs no round when every reference is already in the mirror", async () => {

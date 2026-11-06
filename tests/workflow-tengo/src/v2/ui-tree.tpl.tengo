@@ -1,0 +1,28 @@
+// Exports a two-level tree: a folder holding a collection, a nested folder with another, and an empty
+// folder; with args.collectionRoot, the two collections' items in one collection at the root.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+spec := func(name) {
+	return { kind: "PColumn", name: name, valueType: "Int", axesSpec: [{ name: "pl7.app/test/index", type: "Int" }] }
+}
+
+wf.body(func(args) {
+	// a non-PColumn spec: the UI export passes its data through as is
+	a := ex.collection({ x: { spec: { kind: "Json", name: "pl7.app/test/x" }, data: smart.createJsonResource([1, 2]) } })
+	b := ex.collection({ y: { spec: spec("pl7.app/test/y") } })
+	if args.collectionRoot {
+		return {
+			outputs: {},
+			exports: ex.collection({
+				x: { spec: { kind: "Json", name: "pl7.app/test/x" }, data: smart.createJsonResource([1, 2]) },
+				y: { spec: spec("pl7.app/test/y") }
+			})
+		}
+	}
+	return {
+		outputs: {},
+		exports: ex.folder({ a: a, deeper: ex.folder({ b: b }), empty: ex.folder({}) })
+	}
+})

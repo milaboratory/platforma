@@ -1,0 +1,36 @@
+// A producer of real PColumns for the table builder: imports args.csv with args.spec (xsv) and
+// exports each imported column under its id, plus "specOnly", a column spec on the same axis with
+// no data.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+xsv := import("@platforma-sdk/workflow-tengo:pframes.xsv")
+util := import("@platforma-sdk/workflow-tengo:pframes.util")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+wf.body(func(args) {
+	e := exec.builder().
+		cpu(1).ram("50Mi").
+		software(shellSw).
+		arg("-c").
+		arg("true").
+		writeFile("data.csv", args.csv).
+		saveFile("data.csv").
+		run()
+
+	pf := xsv.importFile(e.getFile("data.csv"), "csv", args.spec)
+
+	items := {}
+	maps.forEach(util.pFrameToColumnsMap(pf), func(colId, col) {
+		items[colId] = { spec: col.spec, data: col.data }
+	})
+	items.specOnly = { spec: args.specOnlySpec }
+
+	return {
+		outputs: {},
+		exports: ex.collection(items)
+	}
+})

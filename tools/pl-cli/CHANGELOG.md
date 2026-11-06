@@ -1,5 +1,245 @@
 # @platforma-sdk/pl-cli
 
+## 0.10.16
+
+### Patch Changes
+
+- Updated dependencies [f7d4c98]
+  - @milaboratories/pl-client@3.21.0
+  - @milaboratories/pl-middle-layer@1.76.2
+
+## 0.10.15
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.1
+
+## 0.10.14
+
+### Patch Changes
+
+- Updated dependencies [f7a9989]
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-middle-layer@1.76.0
+  - @milaboratories/pl-client@3.20.0
+
+## 0.10.13
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-middle-layer@1.75.0
+  - @milaboratories/pl-client@3.19.4
+
+## 0.10.12
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.19
+
+## 0.10.11
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.18
+
+## 0.10.10
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.17
+
+## 0.10.9
+
+### Patch Changes
+
+- Updated dependencies [c8a246e]
+  - @milaboratories/pl-middle-layer@1.74.16
+
+## 0.10.8
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.15
+
+## 0.10.7
+
+### Patch Changes
+
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-middle-layer@1.74.14
+  - @milaboratories/pl-client@3.19.3
+
+## 0.10.6
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.13
+
+## 0.10.5
+
+### Patch Changes
+
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [79f8dbc]
+- Updated dependencies [615bd8c]
+  - @milaboratories/pl-client@3.19.2
+  - @milaboratories/pl-middle-layer@1.74.12
+
+## 0.10.4
+
+### Patch Changes
+
+- Updated dependencies [1472a5b]
+  - @milaboratories/pl-middle-layer@1.74.11
+
+## 0.10.3
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.10
+
+## 0.10.2
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.19.1
+- @milaboratories/pl-middle-layer@1.74.9
+
+## 0.10.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.8
+
+## 0.10.0
+
+### Minor Changes
+
+- 7d9925e: pl-client: add `PlTransaction.listResourcesByType` (admin and controller roles only).
+
+  pl-cli: add the `maintenance` command group to repair server state after storage loss:
+
+  - `maintenance list-resources --type <name:version> [--limit <n>] [--after <resource-id>] [--load-fields] [--load-kv]` lists resources of one type as JSON lines, in ascending order of resource ID.
+  - `maintenance set-resource-error <resource-id...>` puts an error on one or more resources in a single transaction. Resources that already have an error are skipped. With `--skip-missing`, resources that do not exist are skipped too.
+
+### Patch Changes
+
+- Updated dependencies [7d9925e]
+  - @milaboratories/pl-client@3.19.0
+  - @milaboratories/pl-middle-layer@1.74.7
+
+## 0.9.42
+
+### Patch Changes
+
+- Updated dependencies [5d27046]
+  - @milaboratories/pl-middle-layer@1.74.6
+
+## 0.9.41
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.5
+
+## 0.9.40
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.4
+
+## 0.9.39
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.3
+
+## 0.9.38
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.2
+
+## 0.9.37
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.1
+
+## 0.9.36
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-middle-layer@1.74.0
+  - @milaboratories/pl-client@3.18.2
+
+## 0.9.35
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.73.10
+
+## 0.9.34
+
+### Patch Changes
+
+- Updated dependencies [41f0c56]
+  - @milaboratories/pl-client@3.18.1
+  - @milaboratories/pl-middle-layer@1.73.9
+
+## 0.9.33
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.73.8
+
+## 0.9.32
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.73.7
+
+## 0.9.31
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.73.6
+
+## 0.9.30
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-client@3.18.0
+  - @milaboratories/pl-middle-layer@1.73.5
+
+## 0.9.29
+
+### Patch Changes
+
+- Updated dependencies [90073ff]
+  - @milaboratories/pl-client@3.17.7
+  - @milaboratories/pl-middle-layer@1.73.4
+
+## 0.9.28
+
+### Patch Changes
+
+- Updated dependencies [fd9f892]
+  - @milaboratories/pl-client@3.17.6
+  - @milaboratories/pl-middle-layer@1.73.3
+
+## 0.9.27
+
+### Patch Changes
+
+- Updated dependencies [9c97fb0]
+  - @milaboratories/pl-client@3.17.5
+  - @milaboratories/pl-middle-layer@1.73.2
+
 ## 0.9.26
 
 ### Patch Changes

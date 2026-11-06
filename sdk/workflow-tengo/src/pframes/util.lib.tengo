@@ -10,6 +10,7 @@ path := import(":path")
 json := import("json")
 sets := import(":sets")
 maps := import(":maps")
+canonical := import(":canonical")
 
 _PRE_PROCESS_STEP_SCHEMA := [`or`,
 	{
@@ -184,6 +185,12 @@ PFCONV_IMPORT_CFG_SCHEMA := {
 	// Columns would be stored using specified format;
 	// default: Binary
 	`storageFormat,?` : `string,regex=Binary|Json|Parquet`,
+	// Engine for a Parquet-storage import. "polars" (default) runs the usual pt step
+	// chain; "duckdb" fuses it into one DuckDB pass with no 2^32 row ceiling, for
+	// columns too large for Polars to import at all. "duckdb" is ignored when the
+	// spec needs preProcess, naRegex, filterOutRegex or an index axis, none of which
+	// the fused step implements.
+	`importEngine,?` : `string,regex=polars|duckdb`,
 	// Partitioning key length;
 	// default: 0
 	`partitionKeyLength,?` : `number`
@@ -456,6 +463,30 @@ pFrameToColumnsMap := func(pf) {
 }
 
 /**
+ * Encodes the data of a Json column as a .jdata part, with the keys sorted by axis values.
+ *
+ * @param data: map[string]any - JSON-encoded axis values to the column value
+ * @return string - the .jdata content
+ */
+encodeJsonColumnData := func(data) {
+	rows := []
+	for key, value in data {
+		rows = append(rows, { key: key, axes: json.decode(key), value: value })
+	}
+	slices.quickSortInPlaceFn(rows, func(a, b) {
+		for i, x in a.axes {
+			if x != b.axes[i] {
+				return x < b.axes[i]
+			}
+		}
+		return a.key < b.key
+	})
+	return "{" + text.join(slices.map(rows, func(row) {
+		return string(json.encode(row.key)) + ":" + string(canonical.encode(row.value))
+	}), ",") + "}"
+}
+
+/**
  * @param name: string - column name as to name it in the workdir
  * @param spec: json - column specification
  * @param data: resource - column data resource
@@ -516,7 +547,7 @@ addColumnToWd := func(name, spec, data, execBuilder, ops) {
 		jdataFile := "res" + data.id + ".jdata"
 
 		// write jdata
-		execBuilder.writeFile(makePath(jdataFile), data.getDataAsJson().data)
+		execBuilder.writeFile(makePath(jdataFile), encodeJsonColumnData(data.getDataAsJson().data))
 
 		// write data info
 		execBuilder.writeFile(makePath(name + ".datainfo"), {
@@ -832,6 +863,7 @@ export ll.toStrict({
 	decomposePfconvImportCfg: decomposePfconvImportCfg,
 	calculateGroupAxesIndices: calculateGroupAxesIndices,
 	pFrameToColumnsMap: pFrameToColumnsMap,
+	encodeJsonColumnData: encodeJsonColumnData,
 	addColumnToWd: addColumnToWd,
 	isFlatPfMap: isFlatPfMap,
 	isStructuredPfMap: isStructuredPfMap,

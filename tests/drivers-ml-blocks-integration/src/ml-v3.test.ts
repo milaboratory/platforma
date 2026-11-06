@@ -552,6 +552,58 @@ test("v3: dependency test", { timeout: 20000 }, async ({ expect }) => {
   });
 });
 
+test(
+  "v3: column links reach the block state, not the overview",
+  { timeout: 20000 },
+  async ({ expect }) => {
+    await withMl(async (ml) => {
+      const prjId = await ml.createProject({ label: "Project 1" });
+      await ml.openProject(prjId);
+      const prj = ml.getOpenedProject(prjId);
+
+      const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
+      const block2Id = await prj.addBlock("Block 2", sumNumbersSpec);
+      await prj.mutateBlockStorage(block1Id, {
+        operation: "update-block-data",
+        value: { numbers: [1, 2, 3] },
+      });
+      await prj.mutateBlockStorage(block2Id, {
+        operation: "update-block-data",
+        value: { sources: [outputRef(block1Id, "numbers")] },
+      });
+
+      const beforeRun = await prj.getBlockState(block2Id).awaitStableValue();
+      expect(beforeRun.columnLinks?.dependencies).toMatchObject([
+        {
+          producer: { blockId: block1Id, name: "numbers" },
+          holderBlockId: block2Id,
+          check: { type: "notRun" },
+        },
+      ]);
+
+      await prj.runBlock(block2Id);
+      await awaitBlockDone(prj, block2Id);
+
+      const overview = await prj.overview.awaitStableValue();
+      for (const block of overview.blocks) expect(block).not.toHaveProperty("columnLinks");
+      const block1Title = overview.blocks.find((b) => b.id === block1Id)?.title;
+      expect(block1Title).toBeDefined();
+
+      const block2State = await prj.getBlockState(block2Id).awaitStableValue();
+      expect(block2State.columnLinks).toMatchObject({
+        dependencies: [{ producer: { blockId: block1Id, name: "numbers" } }],
+        labels: { [block1Id]: block1Title },
+      });
+      expect(block2State.columnLinks?.dependencies[0]?.check.type).not.toEqual("notRun");
+
+      const block1State = await prj.getBlockState(block1Id).awaitStableValue();
+      expect(block1State.columnLinks?.dependents).toMatchObject([
+        { producer: { blockId: block1Id, name: "numbers" }, holderBlockId: block2Id },
+      ]);
+    });
+  },
+);
+
 test("v3: limbo test", async ({ expect }) => {
   await withMl(async (ml) => {
     const prj1Id = await ml.createProject({ label: "Project 1" });

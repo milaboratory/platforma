@@ -7,7 +7,9 @@ export default {
 <script lang="ts" setup>
 import "./pl-alert.scss";
 
+import type { MaskIconName24 } from "../../types";
 import PlCloseModalBtn from "../../utils/PlCloseModalBtn.vue";
+import { PlIcon24 } from "../PlIcon24";
 
 defineEmits<{
   /**
@@ -16,6 +18,13 @@ defineEmits<{
    * @param value - The new value of the model, generally `false` when the alert is closed.
    */
   (e: "update:modelValue", value: boolean): void;
+}>();
+
+defineSlots<{
+  /** The alert text; the alert is the label alone without it. */
+  default?: () => unknown;
+  /** Content in place of the `label` text, such as a control that folds the alert. */
+  label?: () => unknown;
 }>();
 
 withDefaults(
@@ -74,25 +83,36 @@ const iconMap = {
   warn: "warning",
   info: "edit",
   error: "error",
-};
+} satisfies Record<string, MaskIconName24>;
 </script>
 
 <template>
   <div
     v-if="modelValue"
+    data-testid="pl-alert"
     class="pl-alert"
     :style="{ maxHeight }"
     :class="[{ monospace, whiteSpacePre }, type ? `pl-alert__${type}` : '']"
   >
-    <div v-if="icon && type" class="pl-alert__icon">
-      <div :class="`icon-24 icon-${iconMap[type]}`" />
+    <div
+      v-if="icon && type"
+      data-testid="pl-alert-icon"
+      class="pl-alert__icon"
+      :class="{ 'pl-alert__icon--text': !label && !$slots.label }"
+    >
+      <PlIcon24 :name="iconMap[type]" />
     </div>
     <div class="pl-alert__main">
-      <label v-if="label">{{ label }}</label>
-      <div class="pl-alert__main__text"><slot /></div>
+      <label v-if="label || $slots.label" data-testid="pl-alert-label">
+        <slot name="label">{{ label }}</slot>
+      </label>
+      <div v-if="$slots.default" data-testid="pl-alert-message" class="pl-alert__main__text">
+        <slot />
+      </div>
     </div>
     <PlCloseModalBtn
       v-if="closeable"
+      data-testid="pl-alert-close"
       class="pl-alert__close-btn"
       @click="$emit('update:modelValue', false)"
     />
