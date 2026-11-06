@@ -305,8 +305,8 @@ export interface AuthOps {
   readonly onUpdateError?: (error: unknown) => void;
 }
 
-/** Connection status. */
+/** Connection status. "Disconnected" returns to "OK" after a successful call; "Unauthenticated" is final. */
 export type PlConnectionStatus = "OK" | "Disconnected" | "Unauthenticated";
 
-/** Listener that will be called each time connection status changes. */
+/** Listener that will be called each time connection status changes, possibly many times per outage. */
 export type PlConnectionStatusListener = (status: PlConnectionStatus) => void;

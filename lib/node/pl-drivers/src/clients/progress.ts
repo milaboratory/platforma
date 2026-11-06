@@ -6,6 +6,7 @@ import type {
 } from "@milaboratories/pl-client";
 import {
   addRTypeToMetadata,
+  callAbortSignal,
   createRTypeRoutingHeader,
   RestAPI,
   parseSignedResourceId,
@@ -60,13 +61,14 @@ export class ClientProgress {
     const client = this.wire.get();
 
     const { globalId, signature } = parseSignedResourceId(id);
+    const abort = callAbortSignal(options?.abort);
     let report: ProgressAPI_Report;
     if (client instanceof ProgressClient) {
       report = notEmpty(
         (
           await client.getStatus(
             { resourceId: globalId, resourceSignature: signature },
-            addRTypeToMetadata(type, options),
+            addRTypeToMetadata(type, { ...options, abort }),
           ).response
         ).report,
       );
@@ -78,6 +80,10 @@ export class ClientProgress {
             resourceSignature: signatureToBase64Url(signature),
           },
           headers: { ...createRTypeRoutingHeader(type) },
+          signal:
+            typeof options?.timeout === "number"
+              ? AbortSignal.any([abort, AbortSignal.timeout(options.timeout)])
+              : abort,
         })
       ).data!.report;
       report = {
