@@ -16,9 +16,9 @@ const quoted = String.raw`"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'`;
 const stringRules: [RegExp, string | ((...m: string[]) => string)][] = [
   // scheme://user:password@host, the password running to the last `@` (it may hold `@`)
   [/\b([a-z][a-z0-9+.-]*:\/\/[^\s:@/]*):[^\s/]*@/gi, `$1:${REDACTED}@`],
-  // ?token=… &password=…, the value running to `&`, `#`, whitespace, a quote or `}`/`]`
-  // (commas stay inside the value)
-  [new RegExp(String.raw`([?&]${secretName})=[^&#\s"'}\]]*`, "gi"), `$1=${REDACTED}`],
+  // ?token=… &password=… in a URL inside text, the value running to `&`, `#`,
+  // whitespace or `"` (a JSON string's end); a whole-string URL goes through redactUrl
+  [new RegExp(String.raw`([?&]${secretName})=[^&#\s"]*`, "gi"), `$1=${REDACTED}`],
   // Authorization: Bearer …
   [/\b(Bearer|Basic)\s+[A-Za-z0-9._~+/-]+=*/g, `$1 ${REDACTED}`],
   // TOKEN=…, --jwt=…, password: …, "plPassword": … (env entries, CLI flags, YAML, JSON);
@@ -38,7 +38,7 @@ const stringRules: [RegExp, string | ((...m: string[]) => string)][] = [
 /** Masks credentials that appear in free text: URL user info, secret query
  * parameters, `KEY=value` pairs and JSON fragments with secret keys. */
 export function redactString(text: string): string {
-  let result = text;
+  let result = isWholeUrl(text) ? redactUrlText(text) : text;
   for (const [re, replacement] of stringRules) {
     // two calls only to pick the right `replace` overload
     result =
@@ -47,6 +47,55 @@ export function redactString(text: string): string {
         : result.replace(re, replacement);
   }
   return result;
+}
+
+const urlStart = /^[a-z][a-z0-9+.-]*:\/\//i;
+const secretParam = new RegExp(String.raw`^${secretName}$`, "i");
+
+function isWholeUrl(text: string): boolean {
+  return urlStart.test(text) && !/\s/.test(text) && URL.canParse(text);
+}
+
+/** Masks the password and secret-named query values of a string that is one whole
+ * URL, whatever characters they hold, keeping the rest of the text as written.
+ * Splits as WHATWG URL does: the authority ends at the first `/`, `?` or `#`, and the
+ * user info at the last `@` in it; the query runs from `?` to `#`, split on `&`. */
+function redactUrlText(text: string): string {
+  const afterScheme = text.indexOf("://") + 3;
+  const authorityEnd = text.slice(afterScheme).search(/[/?#]|$/) + afterScheme;
+  const at = text.lastIndexOf("@", authorityEnd - 1);
+  let result = text;
+  if (at >= afterScheme) {
+    const colon = text.indexOf(":", afterScheme);
+    if (colon !== -1 && colon < at) result = text.slice(0, colon + 1) + REDACTED + text.slice(at);
+  }
+
+  const q = result.indexOf("?");
+  if (q === -1) return result;
+  const hash = result.indexOf("#", q);
+  const end = hash === -1 ? result.length : hash;
+  const query = result
+    .slice(q + 1, end)
+    .split("&")
+    .map((part) => {
+      const eq = part.indexOf("=");
+      return eq !== -1 && secretParam.test(part.slice(0, eq))
+        ? `${part.slice(0, eq + 1)}${REDACTED}`
+        : part;
+    })
+    .join("&");
+  return `${result.slice(0, q + 1)}${query}${result.slice(end)}`;
+}
+
+/** Serializes a URL with its password and secret-named query values masked,
+ * whatever characters they hold. Uses the built-in URL methods only. */
+function redactUrl(url: URL): string {
+  const copy = new URL(URL.prototype.toString.call(url));
+  if (copy.password) copy.password = REDACTED;
+  for (const name of new Set(copy.searchParams.keys())) {
+    if (secretParam.test(name)) copy.searchParams.set(name, REDACTED);
+  }
+  return copy.toString();
 }
 
 /** Text of a caught error (or any thrown value) with credentials masked,
@@ -102,7 +151,7 @@ function serializeBuiltin(value: Date | URL): string {
   try {
     return value instanceof Date
       ? Date.prototype.toISOString.call(value)
-      : redactString(URL.prototype.toString.call(value));
+      : redactString(redactUrl(value));
   } catch {
     return "[unserializable]";
   }

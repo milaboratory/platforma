@@ -206,3 +206,24 @@ describe("third review cases", () => {
     expect(stringifyRedacted({ at: new Date(Number.NaN) })).toBe('{"at":"[unserializable]"}');
   });
 });
+
+describe("fourth review cases", () => {
+  test.each(["]", "}", "'"])("query value with %s is masked whole", (c) => {
+    expect(redactString(`https://h?token=abc${c}def`)).toBe(`https://h?token=${REDACTED}`);
+    expect(redactString(`see https://h?token=abc${c}def now`)).toBe(
+      `see https://h?token=${REDACTED} now`,
+    );
+  });
+
+  test("a whole URL is redacted through the URL API", () => {
+    expect(redactString("http://u:p@ss@proxy:3128/x?a=1&jwt=a]b&c=2")).toBe(
+      `http://u:${REDACTED}@proxy:3128/x?a=1&jwt=${REDACTED}&c=2`,
+    );
+  });
+
+  test("JSON around an embedded URL is kept", () => {
+    expect(redactString('{"url":"https://h?token=abc","status":503}')).toBe(
+      `{"url":"https://h?token=${REDACTED}","status":503}`,
+    );
+  });
+});
