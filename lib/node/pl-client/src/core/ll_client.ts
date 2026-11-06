@@ -542,7 +542,7 @@ export class LLPlClient implements WireClientProviderFactory {
           this.updateStatus("Disconnected");
           return new Response(body, { ...resOptions, status: response.status });
         }
-        if (response.status < 400 && this._status !== "OK") this.updateStatus("OK");
+        if (response.status < 400) this.updateStatus("OK");
 
         const respErr = await parseResponseError(response);
         if (!respErr.error) {
@@ -578,7 +578,7 @@ export class LLPlClient implements WireClientProviderFactory {
             },
             onReceiveStatus: (status, next) => {
               ended = true;
-              if (status.code == GrpcStatus.OK && this._status !== "OK") this.updateStatus("OK");
+              if (status.code == GrpcStatus.OK) this.updateStatus("OK");
               if (status.code == GrpcStatus.UNAUTHENTICATED)
                 // (!!!) don't change to "==="
                 void this.verifyThenMaybeEscalateUnauthenticated();

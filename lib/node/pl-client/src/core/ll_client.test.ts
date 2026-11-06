@@ -285,6 +285,12 @@ test("REST status returns to OK on a 2xx or 3xx response", async () => {
     await respond(200);
     await tp.setTimeout(10);
     expect(statuses).toEqual(["OK", "Disconnected", "OK"]);
+
+    // A success in the same tick as a failure must still win.
+    await Promise.all([respond(503), respond(200)]);
+    await tp.setTimeout(10);
+    expect(client.status).toBe("OK");
+    expect(statuses).toEqual(["OK", "Disconnected", "OK", "Disconnected", "OK"]);
   } finally {
     await client.close();
   }
