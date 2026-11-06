@@ -207,14 +207,14 @@ export class UploadDriver {
         await asyncPool(
           this.opts.nConcurrentGetProgresses,
           this.getAllNotDoneProgresses().map(
-            (p) => async () => await p.updateStatus(this.terminating.signal),
+            (task) => async () => await task.updateStatus(this.terminating.signal),
           ),
         );
 
-        toNotify.forEach((n) => n.resolve());
-      } catch (e: any) {
-        console.error(e);
-        toNotify.forEach((n) => n.reject(e));
+        for (const scheduled of toNotify) scheduled.resolve();
+      } catch (error: unknown) {
+        console.error(error);
+        for (const scheduled of toNotify) scheduled.reject(error);
       }
 
       if (!this.keepRunning) break;

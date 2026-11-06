@@ -76,8 +76,8 @@ test("unauthenticated status change", async () => {
   const unauthenticated = new Promise<void>((resolve) => (onUnauthenticated = resolve));
 
   const client = await LLPlClient.build(plAddressToTestConfig(cfg.address), {
-    statusListener: (s) => {
-      if (s === "Unauthenticated") onUnauthenticated();
+    statusListener: (status) => {
+      if (status === "Unauthenticated") onUnauthenticated();
     },
   });
   expect(client.status).toBe("OK");
@@ -229,7 +229,7 @@ test.skipIf(!isLocalHttp)(
     const statuses: PlConnectionStatus[] = [];
     const client = await LLPlClient.build(
       { ...conf, hostAndPort: `127.0.0.1:${port}`, wireProtocol: "grpc" },
-      { auth, statusListener: (s) => statuses.push(s) },
+      { auth, statusListener: (status) => statuses.push(status) },
     );
     let restarted: Awaited<ReturnType<typeof startTcpProxy>> | undefined;
     try {
@@ -240,7 +240,7 @@ test.skipIf(!isLocalHttp)(
       await expect(client.ping()).rejects.toThrow();
       await vi.waitFor(() => expect(client.status).toBe("Disconnected"));
       // Keep calls failing, so the reconnect backoff of the subchannel grows.
-      for (let i = 0; i < 20; i++) {
+      for (let attempt = 0; attempt < 20; attempt++) {
         await expect(client.ping()).rejects.toThrow();
         await tp.setTimeout(300);
       }
@@ -270,7 +270,7 @@ test("REST status returns to OK on a 2xx or 3xx response", async () => {
   const statuses: PlConnectionStatus[] = [];
   const client = await LLPlClient.build(conf, {
     auth,
-    statusListener: (s) => statuses.push(s),
+    statusListener: (status) => statuses.push(status),
   });
   const respond = (status: number) => restRespond(client, status);
   try {

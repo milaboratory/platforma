@@ -298,15 +298,16 @@ export class PlTransaction {
             : TxAPI_Open_Request_WritableTx.NOT_WRITABLE,
         },
       },
-      (r) => ({
-        id: notEmpty(r.txOpen.tx?.id),
+      (response) => ({
+        id: notEmpty(response.txOpen.tx?.id),
         // Empty on a server without treeChangedSince:v1, and on a writable transaction,
         // which is served none: its reads see this transaction's own uncommitted writes,
         // so a token earned here could pin state that never commits.
-        sinceToken: r.txOpen.nextSinceToken.length > 0 ? r.txOpen.nextSinceToken : undefined,
+        sinceToken:
+          response.txOpen.nextSinceToken.length > 0 ? response.txOpen.nextSinceToken : undefined,
       }),
     );
-    this.globalTxId = this.txOpen.then((r) => r.id);
+    this.globalTxId = this.txOpen.then((opened) => opened.id);
 
     void this.track(this.globalTxId);
 
@@ -762,7 +763,7 @@ export class PlTransaction {
             changedSinceToken: new Uint8Array(0),
           },
         },
-        (r) => protoToResource(notEmpty(r.resourceGet.resource)),
+        (response) => protoToResource(notEmpty(response.resourceGet.resource)),
       );
 
       this._stat.rGetDataNetRequests++;
@@ -864,7 +865,10 @@ export class PlTransaction {
             showSoftDeletes: false,
           },
         },
-        (r) => r.map((e) => protoToResource(notEmpty(e.resourceListByType.resource))),
+        (responses) =>
+          responses.map((response) =>
+            protoToResource(notEmpty(response.resourceListByType.resource)),
+          ),
       );
     });
   }
@@ -1073,7 +1077,7 @@ export class PlTransaction {
             changedSinceToken: new Uint8Array(0),
           },
         },
-        (r) => r.map((e) => e.resourceKeyValueList.record!),
+        (responses) => responses.map((response) => response.resourceKeyValueList.record!),
       );
 
       this._stat.kvListRequests++;
@@ -1141,7 +1145,7 @@ export class PlTransaction {
             key,
           },
         },
-        (r) => r.resourceKeyValueGet.value,
+        (response) => response.resourceKeyValueGet.value,
       );
 
       this._stat.kvGetRequests++;
@@ -1169,8 +1173,10 @@ export class PlTransaction {
             key,
           },
         },
-        (r) =>
-          r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined,
+        (response) =>
+          response.resourceKeyValueGetIfExists.exists
+            ? response.resourceKeyValueGetIfExists.value
+            : undefined,
       );
 
       this._stat.kvGetRequests++;

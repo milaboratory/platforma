@@ -130,27 +130,29 @@ export class UploadTask {
       if (status.done || this.progress.status.progress != oldStatus?.progress) {
         this.change.markChanged(`upload status for ${resourceIdToString(this.res.id)} changed`);
       }
-    } catch (e: any) {
+    } catch (error: any) {
       if (signal?.aborted) return;
-      this.setRetriableError(e);
+      this.setRetriableError(error);
 
-      if (isTimeoutError(e)) {
-        this.logger.warn(`deadline exceeded while getting a status of BlobImport: ${e.message}`);
+      if (isTimeoutError(error)) {
+        this.logger.warn(
+          `deadline exceeded while getting a status of BlobImport: ${error.message}`,
+        );
         return;
       }
 
-      if (isTerminalUploadError(e)) {
+      if (isTerminalUploadError(error)) {
         this.logger.warn(
-          `terminal error while updating BlobImport status: ${e}, ${stringifyWithResourceId(this.res)}`,
+          `terminal error while updating BlobImport status: ${error}, ${stringifyWithResourceId(this.res)}`,
         );
         this.change.markChanged(
-          `upload status for ${resourceIdToString(this.res.id)} aborted: ${e.code}`,
+          `upload status for ${resourceIdToString(this.res.id)} aborted: ${error.code}`,
         );
         this.setDone(true);
         return;
       }
 
-      this.logger.error(`retryable error while updating a status of BlobImport: ${e}`);
+      this.logger.error(`retryable error while updating a status of BlobImport: ${error}`);
       // It was a terminal error, but when a connection drops,
       // this will stop the whole task, so we make it retryable.
       // It was like that:

@@ -226,7 +226,7 @@ test("dispose stops polling the log stream", async () => {
     );
     const logs = new LogsDriver(logger, logsStream, download);
 
-    const c = Computable.make((ctx) => {
+    const lastLogs = Computable.make((ctx) => {
       const streamManager = ctx.accessor(tree.entry()).node().traverse("result")?.persist();
       if (streamManager === undefined) {
         ctx.markUnstable("no stream manager");
@@ -241,13 +241,13 @@ test("dispose stops polling the log stream", async () => {
       "for line in $(seq 1 100); do echo $line; sleep 0.1; done",
     ]);
 
-    while (!(await c.getValue())) await c.awaitChange();
+    while (!(await lastLogs.getValue())) await lastLogs.awaitChange();
 
     await logs[Symbol.asyncDispose]();
     const callsAtDispose = lastLines.mock.calls.length;
     expect(lastLines.mock.calls.every(([, , , , options]) => options?.abort?.aborted)).toBe(true);
 
-    await c.getValue();
+    await lastLogs.getValue();
     await scheduler.wait(300);
     expect(lastLines.mock.calls.length).toBe(callsAtDispose);
     expect(loggerError).not.toHaveBeenCalled();

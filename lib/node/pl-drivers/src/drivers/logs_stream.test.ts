@@ -50,10 +50,10 @@ test("dispose cancels running log requests and stops polling", async () => {
     stopPollingDelay: 10_000,
   });
 
-  const c = Computable.make((ctx) => driver.getLastLogs(stream, 10, ctx));
-  await c.getValue();
+  const lastLogs = Computable.make((ctx) => driver.getLastLogs(stream, 10, ctx));
+  await lastLogs.getValue();
   await vi.waitFor(() => expect(signals).toHaveLength(1));
-  const pendingRefresh = c.refreshState();
+  const pendingRefresh = lastLogs.refreshState();
 
   const handle = newLogHandle(true, stream);
   const uiCall = driver.lastLines(handle, 10);
@@ -61,11 +61,11 @@ test("dispose cancels running log requests and stops polling", async () => {
 
   await driver[Symbol.asyncDispose]();
 
-  expect(signals.every((s) => s.aborted)).toBe(true);
+  expect(signals.every((signal) => signal.aborted)).toBe(true);
   await expect(uiCall).rejects.toThrow();
   await pendingRefresh;
 
-  await c.getValue();
+  await lastLogs.getValue();
   await scheduler.wait(50);
   expect(signals).toHaveLength(2);
   expect(logger.error).not.toHaveBeenCalled();

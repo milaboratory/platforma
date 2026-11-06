@@ -600,9 +600,9 @@ export class SynchronizedTreeState {
         ids = await this.pl.userResources.listSharedResourcesByType(seed.resourceType.name, {
           abortSignal: this.abortController.signal,
         });
-      } catch (e: unknown) {
-        if (isUnimplementedError(e)) continue;
-        throw e;
+      } catch (error: unknown) {
+        if (isUnimplementedError(error)) continue;
+        throw error;
       }
       for (const id of ids) discovered.add(id);
     }
@@ -679,8 +679,8 @@ export class SynchronizedTreeState {
         rebuildRetry = undefined;
 
         // notifying that we got new state
-        if (toNotify !== undefined) for (const n of toNotify) n.resolve();
-      } catch (e: any) {
+        if (toNotify !== undefined) for (const scheduled of toNotify) scheduled.resolve();
+      } catch (error: unknown) {
         // logging stats if we were asked to (even if error occured)
         if (this.logStat && this.logger)
           this.logger.info(
@@ -689,12 +689,12 @@ export class SynchronizedTreeState {
         lastUpdate = Date.now();
 
         // notifying that we failed to refresh the state
-        if (toNotify !== undefined) for (const n of toNotify) n.reject(e);
+        if (toNotify !== undefined) for (const scheduled of toNotify) scheduled.reject(error);
 
         if (this.abortController.signal.aborted) break;
 
         // catching tree update errors, as they may leave our tree in inconsistent state
-        if (e instanceof TreeStateUpdateError) {
+        if (error instanceof TreeStateUpdateError) {
           rebuildRetry =
             rebuildRetry === undefined
               ? createInfiniteRetryState(REBUILD_RETRY)
@@ -705,7 +705,7 @@ export class SynchronizedTreeState {
             new Error(
               `tree rebuilt after an update error; next read in ${Math.round(rebuildRetry.nextDelay)}ms`,
               {
-                cause: e,
+                cause: error,
               },
             ),
           );
@@ -724,7 +724,7 @@ export class SynchronizedTreeState {
         } else {
           // Not an inconsistency: the ordinary cadence applies, not the rebuild backoff.
           rebuildRetry = undefined;
-          this.logger?.warn(e);
+          this.logger?.warn(error);
         }
       }
 
@@ -736,8 +736,8 @@ export class SynchronizedTreeState {
         await tp.setTimeout(MIN_POLLING_INTERVAL_MS, undefined, {
           signal: this.abortController.signal,
         });
-      } catch (e: unknown) {
-        if (!isTimeoutOrCancelError(e)) throw new Error("Unexpected error", { cause: e });
+      } catch (error: unknown) {
+        if (!isTimeoutOrCancelError(error)) throw new Error("Unexpected error", { cause: error });
         if (this.abortController.signal.aborted) break;
       }
 
@@ -762,8 +762,9 @@ export class SynchronizedTreeState {
                 this.currentLoopDelayInterrupt.signal,
               ]),
             });
-          } catch (e: unknown) {
-            if (!isTimeoutOrCancelError(e)) throw new Error("Unexpected error", { cause: e });
+          } catch (error: unknown) {
+            if (!isTimeoutOrCancelError(error))
+              throw new Error("Unexpected error", { cause: error });
             if (this.abortController.signal.aborted) break;
             // Otherwise it was just the loop delay interrupt (scheduleOnNextState),
             // continue to the next iteration

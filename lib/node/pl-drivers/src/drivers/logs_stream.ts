@@ -283,7 +283,7 @@ export class LogsStreamDriver implements sdk.LogsDriver {
     if (this.currentLoop !== undefined) {
       await this.currentLoop;
     }
-    this.scheduledOnNextState.splice(0).forEach((n) => n.resolve());
+    for (const scheduled of this.scheduledOnNextState.splice(0)) scheduled.resolve();
   }
 
   async [Symbol.asyncDispose](): Promise<void> {
@@ -307,10 +307,10 @@ export class LogsStreamDriver implements sdk.LogsDriver {
           logs.map((getter) => async () => await getter.update(this.terminating.signal)),
         );
 
-        toNotify.forEach((n) => n.resolve());
-      } catch (e: any) {
-        console.error(e);
-        toNotify.forEach((n) => n.reject(e));
+        for (const scheduled of toNotify) scheduled.resolve();
+      } catch (error: unknown) {
+        console.error(error);
+        for (const scheduled of toNotify) scheduled.reject(error);
       }
 
       if (!this.keepRunning) break;
@@ -383,20 +383,20 @@ class LogGetter {
       this.error = undefined;
 
       return;
-    } catch (e: any) {
+    } catch (error: unknown) {
       if (signal.aborted) return;
-      if (isNotFoundError(e)) {
+      if (isNotFoundError(error)) {
         // No resource
         this.logs = "";
-        this.error = e;
+        this.error = error;
         this.change.markChanged();
         return;
       }
 
       this.logger.error(
-        `Stream log lines for ${stringifyWithResourceId(this.rInfo.id)} failed, reason: ${JSON.stringify(e)}`,
+        `Stream log lines for ${stringifyWithResourceId(this.rInfo.id)} failed, reason: ${JSON.stringify(error)}`,
       );
-      throw e;
+      throw error;
     }
   }
 }

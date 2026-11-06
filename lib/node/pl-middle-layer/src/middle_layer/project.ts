@@ -321,16 +321,16 @@ export class Project {
           }
         }
         retryState = undefined;
-      } catch (e: unknown) {
+      } catch (error: unknown) {
         // If we're destroyed, exit gracefully regardless of error type
         if (this.destroyed) break;
 
-        if (isNotFoundError(e)) {
+        if (isNotFoundError(error)) {
           this.env.logger.warn(
             "project refresh routine terminated, because project was externally deleted",
           );
           break;
-        } else if (isTimeoutOrCancelError(e)) {
+        } else if (isTimeoutOrCancelError(error)) {
           // Timeout during normal operation, continue the loop
         } else {
           retryState = retryState
@@ -344,7 +344,7 @@ export class Project {
               });
           this.env.logger.error(
             new Error(`[refreshLoop] unexpected exception, retrying in ${retryState.nextDelay}ms`, {
-              cause: e,
+              cause: error,
             }),
           );
           try {

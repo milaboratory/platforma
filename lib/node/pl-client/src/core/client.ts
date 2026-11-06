@@ -436,16 +436,16 @@ export class PlClient {
           // collecting stat
           this._txCommittedStat = addStat(this._txCommittedStat, tx.stat);
           ok = true;
-        } catch (e: unknown) {
+        } catch (error: unknown) {
           // the only recoverable
-          if (e instanceof TxCommitConflict) {
+          if (error instanceof TxCommitConflict) {
             // ignoring
             // collecting stat
             this._txConflictStat = addStat(this._txConflictStat, tx.stat);
           } else {
             // collecting stat
             this._txErrorStat = addStat(this._txErrorStat, tx.stat);
-            throw e;
+            throw error;
           }
         } finally {
           // close underlying grpc stream, if not yet done

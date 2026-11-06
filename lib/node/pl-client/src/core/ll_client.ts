@@ -483,8 +483,8 @@ export class LLPlClient implements WireClientProviderFactory {
     this.authProbeInFlight = true;
     try {
       await this.getSessionInfo();
-    } catch (e) {
-      if (isUnauthenticated(e)) this.updateStatus("Unauthenticated");
+    } catch (error) {
+      if (isUnauthenticated(error)) this.updateStatus("Unauthenticated");
     } finally {
       this.authProbeInFlight = false;
     }

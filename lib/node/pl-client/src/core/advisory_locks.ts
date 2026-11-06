@@ -40,7 +40,7 @@ class AwaitLock {
   }
 }
 
-const m = new Map<string, AwaitLock>();
+const locks = new Map<string, AwaitLock>();
 
 /**
  * Acquire a process-local async lock for the given id and return a release function.
@@ -49,11 +49,11 @@ const m = new Map<string, AwaitLock>();
  */
 export async function advisoryLock(id: string, signal?: AbortSignal) {
   signal?.throwIfAborted();
-  if (!m.has(id)) {
-    m.set(id, new AwaitLock());
+  if (!locks.has(id)) {
+    locks.set(id, new AwaitLock());
   }
 
-  const lock = m.get(id)!;
+  const lock = locks.get(id)!;
   await lock.acquireAsync(signal);
 
   let released = false;
@@ -61,7 +61,7 @@ export async function advisoryLock(id: string, signal?: AbortSignal) {
     if (released) return;
     released = true;
     const nowIdle = lock.release();
-    if (nowIdle) m.delete(id);
+    if (nowIdle) locks.delete(id);
   };
 }
 
