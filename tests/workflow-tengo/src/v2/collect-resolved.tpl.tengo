@@ -5,7 +5,7 @@ render := import("@platforma-sdk/workflow-tengo:render")
 
 collectTpl := assets.importTemplate(":v2.collect")
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	r := wf.resolve(args.source)
 	collected := render.createEphemeral(collectTpl, { spec: r.spec, data: r.data })
 	return { outputs: {}, exports: collected.output("pf") }

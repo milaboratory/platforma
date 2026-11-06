@@ -6,7 +6,7 @@ ex := import("@platforma-sdk/workflow-tengo:v2.exports")
 file := import("@platforma-sdk/workflow-tengo:file")
 times := import("times")
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	builder := wf.tableBuilder("tsv").addPrimary("main", args.primary)
 	if !is_undefined(args.column) {
 		if is_undefined(args.columnHeader) {

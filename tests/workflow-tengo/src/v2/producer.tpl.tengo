@@ -12,7 +12,7 @@ columnSpec := func(name, valueType) {
 	}
 }
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	return {
 		outputs: {
 			count: len(args.numbers),

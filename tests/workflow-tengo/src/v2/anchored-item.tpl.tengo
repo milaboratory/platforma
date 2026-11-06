@@ -3,7 +3,7 @@
 wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
 ex := import("@platforma-sdk/workflow-tengo:v2.exports")
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	q := wf.anchoredQuery({ main: args.anchor }, { x: args.item })
 	return {
 		outputs: { spec: q.getResultSpec("x") },

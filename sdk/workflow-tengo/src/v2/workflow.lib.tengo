@@ -6,10 +6,12 @@
  * The project renders the template with the inputs `args` (JSON), `blockId` (a JSON string, the
  * block's id), `isProduction` (a JSON boolean: true for a run workflow, false for an auto one) and
  * `context` (the BContext/2 the block reads upstream values from, or a BContextEnd/1 when nothing is
- * upstream), and reads two outputs:
+ * upstream), and reads three outputs:
  *  - `result`: a map of the body's `outputs`;
  *  - `exports`: the node the body returned as `exports` (see `:v2.exports`), set directly; the
- *    project builds the block's context around it.
+ *    project builds the block's context around it;
+ *  - `effect`: the files the workflow imports, listed for the engine — the client-side runtime that
+ *    sends uploads and reports import progress — and never read by block code (see `body`).
  *
  * A ref names a value another block's workflow exports:
  *
@@ -45,19 +47,32 @@ bquery := import(":v2.bquery")
 exports := import(":v2.exports")
 pBundle := import(":pframes.bundle")
 pTableBuilder := import(":pframes.table-builder")
+file := import(":file")
 
 self := import(":tpl")
 
 _RESULT_OUTPUT := "result"
 _EXPORTS_OUTPUT := "exports"
+_EFFECT_OUTPUT := "effect"
 _INPUT_CONTEXT := "context"
+
+// the effect's section listing the files the workflow imports, one field per source
+_IMPORTS_SECTION := "imports"
+
+// one file the workflow imports, as the effect lists it: Input fields `upload` (upload grants
+// only), `progress` and `file`
+_RTYPE_IMPORT_ENTRY := { Name: "ImportEntry", Version: "1" }
+
+// the prefix of a source the client uploads; the backend imports any other accepted source without
+// the client
+_UPLOAD_SOURCE_PREFIX := "upload://upload/"
 
 // a field name prefix of the inputs that 'prepare()' requested
 _PREPARED_INPUTS_PREFIX := "prepared/"
 
 // declared for the prepare route, where the framework creates and locks the outputs before the
 // body runs (the template is ephemeral)
-self.defineOutputs([_RESULT_OUTPUT, _EXPORTS_OUTPUT])
+self.defineOutputs([_RESULT_OUTPUT, _EXPORTS_OUTPUT, _EFFECT_OUTPUT])
 
 /**
  * Whether this render is a run workflow (true) or an auto one (false).
@@ -172,6 +187,9 @@ anchoredQuery := func(anchors, queryMap, ...opts) {
 /**
  * Requests resources the body needs resolved: `cb(args)` returns a map of references; the body runs
  * once they are ready, with each under its name in `args`. Applies to run and auto workflows alike.
+ * Files are imported in the body, not here (see `body`): an upload grant imported here with `:file`'s
+ * `importFile` is not listed for the engine: when a reference this callback returns depends on its
+ * file, the body waits until something else uploads it.
  *
  * @param cb: func(args) map
  */
@@ -216,18 +234,61 @@ tableBuilder := func(format) {
 	return pTableBuilder.tableBuilderWith(bquery, format, getParentBCtx())
 }
 
-// The template's outputs must be exactly `result` and `exports`. A module that imports `:workflow`
+// The template's outputs must be exactly `result`, `exports` and `effect`. A module that imports `:workflow`
 // declares the output `context` too; on the prepare route the framework creates every declared
 // output, and `context` would never be set, so the render would never finish.
 _assertOwnOutputs := func() {
 	defined := sets.fromSlice(self.definedOutputs())
-	if defined != sets.fromSlice([_RESULT_OUTPUT, _EXPORTS_OUTPUT]) {
-		ll.panic("a v2 workflow's outputs are exactly result and exports, but this template defines %v; " +
+	if defined != sets.fromSlice([_RESULT_OUTPUT, _EXPORTS_OUTPUT, _EFFECT_OUTPUT]) {
+		ll.panic("a v2 workflow's outputs are exactly result, exports and effect, but this template defines %v; " +
 			"is something it imports using @platforma-sdk/workflow-tengo:workflow?", sets.toSlice(defined))
 	}
 }
 
-_buildOutputs := func(results) {
+// The effect of one body call: `api` is the body's second argument, and `build` makes the `effect`
+// output once the body has returned, after which `api` refuses further imports.
+_newEffect := func() {
+	// source -> { entry, file }; ImportEntry resources are created as sources are imported
+	imported := {}
+	built := false
+
+	importFile := func(source) {
+		ll.assert(is_string(source), "effect.importFile takes a source string, got %v", source)
+		if built {
+			ll.panic("effect.importFile(%q) was called after the workflow body returned; " +
+				"import every file inside the body", source)
+		}
+		if is_undefined(imported[source]) {
+			importer := file.importFile(source)
+			entry := smart.ephemeralBuilder(_RTYPE_IMPORT_ENTRY)
+			if text.has_prefix(source, _UPLOAD_SOURCE_PREFIX) {
+				entry.createInputField("upload").set(importer.handle)
+			}
+			entry.createInputField("progress").set(importer.progress)
+			entry.createInputField("file").set(importer.file)
+			imported[source] = { entry: entry.lockAndBuild(), file: importer.file }
+		}
+		return imported[source].file
+	}
+
+	build := func() {
+		built = true
+		imports := smart.ephemeralMapBuilder()
+		for source, i in imported {
+			imports.addRef(source, i.entry)
+		}
+		effect := smart.ephemeralMapBuilder()
+		effect.addRef(_IMPORTS_SECTION, imports.build())
+		return effect.build()
+	}
+
+	return {
+		api: ll.toStrict({ importFile: importFile }),
+		build: build
+	}
+}
+
+_buildOutputs := func(results, effect) {
 	ll.assert(ll.isMap(results) && !smart.isReference(results), "expected to see map result from body function")
 	ll.assert(
 		sets.fromSlice(["outputs", "exports"]) == sets.fromMapKeys(results),
@@ -247,19 +308,54 @@ _buildOutputs := func(results) {
 	tplOutputs := {}
 	tplOutputs[_RESULT_OUTPUT] = resBuilder.build()
 	tplOutputs[_EXPORTS_OUTPUT] = results.exports
+	tplOutputs[_EFFECT_OUTPUT] = effect.build()
 	return tplOutputs
 }
 
 /**
- * Defines the workflow's body: `fn(args)` returns `{outputs, exports}`, where `outputs` is a map
- * and `exports` is one node (`:v2.exports`). Runs for run and auto workflows alike.
+ * Defines the workflow's body: `fn(args, effect)` returns `{outputs, exports}`, where `outputs` is
+ * a map and `exports` is one node (`:v2.exports`). Runs for run and auto workflows alike.
  *
- * @param fn: func(args) {outputs, exports}
+ * `effect` imports files and lists them for the engine, which reports each import and, for an
+ * upload grant, sends the upload:
+ *
+ *     file := import("@platforma-sdk/workflow-tengo:file")
+ *
+ *     wf.body(func(args, effect) {
+ *         reads := effect.importFile(args.reads)
+ *         return { outputs: { reads: file.exportFile(reads) }, exports: ex.collection({}) }
+ *     })
+ *
+ * `effect.importFile(source)` takes what `:file`'s `importFile` takes, parsed and validated by it —
+ * an upload grant (`upload://upload/…`, a local file or a URL the client uploads) or a library file
+ * (`index://index/…`, which the backend imports without the client) — and returns a reference to
+ * the imported file; no output of the block has to start or report the import. Sources are compared
+ * as strings: the same string again returns the same file, and different strings are imported by
+ * separate calls and listed as separate entries, even when they name the same file. The whole source string becomes a field name, so it must
+ * fit the backend's limit of 65,535 bytes. A failed import puts its error on the imported file; the
+ * backend reports it on the entry, the `imports` map and `effect` once all inputs of each are final,
+ * so another import still running delays it in the maps.
+ *
+ * Only the workflow body imports this way: `effect` exists only as this argument, and calling
+ * `effect.importFile` after the body has returned panics. `prepare` gets no effect, and neither
+ * does a sub-template: import in the body and pass the file on. A file imported with `:file`'s
+ * `importFile` anywhere else is not listed, so the engine neither reports it nor uploads it: unless
+ * something else uploads an upload grant imported that way, its file never becomes ready.
+ *
+ * Once the body has returned, the render's `effect` output is an ephemeral map with inputs locked:
+ * its field `imports` is an ephemeral map, inputs locked and empty when nothing was imported, with
+ * one field per imported source string, named by it, to an ephemeral ImportEntry/1 with inputs
+ * locked, whose Input fields are `upload` (the storage-side upload a client sends parts to, present
+ * for an upload grant only), `progress` (the import's map of progress steps) and `file` (the imported
+ * file). A body that fails, or returns outputs the workflow refuses, sets no output.
+ *
+ * @param fn: func(args, effect) {outputs, exports}
  */
 body := func(fn) {
 	_assertOwnOutputs()
 	self.body(func(_) {
-		return _buildOutputs(fn(args()))
+		effect := _newEffect()
+		return _buildOutputs(fn(args(), effect.api), effect)
 	})
 }
 
