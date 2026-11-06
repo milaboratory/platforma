@@ -2884,9 +2884,9 @@ importers:
       json-stringify-safe:
         specifier: 'catalog:'
         version: 5.0.1
-      zod:
+      valibot:
         specifier: 'catalog:'
-        version: 3.25.76
+        version: 1.5.0(typescript@7.0.2)
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
