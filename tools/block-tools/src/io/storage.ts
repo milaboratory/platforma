@@ -104,8 +104,15 @@ export class GcsStorage implements RegistryStorage {
 
   /** The client library is loaded on first use, so that readers of this module never load it. */
   private bucket(): Promise<GcsBucket> {
-    this.bucketPromise ??= import("@google-cloud/storage").then(({ Storage }) =>
-      new Storage().bucket(this.bucketName),
+    // Every write overwrites a whole object and every delete ignores a missing object, so retrying
+    // them is safe. The library default (RetryConditional) does not retry writes or deletes without
+    // a generation precondition, and the shared update-seed object is rewritten on every publish
+    // step, where GCS answers 429 to more than about one write per second.
+    this.bucketPromise ??= import("@google-cloud/storage").then(
+      ({ IdempotencyStrategy, Storage }) =>
+        new Storage({
+          retryOptions: { idempotencyStrategy: IdempotencyStrategy.RetryAlways },
+        }).bucket(this.bucketName),
     );
     return this.bucketPromise;
   }
