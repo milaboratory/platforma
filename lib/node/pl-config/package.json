@@ -38,8 +38,7 @@
   },
   "dependencies": {
     "@milaboratories/ts-helpers": "workspace:*",
-    "upath": "catalog:",
-    "yaml": "catalog:"
+    "upath": "catalog:"
   },
   "devDependencies": {
     "@milaboratories/build-configs": "workspace:*",

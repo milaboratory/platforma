@@ -35,7 +35,7 @@ test(
     const grpcPort = Number(genResult.plAddress.split(":").pop());
     const plLocal = await localPlatformaInit(logger, {
       workingDir: genResult.workingDir,
-      config: genResult.plConfigContent,
+      args: genResult.plArgs,
       grpcPort,
       onCloseAndErrorNoStop: async (pl: LocalPl) => await pl.start(),
     });

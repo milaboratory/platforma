@@ -16,7 +16,6 @@ const optionGroups = (): Parameters<typeof cmdOpts.argDefs> => [
   cmdOpts.AddressesOptions(),
   cmdOpts.PlBinaryOptions(),
   cmdOpts.PlSourcesOptions(),
-  cmdOpts.ConfigOptions(),
   cmdOpts.LicenseOptions(),
   cmdOpts.StorageOptions(),
   cmdOpts.StoragePrimaryURLOptions(),
@@ -88,7 +87,6 @@ export default function svcCreateLocalCommand(): Command {
       binaryPath: flags["pl-binary"],
 
       version: flags.version,
-      configPath: flags.config,
       workdir: flags["pl-workdir"],
 
       primaryURL: flags["storage-primary"],

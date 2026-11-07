@@ -1,15 +1,15 @@
-import { test } from "vitest";
+import { onTestFinished, test, vi } from "vitest";
 import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import fs from "fs/promises";
 import upath from "upath";
 import type { LocalPlConfigGeneratorOptions } from "./config";
 import { generateLocalPlConfigs } from "./config";
-import yaml from "yaml";
-import type { PlAuthDriverJwt, PlConfig } from "../common/types";
 
 test("should return right configs", async ({ expect }) => {
   const logger = new ConsoleLoggerAdapter();
   const workingDir = upath.resolve(upath.join(__dirname, "..", "..", ".test"));
+  await fs.rm(workingDir, { recursive: true, force: true });
+
   const opts: LocalPlConfigGeneratorOptions = {
     logger,
     workingDir,
@@ -24,42 +24,86 @@ test("should return right configs", async ({ expect }) => {
       },
     },
     numCpu: 5,
-    plConfigPostprocessing: (config: PlConfig) => {
-      (config.core.auth[0] as PlAuthDriverJwt).key = "jwtkey";
-      return config;
-    },
+    useGlobalAccess: true,
+    extraArgs: ["--log-level=debug"],
   };
 
   const got = await generateLocalPlConfigs(opts);
 
   expect(got.plAddress).toStrictEqual("127.0.0.1:11234");
-  expect(got.localStorageProjections.find((s) => s.storageId === "root")).toStrictEqual({
-    storageId: "root",
-    localPath: "",
+  expect(got.localStorageProjections).toStrictEqual([
+    { storageId: "root", localPath: "" },
+    { storageId: "main", localPath: upath.join(workingDir, "storages", "main") },
+  ]);
+
+  const wd = (p: string) => upath.join(workingDir, p);
+  expect(got.plArgs).toStrictEqual([
+    "--listen-address=127.0.0.1",
+    "--listen-port=11234",
+    "--listen-http-port=11237",
+    "--monitoring-ip=127.0.0.1",
+    "--monitoring-port=11235",
+    "--debug-enabled",
+    "--debug-ip=127.0.0.1",
+    "--debug-port=11236",
+    `--main-root=${workingDir}`,
+    `--db-dir=${wd("db")}`,
+    `--work-dir=${wd("storages/work")}`,
+    `--packages-dir=${wd("packages")}`,
+    `--primary-storage-fs=${wd("storages/main")}`,
+    "--primary-storage-fs-url=http://127.0.0.1:11237",
+    "--primary-storage-id=main",
+    "--work-storage-id=work",
+    "--host-data-library-id=root",
+    "--host-data-library-downloadable",
+    "--primary-storage-fs-local-access",
+    `--auth-htpasswd=${wd("users.htpasswd")}`,
+    `--master-secret-file=${wd("gen/master-secret")}`,
+    `--license-file=${wd("gen/license")}`,
+    "--runner-local-cpu=5",
+    "--keep-faulty-workdirs=1h",
+    `--log-dst=file://${wd("platforma.log")}`,
+    "--package-registry=platforma-open=https://bin-ga.pl-open.science",
+    "--log-level=debug",
+  ]);
+
+  expect(await fs.readFile(wd("gen/license"), "utf8")).toStrictEqual("abc");
+  expect(await fs.readFile(wd("users.htpasswd"), "utf8")).toStrictEqual(
+    `default-user:${got.plPassword}`,
+  );
+
+  // base64url of 32 random bytes: what the backend accepts as a master secret
+  const masterSecret = await fs.readFile(wd("gen/master-secret"), "utf8");
+  expect(Buffer.from(masterSecret, "base64url")).toHaveLength(32);
+
+  // secrets persist between generations, the license follows the latest value
+  const again = await generateLocalPlConfigs({
+    ...opts,
+    licenseMode: { type: "plain", value: "xyz" },
+  });
+  expect(again.plPassword).toStrictEqual(got.plPassword);
+  expect(await fs.readFile(wd("gen/master-secret"), "utf8")).toStrictEqual(masterSecret);
+  expect(await fs.readFile(wd("gen/license"), "utf8")).toStrictEqual("xyz");
+});
+
+test("should pass a license file as is", async ({ expect }) => {
+  const workingDir = upath.resolve(upath.join(__dirname, "..", "..", ".test-license-file"));
+  await fs.rm(workingDir, { recursive: true, force: true });
+
+  vi.stubEnv("MI_LICENSE", "");
+  vi.stubEnv("PL_LICENSE", "");
+  vi.stubEnv("MI_LICENSE_FILE", "/somewhere/mi.license");
+  onTestFinished(() => {
+    vi.unstubAllEnvs();
   });
 
-  const testConfig = await fs.readFile(upath.join(__dirname, "config_test.yaml"));
-  const expected = yaml.parse(testConfig.toString());
+  const got = await generateLocalPlConfigs({
+    logger: new ConsoleLoggerAdapter(),
+    workingDir,
+    licenseMode: { type: "env" },
+    portsMode: { type: "pickFree" },
+  });
 
-  // the simplest way to pass absolute paths in storages
-  // (TODO: no absolute paths in database though?)
-  expected.controllers.runner.storageRoot = upath.resolve(
-    workingDir,
-    expected.controllers.runner.storageRoot,
-  );
-  expected.controllers.data.storages[1].rootPath = upath.resolve(
-    workingDir,
-    expected.controllers.data.storages[1].rootPath,
-  );
-  expected.controllers.data.storages[2].rootPath = upath.resolve(
-    workingDir,
-    expected.controllers.data.storages[2].rootPath,
-  );
-  expected.core.auth[1].path = upath.resolve(workingDir, expected.core.auth[1].path);
-  expected.controllers.packageLoader.packagesRoot = upath.resolve(
-    workingDir,
-    expected.controllers.packageLoader.packagesRoot,
-  );
-
-  expect(yaml.parse(got.plConfigContent)).toStrictEqual(expected);
+  expect(got.plArgs).toContain("--license-file=/somewhere/mi.license");
+  expect(got.plArgs.some((a) => a.startsWith("--package-registry="))).toBe(false);
 });

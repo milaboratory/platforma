@@ -1,4 +1,5 @@
 import type { ChildProcess, SpawnSyncReturns } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -94,9 +95,7 @@ export default class Core {
       plBinaryPath = options.binaryPath;
     }
 
-    let configPath = options?.configPath;
-    const workdir: string =
-      options?.workdir ?? (configPath ? process.cwd() : state.instanceDir(instanceName));
+    const workdir: string = options?.workdir ?? state.instanceDir(instanceName);
 
     if (options?.primaryURL) {
       options.configOptions = {
@@ -134,6 +133,7 @@ export default class Core {
     );
 
     const storageDirs: string[] = [
+      path.dirname(configOptions.log.path),
       `${configOptions.localRoot}/packages`,
       `${configOptions.localRoot}/packages-local`,
       `${configOptions.localRoot}/blocks-local`,
@@ -143,7 +143,6 @@ export default class Core {
     }
     if (configOptions.storages.library.type === "FS") {
       storageDirs.push(configOptions.storages.library.rootPath);
-      configOptions.hacks.libraryDownloadable = false;
     }
     if (configOptions.storages.work.type === "FS") {
       storageDirs.push(configOptions.storages.work.rootPath);
@@ -166,11 +165,23 @@ export default class Core {
       }
     }
 
-    if (!configPath) {
-      configPath = path.join(configOptions.localRoot, "config.yaml");
-      this.logger.debug(`  rendering configuration '${configPath}'...`);
-      fs.writeFileSync(configPath, plCfg.render(configOptions));
+    const masterSecretFile = path.join(configOptions.localRoot, "master-secret");
+    if (!fs.existsSync(masterSecretFile)) {
+      this.logger.debug(`  generating master secret '${masterSecretFile}'...`);
+      fs.writeFileSync(masterSecretFile, crypto.randomBytes(32).toString("base64url"), {
+        mode: 0o600,
+      });
     }
+
+    if (configOptions.license.value !== "") {
+      // Keep the license out of the process list and of the instance state.
+      const licenseFile = path.join(configOptions.localRoot, "license");
+      fs.writeFileSync(licenseFile, configOptions.license.value, { mode: 0o600 });
+      fs.chmodSync(licenseFile, 0o600); // mode is applied only when the file is created
+      configOptions.license = { value: "", file: licenseFile };
+    }
+
+    const plArgs = plCfg.cliArgs(configOptions, masterSecretFile);
 
     const upCommands: instanceCommand[] = [];
     if (options?.sourcesPath) {
@@ -187,15 +198,17 @@ export default class Core {
     const runBinary: instanceCommand = {
       async: true,
       cmd: plBinaryPath,
-      args: ["--quiet", "--config", configPath],
+      args: plArgs.args,
       workdir: workdir,
       runOpts: {
         stdio: "inherit",
+        env: plArgs.env,
       },
     };
 
     if (options?.configOptions?.numCpu) {
       runBinary.runOpts.env = {
+        ...runBinary.runOpts.env,
         GOMAXPROCS: String(options?.configOptions?.numCpu),
       };
     }
@@ -234,7 +247,6 @@ export default class Core {
       downCommands: [],
       cleanupCommands: [],
       runInfo: {
-        configPath,
         dbPath: configOptions.core.db.path,
         apiAddr: configOptions.grpc.listen,
         logPath: configOptions.log.path,
@@ -1067,7 +1079,6 @@ You can obtain the license from "https://platforma.bio/getlicense".`);
 
   private renderRunInfo(
     runInfo: {
-      configPath?: string;
       apiPort?: number;
       apiAddr?: string;
       logPath?: string;
@@ -1081,10 +1092,6 @@ You can obtain the license from "https://platforma.bio/getlicense".`);
     const report: string[] = [];
 
     const column = (t: string) => t.padStart(indent, " ");
-    if (runInfo.configPath) {
-      report.push(`${column("config")}: ${runInfo.configPath}`);
-    }
-
     if (runInfo.apiAddr) {
       report.push(`${column("API")}: ${runInfo.apiAddr}`);
     } else if (runInfo.apiPort) {
@@ -1165,7 +1172,6 @@ export type createLocalOptions = {
   version?: string;
   sourcesPath?: string;
   binaryPath?: string;
-  configPath?: string;
   configOptions?: plCfg.plOptions;
   workdir?: string;
 
