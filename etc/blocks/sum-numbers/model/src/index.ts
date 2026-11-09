@@ -76,6 +76,13 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
     return [{ type: "link", href: "/", label: "Main" }];
   })
 
+  .subtitle((ctx) =>
+    (ctx.data.sources ?? [])
+      .map((ref) => readAnnotation(ctx.resultPool.getPColumnSpecByRef(ref), Annotation.Label))
+      .filter((label) => label !== undefined)
+      .join(", "),
+  )
+
   .done();
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
