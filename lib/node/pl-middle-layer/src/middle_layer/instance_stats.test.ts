@@ -18,7 +18,7 @@ describe("parseInstanceStats", () => {
         kv("reading/instance/source", "scheduler"),
       ]),
     ).toEqual({
-      status: "read",
+      status: "ok",
       cpu: { total: 24000, current: 18500 },
       ram: { total: 64e9, current: 41e9 },
       jobs: { running: 12, queued: 14 },
@@ -51,7 +51,7 @@ describe("parseInstanceStats", () => {
       kv("reading/instance/jobs", { running: "many" }),
       kv("reading/other/cpu", { current: 1 }),
     ]);
-    expect(stats).toEqual({ status: "read" });
+    expect(stats).toEqual({ status: "ok" });
   });
 });
 
@@ -65,7 +65,7 @@ test("the watch reads a sample where the capability is advertised, and nothing e
       stats = await watch.stats.getValue();
     }
     expect(stats?.status).toEqual(
-      pl.hasCapability(InstanceStatsCapability) ? "read" : "unsupported",
+      pl.hasCapability(InstanceStatsCapability) ? "ok" : "unsupported",
     );
   } finally {
     await watch.terminate();
@@ -127,9 +127,9 @@ describe("InstanceStatsWatch", () => {
     const sample = [kv("reading/instance/jobs", { running: 1, queued: 2 })];
     expect(
       await firstSample(fakeClient({ capabilities: [InstanceStatsCapability], context: sample })),
-    ).toEqual({ status: "read", jobs: { running: 1, queued: 2 } });
+    ).toEqual({ status: "ok", jobs: { running: 1, queued: 2 } });
     expect(
       await firstSample(fakeClient({ capabilities: [InstanceStatsCapability], context: [] })),
-    ).toEqual({ status: "read" });
+    ).toEqual({ status: "ok" });
   });
 });

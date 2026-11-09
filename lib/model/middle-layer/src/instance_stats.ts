@@ -14,10 +14,10 @@ export type InstanceStatsCapacity = {
   readonly current: number;
 };
 
-/** Why the stats carry no numbers. */
+/** Whether the stats were read, and why they carry no numbers when not. */
 export type InstanceStatsStatus =
   /** Read from the instance statistics context. */
-  | "read"
+  | "ok"
   /** The backend has no instance statistics context. */
   | "unsupported"
   /** The context exists but could not be read. */

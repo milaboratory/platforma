@@ -66,7 +66,7 @@ export function parseInstanceStats(kvs: readonly { key: string; value: string }[
 
   const source = readings.get("source");
   return {
-    status: "read",
+    status: "ok",
     cpu: asCapacity(readings.get("cpu")),
     ram: asCapacity(readings.get("ram")),
     gpu: asCapacity(readings.get("gpu")),
