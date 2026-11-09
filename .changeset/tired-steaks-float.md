@@ -7,8 +7,6 @@
 "@milaboratories/pf-spec-driver": patch
 "@milaboratories/pl-middle-layer": patch
 "@milaboratories/pl-error-like": patch
-"@milaboratories/pl-deployments": patch
-"@milaboratories/pl-healthcheck": patch
 "@milaboratories/biowasm-tools": patch
 "@milaboratories/pl-model-middle-layer": patch
 "@milaboratories/pl-mcp-server": patch
@@ -23,7 +21,6 @@
 "@platforma-sdk/tengo-builder": patch
 "@milaboratories/pf-driver": patch
 "@milaboratories/pl-client": patch
-"@milaboratories/pl-config": patch
 "@milaboratories/pl-errors": patch
 "@platforma-open/milaboratories.software-ptabler.schema": patch
 "@milaboratories/sequences": patch
