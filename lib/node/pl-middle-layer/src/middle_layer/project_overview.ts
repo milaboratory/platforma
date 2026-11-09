@@ -1,4 +1,4 @@
-import type { PlTreeEntry } from "@milaboratories/pl-tree";
+import type { PlTreeEntry, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import type { ComputableStableDefined } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
 import type { ProjectRenderingState, ProjectStructure } from "../model/project_model";
@@ -31,6 +31,7 @@ import { getBlockPackInfo } from "./util";
 import { resourceIdToString, type SignedResourceId } from "@milaboratories/pl-client";
 import { omitBy, isEqual } from "es-toolkit";
 import { getDebugFlags } from "../debug";
+import { readArgsErrorsField } from "../model/args_derivation";
 
 type BlockInfo = {
   argsRid?: SignedResourceId;
@@ -168,6 +169,7 @@ export function projectOverview(
           subtitle,
           tags,
           inputsValid,
+          inputsValidFromArgs,
           sdkVersion,
           featureFlags,
           isIncompatibleWithRuntime,
@@ -260,10 +262,11 @@ export function projectOverview(
                   }) as ComputableStableDefined<string[]>,
               ),
               // inputsValid: for modelAPIVersion 2, it's true if currentArgs exists (args derivation succeeded)
+              // and the block's argsIssues() is known to have found no errors in them.
               // For older blocks, use the inputsValid callback from config
               inputsValid:
                 cfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION
-                  ? info.currentArguments !== undefined
+                  ? argsAllowRun(prj, id, info.currentArguments)
                   : cfg.inputsValid
                     ? (computableFromCfgOrRF(
                         env,
@@ -280,6 +283,7 @@ export function projectOverview(
                         },
                       }) as ComputableStableDefined<boolean>)
                     : undefined,
+              inputsValidFromArgs: cfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION,
               sdkVersion: codeWithInfo?.sdkVersion,
               featureFlags: codeWithInfo?.featureFlags ?? {},
               isIncompatibleWithRuntime: false,
@@ -317,6 +321,7 @@ export function projectOverview(
           settings,
           sections,
           inputsValid,
+          inputsValidFromArgs: inputsValidFromArgs === true,
           updateInfo: {},
           currentBlockPack: bp?.info?.source,
           updates,
@@ -336,32 +341,14 @@ export function projectOverview(
       };
     },
     {
-      postprocessValue: (value) => {
-        const cantRun = new Set<string>();
-        const staleBlocks = new Set<string>();
-        return {
-          ...value,
-          blocks: value.blocks.map((b) => {
-            if (!b.inputsValid) cantRun.add(b.id);
-            if (b.stale) staleBlocks.add(b.id);
-            const stale = b.stale || b.upstreams.findIndex((u) => staleBlocks.has(u)) !== -1;
-            const canRun =
-              (stale || b.outputErrors) &&
-              Boolean(b.inputsValid) &&
-              !b.missingReference &&
-              b.upstreams.findIndex((u) => cantRun.has(u)) === -1;
-            const bb = {
-              ...b,
-              canRun,
-              stale,
-              updateSuggestions: b.updates?.suggestions ?? [],
-              updatedBlockPack: b.updates?.mainSuggestion,
-            };
-            delete bb["updates"];
-            return bb;
-          }),
-        };
-      },
+      postprocessValue: (value) => ({
+        ...value,
+        blocks: withRunState(value.blocks).map(({ updates, inputsValidFromArgs: _, ...b }) => ({
+          ...b,
+          updateSuggestions: updates?.suggestions ?? [],
+          updatedBlockPack: updates?.mainSuggestion,
+        })),
+      }),
       onRecalculation: getDebugFlags().logProjectOverviewStat
         ? (stats) => {
             console.log(`[projectOverview] ${JSON.stringify(stats)}`);
@@ -369,4 +356,71 @@ export function projectOverview(
         : undefined,
     },
   ).withStableType();
+}
+
+/**
+ * Whether the args of a block with model API version 2 let it run: the block has current args,
+ * and its `inputsValid` field records no errors its `argsIssues()` found in them (see
+ * `readArgsErrorsField`).
+ *
+ * @param currentArgs - The block's current args as decoded from its `currentArgs` field;
+ *   `undefined` when it has none
+ */
+export function argsAllowRun(
+  prj: PlTreeNodeAccessor,
+  blockId: string,
+  currentArgs: unknown,
+): boolean {
+  if (currentArgs === undefined) return false;
+  const argsErrors = prj.getField({
+    field: projectFieldName(blockId, "inputsValid"),
+    assertFieldType: "Dynamic",
+    stableIfNotFound: true,
+  });
+  return readArgsErrorsField(argsErrors?.value?.getData(), currentArgs).length === 0;
+}
+
+/** What the run state of a block is derived from. */
+export type RunStateSource = {
+  id: string;
+  /** Whether the block's own args differ from those its results were rendered with. */
+  stale: boolean;
+  outputErrors: boolean;
+  inputsValid: boolean | undefined;
+  /**
+   * Whether `inputsValid` tells only whether the block's current args may run: a block with model
+   * API version 2 this runtime is compatible with. Otherwise it also stands for a block whose code
+   * cannot run here, or for checks of a model that predates args issues.
+   */
+  inputsValidFromArgs: boolean;
+  missingReference: boolean;
+  /** Every block upstream of this one, direct or not. */
+  upstreams: string[];
+};
+
+/**
+ * Adds the run state to each block of a project, the blocks listed upstream first. A block is
+ * stale when its own args changed or an upstream block is stale. It can run when it needs to run
+ * (it is stale or its outputs failed), its args allow it, it references no missing block, and no
+ * upstream block that needs to run is kept from running. An upstream block whose `inputsValid`
+ * comes from its args and whose results are up to date feeds its dependents even when its args
+ * could not run again; any other upstream block that is not valid keeps them from running.
+ */
+export function withRunState<B extends RunStateSource>(
+  blocks: B[],
+): (B & { stale: boolean; canRun: boolean })[] {
+  const cantRun = new Set<string>();
+  const staleBlocks = new Set<string>();
+  return blocks.map((b) => {
+    if (b.stale) staleBlocks.add(b.id);
+    const stale = b.stale || b.upstreams.some((u) => staleBlocks.has(u));
+    const needsRun = stale || b.outputErrors;
+    if (!b.inputsValid && (needsRun || !b.inputsValidFromArgs)) cantRun.add(b.id);
+    const canRun =
+      needsRun &&
+      Boolean(b.inputsValid) &&
+      !b.missingReference &&
+      !b.upstreams.some((u) => cantRun.has(u));
+    return { ...b, stale, canRun };
+  });
 }

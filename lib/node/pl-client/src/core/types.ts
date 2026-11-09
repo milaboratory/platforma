@@ -63,15 +63,37 @@ export function resourceTypesEqual(type1: ResourceType, type2: ResourceType): bo
 /** Color proof used for resource creation requests (alias for ResourceSignature). */
 export type ColorProof = ResourceSignature;
 
-/** Readonly fields here marks properties of resource that can't change according to pl's state machine. */
+/** Readonly fields here marks properties of resource that can't change according to pl's state
+ * machine. "Can't change" means once a non-zero value has been observed it stays static — not
+ * that the field is populated from the start.
+ * - {@link id}, {@link kind}, {@link type}, {@link data} are fields that never change since
+ *   resource creation.
+ * - {@link originalResourceId}, {@link canonicalId}, all locks, and other fields change only once:
+ *   when they get their first non-empty value - they stay unchanged til the resource's removal */
 export type BasicResourceData = {
+  /*
+   * Immutable from the moment of resource creation.
+   */
   readonly id: SignedResourceId;
-  readonly originalResourceId: OptionalSignedResourceId;
-
   readonly kind: ResourceKind;
   readonly type: ResourceType;
-
   readonly data?: Uint8Array;
+
+  /*
+   * Changed once: can get a value along resource's lifecycle.
+   * Once observed as non-zero - they never change.
+   */
+  /**
+   * Identifies the original of current resource. During the deduplication, resource could become
+   * 'original' (i.e. first copy of something) or 'duplicate' (second and later copies). Duplicate
+   * resources get ID of their original.
+   */
+  readonly originalResourceId: OptionalSignedResourceId;
+
+  /** Identifies the resource by its content: resources deduplication treats as the same get the
+   * same value. Empty until the server fills it in — at creation for resources without input
+   * fields, at deduplication for the rest. Original and all duplicates share the same CID */
+  readonly canonicalId: Uint8Array;
 
   readonly error: OptionalSignedResourceId;
 
@@ -88,6 +110,7 @@ export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
   const {
     id,
     originalResourceId,
+    canonicalId,
     kind,
     type,
     data,
@@ -100,6 +123,7 @@ export function extractBasicResourceData(rd: ResourceData): BasicResourceData {
   return {
     id,
     originalResourceId,
+    canonicalId,
     kind,
     type,
     data,

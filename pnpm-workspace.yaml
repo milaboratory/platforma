@@ -53,6 +53,7 @@ packages:
   - tools/pl-bootstrap
   - tools/eslint-config
   - tools/blocks-deps-updater
+  - tools/no-env
 
   - sdk/model
   - sdk/workflow-tengo
@@ -315,6 +316,7 @@ catalog:
   "@platforma-open/milaboratories.runenv-python-3": 1.16.1
 
   "shx": ^0.4.0
+  "cross-env": ^10.1.0
 
   # Test
 

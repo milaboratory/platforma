@@ -1,0 +1,16 @@
+// A workflow with a prepare step imports args.source in its body; its effect output lists that import.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+file := import("@platforma-sdk/workflow-tengo:file")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+wf.prepare(func(args) {
+	return { x: smart.createJsonResource(1) }
+})
+
+wf.body(func(args, effect) {
+	return {
+		outputs: { file0: file.exportFile(effect.importFile(args.source)), x: args.x },
+		exports: ex.collection({})
+	}
+})

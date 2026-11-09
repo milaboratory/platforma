@@ -110,6 +110,7 @@ export interface ProjectField {
     | "prodArgs"
     | "currentArgs"
     | "currentPrerunArgs" // Derived args for staging/prerun rendering (from prerunArgs() or args())
+    | "inputsValid" // Model API v2: errors found in currentArgs, none when the block may run, with the fingerprint of those args; present while currentArgs are
     | "prodChainCtx" // Pre-built production context chain node (accumulated prodCtx from all blocks above)
     | "prodCtx"
     | "prodUiCtx"
@@ -122,7 +123,10 @@ export interface ProjectField {
     | "stagingOutput"
     | "stagingCtxPrevious"
     | "stagingUiCtxPrevious"
-    | "stagingOutputPrevious";
+    | "stagingOutputPrevious"
+    // Root action context of the current render. The project holds it so it outlives the render.
+    | "prodActionContext"
+    | "stagingActionContext";
 }
 
 export const FieldsToDuplicate: Set<ProjectField["fieldName"]> = new Set([
@@ -132,6 +136,7 @@ export const FieldsToDuplicate: Set<ProjectField["fieldName"]> = new Set([
   "prodArgs",
   "currentArgs",
   "currentPrerunArgs",
+  "inputsValid",
   "prodCtx",
   "prodUiCtx",
   "prodOutput",
@@ -142,7 +147,7 @@ export function projectFieldName(blockId: string, fieldName: ProjectField["field
 }
 
 const projectFieldPattern =
-  /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodChainCtx|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious)$/;
+  /^(?<blockId>.*)-(?<fieldName>blockPack|blockSettings|blockStorage|inputsValid|prodArgs|currentArgs|currentPrerunArgs|prodChainCtx|prodCtx|prodUiCtx|prodOutput|prodCtxPrevious|prodUiCtxPrevious|prodOutputPrevious|stagingCtx|stagingUiCtx|stagingOutput|stagingCtxPrevious|stagingUiCtxPrevious|stagingOutputPrevious|prodActionContext|stagingActionContext)$/;
 
 export function parseProjectField(name: string): ProjectField | undefined {
   const match = name.match(projectFieldPattern);

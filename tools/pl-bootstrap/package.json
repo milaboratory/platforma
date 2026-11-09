@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/bootstrap",
-  "version": "5.3.51",
+  "version": "5.3.53",
   "description": "MiLaboratories Platforma Backend bootstrap code: configuration generators, service run wrappers and so on",
   "keywords": [],
   "license": "UNLICENSED",
@@ -22,7 +22,7 @@
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target node",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
   "dependencies": {
@@ -39,6 +39,7 @@
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "@types/readline-sync": "catalog:",
+    "shx": "catalog:",
     "typescript": "catalog:"
   },
   "pl-version": "3.5.0"

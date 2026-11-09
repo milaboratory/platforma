@@ -87,15 +87,22 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     return this.mint(contributions);
   }
 
-  isEmpty(handle: CollectionHandle): boolean {
+  isEmpty(handle: CollectionHandle, host: ColumnsCollectionDriverHost<A>): boolean {
     const state = this.requireState(handle);
     for (const c of state.contributions) {
       switch (c.type) {
         case "provider":
-          if (c.provider.getPObjectEntries().size > 0) return false;
+          if (
+            c.provider
+              .getPObjectEntries()
+              .keys()
+              .some((id) => isColumn(id, host))
+          ) {
+            return false;
+          }
           break;
         case "ids":
-          if (c.ids.length > 0) return false;
+          if (c.ids.some((id) => isColumn(id, host))) return false;
           break;
       }
     }
@@ -118,10 +125,11 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
   }
 
   /**
-   * Returns the deduplicated id list for `handle`. Dedup semantics are
-   * shared with sandbox-side `extractColumns` via {@link dedupColumns} —
-   * the same physical column reached via outputs vs. result_pool collapses
-   * to one (provider order decides which id is canonical).
+   * Returns the deduplicated id list for `handle`: only ids whose spec is
+   * readable and is a column spec. Dedup semantics are shared with sandbox-side
+   * `extractColumns` via {@link dedupColumns} — the same physical column
+   * reached via outputs vs. result_pool collapses to one (provider order
+   * decides which id is canonical).
    */
   getColumns(handle: CollectionHandle, host: ColumnsCollectionDriverHost<A>): ColumnUniversalId[] {
     const state = this.requireState(handle);
@@ -133,14 +141,20 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
           return [...c.ids];
       }
     });
-    return dedupColumns(
-      all,
-      (id) => id,
-      (id) => {
+    const columns = all
+      .map((id) => {
         const spec = host.resolveSpec(extractPObjectId(id));
-        return spec === undefined ? undefined : reconstructSpecFromId(spec, id);
-      },
-    );
+        if (spec === undefined || !isPColumnSpec(spec)) {
+          return undefined;
+        }
+        return { id, spec: reconstructSpecFromId(spec, id) };
+      })
+      .filter((column) => column !== undefined);
+    return dedupColumns(
+      columns,
+      ({ id }) => id,
+      ({ spec }) => spec,
+    ).map(({ id }) => id);
   }
 
   addSource(
@@ -263,7 +277,7 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     for (const id of ids) {
       const leaf = extractPObjectId(id);
       const spec = host.resolveSpec(leaf);
-      if (spec === undefined) continue;
+      if (spec === undefined || !isPColumnSpec(spec)) continue;
       specMap.set(id, reconstructSpecFromId(spec, id));
     }
 
@@ -492,4 +506,12 @@ function findById(
   needle: ColumnUniversalId,
 ): ColumnUniversalId | undefined {
   return specs.has(needle) ? needle : undefined;
+}
+
+function isColumn<A extends AccessorLike<A>>(
+  id: ColumnUniversalId,
+  host: ColumnsCollectionDriverHost<A>,
+): boolean {
+  const spec = host.resolveSpec(extractPObjectId(id));
+  return spec !== undefined && isPColumnSpec(spec);
 }
