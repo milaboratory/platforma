@@ -35,7 +35,6 @@ self.body(func(inputs) {
 	params := inputs.params
 	body := inputs.body
 
-	batchCount := params.batchCount
 	batchSize := params.batchSize
 	// This scope's share of batch.maxBatches. 0 / absent means uncapped.
 	scopeMaxBatches := params.scopeMaxBatches
@@ -132,15 +131,10 @@ self.body(func(inputs) {
 		}
 	}
 
-	// True row count for this scope.
-	//
-	// `params.batchCount` cannot be trusted: the orchestrator derives it from
-	// `recordsInGroup`, which returns the number of PARTITIONS (not rows) for
-	// JsonPartitioned / ParquetPartitioned inputs and partitions/2 for
-	// BinaryPartitioned — only inline PColumnData/Json yields an exact count.
-	// For a single-partition column of 500k rows the upper bound is 1, so both
-	// the orchestrator's batch count and its maxBatches decision are wrong by
-	// orders of magnitude. Recompute from the real count in both modes.
+	// True row count for this scope. The orchestrator cannot provide it: it sees
+	// partition counts for partitioned inputs and pre-filter counts for filtered
+	// ones. So the batch count and the cap are decided here, from the real
+	// post-filter rows, in both modes.
 	actualRecords := 0
 	if passContent {
 		actualRecords = len(dataLines)
@@ -164,13 +158,11 @@ self.body(func(inputs) {
 		}
 	}
 
-	// Enforce this scope's share of batch.maxBatches. The orchestrator's
-	// pre-estimate runs before any row count exists and silently does nothing
-	// whenever its upper bound undercounts, so this is where the cap actually
-	// binds. Inflation is deterministic — same rows produce the same count, the
-	// same size and the same boundaries — so per-batch dedup across reruns is
-	// preserved.
-	batchCount = (actualRecords + batchSize - 1) / batchSize
+	// Enforce this scope's share of batch.maxBatches. The orchestrator does not
+	// size batches, so this is the only place the cap binds. Inflation is
+	// deterministic — same rows produce the same count, the same size and the
+	// same boundaries — so per-batch dedup across reruns is preserved.
+	batchCount := (actualRecords + batchSize - 1) / batchSize
 	if scopeMaxBatches > 0 && batchCount > scopeMaxBatches && actualRecords > 0 {
 		batchSize = (actualRecords + scopeMaxBatches - 1) / scopeMaxBatches
 		batchCount = (actualRecords + batchSize - 1) / batchSize
