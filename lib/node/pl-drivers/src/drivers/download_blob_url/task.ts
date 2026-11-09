@@ -17,11 +17,7 @@ import {
   notEmpty,
 } from "@milaboratories/ts-helpers";
 import type { DownloadableBlobSnapshot } from "./snapshot";
-import {
-  UnknownStorageError,
-  WrongLocalFileUrl,
-  type ClientDownload,
-} from "../../clients/download";
+import type { ClientDownload } from "../../clients/download";
 import type { ArchiveFormat, FolderURL } from "@milaboratories/pl-model-common";
 import { newFolderURL } from "../urls/url";
 import { assertNever } from "@protobuf-ts/runtime";
@@ -233,8 +229,6 @@ export function nonRecoverableError(e: any) {
   return (
     e instanceof URLAborted ||
     isDownloadNetworkError400(e) ||
-    e instanceof UnknownStorageError ||
-    e instanceof WrongLocalFileUrl ||
     // file that we downloads from was moved or deleted.
     e?.code == "ENOENT" ||
     // A resource was deleted.

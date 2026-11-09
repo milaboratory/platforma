@@ -18,7 +18,6 @@ export async function withMl(
       defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
       devBlockUpdateRecheckInterval: 300,
       localSecret: MiddleLayer.generateLocalSecret(),
-      localProjections: [], // TODO must be different with local pl
       openFileDialogCallback: () => {
         throw new Error("Not implemented.");
       },

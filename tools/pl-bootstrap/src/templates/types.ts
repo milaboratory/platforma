@@ -11,10 +11,6 @@ export type plSettings = {
   debug: debugSettings;
 
   numCpu?: number;
-
-  hacks: {
-    libraryDownloadable: boolean;
-  };
 };
 export type plOptions = {
   localRoot?: string;
@@ -86,18 +82,10 @@ export type grpcOptions = Partial<grpcSettings>;
 
 export type tlsSettings = {
   enable: boolean;
-  clientAuthMode: tlsAuthMode;
   certFile: string;
   keyFile: string;
 };
 export type tlsOptions = Partial<tlsSettings>;
-
-export type tlsAuthMode =
-  | "NoAuth"
-  | "RequestAnyCert"
-  | "RequireAnyCert"
-  | "RequestValidCert"
-  | "RequireValidCert";
 
 export type storagesSettings = {
   primary: storageSettings;

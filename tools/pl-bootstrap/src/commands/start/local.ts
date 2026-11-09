@@ -20,7 +20,6 @@ export default function startLocalCommand(): Command {
     cmdOpts.AddressesOptions(),
     cmdOpts.PlBinaryOptions(),
     cmdOpts.PlSourcesOptions(),
-    cmdOpts.ConfigOptions(),
     cmdOpts.LicenseOptions(),
     cmdOpts.StorageOptions(),
     cmdOpts.StoragePrimaryURLOptions(),
@@ -66,7 +65,6 @@ export default function startLocalCommand(): Command {
       binaryPath: flags["pl-binary"],
 
       version: flags.version,
-      configPath: flags.config,
       workdir: flags["pl-workdir"],
 
       primaryURL: flags["storage-primary"],

@@ -292,7 +292,7 @@ async function genDriver(
 
   const driver = await DownloadDriver.init(
     logger,
-    createDownloadClient(logger, client, []),
+    createDownloadClient(logger, client),
     createLogsClient(client, logger),
     dir,
     rangesCacheDir,

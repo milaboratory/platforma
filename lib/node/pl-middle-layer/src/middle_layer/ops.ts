@@ -10,7 +10,6 @@ import type { UploadDriverOps } from "@milaboratories/pl-drivers";
 import type { LogsStreamDriverOps } from "@milaboratories/pl-drivers";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
-import type { LocalStorageProjection } from "@milaboratories/pl-drivers";
 import path from "node:path";
 import { PFrameDriverOpsDefaults, type PFrameDriverOps, type ParquetCacheOps } from "../pool";
 
@@ -24,20 +23,6 @@ export type DriverKitOpsPaths = {
 
   /** Common root where to put downloaded blobs with */
   readonly downloadBlobToURLPath: string;
-
-  /**
-   * List of pl storages that have projections in local file system.
-   *
-   * This option affect two drivers:
-   *
-   *   (1) LS driver generates "index" handles instead of "upload" for paths inside those locations
-   *
-   *   (2) Download driver directly serves content retrieval requests for blobs from listed storages,
-   *       and don't apply any caching for such blobs (i.e. preventing duplication of files for Downloaded
-   *       type handles, making OnDemand and Downloaded handles equivalent)
-   *
-   * */
-  readonly localProjections: LocalStorageProjection[];
 
   /**
    * List of virtual storages that will allow homogeneous access to local FSs through LS API.
