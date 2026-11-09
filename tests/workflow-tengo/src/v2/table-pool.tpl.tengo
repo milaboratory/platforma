@@ -11,7 +11,7 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 
 shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	e := exec.builder().
 		cpu(1).ram("50Mi").
 		software(shellSw).

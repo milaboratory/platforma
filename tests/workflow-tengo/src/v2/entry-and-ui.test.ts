@@ -43,7 +43,7 @@ tplTest.concurrent(
   },
 );
 
-const mixedEntries = /a v2 workflow's outputs are exactly result and exports/;
+const mixedEntries = /a v2 workflow's outputs are exactly result, exports and effect/;
 
 tplTest.concurrent.for([
   { template: "v2.guard-v2-first", args: {} },
@@ -51,7 +51,7 @@ tplTest.concurrent.for([
   { template: "v2.guard-prepare", args: { never: false } },
   { template: "v2.guard-prepare", args: { never: true } },
 ])(
-  "a template that also imports the V1 workflow entry fails: its outputs are not exactly result and exports ($template, $args)",
+  "a template that also imports the V1 workflow entry fails: its outputs are not exactly result, exports and effect ($template, $args)",
   async ({ template, args }, { helper, pl, expect, skip }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
