@@ -6,3 +6,5 @@ export * from "./selectors";
 export * from "./native_id";
 export * from "./discovered_column";
 export * from "./overridden";
+export * from "./column_value";
+export * from "./column_references";

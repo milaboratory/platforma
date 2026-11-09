@@ -1,5 +1,80 @@
 # @milaboratories/pl-drivers
 
+## 2.0.0
+
+### Major Changes
+
+- e40ccc1: Remove support for the Desktop App built-in backend. `@milaboratories/pl-deployments`, `@milaboratories/pl-config` and `@milaboratories/pl-healthcheck` are no longer published; `@milaboratories/pl-middle-layer` no longer re-exports `@milaboratories/pl-deployments`. The `localProjections` option is removed from the middle layer and driver kit options, `createDownloadClient` and `LsDriver.init` no longer take local projections, and `ClientDownload` no longer reads `storage://` URLs from the local disk: `LocalStorageProjection`, `parseLocalUrl`, `getFullPath`, `newLocalStorageIdsToRoot`, `WrongLocalFileUrl` and `UnknownStorageError` are gone. The LS driver always creates upload handles for local files and lists a data library with id `root` like any other. `pl-dev` keeps the default backend version in its own `pl-version`.
+
+## 1.16.43
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/computable@2.9.10
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/pl-tree@1.17.2
+  - @milaboratories/helpers@1.14.7
+
+## 1.16.42
+
+### Patch Changes
+
+- 5adb3c8: Close the middle layer and its projects without waiting for request deadlines when the backend stops answering. Before, `MiddleLayer.close()` and `closeProject()` waited for running requests up to their deadlines (60 s for a project write, 300 s for a tree read).
+
+  - `SynchronizedTreeState.terminate()` cancels the running tree read and discovery request.
+  - `Project` close cancels the running project refresh and its wait for the project lock.
+  - The upload driver's `terminate()` cancels the running upload status requests.
+  - `PlClient` transactions stop waiting for their lock when their `abortSignal` fires.
+  - `listUserResources` and `listSharedResourcesByType` take an `abortSignal`.
+  - The upload status request now applies its timeout on the REST wire protocol too.
+  - A cancelled request no longer leaves unhandled promise rejections or an uncaught "cannot resolve rejected" error behind. `PlTransaction` reads return their tracked promise, and the gRPC interceptor drops headers that arrive after a call ended.
+  - A transaction whose open fails with an abort or a deadline no longer logs a warning; the caller still gets the error.
+
+- 0692c00: `MiddleLayer.close()` now stops the logs drivers, so they no longer poll the backend after a disconnect.
+
+  - `LogsDriver` is async-disposable, so the driver kit stops it on close.
+  - Disposing `LogsStreamDriver` cancels its running log requests and its polling loop. A cancelled request ends quietly.
+  - `ClientLogs.lastLines` and `readText` honor `options.abort`, on gRPC and REST.
+  - `LogsStreamDriver` takes a `LogsStreamClient`: any object with the `lastLines` and `readText` methods of `ClientLogs`.
+  - pl-client exports `callAbortSignal`, which gives one call an abort signal of its own.
+
+- Updated dependencies [5adb3c8]
+- Updated dependencies [f08961f]
+- Updated dependencies [0692c00]
+  - @milaboratories/pl-client@3.21.1
+  - @milaboratories/pl-tree@1.17.1
+
+## 1.16.41
+
+### Patch Changes
+
+- Updated dependencies [f7d4c98]
+  - @milaboratories/pl-client@3.21.0
+  - @milaboratories/pl-tree@1.17.0
+
+## 1.16.40
+
+### Patch Changes
+
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-client@3.20.0
+  - @milaboratories/pl-tree@1.16.9
+
+## 1.16.39
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+  - @milaboratories/pl-client@3.19.4
+  - @milaboratories/pl-tree@1.16.8
+
 ## 1.16.38
 
 ### Patch Changes

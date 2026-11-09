@@ -1,5 +1,21 @@
 # @milaboratories/pl-flight-recorder
 
+## 0.3.10
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-model-common@1.55.1
+
+## 0.3.9
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+
 ## 0.3.8
 
 ### Patch Changes

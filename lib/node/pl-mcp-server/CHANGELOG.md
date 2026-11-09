@@ -1,5 +1,43 @@
 # @milaboratories/pl-mcp-server
 
+## 39.0.0
+
+### Patch Changes
+
+- Updated dependencies [e40ccc1]
+  - @milaboratories/pl-middle-layer@2.0.0
+
+## 38.0.0
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-middle-layer@1.77.0
+  - @platforma-sdk/model@1.88.8
+
+## 37.0.0
+
+### Minor Changes
+
+- f7a9989: Read the block action context tree. `Project.getBlockActionContext(blockId, mode)` returns the action context of a block render with its baggage, transitions, readings and child renders, read in one transaction. The MCP server exposes it as the `get_block_action_context` tool, cut to `maxDepth` levels and the latest `maxTransitions` per node, with `contextId` to read a subtree.
+
+### Patch Changes
+
+- Updated dependencies [f7a9989]
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-middle-layer@1.76.0
+
+## 36.0.0
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @platforma-sdk/model@1.88.0
+  - @milaboratories/pl-middle-layer@1.75.0
+
 ## 35.0.0
 
 ### Patch Changes

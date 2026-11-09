@@ -14,7 +14,7 @@ wf.prepare(func(args) {
 	}
 })
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	numbersRef := args.numbersHits[0].ref
 	scoreRef := args.scoreHits[0].ref
 

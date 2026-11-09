@@ -1,5 +1,39 @@
 # @platforma-sdk/tengo-builder
 
+## 4.1.20
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pl-model-backend@1.4.45
+  - @milaboratories/resolve-helper@1.1.3
+
+## 4.1.19
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.44
+
+## 4.1.18
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.43
+
+## 4.1.17
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.42
+
+## 4.1.16
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.41
+
 ## 4.1.15
 
 ### Patch Changes

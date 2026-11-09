@@ -1,5 +1,19 @@
 # @milaboratories/ptabler-expression-js
 
+## 1.2.48
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.15.32
+
+## 1.2.47
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.31
+
 ## 1.2.46
 
 ### Patch Changes

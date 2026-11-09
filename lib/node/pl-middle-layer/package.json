@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-middle-layer",
-  "version": "1.74.18",
+  "version": "2.0.0",
   "description": "Pl Middle Layer",
   "keywords": [],
   "license": "UNLICENSED",
@@ -26,7 +26,7 @@
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
   "dependencies": {
@@ -38,7 +38,6 @@
     "@milaboratories/pframes-rs-node": "catalog:",
     "@milaboratories/pl-client": "workspace:*",
     "@milaboratories/pl-crash-recorder": "workspace:*",
-    "@milaboratories/pl-deployments": "workspace:*",
     "@milaboratories/pl-drivers": "workspace:*",
     "@milaboratories/pl-errors": "workspace:*",
     "@milaboratories/pl-http": "workspace:*",
@@ -69,6 +68,7 @@
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "shx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },

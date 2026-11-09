@@ -10,6 +10,8 @@ export default {
 <script lang="ts" setup generic="M = unknown">
 import { computed, reactive, ref, unref, useTemplateRef, watch, watchPostEffect } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
+import { missingValueText, missingValueTooltip, pickedValueText } from "../../helpers/columnValue";
+import type { MissingValueLabel, MissingValueTooltip } from "../../helpers/columnValue";
 import { getErrorMessage } from "../../helpers/error.ts";
 import { tap } from "../../helpers/functions";
 import { deepEqual } from "../../helpers/objects";
@@ -71,9 +73,16 @@ const props = withDefaults(
     placeholder?: string;
     /**
      * Text shown in the field when `modelValue` has no matching option — e.g. its
-     * upstream block was deleted. Rendered italic in error color.
+     * upstream block was deleted. Rendered italic in error color. One text for every such value,
+     * or a function giving it per value. By default, the value a column value id picks, marked
+     * as not available, or "Value not available".
      */
-    missingValueLabel?: string;
+    missingValueLabel?: MissingValueLabel;
+    /**
+     * Explains a selected value missing from the options in a tooltip over it: one text for every
+     * such value, or a function giving the content per value.
+     */
+    missingValueTooltip?: MissingValueTooltip;
     /**
      * Enables a button to clear the selected value (default: false)
      */
@@ -119,7 +128,8 @@ const props = withDefaults(
     error: undefined,
     showErrorMessage: true,
     placeholder: "...",
-    missingValueLabel: "Value not available",
+    missingValueLabel: undefined,
+    missingValueTooltip: undefined,
     clearable: false,
     required: false,
     disabled: false,
@@ -210,14 +220,25 @@ const selectedOption = computed(() =>
   unref(optionsRef).find((o) => deepEqual(o.value, props.modelValue)),
 );
 
-const textValue = computed(() => selectedOption.value?.label);
+const textValue = computed(() => {
+  const option = selectedOption.value;
+  if (option !== undefined) return option.label;
+  // A picked column value is shown by its own label while the options load.
+  return isLoadingOptions.value ? pickedValueText(props.modelValue) : undefined;
+});
+
+const missingText = computed(() => missingValueText(props.modelValue, props.missingValueLabel));
+
+const missingHint = computed(() =>
+  isMissing.value ? missingValueTooltip(props.modelValue, props.missingValueTooltip) : undefined,
+);
 
 // Native tooltip with the full selected value and its link hint. The `.input-value` layer has
 // `pointer-events: none`, so the title must sit on the field wrapper, which is
-// what actually receives the hover.
+// what actually receives the hover. A missing value with a hint has its own tooltip.
 const fieldTitle = computed(() => {
   if (data.open) return undefined;
-  if (isMissing.value) return props.missingValueLabel;
+  if (isMissing.value) return missingHint.value === undefined ? missingText.value : undefined;
   if (textValue.value === undefined) return undefined;
   const hint = selectedOption.value?.linkHint;
   return hint ? `${textValue.value}\n${hint}` : String(textValue.value);
@@ -385,12 +406,25 @@ watchPostEffect(() => {
           />
 
           <div v-if="!data.open" class="input-value" data-testid="pl-dropdown-value">
+            <PlTooltip
+              v-if="isMissing && missingHint !== undefined"
+              :class="$style.hint"
+              position="top"
+              data-testid="pl-dropdown-value-hint"
+            >
+              <LongText class="input-value--missing" data-testid="pl-dropdown-value-missing">
+                {{ missingText }}
+              </LongText>
+              <template #tooltip>
+                <component :is="missingHint" />
+              </template>
+            </PlTooltip>
             <LongText
-              v-if="isMissing"
+              v-else-if="isMissing"
               class="input-value--missing"
               data-testid="pl-dropdown-value-missing"
             >
-              {{ missingValueLabel }}
+              {{ missingText }}
             </LongText>
             <PlColumnLabel v-else-if="textValue !== undefined" :option="selectedOption">
               <LongText>{{ textValue }}</LongText>
@@ -459,3 +493,10 @@ watchPostEffect(() => {
     </div>
   </div>
 </template>
+
+<style module>
+.hint {
+  min-width: 0;
+  pointer-events: auto;
+}
+</style>

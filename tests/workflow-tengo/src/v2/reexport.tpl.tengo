@@ -8,7 +8,7 @@ wf.prepare(func(args) {
 	return { hits: wf.query({ type: "Name", name: "pl7.app/test/y" }) }
 })
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	resolved := wf.resolve(args.y)
 	x := wf.resolve(args.x)
 	return {

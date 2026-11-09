@@ -1,5 +1,82 @@
 # @platforma-sdk/pl-cli
 
+## 0.10.21
+
+### Patch Changes
+
+- Updated dependencies [e40ccc1]
+  - @milaboratories/pl-middle-layer@2.0.0
+
+## 0.10.20
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/pl-middle-layer@1.77.0
+
+## 0.10.19
+
+### Patch Changes
+
+- Updated dependencies [5adb3c8]
+- Updated dependencies [f08961f]
+- Updated dependencies [0692c00]
+  - @milaboratories/pl-client@3.21.1
+  - @milaboratories/pl-middle-layer@1.76.5
+
+## 0.10.18
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.4
+
+## 0.10.17
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.3
+
+## 0.10.16
+
+### Patch Changes
+
+- Updated dependencies [f7d4c98]
+  - @milaboratories/pl-client@3.21.0
+  - @milaboratories/pl-middle-layer@1.76.2
+
+## 0.10.15
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.1
+
+## 0.10.14
+
+### Patch Changes
+
+- Updated dependencies [f7a9989]
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-middle-layer@1.76.0
+  - @milaboratories/pl-client@3.20.0
+
+## 0.10.13
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-middle-layer@1.75.0
+  - @milaboratories/pl-client@3.19.4
+
+## 0.10.12
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.19
+
 ## 0.10.11
 
 ### Patch Changes

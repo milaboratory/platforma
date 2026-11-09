@@ -27,6 +27,7 @@ import {
 } from "@milaboratories/pl-model-common";
 
 export * from "./columns";
+export * from "./column_value_options";
 
 // Types
 type PValue = string | number | null;

@@ -1,5 +1,98 @@
 # @platforma-sdk/test
 
+## 1.88.9
+
+### Patch Changes
+
+- e40ccc1: Remove support for the Desktop App built-in backend. `@milaboratories/pl-deployments`, `@milaboratories/pl-config` and `@milaboratories/pl-healthcheck` are no longer published; `@milaboratories/pl-middle-layer` no longer re-exports `@milaboratories/pl-deployments`. The `localProjections` option is removed from the middle layer and driver kit options, `createDownloadClient` and `LsDriver.init` no longer take local projections, and `ClientDownload` no longer reads `storage://` URLs from the local disk: `LocalStorageProjection`, `parseLocalUrl`, `getFullPath`, `newLocalStorageIdsToRoot`, `WrongLocalFileUrl` and `UnknownStorageError` are gone. The LS driver always creates upload handles for local files and lists a data library with id `root` like any other. `pl-dev` keeps the default backend version in its own `pl-version`.
+- Updated dependencies [e40ccc1]
+  - @milaboratories/pl-middle-layer@2.0.0
+
+## 1.88.8
+
+### Patch Changes
+
+- 3147752: Raise the default `awaitBlockDone` timeout to 10s.
+
+  The signal the helper builds from this value spans the whole wait loop, not a
+  single change notification, so the default has to fit a block that is fetched
+  before it runs. At 5s that was a race on a cold runner for callers that do not
+  pass a timeout of their own.
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/pl-middle-layer@1.77.0
+  - @milaboratories/computable@2.9.10
+  - @milaboratories/pl-tree@1.17.2
+  - @platforma-sdk/model@1.88.8
+
+## 1.88.7
+
+### Patch Changes
+
+- Updated dependencies [5adb3c8]
+- Updated dependencies [f08961f]
+- Updated dependencies [0692c00]
+  - @milaboratories/pl-client@3.21.1
+  - @milaboratories/pl-tree@1.17.1
+  - @milaboratories/pl-middle-layer@1.76.5
+
+## 1.88.6
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.4
+
+## 1.88.5
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.3
+
+## 1.88.4
+
+### Patch Changes
+
+- Updated dependencies [f7d4c98]
+  - @milaboratories/pl-client@3.21.0
+  - @milaboratories/pl-tree@1.17.0
+  - @milaboratories/pl-middle-layer@1.76.2
+
+## 1.88.2
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.1
+
+## 1.88.1
+
+### Patch Changes
+
+- Updated dependencies [f7a9989]
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-middle-layer@1.76.0
+  - @milaboratories/pl-client@3.20.0
+  - @milaboratories/pl-tree@1.16.9
+
+## 1.88.0
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @platforma-sdk/model@1.88.0
+  - @milaboratories/pl-middle-layer@1.75.0
+  - @milaboratories/pl-client@3.19.4
+  - @milaboratories/pl-tree@1.16.8
+
+## 1.87.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.19
+
 ## 1.87.0
 
 ### Patch Changes

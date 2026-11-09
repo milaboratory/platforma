@@ -4,7 +4,7 @@
     "version": "1.0.0",
     "description": "Simple static artifacts for tests (assets and software)",
     "scripts": {
-        "cleanup": "rm -rf ./dist/ && rm -f ./pkg-*.tgz",
+        "cleanup": "shx rm -rf ./dist/ && shx rm -f ./pkg-*.tgz",
         "test:check": "pnpm run cleanup && pl-pkg build --docker-no-autopush"
     },
     "block-software": {
@@ -41,6 +41,7 @@
     },
     "license": "UNLICENSED",
     "devDependencies": {
-        "@platforma-sdk/package-builder": "workspace:*"
+        "@platforma-sdk/package-builder": "workspace:*",
+        "shx": "catalog:"
     }
 }

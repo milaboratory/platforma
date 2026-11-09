@@ -1,5 +1,69 @@
 # @milaboratories/pl-client
 
+## 3.22.0
+
+### Minor Changes
+
+- efac5cc: `MiddleLayer.instanceStats` reads the backend's instance statistics context (allocated CPU, RAM, GPUs and GPU memory out of capacity, running and queued jobs) every 10s, only when the backend advertises `instanceStats:v1`. `PlClient.listSharedResourcesByType` lists the resources of a type shared with the user.
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/pl-http@1.2.6
+
+## 3.21.1
+
+### Patch Changes
+
+- 5adb3c8: Close the middle layer and its projects without waiting for request deadlines when the backend stops answering. Before, `MiddleLayer.close()` and `closeProject()` waited for running requests up to their deadlines (60 s for a project write, 300 s for a tree read).
+
+  - `SynchronizedTreeState.terminate()` cancels the running tree read and discovery request.
+  - `Project` close cancels the running project refresh and its wait for the project lock.
+  - The upload driver's `terminate()` cancels the running upload status requests.
+  - `PlClient` transactions stop waiting for their lock when their `abortSignal` fires.
+  - `listUserResources` and `listSharedResourcesByType` take an `abortSignal`.
+  - The upload status request now applies its timeout on the REST wire protocol too.
+  - A cancelled request no longer leaves unhandled promise rejections or an uncaught "cannot resolve rejected" error behind. `PlTransaction` reads return their tracked promise, and the gRPC interceptor drops headers that arrive after a call ended.
+  - A transaction whose open fails with an abort or a deadline no longer logs a warning; the caller still gets the error.
+
+- f08961f: Recover from a connection loss:
+
+  - Use a local gRPC subchannel pool per client. A client created after a connection loss no longer inherits the reconnect backoff of the old client's subchannel, so it connects as soon as the server is reachable.
+  - Cap the gRPC reconnect backoff at 10 s (default 120 s), so a long-lived client reconnects soon after the server is back.
+  - Return the connection status from "Disconnected" to "OK" when a gRPC call completes with OK or a REST request succeeds again. The status listener now reports each change between "OK" and "Disconnected".
+  - Check an UNAUTHENTICATED reply also while the status is "Disconnected", so `onAuthError` fires for a session that expired during an outage. "Unauthenticated" stays final for the client.
+
+- 0692c00: `MiddleLayer.close()` now stops the logs drivers, so they no longer poll the backend after a disconnect.
+
+  - `LogsDriver` is async-disposable, so the driver kit stops it on close.
+  - Disposing `LogsStreamDriver` cancels its running log requests and its polling loop. A cancelled request ends quietly.
+  - `ClientLogs.lastLines` and `readText` honor `options.abort`, on gRPC and REST.
+  - `LogsStreamDriver` takes a `LogsStreamClient`: any object with the `lastLines` and `readText` methods of `ClientLogs`.
+  - pl-client exports `callAbortSignal`, which gives one call an abort signal of its own.
+
+## 3.21.0
+
+### Minor Changes
+
+- f7d4c98: Expose the canonical id of a resource as `BasicResourceData.canonicalId`, and pin with a regression test that a committed pure resource reports a non-empty one.
+
+## 3.20.0
+
+### Minor Changes
+
+- 9089e12: Create the action context of a heavy block render. The middle layer creates an `ActionContext` resource with `name`, `block-pack`, `block-id` and a new random `run-id` in the transaction that creates the render, points the render's optional `actionContext` service field to it, and keeps it in the `prodActionContext`/`stagingActionContext` block fields, because the render is garbage collected once its outputs resolve. It does this only when the backend advertises `optionalFieldsInSchemas:v1`, so older backends are not affected. `PlTransaction.hasCapability` tells which capabilities the backend of a transaction advertises.
+
+## 3.19.4
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+
 ## 3.19.3
 
 ### Patch Changes

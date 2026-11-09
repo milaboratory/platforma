@@ -1,5 +1,13 @@
 # @milaboratories/ts-builder
 
+## 1.7.4
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/ts-configs@1.4.1
+
 ## 1.7.3
 
 ### Patch Changes

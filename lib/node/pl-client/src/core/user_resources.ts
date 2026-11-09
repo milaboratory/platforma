@@ -219,9 +219,9 @@ export class UserResources {
    */
   async listSharedResourcesByType(
     resourceTypeName: string,
-    opts: { login?: string } = {},
+    opts: { login?: string; abortSignal?: AbortSignal } = {},
   ): Promise<SignedResourceId[]> {
-    const responses = await this.ll.listUserResources({ login: opts.login });
+    const responses = await this.ll.listUserResources(opts);
 
     const result: SignedResourceId[] = [];
     for (const msg of responses) {
