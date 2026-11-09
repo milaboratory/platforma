@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/node-streams",
-  "version": "1.0.10",
+  "version": "1.0.11",
   "description": "",
   "files": [
     "./dist/**/*",

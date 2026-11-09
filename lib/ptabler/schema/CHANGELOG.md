@@ -1,5 +1,13 @@
 # @platforma-open/software-ptabler.types
 
+## 1.15.32
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-model-common@1.55.1
+
 ## 1.15.31
 
 ### Patch Changes

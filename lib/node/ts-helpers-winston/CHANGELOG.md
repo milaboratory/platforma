@@ -1,5 +1,13 @@
 # @milaboratories/ts-helpers-winston
 
+## 1.0.47
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/ts-helpers@1.9.1
+
 ## 1.0.46
 
 ### Patch Changes

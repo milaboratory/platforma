@@ -1,5 +1,13 @@
 # @platforma-sdk/package-builder
 
+## 3.16.4
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @platforma-sdk/package-builder-lib@1.4.4
+
 ## 3.16.3
 
 ### Patch Changes

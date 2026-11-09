@@ -1,5 +1,37 @@
 # @milaboratories/pl-middle-layer
 
+## 1.77.0
+
+### Minor Changes
+
+- efac5cc: `MiddleLayer.instanceStats` reads the backend's instance statistics context (allocated CPU, RAM, GPUs and GPU memory out of capacity, running and queued jobs) every 10s, only when the backend advertises `instanceStats:v1`. `PlClient.listSharedResourcesByType` lists the resources of a type shared with the user.
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/pl-model-middle-layer@1.36.0
+  - @milaboratories/columns-collection-driver@0.2.14
+  - @milaboratories/pl-crash-recorder@0.3.10
+  - @milaboratories/pf-spec-driver@1.5.14
+  - @milaboratories/pl-deployments@3.0.26
+  - @milaboratories/computable@2.9.10
+  - @milaboratories/pl-drivers@1.16.43
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pf-driver@1.9.14
+  - @milaboratories/pl-errors@1.4.60
+  - @platforma-sdk/workflow-tengo@6.22.1
+  - @milaboratories/pl-model-backend@1.4.45
+  - @platforma-sdk/block-tools@2.17.8
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/pl-http@1.2.6
+  - @milaboratories/pl-tree@1.17.2
+  - @milaboratories/helpers@1.14.7
+  - @platforma-sdk/model@1.88.8
+  - @milaboratories/resolve-helper@1.1.3
+
 ## 1.76.5
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @milaboratories/pf-spec
 
+## 1.0.14
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-model-middle-layer@1.36.0
+  - @milaboratories/pl-model-common@1.55.1
+
 ## 1.0.13
 
 ### Patch Changes

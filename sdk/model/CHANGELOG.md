@@ -1,5 +1,18 @@
 # @platforma-sdk/model
 
+## 1.88.8
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-model-middle-layer@1.36.0
+  - @milaboratories/pl-error-like@1.12.11
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/helpers@1.14.7
+  - @milaboratories/ptabler-expression-js@1.2.48
+
 ## 1.88.0
 
 ### Minor Changes

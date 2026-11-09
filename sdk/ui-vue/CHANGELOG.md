@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.88.8
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/columns-collection-driver@0.2.14
+  - @milaboratories/pf-spec-driver@1.5.14
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/uikit@2.17.2
+  - @platforma-sdk/model@1.88.8
+
 ## 1.88.3
 
 ### Patch Changes

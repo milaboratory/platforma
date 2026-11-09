@@ -1,5 +1,21 @@
 # @platforma-sdk/block-tools
 
+## 2.17.8
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-model-middle-layer@1.36.0
+  - @platforma-sdk/package-builder-lib@1.4.4
+  - @platforma-sdk/blocks-deps-updater@2.2.2
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pl-model-backend@1.4.45
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/pl-http@1.2.6
+  - @milaboratories/resolve-helper@1.1.3
+
 ## 2.17.7
 
 ### Patch Changes

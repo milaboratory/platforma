@@ -1,5 +1,15 @@
 # @milaboratories/pl-mcp-server
 
+## 38.0.0
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-middle-layer@1.77.0
+  - @platforma-sdk/model@1.88.8
+
 ## 37.0.0
 
 ### Minor Changes

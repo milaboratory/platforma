@@ -1,5 +1,13 @@
 # @platforma-sdk/bootstrap
 
+## 5.3.54
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-deployments@3.0.26
+
 ## 5.3.53
 
 ### Patch Changes
