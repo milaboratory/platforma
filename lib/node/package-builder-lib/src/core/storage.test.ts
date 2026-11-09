@@ -80,6 +80,8 @@ test("redactUrl drops userinfo, query and fragment", () => {
   ).toEqual("https://registry.example/v2/a.json");
   expect(redactUrl("gs://bucket/prefix")).toEqual("gs://bucket/prefix");
   expect(redactUrl("./local/registry")).toEqual("./local/registry");
+  // Unparseable (bad port), still must not leak the secret.
+  expect(redactUrl("s3es://key:ab/cd@host:bad/bucket?x=1")).toEqual("s3es://host:bad/bucket");
 });
 
 //

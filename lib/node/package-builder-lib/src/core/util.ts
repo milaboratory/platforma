@@ -16,11 +16,16 @@ export function assertNever(_a: never): never {
 
 /**
  * The address without userinfo, query and fragment, for logs and error messages: those parts carry
- * credentials (`user:password@`) and signed-URL tokens. Strings that are not URLs (local paths) and
- * URLs with none of those parts are returned unchanged.
+ * credentials (`user:password@`) and signed-URL tokens. Local paths and URLs with none of those
+ * parts are returned unchanged.
  */
 export function redactUrl(address: string | URL): string {
-  if (typeof address === "string" && !URL.canParse(address)) return address;
+  if (typeof address === "string" && !URL.canParse(address)) {
+    // Not parseable, but may still look like 'scheme://user:secret@host/...?token': strip the
+    // userinfo, query and fragment textually. Plain local paths pass through unchanged.
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(address)) return address;
+    return address.replace(/^([a-z][a-z0-9+.-]*:\/\/)[^?#]*@/i, "$1").replace(/[?#].*$/, "");
+  }
   const url = new URL(address);
   if (url.username === "" && url.password === "" && url.search === "" && url.hash === "")
     return address.toString();
