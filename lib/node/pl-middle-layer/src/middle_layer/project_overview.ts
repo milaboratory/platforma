@@ -227,10 +227,12 @@ export function projectOverview(
               ),
               subtitle: ifNotUndef(
                 cfg.subtitle,
+                // The subtitle names the inputs the block reads, so it renders with the
+                // result pool; the title stays args-only.
                 (subtitle) =>
                   computableFromCfgOrRF(
                     env,
-                    blockCtxArgsOnly,
+                    blockCtx,
                     subtitle,
                     codeWithInfo,
                     bpId,

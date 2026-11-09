@@ -559,6 +559,11 @@ export class BlockModelV3<
     });
   }
 
+  /**
+   * Sets a rendering function to derive block subtitle, shown below the title in the left
+   * blocks-overview panel. Unlike the title, it can read the result pool, so it can name the
+   * inputs the block reads (e.g. through `ctx.resultPool.getPColumnSpecByRef`).
+   */
   public subtitle(
     rf: RenderFunction<Args, Data, string>,
   ): BlockModelV3<Args, OutputsCfg, Data, Href, Plugins, Transfers, Params, PrerunArgs> {
