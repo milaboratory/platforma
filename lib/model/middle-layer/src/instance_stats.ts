@@ -15,7 +15,7 @@ export type InstanceStatsCapacity = {
 };
 
 /** Why the stats carry no numbers. */
-export type InstanceStatsAvailability =
+export type InstanceStatsStatus =
   /** Read from the instance statistics context. */
   | "read"
   /** The backend has no instance statistics context. */
@@ -25,7 +25,7 @@ export type InstanceStatsAvailability =
 
 /** One sample of the instance statistics. */
 export type InstanceStats = {
-  readonly availability: InstanceStatsAvailability;
+  readonly status: InstanceStatsStatus;
   /** In millicores. */
   readonly cpu?: InstanceStatsCapacity;
   /** In bytes. */
@@ -45,4 +45,4 @@ export type InstanceStats = {
 };
 
 /** Stats for a backend without the instance statistics context. */
-export const UnsupportedInstanceStats: InstanceStats = { availability: "unsupported" };
+export const UnsupportedInstanceStats: InstanceStats = { status: "unsupported" };

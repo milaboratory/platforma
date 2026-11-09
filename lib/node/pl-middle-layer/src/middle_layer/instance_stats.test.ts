@@ -18,7 +18,7 @@ describe("parseInstanceStats", () => {
         kv("reading/instance/source", "scheduler"),
       ]),
     ).toEqual({
-      availability: "read",
+      status: "read",
       cpu: { total: 24000, current: 18500 },
       ram: { total: 64e9, current: 41e9 },
       jobs: { running: 12, queued: 14 },
@@ -51,7 +51,7 @@ describe("parseInstanceStats", () => {
       kv("reading/instance/jobs", { running: "many" }),
       kv("reading/other/cpu", { current: 1 }),
     ]);
-    expect(stats).toEqual({ availability: "read" });
+    expect(stats).toEqual({ status: "read" });
   });
 });
 
@@ -64,7 +64,7 @@ test("the watch reads a sample where the capability is advertised, and nothing e
       await new Promise((r) => setTimeout(r, 100));
       stats = await watch.stats.getValue();
     }
-    expect(stats?.availability).toEqual(
+    expect(stats?.status).toEqual(
       pl.hasCapability(InstanceStatsCapability) ? "read" : "unsupported",
     );
   } finally {
@@ -113,13 +113,13 @@ async function firstSample(client: InstanceStatsClient) {
 describe("InstanceStatsWatch", () => {
   it("does nothing on a backend that does not advertise the capability", async () => {
     const client = fakeClient({ capabilities: [] });
-    expect(await firstSample(client)).toEqual({ availability: "unsupported" });
+    expect(await firstSample(client)).toEqual({ status: "unsupported" });
     expect(client.listed).toBe(0);
   });
 
   it("reports unsupported when the capability is advertised but the context is missing", async () => {
     const client = fakeClient({ capabilities: [InstanceStatsCapability] });
-    expect(await firstSample(client)).toEqual({ availability: "unsupported" });
+    expect(await firstSample(client)).toEqual({ status: "unsupported" });
     expect(client.listed).toBe(1);
   });
 
@@ -127,9 +127,9 @@ describe("InstanceStatsWatch", () => {
     const sample = [kv("reading/instance/jobs", { running: 1, queued: 2 })];
     expect(
       await firstSample(fakeClient({ capabilities: [InstanceStatsCapability], context: sample })),
-    ).toEqual({ availability: "read", jobs: { running: 1, queued: 2 } });
+    ).toEqual({ status: "read", jobs: { running: 1, queued: 2 } });
     expect(
       await firstSample(fakeClient({ capabilities: [InstanceStatsCapability], context: [] })),
-    ).toEqual({ availability: "read" });
+    ).toEqual({ status: "read" });
   });
 });

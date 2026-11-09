@@ -66,7 +66,7 @@ export function parseInstanceStats(kvs: readonly { key: string; value: string }[
 
   const source = readings.get("source");
   return {
-    availability: "read",
+    status: "read",
     cpu: asCapacity(readings.get("cpu")),
     ram: asCapacity(readings.get("ram")),
     gpu: asCapacity(readings.get("gpu")),
@@ -160,7 +160,7 @@ export class InstanceStatsWatch {
         // Retried on the next tick, with the context looked up again in case it was replaced.
         this.logger.warn(new Error("instance stats read failed", { cause: err }));
         context = undefined;
-        this.publish({ availability: "unreadable" });
+        this.publish({ status: "unreadable" });
       }
 
       try {
