@@ -1,5 +1,13 @@
 # @milaboratories/pl-config
 
+## 1.8.7
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/ts-helpers@1.9.1
+
 ## 1.8.6
 
 ### Patch Changes

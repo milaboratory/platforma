@@ -1,5 +1,14 @@
 # @milaboratories/uikit
 
+## 2.17.2
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/helpers@1.14.7
+  - @platforma-sdk/model@1.88.8
+
 ## 2.17.1
 
 ### Patch Changes

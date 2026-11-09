@@ -1,5 +1,17 @@
 # @milaboratories/pl-tree
 
+## 1.17.2
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/computable@2.9.10
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pl-errors@1.4.60
+
 ## 1.17.1
 
 ### Patch Changes

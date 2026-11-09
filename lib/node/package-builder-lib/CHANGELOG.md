@@ -1,5 +1,12 @@
 # @platforma-sdk/package-builder-lib
 
+## 1.4.4
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+  - @milaboratories/resolve-helper@1.1.3
+
 ## 1.4.3
 
 ### Patch Changes

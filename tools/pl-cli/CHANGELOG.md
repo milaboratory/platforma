@@ -1,5 +1,15 @@
 # @platforma-sdk/pl-cli
 
+## 0.10.20
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/pl-middle-layer@1.77.0
+
 ## 0.10.19
 
 ### Patch Changes

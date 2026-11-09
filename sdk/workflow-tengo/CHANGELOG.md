@@ -1,5 +1,14 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.22.1
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @platforma-open/milaboratories.software-ptabler@2.3.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.7
+
 ## 6.22.0
 
 ### Minor Changes

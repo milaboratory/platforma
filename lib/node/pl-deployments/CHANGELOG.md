@@ -1,5 +1,17 @@
 # @milaboratories/pl-local
 
+## 3.0.26
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-healthcheck@1.0.7
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pl-config@1.8.7
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/pl-http@1.2.6
+
 ## 3.0.25
 
 ### Patch Changes

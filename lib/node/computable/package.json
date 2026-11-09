@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/computable",
-  "version": "2.9.9",
+  "version": "2.9.10",
   "description": "Watcher / Computable Abstraction",
   "files": [
     "./dist/**/*",

@@ -1,5 +1,25 @@
 # @platforma-sdk/test
 
+## 1.88.8
+
+### Patch Changes
+
+- 3147752: Raise the default `awaitBlockDone` timeout to 10s.
+
+  The signal the helper builds from this value spans the whole wait loop, not a
+  single change notification, so the default has to fit a block that is fetched
+  before it runs. At 5s that was a race on a cold runner for callers that do not
+  pass a timeout of their own.
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/pl-middle-layer@1.77.0
+  - @milaboratories/computable@2.9.10
+  - @milaboratories/pl-tree@1.17.2
+  - @platforma-sdk/model@1.88.8
+
 ## 1.88.7
 
 ### Patch Changes

@@ -1,5 +1,14 @@
 # @milaboratories/computable
 
+## 2.9.10
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-error-like@1.12.11
+  - @milaboratories/ts-helpers@1.9.1
+
 ## 2.9.9
 
 ### Patch Changes

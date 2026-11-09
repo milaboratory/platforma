@@ -1,5 +1,13 @@
 # @milaboratories/ts-helpers
 
+## 1.9.1
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/helpers@1.14.7
+
 ## 1.9.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @milaboratories/ts-configs
 
+## 1.4.1
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+
 ## 1.4.0
 
 ### Minor Changes

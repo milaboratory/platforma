@@ -1,5 +1,19 @@
 # @milaboratories/pl-drivers
 
+## 1.16.43
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/computable@2.9.10
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/pl-tree@1.17.2
+  - @milaboratories/helpers@1.14.7
+
 ## 1.16.42
 
 ### Patch Changes

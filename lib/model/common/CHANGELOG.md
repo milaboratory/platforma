@@ -1,5 +1,14 @@
 # @milaboratories/pl-model-common
 
+## 1.55.1
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-error-like@1.12.11
+  - @milaboratories/helpers@1.14.7
+
 ## 1.55.0
 
 ### Minor Changes

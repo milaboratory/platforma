@@ -1,5 +1,14 @@
 # @milaboratories/pl-model-backend
 
+## 1.4.45
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+
 ## 1.4.44
 
 ### Patch Changes
