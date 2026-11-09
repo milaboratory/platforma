@@ -28,8 +28,6 @@ export const REQUIRED_BUILDS: Record<string, boolean> = {
 /** Install scripts in the SDK tree that only clean up, print, or build optional native code. */
 export const SKIPPED_BUILDS: Record<string, boolean> = {
   "@milaboratories/tengo-tester": false,
-  "cpu-features": false,
   esbuild: false,
   protobufjs: false,
-  ssh2: false,
 };
