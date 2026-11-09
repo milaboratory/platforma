@@ -61,7 +61,7 @@ export interface ActionContextNode {
 export const MaxDepth = 256;
 
 /** Prefix of the field names holding child contexts. */
-export const ChildFieldPrefix = "child/";
+const ChildFieldPrefix = "child/";
 
 /** Prefix of the transition keys: `transition/<namespace>/<resource>/<ns>`. */
 const TransitionPrefix = "transition/";
@@ -82,7 +82,7 @@ const CreatorNamespace = "core";
 export const ExecNamespace = "exec";
 
 /** The namespace a job's work folder reports under. */
-const WorkdirNamespace = "workdir";
+export const WorkdirNamespace = "workdir";
 
 /** One transition, as stored under `transition/<namespace>/<resource>/<ns>`. */
 export type Transition = {
@@ -96,9 +96,6 @@ export type Transition = {
   detail: string;
   reason: string;
 };
-
-/** A transition whatever its state, for display: a state this build does not know stays a string. */
-export type RawTransition = Omit<Transition, "state"> & { state: string };
 
 /** What one context reported. */
 export type ContextReports = {
@@ -259,7 +256,43 @@ export type ContextFold = {
   readonly job: boolean;
   /** The render's own latest transition, when it is a termination. */
   readonly terminated?: { readonly reason: string; readonly ns: string };
+  /** Time its commands spent in `Running`, see {@link computeOf}. */
+  readonly compute: ContextCompute;
 };
+
+/**
+ * Time the commands of a context spent in `Running`: each Running up to the reporter's next
+ * transition, ns. A command whose latest transition is Running is still open; it is counted up to
+ * whatever moment the reader picks.
+ */
+export type ContextCompute = {
+  readonly closedNs: bigint;
+  /** When each command still running started, ns. */
+  readonly openSinceNs: readonly string[];
+};
+
+function computeOf(all: readonly Transition[]): ContextCompute {
+  const byReporter = new Map<string, Transition[]>();
+  for (const t of all) {
+    if (t.namespace !== ExecNamespace) continue;
+    const list = byReporter.get(t.reporter);
+    if (list === undefined) byReporter.set(t.reporter, [t]);
+    else list.push(t);
+  }
+
+  let closedNs = 0n;
+  const openSinceNs: string[] = [];
+  for (const list of byReporter.values()) {
+    list.sort((a, b) => compareNs(a.ns, b.ns));
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].state !== blockStatusStatesRecord.Running) continue;
+      const next = list[i + 1];
+      if (next === undefined) openSinceNs.push(list[i].ns);
+      else closedNs += BigInt(next.ns) - BigInt(list[i].ns);
+    }
+  }
+  return { closedNs, openSinceNs };
+}
 
 function readReadings(node: ActionContextNode): Reading[] {
   const out: Reading[] = [];
@@ -286,6 +319,7 @@ export function foldContext(node: ActionContextNode): ContextFold {
       render?.state === blockStatusStatesRecord.Terminated
         ? { reason: render.reason, ns: render.ns }
         : undefined,
+    compute: computeOf(reports.all),
   };
 }
 
@@ -322,9 +356,25 @@ export type SubtreeFold = {
   readonly activeContexts: number;
   readonly firstNs?: string;
   readonly lastNs?: string;
-  /** The earliest render in the subtree whose latest report is a termination. */
-  readonly failure?: { readonly reason: string; readonly ns: string };
+  /**
+   * The earliest render in the subtree whose latest report is a termination, with the context ids
+   * from this context down to it.
+   */
+  readonly failure?: {
+    readonly reason: string;
+    readonly ns: string;
+    readonly path: readonly string[];
+  };
   readonly jobs: JobTally;
+  /**
+   * Time the subtree's commands spent in `Running`. Commands still running add their time up to a
+   * moment the reader picks: `open × now − openSinceSumNs`.
+   */
+  readonly compute: {
+    readonly closedNs: bigint;
+    readonly open: number;
+    readonly openSinceSumNs: bigint;
+  };
 };
 
 /** Files done of all, summed over the work folders' progress readings of one context. */
@@ -395,8 +445,13 @@ export function mergeSubtree(own: ContextFold, children: readonly SubtreeFold[])
   let activeContexts = own.folded.terminal ? 0 : 1;
   let firstNs = own.reports.firstNs;
   let lastNs = own.reports.lastNs;
-  let failure = own.terminated;
+  let failure: SubtreeFold["failure"] =
+    own.terminated === undefined ? undefined : { ...own.terminated, path: [own.id] };
   let failedBelow = false;
+  let closedNs = own.compute.closedNs;
+  let open = own.compute.openSinceNs.length;
+  let openSinceSumNs = 0n;
+  for (const since of own.compute.openSinceNs) openSinceSumNs += BigInt(since);
 
   const self = ownJobs(own);
   let { total, done, failed } = self;
@@ -410,8 +465,11 @@ export function mergeSubtree(own: ContextFold, children: readonly SubtreeFold[])
     if (child.failure !== undefined) {
       failedBelow = true;
       if (failure === undefined || compareNs(child.failure.ns, failure.ns) < 0)
-        failure = child.failure;
+        failure = { ...child.failure, path: [own.id, ...child.failure.path] };
     }
+    closedNs += child.compute.closedNs;
+    open += child.compute.open;
+    openSinceSumNs += child.compute.openSinceSumNs;
     total += child.jobs.total;
     done += child.jobs.done;
     failed += child.jobs.failed;
@@ -434,6 +492,7 @@ export function mergeSubtree(own: ContextFold, children: readonly SubtreeFold[])
     lastNs,
     failure,
     jobs: { total, done, failed, groups },
+    compute: { closedNs, open, openSinceSumNs },
   };
 }
 

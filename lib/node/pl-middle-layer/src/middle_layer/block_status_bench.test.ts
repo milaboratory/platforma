@@ -18,19 +18,35 @@ import {
 } from "@milaboratories/pl-client";
 import type { ExtendedResourceData, PlTreeEntry } from "@milaboratories/pl-tree";
 import { PlTreeState } from "@milaboratories/pl-tree";
-import type { BlockStatusSummary } from "@milaboratories/pl-model-middle-layer";
 import { expect, test } from "vitest";
 import { ActionContextType } from "../mutator/template/render_block";
-import { entrySummary } from "./block_status_tree";
+import { summarize } from "./block_status_fold";
+import { entrySummary, subtreeFold } from "./block_status_tree";
+import { blockStatusTree } from "./block_status_tree_fold";
 
 const JobsPerBranch = 1_000;
 const Sizes = [1_000, 10_000, 100_000];
 const Reports = 20;
 
-/** The computable under test: the summary of the run rooted at `entry`. */
-function summaryOf(entry: PlTreeEntry): Computable<BlockStatusSummary> {
+/** The summary of the run rooted at `entry`, as `watchBlockStatus` gives it. */
+function summaryOf(entry: PlTreeEntry): Computable<unknown> {
   return entrySummary(entry, true, (err) => console.error(err));
 }
+
+/** The run's tree with the root and its first branch open, as `watchBlockStatusTree` gives it. */
+function treeOf(entry: PlTreeEntry): Computable<unknown> {
+  return Computable.make(() => ({ fold: subtreeFold(entry, new Set(), (e) => console.error(e)) }), {
+    postprocessValue: ({ fold }) => {
+      if (fold === undefined) throw new Error("the root did not fold");
+      return blockStatusTree(fold, summarize(fold), new Set([fold.children[0].own.id]));
+    },
+  });
+}
+
+const Readers = [
+  { name: "summary", make: summaryOf },
+  { name: "tree", make: treeOf },
+];
 
 const t0 = 1_800_000_000_000_000_000n;
 
@@ -156,40 +172,41 @@ test.skipIf(process.env.BLOCK_STATUS_BENCH === undefined)(
   { timeout: 600_000 },
   async () => {
     const rows: string[] = [];
-    for (const size of Sizes) {
-      const { tree, resources, jobs, num } = buildRun(size);
-      const summary = summaryOf(tree.entry());
+    for (const reader of Readers)
+      for (const size of Sizes) {
+        const { tree, resources, jobs, num } = buildRun(size);
+        const summary = reader.make(tree.entry());
 
-      const first = await timed(() => summary.getValue());
-      expect(first.value.totalContexts).toBe(size);
+        const first = await timed(() => summary.getValue());
+        expect(first.value).toBeDefined();
 
-      const perReport: number[] = [];
-      for (let i = 0; i < Reports; i++) {
-        const job = jobs[(i * 7919) % jobs.length];
-        const data = resources.get(job)!;
-        const updated = {
-          ...data,
-          kv: [
-            ...data.kv,
-            transition("exec", num(job) + 2, t0 + 10_000_000_000n + BigInt(i), "Completed"),
-          ],
-        };
-        resources.set(job, updated);
-        tree.updateFromResourceData([updated]);
-        perReport.push((await timed(() => summary.getValue())).ms);
+        const perReport: number[] = [];
+        for (let i = 0; i < Reports; i++) {
+          const job = jobs[(i * 7919) % jobs.length];
+          const data = resources.get(job)!;
+          const updated = {
+            ...data,
+            kv: [
+              ...data.kv,
+              transition("exec", num(job) + 2, t0 + 10_000_000_000n + BigInt(i), "Completed"),
+            ],
+          };
+          resources.set(job, updated);
+          tree.updateFromResourceData([updated]);
+          perReport.push((await timed(() => summary.getValue())).ms);
+        }
+        perReport.sort((a, b) => a - b);
+        const median = perReport[Math.floor(perReport.length / 2)];
+        const worst = perReport[perReport.length - 1];
+        rows.push(
+          `| ${reader.name} | ${size.toLocaleString("en")} | ${fmt(first.ms)} | ${fmt(median)} | ${fmt(worst)} |`,
+        );
       }
-      perReport.sort((a, b) => a - b);
-      const median = perReport[Math.floor(perReport.length / 2)];
-      const worst = perReport[perReport.length - 1];
-      rows.push(
-        `| ${size.toLocaleString("en")} | ${fmt(first.ms)} | ${fmt(median)} | ${fmt(worst)} |`,
-      );
-    }
 
     console.log(
       [
-        "| Contexts | First read, ms | One report, median ms | One report, worst ms |",
-        "|---:|---:|---:|---:|",
+        "| Reader | Contexts | First read, ms | One report, median ms | One report, worst ms |",
+        "|---|---:|---:|---:|---:|",
         ...rows,
       ].join("\n"),
     );

@@ -1,18 +1,18 @@
 /**
- * The developer debug panel over a block run's action-context tree, as the middle layer hands it to
- * the Desktop App.
+ * A block run's action-context tree, node by node, as the middle layer hands it to the Desktop App.
  *
- * A run can make thousands of nodes, so the panel is never the whole tree: the root and its
- * top-level nodes are always present, and a node's children are present only while the developer
- * has expanded it. The full tree is available separately, as the export.
+ * A run can make thousands of contexts, so this is never the whole tree: the root and its top-level
+ * contexts are always present, and a context's children are present only while the reader has
+ * expanded it.
  *
- * Source: docs/text/work/projects/sdk/block-status/README_teo.md, "Developer debug panel".
+ * Source: docs/text/work/projects/sdk/block-status/README_teo.md, "Developer debug panel", which
+ * is what the Desktop App shows it in.
  */
 
-import type { BlockStatusState, BlockStatusSummary } from "./block_status";
+import type { BlockStatusSummary } from "./block_status";
 
 /** One transition: `transition/<namespace>/<reporter>/<ns>`. */
-export type BlockStatusPanelTransition = {
+export type BlockStatusTreeTransition = {
   /** `render`, `exec`, `workdir`, ... */
   readonly namespace: string;
   /** The resource that reported: the render itself, or a command or work dir it created. */
@@ -26,7 +26,7 @@ export type BlockStatusPanelTransition = {
 };
 
 /** One reading of a node: `reading/<namespace>/<resource>/<key>`. */
-export type BlockStatusPanelReading = {
+export type BlockStatusTreeReading = {
   /** The namespace the reading was written under, e.g. `workdir`. */
   readonly namespace: string;
   /** The resource that wrote it. */
@@ -37,7 +37,7 @@ export type BlockStatusPanelReading = {
 };
 
 /** One action context of the run. */
-export type BlockStatusPanelNode = {
+export type BlockStatusTreeNode = {
   /** Global id of the context, the handle for expanding it. */
   readonly contextId: string;
   /** The context's `name` baggage, falling back to the context id. */
@@ -49,8 +49,9 @@ export type BlockStatusPanelNode = {
   readonly kind: "render" | "command" | "workdir";
   /** The rest of the baggage: `block-pack`, `block-id`, `run-id`, ... */
   readonly baggage: Readonly<Record<string, string>>;
-  /** The state holding the node, undefined once it has ended or before it reports. */
-  readonly state?: BlockStatusState;
+  /** The state holding the node as its reporter wrote it, undefined once it has ended or before it
+   * reports. */
+  readonly state?: string;
   /** True for `Running` reported by a command executing on a machine. */
   readonly onMachine: boolean;
   /** When the node entered {@link state}, ms since the epoch. */
@@ -60,56 +61,56 @@ export type BlockStatusPanelNode = {
   /** The engine's reason, set when the render terminated. */
   readonly failure?: string;
   /** Every transition of every reporter, oldest first, whatever its state. */
-  readonly transitions: readonly BlockStatusPanelTransition[];
+  readonly transitions: readonly BlockStatusTreeTransition[];
   /** Readings, sorted by namespace, then resource, then key. */
-  readonly readings: readonly BlockStatusPanelReading[];
+  readonly readings: readonly BlockStatusTreeReading[];
   /** Direct children, whether or not they are present below. */
   readonly childCount: number;
   /** This node and everything under it. */
-  readonly subtreeNodes: number;
-  /** Live nodes in this subtree. */
-  readonly subtreeLiveNodes: number;
+  readonly subtreeContexts: number;
+  /** Contexts in this subtree that have not ended. */
+  readonly subtreeActiveContexts: number;
   /**
    * Time commands in this subtree spent running on a machine, ms. A command still running counts
    * up to the latest report anywhere in the run.
    */
   readonly subtreeComputeMs: number;
   /** The children, present only while the node is expanded. The root's are always present. */
-  readonly children?: readonly BlockStatusPanelNode[];
+  readonly children?: readonly BlockStatusTreeNode[];
 };
 
-/** A branch of the run, one of the root's top-level nodes with everything under it. */
-export type BlockStatusPanelBranch = {
+/** A branch of the run, one of the root's top-level contexts with everything under it. */
+export type BlockStatusTreeBranch = {
   readonly contextId: string;
   readonly name: string;
   readonly value: number;
 };
 
 /** The heaviest branches of the run, each list largest first. */
-export type BlockStatusPanelHeaviest = {
-  /** By {@link BlockStatusPanelNode.subtreeComputeMs}. */
-  readonly byCompute: readonly BlockStatusPanelBranch[];
-  /** By {@link BlockStatusPanelNode.subtreeNodes}. */
-  readonly byNodes: readonly BlockStatusPanelBranch[];
+export type BlockStatusTreeHeaviest = {
+  /** By {@link BlockStatusTreeNode.subtreeComputeMs}. */
+  readonly byCompute: readonly BlockStatusTreeBranch[];
+  /** By {@link BlockStatusTreeNode.subtreeContexts}. */
+  readonly byContexts: readonly BlockStatusTreeBranch[];
   /**
    * By bytes of output. Undefined while no reporter writes file sizes, which is distinct from a run
    * that wrote nothing.
    */
-  readonly byFileSize?: readonly BlockStatusPanelBranch[];
+  readonly byFileSize?: readonly BlockStatusTreeBranch[];
 };
 
 /** How many branches each heaviest list carries. */
-export const BlockStatusPanelHeaviestCount = 5;
+export const BlockStatusTreeHeaviestCount = 5;
 
-/** What the debug panel shows for one block run. */
-export type BlockStatusPanel = {
-  /** The same summary the status line is built from. */
+/** The tree of one block run. */
+export type BlockStatusTree = {
+  /** The run's summary, the same one `watchBlockStatus` gives. */
   readonly summary: BlockStatusSummary;
-  readonly heaviest: BlockStatusPanelHeaviest;
+  readonly heaviest: BlockStatusTreeHeaviest;
   /** The root context, undefined while the block has none. */
-  readonly root?: BlockStatusPanelNode;
+  readonly root?: BlockStatusTreeNode;
   /**
-   * The context ids from the root down to the render that terminated first, so the panel can open
+   * The context ids from the root down to the render that terminated first, so a reader can open
    * the tree to it. Undefined while no render has terminated.
    */
   readonly firstFailurePath?: readonly string[];

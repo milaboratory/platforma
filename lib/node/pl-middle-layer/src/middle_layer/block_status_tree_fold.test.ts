@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { foldBlockStatusPanel } from "./block_status_panel";
+import { foldBlockStatusTree } from "./block_status_tree_fold";
 import type { ContextFixture } from "./block_status_test_utils";
 import { context, ms, renderCompleted } from "./block_status_test_utils";
 
@@ -23,9 +23,9 @@ function sample(id: string, from: number, to?: number): ContextFixture {
   };
 }
 
-describe("foldBlockStatusPanel", () => {
+describe("foldBlockStatusTree", () => {
   it("opens the root to its top-level nodes and leaves their subtrees collapsed", () => {
-    const panel = foldBlockStatusPanel(
+    const tree = foldBlockStatusTree(
       context({
         id: "root",
         data: { name: "my block", "run-id": "run-1" },
@@ -34,15 +34,15 @@ describe("foldBlockStatusPanel", () => {
       none,
     );
 
-    expect(panel.root?.name).toBe("my block");
-    expect(panel.root?.baggage).toEqual({ "run-id": "run-1" });
-    expect(panel.root?.children?.map((c) => c.contextId)).toEqual(["a", "b"]);
-    expect(panel.root?.children?.[0]).toMatchObject({ childCount: 1, subtreeNodes: 2 });
-    expect(panel.root?.children?.[0].children).toBeUndefined();
+    expect(tree.root?.name).toBe("my block");
+    expect(tree.root?.baggage).toEqual({ "run-id": "run-1" });
+    expect(tree.root?.children?.map((c) => c.contextId)).toEqual(["a", "b"]);
+    expect(tree.root?.children?.[0]).toMatchObject({ childCount: 1, subtreeContexts: 2 });
+    expect(tree.root?.children?.[0].children).toBeUndefined();
   });
 
   it("shows the children of an expanded node in place", () => {
-    const panel = foldBlockStatusPanel(
+    const tree = foldBlockStatusTree(
       context({
         id: "root",
         children: [{ id: "a", children: [{ id: "a1", data: { name: "deep" } }] }],
@@ -50,11 +50,11 @@ describe("foldBlockStatusPanel", () => {
       new Set(["a"]),
     );
 
-    expect(panel.root?.children?.[0].children?.map((c) => c.name)).toEqual(["deep"]);
+    expect(tree.root?.children?.[0].children?.map((c) => c.name)).toEqual(["deep"]);
   });
 
-  it("describes a node: kind, state with its entry time, and the last transition whatever its state", () => {
-    const panel = foldBlockStatusPanel(
+  it("describes a node: kind, the state holding it as its reporter wrote it, and every transition", () => {
+    const tree = foldBlockStatusTree(
       context({
         id: "root",
         children: [
@@ -76,10 +76,10 @@ describe("foldBlockStatusPanel", () => {
       none,
     );
 
-    expect(panel.root?.children?.[0]).toMatchObject({
+    expect(tree.root?.children?.[0]).toMatchObject({
       kind: "command",
-      state: "WaitingForMachine",
-      enteredAt: ms(0),
+      state: "SomeFutureState",
+      enteredAt: ms(5),
       transitions: [
         { namespace: "exec", reporter: "cmd", state: "WaitingForMachine", at: ms(0) },
         { namespace: "exec", reporter: "cmd", state: "SomeFutureState", detail: "x", at: ms(5) },
@@ -88,7 +88,7 @@ describe("foldBlockStatusPanel", () => {
   });
 
   it("lists readings, grouped by namespace and then by the resource that wrote them", () => {
-    const panel = foldBlockStatusPanel(
+    const tree = foldBlockStatusTree(
       context({
         id: "root",
         kv: {
@@ -101,7 +101,7 @@ describe("foldBlockStatusPanel", () => {
       none,
     );
 
-    expect(panel.root?.readings.map((a) => `${a.namespace}/${a.resource}/${a.key}`)).toEqual([
+    expect(tree.root?.readings.map((a) => `${a.namespace}/${a.resource}/${a.key}`)).toEqual([
       "exec/cmd-1/peak-ram",
       "workdir/wd-1/progress",
       "workdir/wd-2/progress",
@@ -109,7 +109,7 @@ describe("foldBlockStatusPanel", () => {
   });
 
   it("reports the termination reason of a failed render", () => {
-    const panel = foldBlockStatusPanel(
+    const tree = foldBlockStatusTree(
       context({
         id: "root",
         transitions: [
@@ -119,11 +119,11 @@ describe("foldBlockStatusPanel", () => {
       none,
     );
 
-    expect(panel.root).toMatchObject({ ended: true, failure: "OOM killed" });
+    expect(tree.root).toMatchObject({ ended: true, failure: "OOM killed" });
   });
 
   it("counts compute per subtree, a running command up to the run's latest report", () => {
-    const panel = foldBlockStatusPanel(
+    const tree = foldBlockStatusTree(
       context({
         id: "root",
         children: [sample("done", 0, 60_000), sample("running", 30_000)],
@@ -133,15 +133,15 @@ describe("foldBlockStatusPanel", () => {
       none,
     );
 
-    const [done, running] = panel.root!.children!;
+    const [done, running] = tree.root!.children!;
     expect(done.subtreeComputeMs).toBe(60_000);
     expect(running.subtreeComputeMs).toBe(60_000);
-    expect(panel.root?.subtreeComputeMs).toBe(120_000);
-    expect(panel.root).toMatchObject({ subtreeNodes: 3, subtreeLiveNodes: 2 });
+    expect(tree.root?.subtreeComputeMs).toBe(120_000);
+    expect(tree.root).toMatchObject({ subtreeContexts: 3, subtreeActiveContexts: 2 });
   });
 
-  it("ranks the top-level branches by compute and by node count, largest first", () => {
-    const panel = foldBlockStatusPanel(
+  it("ranks the top-level branches by compute and by context count, largest first", () => {
+    const tree = foldBlockStatusTree(
       context({
         id: "root",
         children: [
@@ -153,19 +153,22 @@ describe("foldBlockStatusPanel", () => {
       none,
     );
 
-    expect(panel.heaviest.byCompute.map((b) => [b.name, b.value])).toEqual([
+    expect(tree.heaviest.byCompute.map((b) => [b.name, b.value])).toEqual([
       ["sample big", 50_000],
       ["sample mid", 10_000],
       ["sample small", 1_000],
     ]);
-    expect(panel.heaviest.byNodes[0]).toMatchObject({ contextId: "big", value: 3 });
-    expect(panel.heaviest.byFileSize).toBeUndefined();
+    expect(tree.heaviest.byContexts[0]).toMatchObject({ contextId: "big", value: 3 });
+    expect(tree.heaviest.byFileSize).toBeUndefined();
   });
 
-  it("carries the same summary the status line is built from", () => {
-    const panel = foldBlockStatusPanel(context({ id: "root", children: [sample("a", 0)] }), none);
+  it("carries the run's summary", () => {
+    const tree = foldBlockStatusTree(context({ id: "root", children: [sample("a", 0)] }), none);
 
-    expect(panel.summary.jobs).toMatchObject({ total: 1, running: 1 });
+    expect(tree.summary.jobs).toMatchObject({
+      total: 1,
+      byState: [{ namespace: "exec", state: "Running", count: 1 }],
+    });
   });
 });
 
@@ -175,7 +178,7 @@ describe("firstFailurePath", () => {
       id,
       transitions: [{ namespace: "render", atMs, state: "Terminated", reason: "boom" }],
     });
-    const panel = foldBlockStatusPanel(
+    const tree = foldBlockStatusTree(
       context({
         id: "root",
         children: [
@@ -186,10 +189,10 @@ describe("firstFailurePath", () => {
       none,
     );
 
-    expect(panel.firstFailurePath).toEqual(["root", "b", "b1", "early"]);
+    expect(tree.firstFailurePath).toEqual(["root", "b", "b1", "early"]);
   });
 
   it("is undefined while nothing has terminated", () => {
-    expect(foldBlockStatusPanel(context({ id: "root" }), none).firstFailurePath).toBeUndefined();
+    expect(foldBlockStatusTree(context({ id: "root" }), none).firstFailurePath).toBeUndefined();
   });
 });

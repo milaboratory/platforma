@@ -1,4 +1,4 @@
-/** Fixtures for the block status fold and panel tests: action contexts with the backend's key layout. */
+/** Fixtures for the block status fold and tree tests: action contexts with the backend's key layout. */
 import type { BlockStatusState } from "@milaboratories/pl-model-middle-layer";
 import type { ActionContextNode } from "./block_status_fold";
 

@@ -47,7 +47,7 @@ import type { BlockActionContextMode, BlockActionContextNode } from "./block_act
 import { readBlockActionContextTree } from "./block_action_context";
 import { getBlockPackInfo } from "./util";
 import { BlockStatusWatch } from "./block_status_tree";
-import type { BlockStatusPanel, BlockStatusSummary } from "@milaboratories/pl-model-middle-layer";
+import type { BlockStatusSummary, BlockStatusTree } from "@milaboratories/pl-model-middle-layer";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectId, ProjectStructure } from "../model/project_model";
 import {
@@ -864,21 +864,22 @@ export class Project {
   }
 
   /**
-   * Starts watching the debug panel of a block render. Takes the same hold as
-   * {@link watchBlockStatus}, released by {@link unwatchBlockStatus}, and shares its tree.
+   * Starts watching the action-context tree of a block render, context by context. Takes the same
+   * hold as {@link watchBlockStatus}, released by {@link unwatchBlockStatus}, and shares its
+   * synchronized tree.
    */
-  public async watchBlockStatusPanel(
+  public async watchBlockStatusTree(
     blockId: string,
     mode: BlockActionContextMode = "prod",
-  ): Promise<Computable<BlockStatusPanel>> {
-    return (await this.retainBlockStatusWatch(blockId, mode)).panel;
+  ): Promise<Computable<BlockStatusTree>> {
+    return (await this.retainBlockStatusWatch(blockId, mode)).tree;
   }
 
   /**
-   * Sets which nodes of the debug panel show their children. A no-op while nobody watches the
-   * block: the expansion lives with the watch.
+   * Sets which contexts of {@link watchBlockStatusTree} show their children. A no-op while nobody
+   * watches the block: the expansion lives with the watch.
    */
-  public async setBlockStatusPanelExpanded(
+  public async setBlockStatusTreeExpanded(
     blockId: string,
     contextIds: readonly string[],
     mode: BlockActionContextMode = "prod",
@@ -937,7 +938,7 @@ export class Project {
       watch = await pending;
     } catch {
       // The start failed; its own catch handler drops the entry. Nothing to release, and a
-      // panel-close handler must not see that failure again.
+      // caller letting go must not see that failure again.
       return;
     }
 
