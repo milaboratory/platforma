@@ -1,6 +1,4 @@
 ---
-"@milaboratories/milaboratories.pool-explorer.model": minor
-"@milaboratories/milaboratories.pool-explorer.ui": minor
 "@milaboratories/milaboratories.pool-explorer": minor
 ---
 
