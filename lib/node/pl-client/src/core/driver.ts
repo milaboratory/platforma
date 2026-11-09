@@ -29,6 +29,12 @@ export function addRTypeToMetadata(rType: ResourceType, options?: RpcOptions) {
   return options;
 }
 
+/** Returns a signal of its own for one call: protobuf-ts never removes the abort listener it adds to a signal. */
+export function callAbortSignal(signal?: AbortSignal): AbortSignal {
+  signal?.throwIfAborted();
+  return AbortSignal.any(signal === undefined ? [] : [signal]);
+}
+
 /**
  * addRTypeToHeaders adds a header that helps to route request to the right resource and controller.
  * Without this header, API router on server side cannot route request to proper controller in internal

@@ -12,7 +12,7 @@ render := import("@platforma-sdk/workflow-tengo:render")
 
 decodeTpl := assets.importTemplate(":v2.decode")
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	items := {}
 	choices := {}
 	for label, call in args.calls {

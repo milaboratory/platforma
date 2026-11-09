@@ -5,7 +5,7 @@ smart := import("@platforma-sdk/workflow-tengo:smart")
 
 spec := { kind: "PColumn", name: "pl7.app/test/x", valueType: "Int", axesSpec: [] }
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	exports := undefined
 	if args.kind == "folderItem" {
 		exports = ex.folder({ col: { spec: spec, data: smart.createJsonResource(1) } })

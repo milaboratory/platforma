@@ -5,6 +5,7 @@ import type { Dispatcher } from "undici";
 import type { WireClientProvider, WireClientProviderFactory } from "@milaboratories/pl-client";
 import {
   addRTypeToMetadata,
+  callAbortSignal,
   createRTypeRoutingHeader,
   RestAPI,
   parseSignedResourceId,
@@ -51,6 +52,7 @@ export class ClientLogs {
   ): Promise<StreamingAPI_Response> {
     const { globalId: rIdGlobal, signature: rIdSig } = parseSignedResourceId(rId);
     const client = this.wire.get();
+    const abort = callAbortSignal(options?.abort);
     if (client instanceof StreamingClient) {
       return (
         await client.lastLines(
@@ -61,7 +63,7 @@ export class ClientLogs {
             offset: offsetBytes,
             search: searchStr,
           },
-          addRTypeToMetadata(rType, options),
+          addRTypeToMetadata(rType, { ...options, abort }),
         )
       ).response;
     }
@@ -77,6 +79,7 @@ export class ClientLogs {
           searchRe: "",
         },
         headers: { ...createRTypeRoutingHeader(rType) },
+        signal: abort,
       })
     ).data!;
 
@@ -99,6 +102,7 @@ export class ClientLogs {
   ): Promise<StreamingAPI_Response> {
     const { globalId: rIdGlobal2, signature: rIdSig2 } = parseSignedResourceId(rId);
     const client = this.wire.get();
+    const abort = callAbortSignal(options?.abort);
 
     if (client instanceof StreamingClient) {
       return (
@@ -110,7 +114,7 @@ export class ClientLogs {
             offset: offsetBytes,
             search: searchStr,
           },
-          addRTypeToMetadata(rType, options),
+          addRTypeToMetadata(rType, { ...options, abort }),
         )
       ).response;
     }
@@ -126,6 +130,7 @@ export class ClientLogs {
           searchRe: "",
         },
         headers: { ...createRTypeRoutingHeader(rType) },
+        signal: abort,
       })
     ).data!;
 

@@ -197,6 +197,65 @@ test("should get log smart object and get log lines from that", async () => {
   });
 });
 
+test("dispose stops polling the log stream", async () => {
+  await TestHelpers.withTempRoot(async (client) => {
+    const logger = new ConsoleLoggerAdapter();
+    const loggerError = vi.spyOn(logger, "error");
+
+    const tree = await SynchronizedTreeState.init(client, client.clientRoot, {
+      stopPollingDelay: 10,
+      pollingInterval: 10,
+    });
+    const logsClient = createLogsClient(client, logger);
+    const lastLines = vi.spyOn(logsClient, "lastLines");
+    const logsStream = new LogsStreamDriver(logger, logsClient, {
+      nConcurrentGetLogs: 10,
+      pollingInterval: 10,
+      stopPollingDelay: 10_000,
+    });
+    const dir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-logs-4-"));
+    const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-logs-ranges"));
+    const download = await DownloadDriver.init(
+      logger,
+      createDownloadClient(logger, client, []),
+      createLogsClient(client, logger),
+      dir,
+      rangesCacheDir,
+      new HmacSha256Signer(HmacSha256Signer.generateSecret()),
+      downloadDriverOps,
+    );
+    const logs = new LogsDriver(logger, logsStream, download);
+
+    const lastLogs = Computable.make((ctx) => {
+      const streamManager = ctx.accessor(tree.entry()).node().traverse("result")?.persist();
+      if (streamManager === undefined) {
+        ctx.markUnstable("no stream manager");
+        return;
+      }
+
+      return logs.getLastLogs(streamManager, 100, ctx);
+    });
+
+    await createRunCommandWithStdoutStream(client, "sh", [
+      "-c",
+      "for line in $(seq 1 100); do echo $line; sleep 0.1; done",
+    ]);
+
+    while (!(await lastLogs.getValue())) await lastLogs.awaitChange();
+
+    await logs[Symbol.asyncDispose]();
+    const callsAtDispose = lastLines.mock.calls.length;
+    expect(lastLines.mock.calls.every(([, , , , options]) => options?.abort?.aborted)).toBe(true);
+
+    await lastLogs.getValue();
+    await scheduler.wait(300);
+    expect(lastLines.mock.calls.length).toBe(callsAtDispose);
+    expect(loggerError).not.toHaveBeenCalled();
+
+    await tree.terminate();
+  });
+});
+
 async function createRunCommandWithStdoutStream(
   client: PlClient,
   cmd: string,
