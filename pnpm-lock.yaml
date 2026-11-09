@@ -440,9 +440,6 @@ catalogs:
     undici:
       specifier: ~7.30.1
       version: 7.30.1
-    upath:
-      specifier: ^2.0.1
-      version: 2.0.1
     utility-types:
       specifier: ^3.11.0
       version: 3.11.0
@@ -3175,40 +3172,6 @@ importers:
         specifier: 'catalog:'
         version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
-  lib/node/pl-config:
-    dependencies:
-      '@milaboratories/ts-helpers':
-        specifier: workspace:*
-        version: link:../ts-helpers
-      upath:
-        specifier: 'catalog:'
-        version: 2.0.1
-    devDependencies:
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../../../tools/build-configs
-      '@milaboratories/ts-builder':
-        specifier: workspace:*
-        version: link:../../../tools/ts-builder
-      '@milaboratories/ts-configs':
-        specifier: workspace:*
-        version: link:../../../tools/ts-configs
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.19.2
-      '@vitest/coverage-istanbul':
-        specifier: 'catalog:'
-        version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
-      shx:
-        specifier: 'catalog:'
-        version: 0.4.0
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
-
   lib/node/pl-crash-recorder:
     dependencies:
       '@milaboratories/pl-model-common':
@@ -3233,61 +3196,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
-
-  lib/node/pl-deployments:
-    dependencies:
-      '@milaboratories/pl-config':
-        specifier: workspace:*
-        version: link:../pl-config
-      '@milaboratories/pl-healthcheck':
-        specifier: workspace:*
-        version: link:../pl-healthcheck
-      '@milaboratories/pl-http':
-        specifier: workspace:*
-        version: link:../pl-http
-      '@milaboratories/pl-model-common':
-        specifier: workspace:*
-        version: link:../../model/common
-      '@milaboratories/ts-helpers':
-        specifier: workspace:*
-        version: link:../ts-helpers
-      tar:
-        specifier: 'catalog:'
-        version: 7.5.22
-      undici:
-        specifier: 'catalog:'
-        version: 7.30.1
-      upath:
-        specifier: 'catalog:'
-        version: 2.0.1
-    devDependencies:
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../../../tools/build-configs
-      '@milaboratories/ts-builder':
-        specifier: workspace:*
-        version: link:../../../tools/ts-builder
-      '@milaboratories/ts-configs':
-        specifier: workspace:*
-        version: link:../../../tools/ts-configs
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.19.2
-      '@vitest/coverage-istanbul':
-        specifier: 'catalog:'
-        version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
-      shx:
-        specifier: 'catalog:'
-        version: 0.4.0
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      utility-types:
-        specifier: 'catalog:'
-        version: 3.11.0
       vitest:
         specifier: 'catalog:'
         version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
@@ -3417,52 +3325,6 @@ importers:
         specifier: 'catalog:'
         version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
-  lib/node/pl-healthcheck:
-    dependencies:
-      '@grpc/grpc-js':
-        specifier: 'catalog:'
-        version: 1.14.6
-      '@milaboratories/ts-helpers':
-        specifier: workspace:*
-        version: link:../ts-helpers
-      '@protobuf-ts/grpc-transport':
-        specifier: 'catalog:'
-        version: 2.11.1(@grpc/grpc-js@1.14.6)
-      '@protobuf-ts/runtime':
-        specifier: 'catalog:'
-        version: 2.11.1
-      '@protobuf-ts/runtime-rpc':
-        specifier: 'catalog:'
-        version: 2.11.1
-    devDependencies:
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../../../tools/build-configs
-      '@milaboratories/ts-builder':
-        specifier: workspace:*
-        version: link:../../../tools/ts-builder
-      '@milaboratories/ts-configs':
-        specifier: workspace:*
-        version: link:../../../tools/ts-configs
-      '@protobuf-ts/plugin':
-        specifier: 'catalog:'
-        version: 2.11.1(supports-color@10.2.2)
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.19.2
-      '@vitest/coverage-istanbul':
-        specifier: 'catalog:'
-        version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
-      shx:
-        specifier: 'catalog:'
-        version: 0.4.0
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
-
   lib/node/pl-http:
     dependencies:
       undici:
@@ -3569,9 +3431,6 @@ importers:
       '@milaboratories/pl-crash-recorder':
         specifier: workspace:*
         version: link:../pl-crash-recorder
-      '@milaboratories/pl-deployments':
-        specifier: workspace:*
-        version: link:../pl-deployments
       '@milaboratories/pl-drivers':
         specifier: workspace:*
         version: link:../pl-drivers
@@ -4365,46 +4224,6 @@ importers:
         specifier: 'catalog:'
         version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
 
-  tests/config-local-ml-integration:
-    dependencies:
-      '@milaboratories/pl-client':
-        specifier: workspace:*
-        version: link:../../lib/node/pl-client
-      '@milaboratories/pl-config':
-        specifier: workspace:*
-        version: link:../../lib/node/pl-config
-      '@milaboratories/pl-deployments':
-        specifier: workspace:*
-        version: link:../../lib/node/pl-deployments
-      '@milaboratories/pl-middle-layer':
-        specifier: workspace:*
-        version: link:../../lib/node/pl-middle-layer
-      '@milaboratories/ts-helpers':
-        specifier: workspace:*
-        version: link:../../lib/node/ts-helpers
-    devDependencies:
-      '@milaboratories/build-configs':
-        specifier: workspace:*
-        version: link:../../tools/build-configs
-      '@milaboratories/ts-builder':
-        specifier: workspace:*
-        version: link:../../tools/ts-builder
-      '@milaboratories/ts-configs':
-        specifier: workspace:*
-        version: link:../../tools/ts-configs
-      '@types/node':
-        specifier: 'catalog:'
-        version: 24.19.2
-      '@vitest/coverage-istanbul':
-        specifier: 'catalog:'
-        version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
-      typescript:
-        specifier: 'catalog:'
-        version: 7.0.2
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
-
   tests/drivers-ml-blocks-integration:
     dependencies:
       '@milaboratories/computable':
@@ -4994,9 +4813,6 @@ importers:
 
   tools/pl-bootstrap:
     dependencies:
-      '@milaboratories/pl-deployments':
-        specifier: workspace:*
-        version: link:../../lib/node/pl-deployments
       commander:
         specifier: 'catalog:'
         version: 15.0.0
@@ -9456,10 +9272,6 @@ packages:
     resolution: {integrity: sha512-5uKD0nqiYVzlmCRs01Fhs2BdkEgBS3SAVP6ndrBsuK42iC2+JHyxM05Rm9G8+5mkmRtzMZGY8Ct5+mliZxU/Ww==}
     engines: {node: '>=18.12.0'}
 
-  upath@2.0.1:
-    resolution: {integrity: sha512-1uEe95xksV1O0CYKXo8vQvN1JEbtJp7lb7C5U9HMsIp6IVwntkH/oNUzyVNQSd4S1sYk2FpSSW44FqMc8qee5w==}
-    engines: {node: '>=4'}
-
   update-browserslist-db@1.3.4:
     resolution: {integrity: sha512-t8wonIOdQyOjtPd2VktlBu6QjTVTks6v8bSi7kd0r2Vll8TK1JYDZtRRdbmCHOAMphkZgrzK+L+vXK4pyZ8t4A==}
     hasBin: true
@@ -13917,8 +13729,6 @@ snapshots:
       acorn: 8.19.0
       picomatch: 4.0.7
       webpack-virtual-modules: 0.6.2
-
-  upath@2.0.1: {}
 
   update-browserslist-db@1.3.4(browserslist@4.29.5):
     dependencies:

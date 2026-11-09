@@ -47,7 +47,7 @@ test("should get all logs", async () => {
     const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-logs-ranges"));
     const download = await DownloadDriver.init(
       logger,
-      createDownloadClient(logger, client, []),
+      createDownloadClient(logger, client),
       createLogsClient(client, logger),
       dir,
       rangesCacheDir,
@@ -94,7 +94,7 @@ test("should get last line with a prefix", async () => {
     const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-logs-ranges"));
     const download = await DownloadDriver.init(
       logger,
-      createDownloadClient(logger, client, []),
+      createDownloadClient(logger, client),
       createLogsClient(client, logger),
       dir,
       rangesCacheDir,
@@ -149,7 +149,7 @@ test("should get log smart object and get log lines from that", async () => {
     const rangesCacheDir = await fsp.mkdtemp(path.join(os.tmpdir(), "test-logs-ranges"));
     const download = await DownloadDriver.init(
       logger,
-      createDownloadClient(logger, client, []),
+      createDownloadClient(logger, client),
       createLogsClient(client, logger),
       dir,
       rangesCacheDir,

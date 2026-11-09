@@ -21,7 +21,6 @@ test("closeProject and close return soon on a link that stopped answering", asyn
         devBlockUpdateRecheckInterval: 300,
         projectRefreshInterval: 1_000,
         localSecret: MiddleLayer.generateLocalSecret(),
-        localProjections: [],
         openFileDialogCallback: () => {
           throw new Error("Not implemented.");
         },
