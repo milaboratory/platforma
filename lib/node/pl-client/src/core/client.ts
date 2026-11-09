@@ -238,6 +238,15 @@ export class PlClient {
     return this.userResources.getUserRoot(opts);
   }
 
+  /**
+   * The resources of a type that are shared with the authenticated user, as signed ids. Matched by
+   * type name only, so a newer version of the type is still found.
+   * @throws if the backend does not implement ListUserResources, or on a REST connection.
+   */
+  public async listSharedResourcesByType(resourceTypeName: string): Promise<SignedResourceId[]> {
+    return await this.userResources.listSharedResourcesByType(resourceTypeName);
+  }
+
   public get conf(): PlClientConfig {
     return this.ll.conf;
   }

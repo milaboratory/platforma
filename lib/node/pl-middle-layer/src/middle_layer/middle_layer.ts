@@ -1,3 +1,5 @@
+import { InstanceStatsWatch } from "./instance_stats";
+import type { InstanceStats } from "@milaboratories/pl-model-middle-layer";
 import type {
   PlClient,
   PlTransaction,
@@ -1843,8 +1845,22 @@ export class MiddleLayer {
    * actual termination of event loops and other processes associated with
    * them.
    */
+  private instanceStatsWatch?: InstanceStatsWatch;
+
+  /**
+   * The load of the whole instance: allocated CPU and RAM out of its capacity, and running and
+   * queued jobs. Read from the backend's instance statistics context every few seconds, starting on
+   * first access; undefined until the first read, `unsupported` on a backend that does not advertise
+   * `instanceStats:v1`.
+   */
+  public get instanceStats(): Computable<InstanceStats | undefined> {
+    this.instanceStatsWatch ??= new InstanceStatsWatch(this.pl, this.env.logger);
+    return this.instanceStatsWatch.stats;
+  }
+
   public async close() {
     if (this.envelopeCleanupTimer !== undefined) clearInterval(this.envelopeCleanupTimer);
+    await this.instanceStatsWatch?.terminate();
     await Promise.all([...this.openedProjects.values()].map((prj) => prj.destroy()));
     // this.env.quickJs;
     await Promise.all([
