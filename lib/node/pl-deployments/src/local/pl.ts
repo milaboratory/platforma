@@ -17,6 +17,7 @@ import type { ProxySettings } from "@milaboratories/pl-http";
 import { defaultHttpDispatcher } from "@milaboratories/pl-http";
 import { parseHttpAuth } from "@milaboratories/pl-model-common";
 import { plHealthCheck, ServingStatus } from "@milaboratories/pl-healthcheck";
+import { stringifyRedacted } from "../common/redact";
 
 export const LocalConfigYaml = "config-local.yaml";
 
@@ -50,7 +51,7 @@ export class LocalPl {
       const instance = processRun(this.logger, this.startOptions);
       instance.on("error", (e: any) => {
         this.logger.error(
-          `error '${e}', while running platforma, started opts: ${JSON.stringify(this.debugInfo())}`,
+          `error '${e}', while running platforma, started opts: ${stringifyRedacted(this.debugInfo())}`,
         );
 
         // keep in mind there are no awaits here, it will be asynchronous
@@ -60,7 +61,9 @@ export class LocalPl {
           void this.onCloseAndErrorNoStop(this);
       });
       instance.on("close", () => {
-        this.logger.warn(`platforma was closed, started opts: ${JSON.stringify(this.debugInfo())}`);
+        this.logger.warn(
+          `platforma was closed, started opts: ${stringifyRedacted(this.debugInfo())}`,
+        );
 
         // keep in mind there are no awaits here, it will be asynchronous
         if (this.onClose !== undefined) void this.onClose(this);
