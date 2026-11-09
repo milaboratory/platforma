@@ -1,5 +1,75 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.22.0
+
+### Minor Changes
+
+- daa13ed: `v2.workflow` renders a third output, `effect`, and calls the body as `fn(args, effect)`. `effect.importFile(source)` imports an upload grant (`upload://upload/…`) or a library file (`index://index/…`) and returns the imported file. The render lists each import under `effect.imports.<source>` as an `ImportEntry/1` with the fields `upload` (upload grants only), `progress` and `file`, so the engine reports the import and, for an upload grant, sends the upload; no block output has to. A body that succeeds always sets `effect`, with an empty `imports` map when nothing is imported, and `importFile` refuses calls made after the body has returned.
+
+  Breaking for v2 workflows: a body declared as `func(args)` must become `func(args, effect)` — until it does, the render fails with `wrong number of arguments: want=1, got=2` — and the output guard now requires exactly `result`, `exports` and `effect`.
+
+### Patch Changes
+
+- bb23557: `validation`: a tag value may contain `=`, so a schema such as `string,regex=^x=y$` checks the whole regex instead of the part before its first `=`.
+
+## 6.21.1
+
+### Patch Changes
+
+- fe4ff52: exec: `cache()` is deprecated. Use `cacheMillis`, `cacheSeconds`, `cacheMinutes`, `cacheHours` or `cacheDays`. The `cache()` doc comment now tells to build the duration with the 'times' library constants
+
+## 6.21.0
+
+### Minor Changes
+
+- 3ba694e: Add `canonicalId()` to the template object (`tpl`): a pure template reads the canonical ID of its own renderer from the template body. The function fails in ephemeral templates, which have no canonical ID. Add `canonicalIdExposure` to `feats`: true when the backend reports `canonicalIDExposure`, `supportsScratchSpaceRequests` or `scratchSpace`.
+
+  On backends that do not give final canonical IDs, the new internal `ll.canonical-id` library calculates a missing canonical ID on the template level with the backend formula. `anonymize` uses it, so it gives correct field names also on backends v4.2.0 to v4.3.0, which did not give the canonical ID of value resources. On those backends, anonymized names change one time. On backends before v1.34.0, which cannot calculate SHA-256, a missing canonical ID causes an error that tells to update the backend.
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler@2.3.0
+- @platforma-open/milaboratories.software-ptexter@1.2.6
+
+## 6.20.0
+
+### Minor Changes
+
+- 8d28bcd: Column value references: `ColumnValueId` names one value of a column a block picked, and template relocation repoints the producer block inside it. The value is always a string: a value of a number column is its decimal string (`String(cell)`), so the same value picked from a number cell and from a text cell is the same id, and ids compare with `===`. `createColumnValueId` refuses a value that is not a string, and an id whose value is not a string is not a `ColumnValueId`.
+  A value picker is made like a data table, in two halves. The model gives `createColumnValueOptions({ valueColumn, labelColumn? }, { ctx? })` as an output — each column an id, a column or a recipe — a frame holding the value column and the label column, `resolving` while either is, `absent` once the value column is gone (a gone label column leaves the values to label themselves), each with the value column it was made for. The UI reads it through the frame, so a column of any storage format can be picked from: `readColumnValueOptions(model)` gives the distinct non-missing values as `{ value: ColumnValueId, label }` options in natural order of labels, each labelled by the label column in its row or by itself (`deriveColumnValueOptions`, `deriveLabelledColumnValueOptions`). In Vue, as with a table, the output reaches the dropdown through settings: `usePlColumnValueSettings({ source, valueColumn })` makes them out of the output and the column picked now — `none`, `pending` until the output is computed for that pick, `absent`, or `present` — and `<PlColumnValueDropdown>` and `<PlColumnValueDropdownMulti>` take them as `settings`: `PlDropdown` and `PlDropdownMulti` over the values, loading until they are read and telling why a column offers none; `exclude` leaves out values, and other attributes and the slots go to the dropdown.
+  `columnValueLabel(picked)` names a picked value to the user: the value a column value id picks, or the string as is when it is not such an id.
+  In workflows, `workflow.column-value` reads such ids back into plain values, always strings: `valueOf` for one id, `valuesOf` for an array of them.
+  The middle layer computes the column links of each block: `dependencies` — outputs of other blocks the block's args reference: its current args, else those of its last run — and `dependents` — blocks whose args reference the block's outputs. They reach the app and the block UI as `columnLinks` of the block state (`BlockStateInternalV3`, `BlockStateV3`): `BlockColumnLinks` with `blockId`, the block they are of, the two sides as lists of `ColumnLink` — the referenced block output (`producer`), the block holding the reference (`holderBlockId`), the column id, the picked values, the check and the column label — and `labels` of the other blocks they name; `undefined` while they are not computed, and in app versions that do not compute them. They are computed only for blocks whose model declares the `supportsColumnLinks` feature flag, which `BlockModelV3` sets, so blocks built with an earlier SDK add no work. Each block's links are computed on their own: its dependencies read its args and the last runs of the blocks they reference; its dependents read the args of every block below it — those of its last run for a block without current args — and its own last run. So a run of a block recomputes its dependents and the dependencies of the blocks that reference it — and, while it has no current args, the dependents of every block above it; an edit of a block's args recomputes its own dependencies and the dependents of every block above it, whether it references them or not. Each reference carries the picked values and a `LinkCheck`, read the same on both sides, checked against what the producer's last run exports: whether the column is exported and whether it holds the picked values. A reference to a block that has no last run is `notRun`: the block has to be run first. A reference to a block whose last run is still rendering its results is `pending`; one whose last run failed to render them is `unavailable`. A reference to an output its producer does not export is `unavailable`: among `dependents`, the dependent block cannot run against it. A reference to a block that is not above the block holding it is `unavailable` too. A column counts as exported once its spec is in the producer's last run; picked values are checked against those its `pl7.app/discreteValues` annotation lists, else against its data. A reference whose column values cannot be read is `unreadable`; one whose column lacks picked values is `missingValues`, with the values it lacks. Each reference carries the column's label: the exported column's, or, when the producer's last run does not export it, that of the column the producer prepares before it is run; the status is still judged by the last run alone. The middle layer labels the blocks by their titles, the names the project shows.
+  `PlBlockDependencies` turns column links into the alerts shown above a block, one per side, for the links that need attention: an error when an output this block uses is unavailable or lacks picked values; a warning, noting that the links are checked against this block's last run, with advice to add the missing data and run the block or reconfigure those blocks, when blocks using this block's outputs use an output it does not export or pick values it lacks; a block that has not been run yet provides no output, so links to it raise these alerts as to an output that is not provided. Columns are named by their label; output names are shown only as hints. Outputs of one block that are not exported and have no known label share one alert line ("uses 2 outputs this block does not export"). Value pickers tell, from the same links, which block was to provide a missing column or column value and what went wrong, or, when its column is provided while other inputs of the block are not, that it waits for them: the options of one input may be made from another. `computeDependencies` and `computeDependents` are in `@milaboratories/pl-model-common`; turning links into alerts and picker tooltips stays inside `@platforma-sdk/ui-vue`.
+  `PlBlockDependencies` (`<PlBlockDependencies />`) shows those alerts in a block UI that places it, from the column links the app provides, and nothing when it provides none; each other block is named by `PlBlockName`. The reader can fold the warning about blocks using this block's outputs to its title by clicking the title, which then counts the blocks ("2 blocks"); the fold is the reader's own, kept in the browser storage under the block id, and a folded warning is marked "Updated" once it says something else than when it was folded. The error about this block's own inputs does not fold. `PlAlert` takes a `label` slot in place of the `label` text, and leaves out the text area when given no text.
+  `PlBlockName` (`<PlBlockName :block-id="id" :name="label" />`) shows the name of another block of the project: a link opening that block when the app can open blocks, and plain text otherwise.
+  Block UIs can ask the app to open another block of the same project: `PlatformaV3` has an optional `openBlock(blockId)`, absent in app versions that cannot do it; in Vue, `useOpenBlock()` returns a function opening a block by id, or `undefined` when the app cannot.
+  `PlDropdown` and `PlDropdownMulti` show a selected column value id by the value it picks: as is while the options load, and as "<value> — not available" when the options lack it, unless `missingValueLabel` is given.
+  `PlValueLabel` (`<PlValueLabel :value="item" :options="options" />`) shows a selected value as text the way a dropdown does: by its option's label, a column value id by the value it picks, and a value the options lack as not available, in error color.
+  `PlDropdown`, `PlDropdownMulti`, `PlDropdownRef`, `PlDropdownMultiRef` and `PlValueLabel` take `missingValueTooltip`, a tooltip explaining a selected value missing from the options, and `missingValueLabel`, the text shown in its place: each one text for every such value, or a function giving it — the tooltip content — per value, `undefined` when there is nothing to tell. The ones `@platforma-sdk/ui-vue` exports pass both themselves when the app provides column links, for a missing column — selected by id or by ref — and a missing column value: the tooltip names the block that was to provide the column, as a link to it, and what went wrong — it does not provide the column (a block that has not been run yet provides none), the column lacks the value, or the block is still computing it; when the column is provided while other inputs of the block are not, the tooltip says it waits for them. The value is shown by the picked value, or by the label of a column selected as a whole: alone while it waits, as "<name> — not available" otherwise.
+  `PlDatasetSelector` explains a selected dataset or filter the options lack the same way, by the column it selects: the dataset first, then its filter.
+  `PlDropdownRef` and `PlDropdownMultiRef` show a missing value as "Value not available", like the other dropdowns, instead of "Upstream value removed".
+  Inside a `PlTooltip`, `--txt-link` is the tooltip link color, so links drawn with it — `PlBlockName` among them — read on the dark tooltip background like the tooltip's own links.
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler@2.3.0
+- @platforma-open/milaboratories.software-ptexter@1.2.6
+
+## 6.19.0
+
+### Minor Changes
+
+- c40e26d: Block action context in templates. `render()` sets the action context of the rendered template from the action context of the current renderer: a new `ActionContext` with a copy of the parent context baggage and its own `name` (the imported template name, or the new `name` option), linked from the parent context; a new sinkhole with the same baggage when the current renderer is in the sinkhole; nothing when it has no action context. The link is the render's optional `actionContext` service field, set once, so the template cannot change it. `render(tpl, inputs, { actionContext: false })` puts a template and everything below it into the sinkhole: reports are dropped, but the baggage passes down. `self.actionContext()` and `smart.resource.actionContext()` return a handle with `record(namespace, state, ...detail)` and `setReading(namespace, key, value)`, which write to the context with `tx.resourceKeyValueSetAsync`; `self.actionContext().baggage()` returns the baggage of the current context or sinkhole (e.g. `run-id`, `block-id`), and `render(tpl, inputs, { actionContext: { ...baggage } })` gives a render a new action context, for templates rendered outside a block. Exec and workdir resources a template creates (ComputeRequest, RunCommand, WorkdirFill, WorkdirSave) are linked to the template's action context with `actionContext.inherit(rid)`, so the runner and the data controller report into it. Every link is created in the transaction that creates the resource, before its inputs are locked. Everything is a no-op unless the backend has the primitives (`feats.kvAsync`, `feats.optionalFieldsInSchemas`).
+
+## 6.18.0
+
+### Minor Changes
+
+- eff75ea: The v2 layer (`:v2.*`) for platforma2 workflows, unstable. platforma2 is the next block runtime: a block exports a typed values tree and downstream blocks read it through BContext/2 contexts. The layer has the `v2.workflow` entry (outputs `result` and `exports`), typed export constructors in `v2.exports`, the BContext/2 query API in `v2.bquery`, and the `v2.export-for-ui` template. In it a ref is `{block, workflow, name}`; a single lookup finds exactly one value or fails; query options are checked.
+
+  `workflow.bquery` gains `forFamily(n)`, the query API of resolver family `n`: 1 is the existing functions (BResolveSingle/1, BResolveChoice/1 over BContext/1), 2 resolves over BContext/2; the shared result decoder decodes family-2 results. `pframes.bundle` gains `createBuilderWith` and `pframes.table-builder` gains `tableBuilderWith`, which take the query API to resolve with. The `:tpl` API gains `definedOutputs()`. Existing public signatures and the family-1 path are preserved, except that `resolve` no longer writes into the caller's options map.
+
 ## 6.17.3
 
 ### Patch Changes

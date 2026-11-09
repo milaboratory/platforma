@@ -1,3 +1,5 @@
+import { InstanceStatsWatch } from "./instance_stats";
+import type { InstanceStats } from "@milaboratories/pl-model-middle-layer";
 import type {
   PlClient,
   PlTransaction,
@@ -1843,8 +1845,22 @@ export class MiddleLayer {
    * actual termination of event loops and other processes associated with
    * them.
    */
+  private instanceStatsWatch?: InstanceStatsWatch;
+
+  /**
+   * The load of the whole instance: allocated CPU and RAM out of its capacity, and running and
+   * queued jobs. Read from the backend's instance statistics context every few seconds, starting on
+   * first access; undefined until the first read, `unsupported` on a backend that does not advertise
+   * `instanceStats:v1`.
+   */
+  public get instanceStats(): Computable<InstanceStats | undefined> {
+    this.instanceStatsWatch ??= new InstanceStatsWatch(this.pl, this.env.logger);
+    return this.instanceStatsWatch.stats;
+  }
+
   public async close() {
     if (this.envelopeCleanupTimer !== undefined) clearInterval(this.envelopeCleanupTimer);
+    await this.instanceStatsWatch?.terminate();
     await Promise.all([...this.openedProjects.values()].map((prj) => prj.destroy()));
     // this.env.quickJs;
     await Promise.all([
@@ -1898,54 +1914,64 @@ export class MiddleLayer {
     )
       ops.defaultTreeOptions.traversalMode = getDebugFlags().treeTraversalMode;
 
-    const { projects, templates, sharingOutbox, sharingState, folders } = await pl.withWriteTx(
-      "MLInitialization",
-      async (tx) => {
-        // Lazily create each clientRoot-attached singleton resource. Returns the existing
-        // resource id if the field is already populated, otherwise creates + locks + sets it.
-        // A created resource's id is known only once the transaction commits.
-        type Singleton = { existing: SignedResourceId } | { ref: ResourceRef };
-        const lazyInit = async (
-          fieldName: string,
-          type: { name: string; version: string },
-        ): Promise<Singleton> => {
-          const f = field(tx.clientRoot, fieldName);
-          tx.createField(f, "Dynamic");
-          const fData = await tx.getField(f);
-          if (isNullSignedResourceId(fData.value)) {
-            const ref = tx.createEphemeral(type);
-            tx.lock(ref);
-            tx.setField(f, ref);
-            return { ref };
-          }
-          return { existing: fData.value };
-        };
+    const initTxP = pl.withWriteTx("MLInitialization", async (tx) => {
+      // Lazily create each clientRoot-attached singleton resource. Returns the existing
+      // resource id if the field is already populated, otherwise creates + locks + sets it.
+      // A created resource's id is known only once the transaction commits.
+      type Singleton = { existing: SignedResourceId } | { ref: ResourceRef };
+      const lazyInit = async (
+        fieldName: string,
+        type: { name: string; version: string },
+      ): Promise<Singleton> => {
+        const f = field(tx.clientRoot, fieldName);
+        tx.createField(f, "Dynamic");
+        const fData = await tx.getField(f);
+        if (isNullSignedResourceId(fData.value)) {
+          const ref = tx.createEphemeral(type);
+          tx.lock(ref);
+          tx.setField(f, ref);
+          return { ref };
+        }
+        return { existing: fData.value };
+      };
 
-        const projectsR = await lazyInit(ProjectsField, ProjectsResourceType);
-        const templatesR = await lazyInit(TemplatesField, TemplatesResourceType);
-        const outboxR = await lazyInit(SharingOutboxField, SharingOutboxResourceType);
-        const stateR = await lazyInit(SharingStateField, SharingStateResourceType);
+      // All five in flight at once: the transaction pipelines its requests, so this costs one
+      // round trip instead of five.
+      const [projectsR, templatesR, outboxR, stateR, foldersR] = await Promise.all([
+        lazyInit(ProjectsField, ProjectsResourceType),
+        lazyInit(TemplatesField, TemplatesResourceType),
+        lazyInit(SharingOutboxField, SharingOutboxResourceType),
+        lazyInit(SharingStateField, SharingStateResourceType),
         // The folder tree gets its own root-attached singleton rather than a field on the
         // projects resource: an extra field there is walked by the released project-list reader
         // and dereferenced as a project, which takes the whole list down, not just the folders.
-        const foldersR = await lazyInit(FoldersField, FoldersResourceType);
+        lazyInit(FoldersField, FoldersResourceType),
+      ]);
 
-        await tx.commit();
+      await tx.commit();
 
-        const idOf = async (r: Singleton) => ("existing" in r ? r.existing : await r.ref.globalId);
-        return {
-          projects: await idOf(projectsR),
-          templates: await idOf(templatesR),
-          sharingState: await idOf(stateR),
-          sharingOutbox: await idOf(outboxR),
-          folders: await idOf(foldersR),
-        };
-      },
-    );
+      const idOf = async (r: Singleton) => ("existing" in r ? r.existing : await r.ref.globalId);
+      const [projects, templates, sharingState, sharingOutbox, folders] = await Promise.all([
+        idOf(projectsR),
+        idOf(templatesR),
+        idOf(stateR),
+        idOf(outboxR),
+        idOf(foldersR),
+      ]);
+      return { projects, templates, sharingState, sharingOutbox, folders };
+    });
+    // The driver kit needs nothing from the transaction, so it starts alongside it.
+    const driverKitP = initDriverKit(pl, workdir, ops.frontendDownloadPath, ops);
+    const [initTx, driverKitR] = await Promise.allSettled([initTxP, driverKitP]);
+    if (initTx.status === "rejected") {
+      if (driverKitR.status === "fulfilled") await driverKitR.value.dispose();
+      throw initTx.reason;
+    }
+    if (driverKitR.status === "rejected") throw driverKitR.reason;
+    const { projects, templates, sharingOutbox, sharingState, folders } = initTx.value;
+    const driverKit = driverKitR.value;
 
     const logger = ops.logger;
-
-    const driverKit = await initDriverKit(pl, workdir, ops.frontendDownloadPath, ops);
 
     // passed to components having no own retry logic
     const retryHttpDispatcher = new RetryAgent(pl.httpDispatcher);
@@ -1966,6 +1992,8 @@ export class MiddleLayer {
     runtimeCapabilities.addSupportedRequirement("requiresModelAPIVersion", 2);
     runtimeCapabilities.addSupportedRequirement("requiresCreatePTable", 2);
     runtimeCapabilities.addSupportedRequirement("requiresPFramesVersion", REQUIRES_PFRAMES_VERSION);
+    // The project overview and production rendering refuse to run args argsIssues found errors in
+    runtimeCapabilities.addSupportedRequirement("requiresArgsIssues");
     registerServiceCapabilities((flag, value) =>
       runtimeCapabilities.addSupportedRequirement(flag, value),
     );
@@ -2020,21 +2048,33 @@ export class MiddleLayer {
     };
 
     const openedProjects = new WatchableValue<ProjectId[]>([]);
-    const projectListTC = await createProjectList(pl, projects, openedProjects, env);
-    const templateListTC = await createTemplateList(pl, templates, env);
-    const foldersTC = await createFolderList(
-      pl,
-      folders,
-      projectListTC.tree,
-      templateListTC.tree,
-      openedProjects,
-      env,
-    );
-
-    // Project sharing trees and reactive views.
-    const outgoingTC = await createOutgoingShares(pl, sharingOutbox, env);
-    const sharingStateTree = await createSharingStateTree(pl, sharingState, env);
-    const availableSharesTree = await createAvailableSharesTree(pl, env);
+    // Each tree's first load is a round trip of its own; they are independent, so they all load
+    // at once rather than one after another.
+    const projectListP = createProjectList(pl, projects, openedProjects, env);
+    const templateListP = createTemplateList(pl, templates, env);
+    const [
+      projectListTC,
+      templateListTC,
+      foldersTC,
+      // Project sharing trees and reactive views.
+      outgoingTC,
+      sharingStateTree,
+      availableSharesTree,
+    ] = await Promise.all([
+      projectListP,
+      templateListP,
+      createFolderList(
+        pl,
+        folders,
+        projectListP.then((tc) => tc.tree),
+        templateListP.then((tc) => tc.tree),
+        openedProjects,
+        env,
+      ),
+      createOutgoingShares(pl, sharingOutbox, env),
+      createSharingStateTree(pl, sharingState, env),
+      createAvailableSharesTree(pl, env),
+    ]);
     const availableShares = createAvailableSharesComputable(
       availableSharesTree,
       sharingStateTree,

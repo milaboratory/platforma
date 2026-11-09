@@ -15,6 +15,11 @@ import { tplTest } from "@platforma-sdk/test";
  * The message carries a random suffix on purpose: an exec step with a stable
  * CID is deduplicated by the backend, and a cached result would never start a
  * job at all.
+ *
+ * This file runs in the "isolated" vitest project, after all other test files
+ * (see vitest.config.mts). The 10000-entry workdir keeps the backend workflow
+ * controller busy for about a minute, and other tests that run at the same
+ * time fail on their timeouts.
  */
 tplTest.concurrent(
   "run-in-workdir-with-10k-files",

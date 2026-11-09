@@ -2,13 +2,19 @@ import { z } from "zod";
 import type { AxisQualification } from "./drivers/pframe/spec/selectors";
 import type { PObjectId } from "./pool/spec";
 
+/** One output of one block: the block and the name of the output in its output context. */
+export const BlockOutput = z.object({
+  blockId: z.string().describe("Upstream block id"),
+  name: z.string().describe("Name of the output provided to the upstream block's output context"),
+});
+export type BlockOutput = Readonly<z.infer<typeof BlockOutput>>;
+
 export const PlRef = z
   .object({
     __isRef: z
       .literal(true)
       .describe("Crucial marker for the block dependency tree reconstruction"),
-    blockId: z.string().describe("Upstream block id"),
-    name: z.string().describe("Name of the output provided to the upstream block's output context"),
+    ...BlockOutput.shape,
     requireEnrichments: z
       .literal(true)
       .optional()

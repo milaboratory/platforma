@@ -1,0 +1,17 @@
+// A pure sub-template whose output reaches exports: it declares the node's type where it builds it.
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pframes := import("@platforma-sdk/workflow-tengo:pframes")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+self.defineOutputs("pf")
+
+self.body(func(inputs) {
+	f := pframes.pFrameBuilder()
+	f.add("ids", {
+		kind: "PColumn",
+		name: "pl7.app/test/ids",
+		valueType: "Int",
+		axesSpec: [{ name: "pl7.app/test/index", type: "Int" }]
+	}, smart.createJsonResource(inputs.ids))
+	return { pf: f.build() }
+})
