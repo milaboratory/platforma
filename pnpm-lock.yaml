@@ -320,6 +320,9 @@ catalogs:
     commander:
       specifier: ^15.0.0
       version: 15.0.0
+    cross-env:
+      specifier: ^10.1.0
+      version: 10.1.0
     d3-array:
       specifier: ^3.0.0
       version: 3.2.4
@@ -515,6 +518,9 @@ importers:
       '@zed-industries/vscode-langservers-extracted':
         specifier: 'catalog:'
         version: 4.10.8
+      cross-env:
+        specifier: 'catalog:'
+        version: 10.1.0
       husky:
         specifier: 'catalog:'
         version: 9.1.7
@@ -2684,6 +2690,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -2712,6 +2721,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -2749,6 +2761,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -2789,6 +2804,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -2832,6 +2850,9 @@ importers:
       rollup-plugin-copy:
         specifier: 'catalog:'
         version: 3.5.0
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -2866,6 +2887,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -2897,6 +2921,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -2931,6 +2958,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -2952,6 +2982,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3004,6 +3037,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3059,6 +3095,9 @@ importers:
       fast-csv:
         specifier: 'catalog:'
         version: 5.0.5
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3135,6 +3174,9 @@ importers:
       openapi-typescript:
         specifier: 'catalog:'
         version: 7.13.0(typescript@7.0.2)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3169,6 +3211,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3194,6 +3239,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3255,6 +3303,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       testcontainers:
         specifier: 'catalog:'
         version: 12.2.1(supports-color@10.2.2)
@@ -3346,6 +3397,9 @@ importers:
       openapi-typescript:
         specifier: 'catalog:'
         version: 7.13.0(typescript@7.0.2)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3380,6 +3434,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3423,6 +3480,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3451,6 +3511,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3497,6 +3560,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3618,6 +3684,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3664,6 +3733,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3716,6 +3788,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3741,6 +3816,9 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3759,6 +3837,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3790,6 +3871,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3809,6 +3893,9 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3821,6 +3908,9 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../tools/block-tools
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
   lib/ptexter:
     devDependencies:
@@ -3830,8 +3920,15 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../tools/block-tools
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
-  lib/strings: {}
+  lib/strings:
+    devDependencies:
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
   lib/ui/uikit:
     dependencies:
@@ -3902,6 +3999,9 @@ importers:
       jsdom:
         specifier: 'catalog:'
         version: 27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       svgo:
         specifier: 'catalog:'
         version: 3.3.5
@@ -3926,6 +4026,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3944,6 +4047,9 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3963,6 +4069,9 @@ importers:
       '@milaboratories/ts-configs':
         specifier: workspace:*
         version: link:../../../tools/ts-configs
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -3987,6 +4096,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -4054,6 +4166,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -4097,6 +4212,9 @@ importers:
       '@types/node':
         specifier: 'catalog:'
         version: 24.19.2
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -4200,6 +4318,9 @@ importers:
       semver:
         specifier: 'catalog:'
         version: 7.8.5
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -4231,6 +4352,9 @@ importers:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../tools/tengo-builder
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
   tests/block-repo:
     devDependencies:
@@ -4499,24 +4623,42 @@ importers:
 
   tests/package-builder/10.asset:
     devDependencies:
+      '@milaboratories/no-env':
+        specifier: workspace:*
+        version: link:../../../tools/no-env
       '@platforma-sdk/package-builder':
         specifier: workspace:*
         version: link:../../../tools/package-builder
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
   tests/package-builder/20.runenv:
     devDependencies:
+      '@milaboratories/no-env':
+        specifier: workspace:*
+        version: link:../../../tools/no-env
       '@platforma-sdk/package-builder':
         specifier: workspace:*
         version: link:../../../tools/package-builder
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
   tests/package-builder/30.software-pkg:
     devDependencies:
       '@milaboratories/example-pl-package-runenv-1':
         specifier: workspace:*
         version: link:../20.runenv
+      '@milaboratories/no-env':
+        specifier: workspace:*
+        version: link:../../../tools/no-env
       '@platforma-sdk/package-builder':
         specifier: workspace:*
         version: link:../../../tools/package-builder
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
   tests/package-builder/90.catalogue:
     devDependencies:
@@ -4529,9 +4671,15 @@ importers:
       '@milaboratories/example-pl-package-runenv-1':
         specifier: workspace:*
         version: link:../20.runenv
+      '@milaboratories/no-env':
+        specifier: workspace:*
+        version: link:../../../tools/no-env
       '@platforma-sdk/package-builder':
         specifier: workspace:*
         version: link:../../../tools/package-builder
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
   tests/software/venv-identity:
     devDependencies:
@@ -4541,6 +4689,9 @@ importers:
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../tools/block-tools
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
   tests/tengo-builder:
     devDependencies:
@@ -4553,12 +4704,18 @@ importers:
       '@platforma-sdk/tengo-builder':
         specifier: workspace:*
         version: link:../../../tools/tengo-builder
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
   tests/tengo-builder/2-artifacts:
     devDependencies:
       '@platforma-sdk/package-builder':
         specifier: workspace:*
         version: link:../../../tools/package-builder
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
   tests/tengo-builder/3-software-dep:
     devDependencies:
@@ -4571,6 +4728,9 @@ importers:
       '@platforma-sdk/workflow-tengo':
         specifier: workspace:*
         version: link:../../../sdk/workflow-tengo
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
   tests/workflow-tengo:
     dependencies:
@@ -4644,6 +4804,9 @@ importers:
       es-toolkit:
         specifier: 'catalog:'
         version: 1.53.0
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       vitest:
         specifier: 'catalog:'
         version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
@@ -4743,6 +4906,9 @@ importers:
       semver:
         specifier: 'catalog:'
         version: 7.8.5
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -4774,6 +4940,9 @@ importers:
       dedent:
         specifier: 'catalog:'
         version: 1.7.2
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -4795,6 +4964,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 6.0.10(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))(vue@3.5.44(typescript@7.0.2))
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -4804,6 +4976,8 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.1.12(@types/node@24.19.2)(@vitest/coverage-istanbul@4.1.12)(jsdom@27.4.0(@noble/hashes@2.4.0)(supports-color@10.2.2))(vite@8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1))
+
+  tools/no-env: {}
 
   tools/package-builder:
     dependencies:
@@ -4832,6 +5006,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -4881,6 +5058,9 @@ importers:
       '@types/readline-sync':
         specifier: 'catalog:'
         version: 1.4.8
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -4912,6 +5092,9 @@ importers:
       rollup-plugin-node-externals:
         specifier: 'catalog:'
         version: 8.1.2(rollup@4.65.1)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -4976,6 +5159,9 @@ importers:
       '@vitest/coverage-istanbul':
         specifier: 'catalog:'
         version: 4.1.12(supports-color@10.2.2)(vitest@4.1.12)
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
@@ -5042,8 +5228,16 @@ importers:
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.10(typescript@7.0.2)
+    devDependencies:
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
-  tools/ts-configs: {}
+  tools/ts-configs:
+    devDependencies:
+      shx:
+        specifier: 'catalog:'
+        version: 0.4.0
 
 packages:
 
@@ -5452,6 +5646,9 @@ packages:
 
   '@dabh/diagnostics@2.0.9':
     resolution: {integrity: sha512-R6siwR65Hm+3yfgP7o8DKhNvputQAwfoz9zTc3kyDudnomj2/BcLmD+uGQQPICjuFUp8ounPBU+jmKsocwVVAg==}
+
+  '@epic-web/invariant@1.0.0':
+    resolution: {integrity: sha512-lrTPqgvfFQtR/eY/qkIzp98OGdNJu0m5ji3q/nJI8v3SXkRKEnWiOxMmbvcSoAIzv/cGiuvRy57k4suKQSAdwA==}
 
   '@exodus/bytes@1.16.0':
     resolution: {integrity: sha512-IcpW84uEn3N7ETtNZMlxKhfl6Pec8rUNGOTBtWbK1FKhJxIFAptZyVrvVRVBimAJxJCgc3PxepxkdWWG4DVzfA==}
@@ -7632,6 +7829,11 @@ packages:
   crc32-stream@6.0.0:
     resolution: {integrity: sha512-piICUB6ei4IlTv1+653yq5+KoqfBYmj9bw6LqXoOneTMDXk5nM1qt12mFW1caG3LlJXEKW1Bp0WggEmIfQB34g==}
     engines: {node: '>= 14'}
+
+  cross-env@10.1.0:
+    resolution: {integrity: sha512-GsYosgnACZTADcmEyJctkJIoqAhHjttw7RsFrVoJNXbsWWqaq6Ym+7kZjq6mS45O0jij6vtiReppKQEtqWy6Dw==}
+    engines: {node: '>=20'}
+    hasBin: true
 
   cross-spawn@6.0.6:
     resolution: {integrity: sha512-VqCUuhcd1iB+dsv8gxPttb5iZh/D0iubSP21g36KXdEuf6I5JiioesUVjpCdHV9MZRUfVFlvwtIUyPfxo5trtw==}
@@ -10356,6 +10558,8 @@ snapshots:
       enabled: 2.0.0
       kuler: 2.0.0
 
+  '@epic-web/invariant@1.0.0': {}
+
   '@exodus/bytes@1.16.0(@noble/hashes@2.4.0)':
     optionalDependencies:
       '@noble/hashes': 2.4.0
@@ -12212,6 +12416,11 @@ snapshots:
     dependencies:
       crc-32: 1.2.2
       readable-stream: 4.8.0
+
+  cross-env@10.1.0:
+    dependencies:
+      '@epic-web/invariant': 1.0.0
+      cross-spawn: 7.0.6
 
   cross-spawn@6.0.6:
     dependencies:
