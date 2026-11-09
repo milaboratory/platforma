@@ -28,7 +28,8 @@
  * these forms, by the path it took:
  *  - decoded (a `prepare` result, or a sub-template's input): an item `{ref, spec}` with no `data`
  *    key; the item is a strict map, so test with `maps.containsKey(item, "data")`, not `item.data`;
- *  - in a PColumnBundle: `data` is undefined;
+ *  - in a PColumnBundle: `data` is undefined, or, when the template runs before the data is set,
+ *    a future that resolves to the no-result marker;
  *  - `resolve(ref).data` in the body: a future that resolves to the no-result marker
  *    (BResolveSingleNoResult/1); `:v2.exports.collection` leaves it out when it has already resolved
  *    there, and the UI export leaves out data that has resolved there by the time the collection's
@@ -215,7 +216,8 @@ validateArgs := func(argsSchema) {
 
 /**
  * A PColumnBundle collector resolving upstream (see `:pframes.bundle`'s `createBuilder`). In the
- * bundle a template receives, a value without data has `data` undefined.
+ * bundle a template receives, a value without data has `data` undefined, or a future of the
+ * no-result marker when the template runs before the data is set (see above).
  */
 createPBundleBuilder := func() {
 	return pBundle.createBuilderWith(bquery, getParentBCtx())
