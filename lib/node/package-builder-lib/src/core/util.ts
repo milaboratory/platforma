@@ -14,12 +14,20 @@ export function assertNever(_a: never): never {
   throw new Error(`code logic error: assertNever() call for ${JSON.stringify(_a)}`);
 }
 
-/** The URL with its password masked, for logs. Non-URL strings (local paths) are returned as is. */
-export function redactUrl(address: string): string {
-  if (!URL.canParse(address)) return address;
+/**
+ * The address without userinfo, query and fragment, for logs and error messages: those parts carry
+ * credentials (`user:password@`) and signed-URL tokens. Strings that are not URLs (local paths) and
+ * URLs with none of those parts are returned unchanged.
+ */
+export function redactUrl(address: string | URL): string {
+  if (typeof address === "string" && !URL.canParse(address)) return address;
   const url = new URL(address);
-  if (url.password === "") return address;
-  url.password = "***";
+  if (url.username === "" && url.password === "" && url.search === "" && url.hash === "")
+    return address.toString();
+  url.username = "";
+  url.password = "";
+  url.search = "";
+  url.hash = "";
   return url.toString();
 }
 

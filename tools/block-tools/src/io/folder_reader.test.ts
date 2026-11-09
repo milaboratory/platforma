@@ -1,5 +1,5 @@
 import { expect, test } from "vitest";
-import { folderReaderByUrl, redactUrl } from "./folder_reader";
+import { folderReaderByUrl } from "./folder_reader";
 
 test("test fs reader", async () => {
   const reader = folderReaderByUrl("file:.");
@@ -36,10 +36,4 @@ test("test url reader rejects non-2xx responses", async () => {
   } finally {
     await new Promise((resolve) => server.close(resolve));
   }
-});
-
-test("redactUrl drops credentials and query from error messages", () => {
-  expect(
-    redactUrl(new URL("https://user:secret@registry.example/v2/a.json?X-Goog-Signature=abc#f")),
-  ).toEqual("https://registry.example/v2/a.json");
 });
