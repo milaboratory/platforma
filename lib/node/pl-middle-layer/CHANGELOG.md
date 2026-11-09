@@ -1,5 +1,16 @@
 # @milaboratories/pl-middle-layer
 
+## 2.1.0
+
+### Minor Changes
+
+- d3a7b19: The block subtitle now renders with the result pool, so `.subtitle()` can name the inputs a block reads (for example `ctx.resultPool.getPColumnSpecByRef(ref)`) without the UI caching that text in block data. The title stays args-only.
+
+### Patch Changes
+
+- Updated dependencies [d3a7b19]
+  - @platforma-sdk/model@1.88.10
+
 ## 2.0.0
 
 ### Major Changes
