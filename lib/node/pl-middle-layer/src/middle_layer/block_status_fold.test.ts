@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ActionContextNode } from "./block_status_fold";
 import { failureHeadline, foldBlockStatus } from "./block_status_fold";
-import type { BlockStatusState } from "@milaboratories/pl-model-middle-layer";
+import type { BlockStatusJobs, BlockStatusState } from "@milaboratories/pl-model-middle-layer";
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -53,6 +53,16 @@ function context(fixture: ContextFixture): ActionContextNode {
   };
 }
 
+/** The jobs not ended, as `<namespace>/<state>: count`. */
+function counts(jobs: BlockStatusJobs): Record<string, number> {
+  return Object.fromEntries(jobs.byState.map((g) => [`${g.namespace}/${g.state}`, g.count]));
+}
+
+/** One group of the jobs not ended. */
+function group(jobs: BlockStatusJobs, key: string) {
+  return jobs.byState.find((g) => `${g.namespace}/${g.state}` === key);
+}
+
 const t0 = Date.UTC(2026, 9, 27, 12, 0, 0);
 const ms = (offset: number) => t0 + offset;
 
@@ -70,7 +80,7 @@ describe("foldBlockStatus", () => {
   it("reports a context that has not reported as live with no state", () => {
     const summary = foldBlockStatus(context({ id: "r1" }));
 
-    expect(summary).toMatchObject({ liveNodes: 1, totalNodes: 1, done: false });
+    expect(summary).toMatchObject({ activeContexts: 1, totalContexts: 1, done: false });
     expect(summary.startedAt).toBeUndefined();
   });
 
@@ -97,7 +107,8 @@ describe("the state holding a node", () => {
       }),
     );
 
-    expect(summary.jobs).toMatchObject({ pending: 1, pendingSince: ms(100) });
+    expect(counts(summary.jobs)).toEqual({ "exec/WaitingForMachine": 1 });
+    expect(group(summary.jobs, "exec/WaitingForMachine")?.since).toBe(ms(100));
   });
 
   it("lets a command running on a machine outrank the render's heartbeat", () => {
@@ -111,7 +122,7 @@ describe("the state holding a node", () => {
       }),
     );
 
-    expect(summary.jobs).toMatchObject({ running: 1 });
+    expect(counts(summary.jobs)).toEqual({ "exec/Running": 1 });
   });
 
   it("takes the latest transition of a reporter, not the first", () => {
@@ -125,7 +136,7 @@ describe("the state holding a node", () => {
       }),
     );
 
-    expect(summary.jobs).toMatchObject({ running: 1, pending: 0 });
+    expect(counts(summary.jobs)).toEqual({ "exec/Running": 1 });
   });
 });
 
@@ -144,7 +155,7 @@ describe("a node that has ended", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ liveNodes: 0, totalNodes: 1, done: true });
+    expect(summary).toMatchObject({ activeContexts: 0, totalContexts: 1, done: true });
   });
 
   it("stays live while a command it started is still running after its outputs are set", () => {
@@ -159,7 +170,8 @@ describe("a node that has ended", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ liveNodes: 1, done: false, jobs: { pending: 1 } });
+    expect(summary).toMatchObject({ activeContexts: 1, done: false });
+    expect(counts(summary.jobs)).toEqual({ "exec/WaitingForScheduler": 1 });
   });
 
   it("stays live while only its commands have finished", () => {
@@ -174,7 +186,7 @@ describe("a node that has ended", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ liveNodes: 1, done: false });
+    expect(summary).toMatchObject({ activeContexts: 1, done: false });
   });
 
   it("counts a deduplicated render as done", () => {
@@ -195,7 +207,7 @@ describe("a node that has ended", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ totalNodes: 2, liveNodes: 1 });
+    expect(summary).toMatchObject({ totalContexts: 2, activeContexts: 1 });
   });
 
   it("does not count the root done while a child is still live", () => {
@@ -213,7 +225,8 @@ describe("a node that has ended", () => {
     );
 
     // The root's own outputs are set, but work under it still runs: not done.
-    expect(summary).toMatchObject({ liveNodes: 1, done: false, jobs: { pending: 1 } });
+    expect(summary).toMatchObject({ activeContexts: 1, done: false });
+    expect(counts(summary.jobs)).toEqual({ "exec/WaitingForMachine": 1 });
   });
 });
 
@@ -273,7 +286,7 @@ describe("a run that ended in a failure", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ done: true, failure: "axesSpec", liveNodes: 1 });
+    expect(summary).toMatchObject({ done: true, failure: "axesSpec", activeContexts: 1 });
   });
 
   it("counts a render that failed on its own as a failed job, not the renders passing it up", () => {
@@ -324,7 +337,8 @@ describe("a run that ended in a failure", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ done: false, failure: "", jobs: { running: 1 } });
+    expect(summary).toMatchObject({ done: false, failure: "" });
+    expect(counts(summary.jobs)).toEqual({ "exec/Running": 1 });
   });
 
   it("does not report a failure for a command the run recovered from", () => {
@@ -350,7 +364,8 @@ describe("a run that ended in a failure", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ done: false, failure: undefined, jobs: { pending: 1 } });
+    expect(summary).toMatchObject({ done: false, failure: undefined });
+    expect(counts(summary.jobs)).toEqual({ "exec/WaitingForMachine": 1 });
   });
 
   it("does not report a failure when the render completed despite a terminated command", () => {
@@ -370,7 +385,7 @@ describe("a run that ended in a failure", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ done: true, liveNodes: 0, failure: undefined });
+    expect(summary).toMatchObject({ done: true, activeContexts: 0, failure: undefined });
   });
 });
 
@@ -397,8 +412,12 @@ describe("aggregation over a tree", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ totalNodes: 400, liveNodes: 400 });
-    expect(summary.jobs).toMatchObject({ total: 399, pending: 382, copying: 17 });
+    expect(summary).toMatchObject({ totalContexts: 400, activeContexts: 400 });
+    expect(summary.jobs.total).toBe(399);
+    expect(counts(summary.jobs)).toEqual({
+      "exec/WaitingForMachine": 382,
+      "exec/PopulatingWorkdir": 17,
+    });
   });
 
   it("walks nested children and spans the whole tree in its timestamps", () => {
@@ -421,7 +440,7 @@ describe("aggregation over a tree", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ totalNodes: 3, startedAt: ms(0), lastChangeAt: ms(900) });
+    expect(summary).toMatchObject({ totalContexts: 3, startedAt: ms(0), lastChangeAt: ms(900) });
   });
 });
 
@@ -437,7 +456,7 @@ describe("malformed input", () => {
       }),
     );
 
-    expect(summary.jobs).toMatchObject({ copying: 1 });
+    expect(counts(summary.jobs)).toEqual({ "workdir/PopulatingWorkdir": 1 });
   });
 
   it("skips JSON that is not an object, in transitions and readings", () => {
@@ -456,10 +475,10 @@ describe("malformed input", () => {
       }),
     );
 
-    expect(summary.jobs).toMatchObject({ copying: 1 });
+    expect(counts(summary.jobs)).toEqual({ "workdir/PopulatingWorkdir": 1 });
   });
 
-  it("skips a state this build does not know, but still advances the clock", () => {
+  it("passes on a state this build does not know, as the reporter wrote it", () => {
     const summary = foldBlockStatus(
       context({
         id: "r1",
@@ -475,7 +494,7 @@ describe("malformed input", () => {
       }),
     );
 
-    expect(summary.jobs).toMatchObject({ copying: 1 });
+    expect(counts(summary.jobs)).toEqual({ "exec/WaitingForLicenceServer": 1 });
     expect(summary.lastChangeAt).toBe(ms(90_000));
   });
 
@@ -492,7 +511,7 @@ describe("malformed input", () => {
       }),
     );
 
-    expect(summary).toMatchObject({ done: false, liveNodes: 1 });
+    expect(summary).toMatchObject({ done: false, activeContexts: 1 });
   });
 
   it("visits a context reachable twice only once", () => {
@@ -508,7 +527,7 @@ describe("malformed input", () => {
       traverse: () => shared,
     };
 
-    expect(foldBlockStatus(root)).toMatchObject({ totalNodes: 2, liveNodes: 2 });
+    expect(foldBlockStatus(root)).toMatchObject({ totalContexts: 2, activeContexts: 2 });
   });
 });
 
@@ -542,7 +561,7 @@ describe("a run the user stopped", () => {
   });
 
   it("keeps the counters, to say where each node was when it stopped", () => {
-    expect(foldBlockStatus(stopped()).jobs).toMatchObject({ running: 1 });
+    expect(counts(foldBlockStatus(stopped()).jobs)).toEqual({ "exec/Running": 1 });
   });
 
   it("is not cancelled while only the backend has reported", () => {
@@ -604,25 +623,27 @@ describe("the run's jobs", () => {
   );
 
   it("counts each job once, by where it is now", () => {
-    expect(summary.jobs).toMatchObject({
-      total: 9,
-      copying: 2,
-      queued: 2,
-      pending: 1,
-      running: 1,
-      saving: 1,
-      done: 1,
-      failed: 1,
+    expect(summary.jobs).toMatchObject({ total: 9, done: 1, failed: 1 });
+    expect(counts(summary.jobs)).toEqual({
+      "workdir/PopulatingWorkdir": 2,
+      "exec/WaitingSubmissionGate": 2,
+      "exec/WaitingForScheduler": 1,
+      "exec/Running": 1,
+      "workdir/CollectingOutputs": 1,
     });
   });
 
-  it("sums the files copied by the jobs copying now", () => {
-    expect(summary.jobs.files).toEqual({ done: 4, total: 6 });
+  it("sums the files copied by the jobs in each state", () => {
+    expect(group(summary.jobs, "workdir/PopulatingWorkdir")?.files).toEqual({ done: 4, total: 6 });
   });
 
-  it("dates each wait from the earliest job still in it", () => {
-    expect(summary.jobs.queuedSince).toBe(ms(20));
-    expect(summary.jobs.pendingSince).toBe(ms(40));
+  it("dates each state from the earliest job still in it", () => {
+    expect(group(summary.jobs, "exec/WaitingSubmissionGate")?.since).toBe(ms(20));
+    expect(group(summary.jobs, "exec/WaitingForScheduler")?.since).toBe(ms(40));
+  });
+
+  it("lists the largest group first", () => {
+    expect(summary.jobs.byState.map((g) => g.count)).toEqual([2, 2, 1, 1, 1]);
   });
 
   it("has no jobs before any command or work folder reports", () => {
@@ -632,8 +653,7 @@ describe("the run's jobs", () => {
         transitions: [{ namespace: "render", atMs: ms(0), state: "Running" }],
       }),
     );
-    expect(empty.jobs).toMatchObject({ total: 0 });
-    expect(empty.jobs.files).toBeUndefined();
+    expect(empty.jobs).toEqual({ total: 0, done: 0, failed: 0, byState: [] });
   });
 });
 

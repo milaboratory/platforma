@@ -11,7 +11,6 @@
 
 import type { PlClient, SignedResourceId } from "@milaboratories/pl-client";
 import { isNullSignedResourceId, ResourceTypeName, treeFilter } from "@milaboratories/pl-client";
-import type { ComputableCtx } from "@milaboratories/computable";
 import { Computable, WatchableValue } from "@milaboratories/computable";
 import type { PlTreeEntry, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
@@ -22,8 +21,8 @@ import {
   UnsupportedBlockStatusSummary,
 } from "@milaboratories/pl-model-middle-layer";
 import { setTimeout } from "node:timers/promises";
-import type { ActionContextNode } from "./block_status_fold";
-import { foldBlockStatus } from "./block_status_fold";
+import type { ActionContextNode, SubtreeFold } from "./block_status_fold";
+import { childContexts, foldContext, mergeSubtree, summarize } from "./block_status_fold";
 import type { BlockActionContextMode } from "./block_action_context";
 import { ActionContextLinkCapability } from "../mutator/template/render_block";
 import { projectFieldName } from "../model/project_model";
@@ -77,7 +76,7 @@ export async function readBlockActionContextRoot(
   });
 }
 
-/** Adapts a tree node accessor to what {@link foldBlockStatus} reads. */
+/** Adapts a tree node accessor to what the fold reads. */
 export function actionContextNode(acc: PlTreeNodeAccessor): ActionContextNode {
   return {
     id: String(acc.id),
@@ -94,33 +93,71 @@ export function actionContextNode(acc: PlTreeNodeAccessor): ActionContextNode {
 }
 
 /**
- * Folds the context an entry points at, or reports that it could not be read.
+ * The fold of the context an entry points at and everything under it, one computable per context.
  *
- * A context that is gone is the ordinary case, not a fault: an ephemeral context is dropped as
- * soon as the project stops holding it, which happens the moment the block is run again, and the
- * watch is briefly pointed at it until the next look for a new render. Breaking the panel over
- * that would be worse than saying nothing. The result is still distinguishable from a run that has
- * reported nothing, and the cause is logged, so a genuine fault here is not silent.
+ * A report is a KV write into one context, and only that context's computable reads its KV, so a
+ * report re-reads that one context. Each computable above it re-merges its direct children, which
+ * are cached, and nothing else in the tree is read again.
+ *
+ * Undefined when the context cannot be read. A context that is gone is the ordinary case, not a
+ * fault: an ephemeral context is dropped as soon as the project stops holding it, which happens the
+ * moment the block is run again, and the watch is briefly pointed at it until the next look for a
+ * new render. A child that cannot be read is left out rather than breaking the whole run's status.
+ * The cause is logged, so a genuine fault is not silent.
  */
-export function foldEntry(
-  ctx: ComputableCtx,
+export function subtreeFold(
+  entry: PlTreeEntry,
+  path: ReadonlySet<string>,
+  onError: (err: unknown) => void,
+): Computable<SubtreeFold | undefined> {
+  return Computable.make(
+    (ctx) => {
+      try {
+        const acc = ctx.accessor(entry).node({ ignoreError: true });
+        if (acc === undefined) return undefined;
+        const node = actionContextNode(acc);
+        const below = new Set(path).add(node.id);
+        const children = childContexts(
+          acc.listFields(),
+          // A child that carries an error is skipped rather than thrown, as in actionContextNode.
+          (field) => acc.traverse({ field, ignoreError: true }),
+          below,
+        ).map((child) => subtreeFold(child.persist(), below, onError));
+        return { own: foldContext(node), children };
+      } catch (err: unknown) {
+        onError(err);
+        return undefined;
+      }
+    },
+    {
+      key: `block-status-context/${entry.id}`,
+      postprocessValue: (value) => {
+        if (value === undefined) return undefined;
+        const children: SubtreeFold[] = [];
+        for (const child of value.children) if (child !== undefined) children.push(child);
+        return mergeSubtree(value.own, children);
+      },
+    },
+  );
+}
+
+/** The summary of the run whose root context an entry points at. */
+export function entrySummary(
   entry: PlTreeEntry,
   reportsSupported: boolean,
   onError: (err: unknown) => void,
-): BlockStatusSummary {
-  let summary: BlockStatusSummary;
-  try {
-    const node = ctx.accessor(entry).node({ ignoreError: true });
-    if (node === undefined) return UnreadableBlockStatusSummary;
-    summary = foldBlockStatus(actionContextNode(node));
-  } catch (err: unknown) {
-    onError(err);
-    return UnreadableBlockStatusSummary;
-  }
-
-  if (reportsSupported || summary.totalNodes === 0) return summary;
-  // The context exists and carries its data, but no transition can ever arrive.
-  return { ...summary, availability: "unsupported" };
+): Computable<BlockStatusSummary> {
+  return Computable.make(() => ({ fold: subtreeFold(entry, new Set(), onError) }), {
+    key: `block-status-summary/${entry.id}`,
+    postprocessValue: ({ fold }) => {
+      // The counters of a context that could not be read are unknown, not zero.
+      if (fold === undefined) return UnreadableBlockStatusSummary;
+      const summary = summarize(fold);
+      if (reportsSupported || summary.totalContexts === 0) return summary;
+      // The context exists and carries its data, but no transition can ever arrive.
+      return { ...summary, availability: "unsupported" as const };
+    },
+  });
 }
 
 /** What {@link BlockStatusWatch.start} watches. */
@@ -186,7 +223,7 @@ export class BlockStatusWatch {
       const entry = this.source.getValue(ctx);
       if (entry === undefined)
         return reportsSupported ? EmptyBlockStatusSummary : UnsupportedBlockStatusSummary;
-      return foldEntry(ctx, entry, reportsSupported, (err) =>
+      return entrySummary(entry, reportsSupported, (err) =>
         this.env.logger.warn(new Error("block status fold failed", { cause: err })),
       );
     });

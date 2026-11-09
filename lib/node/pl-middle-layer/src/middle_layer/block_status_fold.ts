@@ -1,19 +1,25 @@
 /**
  * Folds a block's action-context tree into the {@link BlockStatusSummary} the Desktop App shows.
  *
- * The fold is a pure function over {@link ActionContextNode}, which both a synchronized tree
- * accessor and a test fixture satisfy. Everything it reads registers a watcher on the tree, so the
- * computable holding it re-runs when any context in the tree reports.
+ * The fold runs bottom up: {@link foldContext} reads one context on its own, and
+ * {@link mergeSubtree} merges it with the folds of its children. Over a synchronized tree each
+ * context gets its own computable (see `block_status_tree.ts`), so a report re-reads only the
+ * context it landed in and re-merges the contexts above it; the rest of the tree is not read
+ * again.
+ *
+ * The fold attaches no meaning to the states the reporters write, beyond the lifecycle the backend
+ * fixes: a context ends in `Completed` or `Terminated`, and a command's `Running` is work on a
+ * machine. Jobs are counted per state as reported, so a state added on the backend reaches the
+ * Desktop App without a middle layer release.
  */
 
 import type {
+  BlockStatusJobGroup,
   BlockStatusJobs,
-  BlockStatusState,
   BlockStatusSummary,
 } from "@milaboratories/pl-model-middle-layer";
 import {
   blockStatusStatesRecord,
-  isBlockStatusState,
   isTerminalBlockStatusState,
 } from "@milaboratories/pl-model-middle-layer";
 
@@ -47,18 +53,21 @@ export interface ActionContextNode {
 }
 
 /**
- * How deep the walk follows `child/<render>`.
+ * How deep the fold follows `child/<render>`.
  *
- * A stack guard, not a correctness device: the `seen` set already makes a cycle terminate, and the
- * depth of a real tree is the nesting depth of the templates, far below this.
+ * A stack guard, not a correctness device: a context already on the path is skipped, and the depth
+ * of a real tree is the nesting depth of the templates, far below this.
  */
-const MaxDepth = 256;
+export const MaxDepth = 256;
 
 /** Prefix of the field names holding child contexts. */
 const ChildFieldPrefix = "child/";
 
 /** Prefix of the transition keys: `transition/<namespace>/<resource>/<ns>`. */
 const TransitionPrefix = "transition/";
+
+/** Prefix of the reading keys: `reading/<namespace>/<resource>/<key>`. */
+const ReadingPrefix = "reading/";
 
 /** The namespace the workflow controller reports a render's own lifecycle under. */
 const RenderNamespace = "render";
@@ -72,56 +81,60 @@ const CreatorNamespace = "core";
 /** The namespace a command reports under; its `Running` means a job executing on a machine. */
 const ExecNamespace = "exec";
 
-/** The namespace a job's work folder reports under: staging inputs, saving results. */
-export const WorkdirNamespace = "workdir";
-
-/** Prefix of a work folder's readings: `reading/workdir/<resource>/<key>`. */
-const WorkdirReadingPrefix = "reading/workdir/";
+/** The namespace a job's work folder reports under. */
+const WorkdirNamespace = "workdir";
 
 /** One transition, as stored under `transition/<namespace>/<resource>/<ns>`. */
-type Transition = {
+export type Transition = {
   namespace: string;
   /** The resource that reported: the render itself, or a command or work dir it created. */
   reporter: string;
   /** The reporter's clock in nanoseconds, as the decimal string the key carries. */
   ns: string;
-  state: BlockStatusState;
+  /** As the reporter wrote it, whether or not this build knows the name. */
+  state: string;
   detail: string;
   reason: string;
 };
 
 /** What one context reported. */
-type ContextReports = {
-  /** Transitions this build understands. */
-  known: Transition[];
-  /** The earliest and latest timestamp of ANY transition key, including states this build does
-   * not know: the clock is state-independent, so an unknown state still means the run moved. */
+export type ContextReports = {
+  /** Every transition whose key and value parse. */
+  all: Transition[];
+  /** The earliest and latest timestamp of any transition key, even one whose value does not
+   * parse: a report arriving is evidence the run moved whatever it says. */
   firstNs?: string;
   lastNs?: string;
 };
 
 /** A node of the tree, reduced to what the summary needs. */
-type FoldedNode = {
+export type FoldedNode = {
   /** True when the render of this context has ended and nothing it started is still running. */
   terminal: boolean;
   /** The reason, set when the render itself ended in a termination rather than a completion. */
   failure?: string;
-  /** The state holding this node, undefined when it is terminal or has not reported. */
-  state?: BlockStatusState;
-  /** True when {@link FoldedNode.state} is `Running` reported by a command. */
+  /** The transition holding this node, undefined when it is terminal or has not reported. */
+  holding?: Transition;
+  /** True when {@link FoldedNode.holding} is `Running` reported by a command. */
   onMachine: boolean;
-  /** When the node entered its state, nanoseconds as a decimal string. */
-  since?: string;
 };
 
 /** Compares non-negative decimal integers given as strings, shorter is smaller. */
-function compareNs(a: string, b: string): number {
+export function compareNs(a: string, b: string): number {
   return a.length !== b.length ? a.length - b.length : a < b ? -1 : a > b ? 1 : 0;
 }
 
 /** Nanoseconds since the epoch, as the key carries them, to milliseconds. */
-function nsToMs(ns: string): number {
+export function nsToMs(ns: string): number {
   return Number(BigInt(ns) / 1_000_000n);
+}
+
+function earlier(a: string | undefined, b: string | undefined): string | undefined {
+  return a === undefined || (b !== undefined && compareNs(b, a) < 0) ? b : a;
+}
+
+function later(a: string | undefined, b: string | undefined): string | undefined {
+  return a === undefined || (b !== undefined && compareNs(b, a) > 0) ? b : a;
 }
 
 /**
@@ -132,20 +145,18 @@ function nsToMs(ns: string): number {
  * the wait that actually holds the node. Anything else outranks it however old it is, including a
  * command's `Running`, which is real work. Recency decides only between equal ranks.
  */
-function rank(state: BlockStatusState, namespace: string): number {
-  return state === blockStatusStatesRecord.Running && namespace === RenderNamespace ? 0 : 1;
+function rank(t: Transition): number {
+  return t.state === blockStatusStatesRecord.Running && t.namespace === RenderNamespace ? 0 : 1;
 }
 
 /**
  * The transitions of one context.
  *
- * A value that is not the JSON the reporters write, or that names a state this build does not know,
- * is left out of the known list: a report is diagnostic, and a newer backend reporting a state
- * added after this release must not break the surface. Its timestamp still counts, because a report
- * arriving is evidence the run moved whatever the state means.
+ * A value that is not the JSON the reporters write is left out: a report is diagnostic, and a
+ * malformed one must not break the surface. Its timestamp still counts.
  */
-function readTransitions(node: ActionContextNode): ContextReports {
-  const out: ContextReports = { known: [] };
+export function readTransitions(node: ActionContextNode): ContextReports {
+  const out: ContextReports = { all: [] };
 
   for (const { key, value } of node.listKeyValuesAsString(TransitionPrefix)) {
     const parts = key.split("/");
@@ -154,22 +165,16 @@ function readTransitions(node: ActionContextNode): ContextReports {
     // Leading zeros would break the length-first comparison, and no reporter writes them.
     if (!/^(0|[1-9]\d*)$/.test(ns)) continue;
 
-    if (out.firstNs === undefined || compareNs(ns, out.firstNs) < 0) out.firstNs = ns;
-    if (out.lastNs === undefined || compareNs(ns, out.lastNs) > 0) out.lastNs = ns;
+    out.firstNs = earlier(out.firstNs, ns);
+    out.lastNs = later(out.lastNs, ns);
 
     const parsed = parseJsonObject(value);
     if (parsed === undefined) continue;
     const state = parsed.state;
-    if (!isBlockStatusState(state)) continue;
-
-    out.known.push({
-      namespace,
-      reporter,
-      ns,
-      state,
-      detail: typeof parsed.detail === "string" ? parsed.detail : "",
-      reason: typeof parsed.reason === "string" ? parsed.reason : "",
-    });
+    if (typeof state !== "string") continue;
+    const detail = typeof parsed.detail === "string" ? parsed.detail : "";
+    const reason = typeof parsed.reason === "string" ? parsed.reason : "";
+    out.all.push({ namespace, reporter, ns, state, detail, reason });
   }
 
   return out;
@@ -188,7 +193,7 @@ function readTransitions(node: ActionContextNode): ContextReports {
  * reporter in the context has ended too: the render's outputs being set does not stop a command it
  * started, and that command's report must stay visible.
  */
-function foldNode(transitions: readonly Transition[]): FoldedNode {
+export function foldNode(transitions: readonly Transition[]): FoldedNode {
   const latestPerReporter = new Map<string, Transition>();
   for (const t of transitions) {
     const reporterKey = `${t.namespace}/${t.reporter}`;
@@ -208,7 +213,7 @@ function foldNode(transitions: readonly Transition[]): FoldedNode {
       holding = t;
       continue;
     }
-    const byRank = rank(t.state, t.namespace) - rank(holding.state, holding.namespace);
+    const byRank = rank(t) - rank(holding);
     if (byRank > 0 || (byRank === 0 && compareNs(t.ns, holding.ns) > 0)) holding = t;
   }
 
@@ -219,172 +224,254 @@ function foldNode(transitions: readonly Transition[]): FoldedNode {
       failure: render.state === blockStatusStatesRecord.Terminated ? render.reason : undefined,
     };
 
-  if (holding === undefined) return { terminal: false, onMachine: false };
   return {
     terminal: false,
-    state: holding.state,
+    holding,
     onMachine:
-      holding.state === blockStatusStatesRecord.Running && holding.namespace === ExecNamespace,
-    since: holding.ns,
+      holding?.state === blockStatusStatesRecord.Running && holding.namespace === ExecNamespace,
   };
 }
 
-/** What the walk accumulates across the whole tree. */
-type Accumulator = {
-  totalNodes: number;
-  liveNodes: number;
-  firstNs?: string;
-  lastNs?: string;
-  /** The root's own fold, kept by the walk so the root is read once. */
-  root?: FoldedNode;
-  /** The earliest render anywhere in the tree whose latest report is a termination. */
-  failure?: { reason: string; ns: string };
-  /** When the creator marked the run cancelled on the root. */
-  cancelledNs?: string;
-  jobs: JobAccumulator;
+/** The render's own latest transition in a context. */
+export function latestRender(transitions: readonly Transition[]): Transition | undefined {
+  let latest: Transition | undefined;
+  for (const t of transitions)
+    if (t.namespace === RenderNamespace && (latest === undefined || compareNs(t.ns, latest.ns) > 0))
+      latest = t;
+  return latest;
+}
+
+/** One reading, as stored under `reading/<namespace>/<resource>/<key>`. */
+export type Reading = { namespace: string; resource: string; key: string; value: string };
+
+/** One context read on its own, before its children are merged in. */
+export type ContextFold = {
+  readonly id: string;
+  /** The baggage: `name`, `block-pack`, `block-id`, `run-id`. */
+  readonly data: Record<string, unknown> | undefined;
+  readonly reports: ContextReports;
+  readonly readings: readonly Reading[];
+  readonly folded: FoldedNode;
+  /** True for a context a command or its work folder reports in: one job. */
+  readonly job: boolean;
+  /** The render's own latest transition, when it is a termination. */
+  readonly terminated?: { readonly reason: string; readonly ns: string };
 };
 
-/** {@link BlockStatusJobs} being accumulated, the earliest entries still in nanoseconds. */
-type JobAccumulator = {
-  -readonly [K in Exclude<keyof BlockStatusJobs, "queuedSince" | "pendingSince" | "files">]: number;
-} & {
-  queuedSinceNs?: string;
-  pendingSinceNs?: string;
-  filesDone: number;
-  filesTotal: number;
-  /** Whether any copying job has reported its progress. */
-  filesKnown: boolean;
-};
+function readReadings(node: ActionContextNode): Reading[] {
+  const out: Reading[] = [];
+  for (const { key, value } of node.listKeyValuesAsString(ReadingPrefix)) {
+    const parts = key.split("/");
+    if (parts.length !== 4) continue;
+    out.push({ namespace: parts[1], resource: parts[2], key: parts[3], value });
+  }
+  return out;
+}
 
-function emptyJobAccumulator(): JobAccumulator {
+/** Reads one context: its transitions, its readings, and the state holding it. */
+export function foldContext(node: ActionContextNode): ContextFold {
+  const reports = readTransitions(node);
+  const render = latestRender(reports.all);
   return {
-    total: 0,
-    done: 0,
-    failed: 0,
-    running: 0,
-    copying: 0,
-    queued: 0,
-    pending: 0,
-    saving: 0,
-    filesDone: 0,
-    filesTotal: 0,
-    filesKnown: false,
+    id: node.id,
+    data: node.getData(),
+    reports,
+    readings: readReadings(node),
+    folded: foldNode(reports.all),
+    job: reports.all.some((t) => t.namespace === ExecNamespace || t.namespace === WorkdirNamespace),
+    terminated:
+      render?.state === blockStatusStatesRecord.Terminated
+        ? { reason: render.reason, ns: render.ns }
+        : undefined,
   };
 }
 
-/** True for a context a command or its work folder reports in: one job. */
-function isJob(reports: ContextReports): boolean {
-  return reports.known.some(
-    (t) => t.namespace === ExecNamespace || t.namespace === WorkdirNamespace,
-  );
-}
+/** {@link BlockStatusJobGroup} being accumulated, its timestamp still in nanoseconds. */
+type JobGroupTally = {
+  readonly namespace: string;
+  readonly state: string;
+  readonly count: number;
+  readonly sinceNs?: string;
+  readonly files?: { readonly done: number; readonly total: number };
+};
 
-function earlier(a: string | undefined, b: string): string {
-  return a === undefined || compareNs(b, a) < 0 ? b : a;
-}
+/**
+ * {@link BlockStatusJobs} being accumulated over a subtree. Plain data throughout, no `Map`: it is
+ * the value of a computable, which the computable types map over field by field.
+ */
+export type JobTally = {
+  readonly total: number;
+  readonly done: number;
+  readonly failed: number;
+  /** Jobs not ended, by `<namespace>/<state>` of the transition holding each. */
+  readonly groups: Readonly<Record<string, JobGroupTally>>;
+};
 
-/** The progress readings of the work folders in a context, summed: files done of all. */
-function readWorkdirProgress(node: ActionContextNode): { done: number; total: number } | undefined {
-  let done = 0;
-  let total = 0;
-  let known = false;
-  for (const { key, value } of node.listKeyValuesAsString(WorkdirReadingPrefix)) {
-    if (!key.endsWith("/progress")) continue;
-    const parsed = parseJsonObject(value);
-    if (parsed === undefined) continue;
-    if (typeof parsed.done !== "number" || typeof parsed.total !== "number") continue;
-    done += parsed.done;
-    total += parsed.total;
-    known = true;
+const EmptyJobTally: JobTally = { total: 0, done: 0, failed: 0, groups: {} };
+
+/** A context and everything under it, folded. */
+export type SubtreeFold = {
+  readonly own: ContextFold;
+  readonly children: readonly SubtreeFold[];
+  /** This context and every context under it. */
+  readonly contexts: number;
+  /** Contexts in the subtree that have not ended. */
+  readonly activeContexts: number;
+  readonly firstNs?: string;
+  readonly lastNs?: string;
+  /** The earliest render in the subtree whose latest report is a termination. */
+  readonly failure?: { readonly reason: string; readonly ns: string };
+  readonly jobs: JobTally;
+};
+
+/** Files done of all, summed over the work folders' progress readings of one context. */
+function workdirProgress(readings: readonly Reading[]): JobGroupTally["files"] {
+  let progress: JobGroupTally["files"];
+  for (const r of readings) {
+    if (r.namespace !== WorkdirNamespace || r.key !== "progress") continue;
+    const parsed = parseJsonObject(r.value);
+    if (typeof parsed?.done !== "number" || typeof parsed.total !== "number") continue;
+    progress = addFiles(progress, { done: parsed.done, total: parsed.total });
   }
-  return known ? { done, total } : undefined;
+  return progress;
 }
 
-/** Counts one job where it is now. */
-function noteJob(jobs: JobAccumulator, node: ActionContextNode, folded: FoldedNode): void {
-  jobs.total++;
-  if (folded.terminal) {
-    if (folded.failure !== undefined) jobs.failed++;
-    else jobs.done++;
-    return;
-  }
-  switch (folded.state) {
-    case blockStatusStatesRecord.Running:
-      // The render's own Running only evaluates template code; the job has not started yet.
-      if (folded.onMachine) jobs.running++;
-      return;
-    case blockStatusStatesRecord.WaitingWorkdirGate:
-    case blockStatusStatesRecord.PopulatingWorkdir: {
-      jobs.copying++;
-      const progress = readWorkdirProgress(node);
-      if (progress === undefined) return;
-      jobs.filesDone += progress.done;
-      jobs.filesTotal += progress.total;
-      jobs.filesKnown = true;
-      return;
+function addFiles(a: JobGroupTally["files"], b: JobGroupTally["files"]): JobGroupTally["files"] {
+  if (a === undefined) return b;
+  if (b === undefined) return a;
+  return { done: a.done + b.done, total: a.total + b.total };
+}
+
+function groupKey(group: Pick<JobGroupTally, "namespace" | "state">): string {
+  return `${group.namespace}/${group.state}`;
+}
+
+function mergeGroup(
+  groups: Record<string, JobGroupTally>,
+  key: string,
+  group: JobGroupTally,
+): void {
+  const previous = groups[key];
+  groups[key] =
+    previous === undefined
+      ? group
+      : {
+          namespace: group.namespace,
+          state: group.state,
+          count: previous.count + group.count,
+          sinceNs: earlier(previous.sinceNs, group.sinceNs),
+          files: addFiles(previous.files, group.files),
+        };
+}
+
+/** The job a context is, counted where it is now; empty when it is not one. */
+function ownJobs(own: ContextFold): JobTally {
+  if (!own.job) return EmptyJobTally;
+  const { terminal, failure, holding } = own.folded;
+  if (terminal)
+    return failure === undefined
+      ? { ...EmptyJobTally, total: 1, done: 1 }
+      : { ...EmptyJobTally, total: 1, failed: 1 };
+  if (holding === undefined) return { ...EmptyJobTally, total: 1 };
+  const group: JobGroupTally = {
+    namespace: holding.namespace,
+    state: holding.state,
+    count: 1,
+    sinceNs: holding.ns,
+    files: workdirProgress(own.readings),
+  };
+  return { ...EmptyJobTally, total: 1, groups: { [groupKey(group)]: group } };
+}
+
+/**
+ * Merges a context with the folds of its children. One pass over the direct children, so a report
+ * re-merges each context on its path to the root and nothing else.
+ */
+export function mergeSubtree(own: ContextFold, children: readonly SubtreeFold[]): SubtreeFold {
+  let contexts = 1;
+  let activeContexts = own.folded.terminal ? 0 : 1;
+  let firstNs = own.reports.firstNs;
+  let lastNs = own.reports.lastNs;
+  let failure = own.terminated;
+  let failedBelow = false;
+
+  const self = ownJobs(own);
+  let { total, done, failed } = self;
+  const groups: Record<string, JobGroupTally> = { ...self.groups };
+
+  for (const child of children) {
+    contexts += child.contexts;
+    activeContexts += child.activeContexts;
+    firstNs = earlier(firstNs, child.firstNs);
+    lastNs = later(lastNs, child.lastNs);
+    if (child.failure !== undefined) {
+      failedBelow = true;
+      if (failure === undefined || compareNs(child.failure.ns, failure.ns) < 0)
+        failure = child.failure;
     }
-    case blockStatusStatesRecord.WaitingSubmissionGate:
-      jobs.queued++;
-      if (folded.since !== undefined)
-        jobs.queuedSinceNs = earlier(jobs.queuedSinceNs, folded.since);
-      return;
-    case blockStatusStatesRecord.WaitingForScheduler:
-    case blockStatusStatesRecord.WaitingForMachine:
-      jobs.pending++;
-      if (folded.since !== undefined)
-        jobs.pendingSinceNs = earlier(jobs.pendingSinceNs, folded.since);
-      return;
-    case blockStatusStatesRecord.CollectingOutputs:
-      jobs.saving++;
-      return;
-    default:
-      return;
+    total += child.jobs.total;
+    done += child.jobs.done;
+    failed += child.jobs.failed;
+    for (const [key, group] of Object.entries(child.jobs.groups)) mergeGroup(groups, key, group);
   }
-}
 
-function finishJobs(jobs: JobAccumulator): BlockStatusJobs {
-  const { queuedSinceNs, pendingSinceNs, filesDone, filesTotal, filesKnown, ...counts } = jobs;
+  // A render that failed on its own, e.g. one whose command could not start, is a failed job too;
+  // one that only passes up the failure under it is not counted again.
+  if (own.terminated !== undefined && !failedBelow && !own.job) {
+    total++;
+    failed++;
+  }
+
   return {
-    ...counts,
-    queuedSince: queuedSinceNs === undefined ? undefined : nsToMs(queuedSinceNs),
-    pendingSince: pendingSinceNs === undefined ? undefined : nsToMs(pendingSinceNs),
-    files: filesKnown ? { done: filesDone, total: filesTotal } : undefined,
+    own,
+    children,
+    contexts,
+    activeContexts,
+    firstNs,
+    lastNs,
+    failure,
+    jobs: { total, done, failed, groups },
   };
 }
 
 /**
- * Notes one context. Returns whether its render terminated, so the walk can tell a render that
- * failed on its own from one that only passes up the error of something under it.
+ * The child contexts a fold follows: each once, and none already on the path from the root, so a
+ * context linked twice or a cycle cannot count a subtree again.
  */
-function note(acc: Accumulator, node: ActionContextNode, isRoot: boolean): NotedContext {
-  const reports = readTransitions(node);
-
-  if (reports.firstNs !== undefined)
-    if (acc.firstNs === undefined || compareNs(reports.firstNs, acc.firstNs) < 0)
-      acc.firstNs = reports.firstNs;
-  if (reports.lastNs !== undefined)
-    if (acc.lastNs === undefined || compareNs(reports.lastNs, acc.lastNs) > 0)
-      acc.lastNs = reports.lastNs;
-
-  const folded = foldNode(reports.known);
-  if (isRoot) {
-    acc.root = folded;
-    for (const t of reports.known)
-      if (t.namespace === CreatorNamespace && t.state === blockStatusStatesRecord.Terminated)
-        if (acc.cancelledNs === undefined || compareNs(t.ns, acc.cancelledNs) > 0)
-          acc.cancelledNs = t.ns;
+export function childContexts<T extends { readonly id: unknown }>(
+  fields: readonly string[],
+  traverse: (field: string) => T | undefined,
+  path: ReadonlySet<string>,
+): T[] {
+  if (path.size > MaxDepth) return [];
+  const out: T[] = [];
+  const seen = new Set<string>();
+  for (const field of fields) {
+    if (!field.startsWith(ChildFieldPrefix)) continue;
+    const child = traverse(field);
+    if (child === undefined) continue;
+    const id = String(child.id);
+    if (path.has(id) || seen.has(id)) continue;
+    seen.add(id);
+    out.push(child);
   }
-  acc.totalNodes++;
-  if (isJob(reports)) noteJob(acc.jobs, node, folded);
+  return out;
+}
 
-  const render = latestRender(reports.known);
-  const terminated = render?.state === blockStatusStatesRecord.Terminated;
-  if (terminated)
-    if (acc.failure === undefined || compareNs(render.ns, acc.failure.ns) < 0)
-      acc.failure = { reason: render.reason, ns: render.ns };
-
-  if (!folded.terminal) acc.liveNodes++;
-  return { terminated, job: isJob(reports) };
+/**
+ * Folds a context and everything under it in one walk: what the per-context computables compute,
+ * for a tree that is read once.
+ */
+export function foldSubtree(
+  node: ActionContextNode,
+  path: ReadonlySet<string> = new Set(),
+): SubtreeFold {
+  const below = new Set(path).add(node.id);
+  const children = childContexts(node.listFields(), (f) => node.traverse(f), below);
+  return mergeSubtree(
+    foldContext(node),
+    children.map((child) => foldSubtree(child, below)),
+  );
 }
 
 /** Where the backend nests the error of an input inside the error of what consumes it. */
@@ -421,81 +508,56 @@ export function failureHeadline(reason: string): string {
     : headline;
 }
 
-/** The render's own latest transition in a context. */
-function latestRender(known: readonly Transition[]): Transition | undefined {
-  let latest: Transition | undefined;
-  for (const t of known)
-    if (t.namespace === RenderNamespace && (latest === undefined || compareNs(t.ns, latest.ns) > 0))
-      latest = t;
-  return latest;
+function finishJobs(jobs: JobTally): BlockStatusJobs {
+  const byState = Object.values(jobs.groups)
+    .map((g): BlockStatusJobGroup => ({
+      namespace: g.namespace,
+      state: g.state,
+      count: g.count,
+      since: g.sinceNs === undefined ? undefined : nsToMs(g.sinceNs),
+      files: g.files,
+    }))
+    .sort((a, b) => b.count - a.count || groupKey(a).localeCompare(groupKey(b)));
+  return { total: jobs.total, done: jobs.done, failed: jobs.failed, byState };
 }
 
-type NotedContext = { terminated: boolean; job: boolean };
-
-/**
- * Walks the context and everything under it, depth first, each context counted once. Returns
- * whether a render in the subtree terminated.
- */
-function walk(
-  node: ActionContextNode,
-  acc: Accumulator,
-  seen: Set<string>,
-  depth: number,
-): boolean {
-  if (depth > MaxDepth) return false;
-  if (seen.has(node.id)) return false;
-  seen.add(node.id);
-
-  const own = note(acc, node, depth === 0);
-
-  let below = false;
-  for (const fieldName of node.listFields()) {
-    if (!fieldName.startsWith(ChildFieldPrefix)) continue;
-    const child = node.traverse(fieldName);
-    if (child === undefined) continue;
-    if (walk(child, acc, seen, depth + 1)) below = true;
-  }
-
-  // A render that failed on its own, e.g. one whose command could not start, is a failed job too;
-  // one that only passes up the failure under it is not counted again.
-  if (own.terminated && !below && !own.job) {
-    acc.jobs.total++;
-    acc.jobs.failed++;
-  }
-  return own.terminated || below;
-}
-
-/** The summary of a block run, from the root action context of its render. */
-export function foldBlockStatus(root: ActionContextNode): BlockStatusSummary {
-  const acc: Accumulator = { totalNodes: 0, liveNodes: 0, jobs: emptyJobAccumulator() };
-  walk(root, acc, new Set(), 0);
-
-  const runId = root.getData()?.["run-id"];
+/** The summary of a block run, from the fold of its root action context. */
+export function summarize(root: SubtreeFold): BlockStatusSummary {
+  const runId = root.own.data?.["run-id"];
+  const jobs = finishJobs(root.jobs);
   const summary = {
     availability: "read" as const,
     runId: typeof runId === "string" ? runId : undefined,
-    liveNodes: acc.liveNodes,
-    totalNodes: acc.totalNodes,
-    jobs: finishJobs(acc.jobs),
-    startedAt: acc.firstNs === undefined ? undefined : nsToMs(acc.firstNs),
+    activeContexts: root.activeContexts,
+    totalContexts: root.contexts,
+    jobs,
+    startedAt: root.firstNs === undefined ? undefined : nsToMs(root.firstNs),
   };
 
   // A stopped run: its render is gone and reports nothing more, so the tree is frozen where it
   // stopped. The counters stay, to say where each node was; the run itself is over.
-  if (acc.cancelledNs !== undefined)
-    return { ...summary, lastChangeAt: nsToMs(acc.cancelledNs), done: true, cancelled: true };
+  let cancelledNs: string | undefined;
+  for (const t of root.own.reports.all)
+    if (t.namespace === CreatorNamespace && t.state === blockStatusStatesRecord.Terminated)
+      cancelledNs = later(cancelledNs, t.ns);
+  if (cancelledNs !== undefined)
+    return { ...summary, lastChangeAt: nsToMs(cancelledNs), done: true, cancelled: true };
 
   // A terminated render fails the run. Renders waiting on its outputs never report again, so once
-  // no job is working the run is over even though they still look live.
-  const { jobs } = summary;
-  const working = jobs.running + jobs.copying + jobs.queued + jobs.pending + jobs.saving;
+  // no job is held by its command or work folder the run is over, though they still look active.
+  const working = jobs.byState.some((g) => g.namespace !== RenderNamespace);
   return {
     ...summary,
-    lastChangeAt: acc.lastNs === undefined ? undefined : nsToMs(acc.lastNs),
+    lastChangeAt: root.lastNs === undefined ? undefined : nsToMs(root.lastNs),
     // The root's outputs can be set while work it started still runs, so done needs both.
     done:
-      ((acc.root?.terminal ?? false) && acc.liveNodes === 0) ||
-      (acc.failure !== undefined && working === 0),
-    failure: acc.failure === undefined ? undefined : failureHeadline(acc.failure.reason),
+      (root.own.folded.terminal && root.activeContexts === 0) ||
+      (root.failure !== undefined && !working),
+    failure: root.failure === undefined ? undefined : failureHeadline(root.failure.reason),
   };
+}
+
+/** The summary of a block run, from the root action context of its render. */
+export function foldBlockStatus(root: ActionContextNode): BlockStatusSummary {
+  return summarize(foldSubtree(root));
 }

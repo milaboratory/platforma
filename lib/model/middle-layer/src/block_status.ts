@@ -7,11 +7,13 @@
  */
 
 /**
- * A node state, spelled as the backend and the workflow SDK write it into a transition value. The
- * names match `plapi.ActionState` on the backend and `STATES` in workflow-tengo's action-context
- * library.
+ * The node states this build knows, spelled as the backend and the workflow SDK write them into a
+ * transition value. The names match `plapi.ActionState` on the backend and `STATES` in
+ * workflow-tengo's action-context library.
  *
- * States are lossy by design: they exist for the user, and no logic may depend on them.
+ * The backend owns the list: a reporter may write a state added after this release, and the middle
+ * layer passes it on as written. Only the lifecycle (`Completed`, `Terminated`, and `Running`
+ * reported by a command) carries meaning in the fold; the rest exists for the user.
  */
 export const blockStatusStatesRecord = {
   WaitingForInputs: "WaitingForInputs",
@@ -29,22 +31,28 @@ export const blockStatusStatesRecord = {
 /** Every state, in the order above. */
 export const blockStatusStates = Object.values(blockStatusStatesRecord);
 
-/** A node state name, e.g. `"PopulatingWorkdir"`. */
+/** A node state name this build knows, e.g. `"PopulatingWorkdir"`. */
 export type BlockStatusState = (typeof blockStatusStates)[number];
 
-const blockStatusStateSet: ReadonlySet<string> = new Set(blockStatusStates);
-
-/** True for a state name this build knows, as a reporter writes it into a transition value. */
-export function isBlockStatusState(value: unknown): value is BlockStatusState {
-  return typeof value === "string" && blockStatusStateSet.has(value);
-}
-
 /** True for a state a node cannot leave. */
-export function isTerminalBlockStatusState(state: BlockStatusState): boolean {
+export function isTerminalBlockStatusState(state: string): boolean {
   return (
     state === blockStatusStatesRecord.Terminated || state === blockStatusStatesRecord.Completed
   );
 }
+
+/** Jobs held by one state: the transition holding each of them has this namespace and state. */
+export type BlockStatusJobGroup = {
+  /** Who reported the state: `exec` for a command, `workdir` for its work folder, `render`. */
+  readonly namespace: string;
+  /** As the reporter wrote it, which can be a state this build does not know. */
+  readonly state: string;
+  readonly count: number;
+  /** When the earliest of them entered the state, ms since the epoch. */
+  readonly since?: number;
+  /** Files done and all, summed over the jobs whose work folders report their progress. */
+  readonly files?: { readonly done: number; readonly total: number };
+};
 
 /**
  * The block's jobs: the commands it runs on a machine, each counted once by where it is now.
@@ -60,22 +68,8 @@ export type BlockStatusJobs = {
    * them), e.g. one whose command could not start.
    */
   readonly failed: number;
-  /** Executing on a machine. */
-  readonly running: number;
-  /** Getting their input files. */
-  readonly copying: number;
-  /** Input files copied so far by the jobs copying now, when their work folders report it. */
-  readonly files?: { readonly done: number; readonly total: number };
-  /** Waiting for CPU or memory on the server. */
-  readonly queued: number;
-  /** When the earliest job still queued entered the queue, ms since the epoch. */
-  readonly queuedSince?: number;
-  /** Held by the cluster (Kubernetes, Batch): it has the job and has not started it. */
-  readonly pending: number;
-  /** When the earliest job still held by the cluster was handed to it, ms since the epoch. */
-  readonly pendingSince?: number;
-  /** Saving their results. */
-  readonly saving: number;
+  /** The jobs not ended, by the state holding each, largest group first. */
+  readonly byState: readonly BlockStatusJobGroup[];
 };
 
 /** Why a summary carries no counters. */
@@ -95,10 +89,10 @@ export type BlockStatusSummary = {
   readonly availability: BlockStatusAvailability;
   /** The block's own `run-id`: two clicks of Run give two different values. */
   readonly runId?: string;
-  /** Nodes whose latest transition is not terminal. */
-  readonly liveNodes: number;
-  /** Every node of the tree, live or finished. */
-  readonly totalNodes: number;
+  /** Action contexts that have not ended. */
+  readonly activeContexts: number;
+  /** Every action context of the run, active or ended. */
+  readonly totalContexts: number;
   /** The run's jobs, counted apart from the template renders that only prepare them. */
   readonly jobs: BlockStatusJobs;
   /** The first transition anywhere in the tree, ms since the epoch. */
@@ -128,18 +122,14 @@ export const EmptyBlockStatusJobs: BlockStatusJobs = {
   total: 0,
   done: 0,
   failed: 0,
-  running: 0,
-  copying: 0,
-  queued: 0,
-  pending: 0,
-  saving: 0,
+  byState: [],
 };
 
 /** A summary for a block whose run has not reported anything yet. */
 export const EmptyBlockStatusSummary: BlockStatusSummary = {
   availability: "read",
-  liveNodes: 0,
-  totalNodes: 0,
+  activeContexts: 0,
+  totalContexts: 0,
   jobs: EmptyBlockStatusJobs,
   done: false,
 };
