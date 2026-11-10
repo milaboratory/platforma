@@ -13,7 +13,7 @@ New `ColumnsCollection.discoverRoots`: find the columns the given ones hang off
 `discover` starts from anchors and walks linkers down to what they contain (anchored on `sample`, it reaches `cell`). There was no way to go the other way, from `cell` to the `sample`-level columns above it. `discoverRoots` takes the columns you have and returns the roots they hang off:
 
 ```ts
-const found = collection.discoverRoots({ leaves: { c: cellRef }, mode: "enrichment", maxHops: 4 });
+const found = collection.discoverRoots({ leaves: [cellRef], mode: "enrichment", maxHops: 4 });
 // found: Array<{ root: ColumnRecipe; leaf: ColumnRecipe; path: ColumnRecipe[] }>
 ```
 

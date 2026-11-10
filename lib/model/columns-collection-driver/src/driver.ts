@@ -200,7 +200,10 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
 
     const specDriver = host.getSpecDriver();
     const specMap = effectiveSpecs(ids, host);
-    const leaves = Object.values(resolveAnchors(options.leaves, specMap, specDriver));
+    // Leaves resolve like anchors; their position stands in for an anchor's
+    // name in error messages.
+    const named = Object.fromEntries(options.leaves.map((leaf, i) => [`leaves[${i}]`, leaf]));
+    const leaves = Object.values(resolveAnchors(named, specMap, specDriver));
     if (leaves.length === 0) return [];
 
     using specFrame = specDriver.createSpecFrame(Object.fromEntries(specMap.entries()));

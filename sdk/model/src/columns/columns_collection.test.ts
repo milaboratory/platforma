@@ -219,7 +219,7 @@ describe("ColumnsCollection.discoverRoots", () => {
 
   test("finds the column the given one hangs off, with the linker path", () => {
     const found = makeCollection([cellData, linker, sampleData]).discoverRoots({
-      leaves: { c: cellData.id },
+      leaves: [cellData.id],
       maxHops: 1,
     });
 
@@ -229,7 +229,7 @@ describe("ColumnsCollection.discoverRoots", () => {
 
   test("the leaf is what discover anchored on the root returns", () => {
     const collection = makeCollection([cellData, linker, sampleData]);
-    const [found] = collection.discoverRoots({ leaves: { c: cellData.id }, maxHops: 1 });
+    const [found] = collection.discoverRoots({ leaves: [cellData.id], maxHops: 1 });
 
     const discovered = collection
       .discover({ anchors: { r: sampleData.id }, maxHops: 1 })
@@ -241,7 +241,7 @@ describe("ColumnsCollection.discoverRoots", () => {
 
   test("a column at the top of the hierarchy has no roots", () => {
     const found = makeCollection([cellData, linker, sampleData]).discoverRoots({
-      leaves: { s: sampleData.id },
+      leaves: [sampleData.id],
       maxHops: 1,
     });
 

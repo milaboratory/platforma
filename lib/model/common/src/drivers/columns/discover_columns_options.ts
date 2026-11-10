@@ -71,7 +71,7 @@ export type ColumnsFilterOptions = Omit<DiscoverColumnsOptions, "mode" | "maxHop
  */
 export interface DiscoverRootsOptions {
   /** Columns to find roots for. */
-  leaves: Record<string, AnchorEntry>;
+  leaves: AnchorEntry[];
   /** Roots must match these selectors. If omitted, includes all. */
   include?: ColumnSelector;
   /** Roots matching these selectors are dropped. */
