@@ -143,7 +143,6 @@ async function withMl(cb: (ml: MiddleLayer) => Promise<void>): Promise<void> {
       defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
       devBlockUpdateRecheckInterval: 300,
       localSecret: MiddleLayer.generateLocalSecret(),
-      localProjections: [],
       openFileDialogCallback: () => {
         throw new Error("Not implemented.");
       },

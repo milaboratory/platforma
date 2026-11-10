@@ -77,6 +77,7 @@ function contextData(
   return {
     id: rid,
     originalResourceId: NullSignedResourceId,
+    canonicalId: new Uint8Array(0),
     kind: "Structural",
     type: ActionContextType,
     data: Buffer.from(JSON.stringify({ name })),
