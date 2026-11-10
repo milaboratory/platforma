@@ -58,7 +58,7 @@ async function libraryFileHandle(
   name = FIXTURE_NAME,
 ) {
   const storages = await driverKit.lsDriver.getStorageList();
-  const library = storages.find((s) => s.name === env.libraryStorage);
+  const library = env.findLibraryStorage(storages);
   if (!library) throw new Error(`library storage "${env.libraryStorage}" not found`);
   const files = await driverKit.lsDriver.listFiles(library.handle, "");
   const ourFile = files.entries.find((f) => f.name === name);

@@ -22,7 +22,7 @@ const cases: TestInput[] = [
     name: "import",
     handleProvider: async (driverKit) => {
       const storages = await driverKit.lsDriver.getStorageList();
-      const library = storages.find((s) => s.name == env.libraryStorage);
+      const library = env.findLibraryStorage(storages);
       if (library === undefined) throw new Error(`Library '${env.libraryStorage}' not found`);
       const files = await driverKit.lsDriver.listFiles(library!.handle, "");
       const ourFile = files.entries.find((f) => f.name == "answer_to_the_ultimate_question.txt");

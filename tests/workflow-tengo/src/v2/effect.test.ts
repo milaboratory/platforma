@@ -42,9 +42,7 @@ async function librarySource(
   driverKit: MiddleLayerDriverKit,
   name: string = ASSET,
 ): Promise<string> {
-  const library = (await driverKit.lsDriver.getStorageList()).find(
-    (s) => s.name === env.libraryStorage,
-  );
+  const library = env.findLibraryStorage(await driverKit.lsDriver.getStorageList());
   if (library === undefined) throw new Error(`no data library ${env.libraryStorage}`);
   const file = (await driverKit.lsDriver.listFiles(library.handle, "")).entries.find(
     (e) => e.name === name,
