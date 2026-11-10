@@ -15,6 +15,7 @@ import * as util from "./util";
 import * as archive from "./archive";
 import * as storage from "./storage";
 import * as docker from "./docker";
+import * as dockerRelayer from "./docker-relayer";
 import * as dockerCoverage from "./docker-coverage";
 import { tmpSpecFile } from "./docker-conda";
 
@@ -894,7 +895,11 @@ export class Core {
       this.logger.info(`Publishing docker image '${tag}' with tag '${pushTag}'`);
     }
 
-    docker.push(pushTag);
+    if (dockerRelayer.isEnabled()) {
+      dockerRelayer.relayerAndPush(tag, pushTag, this.logger);
+    } else {
+      docker.push(pushTag);
+    }
   }
 
   private get renderer(): SwJsonRenderer {

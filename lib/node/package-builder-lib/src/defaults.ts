@@ -67,3 +67,18 @@ export const DOCKER_BUILD_PLATFORM = "linux/amd64";
 // may not finalize such a layer before the pushing client gives up. Override with
 // PL_DOCKER_MAX_LAYER_BYTES; see docker.checkLayerSizes.
 export const DOCKER_MAX_LAYER_BYTES = 4 * 1024 ** 3;
+
+// Re-layering of docker images before the push (opt-in: PL_DOCKER_RELAYER=chunkah, see
+// docker-relayer.ts). The image is exported, its files are grouped by owning package, and
+// chunkah writes one layer per group (or per few groups), so a one-package bump re-uploads
+// about one package. Tool images are pinned; the tools run in containers, so nothing is
+// installed on the runner.
+export const DOCKER_RELAYER_CHUNKAH_IMAGE = "quay.io/coreos/chunkah:v0.7.1";
+// The debug variant has a shell, needed to log in and push in one container run.
+export const DOCKER_RELAYER_CRANE_IMAGE = "gcr.io/go-containerregistry/crane/debug:v0.22.0";
+// Runs tar (to unpack the exported filesystem) and the python tagger.
+export const DOCKER_RELAYER_TOOLS_IMAGE = "python:3.12-slim";
+// Docker overlay2 refuses to run images with more than 128 layers (moby/buildkit#3067).
+export const DOCKER_RELAYER_MAX_LAYERS = 64;
+// A package bigger than this is split into several components (= several layers).
+export const DOCKER_RELAYER_COMPONENT_MAX_BYTES = 2 * 1024 ** 3;

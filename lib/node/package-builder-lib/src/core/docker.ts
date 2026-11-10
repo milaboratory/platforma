@@ -170,9 +170,9 @@ export function push(tag: string) {
 }
 
 export type ImageLayer = {
-  /** Uncompressed layer size in bytes, as `docker history` reports it; undefined if unreadable. */
+  /** Layer size in bytes: uncompressed from `docker history`, compressed from a manifest. */
   bytes: number | undefined;
-  /** The Dockerfile instruction that created the layer. */
+  /** What made the layer: the Dockerfile instruction, or the re-layering component. */
   createdBy: string;
 };
 
@@ -228,7 +228,8 @@ export function oversizedLayers(layers: ImageLayer[], limit: number): ImageLayer
  * Runs after the build and before the push, so the failure names the layer instead of
  * surfacing as a registry timeout.
  */
-export function checkLayerSizes(tag: string, warn: (message: string) => void): void {
+/** The layer size limit, and whether exceeding it fails (PL_DOCKER_MAX_LAYER_BYTES set). */
+function layerLimit(): { limit: number; enforced: boolean } {
   const raw = process.env[envs.PL_DOCKER_MAX_LAYER_BYTES]?.trim();
   const enforced = raw !== undefined && raw !== "";
   const limit = enforced ? Number(raw) : defaults.DOCKER_MAX_LAYER_BYTES;
@@ -237,6 +238,11 @@ export function checkLayerSizes(tag: string, warn: (message: string) => void): v
       `${envs.PL_DOCKER_MAX_LAYER_BYTES} must be a positive number of bytes, got '${raw}'`,
     );
   }
+  return { limit, enforced };
+}
+
+export function checkLayerSizes(tag: string, warn: (message: string) => void): void {
+  const { enforced } = layerLimit();
 
   let layers: ImageLayer[];
   try {
@@ -257,6 +263,20 @@ export function checkLayerSizes(tag: string, warn: (message: string) => void): v
     warn(message);
   }
 
+  reportOversizedLayers(tag, layers, "uncompressed", warn);
+}
+
+/**
+ * Reports layers above the limit (see checkLayerSizes): a warning, or an error when
+ * PL_DOCKER_MAX_LAYER_BYTES is set. `measure` says which size the layers carry.
+ */
+export function reportOversizedLayers(
+  tag: string,
+  layers: ImageLayer[],
+  measure: "compressed" | "uncompressed",
+  warn: (message: string) => void,
+): void {
+  const { limit, enforced } = layerLimit();
   const oversized = oversizedLayers(layers, limit);
   if (oversized.length === 0) {
     return;
@@ -264,7 +284,7 @@ export function checkLayerSizes(tag: string, warn: (message: string) => void): v
 
   const gib = (bytes: number) => `${(bytes / 1024 ** 3).toFixed(2)} GiB`;
   const message =
-    `Image '${tag}' has ${oversized.length} layer(s) above ${gib(limit)} (uncompressed):\n` +
+    `Image '${tag}' has ${oversized.length} layer(s) above ${gib(limit)} (${measure}):\n` +
     oversized.map((l) => `  ${gib(l.bytes ?? 0)}  ${l.createdBy.slice(0, 160)}`).join("\n") +
     `\nRegistries may not finalize a layer this big before the pushing client gives up ` +
     `('timeout awaiting response headers'). Split the step that creates it into several ` +
