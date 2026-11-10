@@ -11,7 +11,8 @@
  *  - `exports`: the node the body returned as `exports` (see `:v2.exports`), set directly; the
  *    project builds the block's context around it;
  *  - `effect`: the files the workflow imports, listed for the engine — the client-side runtime that
- *    sends uploads and reports import progress — and never read by block code (see `body`).
+ *    sends uploads and reports import progress — and never read by block code; an empty map when
+ *    the workflow imports nothing (see `body`).
  *
  * A ref names a value another block's workflow exports:
  *
@@ -56,7 +57,8 @@ _EXPORTS_OUTPUT := "exports"
 _EFFECT_OUTPUT := "effect"
 _INPUT_CONTEXT := "context"
 
-// the effect's section listing the files the workflow imports, one field per source
+// the effect's section listing the files the workflow imports, one field per source; present only
+// when the workflow imports at least one file
 _IMPORTS_SECTION := "imports"
 
 // one file the workflow imports, as the effect lists it: Input fields `upload` (upload grants
@@ -273,12 +275,16 @@ _newEffect := func() {
 
 	build := func() {
 		built = true
-		imports := smart.ephemeralMapBuilder()
-		for source, i in imported {
-			imports.addRef(source, i.entry)
-		}
 		effect := smart.ephemeralMapBuilder()
-		effect.addRef(_IMPORTS_SECTION, imports.build())
+		// `imports` is added only when something was imported, so the engine reading an effect with
+		// no imports finds nothing below the map
+		if len(imported) > 0 {
+			imports := smart.ephemeralMapBuilder()
+			for source, i in imported {
+				imports.addRef(source, i.entry)
+			}
+			effect.addRef(_IMPORTS_SECTION, imports.build())
+		}
 		return effect.build()
 	}
 
@@ -342,12 +348,13 @@ _buildOutputs := func(results, effect) {
  * `importFile` anywhere else is not listed, so the engine neither reports it nor uploads it: unless
  * something else uploads an upload grant imported that way, its file never becomes ready.
  *
- * Once the body has returned, the render's `effect` output is an ephemeral map with inputs locked:
- * its field `imports` is an ephemeral map, inputs locked and empty when nothing was imported, with
- * one field per imported source string, named by it, to an ephemeral ImportEntry/1 with inputs
- * locked, whose Input fields are `upload` (the storage-side upload a client sends parts to, present
- * for an upload grant only), `progress` (the import's map of progress steps) and `file` (the imported
- * file). A body that fails, or returns outputs the workflow refuses, sets no output.
+ * Once the body has returned, the render's `effect` output is an ephemeral map with inputs locked,
+ * with no fields when the body imported nothing. Otherwise its field `imports` is an ephemeral map,
+ * inputs locked, with one field per imported source string, named by it, to an ephemeral
+ * ImportEntry/1 with inputs locked, whose Input fields are `upload` (the storage-side upload a client
+ * sends parts to, present for an upload grant only), `progress` (the import's map of progress steps)
+ * and `file` (the imported file). A body that fails, or returns outputs the workflow refuses, sets
+ * no output.
  *
  * @param fn: func(args, effect) {outputs, exports}
  */

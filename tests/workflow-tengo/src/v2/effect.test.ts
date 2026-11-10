@@ -19,8 +19,8 @@ vi.setConfig({ testTimeout: 240_000 });
 /*
  * The stored layout of a render's effect, as the engine reads it:
  *
- *   effect: EphStdMap/1, inputs locked
- *   └─ imports: EphStdMap/1, inputs locked
+ *   effect: EphStdMap/1, inputs locked; no fields when nothing is imported
+ *   └─ imports: EphStdMap/1, inputs locked; present only when something is imported
  *      └─ <source>: ImportEntry/1, inputs locked
  *         ├─ upload: the storage-side upload a client sends parts to (upload grants only)
  *         ├─ progress: the import's map of progress steps
@@ -76,17 +76,23 @@ function input(a: PlTreeNodeAccessor | undefined, name: string): PlTreeNodeAcces
 
 type EffectLayout = {
   effect: Part;
-  imports: Part;
+  /** absent when the effect has no imports section */
+  imports?: Part;
   entries: Record<string, Part & { targets: Record<string, string> }>;
 };
 
-/** The effect's map, section and entries with the types their fields point to, once every part is
- *  ready. */
+/** The effect's map, its imports section if any, and its entries with the types their fields point
+ *  to, once every part is ready. The map's fields are final once its inputs are locked, so a map
+ *  locked without `imports` has no imports section. */
 async function settledEffect(render: V2Render): Promise<EffectLayout> {
   return await awaitStableState(
-    render.computeOutput("effect", (a) => {
+    render.computeOutput("effect", (a): EffectLayout | undefined => {
+      if (a === undefined || !a.getInputsLocked()) return undefined;
+      if (!a.listInputFields().includes("imports")) {
+        return a.getIsReadyOrError() ? { effect: part(a), entries: {} } : undefined;
+      }
       const imports = input(a, "imports");
-      if (a === undefined || imports === undefined) return undefined;
+      if (imports === undefined) return undefined;
       const entries: EffectLayout["entries"] = {};
       for (const source of imports.listInputFields()) {
         const entry = input(imports, source);
@@ -147,17 +153,22 @@ async function progressSteps(render: V2Render, source: string) {
 const MAP = { type: "EphStdMap/1", inputsLocked: true, ready: true };
 
 tplTest.concurrent(
-  "a workflow that imports nothing has an effect whose imports section is empty",
+  "a workflow that imports nothing has an effect that is an empty, final map with no imports section",
   async ({ helper, pl, expect, skip }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
     const render = await renderWorkflowV2(helper, "v2.effect-none", { blockId: "effect-none" });
     expect(await resultJson(render, "ran")).eq(true);
     expect(await settledEffect(render)).toStrictEqual({
-      effect: { ...MAP, fields: ["imports"] },
-      imports: { ...MAP, fields: [] },
+      effect: { ...MAP, fields: [] },
       entries: {},
     });
+    expect(
+      await awaitStableState(
+        render.computeOutput("effect", (a) => a?.getIsFinal()),
+        OUTPUT_TIMEOUT,
+      ),
+    ).eq(true);
   },
 );
 
@@ -235,7 +246,7 @@ tplTest.concurrent(
     await runUpload(render, upload, driverKit);
 
     const layout = await settledEffect(render);
-    expect(layout.imports.fields).toStrictEqual([library, upload].sort());
+    expect(layout.imports?.fields).toStrictEqual([library, upload].sort());
     const files = await awaitStableState(
       render.computeOutput("result", (a) => {
         const ids = ["file0", "file1", "file2"].map((name) => input(a, name)?.id);
@@ -262,7 +273,7 @@ tplTest.concurrent(
 
     expect(await resultJson(render, "x")).eq(1);
     const layout = await settledEffect(render);
-    expect(layout.imports.fields).toStrictEqual([source]);
+    expect(layout.imports?.fields).toStrictEqual([source]);
     expect(await resultFileContent(render, "file0", driverKit)).eq(ASSET_CONTENT);
   },
 );
@@ -306,14 +317,17 @@ tplTest.concurrent.for([
   },
 );
 
-tplTest.concurrent(
-  "importing through the effect after the body has returned fails the render, even a source the body imported",
-  async ({ helper, pl, driverKit, expect, skip }) => {
+tplTest.concurrent.for([
+  { importInBody: true, what: "a source the body imported" },
+  { importInBody: false, what: "after a body that imported nothing" },
+])(
+  "importing through the effect after the body has returned fails the render, even $what",
+  async ({ importInBody }, { helper, pl, driverKit, expect, skip }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
 
     const render = await renderWorkflowV2(helper, "v2.effect-late", {
       blockId: "effect-late",
-      args: { source: await librarySource(driverKit) },
+      args: { source: await librarySource(driverKit), importInBody },
     });
     await expect(resultJson(render, "ran")).rejects.toThrow(/after the workflow body returned/);
   },
