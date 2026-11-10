@@ -2,6 +2,7 @@
 "@platforma-sdk/model": patch
 ---
 
+
 PlDataTable: carry table state saved before the column-access rework over to the current column ids.
 
 Sorting, hidden columns, column order and filters saved before the rework kept discovered column ids without the `__isDiscovered` marker. The current id parser rejects them, so a block with such a saved sorting failed its whole table output with `extractPObjectId: unrecognized column id structure`.
