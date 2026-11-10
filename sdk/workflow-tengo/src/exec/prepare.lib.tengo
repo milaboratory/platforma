@@ -109,6 +109,9 @@ implInputs := func(inputs, raw) {
 	if !is_undefined(inputs.fallbackPolicy) {
 		pureImplInputs.fallbackPolicy = inputs.fallbackPolicy
 	}
+	if !is_undefined(inputs.runPlan) {
+		pureImplInputs.runPlan = inputs.runPlan
+	}
 	for seam in [execConstants.META_INPUT_FORCE_RUN_COMMAND_V2, execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1] {
 		if !is_undefined(inputs[seam]) {
 			metaImplInputs[seam] = smart.createJsonResource(true)

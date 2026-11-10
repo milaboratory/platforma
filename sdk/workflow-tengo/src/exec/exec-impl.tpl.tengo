@@ -107,6 +107,8 @@ inputSchema := {
 	},
 	"streamCollections,?": "any",
 	"execImplTpl,?": "any",
+	// RunCommand v2 only: the fallback plan run in place of the root, for the attempts output
+	"runPlan,?": "string",
 
 	// Meta inputs
 	"quota": {
@@ -207,7 +209,7 @@ _runV2 := func(inputs, mainRunBuilder, wdBefore) {
 		fileStreams: streams.build(),
 		wdProcessors: wdProcessorsResults,
 		progress: wdResult.progress,
-		attempts: render.createEphemeral(v2AttemptsTpl, { workdir: wdResult.workdir }).output("attempts")
+		attempts: render.createEphemeral(v2AttemptsTpl, maps.clone({ workdir: wdResult.workdir, plan: inputs.runPlan }, { removeUndefs: true })).output("attempts")
 	}
 }
 

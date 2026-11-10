@@ -1825,8 +1825,9 @@ _makeBuilder := func(st) {
 
 		/**
 		 * Declares what runs instead when the command fails for a known reason. Needs a backend
-		 * with RunCommand v3; on an older one the policy is ignored with a notice and a failure is
-		 * an error, as without it.
+		 * with RunCommand v3. On an older one no failure is seen: the OOM plan with the most RAM
+		 * (any depth of OOM handlers) runs in place of the root, or the root without OOM
+		 * handlers, and a failure is an error, both with a notice.
 		 *
 		 * The policy maps a failure reason to a handler: an exec builder, or an ordered list of
 		 * entries { <attributes>?, name?, builder }, the first matching one wins. An entry with no
@@ -1930,23 +1931,14 @@ _makeBuilder := func(st) {
 		},
 
 		_plan: func() {
-			p := _cloneState(st)
-			planned := _planOf(p)
-			planned.st = p
-
-			if p.forceRunCommandV2 {
-				planned.meta[execConstants.META_INPUT_FORCE_RUN_COMMAND_V2] = smart.createJsonResource(true)
-			}
-			if p.forceWorkdirSaveV1 {
-				planned.meta[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1] = smart.createJsonResource(true)
-			}
+			planned := self._planWithoutFallbacks(false)
+			p := planned.st
 
 			if is_undefined(p.fallbacks) {
 				return planned
 			}
 			if p.forceRunCommandV2 || is_undefined(limits.getRunCommandV3Type(p.queue)) {
-				ll.print("exec.builder: the backend has no RunCommand v3, fallbacks are ignored; a failure is an error")
-				return planned
+				return self._planWithoutRunCommandV3(planned)
 			}
 
 			flat := fallback.flatten(p.fallbacks)
@@ -1973,8 +1965,73 @@ _makeBuilder := func(st) {
 			return planned
 		},
 
+		/**
+		 * The plan of this builder alone, its fallbacks left out.
+		 *
+		 * @param forceRunCommandV2: bool - render as on a backend without RunCommand v3, as the
+		 *        root does when this builder runs in its place
+		 */
+		_planWithoutFallbacks: func(forceRunCommandV2) {
+			p := _cloneState(st)
+			if forceRunCommandV2 {
+				p.forceRunCommandV2 = true
+			}
+			planned := _planOf(p)
+			planned.st = p
+
+			if p.forceRunCommandV2 {
+				planned.meta[execConstants.META_INPUT_FORCE_RUN_COMMAND_V2] = smart.createJsonResource(true)
+			}
+			if p.forceWorkdirSaveV1 {
+				planned.meta[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1] = smart.createJsonResource(true)
+			}
+			return planned
+		},
+
+		/**
+		 * The plan on a backend without RunCommand v3, where no failure is seen and no fallback
+		 * runs: the OOM plan with the most RAM runs in place of the root, so the exec does not
+		 * fail where a fallback would have saved it. Without OOM handlers the root runs.
+		 *
+		 * @param rootPlanned: map - the root's own plan, _planWithoutFallbacks()
+		 */
+		_planWithoutRunCommandV3: func(rootPlanned) {
+			builders := {}
+			candidates := []
+			walk := undefined
+			walk = func(b) {
+				entries := b._fallbackEntries()
+				if is_undefined(entries) || is_undefined(entries.OOM) {
+					return
+				}
+				for i, e in entries.OOM {
+					key := fallback.planKey("OOM", i, e)
+					builders[key] = e.builder
+					candidates = append(candidates, { key: key, ram: e.builder._ramRequest() })
+					// verify() has refused cycles
+					walk(e.builder)
+				}
+			}
+			walk(self)
+
+			key := fallback.biggestOomPlan(candidates)
+			if is_undefined(key) {
+				ll.print("exec.builder: the backend has no RunCommand v3, fallbacks are ignored; a failure is an error")
+				return rootPlanned
+			}
+			ll.print(fmt.sprintf("exec.builder: the backend has no RunCommand v3, the OOM plan %q with the most RAM runs instead of the root; a failure is an error", key))
+			planned := builders[key]._planWithoutFallbacks(st.forceRunCommandV2)
+			planned.inputs.runPlan = key
+			return planned
+		},
+
 		_execBuilderId: func() {
 			return string(st.id)
+		},
+
+		// the RAM request as given: a static one, or the static fallback of a RAM formula
+		_ramRequest: func() {
+			return is_undefined(st.ramRequest) ? st.memFormulaFallback : st.ramRequest
 		},
 
 		_hasRunCommandV3: func() {

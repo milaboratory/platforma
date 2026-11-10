@@ -170,3 +170,30 @@ Test_historyText_noReason := func() {
 	test.isEqual("Attempts (2, backend cap 3):\n  #0 root fail → handler \"h\"\n  #1 h success (exit 0) → done",
 		fallback.historyText(hist, 3, "done"))
 }
+
+Test_ramBytes := func() {
+	test.isEqual(64 * 1073741824, fallback.ramBytes("64GiB"))
+	test.isEqual(64 * 1073741824, fallback.ramBytes("64gi"))
+	test.isEqual(2000000000, fallback.ramBytes("2G"))
+	test.isEqual(50 * 1048576, fallback.ramBytes("50Mi"))
+	test.isEqual(4096, fallback.ramBytes("4096b"))
+	test.isEqual(4096, fallback.ramBytes(4096))
+	test.isEqual(undefined, fallback.ramBytes("1.5GiB"))
+	test.isEqual(undefined, fallback.ramBytes("64XiB"))
+	test.isEqual(undefined, fallback.ramBytes(undefined))
+}
+
+Test_biggestOomPlan := func() {
+	test.isEqual(undefined, fallback.biggestOomPlan([]))
+	test.isEqual("most", fallback.biggestOomPlan([
+		{ key: "more", ram: "8GiB" }, { key: "most", ram: "32GiB" }, { key: "less", ram: 1073741824 }
+	]))
+	// a tie goes to the later, deeper plan
+	test.isEqual("deeper", fallback.biggestOomPlan([{ key: "first", ram: "8GiB" }, { key: "deeper", ram: "8Gi" }]))
+	// an unknown request never beats a known one
+	test.isEqual("known", fallback.biggestOomPlan([
+		{ key: "unset", ram: undefined }, { key: "known", ram: "1GiB" }, { key: "odd", ram: "lots" }
+	]))
+	// with no request known, the last plan
+	test.isEqual("b", fallback.biggestOomPlan([{ key: "a" }, { key: "b" }]))
+}

@@ -1,0 +1,48 @@
+/**
+ * An exec on a backend without RunCommand v3 (the _forceRunCommandV2 seam stands in for it): no
+ * failure is seen there, so the OOM plan with the most RAM runs in place of the root. Each plan
+ * writes its own name to out.txt.
+ *
+ * inputs.nonce: string - keeps the pure exec.exec render from deduplicating against earlier runs
+ * inputs.policy: string - "oom": OOM handlers at two depths; "softwareError": no OOM handler
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+fmt := import("fmt")
+
+self.defineOutputs(["out", "attempts"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	shell := func(name, ram) {
+		return exec.builder().
+			cpu(1).ram(ram).
+			software(shellSw).
+			arg("-c").
+			arg(fmt.sprintf("echo %s > out.txt # %s", name, inputs.nonce)).
+			inLightQueue().
+			saveFileContent("out.txt")
+	}
+
+	root := shell("root", "50Mi")._forceRunCommandV2()
+	if inputs.policy == "oom" {
+		more := shell("more", "100Mi").
+			fallbacks({ OOM: [{ name: "most", builder: shell("most", "200Mi") }] })
+		root.fallbacks({
+			OOM: [{ name: "more", builder: more }, { exitCode: 137, name: "less", builder: shell("less", "60Mi") }],
+			SoftwareError: [{ name: "big", builder: shell("big", "1Gi") }]
+		})
+	} else {
+		root.fallbacks({ SoftwareError: [{ name: "big", builder: shell("big", "1Gi") }] })
+	}
+
+	res := root.run()
+
+	return {
+		out: res.getFileContent("out.txt"),
+		attempts: res.getAttempts()
+	}
+})

@@ -7,6 +7,8 @@
  *
  * inputs.workdir: the save's post-save working directory
  * inputs.history: map[], optional - the history; the one success entry of attempt 0 by default
+ * inputs.plan: string, optional - the plan of that entry, when a fallback plan ran in place of the
+ *   root on a backend without RunCommand v3; the root by default
  */
 
 self := import(":tpl.light")
@@ -18,5 +20,6 @@ self.body(func(inputs) {
 	if !is_undefined(inputs.history) {
 		return { attempts: inputs.history }
 	}
-	return { attempts: [{ attempt: 0, plan: fallback.ROOT_PLAN, result: "success" }] }
+	plan := is_undefined(inputs.plan) ? fallback.ROOT_PLAN : inputs.plan
+	return { attempts: [{ attempt: 0, plan: plan, result: "success" }] }
 })

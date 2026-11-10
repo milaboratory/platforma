@@ -88,6 +88,36 @@ tplTest.concurrent(
   120_000,
 );
 
+// A backend without RunCommand v3 (the seam stands in for it) sees no failure: the OOM plan with
+// the most RAM, at any depth of OOM handlers, runs in place of the root; other reasons' plans never
+// do, and without OOM handlers the root runs.
+tplTest.concurrent.for([
+  { policy: "oom", plan: "most" },
+  { policy: "softwareError", plan: "root" },
+])(
+  "exec fallbacks: without RunCommand v3 the biggest OOM plan runs ($policy -> $plan)",
+  async ({ policy, plan }, { helper, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.old_backend",
+      ["out", "attempts"],
+      (tx) => ({
+        nonce: json(tx, randomUUID()),
+        policy: json(tx, policy),
+      }),
+    );
+
+    const out = await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue();
+    expect(out).toBe(`${plan}\n`);
+
+    const attempts = await result
+      .computeOutput("attempts", (a) => a?.getDataAsJson<Attempt[]>())
+      .awaitStableValue();
+    expect(attempts).toEqual([{ attempt: 0, plan, result: "success" }]);
+  },
+  120_000,
+);
+
 // A handler in a queue without RunCommand v3 (the seam stands in for it): the exec runs without
 // fallbacks, with a notice, instead of failing to render (spec §5)
 tplTest.concurrent(

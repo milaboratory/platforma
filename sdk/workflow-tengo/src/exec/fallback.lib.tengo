@@ -177,6 +177,66 @@ flatten := func(normalized) {
 	return { policy: { handlers: handlers }, plans: plans }
 }
 
+// Size suffixes of a RAM request, lower-cased, as the quota takes them (see :exec.limits).
+_SIZE_UNITS := {
+	"": 1, b: 1,
+	k: 1000, kb: 1000, ki: 1024, kib: 1024,
+	m: 1000000, mb: 1000000, mi: 1048576, mib: 1048576,
+	g: 1000000000, gb: 1000000000, gi: 1073741824, gib: 1073741824,
+	t: 1000000000000, tb: 1000000000000, ti: 1099511627776, tib: 1099511627776
+}
+
+/**
+ * The bytes of a RAM request, to compare requests: a number of bytes, or a size string ("64GiB").
+ *
+ * @param v: int | string | undefined - the request
+ * @return int | undefined - undefined when the request is unset or not understood
+ */
+ramBytes := func(v) {
+	if is_int(v) {
+		return v
+	}
+	if !is_string(v) {
+		return undefined
+	}
+	m := regexp.compile("^\\s*([0-9]+)\\s*([a-zA-Z]*)\\s*$").find(v)
+	if is_undefined(m) {
+		return undefined
+	}
+	unit := _SIZE_UNITS[text.to_lower(m[0][2].text)]
+	if is_undefined(unit) {
+		return undefined
+	}
+	return int(m[0][1].text) * unit
+}
+
+/**
+ * The OOM plan with the most RAM, for a backend without RunCommand v3: there no failure is seen,
+ * so the plan most likely to fit runs instead of the root.
+ *
+ * @param candidates: [{ key: string, ram: int | string | undefined }] - the OOM plans reachable
+ *        from the root through OOM handlers only, depth first
+ * @return string | undefined - the plan key; the later one on a tie, the last one when no RAM is
+ *         known, undefined without candidates
+ */
+biggestOomPlan := func(candidates) {
+	best := undefined
+	bestBytes := undefined
+	for c in candidates {
+		bytes := ramBytes(c.ram)
+		// An unknown request never beats a known one.
+		if is_undefined(bytes) && !is_undefined(bestBytes) {
+			continue
+		}
+		// A known request beats an unknown one, a bigger one a smaller; a tie goes deeper.
+		if is_undefined(bytes) || is_undefined(bestBytes) || bytes >= bestBytes {
+			best = c.key
+			bestBytes = bytes
+		}
+	}
+	return best
+}
+
 /**
  * Chooses the plan that handles a failure.
  *
@@ -355,6 +415,8 @@ export ll.toStrict({
 	planKey: planKey,
 	flatten: flatten,
 	pick: pick,
+	ramBytes: ramBytes,
+	biggestOomPlan: biggestOomPlan,
 	composeMessage: composeMessage,
 	historyEntry: historyEntry,
 	historyText: historyText,

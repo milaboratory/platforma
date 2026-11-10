@@ -105,6 +105,8 @@ inputSchema[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1 + ",?"] = "any"
 // meta } of each handler's exec.exec render, and the policy JSON that names them.
 inputSchema["fallbackPlans,?"] = "any"
 inputSchema["fallbackPolicy,?"] = "any"
+// On a backend without RunCommand v3: the fallback plan run in place of the root, for getAttempts()
+inputSchema["runPlan,?"] = "string"
 self.validateInputs(inputSchema)
 
 self.body(func(inputs) {
