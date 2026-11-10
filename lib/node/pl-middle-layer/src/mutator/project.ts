@@ -25,6 +25,7 @@ import {
   type BlockActionContextBaggage,
   createBContextFromUpstreams,
   createBContextEnd,
+  recordBlockRunCancelled,
 } from "./template/render_block";
 import type {
   Block,
@@ -1827,10 +1828,15 @@ export class ProjectMutator {
         // skipping finished blocks
         continue;
 
-      this.deleteBlockFields(blockId, "prodActionContext");
       if (this.deleteBlockFields(blockId, "prodOutput", "prodCtx", "prodUiCtx", "prodArgs")) {
         // was actually stopped
         stopped.push(blockId);
+
+        // The run's status tree stays, so the user can see where it stopped; the next run replaces
+        // it. It is marked cancelled, because a destroyed render reports nothing of its own.
+        const actionContext = fields.prodActionContext?.ref;
+        if (actionContext !== undefined && isResource(actionContext))
+          recordBlockRunCancelled(this.tx, actionContext);
 
         // will try to stop all its downstreams
         for (const downstream of activeProdGraph.traverseIdsExcludingRoots("downstream", blockId)) {
