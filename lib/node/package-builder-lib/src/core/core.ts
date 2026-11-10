@@ -776,7 +776,7 @@ export class Core {
 
     const s = await storage.initByUrl(storageURL, this.pkgInfo.packageRoot);
 
-    const exists = s.exists ? await s.exists(dstName) : (await s.getFile(dstName)) !== undefined;
+    const exists = await s.exists(dstName);
     if (exists && !options?.forceReupload) {
       if (options?.failExisting) {
         throw util.CLIError(

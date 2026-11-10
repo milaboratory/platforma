@@ -6,6 +6,7 @@ export * as envs from "./core/envs";
 export * as defaults from "./defaults";
 export {
   type RegistryStorage,
+  type BuiltinStorage,
   S3Storage,
   GcsStorage,
   FSStorage,

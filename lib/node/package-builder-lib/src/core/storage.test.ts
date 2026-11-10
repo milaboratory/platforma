@@ -17,8 +17,8 @@ import { redactUrl } from "./util";
 
 // In-memory stand-in for @google-cloud/storage, used unless TEST_GCS_ADDRESS points at a real
 // bucket. It records what the driver asks for, so the tests can check options and metadata.
-const fakeGcs = vi.hoisted(() => {
-  const { Writable } = require("node:stream") as typeof import("node:stream");
+const fakeGcs = await vi.hoisted(async () => {
+  const { Writable } = await import("node:stream");
   const objects = new Map<string, { data: Buffer; cacheControl?: string }>();
   const calls = {
     storageOptions: [] as unknown[],
@@ -334,6 +334,6 @@ test("s3 deletes go in batches of 1000 and collect errors", async () => {
   expect(batches).toEqual([]);
   await expect(
     storage.deleteFiles(...Array.from({ length: 2500 }, (_, i) => `f/${i}`)),
-  ).rejects.toThrow("denied root/f/1500");
+  ).rejects.toThrow("root/f/1500: denied root/f/1500");
   expect(batches).toEqual([1000, 1000, 500]);
 });

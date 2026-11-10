@@ -139,7 +139,8 @@ export class S3Storage implements RegistryStorage {
           Objects: files.slice(i, i + S3DeleteBatchSize).map((file) => ({ Key: this.key(file) })),
         },
       });
-      for (const e of results.Errors ?? []) errors.push(e.Message ?? e.Code ?? "Unknown error");
+      for (const e of results.Errors ?? [])
+        errors.push(`${e.Key ?? "?"}: ${e.Message ?? e.Code ?? "Unknown error"}`);
     }
     if (errors.length > 0)
       throw new Error(`Errors encountered while deleting files: ${errors.join("\n")}`);
@@ -405,10 +406,10 @@ const softwareRegistrySchemes = new Set(["s3:", "s3e:", "s3es:", "gs:"]);
  *
  * No network call is made here; use {@link RegistryStorage.checkAccess} to fail early.
  */
-export function storageByUrl(
-  address: string,
-  baseDir: string = path.resolve("."),
-): RegistryStorage {
+/** The storage drivers this module provides; all of them implement every optional method. */
+export type BuiltinStorage = S3Storage | GcsStorage | FSStorage;
+
+export function storageByUrl(address: string, baseDir: string = path.resolve(".")): BuiltinStorage {
   const url = parseStorageUrl(address, `file:${baseDir.split(path.sep).join(pathPosix.sep)}/`);
   switch (url.protocol) {
     case "file:":
@@ -432,7 +433,7 @@ export function storageByUrl(
 }
 
 /** {@link storageByUrl} for package-builder: resolves against the package root and checks access. */
-export async function initByUrl(address: string, pkgRoot: string): Promise<RegistryStorage> {
+export async function initByUrl(address: string, pkgRoot: string): Promise<BuiltinStorage> {
   if (address === "") {
     throw util.CLIError(`Empty registry storage address`);
   }
@@ -445,7 +446,7 @@ export async function initByUrl(address: string, pkgRoot: string): Promise<Regis
           `Use ${[...softwareRegistrySchemes].join(", ")} or your own tooling for package upload`,
       );
     const storage = storageByUrl(address, pkgRoot);
-    await storage.checkAccess?.();
+    await storage.checkAccess();
     return storage;
   } catch (e) {
     throw util.wrapErr(e, `failed to init storage driver from URL`);
