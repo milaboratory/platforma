@@ -1,5 +1,11 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.37.0
+
+### Minor Changes
+
+- 82dd041: Rename `InstanceStats.availability` to `status` (type `InstanceStatsStatus`), and its "read" value to "ok".
+
 ## 1.36.0
 
 ### Minor Changes

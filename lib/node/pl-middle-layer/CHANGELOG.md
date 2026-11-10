@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 2.2.0
+
+### Minor Changes
+
+- 82dd041: Rename `InstanceStats.availability` to `status` (type `InstanceStatsStatus`), and its "read" value to "ok".
+
+### Patch Changes
+
+- Updated dependencies [82dd041]
+  - @milaboratories/pl-model-middle-layer@1.37.0
+  - @milaboratories/pf-driver@1.9.15
+  - @platforma-sdk/model@1.88.13
+  - @platforma-sdk/block-tools@2.18.1
+  - @milaboratories/pf-spec-driver@1.5.15
+
 ## 2.1.2
 
 ### Patch Changes
