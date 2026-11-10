@@ -579,14 +579,12 @@ function parseLegacyLeafColumn(s: unknown): PTableColumnId | undefined {
 function migrateV8toV9(state: PlDataTableStateV2V8): PlDataTableStateV2Normalized {
   return {
     version: 9,
-    stateCache: state.stateCache.map(
-      (entry): PlDataTableStateV2CacheEntry => ({
-        ...entry,
-        gridState: upgradeGridStateColumnIds(entry.gridState),
-        filtersState: upgradeFilterColumnIds(entry.filtersState),
-        defaultFiltersState: upgradeFilterColumnIds(entry.defaultFiltersState),
-      }),
-    ),
+    stateCache: state.stateCache.map((entry): PlDataTableStateV2CacheEntry => ({
+      ...entry,
+      gridState: upgradeGridStateColumnIds(entry.gridState),
+      filtersState: upgradeFilterColumnIds(entry.filtersState),
+      defaultFiltersState: upgradeFilterColumnIds(entry.defaultFiltersState),
+    })),
     pTableParams: upgradeParamsColumnIds(state.pTableParams),
   };
 }
