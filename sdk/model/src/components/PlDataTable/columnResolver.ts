@@ -40,8 +40,19 @@ export function createColumnResolver(columns: ColumnRecipe[]): ColumnResolver {
     if (ref.type === "axis") {
       return axisIds.some((a) => matchAxisId(ref.id, a)) ? ref : undefined;
     }
-    const hit = byFullId.get(ref.id) ?? byPObjectId.get(extractPObjectId(ref.id));
+    const pid = tryExtractPObjectId(ref.id);
+    const hit = byFullId.get(ref.id) ?? (pid === undefined ? undefined : byPObjectId.get(pid));
     if (hit === undefined) return undefined;
     return { type: "column", id: hit.id } satisfies PTableColumnIdColumn;
   };
+}
+
+/** {@link extractPObjectId} for a stored reference: an id it cannot parse resolves to
+ *  nothing, so the one entry is dropped instead of failing the whole table. */
+function tryExtractPObjectId(id: ColumnUniversalId): PObjectId | undefined {
+  try {
+    return extractPObjectId(id);
+  } catch {
+    return undefined;
+  }
 }
