@@ -1,5 +1,137 @@
 # @milaboratories/pl-middle-layer
 
+## 2.2.0
+
+### Minor Changes
+
+- 82dd041: Rename `InstanceStats.availability` to `status` (type `InstanceStatsStatus`), and its "read" value to "ok".
+
+### Patch Changes
+
+- Updated dependencies [82dd041]
+  - @milaboratories/pl-model-middle-layer@1.37.0
+  - @milaboratories/pf-driver@1.9.15
+  - @platforma-sdk/model@1.88.13
+  - @platforma-sdk/block-tools@2.18.1
+  - @milaboratories/pf-spec-driver@1.5.15
+
+## 2.1.2
+
+### Patch Changes
+
+- Updated dependencies [187228d]
+  - @platforma-sdk/block-tools@2.18.0
+
+## 2.1.1
+
+### Patch Changes
+
+- Updated dependencies [c78669f]
+  - @platforma-sdk/block-tools@2.17.9
+
+## 2.1.0
+
+### Minor Changes
+
+- d3a7b19: The block subtitle now renders with the result pool, so `.subtitle()` can name the inputs a block reads (for example `ctx.resultPool.getPColumnSpecByRef(ref)`) without the UI caching that text in block data. The title stays args-only.
+
+### Patch Changes
+
+- Updated dependencies [d3a7b19]
+  - @platforma-sdk/model@1.88.10
+
+## 2.0.0
+
+### Major Changes
+
+- e40ccc1: Remove support for the Desktop App built-in backend. `@milaboratories/pl-deployments`, `@milaboratories/pl-config` and `@milaboratories/pl-healthcheck` are no longer published; `@milaboratories/pl-middle-layer` no longer re-exports `@milaboratories/pl-deployments`. The `localProjections` option is removed from the middle layer and driver kit options, `createDownloadClient` and `LsDriver.init` no longer take local projections, and `ClientDownload` no longer reads `storage://` URLs from the local disk: `LocalStorageProjection`, `parseLocalUrl`, `getFullPath`, `newLocalStorageIdsToRoot`, `WrongLocalFileUrl` and `UnknownStorageError` are gone. The LS driver always creates upload handles for local files and lists a data library with id `root` like any other. `pl-dev` keeps the default backend version in its own `pl-version`.
+
+### Patch Changes
+
+- Updated dependencies [e40ccc1]
+  - @milaboratories/pl-drivers@2.0.0
+
+## 1.77.0
+
+### Minor Changes
+
+- efac5cc: `MiddleLayer.instanceStats` reads the backend's instance statistics context (allocated CPU, RAM, GPUs and GPU memory out of capacity, running and queued jobs) every 10s, only when the backend advertises `instanceStats:v1`. `PlClient.listSharedResourcesByType` lists the resources of a type shared with the user.
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/pl-model-middle-layer@1.36.0
+  - @milaboratories/columns-collection-driver@0.2.14
+  - @milaboratories/pl-crash-recorder@0.3.10
+  - @milaboratories/pf-spec-driver@1.5.14
+  - @milaboratories/pl-deployments@3.0.26
+  - @milaboratories/computable@2.9.10
+  - @milaboratories/pl-drivers@1.16.43
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pf-driver@1.9.14
+  - @milaboratories/pl-errors@1.4.60
+  - @platforma-sdk/workflow-tengo@6.22.1
+  - @milaboratories/pl-model-backend@1.4.45
+  - @platforma-sdk/block-tools@2.17.8
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/pl-http@1.2.6
+  - @milaboratories/pl-tree@1.17.2
+  - @milaboratories/helpers@1.14.7
+  - @platforma-sdk/model@1.88.8
+  - @milaboratories/resolve-helper@1.1.3
+
+## 1.76.5
+
+### Patch Changes
+
+- 5adb3c8: Close the middle layer and its projects without waiting for request deadlines when the backend stops answering. Before, `MiddleLayer.close()` and `closeProject()` waited for running requests up to their deadlines (60 s for a project write, 300 s for a tree read).
+
+  - `SynchronizedTreeState.terminate()` cancels the running tree read and discovery request.
+  - `Project` close cancels the running project refresh and its wait for the project lock.
+  - The upload driver's `terminate()` cancels the running upload status requests.
+  - `PlClient` transactions stop waiting for their lock when their `abortSignal` fires.
+  - `listUserResources` and `listSharedResourcesByType` take an `abortSignal`.
+  - The upload status request now applies its timeout on the REST wire protocol too.
+  - A cancelled request no longer leaves unhandled promise rejections or an uncaught "cannot resolve rejected" error behind. `PlTransaction` reads return their tracked promise, and the gRPC interceptor drops headers that arrive after a call ended.
+  - A transaction whose open fails with an abort or a deadline no longer logs a warning; the caller still gets the error.
+
+- 0692c00: `MiddleLayer.close()` now stops the logs drivers, so they no longer poll the backend after a disconnect.
+
+  - `LogsDriver` is async-disposable, so the driver kit stops it on close.
+  - Disposing `LogsStreamDriver` cancels its running log requests and its polling loop. A cancelled request ends quietly.
+  - `ClientLogs.lastLines` and `readText` honor `options.abort`, on gRPC and REST.
+  - `LogsStreamDriver` takes a `LogsStreamClient`: any object with the `lastLines` and `readText` methods of `ClientLogs`.
+  - pl-client exports `callAbortSignal`, which gives one call an abort signal of its own.
+
+- Updated dependencies [5adb3c8]
+- Updated dependencies [f08961f]
+- Updated dependencies [0692c00]
+  - @milaboratories/pl-client@3.21.1
+  - @milaboratories/pl-tree@1.17.1
+  - @milaboratories/pl-drivers@1.16.42
+  - @milaboratories/pl-model-backend@1.4.44
+  - @milaboratories/pl-errors@1.4.59
+  - @platforma-sdk/block-tools@2.17.7
+  - @platforma-sdk/workflow-tengo@6.22.0
+
+## 1.76.4
+
+### Patch Changes
+
+- Updated dependencies [daa13ed]
+- Updated dependencies [bb23557]
+  - @platforma-sdk/workflow-tengo@6.22.0
+
+## 1.76.3
+
+### Patch Changes
+
+- Updated dependencies [fe4ff52]
+  - @platforma-sdk/workflow-tengo@6.21.1
+
 ## 1.76.2
 
 ### Patch Changes

@@ -4,4 +4,4 @@
 "@milaboratories/pl-middle-layer": patch
 ---
 
-Give flaky network tests retries, and give the render tests realistic waits
+Give flaky network tests retries, and give the template render test a realistic wait

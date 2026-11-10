@@ -1,5 +1,24 @@
 # @milaboratories/pl-errors
 
+## 1.4.60
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/ts-helpers@1.9.1
+
+## 1.4.59
+
+### Patch Changes
+
+- Updated dependencies [5adb3c8]
+- Updated dependencies [f08961f]
+- Updated dependencies [0692c00]
+  - @milaboratories/pl-client@3.21.1
+
 ## 1.4.58
 
 ### Patch Changes

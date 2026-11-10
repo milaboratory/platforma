@@ -1,5 +1,31 @@
 # @platforma-sdk/model
 
+## 1.88.13
+
+### Patch Changes
+
+- Updated dependencies [82dd041]
+  - @milaboratories/pl-model-middle-layer@1.37.0
+
+## 1.88.10
+
+### Patch Changes
+
+- d3a7b19: The block subtitle now renders with the result pool, so `.subtitle()` can name the inputs a block reads (for example `ctx.resultPool.getPColumnSpecByRef(ref)`) without the UI caching that text in block data. The title stays args-only.
+
+## 1.88.8
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-model-middle-layer@1.36.0
+  - @milaboratories/pl-error-like@1.12.11
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/helpers@1.14.7
+  - @milaboratories/ptabler-expression-js@1.2.48
+
 ## 1.88.0
 
 ### Minor Changes

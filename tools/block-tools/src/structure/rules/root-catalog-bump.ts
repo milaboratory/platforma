@@ -14,6 +14,10 @@
 // migrated block that never carried `@milaboratories/ts-builder` etc. now
 // gets them ADDED on `--update-deps-only`, no manual catalog seed required.
 //
+// The same frame also applies the toolchain rules (SDK pnpm and Node, pnpm 12
+// workspace settings), so `upgrade-sdk` runs its first `pnpm i` on the SDK
+// pnpm with its release-age check.
+//
 // Wrapped in the same root-scope `when(!isSdkInternal)` guard as the rest of
 // the root rules — internal blocks get their catalog from the parent
 // monorepo, so catalog resolution never applies there.
@@ -27,11 +31,14 @@ import {
   ensureCatalogLatest,
   ensureCatalogVersion,
   pinCatalogToDependencyOf,
+  enforceFieldOrder,
 } from "../engine/api";
+import { rootPackageJsonInitial, rootPackageJsonToolchainRules } from "./root-package-json";
+import { canonicalPackageJsonOrder } from "./shared/key-order";
 import {
   rootPnpmWorkspaceInitial,
+  rootPnpmWorkspaceToolchainRules,
   SDK_CATALOG_PACKAGES,
-  INFRA_CATALOG_FLOOR,
   DERIVED_CATALOG_PINS,
   RUNENV_PYTHON,
   RUNENV_PYTHON_VERSION,
@@ -43,6 +50,14 @@ export function rootCatalogBumpRules(): void {
       when(
         ({ ctx }) => !ctx.isSdkInternal,
         () => {
+          managed(
+            "package.json",
+            generate(() => rootPackageJsonInitial()),
+            () => {
+              rootPackageJsonToolchainRules();
+              enforceFieldOrder([...canonicalPackageJsonOrder]);
+            },
+          );
           // On init, the default root rules create pnpm-workspace.yaml from
           // this same generator (the curated SDK placeholders + infra
           // floor); this leaf then overwrites the SDK entries with npm
@@ -67,17 +82,18 @@ export function rootCatalogBumpRules(): void {
               for (const pin of DERIVED_CATALOG_PINS) {
                 pinCatalogToDependencyOf(pin.entry, { of: pin.of, ofVersion: pin.ofVersion });
               }
-              // Curated infra floor → fixed version, ADD-IF-ABSENT (seeds
-              // shx/turbo/vitest/changesets when missing; never touches a
-              // version the block already pins).
-              for (const [name, version] of Object.entries(INFRA_CATALOG_FLOOR)) {
-                ensureCatalogVersion(name, version);
-              }
+              // The curated infra floor is seeded by `rootPnpmWorkspaceRules`,
+              // which runs on every refresh — the root package.json rules hand
+              // out `catalog:` references for those entries on every refresh
+              // too, so seeding them only here would leave a plain refresh with
+              // an unresolvable reference.
+              //
               // The python runenv pin is relevant only to software-bearing
               // blocks; seed it add-if-absent when one is present.
               if (ctx.modules.some((m) => m.scope === "software")) {
                 ensureCatalogVersion(RUNENV_PYTHON, RUNENV_PYTHON_VERSION);
               }
+              rootPnpmWorkspaceToolchainRules();
             },
           );
         },

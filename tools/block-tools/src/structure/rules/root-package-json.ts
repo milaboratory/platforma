@@ -21,24 +21,27 @@ import { NODE_RUNTIME, PACKAGE_MANAGER } from "./shared/toolchain";
 
 // `variant=all` builds every variant the software declares — docker-vs-binary is not a per-script
 // choice. `no-software` builds placeholder software for validators.
+//
+// `cross-env` rather than a bare `VAR=value` prefix or `env`: package scripts run through cmd.exe
+// on Windows, which has neither. Without it every one of these dies with "'env' is not recognized".
 
 const BUILD_SCRIPTS: Record<string, string> = {
   "build:dev-local":
-    "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=local turbo run build",
+    "cross-env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=local turbo run build",
   "build:dev-remote":
-    "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=remote turbo run build",
-  "build:dev-no-software": "env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=none turbo run build",
+    "cross-env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=all PL_BUILD_LOCATION=remote turbo run build",
+  "build:dev-no-software": "cross-env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=none turbo run build",
   "build:dev-binary-existing":
-    "env PL_BUILD_CHANNEL=dev PL_BUILD_USE_PUBLISHED=true turbo run build",
+    "cross-env PL_BUILD_CHANNEL=dev PL_BUILD_USE_PUBLISHED=true turbo run build",
   "build:release":
-    "env PL_BUILD_CHANNEL=release PL_BUILD_VARIANT=all PL_BUILD_LOCATION=remote turbo run build",
+    "cross-env PL_BUILD_CHANNEL=release PL_BUILD_VARIANT=all PL_BUILD_LOCATION=remote turbo run build",
 };
 
 // `test` / `test:dry-run` run the build-then-test DAG in the dev-binary-local target; the live
 // backend's env reaches the integration tests via the turbo `test` task's passThroughEnv.
 const TEST_SCRIPTS: Record<string, string> = {
-  test: `env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local turbo run test --concurrency 1`,
-  "test:dry-run": `env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local turbo run test --dry-run=json`,
+  test: `cross-env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local turbo run test --concurrency 1`,
+  "test:dry-run": `cross-env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local turbo run test --dry-run=json`,
 };
 
 export function rootPackageJsonInitial(): Record<string, unknown> {
@@ -70,13 +73,14 @@ export function rootPackageJsonInitial(): Record<string, unknown> {
       "@changesets/cli": "catalog:",
       "@milaboratories/ts-builder": "sdk:",
       "@platforma-sdk/block-tools": "sdk:",
+      "cross-env": "catalog:",
       shx: "catalog:",
       turbo: "catalog:",
     },
   };
 }
 
-export function rootPackageJsonRules(): void {
+export function rootPackageJsonToolchainRules(): void {
   ensureField("packageManager", PACKAGE_MANAGER);
   ensureField("devEngines.runtime", NODE_RUNTIME);
   removeField(
@@ -92,6 +96,10 @@ export function rootPackageJsonRules(): void {
     "pnpm",
     'pnpm 11+ ignores the "pnpm" field in package.json. Move its settings to pnpm-workspace.yaml: overrides as is, onlyBuiltDependencies as allowBuilds true, neverBuiltDependencies as allowBuilds false.',
   );
+}
+
+export function rootPackageJsonRules(): void {
+  rootPackageJsonToolchainRules();
 
   // Root is never published — it carries no `name`; delete any stray one.
   removeField("name");
@@ -135,6 +143,7 @@ export function rootPackageJsonRules(): void {
     "@changesets/cli": "catalog:",
     "@milaboratories/ts-builder": "sdk:",
     "@platforma-sdk/block-tools": "sdk:",
+    "cross-env": "catalog:",
     shx: "catalog:",
     turbo: "catalog:",
   });

@@ -12,6 +12,6 @@ wf.prepare(func(args) {
 	return { x: smart.createJsonResource(1) }
 })
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	return { outputs: { ran: true }, exports: ex.collection({}) }
 })

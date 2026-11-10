@@ -42,7 +42,6 @@ test.skipIf(process.env.PL_ML_INIT_BENCH !== "1")(
         try {
           ml = await MiddleLayer.init(client, path.resolve(`work/${randomUUID()}`), {
             localSecret: MiddleLayer.generateLocalSecret(),
-            localProjections: [],
             openFileDialogCallback: () => {
               throw new Error("Not implemented.");
             },

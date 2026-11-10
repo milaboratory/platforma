@@ -7,7 +7,7 @@ wf.prepare(func(args) {
 	return { hits: wf.query({ type: "Name", name: "pl7.app/test/y" }) }
 })
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	withData := []
 	for hit in args.hits {
 		withData = append(withData, { name: hit.ref.name, hasData: maps.containsKey(hit, "data") })

@@ -1,5 +1,32 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.22.1
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @platforma-open/milaboratories.software-ptabler@2.3.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.7
+
+## 6.22.0
+
+### Minor Changes
+
+- daa13ed: `v2.workflow` renders a third output, `effect`, and calls the body as `fn(args, effect)`. `effect.importFile(source)` imports an upload grant (`upload://upload/…`) or a library file (`index://index/…`) and returns the imported file. The render lists each import under `effect.imports.<source>` as an `ImportEntry/1` with the fields `upload` (upload grants only), `progress` and `file`, so the engine reports the import and, for an upload grant, sends the upload; no block output has to. A body that succeeds always sets `effect`, with an empty `imports` map when nothing is imported, and `importFile` refuses calls made after the body has returned.
+
+  Breaking for v2 workflows: a body declared as `func(args)` must become `func(args, effect)` — until it does, the render fails with `wrong number of arguments: want=1, got=2` — and the output guard now requires exactly `result`, `exports` and `effect`.
+
+### Patch Changes
+
+- bb23557: `validation`: a tag value may contain `=`, so a schema such as `string,regex=^x=y$` checks the whole regex instead of the part before its first `=`.
+
+## 6.21.1
+
+### Patch Changes
+
+- fe4ff52: exec: `cache()` is deprecated. Use `cacheMillis`, `cacheSeconds`, `cacheMinutes`, `cacheHours` or `cacheDays`. The `cache()` doc comment now tells to build the duration with the 'times' library constants
+
 ## 6.21.0
 
 ### Minor Changes

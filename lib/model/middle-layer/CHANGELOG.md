@@ -1,5 +1,24 @@
 # @milaboratories/pl-model-middle-layer
 
+## 1.37.0
+
+### Minor Changes
+
+- 82dd041: Rename `InstanceStats.availability` to `status` (type `InstanceStatsStatus`), and its "read" value to "ok".
+
+## 1.36.0
+
+### Minor Changes
+
+- efac5cc: `MiddleLayer.instanceStats` reads the backend's instance statistics context (allocated CPU, RAM, GPUs and GPU memory out of capacity, running and queued jobs) every 10s, only when the backend advertises `instanceStats:v1`. `PlClient.listSharedResourcesByType` lists the resources of a type shared with the user.
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/helpers@1.14.7
+
 ## 1.35.0
 
 ### Minor Changes

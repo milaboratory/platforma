@@ -1,5 +1,11 @@
 # @milaboratories/helpers
 
+## 1.14.7
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+
 ## 1.14.6
 
 ### Patch Changes

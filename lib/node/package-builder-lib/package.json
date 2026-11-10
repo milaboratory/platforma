@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/package-builder-lib",
-  "version": "1.4.3",
+  "version": "1.5.0",
   "description": "MiLaboratories Platforma Package builder engine (library)",
   "keywords": [],
   "license": "UNLICENSED",
@@ -28,12 +28,13 @@
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "catalog:",
     "@aws-sdk/lib-storage": "catalog:",
+    "@google-cloud/storage": "catalog:",
     "@milaboratories/resolve-helper": "workspace:*",
     "archiver": "catalog:",
     "undici": "catalog:",
@@ -49,6 +50,7 @@
     "@types/archiver": "catalog:",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "shx": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"

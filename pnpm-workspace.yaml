@@ -26,13 +26,10 @@ packages:
   - lib/model/pf-spec-driver
   - lib/model/columns-collection-driver
   - lib/node/pl-client
-  - lib/node/pl-healthcheck
   - lib/node/pl-tree
   - lib/node/pl-drivers
   - lib/node/pl-middle-layer
   - lib/node/pl-mcp-server
-  - lib/node/pl-deployments
-  - lib/node/pl-config
   - lib/node/package-builder-lib
 
   - lib/ptabler/js
@@ -56,6 +53,7 @@ packages:
   - tools/pl-bootstrap
   - tools/eslint-config
   - tools/blocks-deps-updater
+  - tools/no-env
 
   - sdk/model
   - sdk/workflow-tengo
@@ -160,7 +158,6 @@ packages:
   - tests/software/venv-identity
   - tests/helper
   - tests/block-repo
-  - tests/config-local-ml-integration
   - tests/drivers-ml-blocks-integration
   - tests/mcp-server
 
@@ -230,11 +227,11 @@ catalog:
   "@aws-sdk/client-s3": &aws-sdk-version 3.1157.0
   "@aws-sdk/lib-storage": *aws-sdk-version
   "@aws-sdk/client-ecr-public": *aws-sdk-version
+  "@google-cloud/storage": ^8.4.0
 
   # Util & other libs
 
   "@inquirer/prompts": ^7.0.1
-  "testcontainers": ^12.2.1
   "utility-types": ^3.11.0
   "denque": ^2.1.0
   "lru-cache": ^11.5.3
@@ -244,12 +241,10 @@ catalog:
   "semver": ^7.7.2
   "jsonc-parser": 3.3.1
 
-  "upath": ^2.0.1
   "tar": ^7.5.22
   "tar-fs": ^3.1.3
   "yauzl": ^3.4.0
   "readline-sync": ^1.4.10
-  "ssh2": ^1.16.0
   "json-stringify-safe": ^5.0.1
 
   "fs-extra": "^11.2.0"
@@ -322,6 +317,7 @@ catalog:
   "@platforma-open/milaboratories.runenv-python-3": 1.16.1
 
   "shx": ^0.4.0
+  "cross-env": ^10.1.0
 
   # Test
 
@@ -342,7 +338,6 @@ catalog:
   "@types/semver": ^7.7.0
   "@types/mime-types": ^2.1.4
   "@types/tar-fs": ^2.0.4
-  "@types/ssh2": ^1.15.5
 
 minimumReleaseAgeExclude:
   - "@milaboratories/*"
@@ -354,7 +349,5 @@ allowBuilds:
   "@milaboratories/tengo-tester": false
   "@parcel/watcher": false
   core-js: false
-  cpu-features: false
   esbuild: false
   protobufjs: false
-  ssh2: false

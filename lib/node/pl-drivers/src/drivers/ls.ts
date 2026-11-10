@@ -20,7 +20,7 @@ import {
   parseStorageHandle,
   RemoteStorageHandleData,
 } from "./helpers/ls_storage_entry";
-import type { LocalStorageProjection, VirtualLocalStorageSpec } from "./types";
+import type { VirtualLocalStorageSpec } from "./types";
 import { DefaultVirtualLocalStorages } from "./virtual_storages";
 
 /**
@@ -62,8 +62,6 @@ export class LsDriver implements InternalLsDriver {
     private readonly signer: Signer,
     /** Virtual storages by name */
     private readonly virtualStoragesMap: Map<string, VirtualLocalStorageSpec>,
-    /** Local projections by storageId */
-    private readonly localProjectionsMap: Map<string, LocalStorageProjection>,
     private readonly openFileDialogCallback: OpenFileDialogCallback,
   ) {}
 
@@ -122,52 +120,30 @@ export class LsDriver implements InternalLsDriver {
   private async tryResolveLocalFileHandle(handle: sdk.LocalImportFileHandle): Promise<string> {
     if (isImportFileHandleIndex(handle)) {
       const handleData = parseIndexHandle(handle);
-      const localProjection = this.localProjectionsMap.get(handleData.storageId);
-      if (!localProjection)
-        throw new Error(`Storage ${handleData.storageId} is not mounted locally.`);
-      return path.join(localProjection.localPath, handleData.path);
-    } else {
-      const handleData = parseUploadHandle(handle);
-      // checking it is a valid local handle from out machine
-      this.signer.verify(
-        handleData.localPath,
-        handleData.pathSignature,
-        "Failed to validate local file handle signature.",
-      );
-
-      const localPath = handleData.localPath;
-
-      const stat = await fsp.stat(localPath, { bigint: true });
-      if (String(stat.mtimeMs / 1000n) !== handleData.modificationTime)
-        throw new Error("File has changed since the handle was created.");
-
-      return localPath;
+      throw new Error(`Storage ${handleData.storageId} is not mounted locally.`);
     }
+
+    const handleData = parseUploadHandle(handle);
+    // checking it is a valid local handle from out machine
+    this.signer.verify(
+      handleData.localPath,
+      handleData.pathSignature,
+      "Failed to validate local file handle signature.",
+    );
+
+    const localPath = handleData.localPath;
+
+    const stat = await fsp.stat(localPath, { bigint: true });
+    if (String(stat.mtimeMs / 1000n) !== handleData.modificationTime)
+      throw new Error("File has changed since the handle was created.");
+
+    return localPath;
   }
 
   public async getLocalFileHandle(
     localPath: string,
   ): Promise<sdk.ImportFileHandle & sdk.LocalImportFileHandle> {
     validateAbsolute(localPath);
-
-    // Checking if local path is directly reachable by pl, because it is in one of the
-    // locally mounted storages
-    for (const lp of this.localProjectionsMap.values()) {
-      // note: empty lp.localPath will match any address
-      if (localPath.startsWith(lp.localPath)) {
-        // Just in case:
-        //  > path.relative("/a/b", "/a/b/c");
-        //    'c'
-        const pathWithinStorage =
-          lp.localPath === "" ? localPath : path.relative(lp.localPath, localPath);
-        return createIndexImportHandle(
-          lp.storageId,
-          pathWithinStorage,
-        ) as sdk.ImportFileHandleIndex & sdk.LocalImportFileHandle;
-      }
-    }
-
-    // we get here if none of the local projections matched the path
 
     const stat = await fsp.stat(localPath, { bigint: true });
     return createUploadImportHandle(
@@ -194,13 +170,7 @@ export class LsDriver implements InternalLsDriver {
       initialFullPath: "",
     }));
 
-    // root must be a storage so we can index any file,
-    // but for UI it's enough
-    // to have local virtual storage on *nix,
-    // and local_disk_${drive} on Windows.
-    const noRoot = remoteStorages.filter((it) => it.id !== "root");
-
-    return [...virtualStorages, ...noRoot];
+    return [...virtualStorages, ...remoteStorages];
   }
 
   public async listFiles(
@@ -289,8 +259,6 @@ export class LsDriver implements InternalLsDriver {
     logger: MiLogger,
     client: PlClient,
     signer: Signer,
-    /** Pl storages available locally */
-    localProjections: LocalStorageProjection[],
     openFileDialogCallback: OpenFileDialogCallback,
     virtualStorages?: VirtualLocalStorageSpec[],
   ): Promise<LsDriver> {
@@ -300,20 +268,9 @@ export class LsDriver implements InternalLsDriver {
 
     // validating inputs
     for (const vp of virtualStorages) validateAbsolute(vp.root);
-    for (const lp of localProjections) if (lp.localPath !== "") validateAbsolute(lp.localPath);
 
     // creating indexed maps for quick access
     const virtualStoragesMap = new Map(virtualStorages.map((s) => [s.id, s]));
-    const localProjectionsMap = new Map(localProjections.map((s) => [s.storageId, s]));
-
-    // validating there is no intersection
-    if (
-      new Set([...virtualStoragesMap.keys(), ...localProjectionsMap.keys()]).size !==
-      virtualStoragesMap.size + localProjectionsMap.size
-    )
-      throw new Error(
-        "Intersection between local projection storage ids and virtual storages names detected.",
-      );
 
     return new LsDriver(
       logger,
@@ -321,7 +278,6 @@ export class LsDriver implements InternalLsDriver {
       client.userResources,
       signer,
       virtualStoragesMap,
-      localProjectionsMap,
       openFileDialogCallback,
     );
   }

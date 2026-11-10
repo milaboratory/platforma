@@ -23,6 +23,7 @@ import {
 } from "./config";
 import type { GrpcOptions } from "@protobuf-ts/grpc-transport";
 import { GrpcTransport } from "@protobuf-ts/grpc-transport";
+import { callAbortSignal } from "./driver";
 import { LLPlTransaction } from "./ll_transaction";
 import { setResourceSignaturesRequired } from "./types";
 import { parsePlJwt } from "../util/pl";
@@ -296,6 +297,9 @@ export class LLPlClient implements WireClientProviderFactory {
     const clientOptions: ClientOptions = {
       "grpc.keepalive_time_ms": 30_000, // 30 seconds
       "grpc.service_config_disable_resolution": 1, // Disable DNS TXT lookups for service config
+      // A new client must not share a subchannel, and its reconnect backoff, with another client.
+      "grpc.use_local_subchannel_pool": 1,
+      "grpc.max_reconnect_backoff_ms": 10_000,
       // Raises the per-stream and connection-level HTTP/2 windows. Node's 64 KB default
       // caps a big single-stream read (project open) at window/RTT rather than link speed,
       // and a lost WINDOW_UPDATE can deadlock it under packet loss.
@@ -459,7 +463,7 @@ export class LLPlClient implements WireClientProviderFactory {
 
   private updateStatus(newStatus: PlConnectionStatus) {
     process.nextTick(() => {
-      if (this._status !== newStatus) {
+      if (this._status !== newStatus && this._status !== "Unauthenticated") {
         this._status = newStatus;
         if (this.statusListener !== undefined) this.statusListener(this._status);
         if (newStatus === "Unauthenticated" && this.onAuthError !== undefined) this.onAuthError();
@@ -475,12 +479,12 @@ export class LLPlClient implements WireClientProviderFactory {
    * authProbeInFlight so a burst of failures costs one probe.
    */
   private async verifyThenMaybeEscalateUnauthenticated(): Promise<void> {
-    if (this._status !== "OK" || this.authProbeInFlight) return;
+    if (this._status === "Unauthenticated" || this.authProbeInFlight) return;
     this.authProbeInFlight = true;
     try {
       await this.getSessionInfo();
-    } catch (e) {
-      if (isUnauthenticated(e)) this.updateStatus("Unauthenticated");
+    } catch (error) {
+      if (isUnauthenticated(error)) this.updateStatus("Unauthenticated");
     } finally {
       this.authProbeInFlight = false;
     }
@@ -538,6 +542,7 @@ export class LLPlClient implements WireClientProviderFactory {
           this.updateStatus("Disconnected");
           return new Response(body, { ...resOptions, status: response.status });
         }
+        if (response.status < 400) this.updateStatus("OK");
 
         const respErr = await parseResponseError(response);
         if (!respErr.error) {
@@ -565,8 +570,15 @@ export class LLPlClient implements WireClientProviderFactory {
     return (options, nextCall) => {
       return new InterceptingCall(nextCall(options), {
         start: (metadata, listener, next) => {
+          let ended = false;
           next(metadata, {
+            // grpc-js can pass headers after a cancelled call's status, and protobuf-ts throws on them.
+            onReceiveMetadata: (headers, next) => {
+              if (!ended) next(headers);
+            },
             onReceiveStatus: (status, next) => {
+              ended = true;
+              if (status.code == GrpcStatus.OK) this.updateStatus("OK");
               if (status.code == GrpcStatus.UNAUTHENTICATED)
                 // (!!!) don't change to "==="
                 void this.verifyThenMaybeEscalateUnauthenticated();
@@ -1038,7 +1050,7 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   public async listUserResources(
-    opts: { login?: string; startFrom?: bigint; limit?: number } = {},
+    opts: { login?: string; startFrom?: bigint; limit?: number; abortSignal?: AbortSignal } = {},
   ): Promise<grpcTypes.AuthAPI_ListUserResources_Response[]> {
     const cl = this.clientProvider.get();
 
@@ -1046,11 +1058,14 @@ export class LLPlClient implements WireClientProviderFactory {
       throw new Error("ListUserResources requires gRPC wire protocol; REST is not supported");
     }
 
-    const call = cl.listUserResources({
-      login: opts.login ?? "",
-      startFrom: opts.startFrom ?? 0n,
-      limit: opts.limit ?? 0,
-    });
+    const call = cl.listUserResources(
+      {
+        login: opts.login ?? "",
+        startFrom: opts.startFrom ?? 0n,
+        limit: opts.limit ?? 0,
+      },
+      { abort: callAbortSignal(opts.abortSignal) },
+    );
     const responses: grpcTypes.AuthAPI_ListUserResources_Response[] = [];
     for await (const msg of call.responses) {
       responses.push(msg);

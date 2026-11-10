@@ -7,7 +7,7 @@ wf.prepare(func(args) {
 	return { prepared: wf.resolve(args.source) }
 })
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	return {
 		outputs: {
 			isProduction: wf.isProduction(),

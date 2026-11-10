@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/block-tools",
-  "version": "2.17.6",
+  "version": "2.18.1",
   "description": "Utility to manipulate Platforma Blocks and Block Registry",
   "license": "UNLICENSED",
   "bin": {
@@ -25,7 +25,7 @@
   "scripts": {
     "build": "vite build",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target node",
@@ -34,7 +34,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-ecr-public": "catalog:",
-    "@aws-sdk/client-s3": "catalog:",
     "@inquirer/prompts": "catalog:",
     "@milaboratories/pl-http": "workspace:*",
     "@milaboratories/pl-model-backend": "workspace:*",
@@ -65,6 +64,7 @@
     "oxfmt": "catalog:",
     "rollup-plugin-node-externals": "catalog:",
     "semver": "catalog:",
+    "shx": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "catalog:",

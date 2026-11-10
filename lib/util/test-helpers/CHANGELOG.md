@@ -1,5 +1,13 @@
 # @milaboratories/test-helpers
 
+## 1.2.8
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/helpers@1.14.7
+
 ## 1.2.7
 
 ### Patch Changes

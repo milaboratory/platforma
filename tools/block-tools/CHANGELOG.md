@@ -1,5 +1,63 @@
 # @platforma-sdk/block-tools
 
+## 2.18.1
+
+### Patch Changes
+
+- Updated dependencies [82dd041]
+  - @milaboratories/pl-model-middle-layer@1.37.0
+
+## 2.18.0
+
+### Minor Changes
+
+- 187228d: Support Google Cloud Storage as registry storage: `gs://<bucket>/<prefix>` for block publishing and registry maintenance in block-tools, and for software package upload in package-builder. Authentication uses Application Default Credentials.
+
+  - block-tools and package-builder now share one storage implementation, exported from package-builder-lib and re-exported by block-tools. The `RegistryStorage` interface gained optional `exists()` and `checkAccess()`, and `putFile()` accepts a stream, so existing implementations keep compiling.
+  - block-tools accepts the same addresses as package-builder: `s3://`, `s3e://`, `s3es://`, `gs://` and local paths. S3 writes go through the multipart uploader, so large and streamed bodies work.
+  - Every object written to GCS, package archives included, gets `Cache-Control: no-cache`, so a registry served from a public bucket is never stale.
+  - package-builder checks access inside the target prefix, so credentials scoped to `<bucket>/<prefix>/*` are enough on GCS. On S3 they also need `s3:ListBucket` for that prefix: without it S3 answers 403 instead of 404 for a missing object.
+  - `s3e://` upload URLs now honour the endpoint, credentials and nested key prefix they carry; `s3es://` is the same over https. Without `?region=`, the region comes from `AWS_REGION`, then defaults to `us-east-1`.
+  - `s3://` and `gs://` addresses without a bucket fail with a clear error. Deletes from S3 go in batches of 1000 keys (the DeleteObjects limit), and local-folder deletes ignore missing files, same as S3 and GCS.
+  - Registry HTTP reads now fail with the HTTP status instead of parsing an error page as content.
+
+### Patch Changes
+
+- Updated dependencies [187228d]
+  - @platforma-sdk/package-builder-lib@1.5.0
+
+## 2.17.9
+
+### Patch Changes
+
+- c78669f: `structure refresh --update-deps-only` now also moves a block to the SDK pnpm and Node and writes the pnpm 12 workspace settings. So the first `pnpm i` of `upgrade-sdk` runs on the SDK pnpm, with its release-age check, and the lockfile no longer gets a release that the later install rejects. `--update-deps-only` now also refuses a `pnpm` field with settings in the root `package.json`, before any install.
+
+  New blocks no longer get `allowBuilds` entries for `ssh2` and `cpu-features`: the SDK no longer depends on them.
+
+  `upgrade-sdk` runs the `block-tools` installed in the block. A block on pnpm 9 or 10 gets the fix only from its next upgrade on. For its first upgrade, run `pnpm dlx @platforma-sdk/block-tools@latest structure refresh --update-deps-only` before `pnpm upgrade-sdk`.
+
+## 2.17.8
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-model-middle-layer@1.36.0
+  - @platforma-sdk/package-builder-lib@1.4.4
+  - @platforma-sdk/blocks-deps-updater@2.2.2
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pl-model-backend@1.4.45
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/pl-http@1.2.6
+  - @milaboratories/resolve-helper@1.1.3
+
+## 2.17.7
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.44
+
 ## 2.17.6
 
 ### Patch Changes
