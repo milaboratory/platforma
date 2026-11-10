@@ -1,5 +1,13 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.22.2
+
+### Patch Changes
+
+- 581be9f: v2 workflow: the `effect` output omits its `imports` section when the body imports nothing, leaving an empty map; an effect that lists imports is unchanged.
+  - @platforma-open/milaboratories.software-ptabler@2.3.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.7
+
 ## 6.22.1
 
 ### Patch Changes

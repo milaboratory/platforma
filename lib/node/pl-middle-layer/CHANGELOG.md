@@ -1,5 +1,31 @@
 # @milaboratories/pl-middle-layer
 
+## 2.3.0
+
+### Minor Changes
+
+- 9aea514: `Project.watchBlockStatus()` folds a block's action-context tree into a live `BlockStatusSummary`, with the run's jobs counted per state as the backend reports it, one computable per context so a report re-reads only its own context, and the project tree prunes the action-context fields. `PlTreeNodeAccessor` gains `listKeyValuesAsString(prefix)` and `listFields()`.
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+- Updated dependencies [5744a50]
+- Updated dependencies [581be9f]
+  - @milaboratories/pl-model-common@1.55.2
+  - @milaboratories/pl-client@3.22.1
+  - @milaboratories/pl-tree@1.18.0
+  - @milaboratories/pl-model-middle-layer@1.38.0
+  - @platforma-sdk/block-tools@2.19.0
+  - @platforma-sdk/workflow-tengo@6.22.2
+  - @milaboratories/columns-collection-driver@0.2.15
+  - @milaboratories/pf-spec-driver@1.5.16
+  - @milaboratories/pf-driver@1.9.16
+  - @milaboratories/pl-crash-recorder@0.3.11
+  - @milaboratories/pl-drivers@2.0.1
+  - @platforma-sdk/model@1.88.14
+  - @milaboratories/pl-model-backend@1.4.46
+  - @milaboratories/pl-errors@1.4.61
+
 ## 2.2.0
 
 ### Minor Changes
