@@ -64,9 +64,7 @@ test("the watch reads a sample where the capability is advertised, and nothing e
       await new Promise((r) => setTimeout(r, 100));
       stats = await watch.stats.getValue();
     }
-    expect(stats?.status).toEqual(
-      pl.hasCapability(InstanceStatsCapability) ? "ok" : "unsupported",
-    );
+    expect(stats?.status).toEqual(pl.hasCapability(InstanceStatsCapability) ? "ok" : "unsupported");
   } finally {
     await watch.terminate();
     await pl.close();
