@@ -16,11 +16,12 @@ RUN ${TOOLSET} install --no-compile --upgrade pip wheel setuptools
 # files are still in this step's own layer, so the split moves them instead of copying.
 # .pyc files are compiled hash-based (not from the install time), so an unchanged package
 # gives the same files on every build and its layer can be reused (see docker-relayer.ts).
+# Like pip's own compile step, files that do not compile (py2-only, test fixtures) are skipped.
 # The heredoc needs BuildKit (Docker >= 23 default) or buildah/podman >= 1.33.
 COPY ${REQUIREMENTS_PATH} .
 RUN ${TOOLSET} install --no-compile --no-cache-dir -r ${REQUIREMENTS_FILENAME} \
-    && python3 -m compileall -q -f -j 0 --invalidation-mode unchecked-hash \
-        "$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')" \
+    && { python3 -m compileall -q -f -j 0 --invalidation-mode unchecked-hash \
+        "$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')" || true; } \
     && python3 - ${DEPS_ROOT} /layers ${DEPS_LAYERS} ${DEPS_LAYER_TARGET_BYTES} <<'LAYER_SPLIT_EOF'
 ${LAYER_SPLIT_SCRIPT}
 LAYER_SPLIT_EOF

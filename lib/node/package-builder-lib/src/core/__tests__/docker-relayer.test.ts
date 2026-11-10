@@ -1,7 +1,10 @@
 import { describe, it, expect, afterEach } from "vitest";
 import {
   authSource,
+  createdEpoch,
+  helperAnswerToAuth,
   isEnabled,
+  normalizeRegistryKey,
   parseDockerConfig,
   parseLayers,
   registryHost,
@@ -33,36 +36,65 @@ describe("docker-relayer", () => {
     expect(registryHost("python:3.12")).toBe("docker.io");
   });
 
-  it("takes credentials in docker's order: credHelpers, auths, credsStore", () => {
-    const config = parseDockerConfig(
+  it("takes credentials in docker's order: credHelpers, then credsStore, then auths", () => {
+    const withStore = parseDockerConfig(
       JSON.stringify({
-        auths: { "quay.io": { auth: b64("robot:s3cr:et") }, "ghcr.io": {} },
+        auths: { "quay.io": { auth: b64("stale:entry") } },
         credsStore: "osxkeychain",
         credHelpers: { "public.ecr.aws": "ecr-login" },
       }),
     );
-
-    expect(authSource(config, "public.ecr.aws")).toEqual({ kind: "helper", helper: "ecr-login" });
-    // a colon in the password stays in the password
-    expect(authSource(config, "quay.io")).toEqual({
-      kind: "basic",
-      username: "robot",
-      password: "s3cr:et",
+    expect(authSource(withStore, "public.ecr.aws")).toEqual({
+      kind: "helper",
+      helper: "ecr-login",
     });
-    // an entry without 'auth' is a placeholder: the store holds the secret
-    expect(authSource(config, "ghcr.io")).toEqual({ kind: "helper", helper: "osxkeychain" });
+    // with a credsStore, docker ignores inline auths
+    expect(authSource(withStore, "quay.io")).toEqual({ kind: "helper", helper: "osxkeychain" });
+
+    const inline = parseDockerConfig(
+      JSON.stringify({ auths: { "quay.io": { auth: b64("robot:s3cr:et") }, "ghcr.io": {} } }),
+    );
+    expect(authSource(inline, "quay.io")).toEqual({
+      kind: "entry",
+      entry: { auth: b64("robot:s3cr:et"), identitytoken: undefined },
+    });
+    expect(authSource(inline, "ghcr.io")).toEqual({ kind: "none" });
   });
 
-  it("maps docker.io to its config key and allows anonymous access", () => {
+  it("normalizes config keys and keeps identity tokens", () => {
     const config = parseDockerConfig(
-      JSON.stringify({ auths: { "https://index.docker.io/v1/": { auth: b64("u:p") } } }),
+      JSON.stringify({
+        auths: {
+          "https://index.docker.io/v1/": { auth: b64("u:p") },
+          "https://myacr.azurecr.io": { identitytoken: "tok" },
+        },
+      }),
     );
     expect(authSource(config, "docker.io")).toEqual({
-      kind: "basic",
-      username: "u",
-      password: "p",
+      kind: "entry",
+      entry: { auth: b64("u:p"), identitytoken: undefined },
     });
-    expect(authSource(parseDockerConfig("{}"), "quay.io")).toBeUndefined();
+    expect(authSource(config, "myacr.azurecr.io")).toEqual({
+      kind: "entry",
+      entry: { auth: undefined, identitytoken: "tok" },
+    });
+    expect(normalizeRegistryKey("Quay.io/v2/")).toBe("quay.io");
+    expect(authSource(parseDockerConfig("{}"), "quay.io")).toEqual({ kind: "none" });
+  });
+
+  it("turns a credential helper's answer into a config entry", () => {
+    expect(helperAnswerToAuth(JSON.stringify({ Username: "AWS", Secret: "pw" }))).toEqual({
+      auth: b64("AWS:pw"),
+    });
+    expect(helperAnswerToAuth(JSON.stringify({ Username: "<token>", Secret: "tok" }))).toEqual({
+      identitytoken: "tok",
+    });
+    expect(helperAnswerToAuth(JSON.stringify({ Username: "u", Secret: "" }))).toBeUndefined();
+  });
+
+  it("reads the image creation time for chunkah's mtime clamp", () => {
+    expect(createdEpoch("2026-11-10T12:00:00.123456789Z")).toBe(1794312000);
+    expect(createdEpoch("")).toBe(0);
   });
 
   it("reads layer sizes and components of the manifest summary", () => {

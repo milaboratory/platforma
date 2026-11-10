@@ -241,8 +241,14 @@ function layerLimit(): { limit: number; enforced: boolean } {
   return { limit, enforced };
 }
 
-export function checkLayerSizes(tag: string, warn: (message: string) => void): void {
-  const { enforced } = layerLimit();
+export function checkLayerSizes(
+  tag: string,
+  warn: (message: string) => void,
+  opts?: { advisory?: boolean },
+): void {
+  // advisory: the image is re-layered before the push (docker-relayer.ts), which splits big
+  // layers and checks the result; a big Dockerfile layer is then only worth a warning here.
+  const enforced = layerLimit().enforced && !opts?.advisory;
 
   let layers: ImageLayer[];
   try {
@@ -263,7 +269,7 @@ export function checkLayerSizes(tag: string, warn: (message: string) => void): v
     warn(message);
   }
 
-  reportOversizedLayers(tag, layers, "uncompressed", warn);
+  reportOversizedLayers(tag, layers, "uncompressed", warn, opts);
 }
 
 /**
@@ -275,8 +281,10 @@ export function reportOversizedLayers(
   layers: ImageLayer[],
   measure: "compressed" | "uncompressed",
   warn: (message: string) => void,
+  opts?: { advisory?: boolean },
 ): void {
-  const { limit, enforced } = layerLimit();
+  const { limit } = layerLimit();
+  const enforced = layerLimit().enforced && !opts?.advisory;
   const oversized = oversizedLayers(layers, limit);
   if (oversized.length === 0) {
     return;

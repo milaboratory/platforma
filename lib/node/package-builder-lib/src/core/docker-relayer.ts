@@ -6,18 +6,25 @@
 // the registry to finalize before the pushing client gives up.
 //
 // With PL_DOCKER_RELAYER=chunkah the pushed image gets its layers from its content instead:
-//   1. export the image filesystem into a docker volume;
-//   2. tag each file with its owning package (assets/relayer-tag.py: pip, conda, dpkg, the
-//      image's WORKDIR, else the directory), splitting packages above a size cap;
+//   1. export the image filesystem into a docker volume (with xattrs and ACLs);
+//   2. assets/relayer-tag.py tags each file with its owning package (pip, conda, dpkg, the
+//      image's WORKDIR, else the directory), splits packages above a size cap, and sets
+//      deterministic mtimes that keep timestamp-based .pyc files valid;
 //   3. chunkah (https://github.com/coreos/chunkah) writes an OCI image with one layer per
 //      package, or per few packages, at most DOCKER_RELAYER_MAX_LAYERS;
 //   4. crane pushes that OCI layout.
 // An unchanged package gives a byte-identical layer, so a one-package bump uploads (and a
-// node pulls) about one package. The image config (env, entrypoint, labels...) is kept.
+// node pulls) about one package.
+//
+// What differs from the local image: the layers; file mtimes (see relayer-tag.py); a
+// user.component xattr on each file; /.dockerenv and /dev/console from the export are dropped.
+// chunkah keeps user, env, entrypoint, cmd, workdir, labels, volumes and exposed ports; it
+// drops the docker-only healthcheck, shell, onbuild and the history.
 //
 // All tools run as containers on the same docker daemon, with data in docker volumes, so it
-// works the same with a local daemon and with a remote one (dind in CI). The local image
-// keeps its Dockerfile layers; only the pushed image is re-layered. Both have the same files.
+// works the same with a local daemon and with a remote one (dind in CI). The daemon needs
+// free disk for one uncompressed and one compressed copy of the image while this runs.
+// Needs bash on the host (not available on plain Windows).
 
 import { spawnSync, type SpawnSyncOptions } from "node:child_process";
 import { randomBytes } from "node:crypto";
@@ -42,22 +49,38 @@ export function isEnabled(): boolean {
 
 // ---------------------------------------------------------------------------------------
 // Registry credentials. crane runs in a container and cannot use the host's docker
-// credential helpers, so the credentials are read on the host and given to it on stdin.
+// credential helpers, so the credentials are read on the host the way docker reads them, and
+// given to crane as a generated config.json on stdin.
+
+export type AuthEntry = { auth: string | undefined; identitytoken: string | undefined };
 
 export type DockerConfig = {
-  auths: Record<string, string | undefined>; // registry -> base64 "user:password"
+  auths: Record<string, AuthEntry>; // keyed by normalized registry host
   credsStore: string | undefined;
-  credHelpers: Record<string, string>;
+  credHelpers: Record<string, string>; // keyed by normalized registry host
 };
 
+/** How docker would authenticate to a registry. */
 export type AuthSource =
-  | { kind: "basic"; username: string; password: string }
-  | { kind: "helper"; helper: string };
+  | { kind: "entry"; entry: AuthEntry }
+  | { kind: "helper"; helper: string }
+  | { kind: "none" };
 
-export type Credentials = { username: string; password: string };
+/** What crane gets: one `auths` entry of a docker config.json. */
+export type CraneAuth = { auth?: string; identitytoken?: string };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/** Registry host of a config key: "https://quay.io/v1/" -> "quay.io"; Docker Hub -> "docker.io". */
+export function normalizeRegistryKey(key: string): string {
+  const host = key
+    .replace(/^[a-z]+:\/\//i, "")
+    .split("/")[0]
+    ?.toLowerCase();
+  if (!host || host === "index.docker.io" || host === "registry-1.docker.io") return "docker.io";
+  return host;
 }
 
 /** Parses ~/.docker/config.json; unknown or malformed fields are ignored. */
@@ -66,17 +89,25 @@ export function parseDockerConfig(text: string): DockerConfig {
   const config: DockerConfig = { auths: {}, credsStore: undefined, credHelpers: {} };
   if (!isRecord(raw)) return config;
   if (isRecord(raw.auths)) {
-    for (const [registry, entry] of Object.entries(raw.auths)) {
-      config.auths[registry] =
-        isRecord(entry) && typeof entry.auth === "string" ? entry.auth : undefined;
+    for (const [key, entry] of Object.entries(raw.auths)) {
+      if (!isRecord(entry)) continue;
+      config.auths[normalizeRegistryKey(key)] = {
+        auth: typeof entry.auth === "string" && entry.auth !== "" ? entry.auth : undefined,
+        identitytoken:
+          typeof entry.identitytoken === "string" && entry.identitytoken !== ""
+            ? entry.identitytoken
+            : undefined,
+      };
     }
   }
   if (typeof raw.credsStore === "string" && raw.credsStore !== "") {
     config.credsStore = raw.credsStore;
   }
   if (isRecord(raw.credHelpers)) {
-    for (const [registry, helper] of Object.entries(raw.credHelpers)) {
-      if (typeof helper === "string") config.credHelpers[registry] = helper;
+    for (const [key, helper] of Object.entries(raw.credHelpers)) {
+      if (typeof helper === "string" && helper !== "") {
+        config.credHelpers[normalizeRegistryKey(key)] = helper;
+      }
     }
   }
   return config;
@@ -86,34 +117,33 @@ export function parseDockerConfig(text: string): DockerConfig {
 export function registryHost(tag: string): string {
   const first = tag.split("/")[0] ?? "";
   if (tag.includes("/") && (first.includes(".") || first.includes(":") || first === "localhost")) {
-    return first;
+    return first.toLowerCase();
   }
   return "docker.io";
 }
 
-/** Where docker would take the credentials for `host` from, in docker's own order. */
-export function authSource(config: DockerConfig, host: string): AuthSource | undefined {
-  const keys = host === "docker.io" ? ["https://index.docker.io/v1/", "docker.io"] : [host];
-  for (const key of keys) {
-    const helper = config.credHelpers[key];
-    if (helper) return { kind: "helper", helper };
-  }
-  for (const key of keys) {
-    const auth = config.auths[key];
-    if (auth) {
-      const decoded = Buffer.from(auth, "base64").toString("utf-8");
-      const colon = decoded.indexOf(":");
-      if (colon > 0) {
-        return {
-          kind: "basic",
-          username: decoded.slice(0, colon),
-          password: decoded.slice(colon + 1),
-        };
-      }
-    }
-  }
+/**
+ * Docker's order: a credHelpers entry for the host; else the credsStore, when set (docker then
+ * ignores inline auths); else the inline auths entry.
+ */
+export function authSource(config: DockerConfig, host: string): AuthSource {
+  const helper = config.credHelpers[host];
+  if (helper) return { kind: "helper", helper };
   if (config.credsStore) return { kind: "helper", helper: config.credsStore };
-  return undefined;
+  const entry = config.auths[host];
+  if (entry && (entry.auth || entry.identitytoken)) return { kind: "entry", entry };
+  return { kind: "none" };
+}
+
+/** A credential helper's answer as a config entry; "<token>" means an identity token. */
+export function helperAnswerToAuth(stdout: string): CraneAuth | undefined {
+  const parsed: unknown = JSON.parse(stdout);
+  if (!isRecord(parsed) || typeof parsed.Secret !== "string" || parsed.Secret === "") {
+    return undefined;
+  }
+  const username = typeof parsed.Username === "string" ? parsed.Username : "";
+  if (username === "<token>") return { identitytoken: parsed.Secret };
+  return { auth: Buffer.from(`${username}:${parsed.Secret}`).toString("base64") };
 }
 
 function dockerConfigPath(): string {
@@ -121,31 +151,33 @@ function dockerConfigPath(): string {
   return path.join(dir, "config.json");
 }
 
-/** Credentials docker would use to push to `host`, or undefined for anonymous access. */
-export function registryCredentials(host: string): Credentials | undefined {
+/** Credentials docker would use for `host`; undefined means anonymous access. */
+export function registryAuth(host: string, warn: (m: string) => void): CraneAuth | undefined {
   const file = dockerConfigPath();
   if (!fs.existsSync(file)) return undefined;
   const source = authSource(parseDockerConfig(fs.readFileSync(file, "utf-8")), host);
-  if (!source) return undefined;
-  if (source.kind === "basic") return { username: source.username, password: source.password };
+  if (source.kind === "none") return undefined;
+  if (source.kind === "entry") {
+    return { auth: source.entry.auth, identitytoken: source.entry.identitytoken };
+  }
 
-  const result = spawnSync(`docker-credential-${source.helper}`, ["get"], {
-    input: host === "docker.io" ? "https://index.docker.io/v1/" : host,
-    encoding: "utf-8",
-  });
+  const helper = `docker-credential-${source.helper}`;
+  const serverUrl = host === "docker.io" ? "https://index.docker.io/v1/" : host;
+  const result = spawnSync(helper, ["get"], { input: serverUrl, encoding: "utf-8" });
   if (result.error || result.status !== 0) {
-    // the helper has no entry: docker would push anonymously too
+    warn(
+      `'${helper} get' found no credentials for '${host}' ` +
+        `(${result.error ? String(result.error) : (result.stdout || result.stderr).trim()}); ` +
+        `pushing without credentials. Log in with 'docker login ${host}' if the push is denied.`,
+    );
     return undefined;
   }
-  const parsed: unknown = JSON.parse(result.stdout);
-  if (
-    isRecord(parsed) &&
-    typeof parsed.Username === "string" &&
-    typeof parsed.Secret === "string"
-  ) {
-    return { username: parsed.Username, password: parsed.Secret };
+  try {
+    return helperAnswerToAuth(result.stdout);
+  } catch {
+    warn(`'${helper} get' returned an unreadable answer for '${host}'; pushing anonymously.`);
+    return undefined;
   }
-  return undefined;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -174,7 +206,7 @@ function run(
   return typeof result.stdout === "string" ? result.stdout : "";
 }
 
-/** Compressed layer sizes and chunkah component names of the OCI image in `volume`. */
+/** Compressed layer sizes and chunkah component names of the OCI image (manifest summary). */
 export function parseLayers(json: string): docker.ImageLayer[] {
   const raw: unknown = JSON.parse(json);
   if (!Array.isArray(raw)) throw util.CLIError(`image re-layering: unexpected manifest summary`);
@@ -188,6 +220,12 @@ export function parseLayers(json: string): docker.ImageLayer[] {
   });
 }
 
+/** Unix seconds of an image's Created time (docker inspect), 0 if unreadable. */
+export function createdEpoch(created: string): number {
+  const ms = Date.parse(created.trim());
+  return Number.isFinite(ms) && ms > 0 ? Math.floor(ms / 1000) : 0;
+}
+
 const MANIFEST_SUMMARY = [
   "import json",
   "i = json.load(open('/out/image/index.json'))",
@@ -197,6 +235,11 @@ const MANIFEST_SUMMARY = [
   "                  for l in m['layers']]))",
 ].join("\n");
 
+// Writes the config.json from stdin, then pushes. Values come in through the environment.
+const CRANE_PUSH =
+  "set -e; mkdir -p /tmp/cfg; cat > /tmp/cfg/config.json; " +
+  'DOCKER_CONFIG=/tmp/cfg crane push /out/image "$PL_PUSH_TAG"';
+
 /**
  * Re-layers local image `localTag` (see the file header) and pushes it as `pushTag`.
  * Layers above the size limit are reported like docker.checkLayerSizes does, but by
@@ -204,6 +247,7 @@ const MANIFEST_SUMMARY = [
  */
 export function relayerAndPush(localTag: string, pushTag: string, logger: winston.Logger): void {
   const id = randomBytes(6).toString("hex");
+  const label = "com.milaboratories.package-builder.relayer=" + id; // for sweeping leftovers
   const rootfs = `pl-relayer-rootfs-${id}`;
   const oci = `pl-relayer-oci-${id}`;
   const tools = defaults.DOCKER_RELAYER_TOOLS_IMAGE;
@@ -214,32 +258,37 @@ export function relayerAndPush(localTag: string, pushTag: string, logger: winsto
 
   logger.info(`Re-layering docker image '${localTag}' by package (${envs.PL_DOCKER_RELAYER})...`);
   try {
-    run("docker volume create", "docker", ["volume", "create", rootfs]);
-    run("docker volume create", "docker", ["volume", "create", oci]);
+    run("docker volume create", "docker", ["volume", "create", "--label", label, rootfs]);
+    run("docker volume create", "docker", ["volume", "create", "--label", label, oci]);
 
     step("exporting the image filesystem");
-    container = run("docker create", "docker", ["create", localTag]).trim();
+    // a placeholder command: images without CMD/ENTRYPOINT (FROM scratch) cannot be created
+    // otherwise. The container is never started.
+    container = run("docker create", "docker", [
+      "create",
+      "--label",
+      label,
+      localTag,
+      "/pl-relayer-placeholder",
+    ]).trim();
     run("docker export", "bash", [
       "-o",
       "pipefail",
       "-c",
-      'docker export "$1" | docker run --rm -i -v "$2":/r "$3" tar --numeric-owner -xpf - -C /r',
+      'docker export "$1" | docker run --rm -i -v "$2":/r "$3" ' +
+        "tar --numeric-owner --xattrs --xattrs-include='*' --acls -xpf - -C /r",
       "relayer-export",
       container,
       rootfs,
       tools,
     ]);
-    run("docker rm", "docker", ["rm", container]);
+    run("docker rm", "docker", ["rm", "-v", container]);
     container = "";
 
     step("grouping files by package");
-    const workdir = run("docker inspect", "docker", [
-      "image",
-      "inspect",
-      localTag,
-      "--format",
-      "{{.Config.WorkingDir}}",
-    ]).trim();
+    const inspect = (format: string) =>
+      run("docker inspect", "docker", ["image", "inspect", localTag, "--format", format]).trim();
+    const workdir = inspect("{{.Config.WorkingDir}}");
     run(
       "tagging files",
       "docker",
@@ -262,6 +311,9 @@ export function relayerAndPush(localTag: string, pushTag: string, logger: winsto
 
     step("writing package layers (chunkah)");
     const config = run("docker inspect", "docker", ["image", "inspect", localTag]);
+    // The tagger already set every mtime; the image's build time as chunkah's clamp keeps
+    // them (all are earlier) and gives the image a real creation time.
+    const epoch = createdEpoch(inspect("{{.Created}}")) || Math.floor(Date.now() / 1000);
     run(
       "chunkah",
       "docker",
@@ -284,15 +336,12 @@ export function relayerAndPush(localTag: string, pushTag: string, logger: winsto
         "--prune",
         "/.dockerenv",
         "--prune",
-        "/root/.cache/",
+        "/dev/console",
         "--output",
         "oci:/out/image",
       ],
       {
-        env: {
-          CHUNKAH_CONFIG_STR: config,
-          SOURCE_DATE_EPOCH: process.env.SOURCE_DATE_EPOCH ?? "0",
-        },
+        env: { CHUNKAH_CONFIG_STR: config, SOURCE_DATE_EPOCH: String(epoch) },
         stdio: ["pipe", "inherit", "inherit"],
       },
     );
@@ -317,7 +366,9 @@ export function relayerAndPush(localTag: string, pushTag: string, logger: winsto
 
     step(`pushing '${pushTag}' (crane)`);
     const host = registryHost(pushTag);
-    const creds = registryCredentials(host);
+    const auth = registryAuth(host, (m) => logger.warn(m));
+    // crane looks Docker Hub up under docker's legacy key
+    const craneHost = host === "docker.io" ? "https://index.docker.io/v1/" : host;
     run(
       "crane push",
       "docker",
@@ -325,35 +376,33 @@ export function relayerAndPush(localTag: string, pushTag: string, logger: winsto
         "run",
         "--rm",
         "-i",
+        // the daemon's network: a registry on localhost, and the host's proxy routes
+        "--network",
+        "host",
         "-v",
         `${oci}:/out:ro`,
         "-e",
-        "PL_REG_HOST",
-        "-e",
-        "PL_REG_USER",
-        "-e",
         "PL_PUSH_TAG",
+        "-e",
+        "HTTPS_PROXY",
+        "-e",
+        "NO_PROXY",
         "--entrypoint",
         "sh",
         defaults.DOCKER_RELAYER_CRANE_IMAGE,
         "-c",
-        'set -e; if [ -n "$PL_REG_USER" ]; then crane auth login "$PL_REG_HOST" ' +
-          '-u "$PL_REG_USER" --password-stdin; fi; crane push /out/image "$PL_PUSH_TAG"',
+        CRANE_PUSH,
       ],
       {
-        // the password goes on stdin only: never in arguments or the container's env
-        input: creds?.password ?? "",
-        env: {
-          PL_REG_HOST: host === "docker.io" ? "index.docker.io" : host,
-          PL_REG_USER: creds?.username ?? "",
-          PL_PUSH_TAG: pushTag,
-        },
+        // credentials go on stdin only: never in arguments or the container's env
+        input: JSON.stringify({ auths: auth ? { [craneHost]: auth } : {} }),
+        env: { PL_PUSH_TAG: pushTag },
         stdio: ["pipe", "inherit", "inherit"],
       },
     );
     step("done");
   } finally {
-    if (container !== "") spawnSync("docker", ["rm", "-f", container], { stdio: "ignore" });
+    if (container !== "") spawnSync("docker", ["rm", "-f", "-v", container], { stdio: "ignore" });
     spawnSync("docker", ["volume", "rm", "-f", rootfs, oci], { stdio: "ignore" });
   }
 }

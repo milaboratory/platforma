@@ -27,7 +27,9 @@ export const PL_DOCKER_BUILD = "PL_DOCKER_BUILD";
 export const PL_DOCKER_NO_BUILD = "PL_DOCKER_NO_BUILD";
 export const PL_DOCKER_AUTOPUSH = "PL_DOCKER_AUTOPUSH";
 export const PL_DOCKER_NO_AUTOPUSH = "PL_DOCKER_NO_AUTOPUSH";
-// Max uncompressed size of one image layer. Unset: oversized layers only warn. Set: they fail the build.
+// Max size of one image layer: uncompressed after the build; compressed (what the registry
+// receives) for re-layered images (PL_DOCKER_RELAYER), checked before their push. Unset:
+// oversized layers only warn. Set: they fail.
 export const PL_DOCKER_MAX_LAYER_BYTES = "PL_DOCKER_MAX_LAYER_BYTES";
 // "chunkah": re-layer docker images by owning package before the push (docker-relayer.ts).
 export const PL_DOCKER_RELAYER = "PL_DOCKER_RELAYER";

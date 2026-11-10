@@ -36,14 +36,30 @@ describe.skipIf(!hasPython)("relayer-tag.py", () => {
     });
     expect(result.status, result.stderr).toBe(0);
     return Object.fromEntries(
-      result.stdout
-        .split("\n")
-        .filter((l) => l !== "")
-        .map((l) => {
-          const [p, comp] = l.split("\t");
-          return [p ?? "", comp ?? ""];
-        }),
+      lines(result.stdout)
+        .filter(([, comp]) => comp !== "")
+        .map(([p, comp]) => [p, comp]),
     );
+  }
+
+  /** [path, component, mtime] rows of a dry run. */
+  function lines(stdout: string): [string, string, string][] {
+    return stdout
+      .split("\n")
+      .filter((l) => l !== "")
+      .map((l) => {
+        const [p, comp, mtime] = l.split("\t");
+        return [p ?? "", comp ?? "", mtime ?? ""];
+      });
+  }
+
+  function mtimes(appDir = "/app"): Record<string, number> {
+    const result = spawnSync("python3", ["-", root, appDir, "1000", "--dry-run"], {
+      input: script,
+      encoding: "utf-8",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    return Object.fromEntries(lines(result.stdout).map(([p, , m]) => [p, Number(m)]));
   }
 
   const site = "usr/local/lib/python3.12/site-packages";
@@ -152,17 +168,101 @@ describe.skipIf(!hasPython)("relayer-tag.py", () => {
     expect(c["/app/main.py"]).toBe("app");
   });
 
-  it("ignores RECORD entries that point outside the root filesystem", () => {
-    file(`${site}/evil/x.py`);
-    fs.mkdirSync(path.join(root, `${site}/evil-1.0.dist-info`));
+  it("ignores absolute RECORD entries instead of claiming all of site-packages", () => {
+    file(`${site}/a/x.py`);
+    file(`${site}/b/y.py`);
+    fs.mkdirSync(path.join(root, `${site}/zz-1.0.dist-info`));
+    fs.writeFileSync(path.join(root, `${site}/zz-1.0.dist-info/RECORD`), "/usr/share/zz,,\n");
+    for (const pkg of ["a", "b"]) {
+      fs.mkdirSync(path.join(root, `${site}/${pkg}-1.0.dist-info`));
+      fs.writeFileSync(path.join(root, `${site}/${pkg}-1.0.dist-info/RECORD`), `${pkg}/x.py,,\n`);
+    }
+
+    const c = components();
+
+    expect(c[`/${site}/a/x.py`]).toBe("pypi/a");
+    expect(c[`/${site}/b/y.py`]).toBe("pypi/b");
+  });
+
+  it("keeps RECORD owners in a namespace directory that several distributions share", () => {
+    file(`${site}/nvidia/cublas/lib/libcublas.so`);
+    file(`${site}/nvidia/cudnn/lib/libcudnn.so`);
+    for (const [dist, rel] of [
+      ["nvidia_cublas_cu12-12.4", "nvidia/cublas/lib/libcublas.so"],
+      ["nvidia_cudnn_cu12-9.1", "nvidia/cudnn/lib/libcudnn.so"],
+    ] as const) {
+      fs.mkdirSync(path.join(root, `${site}/${dist}.dist-info`));
+      fs.writeFileSync(path.join(root, `${site}/${dist}.dist-info/RECORD`), `${rel},,\n`);
+    }
+
+    const c = components();
+
+    expect(c[`/${site}/nvidia/cublas/lib/libcublas.so`]).toBe("pypi/nvidia_cublas_cu12");
+    expect(c[`/${site}/nvidia/cudnn/lib/libcudnn.so`]).toBe("pypi/nvidia_cudnn_cu12");
+  });
+
+  it("keeps package owners of a venv under WORKDIR; only unowned files there are 'app'", () => {
+    const venv = "app/.venv/lib/python3.12/site-packages";
+    file(`${venv}/numpy/core.py`);
+    file("app/main.py");
+    fs.mkdirSync(path.join(root, `${venv}/numpy-2.1.3.dist-info`));
+    fs.writeFileSync(path.join(root, `${venv}/numpy-2.1.3.dist-info/RECORD`), "numpy/core.py,,\n");
+
+    const c = components("/app");
+
+    expect(c[`/${venv}/numpy/core.py`]).toBe("pypi/numpy");
+    expect(c["/app/main.py"]).toBe("app");
+  });
+
+  it("gives all links of a hard-linked file the component of its first path", () => {
+    file("opt/conda/pkgs/zlib/lib/libz.so");
+    fs.mkdirSync(path.join(root, "opt/conda/lib"), { recursive: true });
+    fs.linkSync(
+      path.join(root, "opt/conda/pkgs/zlib/lib/libz.so"),
+      path.join(root, "opt/conda/lib/libz.so"),
+    );
+    fs.mkdirSync(path.join(root, "opt/conda/conda-meta"), { recursive: true });
     fs.writeFileSync(
-      path.join(root, `${site}/evil-1.0.dist-info/RECORD`),
-      "../../../../../../../../etc/passwd,,\nevil/x.py,,\n",
+      path.join(root, "opt/conda/conda-meta/zlib-1.3-0.json"),
+      JSON.stringify({ name: "zlib", files: ["lib/libz.so"] }),
     );
 
     const c = components();
 
-    expect(Object.keys(c).every((p) => p.startsWith("/"))).toBe(true);
-    expect(c[`/${site}/evil/x.py`]).toBe("pypi/evil");
+    expect(c["/opt/conda/lib/libz.so"]).toBe("conda/zlib");
+    expect(c["/opt/conda/pkgs/zlib/lib/libz.so"]).toBe("conda/zlib");
+  });
+
+  it("maps dpkg's /bin paths to /usr/bin on usrmerge images", () => {
+    file("usr/bin/bash");
+    fs.mkdirSync(path.join(root, "var/lib/dpkg/info"), { recursive: true });
+    fs.writeFileSync(path.join(root, "var/lib/dpkg/info/bash.list"), "/bin\n/bin/bash\n");
+
+    expect(components()["/usr/bin/bash"]).toBe("deb/bash");
+  });
+
+  it("sets mtime 0, except a .py with a timestamp .pyc: it keeps the .pyc's source mtime", () => {
+    const pyc = (flags: number, mtime: number) => {
+      const b = Buffer.alloc(16);
+      b.writeUInt32LE(0x0a0d0dcb, 0); // magic (any value works for the tagger)
+      b.writeUInt32LE(flags, 4);
+      b.writeUInt32LE(mtime, 8);
+      return b;
+    };
+    file("usr/local/lib/python3.12/os.py");
+    file("usr/local/lib/python3.12/__pycache__/os.cpython-312.pyc");
+    fs.writeFileSync(
+      path.join(root, "usr/local/lib/python3.12/__pycache__/os.cpython-312.pyc"),
+      pyc(0, 1700000000),
+    );
+    file(`${site}/numpy/core.py`);
+    file(`${site}/numpy/__pycache__/core.cpython-312.pyc`);
+    fs.writeFileSync(path.join(root, `${site}/numpy/__pycache__/core.cpython-312.pyc`), pyc(1, 0)); // hash-based
+
+    const m = mtimes();
+
+    expect(m["/usr/local/lib/python3.12/os.py"]).toBe(1700000000);
+    expect(m["/usr/local/lib/python3.12/__pycache__/os.cpython-312.pyc"]).toBe(0);
+    expect(m[`/${site}/numpy/core.py`]).toBe(0);
   });
 });

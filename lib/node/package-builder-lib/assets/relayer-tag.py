@@ -1,75 +1,121 @@
-# Assigns every file of an exported image root filesystem to a component, and writes the
-# component name to the file's user.component xattr. chunkah then makes image layers from
-# components, so files that change together land in the same layer, and an unchanged
-# component gives a byte-identical layer on the next build.
+# Prepares an exported image root filesystem for chunkah:
+#   1. assigns every regular file to a component and writes the name to the file's
+#      user.component xattr; chunkah makes image layers from components, so files that change
+#      together land in the same layer;
+#   2. sets deterministic mtimes, so an unchanged component gives a byte-identical layer on the
+#      next build (see "mtimes" below).
 #
 # Usage: python3 - <rootfs> <app_dir> <max_component_bytes> [--dry-run]
 #   app_dir              the image's own code (WORKDIR), its own component; "" to skip
 #   max_component_bytes  a component bigger than this is split into several, by path order
-#   --dry-run            print "<path>\t<component>" lines instead of writing xattrs
+#   --dry-run            print "<path>\t<component>\t<mtime>" lines (component "" when the file
+#                        is left to chunkah) instead of changing the filesystem
 #
-# Owners, later ones win: Debian packages (dpkg lists), conda packages (conda-meta),
-# pip packages (dist-info RECORD), then app_dir. Files that no package owns are grouped by
-# directory, unless the image has an RPM or pacman database: chunkah reads those itself.
+# Owners: Debian packages (dpkg lists), conda packages (conda-meta), pip packages (dist-info
+# RECORD; pip wins over the others, since pip runs last), then app_dir for files no package
+# owns. Remaining files are grouped by directory, unless the image has an RPM or pacman
+# database: chunkah reads those itself. All links of a hard-linked file get one component, so
+# chunkah keeps them as hard links.
+#
+# mtimes: every file and directory gets mtime 0, except a .py file that has a timestamp-based
+# .pyc (the default of pip, conda and the stdlib): it gets the source mtime recorded in that
+# .pyc, so Python keeps using the .pyc instead of recompiling the module on every start.
 import json
 import os
 import re
+import stat
 import sys
 from collections import defaultdict
 
-FALLBACK_DEPTH = 3  # /usr/share/doc -> "dir/usr/share/doc"
+FALLBACK_DEPTH = 3  # /usr/share/doc/a/README -> "dir/usr/share/doc"
+PYC_NAME = re.compile(r"^([^.]+)\..*\.pyc$")  # mod.cpython-312.pyc, mod.cpython-312.opt-1.pyc
 
 
 def norm_pip(name):
     return re.sub(r"[-_.]+", "_", name).lower()
 
 
-def scan(root):
-    """All regular files under root, as {"/abs/path": size}, plus package database locations."""
-    files = {}
-    dist_infos, conda_metas = [], []
-    for dirpath, dirnames, filenames in os.walk(root):
-        rel_dir = "/" + os.path.relpath(dirpath, root) if dirpath != root else ""
-        for d in dirnames:
-            if d.endswith(".dist-info"):
-                dist_infos.append(os.path.join(dirpath, d))
-            elif d == "conda-meta":
-                conda_metas.append(os.path.join(dirpath, d))
-        for f in filenames:
-            p = os.path.join(dirpath, f)
-            st = os.lstat(p)
-            if os.path.stat.S_ISREG(st.st_mode):
-                files[rel_dir + "/" + f] = st.st_size
-    return files, dist_infos, conda_metas
-
-
-def in_root(root, path):
-    """Absolute image path of a host path under root, or None if it points outside."""
-    path = os.path.normpath(path)
-    if path != root and not path.startswith(root + os.sep):
+def img(root, host_path):
+    """Image path ("/usr/bin/x") of a host path, or None if it points outside root."""
+    p = os.path.normpath(host_path)
+    if p != root and not p.startswith(root + os.sep):
         return None
-    return "/" + os.path.relpath(path, root)
+    return "/" + os.path.relpath(p, root) if p != root else "/"
 
 
-def dpkg_owners(root, owner):
-    info = os.path.join(root, "var/lib/dpkg/info")
+class Tree:
+    def __init__(self, root):
+        self.root = root
+        self.files = {}  # image path -> size, regular files only
+        self.dirs = []  # host paths
+        self.links = []  # host paths of symlinks
+        self.inodes = defaultdict(list)  # (dev, ino) -> image paths, files with nlink > 1
+        self.dist_infos, self.conda_metas = [], []
+        self.pyc_mtime = {}  # image path of a .py -> source mtime in its timestamp-based .pyc
+        for dirpath, dirnames, filenames in os.walk(root):
+            self.dirs.append(dirpath)
+            for d in dirnames:
+                full = os.path.join(dirpath, d)
+                if os.path.islink(full):
+                    self.links.append(full)
+                elif d.endswith(".dist-info"):
+                    self.dist_infos.append(full)
+                elif d == "conda-meta":
+                    self.conda_metas.append(full)
+            for f in filenames:
+                full = os.path.join(dirpath, f)
+                st = os.lstat(full)
+                if stat.S_ISLNK(st.st_mode):
+                    self.links.append(full)
+                    continue
+                if not stat.S_ISREG(st.st_mode):
+                    continue
+                p = img(root, full)
+                self.files[p] = st.st_size
+                if st.st_nlink > 1:
+                    self.inodes[(st.st_dev, st.st_ino)].append(p)
+                if f.endswith(".pyc") and os.path.basename(dirpath) == "__pycache__":
+                    self._read_pyc(full, f)
+
+    def _read_pyc(self, full, name):
+        m = PYC_NAME.match(name)
+        if not m:
+            return
+        try:
+            with open(full, "rb") as fh:
+                header = fh.read(16)
+        except OSError:
+            return
+        if len(header) < 16 or int.from_bytes(header[4:8], "little") != 0:
+            return  # too short, or hash-based: no source mtime to keep
+        source = os.path.join(os.path.dirname(os.path.dirname(full)), m.group(1) + ".py")
+        p = img(self.root, source)
+        if p is not None:
+            self.pyc_mtime.setdefault(p, int.from_bytes(header[8:12], "little"))
+
+
+def dpkg_owners(tree, owner):
+    info = os.path.join(tree.root, "var/lib/dpkg/info")
     if not os.path.isdir(info):
         return
     for name in sorted(os.listdir(info)):
         if not name.endswith(".list"):
             continue
-        pkg = name[: -len(".list")].split(":")[0]
+        comp = "deb/" + name[: -len(".list")].split(":")[0]
         with open(os.path.join(info, name), errors="replace") as fh:
             for line in fh:
                 p = line.strip()
-                if p.startswith("/"):
-                    owner[p] = "deb/" + pkg
+                if p.startswith("/") and p in tree.files:
+                    owner[p] = comp
+                # usrmerge: dpkg lists /bin/x, the file is at /usr/bin/x
+                elif p.startswith(("/bin/", "/sbin/", "/lib")) and "/usr" + p in tree.files:
+                    owner["/usr" + p] = comp
     # the database itself changes with every apt install: one component for it
     owner.setdefault("/var/lib/dpkg/status", "deb/.db")
 
 
-def conda_owners(root, conda_metas, owner):
-    for meta in sorted(conda_metas):
+def conda_owners(tree, owner):
+    for meta in sorted(tree.conda_metas):
         prefix = os.path.dirname(meta)
         for name in sorted(os.listdir(meta)):
             if not name.endswith(".json"):
@@ -79,53 +125,64 @@ def conda_owners(root, conda_metas, owner):
                     rec = json.load(fh)
             except (OSError, ValueError):
                 continue
-            comp = "conda/" + rec.get("name", name[: -len(".json")])
+            comp = "conda/" + str(rec.get("name") or name[: -len(".json")])
             for rel in rec.get("files", []):
-                p = in_root(root, os.path.join(prefix, rel))
-                if p:
+                p = img(tree.root, os.path.join(prefix, rel))
+                if p in tree.files:
                     owner[p] = comp
-            p = in_root(root, os.path.join(meta, name))
-            if p:
-                owner[p] = comp
+            owner[img(tree.root, os.path.join(meta, name))] = comp
 
 
-def pip_owners(root, dist_infos, files, owner):
-    for info in sorted(dist_infos):
+def pip_owners(tree, owner):
+    # pass 1: what RECORD lists; pip installs last, so it wins over dpkg and conda
+    tops_of = {}  # dist-info -> (site dir, component, top-level entries)
+    top_count = defaultdict(int)  # (site dir, top) -> number of distributions listing it
+    for info in sorted(tree.dist_infos):
         site = os.path.dirname(info)
         comp = "pypi/" + norm_pip(re.sub(r"-[^-]+\.dist-info$", "", os.path.basename(info)))
-        record = os.path.join(info, "RECORD")
         tops = set()
+        record = os.path.join(info, "RECORD")
         if os.path.isfile(record):
             with open(record, errors="replace") as fh:
                 for line in fh:
                     rel = line.rstrip("\n").rsplit(",", 2)[0]
-                    if not rel:
-                        continue
-                    p = in_root(root, os.path.join(site, rel))
-                    if p:
+                    if not rel or rel.startswith("/"):
+                        continue  # absolute entries: written outside the environment
+                    p = img(tree.root, os.path.join(site, rel))
+                    if p in tree.files:
                         owner[p] = comp
                     first = rel.split("/")[0]
-                    if first not in ("..", "."):
+                    if first not in ("", ".", "..", "__pycache__"):
                         tops.add(first)
-        # files pip does not list: .pyc compiled after the install, caches inside the package
+        tops_of[info] = (site, comp, tops)
+        for top in tops:
+            top_count[(site, top)] += 1
+
+    # pass 2: files pip does not list (.pyc compiled after the install, caches inside a
+    # package). Only under top-level directories that one distribution owns: a namespace
+    # directory shared by several (nvidia/, google/) keeps the RECORD owners only.
+    for info, (site, comp, tops) in tops_of.items():
         dirs = [info]
         for top in tops:
             q = os.path.join(site, top)
-            if top == "__pycache__" or os.path.islink(q):
+            if os.path.islink(q):
                 continue
             if os.path.isdir(q):
-                dirs.append(q)
+                if top_count[(site, top)] == 1:
+                    dirs.append(q)
             elif top.endswith(".py"):
                 cache = os.path.join(site, "__pycache__")
                 if os.path.isdir(cache):
                     for f in os.listdir(cache):
                         if f.startswith(top[:-3] + ".") and f.endswith(".pyc"):
-                            owner[in_root(root, os.path.join(cache, f))] = comp
+                            p = img(tree.root, os.path.join(cache, f))
+                            if not owner.get(p, "").startswith("pypi/"):
+                                owner[p] = comp
         for d in dirs:
             for dirpath, _, filenames in os.walk(d):
                 for f in filenames:
-                    p = in_root(root, os.path.join(dirpath, f))
-                    if p in files:
+                    p = img(tree.root, os.path.join(dirpath, f))
+                    if p in tree.files and not owner.get(p, "").startswith("pypi/"):
                         owner[p] = comp
 
 
@@ -143,8 +200,7 @@ def split_big(files, assigned, max_bytes):
         by_comp[comp].append(p)
     out = {}
     for comp, paths in by_comp.items():
-        total = sum(files[p] for p in paths)
-        if total <= max_bytes:
+        if sum(files[p] for p in paths) <= max_bytes:
             for p in paths:
                 out[p] = comp
             continue
@@ -157,22 +213,20 @@ def split_big(files, assigned, max_bytes):
     return out
 
 
-def assign(root, app_dir, max_bytes):
-    root = os.path.normpath(root)
-    files, dist_infos, conda_metas = scan(root)
+def assign(tree, app_dir, max_bytes):
     owner = {}
-    dpkg_owners(root, owner)
-    conda_owners(root, conda_metas, owner)
-    pip_owners(root, dist_infos, files, owner)
+    dpkg_owners(tree, owner)
+    conda_owners(tree, owner)
+    pip_owners(tree, owner)
     if app_dir and app_dir != "/":
         app = app_dir.rstrip("/") + "/"
-        for p in files:
+        for p in tree.files:
             if p.startswith(app):
-                owner[p] = "app"
+                owner.setdefault(p, "app")  # a venv or conda prefix under WORKDIR keeps its owners
 
-    native = has_native_db(root)
+    native = has_native_db(tree.root)
     assigned = {}
-    for p in files:
+    for p in tree.files:
         comp = owner.get(p)
         if comp is None:
             if native:
@@ -180,25 +234,45 @@ def assign(root, app_dir, max_bytes):
             parts = p.strip("/").split("/")[:-1][:FALLBACK_DEPTH]
             comp = "dir/" + "/".join(parts) if parts else "dir/"
         assigned[p] = comp
-    return files, split_big(files, assigned, max_bytes)
+    assigned = split_big(tree.files, assigned, max_bytes)
+
+    # all links of one inode in one component: the first link (by path) decides
+    for paths in tree.inodes.values():
+        first = min(paths)
+        comp = assigned.get(first)
+        for p in paths:
+            if comp is None:
+                assigned.pop(p, None)
+            else:
+                assigned[p] = comp
+    return assigned
 
 
 def main():
-    root, app_dir, max_bytes = sys.argv[1], sys.argv[2], int(sys.argv[3])
+    root, app_dir, max_bytes = os.path.normpath(sys.argv[1]), sys.argv[2], int(sys.argv[3])
     dry_run = "--dry-run" in sys.argv[4:]
-    files, assigned = assign(root, app_dir, max_bytes)
-    sizes = defaultdict(int)
-    for p, comp in assigned.items():
-        sizes[comp] += files[p]
+    tree = Tree(root)
+    assigned = assign(tree, app_dir, max_bytes)
+
     if dry_run:
-        for p in sorted(assigned):
-            print(f"{p}\t{assigned[p]}")
+        for p in sorted(tree.files):
+            print(f"{p}\t{assigned.get(p, '')}\t{tree.pyc_mtime.get(p, 0)}")
     else:
         for p, comp in assigned.items():
             os.setxattr(os.path.join(root, p.lstrip("/")), "user.component", comp.encode())
+        for p in tree.files:
+            t = tree.pyc_mtime.get(p, 0)
+            os.utime(os.path.join(root, p.lstrip("/")), (t, t), follow_symlinks=False)
+        for host in tree.links + tree.dirs:
+            os.utime(host, (0, 0), follow_symlinks=False)
+
+    sizes = defaultdict(int)
+    for p, comp in assigned.items():
+        sizes[comp] += tree.files[p]
     biggest = sorted(sizes.items(), key=lambda kv: -kv[1])[:5]
     print(
-        f"relayer: {len(assigned)} of {len(files)} files in {len(sizes)} components; biggest: "
+        f"relayer: {len(assigned)} of {len(tree.files)} files in {len(sizes)} components, "
+        f"{len(tree.pyc_mtime)} sources kept at their .pyc mtime; biggest: "
         + ", ".join(f"{c} {s / 1024**3:.2f} GiB" for c, s in biggest),
         file=sys.stderr,
     )

@@ -71,13 +71,17 @@ export const DOCKER_MAX_LAYER_BYTES = 4 * 1024 ** 3;
 // Re-layering of docker images before the push (opt-in: PL_DOCKER_RELAYER=chunkah, see
 // docker-relayer.ts). The image is exported, its files are grouped by owning package, and
 // chunkah writes one layer per group (or per few groups), so a one-package bump re-uploads
-// about one package. Tool images are pinned; the tools run in containers, so nothing is
-// installed on the runner.
-export const DOCKER_RELAYER_CHUNKAH_IMAGE = "quay.io/coreos/chunkah:v0.7.1";
-// The debug variant has a shell, needed to log in and push in one container run.
-export const DOCKER_RELAYER_CRANE_IMAGE = "gcr.io/go-containerregistry/crane/debug:v0.22.0";
+// about one package. The tools run in containers, so nothing is installed on the runner. The
+// images are pinned by digest (multi-arch indexes): the crane container gets the registry
+// credentials.
+export const DOCKER_RELAYER_CHUNKAH_IMAGE =
+  "quay.io/coreos/chunkah:v0.7.1@sha256:71e593421c5de7dcc7c8c5c50e98d3bac572055a76f399f61a491d123c20a523";
+// The debug variant has a shell, needed to write the credentials and push in one run.
+export const DOCKER_RELAYER_CRANE_IMAGE =
+  "gcr.io/go-containerregistry/crane/debug:v0.22.0@sha256:fcf134969f70b86febd0ec78528e3a9f2a8e6b59a110b44694dc6fa2c553e4a1";
 // Runs tar (to unpack the exported filesystem) and the python tagger.
-export const DOCKER_RELAYER_TOOLS_IMAGE = "python:3.12-slim";
+export const DOCKER_RELAYER_TOOLS_IMAGE =
+  "python:3.12.16-slim@sha256:5e2bdb1b0d542d5039cffb8181c65930093949194a65c365dfb1b0fe13a4fa5b";
 // Docker overlay2 refuses to run images with more than 128 layers (moby/buildkit#3067).
 export const DOCKER_RELAYER_MAX_LAYERS = 64;
 // A package bigger than this is split into several components (= several layers).
