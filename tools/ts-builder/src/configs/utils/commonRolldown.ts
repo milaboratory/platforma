@@ -1,9 +1,11 @@
 import { dts } from "rolldown-plugin-dts";
 import type { RolldownOptions, RolldownPluginOption } from "rolldown";
+import { buildTsconfig } from "./buildTsconfig";
 
 const useSources = process.env.USE_SOURCES === "1";
 
 const dtsPlugin = dts({
+  tsconfig: buildTsconfig(),
   sourcemap: true,
   ...(useSources && {
     compilerOptions: {
