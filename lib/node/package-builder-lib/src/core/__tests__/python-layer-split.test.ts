@@ -11,10 +11,18 @@ import * as paths from "../paths";
 const hasPython = spawnSync("python3", ["--version"]).status === 0;
 const script = fs.readFileSync(paths.assets("python-layer-split.py"), "utf-8");
 
-function runSplit(root: string, out: string, bins: number, minTarget: number, keep: string[] = []) {
+function runSplit(
+  root: string,
+  out: string,
+  bins: number,
+  minTarget: number,
+  keep: string[] = [],
+  env: NodeJS.ProcessEnv = {},
+) {
   const result = spawnSync("python3", ["-", root, out, String(bins), String(minTarget), ...keep], {
     input: script,
     encoding: "utf-8",
+    env: { ...process.env, ...env },
   });
   expect(result.stderr).toBe("");
   expect(result.status).toBe(0);
@@ -72,17 +80,81 @@ describe.skipIf(!hasPython)("python-layer-split.py", () => {
       .sort();
   }
 
-  it("keeps a tree smaller than the target in bin 0 and creates every bin", () => {
+  /** Index of the bin that holds root-relative path f, or undefined. */
+  function binOf(f: string, bins: number): number | undefined {
+    return Array.from({ length: bins }, (_, i) => i).find((i) =>
+      fs.existsSync(path.join(out, String(i)) + path.join(root, f)),
+    );
+  }
+
+  it("creates every bin, empty or not, and keeps all files", () => {
     writeFile(path.join(root, "lib/site-packages/a/x.py"), 100);
     writeFile(path.join(root, "bin/tool"), 10);
 
     runSplit(root, out, 4, 1000);
 
     expect(fs.readdirSync(out).sort()).toEqual(["0", "1", "2", "3"]);
-    expect(listFiles(path.join(out, "0") + root)).toEqual(["bin/tool", "lib/site-packages/a/x.py"]);
-    for (const i of [1, 2, 3]) {
-      expect(fs.readdirSync(path.join(out, String(i)))).toEqual([]);
+    expect(mergedFiles(4)).toEqual(["bin/tool", "lib/site-packages/a/x.py"]);
+  });
+
+  it("keeps a package and its dist-info in the same bin", () => {
+    for (const pkg of ["numpy", "pandas", "scipy", "torch"]) {
+      writeFile(path.join(root, "lib/site-packages", pkg, "__init__.py"), 50);
+      writeFile(path.join(root, "lib/site-packages", `${pkg}-1.2.3.dist-info/RECORD`), 10);
     }
+
+    runSplit(root, out, 8, 1000);
+
+    for (const pkg of ["numpy", "pandas", "scipy", "torch"]) {
+      expect(binOf(`lib/site-packages/${pkg}-1.2.3.dist-info`, 8)).toBe(
+        binOf(`lib/site-packages/${pkg}`, 8),
+      );
+    }
+  });
+
+  it("keeps unchanged packages in byte-identical bins when one package is bumped", () => {
+    const pkgs = ["a", "b", "c", "d", "e", "f", "g", "h"];
+    const install = (bumped: boolean) => {
+      fs.rmSync(path.join(tmp, "usr"), { recursive: true, force: true });
+      fs.rmSync(out, { recursive: true, force: true });
+      for (const pkg of pkgs) {
+        const version = bumped && pkg === "c" ? "2.0" : "1.0";
+        writeFile(
+          path.join(root, "lib/site-packages", pkg, "m.so"),
+          bumped && pkg === "c" ? 70 : 50,
+        );
+        writeFile(path.join(root, "lib/site-packages", `${pkg}-${version}.dist-info/RECORD`), 5);
+      }
+      runSplit(root, out, 8, 1000);
+      return Object.fromEntries(
+        Array.from({ length: 8 }, (_, i) => {
+          const dir = path.join(out, String(i));
+          return [i, listFiles(dir).map((f) => `${f}:${fs.statSync(path.join(dir, f)).mtimeMs}`)];
+        }),
+      );
+    };
+
+    const before = install(false);
+    const after = install(true);
+    const changed = Object.keys(before).filter(
+      (i) => JSON.stringify(before[i]) !== JSON.stringify(after[i]),
+    );
+    // only the bin holding package c differs
+    expect(changed).toHaveLength(1);
+  });
+
+  it("sets every moved entry to SOURCE_DATE_EPOCH", () => {
+    writeFile(path.join(root, "lib/site-packages/a/x.py"), 10);
+    fs.symlinkSync("x.py", path.join(root, "lib/site-packages/a/y.py"));
+
+    runSplit(root, out, 2, 1000, [], { SOURCE_DATE_EPOCH: "1234" });
+
+    const bin = binOf("lib/site-packages/a", 2);
+    const base = path.join(out, String(bin)) + root;
+    for (const rel of ["", "lib", "lib/site-packages/a", "lib/site-packages/a/x.py"]) {
+      expect(fs.lstatSync(path.join(base, rel)).mtimeMs).toBe(1234000);
+    }
+    expect(fs.lstatSync(path.join(base, "lib/site-packages/a/y.py")).mtimeMs).toBe(1234000);
   });
 
   it("splits a big tree across bins without losing or duplicating files", () => {
@@ -96,16 +168,16 @@ describe.skipIf(!hasPython)("python-layer-split.py", () => {
     writeFile(path.join(root, "bin/tool"), 10);
     before.push("bin/tool");
 
-    // total 3010 bytes, 4 bins, min target 500 -> target 753. Package dirs (600) fit no
-    // bin once four are placed, so the fifth is placed file by file: a bin may exceed the
-    // target by less than one file (300).
+    // total 3010 bytes, 4 bins, target 500: package dirs (600) are split into files (300).
+    // Capacity 2000 < 3010, so files that fit no bin go to the least-filled one: a bin
+    // ends at most one file (300) above the average (753).
     runSplit(root, out, 4, 500);
 
     expect(mergedFiles(4)).toEqual(before.sort());
     const loads = [0, 1, 2, 3].map((i) => dirBytes(path.join(out, String(i))));
     expect(loads.reduce((a, b) => a + b, 0)).toBe(3010);
     for (const load of loads) {
-      expect(load).toBeLessThan(753 + 300);
+      expect(load).toBeLessThanOrEqual(753 + 300);
     }
   });
 
@@ -130,9 +202,10 @@ describe.skipIf(!hasPython)("python-layer-split.py", () => {
 
     runSplit(root, out, 2, 1000);
 
-    const bin0 = path.join(out, "0") + root;
-    expect(fs.readlinkSync(path.join(bin0, "bin/python3"))).toBe("python3.12");
-    expect(fs.statSync(path.join(bin0, "share/empty")).isDirectory()).toBe(true);
+    const linkBin = path.join(out, String(binOf("bin/python3", 2))) + root;
+    expect(fs.readlinkSync(path.join(linkBin, "bin/python3"))).toBe("python3.12");
+    const emptyBin = path.join(out, String(binOf("share/empty", 2))) + root;
+    expect(fs.statSync(path.join(emptyBin, "share/empty")).isDirectory()).toBe(true);
   });
 
   it("leaves the kept stdlib in place but moves its site-packages", () => {

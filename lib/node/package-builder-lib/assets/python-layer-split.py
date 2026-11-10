@@ -13,17 +13,20 @@
 #   and the script must not move modules it may still import.
 #   All <out>/<i> directories exist afterwards, even when empty.
 #
-# Layout rules:
-#   TARGET = max(min_target_bytes, ceil(total / bins)).
+# Layout rules (stable: an unchanged package lands in a byte-identical layer):
+#   TARGET = min_target_bytes, fixed, so the unit split never depends on the total size.
 #   A directory larger than TARGET is split into its children; anything else
-#   (file, symlink, small directory) is moved whole. A single file larger than
-#   TARGET cannot be split and stays one unit.
-#   Units are placed largest-first into the first bin that still fits under TARGET.
-#   A directory that fits no bin is placed child by child instead; a file that fits no
-#   bin goes to the least-filled one. So a layer exceeds TARGET only by less than one
-#   file. A tree smaller than TARGET ends up entirely in bin 0, i.e. one layer as before.
-#   Order is deterministic (sorted names), so identical installs give identical layers.
+#   (file, symlink, small directory) is one unit.
+#   Each unit has a home bin chosen by hashing its path with the version removed
+#   ("numpy-2.0.2.dist-info" -> "numpy"), so a package and its metadata share a home and
+#   a version bump does not move it. Units are placed in path order; when the home bin is
+#   full, the next bin with room is used; a directory that fits no bin is placed child by
+#   child; a file that fits no bin goes to the least-filled one.
+#   Every moved entry gets mtime SOURCE_DATE_EPOCH (default 0), so layer contents depend
+#   only on file contents. The Dockerfile compiles .pyc files hash-based for the same reason.
+import hashlib
 import os
+import re
 import shutil
 import stat
 import sys
@@ -66,6 +69,27 @@ def units(path, target, keep, inside_keep):
     return result
 
 
+def unit_key(path, root):
+    """Path relative to root, with distribution versions dropped and names normalized."""
+    head, name = os.path.split(os.path.relpath(path, root))
+    match = re.match(r"^(.+?)-[0-9][^/]*\.(dist-info|egg-info|data)$", name)
+    if match:
+        name = match.group(1)
+    return os.path.join(head, re.sub(r"[-_.]+", "_", name).lower())
+
+
+def home_bin(key, bins):
+    return int.from_bytes(hashlib.sha256(key.encode()).digest()[:8], "big") % bins
+
+
+def set_epoch(top, epoch):
+    """Set mtime/atime of top and everything below it, without following symlinks."""
+    for dirpath, dirnames, filenames in os.walk(top, topdown=False):
+        for name in filenames + dirnames:
+            os.utime(os.path.join(dirpath, name), (epoch, epoch), follow_symlinks=False)
+    os.utime(top, (epoch, epoch), follow_symlinks=False)
+
+
 def ensure_parents(src_path, dst_path):
     """Create dst_path's parents with the permission bits of the matching source dirs."""
     missing = []
@@ -90,25 +114,25 @@ def main():
         inside_keep = sorted({os.path.abspath(paths["purelib"]), os.path.abspath(paths["platlib"])})
     inside_keep = [p for p in inside_keep if p.startswith(keep + os.sep)]
 
-    # Sizes first with a target no unit can reach, to learn the total; then the real units.
-    total = sum(size for size, _ in units(root, float("inf"), keep, inside_keep))
-    target = max(min_target, -(-total // bins))
+    target = min_target
     placed = units(root, target, keep, inside_keep)
-    placed.sort(key=lambda u: (-u[0], u[1]))
+    total = sum(size for size, _ in placed)
+    placed.sort(key=lambda u: unit_key(u[1], root))
 
     loads = [0] * bins
     assignment = []
 
     def place(size, path):
-        fits = [i for i in range(bins) if loads[i] + size <= target]
+        home = home_bin(unit_key(path, root), bins)
+        probe = [(home + k) % bins for k in range(bins)]
+        fits = [i for i in probe if loads[i] + size <= target]
         if fits:
             i = fits[0]
         elif os.path.isdir(path) and not os.path.islink(path) and os.listdir(path):
             # No room for the whole directory: place its children one by one instead.
-            children = [(tree_size(os.path.join(path, n)), os.path.join(path, n))
-                        for n in sorted(os.listdir(path))]
-            for child in sorted(children, key=lambda u: (-u[0], u[1])):
-                place(*child)
+            for name in sorted(os.listdir(path)):
+                child = os.path.join(path, name)
+                place(tree_size(child), child)
             return
         else:
             i = min(range(bins), key=lambda b: (loads[b], b))
@@ -124,6 +148,10 @@ def main():
         dst = os.path.join(out, str(i)) + path
         ensure_parents(path, dst)
         shutil.move(path, dst)  # a rename when the file was written in the same RUN step
+
+    epoch = int(os.environ.get("SOURCE_DATE_EPOCH", "0"))
+    for i in range(bins):
+        set_epoch(os.path.join(out, str(i)), epoch)
 
     gib = 1024 ** 3
     print(f"layer split: {total / gib:.2f} GiB under {root} (kept in place: {keep}), target {target / gib:.2f} GiB")
