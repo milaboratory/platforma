@@ -2,8 +2,8 @@ import type { QuickJSHandle, VmFunctionImplementation } from "quickjs-emscripten
 import type {
   CollectionHandle,
   ColumnsCollectionDriverHost,
-  ColumnsFilterOptions,
   DiscoverColumnsOptions,
+  DiscoverRootsOptions,
   InferServiceModel,
   PoolEntry,
   SerializedColumnsSource,
@@ -27,6 +27,7 @@ import type {
   BuildQueryInput,
   DeleteColumnRequest,
   DiscoverColumnsRequest,
+  DiscoverRootsRequest,
   PFrameDef,
   SpecQuery,
   PTableDef,
@@ -95,6 +96,14 @@ export function getServiceInjectors(): ServiceInjectorMap {
             driver.discoverColumns(
               vm.vm.getString(handle) as SpecFrameHandle,
               vm.importObjectViaJson(request) as DiscoverColumnsRequest,
+            ),
+          ),
+
+        discoverRoots: (handle: QuickJSHandle, request: QuickJSHandle) =>
+          vm.exportObjectViaJson(
+            driver.discoverRoots(
+              vm.vm.getString(handle) as SpecFrameHandle,
+              vm.importObjectViaJson(request) as DiscoverRootsRequest,
             ),
           ),
 
@@ -268,9 +277,18 @@ export function getServiceInjectors(): ServiceInjectorMap {
             pinHandle(
               driver.filter(
                 vm.vm.getString(handle) as CollectionHandle,
-                vm.importObjectViaJson(opts) as ColumnsFilterOptions,
+                vm.importObjectViaJson(opts) as DiscoverColumnsOptions,
                 bindings,
               ),
+            ),
+          ),
+
+        discoverRoots: (handle: QuickJSHandle, opts: QuickJSHandle) =>
+          vm.exportObjectViaJson(
+            driver.discoverRoots(
+              vm.vm.getString(handle) as CollectionHandle,
+              vm.importObjectViaJson(opts) as DiscoverRootsOptions,
+              bindings,
             ),
           ),
       };

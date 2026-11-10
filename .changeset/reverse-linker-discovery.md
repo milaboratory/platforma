@@ -1,18 +1,22 @@
 ---
 "@milaboratories/pl-model-common": minor
 "@milaboratories/pl-model-middle-layer": minor
+"@milaboratories/pf-spec": minor
+"@milaboratories/pf-spec-driver": minor
 "@milaboratories/columns-collection-driver": minor
+"@milaboratories/pl-middle-layer": minor
+"@platforma-sdk/model": minor
 ---
 
-Column discovery can now walk linkers up the hierarchy: pass `leaves` instead of `anchors` to find what contains the given columns
+New `ColumnsCollection.discoverRoots`: find the columns the given ones hang off
 
-Discovery only ever walked down — anchored on `sample`, it reached `cell`, but there was no way to go from `cell` to the `sample`-level columns above it. Which key you fill in says where the anchors sit, so there is no direction flag anywhere:
+`discover` starts from anchors and walks linkers down to what they contain (anchored on `sample`, it reaches `cell`). There was no way to go the other way, from `cell` to the `sample`-level columns above it. `discoverRoots` takes the columns you have and returns the roots they hang off:
 
 ```ts
-collection.discover({ anchors: { s: sampleRef }, maxHops: 4 }); // down to what they contain
-collection.discover({ leaves: { c: cellRef }, maxHops: 4 }); // up to what contains them
+const found = collection.discoverRoots({ leaves: { c: cellRef }, mode: "enrichment", maxHops: 4 });
+// found: Array<{ root: ColumnRecipe; leaf: ColumnRecipe; path: ColumnRecipe[] }>
 ```
 
-`DiscoverColumnsOptions` is now a union of `RootAnchoredOptions | LeafAnchoredOptions`, so the two keys exclude each other at compile time; `resolveAnchorSide` resolves them at runtime and names the request arm (`axes` vs `leafAxes`) the anchors belong in. Only the traversal rule changes — linker columns are still read as-is, so results stay correct against the real linkers. `leaves` is not part of the `.filter()` surface, which pins `maxHops: 0`.
+Each entry is exactly what `discover({ anchors: { r: root } })` would return for the leaf: `leaf` is the requested column as a discovered column carrying the linker path and qualifications, so the table is built from `root` as the anchor plus `leaf`, the same way as for any discovered column. `discover` is unchanged.
 
-Existing `anchors` calls are unchanged, down to a byte-identical request. Requires the engine support from platforma-open/pframes-rs#295.
+The engine side is the new `discoverRoots` request of the spec frame (`PFrameSpecDriver.discoverRoots`), from platforma-open/pframes-rs#295.
