@@ -27,6 +27,8 @@ export const PL_DOCKER_BUILD = "PL_DOCKER_BUILD";
 export const PL_DOCKER_NO_BUILD = "PL_DOCKER_NO_BUILD";
 export const PL_DOCKER_AUTOPUSH = "PL_DOCKER_AUTOPUSH";
 export const PL_DOCKER_NO_AUTOPUSH = "PL_DOCKER_NO_AUTOPUSH";
+// Max uncompressed size of one image layer. Unset: oversized layers only warn. Set: they fail the build.
+export const PL_DOCKER_MAX_LAYER_BYTES = "PL_DOCKER_MAX_LAYER_BYTES";
 
 export const CI = "CI";
 export const RUNNER_DEBUG = "RUNNER_DEBUG";
