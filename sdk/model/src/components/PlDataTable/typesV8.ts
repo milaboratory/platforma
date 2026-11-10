@@ -85,28 +85,25 @@ export type PlDataTableStateV2CacheEntry = {
   searchString?: string;
 };
 
-export type PTableParamsV2 =
-  | {
-      sourceId: null;
-      hiddenColIds: null;
-      sorting: null;
-      filters: null;
-      defaultFilters: null;
-    }
-  | {
-      sourceId: string;
-      hiddenColIds: null | PTableColumnId[];
-      sorting: null | PTableSorting[];
-      filters: null | PlDataTableFilters;
-      defaultFilters: null | PlDataTableFilters;
-    };
+/**
+ * Which source the UI shows. The model builds the table from that source's cache
+ * entry; the remaining fields stay `null`, so a block version built against an
+ * earlier SDK reads the state as untouched.
+ */
+export type PTableParamsV2 = {
+  sourceId: null | string;
+  hiddenColIds: null;
+  sorting: null;
+  filters: null;
+  defaultFilters: null;
+};
 
 export type PlDataTableStateV2Normalized = {
   /** Version for upgrades. v9 has the v8 shape; it marks column ids rewritten to the current form. */
   version: 9;
   /** Internal states, LRU cache for 5 sourceId-s */
   stateCache: PlDataTableStateV2CacheEntry[];
-  /** PTable params derived from the cache state for the current sourceId */
+  /** Which source the UI shows */
   pTableParams: PTableParamsV2;
 };
 

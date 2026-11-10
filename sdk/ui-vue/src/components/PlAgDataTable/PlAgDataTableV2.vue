@@ -20,7 +20,7 @@ import {
 } from "@platforma-sdk/model";
 import type { CellRendererSelectorFunc, GridApi, GridState } from "ag-grid-enterprise";
 import { AgGridVue } from "ag-grid-vue3";
-import { computed, effectScope, nextTick, ref, toRefs, watch, watchEffect } from "vue";
+import { computed, effectScope, nextTick, ref, shallowRef, toRefs, watch, watchEffect } from "vue";
 import PlAgCsvExporter from "../PlAgCsvExporter/PlAgCsvExporter.vue";
 import { PlAgGridColumnManager } from "../PlAgGridColumnManager";
 import PlTableFiltersV2 from "../PlTableFilters/PlTableFiltersV2.vue";
@@ -39,7 +39,6 @@ import type {
   PlAgOverlayLoadingParams,
   PlAgOverlayNoRowsParams,
   PlDataTableSettingsV2,
-  PlDataTableSheetsSettings,
   PlTableRowId,
 } from "./types";
 import { useFilterableColumns } from "./compositions/useFilterableColumns";
@@ -128,38 +127,21 @@ const { gridApi, gridOptions } = useGrid({
   cellRendererSelector: props.cellRendererSelector,
 });
 let isReloading = false;
+/** Source the grid's columns were built for; `null` while the grid has none. */
+const boundSourceId = shallowRef<null | string>(null);
 gridOptions.value.onGridPreDestroyed = (event) => {
-  if (!isReloading) {
-    gridOptions.value.initialState = gridState.value = normalizeGridState(
-      makePartialState(event.api.getState()),
-      gridState.value,
-      event.api,
-      getColumnsMeta(),
-    );
-  }
+  if (!isReloading) saveGridState(event.api, makePartialState(event.api.getState()));
+  gridOptions.value.initialState = gridState.value;
   gridApi.value = null;
 };
 gridOptions.value.onRowDoubleClicked = (event) => {
   if (event.data && event.data.axesKey) emit("rowDoubleClicked", event.data.axesKey);
 };
 gridOptions.value.onStateUpdated = (event) => {
-  const reportedState = makePartialState(event.state);
-  // AG Grid reports an entirely empty state until its columns have been taken
-  // into its own state, and `normalizeGridState` reads the live columns — so
-  // normalizing an empty report invents a state (hidden columns, no column
-  // order) that the grid will never report back, and the reload watch below
-  // would then try to apply it on every remount, forever. Wait for the grid to
-  // say something about itself; it always does once its columns are in.
-  if (isJsonEqual(reportedState, {})) return;
-
-  const partialState = normalizeGridState(
-    reportedState,
-    gridState.value,
-    event.api,
-    getColumnsMeta(),
-  );
-  // We have to keep initialState synchronized with gridState for gridState recovery after key updating.
-  gridOptions.value.initialState = gridState.value = partialState;
+  saveGridState(event.api, makePartialState(event.state));
+  // Keep initialState in step with the stored grid state, so the grid recreated
+  // by the reload watch below comes back with it.
+  gridOptions.value.initialState = gridState.value;
 
   if (!isJsonEqual(event.sources, ["columnSizing"])) {
     event.api.autoSizeColumns(
@@ -170,7 +152,7 @@ gridOptions.value.onStateUpdated = (event) => {
   }
 };
 
-const [filterableColumns, visibleFilterableColumns] = useFilterableColumns(
+const [filterableColumns] = useFilterableColumns(
   () => settings.value.sourceId,
   () => gridOptions.value.columnDefs ?? null,
 );
@@ -178,26 +160,38 @@ const defaultFilters = computed(() =>
   settings.value.sourceId !== null ? settings.value.model?.defaultFilters : undefined,
 );
 const {
+  sourceId: shownSourceId,
   gridState,
+  getGridState,
+  updateGridState,
   sheetsState,
   searchString,
   filtersState,
   defaultFiltersState,
   resetDefaultFilters,
-} = useTableState(tableState, settings, visibleFilterableColumns, defaultFilters);
-const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
-  const settingsCopy = { ...settings.value };
-  return settingsCopy.sourceId !== null
-    ? {
-        sheets: settingsCopy.sheets ?? [],
-        cachedState: [...sheetsState.value],
-      }
-    : {
-        sheets: [],
-        cachedState: [],
-      };
-});
+} = useTableState(tableState, settings, defaultFilters);
+const sheets = computed(() => (settings.value.sourceId !== null ? settings.value.sheets : []));
 gridOptions.value.initialState = gridState.value;
+
+/**
+ * Store what the grid reports as the state of the source its columns belong
+ * to: while the table switches sources the grid still holds the previous
+ * source's columns, and their state must not land on the new source.
+ */
+function saveGridState(api: GridApi<PlAgDataTableV2Row>, reported: PlDataTableGridStateCore) {
+  const sourceId = boundSourceId.value;
+  // AG Grid reports an entirely empty state until its columns have been taken
+  // into its own state, and `normalizeGridState` reads the live columns — so
+  // normalizing an empty report invents a state (hidden columns, no column
+  // order) that the grid will never report back, and the reload watch below
+  // would then try to apply it on every remount, forever. Wait for the grid to
+  // say something about itself; it always does once its columns are in.
+  if (sourceId === null || isJsonEqual(reported, {})) return;
+  updateGridState(
+    sourceId,
+    normalizeGridState(reported, getGridState(sourceId), api, getColumnsMeta()),
+  );
+}
 
 // Restore proper types erased by AgGrid
 function makePartialState(state: GridState): PlDataTableGridStateCore {
@@ -310,12 +304,13 @@ function getDefaultHiddenColIds(
     .map((col) => col.getColId() as PlTableColumnIdJson);
 }
 
-// Reload AgGrid when new state arrives from server
+// Reload AgGrid when new state arrives from server, or when the grid takes the
+// columns of a source whose stored state it does not show yet
 const reloadKey = ref(0);
 watch(
-  () => [gridApi.value, gridState.value] as const,
-  ([gridApi, gridState]) => {
-    if (!gridApi || gridApi.isDestroyed()) return;
+  () => [gridApi.value, gridState.value, boundSourceId.value] as const,
+  ([gridApi, gridState, boundSourceId]) => {
+    if (!gridApi || gridApi.isDestroyed() || boundSourceId !== shownSourceId.value) return;
     const selfState = makePartialState(gridApi.getState());
     const gridColIds = new Set(
       (gridApi.getAllGridColumns() ?? []).map((column) => column.getColId() as PlTableColumnIdJson),
@@ -410,6 +405,7 @@ watch(
       // No data source selected -> reset state to default
       if (settings.sourceId === null) {
         ++generation.value;
+        boundSourceId.value = null;
         gridApi.updateGridOptions({
           loading: true,
           loadingOverlayComponentParams: {
@@ -443,6 +439,11 @@ watch(
         settings.model?.visibleTableHandle === undefined
       ) {
         if (settings.sourceId !== oldSettings?.sourceId) ++generation.value;
+        // A grid that already shows a table keeps showing it; one that is still
+        // waiting says why.
+        if (gridApi.getGridOption("loading") === true) {
+          setLoadingVariant(gridApi, settings.pending ? "running" : "not-ready");
+        }
         return;
       }
 
@@ -468,16 +469,17 @@ watch(
         }
       }
 
-      // Model updated -> show skeletons instead of data
+      // Model built for another source -> show skeletons until it catches up.
+      // A model that reports no source was built from a state that names none,
+      // or does not take the state at all, and is shown as it is.
       const sourceChanged =
-        settings.model?.sourceId && settings.model.sourceId !== settings.sourceId;
-      if (!settings.model || sourceChanged) {
-        const state = gridApi.getServerSideGroupLevelState();
-        const rowCount = !sourceChanged && state.length > 0 ? state[0].rowCount : 1;
+        settings.model.sourceId !== null && settings.model.sourceId !== settings.sourceId;
+      if (sourceChanged) {
+        if (gridApi.getGridOption("loading") === true) setLoadingVariant(gridApi, "loading");
         return gridApi.updateGridOptions({
           serverSideDatasource: {
             getRows: (params) => {
-              params.success({ rowData: [], rowCount });
+              params.success({ rowData: [], rowCount: 1 });
             },
           },
         });
@@ -485,6 +487,7 @@ watch(
 
       // Model ready -> calculate new state
       const stateGeneration = generation.value;
+      const stateSourceId = settings.sourceId;
       calculateGridOptions({
         generation,
         pfDriver: getRawPlatformaInstance().pFrameDriver,
@@ -506,6 +509,7 @@ watch(
           gridApi.updateGridOptions({
             ...options,
           });
+          boundSourceId.value = stateSourceId;
           if (selection.value) {
             // Update selection if axesSpec changed, as order of axes may have changed and so we need to remap selected keys
             const { axesSpec: oldAxesSpec, selectedKeys: oldSelectedKeys } = selection.value;
@@ -572,6 +576,18 @@ watch(
   },
 );
 
+function setLoadingVariant(
+  api: GridApi<PlAgDataTableV2Row>,
+  variant: PlAgOverlayLoadingParams["variant"],
+): void {
+  api.updateGridOptions({
+    loadingOverlayComponentParams: {
+      ...gridOptions.value.loadingOverlayComponentParams,
+      variant,
+    } satisfies PlAgOverlayLoadingParams,
+  });
+}
+
 watch(
   () => ({
     gridApi: gridApi.value,
@@ -630,7 +646,11 @@ watchEffect(() => {
       :table-handle="'model' in settings ? settings?.model?.visibleTableHandle : undefined"
       :columns-meta="getColumnsMeta()"
     />
-    <PlAgDataTableSheets v-model="sheetsState" :settings="sheetsSettings">
+    <PlAgDataTableSheets
+      :sheets="sheets"
+      :state="sheetsState"
+      :on-change="(state) => (sheetsState = state)"
+    >
       <template v-if="$slots['before-sheets']" #before>
         <slot name="before-sheets" />
       </template>

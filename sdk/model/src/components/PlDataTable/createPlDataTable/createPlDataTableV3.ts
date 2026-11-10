@@ -25,6 +25,13 @@ import type {
 } from "../typesV8";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
+import {
+  collectSearchColumns,
+  createSearchFilter,
+  createSheetFilters,
+  joinFilters,
+  readPlDataTableUserParams,
+} from "../tableParams";
 import type { MatchingMode } from "@milaboratories/pl-model-common";
 import {
   hasSingleDataColumn,
@@ -67,7 +74,20 @@ export type createPlDataTableOptionsV3 = (
 ) & {
   tableState?: PlDataTableStateV2;
 
+  /** Default filters: shown to the user, who can edit or suppress them. */
   filters?: PlDataTableFilters;
+  /**
+   * Filters applied on every render on top of everything the user set. They are
+   * not stored, not shown and cannot be removed by the user, so they follow the
+   * block value they are built from.
+   */
+  fixedFilters?: PlDataTableFilters;
+  /**
+   * Build the table without the user's sheet selection, keeping the rest of the
+   * user's settings. For a second table over the same state that replaces the
+   * sheet with its own filter, such as an export of several sheet values at once.
+   */
+  ignoreSheets?: boolean;
   sorting?: PTableSorting[];
   primaryJoinType?: "inner" | "full";
 
@@ -105,7 +125,7 @@ export function createPlDataTableV3<A, U>(
   ctx: RenderCtxBase<A, U>,
   options: createPlDataTableOptionsV3,
 ): PlDataTableModel | undefined {
-  const state = upgradePlDataTableStateV2(options.tableState);
+  const params = readPlDataTableUserParams(upgradePlDataTableStateV2(options.tableState));
   const primaryJoinType = options.primaryJoinType ?? "full";
 
   const resolved = resolveInputColumns(ctx, options);
@@ -148,17 +168,40 @@ export function createPlDataTableV3<A, U>(
     ...linked.flatMap((lc) => [...collectLinkerColumns(lc), lc]),
   ]);
 
+  const tableColumns = [...primary, ...direct, ...linked];
+  // The table shows only the axes of its primary columns.
+  const primaryAxisKeys = new Set(
+    primary.flatMap((c) => c.getSpec().axesSpec.map((a) => canonicalizeAxisId(a))),
+  );
+  const searchFilter = createSearchFilter(
+    params.searchString,
+    collectSearchColumns({
+      columns: tableColumns.map((c) => ({
+        id: c.id,
+        spec: c.getSpec(),
+        visibility: getEffectiveVisibility(toRuleColumn(c), visibilityByColId) ?? "default",
+      })),
+      isAxisHidden: (axis) =>
+        !primaryAxisKeys.has(canonicalizeAxisId(axis)) || isColumnHidden(axis),
+      sheetAxes: params.sheetsState.map((sheet) => sheet.axisId),
+      hiddenColIds: params.hiddenColIds,
+    }),
+  );
+
   const remapedDefaultFilters = remapFilterColumnIds(options.filters, resolver);
   const filters = filterFilters(
-    concatFilters(
-      state.pTableParams.filters,
-      state.pTableParams.defaultFilters ?? remapedDefaultFilters,
-    ),
+    joinFilters([
+      ...(options.ignoreSheets === true ? [] : createSheetFilters(params.sheetsState)),
+      params.userFilters,
+      searchFilter,
+      params.defaultFilters ?? remapedDefaultFilters,
+      remapFilterColumnIds(options.fixedFilters, resolver),
+    ]),
     resolver,
   );
 
   const sorting = filterSorting(
-    resolveSorting(state.pTableParams.sorting, remapSortingColumnIds(options.sorting, resolver)),
+    resolveSorting(params.sorting, remapSortingColumnIds(options.sorting, resolver)),
     resolver,
   );
 
@@ -184,13 +227,12 @@ export function createPlDataTableV3<A, U>(
     ]),
   );
 
-  const hiddenSpecs = state.pTableParams.hiddenColIds;
   const hiddenColumnIds = computeHiddenColumns({
-    columns: [...primary, ...direct, ...linked],
+    columns: tableColumns,
     visibilityByColId,
     sorting,
     filters,
-    hiddenSpecs,
+    hiddenSpecs: params.hiddenColIds,
   });
 
   const visible = {
@@ -221,7 +263,7 @@ export function createPlDataTableV3<A, U>(
   });
 
   return {
-    sourceId: state.pTableParams.sourceId,
+    sourceId: params.sourceId,
     fullTableHandle: fullHandle,
     fullPframeHandle: pframeHandle,
     visibleTableHandle: visibleHandle,
@@ -410,19 +452,6 @@ function filterFilters(
   };
 
   return prune(filters) as Nil | PlDataTableFilters;
-}
-
-/** Merge two filter trees into one AND-combined tree. Returns the non-nil one if the other is nil.
- *  Exported for unit testing. */
-export function concatFilters(
-  a: Nil | PlDataTableFilters,
-  b: Nil | PlDataTableFilters,
-): Nil | PlDataTableFilters {
-  if (isNil(a)) return b;
-  if (isNil(b)) return a;
-  const operands = (f: PlDataTableFilters): PlDataTableFilterNode[] =>
-    f.type === "and" ? f.filters : [f as PlDataTableFilterNode];
-  return { type: "and", filters: [...operands(a), ...operands(b)] };
 }
 
 /** Pick user sorting from state if set, otherwise fall back to options default.
