@@ -14,7 +14,8 @@ import * as util from "./util";
  * Addressed by URL, see {@link storageByUrl}: `file:`, `s3://`, `s3e://`, `s3es://` and `gs://`.
  */
 export interface RegistryStorage {
-  exists(file: string): Promise<boolean>;
+  /** Optional for custom implementations; callers fall back to {@link getFile}. */
+  exists?(file: string): Promise<boolean>;
 
   getFile(file: string): Promise<Buffer | undefined>;
 
@@ -24,8 +25,11 @@ export interface RegistryStorage {
 
   deleteFiles(...files: string[]): Promise<void>;
 
-  /** Fails with a readable error if the configured credentials cannot reach the storage. */
-  checkAccess(): Promise<void>;
+  /**
+   * Fails with a readable error if the configured credentials cannot reach the storage.
+   * Optional for custom implementations; without it, access problems surface on first use.
+   */
+  checkAccess?(): Promise<void>;
 }
 
 export const supportedTypes = ["S3", "GCS"] as const; // add other types when we support them
@@ -46,6 +50,9 @@ export function typeToURLScheme(sType: storageType): string {
 //
 // S3
 //
+
+/** The DeleteObjects limit. */
+const S3DeleteBatchSize = 1000;
 
 export class S3Storage implements RegistryStorage {
   constructor(
@@ -123,23 +130,25 @@ export class S3Storage implements RegistryStorage {
   }
 
   async deleteFiles(...files: string[]): Promise<void> {
-    // DeleteObjects rejects an empty list.
-    if (files.length === 0) return;
-    // TODO implement support of more than 1000 files
-    const results = await this.client.deleteObjects({
-      Bucket: this.bucket,
-      Delete: { Objects: files.map((file) => ({ Key: this.key(file) })) },
-    });
-    if (results.Errors !== undefined && results.Errors.length > 0)
-      throw new Error(
-        `Errors encountered while deleting files: ${results.Errors.map((e) => e.Message ?? e.Code ?? "Unknown error").join("\n")}`,
-      );
+    const errors: string[] = [];
+    // DeleteObjects takes at most 1000 keys and rejects an empty list.
+    for (let i = 0; i < files.length; i += S3DeleteBatchSize) {
+      const results = await this.client.deleteObjects({
+        Bucket: this.bucket,
+        Delete: {
+          Objects: files.slice(i, i + S3DeleteBatchSize).map((file) => ({ Key: this.key(file) })),
+        },
+      });
+      for (const e of results.Errors ?? []) errors.push(e.Message ?? e.Code ?? "Unknown error");
+    }
+    if (errors.length > 0)
+      throw new Error(`Errors encountered while deleting files: ${errors.join("\n")}`);
   }
 }
 
 /**
  * Parses `s3e[s]://[user:password@]<endpoint>/<bucket>/<keyPrefix>?region=<name>`, the same forms
- * pl-bootstrap uses for the backend's storages. s3e talks to the endpoint over http (a local MinIO),
+ * pl-bootstrap uses for the backend's storages. s3e talks to the endpoint over http (local S3-compatible storage),
  * s3es over https; use s3es whenever credentials leave the machine.
  */
 export function s3eConfigFromUrl(url: URL): {
@@ -153,8 +162,8 @@ export function s3eConfigFromUrl(url: URL): {
     forcePathStyle: true,
   };
   const region = url.searchParams.get("region");
-  // The SDK needs a region to sign requests; MinIO and most S3-compatible stores ignore it.
-  options.region = region ?? "us-east-1";
+  // The SDK needs a region to sign requests; most S3-compatible stores ignore it.
+  options.region = region || process.env.AWS_REGION || "us-east-1";
   // URL keeps userinfo percent-encoded; a secret with '/', '+' or '@' must be written encoded.
   if (url.username)
     options.credentials = {
@@ -348,8 +357,9 @@ export class FSStorage implements RegistryStorage {
   }
 
   async deleteFiles(...files: string[]): Promise<void> {
-    // Folders are not removed, deletes issued sequentially
-    for (const file of files) await fs.promises.rm(this.toAbsolutePath(file));
+    // Folders are not removed, deletes issued sequentially. A missing file is not an error, same as
+    // S3 and GCS.
+    for (const file of files) await fs.promises.rm(this.toAbsolutePath(file), { force: true });
   }
 }
 
@@ -371,6 +381,14 @@ function parseStorageUrl(address: string, base: string): URL {
         `percent-encode special characters in credentials`,
     );
   }
+}
+
+function bucketOf(url: URL): string {
+  if (url.hostname === "")
+    throw new Error(
+      `${url.protocol}// storage URL has no bucket: expected ${url.protocol}//<bucket>/<prefix>`,
+    );
+  return url.hostname;
 }
 
 /** Schemes package-builder uploads to. A bare path or file: would quietly write under the package root. */
@@ -399,7 +417,7 @@ export function storageByUrl(
       const options: NonNullable<ConstructorParameters<typeof S3>[0]> = {};
       const region = url.searchParams.get("region");
       if (region) options.region = region;
-      return new S3Storage(new S3(options), url.hostname, util.trimPrefix(url.pathname, "/"));
+      return new S3Storage(new S3(options), bucketOf(url), util.trimPrefix(url.pathname, "/"));
     }
     case "s3e:":
     case "s3es:": {
@@ -407,7 +425,7 @@ export function storageByUrl(
       return new S3Storage(new S3(options), bucket, keyPrefix);
     }
     case "gs:":
-      return new GcsStorage(url.hostname, util.trimPrefix(url.pathname, "/"));
+      return new GcsStorage(bucketOf(url), util.trimPrefix(url.pathname, "/"));
     default:
       throw new Error(`Unknown protocol: ${url.protocol}`);
   }
@@ -427,7 +445,7 @@ export async function initByUrl(address: string, pkgRoot: string): Promise<Regis
           `Use ${[...softwareRegistrySchemes].join(", ")} or your own tooling for package upload`,
       );
     const storage = storageByUrl(address, pkgRoot);
-    await storage.checkAccess();
+    await storage.checkAccess?.();
     return storage;
   } catch (e) {
     throw util.wrapErr(e, `failed to init storage driver from URL`);
