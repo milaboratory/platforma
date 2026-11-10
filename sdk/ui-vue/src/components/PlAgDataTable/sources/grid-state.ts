@@ -1,5 +1,67 @@
 import { isJsonEqual } from "@milaboratories/helpers";
-import type { PlDataTableGridStateCore, PlTableColumnIdJson } from "@platforma-sdk/model";
+import {
+  parseJson,
+  type PlDataTableGridStateCore,
+  type PlDataTableStateV2CacheEntry,
+  type PlTableColumnIdJson,
+  type PTableColumnId,
+  type PTableSorting,
+} from "@platforma-sdk/model";
+import { isNil } from "es-toolkit";
+
+/** The fields of a cache entry that the grid's state report determines. */
+export type PlDataTableGridFields = Pick<
+  PlDataTableStateV2CacheEntry,
+  "gridState" | "sorting" | "hiddenColIds"
+>;
+
+/**
+ * Read what a grid state report means for the entry of the source the grid
+ * shows. The report itself is kept as it came, to restore the grid from; the
+ * sorting and hidden columns the table is built with are taken out of it.
+ *
+ * AG Grid leaves out what carries no information — no `sort` while nothing is
+ * sorted, no `columnVisibility` while every column is shown — so a missing part
+ * means "cleared" once the user has set it before, and "untouched" otherwise.
+ * Untouched sorting keeps the block's default; untouched visibility hides the
+ * optional columns, which the grid does hide, so an untouched report names them.
+ */
+export function readGridReport(
+  reported: PlDataTableGridStateCore,
+  previous: undefined | Pick<PlDataTableStateV2CacheEntry, "sorting" | "hiddenColIds">,
+  defaultHiddenColIds: () => PlTableColumnIdJson[],
+): PlDataTableGridFields {
+  return {
+    gridState: reported,
+    sorting: readSorting(),
+    hiddenColIds: readHiddenColIds(),
+  };
+
+  function readSorting(): null | PTableSorting[] {
+    if (!isNil(reported.sort)) return convertAgSortingToPTableSorting(reported.sort);
+    return isNil(previous?.sorting) ? null : [];
+  }
+
+  function readHiddenColIds(): null | PTableColumnId[] {
+    if (!isNil(reported.columnVisibility)) {
+      return reported.columnVisibility.hiddenColIds.map((id) => parseJson<PTableColumnId>(id));
+    }
+    if (!isNil(previous?.hiddenColIds)) return [];
+    const defaults = defaultHiddenColIds();
+    return defaults.length > 0 ? defaults.map((id) => parseJson<PTableColumnId>(id)) : null;
+  }
+}
+
+/** AG Grid's sort model as table sorting; the least values are the NA ones when ascending. */
+export function convertAgSortingToPTableSorting(
+  sort: NonNullable<PlDataTableGridStateCore["sort"]>,
+): PTableSorting[] {
+  return sort.sortModel.map((item) => ({
+    column: parseJson<PTableColumnId>(item.colId),
+    ascending: item.sort === "asc",
+    naAndAbsentAreLeastValues: item.sort === "asc",
+  }));
+}
 
 /**
  * Whether the grid already shows everything the stored state asks for that it

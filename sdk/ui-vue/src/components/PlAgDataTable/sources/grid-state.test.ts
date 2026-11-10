@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { PlDataTableGridStateCore, PlTableColumnIdJson } from "@platforma-sdk/model";
-import { isStoredStateApplied } from "./grid-state";
+import type {
+  ColumnUniversalId,
+  PlDataTableGridStateCore,
+  PlTableColumnIdJson,
+} from "@platforma-sdk/model";
+import {
+  convertAgSortingToPTableSorting,
+  isStoredStateApplied,
+  readGridReport,
+} from "./grid-state";
 
 const colA = '{"id":"a","type":"column"}' as PlTableColumnIdJson;
 const colB = '{"id":"b","type":"column"}' as PlTableColumnIdJson;
@@ -90,5 +98,61 @@ describe("isStoredStateApplied", () => {
         true,
       );
     });
+  });
+});
+
+describe("readGridReport", () => {
+  const a = { type: "column", id: "a" as ColumnUniversalId } as const;
+  const untouched = { sorting: null, hiddenColIds: null };
+  const noDefaults = () => [];
+
+  it("keeps the report as it came, to restore the grid from", () => {
+    const reported = order(colB, colA);
+    expect(readGridReport(reported, untouched, noDefaults).gridState).toBe(reported);
+  });
+
+  it("reads a missing sort as untouched until the user has sorted, and as cleared after", () => {
+    expect(readGridReport({}, untouched, noDefaults).sorting).toBeNull();
+    expect(readGridReport({}, { ...untouched, sorting: [] }, noDefaults).sorting).toEqual([]);
+  });
+
+  it("reads a missing visibility as every column shown once the user has hidden some", () => {
+    expect(
+      readGridReport({}, { ...untouched, hiddenColIds: [a] }, noDefaults).hiddenColIds,
+    ).toEqual([]);
+  });
+
+  it("reads a missing visibility of an untouched table as the default hidden columns", () => {
+    expect(readGridReport({}, untouched, () => [colA]).hiddenColIds).toEqual([a]);
+    expect(readGridReport({}, untouched, noDefaults).hiddenColIds).toBeNull();
+  });
+
+  it("takes reported sorting and visibility as they are", () => {
+    const reported: PlDataTableGridStateCore = {
+      sort: { sortModel: [{ colId: colA, sort: "desc" }] },
+      columnVisibility: { hiddenColIds: [colA] },
+    };
+    expect(readGridReport(reported, untouched, noDefaults)).toEqual({
+      gridState: reported,
+      sorting: [{ column: a, ascending: false, naAndAbsentAreLeastValues: false }],
+      hiddenColIds: [a],
+    });
+  });
+});
+
+describe("convertAgSortingToPTableSorting", () => {
+  it("takes NA and absent values as the least ones only when ascending", () => {
+    const column = { type: "column", id: "a" as ColumnUniversalId } as const;
+    expect(
+      convertAgSortingToPTableSorting({
+        sortModel: [
+          { colId: colA, sort: "asc" },
+          { colId: colA, sort: "desc" },
+        ],
+      }),
+    ).toEqual([
+      { column, ascending: true, naAndAbsentAreLeastValues: true },
+      { column, ascending: false, naAndAbsentAreLeastValues: false },
+    ]);
   });
 });

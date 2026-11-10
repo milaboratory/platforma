@@ -73,8 +73,12 @@ export type PlDataTableFiltersWithMeta = RootFilterSpec<
 export type PlDataTableStateV2CacheEntry = {
   /** DataSource identifier for state management */
   sourceId: string;
-  /** Internal ag-grid state */
+  /** The grid's own state, kept to restore the grid; opaque to everything but the grid */
   gridState: PlDataTableGridStateCore;
+  /** Sorting the user set; `null` while untouched, so the block's default applies, `[]` once cleared */
+  sorting: null | PTableSorting[];
+  /** Columns the user hid; `null` while untouched, so optional columns stay hidden */
+  hiddenColIds: null | PTableColumnId[];
   /** Sheets state */
   sheetsState: PlDataTableSheetState[];
   /** User filters state (tree-based, compatible with PlAdvancedFilter) */

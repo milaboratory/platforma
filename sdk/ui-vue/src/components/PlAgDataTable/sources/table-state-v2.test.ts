@@ -6,6 +6,7 @@ import {
   type PlDataTableStateV2,
   type PlDataTableStateV2CacheEntry,
   type PlDataTableStateV2Normalized,
+  upgradePlDataTableStateV2,
 } from "@platforma-sdk/model";
 import { describe, expect, it } from "vitest";
 import { effectScope, nextTick, shallowRef } from "vue";
@@ -122,12 +123,20 @@ describe("useTableState", () => {
   it("stores a grid report under the source the grid was built for", async () => {
     const { tableState, table, stop } = setup(state("A", [entry("A")]), settings("B"));
     await nextTick();
-    table.updateGridState("A", { sort: { sortModel: [] } });
-    const stored = normalized(tableState.value);
-    expect(stored.stateCache.find((e) => e.sourceId === "A")?.gridState).toEqual({
-      sort: { sortModel: [] },
+    table.updateGrid("A", {
+      gridState: { sort: { sortModel: [] } },
+      sorting: [],
+      hiddenColIds: null,
     });
-    expect(stored.stateCache.find((e) => e.sourceId === "B")?.gridState).toEqual({});
+    const stored = normalized(tableState.value);
+    expect(stored.stateCache.find((e) => e.sourceId === "A")).toMatchObject({
+      gridState: { sort: { sortModel: [] } },
+      sorting: [],
+    });
+    expect(stored.stateCache.find((e) => e.sourceId === "B")).toMatchObject({
+      gridState: {},
+      sorting: null,
+    });
     stop();
   });
 });
@@ -153,6 +162,8 @@ function entry(
   return {
     sourceId,
     gridState: {},
+    sorting: null,
+    hiddenColIds: null,
     sheetsState: [],
     filtersState: null,
     defaultFiltersState: null,
@@ -169,8 +180,8 @@ function state(
 }
 
 function normalized(value: PlDataTableStateV2): PlDataTableStateV2Normalized {
-  if (!("version" in value) || value.version !== 8) throw new Error("expected a v8 state");
-  return value;
+  if (!("version" in value) || value.version !== 9) throw new Error("expected a v9 state");
+  return upgradePlDataTableStateV2(value);
 }
 
 function setup(initial: PlDataTableStateV2Normalized, current: PlDataTableSettingsV2) {

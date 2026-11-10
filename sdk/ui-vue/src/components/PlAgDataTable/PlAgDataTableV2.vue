@@ -7,6 +7,7 @@ import type {
   PlDataTableStateV2,
   PlSelectionModel,
   PlTableColumnIdJson,
+  PTableColumnId,
   PTableColumnSpec,
   PTableKey,
 } from "@platforma-sdk/model";
@@ -31,7 +32,7 @@ import { DeferredCircular, ensureNodeVisible } from "./sources/focus-row";
 import { PlAgDataTableRowNumberColId } from "./sources/row-number";
 import type { PlAgCellButtonAxisParams } from "./sources/table-source-v2";
 import { calculateGridOptions, effectiveVisibility } from "./sources/table-source-v2";
-import { isStoredStateApplied } from "./sources/grid-state";
+import { isStoredStateApplied, readGridReport } from "./sources/grid-state";
 import { useTableState } from "./sources/table-state-v2";
 import type {
   PlAgDataTableV2Controller,
@@ -162,8 +163,9 @@ const defaultFilters = computed(() =>
 const {
   sourceId: shownSourceId,
   gridState,
-  getGridState,
-  updateGridState,
+  hiddenColIds,
+  getEntry,
+  updateGrid,
   sheetsState,
   searchString,
   filtersState,
@@ -174,22 +176,23 @@ const sheets = computed(() => (settings.value.sourceId !== null ? settings.value
 gridOptions.value.initialState = gridState.value;
 
 /**
- * Store what the grid reports as the state of the source its columns belong
- * to: while the table switches sources the grid still holds the previous
- * source's columns, and their state must not land on the new source.
+ * Store what the grid reports under the source its columns belong to: while
+ * the table switches sources the grid still holds the previous source's
+ * columns, and their state must not land on the new source.
  */
 function saveGridState(api: GridApi<PlAgDataTableV2Row>, reported: PlDataTableGridStateCore) {
   const sourceId = boundSourceId.value;
   // AG Grid reports an entirely empty state until its columns have been taken
-  // into its own state, and `normalizeGridState` reads the live columns — so
-  // normalizing an empty report invents a state (hidden columns, no column
-  // order) that the grid will never report back, and the reload watch below
-  // would then try to apply it on every remount, forever. Wait for the grid to
-  // say something about itself; it always does once its columns are in.
+  // into its own state. Such a report says nothing about the user's choices, and
+  // reading defaults from the live columns at that point would invent some.
+  // Wait for the grid to say something about itself; it always does once its
+  // columns are in.
   if (sourceId === null || isJsonEqual(reported, {})) return;
-  updateGridState(
+  updateGrid(
     sourceId,
-    normalizeGridState(reported, getGridState(sourceId), api, getColumnsMeta()),
+    readGridReport(reported, getEntry(sourceId), () =>
+      getDefaultHiddenColIds(api, getColumnsMeta()),
+    ),
   );
 }
 
@@ -215,69 +218,6 @@ function makePartialState(state: GridState): PlDataTableGridStateCore {
         }
       | undefined,
   };
-}
-
-// AG Grid omits parts of its state that carry no information — columnVisibility
-// when every column is visible, sort when nothing is sorted. The model needs
-// "no state yet" (fall back to the block's defaults) to stay distinguishable
-// from "user explicitly cleared it" (store []), so both are normalized against
-// the previous state before the state is persisted.
-function normalizeGridState(
-  partialState: PlDataTableGridStateCore,
-  prevState: PlDataTableGridStateCore,
-  api: GridApi<PlAgDataTableV2Row>,
-  columnsMeta: PlDataTableColumnsMeta | undefined,
-): PlDataTableGridStateCore {
-  return normalizeSort(
-    normalizeColumnVisibility(partialState, prevState, api, columnsMeta),
-    prevState,
-  );
-}
-
-// AG Grid returns sort: undefined when no column is sorted. Left as-is that
-// erases the block's default sorting the moment any unrelated grid state is
-// persisted, so the undefined is only turned into an explicit empty sort model
-// once the user has actually sorted something before.
-function normalizeSort(
-  partialState: PlDataTableGridStateCore,
-  prevState: PlDataTableGridStateCore,
-): PlDataTableGridStateCore {
-  if (partialState.sort !== undefined) return partialState;
-
-  if (prevState.sort !== undefined) {
-    // Had an explicit sort model before → user cleared the sorting → store [].
-    return { ...partialState, sort: { sortModel: [] } };
-  }
-
-  // Never sorted → leave undefined so the model applies its default sorting.
-  return partialState;
-}
-
-// AG Grid returns columnVisibility: undefined when all columns are visible.
-// We need to distinguish "no state yet" (use isColumnOptional defaults) from
-// "user explicitly showed all columns" (store []). This function normalizes
-// the undefined from AG Grid based on the previous state.
-function normalizeColumnVisibility(
-  partialState: PlDataTableGridStateCore,
-  prevState: PlDataTableGridStateCore,
-  api: GridApi<PlAgDataTableV2Row>,
-  columnsMeta: PlDataTableColumnsMeta | undefined,
-): PlDataTableGridStateCore {
-  if (partialState.columnVisibility !== undefined) return partialState;
-
-  if (prevState.columnVisibility !== undefined) {
-    // Had explicit visibility state before → user made all columns visible → store [].
-    return { ...partialState, columnVisibility: { hiddenColIds: [] } };
-  }
-
-  // No previous explicit state → compute defaults from current columns
-  // to replicate: hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec)
-  const defaultHidden = getDefaultHiddenColIds(api, columnsMeta);
-  if (defaultHidden.length > 0) {
-    return { ...partialState, columnVisibility: { hiddenColIds: defaultHidden } };
-  }
-
-  return partialState;
 }
 
 /** Sidecar display meta is only on the `model` branch of the settings union. */
@@ -496,7 +436,7 @@ watch(
         columnsMeta: settings.model?.columnsMeta,
         sheets: settings.sheets ?? [],
         dataRenderedTracker,
-        hiddenColIds: gridState.value.columnVisibility?.hiddenColIds,
+        hiddenColIds: hiddenColIds.value?.map((id) => canonicalizeJson<PTableColumnId>(id)),
         cellButtonAxisParams: {
           showCellButtonForAxisId: props.showCellButtonForAxisId,
           cellButtonInvokeRowsOnDoubleClick: props.cellButtonInvokeRowsOnDoubleClick,

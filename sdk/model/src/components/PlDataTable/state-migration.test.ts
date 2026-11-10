@@ -11,7 +11,7 @@ import {
   upgradeLegacyColumnId,
   upgradePlDataTableStateV2,
 } from "./state-migration";
-import type { PlDataTableFilters, PlTableColumnIdJson, PTableParamsV2 } from "./typesV8";
+import type { PlDataTableFiltersWithMeta, PlTableColumnIdJson } from "./typesV8";
 
 // Leaf ids as a result-pool export names them; the form did not change in the rework.
 const property = createGlobalPObjectId(
@@ -51,7 +51,9 @@ const ROW_NUMBER: PlTableColumnIdJson = canonicalizeJson(
   "##RowNumberColumnId##",
 ) as PlTableColumnIdJson;
 
-function params(over: Partial<Extract<PTableParamsV2, { sourceId: string }>>): PTableParamsV2 {
+type StoredParams = PlDataTableStateV2V8["pTableParams"];
+
+function params(over: Partial<Extract<StoredParams, { sourceId: string }>>): StoredParams {
   return {
     sourceId: '"static"',
     hiddenColIds: null,
@@ -63,8 +65,9 @@ function params(over: Partial<Extract<PTableParamsV2, { sourceId: string }>>): P
 }
 
 function v8(
-  pTableParams: PTableParamsV2,
+  pTableParams: StoredParams,
   gridColIds: PlTableColumnIdJson[] = [],
+  filtersState: null | PlDataTableFiltersWithMeta = null,
 ): PlDataTableStateV2V8 {
   return {
     version: 8,
@@ -77,7 +80,7 @@ function v8(
           columnVisibility: { hiddenColIds: gridColIds.slice(1) },
         },
         sheetsState: [],
-        filtersState: null,
+        filtersState,
         defaultFiltersState: null,
       },
     ],
@@ -85,10 +88,10 @@ function v8(
   };
 }
 
-const sortingOf = (state: PlDataTableStateV2) => {
-  const p = upgradePlDataTableStateV2(state).pTableParams;
-  return p.sourceId === null ? undefined : p.sorting;
-};
+/** The upgraded settings of the source the state points at. */
+const shownEntryOf = (state: PlDataTableStateV2) => upgradePlDataTableStateV2(state).stateCache[0];
+
+const sortingOf = (state: PlDataTableStateV2) => shownEntryOf(state).sorting;
 
 describe("upgradeLegacyColumnId", () => {
   test("a pre-rework direct hit takes its own id", () => {
@@ -163,8 +166,7 @@ describe("v8 -> v9", () => {
 
   test("hidden columns are rewritten and unconvertible ones dropped", () => {
     const state = v8(params({ hiddenColIds: [col(legacyLinked), col(legacyFiltered)] }));
-    const p = upgradePlDataTableStateV2(state).pTableParams;
-    expect(p.hiddenColIds).toEqual([col(currentLinked as ColumnUniversalId)]);
+    expect(shownEntryOf(state).hiddenColIds).toEqual([col(currentLinked as ColumnUniversalId)]);
   });
 
   test("grid column ids are rewritten, the row-number column kept", () => {
@@ -177,31 +179,29 @@ describe("v8 -> v9", () => {
   });
 
   test("filter leaves are rewritten; a group emptied by dropped leaves goes", () => {
-    const filters: PlDataTableFilters = {
+    const filtersState: PlDataTableFiltersWithMeta = {
+      id: 1,
       type: "and",
       filters: [
-        { type: "isNA", column: col(legacyDirect) },
-        { type: "or", filters: [{ type: "isNotNA", column: col(legacyAnchored) }] },
+        { id: 2, type: "isNA", column: col(legacyDirect) },
+        { id: 3, type: "or", filters: [{ id: 4, type: "isNotNA", column: col(legacyAnchored) }] },
       ],
     };
-    const p = upgradePlDataTableStateV2(v8(params({ filters }))).pTableParams;
-    expect(p.filters).toEqual({
+    expect(shownEntryOf(v8(params({}), [], filtersState)).filtersState).toEqual({
+      id: 1,
       type: "and",
-      filters: [{ type: "isNA", column: col(currentDirect as ColumnUniversalId) }],
+      filters: [{ id: 2, type: "isNA", column: col(currentDirect as ColumnUniversalId) }],
     });
   });
 
   test("a state with current ids comes through unchanged", () => {
-    const state = v8(
-      params({
-        hiddenColIds: [col(currentLinked as ColumnUniversalId)],
-        sorting: [{ column: col(property), ascending: true, naAndAbsentAreLeastValues: false }],
-      }),
-      [ROW_NUMBER, colIdJson(currentDirect as ColumnUniversalId)],
-    );
-    const { version: _, ...rest } = upgradePlDataTableStateV2(state);
-    const { version: __, ...expected } = state;
-    expect(rest).toEqual(expected);
+    const hiddenColIds = [col(currentLinked as ColumnUniversalId)];
+    const sorting = [{ column: col(property), ascending: true, naAndAbsentAreLeastValues: false }];
+    const state = v8(params({ hiddenColIds, sorting }), [
+      ROW_NUMBER,
+      colIdJson(currentDirect as ColumnUniversalId),
+    ]);
+    expect(shownEntryOf(state)).toEqual({ ...state.stateCache[0], sorting, hiddenColIds });
   });
 
   test("a fresh state is already v9", () => {

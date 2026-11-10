@@ -11,9 +11,7 @@ import type {
 import {
   canonicalizeJson,
   getAxisId,
-  isLabelColumn,
   isLinkerColumn,
-  parseJson,
   ValueType,
 } from "@milaboratories/pl-model-common";
 import { isNil } from "es-toolkit";
@@ -23,7 +21,6 @@ import type {
   PlDataTableFilters,
   PlDataTableFiltersWithMeta,
   PlDataTableFilterSpecLeaf,
-  PlDataTableGridStateCore,
   PlDataTableSheetState,
   PlDataTableStateV2CacheEntry,
   PlDataTableStateV2Normalized,
@@ -91,9 +88,8 @@ export function readPlDataTableUserParams(
       ? null
       : (distillFilterSpec(stripSuppressedFilters(entry.defaultFiltersState)) ?? emptyGroup()),
     searchString: entry.searchString?.trim() || null,
-    sorting: convertAgSortingToPTableSorting(entry.gridState.sort),
-    hiddenColIds:
-      entry.gridState.columnVisibility?.hiddenColIds.map((json) => parseJson(json)) ?? null,
+    sorting: entry.sorting,
+    hiddenColIds: entry.hiddenColIds,
   };
 }
 
@@ -116,26 +112,10 @@ export function createSheetFilters(sheetsState: PlDataTableSheetState[]): PlData
 }
 
 /**
- * AG Grid omits `sort` from its state while nothing is sorted, so the absent
- * state must stay distinguishable from an explicitly emptied sort model: the
- * model falls back to the block's default sorting on `null` only, and treats
- * `[]` as "user cleared the sorting".
- */
-export function convertAgSortingToPTableSorting(
-  state: PlDataTableGridStateCore["sort"],
-): null | PTableSorting[] {
-  if (isNil(state)) return null;
-  return state.sortModel.map((item) => ({
-    column: parseJson<PTableColumnId>(item.colId),
-    ascending: item.sort === "asc",
-    naAndAbsentAreLeastValues: item.sort === "asc",
-  }));
-}
-
-/**
- * The columns the fast search looks into: the ones the table shows and the user
- * has not hidden. An axis is not shown while a label column stands in for it or
- * while it is a sheet axis.
+ * The columns the fast search looks into: the visible ones, and the visible axes
+ * except those a sheet fixes to a single value, where every row would match.
+ * Hidden are columns the block's rules hide, linker columns, and the columns in
+ * the user's hidden list, or, while the user has not touched it, the optional ones.
  */
 export function collectSearchColumns(params: {
   columns: PlDataTableSearchCandidate[];
@@ -145,17 +125,9 @@ export function collectSearchColumns(params: {
 }): PlDataTableSearchColumn[] {
   const { columns, isAxisHidden, sheetAxes, hiddenColIds } = params;
   const sheetAxisKeys = new Set(sheetAxes.map(axisKey));
-  const labeledAxisKeys = new Set(
-    columns
-      .filter((c) => isLabelColumn(c.spec))
-      .map((c) => axisKey(getAxisId(c.spec.axesSpec[0])))
-      .filter((key) => !sheetAxisKeys.has(key)),
+  const shownAxes = uniqueAxes(columns.flatMap((c) => c.spec.axesSpec)).filter(
+    (axis) => !sheetAxisKeys.has(axisKey(getAxisId(axis))) && !isAxisHidden(axis),
   );
-
-  const shownAxes = uniqueAxes(columns.flatMap((c) => c.spec.axesSpec)).filter((axis) => {
-    const key = axisKey(getAxisId(axis));
-    return !labeledAxisKeys.has(key) && !sheetAxisKeys.has(key) && !isAxisHidden(axis);
-  });
   const shownColumns = columns.filter((c) => c.visibility !== "hidden" && !isLinkerColumn(c.spec));
 
   const hidden = new Set(

@@ -6,10 +6,9 @@ import type {
 } from "@milaboratories/pl-model-common";
 import { canonicalizeJson, getAxisId } from "@milaboratories/pl-model-common";
 import { describe, expect, test } from "vitest";
-import { upgradePlDataTableStateV2 } from "./state-migration";
+import { upgradePlDataTableStateV2, type PlDataTableStateV2 } from "./state-migration";
 import {
   collectSearchColumns,
-  convertAgSortingToPTableSorting,
   createSearchFilter,
   createSheetFilters,
   joinFilters,
@@ -63,32 +62,20 @@ describe("readPlDataTableUserParams", () => {
     expect(params.defaultFilters).toEqual({ type: "and", filters: [] });
   });
 
-  test("reads sorting and hidden columns from the grid state", () => {
+  test("reads sorting and hidden columns from the entry, never from the grid state", () => {
     const column: PTableColumnId = { type: "column", id: col("c1") };
+    const sorting = [{ column, ascending: false, naAndAbsentAreLeastValues: false }];
     const params = readPlDataTableUserParams(
       state("A", [
         entry("A", {
-          gridState: {
-            sort: { sortModel: [{ colId: canonicalizeJson(column), sort: "desc" }] },
-            columnVisibility: { hiddenColIds: [canonicalizeJson(column)] },
-          },
+          gridState: { sort: { sortModel: [{ colId: canonicalizeJson(column), sort: "asc" }] } },
+          sorting,
+          hiddenColIds: [column],
         }),
       ]),
     );
-    expect(params.sorting).toEqual([
-      { column, ascending: false, naAndAbsentAreLeastValues: false },
-    ]);
+    expect(params.sorting).toEqual(sorting);
     expect(params.hiddenColIds).toEqual([column]);
-  });
-});
-
-describe("convertAgSortingToPTableSorting", () => {
-  test("an absent sort state is untouched, so the model keeps its default sorting", () => {
-    expect(convertAgSortingToPTableSorting(undefined)).toBeNull();
-  });
-
-  test("an empty sort model is explicitly cleared, which suppresses the default", () => {
-    expect(convertAgSortingToPTableSorting({ sortModel: [] })).toEqual([]);
   });
 });
 
@@ -108,16 +95,35 @@ describe("readPlDataTableSheetsState", () => {
 });
 
 describe("upgradePlDataTableStateV2", () => {
-  test("keeps only the pointer of what earlier SDK versions stored in pTableParams", () => {
-    const legacy = {
-      version: 8 as const,
-      stateCache: [],
-      pTableParams: { ...nullParams("A"), sorting: [] },
-    };
-    // A legacy value the current types no longer allow; the parser must clear it.
-    expect(upgradePlDataTableStateV2(legacy as PlDataTableStateV2Normalized).pTableParams).toEqual(
-      nullParams("A"),
+  const column: PTableColumnId = { type: "column", id: col("c1") };
+  const sorting = [{ column, ascending: true, naAndAbsentAreLeastValues: true }];
+
+  test("moves the sorting and hidden columns earlier versions kept in pTableParams into the shown entry", () => {
+    const { sorting: _a, hiddenColIds: _b, ...legacyA } = entry("A");
+    const { sorting: _c, hiddenColIds: _d, ...legacyB } = entry("B");
+    const upgraded = upgradePlDataTableStateV2(
+      stored({
+        version: 9,
+        stateCache: [legacyA, legacyB],
+        pTableParams: { ...nullParams("A"), sorting, hiddenColIds: [column] },
+      }),
     );
+    expect(upgraded.pTableParams).toEqual(nullParams("A"));
+    expect(upgraded.stateCache).toEqual([
+      entry("A", { sorting, hiddenColIds: [column] }),
+      entry("B"),
+    ]);
+  });
+
+  test("keeps an entry's own untouched sorting rather than the legacy one", () => {
+    const upgraded = upgradePlDataTableStateV2(
+      stored({
+        version: 9,
+        stateCache: [entry("A")],
+        pTableParams: { ...nullParams("A"), sorting },
+      }),
+    );
+    expect(upgraded.stateCache[0].sorting).toBeNull();
   });
 });
 
@@ -147,7 +153,7 @@ describe("collectSearchColumns", () => {
     candidate("secret", { axesSpec: [sample, clone], valueType: "String" }, "hidden"),
   ];
 
-  test("searches shown columns and axes, skipping labeled, sheet and optional ones", () => {
+  test("searches visible columns and axes, skipping sheet axes and optional columns", () => {
     const found = collectSearchColumns({
       columns,
       isAxisHidden: () => false,
@@ -155,6 +161,7 @@ describe("collectSearchColumns", () => {
       hiddenColIds: null,
     }).map((c) => c.id);
     expect(found).toEqual([
+      { type: "axis", id: getAxisId(clone) },
       { type: "column", id: col("label") },
       { type: "column", id: col("count") },
     ]);
@@ -168,6 +175,7 @@ describe("collectSearchColumns", () => {
       hiddenColIds: [{ type: "column", id: col("count") }],
     }).map((c) => c.id);
     expect(found).toEqual([
+      { type: "axis", id: getAxisId(clone) },
       { type: "axis", id: getAxisId(sample) },
       { type: "column", id: col("label") },
       { type: "column", id: col("extra") },
@@ -267,6 +275,8 @@ function entry(
   return {
     sourceId,
     gridState: {},
+    sorting: null,
+    hiddenColIds: null,
     sheetsState: [],
     filtersState: null,
     defaultFiltersState: null,
@@ -278,5 +288,10 @@ function state(
   sourceId: null | string,
   stateCache: PlDataTableStateV2CacheEntry[],
 ): PlDataTableStateV2Normalized {
-  return { version: 8, stateCache, pTableParams: nullParams(sourceId) };
+  return { version: 9, stateCache, pTableParams: nullParams(sourceId) };
+}
+
+/** A state as it comes out of storage, in a shape the current types may no longer describe. */
+function stored(value: unknown): PlDataTableStateV2 {
+  return JSON.parse(JSON.stringify(value));
 }

@@ -182,7 +182,7 @@ export type PlDataTableStateV2V9 = StoredStateV8<9>;
  */
 type StoredStateV8<V extends 8 | 9> = {
   version: V;
-  stateCache: PlDataTableStateV2CacheEntry[];
+  stateCache: StoredCacheEntry[];
   pTableParams: StoredPTableParams;
 };
 
@@ -254,14 +254,42 @@ export function upgradePlDataTableStateV2(
   if (state.version === 8) {
     state = migrateV8toV9(state);
   }
-  // Earlier SDK versions also stored the source's entry translated into table
-  // parameters; only the pointer to the source is read now.
+  return adoptLegacyTableParams(state);
+}
+
+/**
+ * Earlier SDK versions kept the sorting and hidden columns of the source on
+ * screen only in `pTableParams`, next to the pointer to that source. They move
+ * into that source's entry, other entries start untouched, and `pTableParams`
+ * keeps only the pointer.
+ */
+function adoptLegacyTableParams(
+  state: PlDataTableStateV2V9 | PlDataTableStateV2Normalized,
+): PlDataTableStateV2Normalized {
+  const legacy: StoredPTableParams = state.pTableParams;
+  const stateCache: StoredCacheEntry[] = state.stateCache;
   return {
     version: 9,
-    stateCache: state.stateCache,
-    pTableParams: { ...createDefaultPTableParams(), sourceId: state.pTableParams.sourceId },
+    stateCache: stateCache.map((entry) => {
+      const isShown = entry.sourceId === legacy.sourceId;
+      return {
+        ...entry,
+        sorting: entry.sorting !== undefined ? entry.sorting : isShown ? legacy.sorting : null,
+        hiddenColIds:
+          entry.hiddenColIds !== undefined
+            ? entry.hiddenColIds
+            : isShown
+              ? legacy.hiddenColIds
+              : null,
+      };
+    }),
+    pTableParams: { ...createDefaultPTableParams(), sourceId: legacy.sourceId },
   };
 }
+
+/** A cache entry as stored, possibly by an SDK version without the sorting fields. */
+type StoredCacheEntry = Omit<PlDataTableStateV2CacheEntry, "sorting" | "hiddenColIds"> &
+  Partial<Pick<PlDataTableStateV2CacheEntry, "sorting" | "hiddenColIds">>;
 
 /** Migrate v5 to v6: unwrap `{source, labeled}` colIds in gridState. */
 function migrateV5toV6(state: Extract<PlDataTableStateV2, { version: 5 }>): PlDataTableStateV2V6 {
@@ -509,7 +537,7 @@ export function createPlDataTableStateV2(): PlDataTableStateV2Normalized {
 // Also translates `sorting: []` (legacy "untouched") into `sorting: null`.
 
 function migrateV7toV8(state: PlDataTableStateV2V7): PlDataTableStateV2V8 {
-  const newCache: PlDataTableStateV2CacheEntry[] = state.stateCache.map((entry) => ({
+  const newCache: StoredCacheEntry[] = state.stateCache.map((entry) => ({
     sourceId: entry.sourceId,
     gridState: entry.gridState,
     sheetsState: entry.sheetsState,
@@ -615,7 +643,7 @@ function parseLegacyLeafColumn(s: unknown): PTableColumnId | undefined {
 function migrateV8toV9(state: PlDataTableStateV2V8): PlDataTableStateV2V9 {
   return {
     version: 9,
-    stateCache: state.stateCache.map((entry): PlDataTableStateV2CacheEntry => ({
+    stateCache: state.stateCache.map((entry): StoredCacheEntry => ({
       ...entry,
       gridState: upgradeGridStateColumnIds(entry.gridState),
       filtersState: upgradeFilterColumnIds(entry.filtersState),

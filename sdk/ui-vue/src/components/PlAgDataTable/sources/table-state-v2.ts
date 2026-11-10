@@ -13,6 +13,7 @@ import {
   type PlDataTableFilterMeta,
   type PlDataTableFilters,
   type PlDataTableFiltersWithMeta,
+  type PTableColumnId,
 } from "@platforma-sdk/model";
 import {
   computed,
@@ -23,6 +24,7 @@ import {
   type WritableComputedRef,
 } from "vue";
 import type { PlDataTableSettingsV2 } from "../types";
+import type { PlDataTableGridFields } from "./grid-state";
 import { isJsonEqual, randomInt, getField, type Nil } from "@milaboratories/helpers";
 import { isNil } from "es-toolkit";
 
@@ -92,9 +94,12 @@ export function useTableState(
 ): {
   /** Source whose settings the controls show and edit; `null` while there is none. */
   sourceId: ComputedRef<null | string>;
+  /** The grid's own state for the source on screen, to restore the grid from */
   gridState: ComputedRef<PlDataTableGridStateCore>;
-  getGridState: (sourceId: string) => PlDataTableGridStateCore;
-  updateGridState: (sourceId: string, gridState: PlDataTableGridStateCore) => void;
+  /** Columns the user hid on the source on screen; `null` while untouched */
+  hiddenColIds: ComputedRef<null | PTableColumnId[]>;
+  getEntry: (sourceId: string) => undefined | PlDataTableStateV2CacheEntry;
+  updateGrid: (sourceId: string, grid: PlDataTableGridFields) => void;
   sheetsState: WritableComputedRef<PlDataTableSheetState[]>;
   searchString: WritableComputedRef<string>;
   filtersState: WritableComputedRef<PlDataTableFiltersWithMeta>;
@@ -152,6 +157,7 @@ export function useTableState(
   }
 
   const gridState = computed<PlDataTableGridStateCore>(() => entry.value?.gridState ?? {});
+  const hiddenColIds = computed(() => entry.value?.hiddenColIds ?? null);
 
   const sheetsState = computed<PlDataTableSheetState[]>({
     get: () => entry.value?.sheetsState ?? [],
@@ -192,8 +198,9 @@ export function useTableState(
   return {
     sourceId,
     gridState,
-    getGridState: (id) => findEntry(state.value, id)?.gridState ?? {},
-    updateGridState: (id, gridState) => edit({ sourceId: id, patch: { gridState } }),
+    hiddenColIds,
+    getEntry: (id) => findEntry(state.value, id),
+    updateGrid: (id, grid) => edit({ sourceId: id, patch: grid }),
     sheetsState,
     searchString,
     filtersState,
@@ -230,7 +237,7 @@ function alignWithTarget(
   const current = findEntry(state, sourceId) ?? createEntry(sourceId);
   const entry = { ...current, sheetsState: resolveSheetsState(sheets, current.sheetsState) };
   return {
-    version: 8,
+    ...state,
     stateCache: [...state.stateCache.filter((e) => e.sourceId !== sourceId), entry],
     pTableParams: { ...createDefaultPTableParams(), sourceId },
   };
@@ -248,6 +255,8 @@ function createEntry(sourceId: string): PlDataTableStateV2CacheEntry {
   return {
     sourceId,
     gridState: {},
+    sorting: null,
+    hiddenColIds: null,
     sheetsState: [],
     filtersState: null,
     defaultFiltersState: null,
