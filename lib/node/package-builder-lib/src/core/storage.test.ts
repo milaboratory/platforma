@@ -55,6 +55,7 @@ test("s3e and s3es URLs: endpoint scheme, credentials, nested prefix", () => {
     options: {
       endpoint: "https://s3.example.com",
       forcePathStyle: true,
+      region: "us-east-1",
       credentials: { accessKeyId: "key", secretAccessKey: "se/cr+et" },
     },
     bucket: "bucket",

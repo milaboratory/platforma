@@ -60,7 +60,8 @@ export class S3Storage implements RegistryStorage {
 
   async checkAccess(): Promise<void> {
     try {
-      await this.objectExists("/");
+      // Probe inside the prefix: credentials may be scoped to <bucket>/<prefix>/*.
+      await this.objectExists(this.key(".access-check"));
     } catch (error) {
       throw util.CLIError(
         `credentials do not have access to S3 bucket '${this.bucket}': ${String(error)}`,
@@ -97,7 +98,7 @@ export class S3Storage implements RegistryStorage {
   }
 
   async listFiles(prefix: string): Promise<string[]> {
-    const listRoot = pathPosix.join(this.root, prefix);
+    const listRoot = pathPosix.join(this.root, prefix).replace(/^\.$/, "");
     const paginator = paginateListObjectsV2(
       { client: this.client },
       { Bucket: this.bucket, Prefix: listRoot },
@@ -122,6 +123,8 @@ export class S3Storage implements RegistryStorage {
   }
 
   async deleteFiles(...files: string[]): Promise<void> {
+    // DeleteObjects rejects an empty list.
+    if (files.length === 0) return;
     // TODO implement support of more than 1000 files
     const results = await this.client.deleteObjects({
       Bucket: this.bucket,
@@ -150,7 +153,8 @@ export function s3eConfigFromUrl(url: URL): {
     forcePathStyle: true,
   };
   const region = url.searchParams.get("region");
-  if (region) options.region = region;
+  // The SDK needs a region to sign requests; MinIO and most S3-compatible stores ignore it.
+  options.region = region ?? "us-east-1";
   // URL keeps userinfo percent-encoded; a secret with '/', '+' or '@' must be written encoded.
   if (url.username)
     options.credentials = {
@@ -214,7 +218,8 @@ export class GcsStorage implements RegistryStorage {
 
   async checkAccess(): Promise<void> {
     try {
-      await (await this.bucket()).file("/").exists();
+      // Probe inside the prefix: credentials may be scoped to <bucket>/<prefix>/*.
+      await (await this.bucket()).file(this.key(".access-check")).exists();
     } catch (error) {
       throw util.CLIError(
         `credentials do not have access to GCS bucket '${this.bucketName}': ${String(error)}`,
@@ -242,7 +247,7 @@ export class GcsStorage implements RegistryStorage {
   }
 
   async listFiles(prefix: string): Promise<string[]> {
-    const listRoot = pathPosix.join(this.root, prefix);
+    const listRoot = pathPosix.join(this.root, prefix).replace(/^\.$/, "");
     const [files] = await (await this.bucket()).getFiles({ prefix: listRoot, autoPaginate: true });
     return files.map((f) => pathPosix.relative(listRoot, f.name));
   }
