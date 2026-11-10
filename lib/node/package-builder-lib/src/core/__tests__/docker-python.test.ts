@@ -228,8 +228,9 @@ describe("Docker Python Functions", () => {
       expect(content).toContain("FROM python:3.12-slim AS deps");
       expect(content).toContain(
         `RUN pip install --no-compile --no-cache-dir -r requirements.txt \\\n` +
-          `    && { python3 -m compileall -q -f -j 0 --invalidation-mode unchecked-hash \\\n` +
-          `        "$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')" || true; } \\\n` +
+          `    && python3 -c 'import compileall, py_compile, sys, sysconfig; \\\n` +
+          `kw = {"invalidation_mode": py_compile.PycInvalidationMode.UNCHECKED_HASH} if sys.version_info >= (3, 7) else {}; \\\n` +
+          `[compileall.compile_dir(d, quiet=1, force=True, workers=0, **kw) for d in sorted({sysconfig.get_paths()["purelib"], sysconfig.get_paths()["platlib"]})]' \\\n` +
           `    && python3 - /usr/local /layers 8 ${2 * 1024 ** 3} <<'LAYER_SPLIT_EOF'`,
       );
       // the split script is inlined between the heredoc markers

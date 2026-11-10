@@ -7,6 +7,7 @@ import {
   normalizeRegistryKey,
   parseDockerConfig,
   parseLayers,
+  parseTaggerSummary,
   registryHost,
 } from "../docker-relayer";
 import * as envs from "../envs";
@@ -56,7 +57,7 @@ describe("docker-relayer", () => {
     );
     expect(authSource(inline, "quay.io")).toEqual({
       kind: "entry",
-      entry: { auth: b64("robot:s3cr:et"), identitytoken: undefined },
+      entry: { auth: b64("robot:s3cr:et"), identitytoken: undefined, registrytoken: undefined },
     });
     expect(authSource(inline, "ghcr.io")).toEqual({ kind: "none" });
   });
@@ -72,14 +73,43 @@ describe("docker-relayer", () => {
     );
     expect(authSource(config, "docker.io")).toEqual({
       kind: "entry",
-      entry: { auth: b64("u:p"), identitytoken: undefined },
+      entry: { auth: b64("u:p"), identitytoken: undefined, registrytoken: undefined },
     });
     expect(authSource(config, "myacr.azurecr.io")).toEqual({
       kind: "entry",
-      entry: { auth: undefined, identitytoken: "tok" },
+      entry: { auth: undefined, identitytoken: "tok", registrytoken: undefined },
     });
     expect(normalizeRegistryKey("Quay.io/v2/")).toBe("quay.io");
     expect(authSource(parseDockerConfig("{}"), "quay.io")).toEqual({ kind: "none" });
+  });
+
+  it("accepts user/password fields and prefers host keys over repository-scoped ones", () => {
+    const config = parseDockerConfig(
+      JSON.stringify({
+        auths: {
+          "quay.io": { username: "robot", password: "pw" },
+          "quay.io/org": { auth: b64("other:x") },
+          "ghcr.io": { registrytoken: "rt" },
+        },
+      }),
+    );
+    expect(authSource(config, "quay.io")).toEqual({
+      kind: "entry",
+      entry: { auth: b64("robot:pw"), identitytoken: undefined, registrytoken: undefined },
+    });
+    expect(authSource(config, "ghcr.io")).toEqual({
+      kind: "entry",
+      entry: { auth: undefined, identitytoken: undefined, registrytoken: "rt" },
+    });
+    expect(registryHost("index.docker.io/library/python:3")).toBe("docker.io");
+  });
+
+  it("reads the tagger's summary line", () => {
+    expect(parseTaggerSummary('{"special": ["/app/pipe"], "max_mtime": 5}\n')).toEqual({
+      special: ["/app/pipe"],
+      maxMtime: 5,
+    });
+    expect(() => parseTaggerSummary("relayer: 3 files")).toThrow();
   });
 
   it("turns a credential helper's answer into a config entry", () => {

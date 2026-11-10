@@ -53,15 +53,6 @@ describe.skipIf(!hasPython)("relayer-tag.py", () => {
       });
   }
 
-  function mtimes(appDir = "/app"): Record<string, number> {
-    const result = spawnSync("python3", ["-", root, appDir, "1000", "--dry-run"], {
-      input: script,
-      encoding: "utf-8",
-    });
-    expect(result.status, result.stderr).toBe(0);
-    return Object.fromEntries(lines(result.stdout).map(([p, , m]) => [p, Number(m)]));
-  }
-
   const site = "usr/local/lib/python3.12/site-packages";
 
   it("groups a pip package with its dist-info, scripts and later-compiled .pyc", () => {
@@ -214,7 +205,7 @@ describe.skipIf(!hasPython)("relayer-tag.py", () => {
     expect(c["/app/main.py"]).toBe("app");
   });
 
-  it("gives all links of a hard-linked file the component of its first path", () => {
+  it("keeps all links of a hard-linked file in one component", () => {
     file("opt/conda/pkgs/zlib/lib/libz.so");
     fs.mkdirSync(path.join(root, "opt/conda/lib"), { recursive: true });
     fs.linkSync(
@@ -241,28 +232,115 @@ describe.skipIf(!hasPython)("relayer-tag.py", () => {
     expect(components()["/usr/bin/bash"]).toBe("deb/bash");
   });
 
-  it("sets mtime 0, except a .py with a timestamp .pyc: it keeps the .pyc's source mtime", () => {
-    const pyc = (flags: number, mtime: number) => {
-      const b = Buffer.alloc(16);
-      b.writeUInt32LE(0x0a0d0dcb, 0); // magic (any value works for the tagger)
-      b.writeUInt32LE(flags, 4);
-      b.writeUInt32LE(mtime, 8);
+  /** A .pyc header: Python >= 3.7 (magic, flags, mtime, size) or <= 3.6 (magic, mtime, size). */
+  function pyc(opts: { magic: number; flags?: number; mtime: number; size: number }): Buffer {
+    const parts = [Buffer.from([opts.magic & 0xff, opts.magic >> 8, 0x0d, 0x0a])];
+    const u32 = (v: number) => {
+      const b = Buffer.alloc(4);
+      b.writeUInt32LE(v >>> 0, 0);
       return b;
     };
-    file("usr/local/lib/python3.12/os.py");
-    file("usr/local/lib/python3.12/__pycache__/os.cpython-312.pyc");
-    fs.writeFileSync(
-      path.join(root, "usr/local/lib/python3.12/__pycache__/os.cpython-312.pyc"),
-      pyc(0, 1700000000),
+    if (opts.flags !== undefined) parts.push(u32(opts.flags));
+    parts.push(u32(opts.mtime), u32(opts.size), Buffer.from("BYTECODE"));
+    return Buffer.concat(parts);
+  }
+
+  /** Writes a .py with the given mtime and size, plus its __pycache__ .pyc. */
+  function module(dir: string, name: string, pycName: string, header: Buffer, mtime: number) {
+    file(`${dir}/${name}.py`, 20);
+    fs.utimesSync(path.join(root, `${dir}/${name}.py`), mtime, mtime);
+    fs.mkdirSync(path.join(root, `${dir}/__pycache__`), { recursive: true });
+    fs.writeFileSync(path.join(root, `${dir}/__pycache__/${pycName}`), header);
+  }
+
+  function runForReal(): string {
+    const result = spawnSync("python3", ["-", root, "/app", "1000", "--no-xattrs"], {
+      input: script,
+      encoding: "utf-8",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    return result.stdout;
+  }
+
+  it("makes a valid timestamp .pyc (py >= 3.7) hash-based and sets every mtime to 0", () => {
+    const lib = "usr/local/lib/python3.12";
+    module(
+      lib,
+      "os",
+      "os.cpython-312.pyc",
+      pyc({ magic: 3531, flags: 0, mtime: 1700000000, size: 20 }),
+      1700000000,
     );
-    file(`${site}/numpy/core.py`);
-    file(`${site}/numpy/__pycache__/core.cpython-312.pyc`);
-    fs.writeFileSync(path.join(root, `${site}/numpy/__pycache__/core.cpython-312.pyc`), pyc(1, 0)); // hash-based
+    module(
+      lib,
+      "re",
+      "re.cpython-312.opt-1.pyc",
+      pyc({ magic: 3531, flags: 0, mtime: 1700000000, size: 20 }),
+      1700000000,
+    );
 
-    const m = mtimes();
+    const summary = JSON.parse(runForReal());
 
-    expect(m["/usr/local/lib/python3.12/os.py"]).toBe(1700000000);
-    expect(m["/usr/local/lib/python3.12/__pycache__/os.cpython-312.pyc"]).toBe(0);
-    expect(m[`/${site}/numpy/core.py`]).toBe(0);
+    for (const name of ["os.cpython-312.pyc", "re.cpython-312.opt-1.pyc"]) {
+      const data = fs.readFileSync(path.join(root, `${lib}/__pycache__/${name}`));
+      expect(data.readUInt32LE(4), name).toBe(1); // unchecked-hash flag
+      expect(data.subarray(16).toString(), name).toBe("BYTECODE"); // bytecode unchanged
+    }
+    expect(fs.statSync(path.join(root, `${lib}/os.py`)).mtimeMs).toBe(0);
+    expect(fs.statSync(path.join(root, lib)).mtimeMs).toBe(0);
+    expect(summary).toEqual({ special: [], max_mtime: 0 });
+  });
+
+  it("leaves a stale .pyc stale, so Python recompiles it as in the original image", () => {
+    const lib = "usr/local/lib/python3.12";
+    // the .py was edited (same size) after compiling: recorded mtime differs from the file's
+    const stale = pyc({ magic: 3531, flags: 0, mtime: 1600000000, size: 20 });
+    module(lib, "mymod", "mymod.cpython-312.pyc", stale, 1700000000);
+
+    runForReal();
+
+    expect(fs.readFileSync(path.join(root, `${lib}/__pycache__/mymod.cpython-312.pyc`))).toEqual(
+      stale,
+    );
+    expect(fs.statSync(path.join(root, `${lib}/mymod.py`)).mtimeMs).toBe(0);
+  });
+
+  it("keeps the .py mtime of a valid Python <= 3.6 .pyc, which has no hash form", () => {
+    const lib = "usr/local/lib/python3.6";
+    const old = pyc({ magic: 3379, mtime: 1500000000, size: 20 });
+    module(lib, "json", "json.cpython-36.pyc", old, 1500000000);
+
+    const summary = JSON.parse(runForReal());
+
+    expect(fs.statSync(path.join(root, `${lib}/json.py`)).mtimeMs).toBe(1500000000 * 1000);
+    expect(fs.readFileSync(path.join(root, `${lib}/__pycache__/json.cpython-36.pyc`))).toEqual(old);
+    expect(summary.max_mtime).toBe(1500000000);
+  });
+
+  it.skipIf(process.platform === "win32")("reports FIFOs, which chunkah cannot store", () => {
+    file("app/main.py");
+    spawnSync("mkfifo", [path.join(root, "app/pipe")]);
+
+    expect(JSON.parse(runForReal()).special).toEqual(["/app/pipe"]);
+  });
+
+  it("prefers a package owner for hard links, whatever the path order", () => {
+    // pkgs/ sorts before share/: the package owner must still win
+    file("opt/conda/share/zoneinfo/UTC");
+    fs.mkdirSync(path.join(root, "opt/conda/pkgs/tzdata/share/zoneinfo"), { recursive: true });
+    fs.linkSync(
+      path.join(root, "opt/conda/share/zoneinfo/UTC"),
+      path.join(root, "opt/conda/pkgs/tzdata/share/zoneinfo/UTC"),
+    );
+    fs.mkdirSync(path.join(root, "opt/conda/conda-meta"), { recursive: true });
+    fs.writeFileSync(
+      path.join(root, "opt/conda/conda-meta/tzdata-2024a-0.json"),
+      JSON.stringify({ name: "tzdata", files: ["share/zoneinfo/UTC"] }),
+    );
+
+    const c = components();
+
+    expect(c["/opt/conda/share/zoneinfo/UTC"]).toBe("conda/tzdata");
+    expect(c["/opt/conda/pkgs/tzdata/share/zoneinfo/UTC"]).toBe("conda/tzdata");
   });
 });

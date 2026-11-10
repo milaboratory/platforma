@@ -6,24 +6,30 @@
 // the registry to finalize before the pushing client gives up.
 //
 // With PL_DOCKER_RELAYER=chunkah the pushed image gets its layers from its content instead:
-//   1. export the image filesystem into a docker volume (with xattrs and ACLs);
+//   1. flatten the image's layers into a docker volume (`docker save | crane export`: the
+//      image's own files, with whiteouts applied and file capabilities kept);
 //   2. assets/relayer-tag.py tags each file with its owning package (pip, conda, dpkg, the
-//      image's WORKDIR, else the directory), splits packages above a size cap, and sets
-//      deterministic mtimes that keep timestamp-based .pyc files valid;
+//      image's WORKDIR, else the directory), splits packages above a size cap, sets mtime 0,
+//      and makes valid timestamp .pyc hash-based so they stay valid;
 //   3. chunkah (https://github.com/coreos/chunkah) writes an OCI image with one layer per
 //      package, or per few packages, at most DOCKER_RELAYER_MAX_LAYERS;
 //   4. crane pushes that OCI layout.
 // An unchanged package gives a byte-identical layer, so a one-package bump uploads (and a
 // node pulls) about one package.
 //
-// What differs from the local image: the layers; file mtimes (see relayer-tag.py); a
-// user.component xattr on each file; /.dockerenv and /dev/console from the export are dropped.
-// chunkah keeps user, env, entrypoint, cmd, workdir, labels, volumes and exposed ports; it
-// drops the docker-only healthcheck, shell, onbuild and the history.
+// What differs from the local image: the layers; file mtimes and timestamp .pyc headers (see
+// relayer-tag.py); a user.component xattr on each file. Like `docker push`, only the
+// security.capability xattr of the original files survives (docker's layer tars keep no other
+// xattrs or ACLs). chunkah keeps user, env, entrypoint, cmd, workdir, labels, volumes and
+// exposed ports; it drops the docker-only healthcheck, shell, onbuild and the history.
+// Images with FIFOs, sockets or device files are pushed with plain `docker push` (chunkah
+// cannot store those).
 //
 // All tools run as containers on the same docker daemon, with data in docker volumes, so it
 // works the same with a local daemon and with a remote one (dind in CI). The daemon needs
-// free disk for one uncompressed and one compressed copy of the image while this runs.
+// free disk for about two uncompressed copies of the image (the save stream, then the
+// unpacked tree) and one compressed copy while this runs. Volumes left by an interrupted
+// run are removed by the next run after RELAYER_LEFTOVER_HOURS.
 // Needs bash on the host (not available on plain Windows).
 
 import { spawnSync, type SpawnSyncOptions } from "node:child_process";
@@ -52,7 +58,11 @@ export function isEnabled(): boolean {
 // credential helpers, so the credentials are read on the host the way docker reads them, and
 // given to crane as a generated config.json on stdin.
 
-export type AuthEntry = { auth: string | undefined; identitytoken: string | undefined };
+export type AuthEntry = {
+  auth: string | undefined; // base64 "user:password"
+  identitytoken: string | undefined;
+  registrytoken: string | undefined;
+};
 
 export type DockerConfig = {
   auths: Record<string, AuthEntry>; // keyed by normalized registry host
@@ -67,7 +77,7 @@ export type AuthSource =
   | { kind: "none" };
 
 /** What crane gets: one `auths` entry of a docker config.json. */
-export type CraneAuth = { auth?: string; identitytoken?: string };
+export type CraneAuth = { auth?: string; identitytoken?: string; registrytoken?: string };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -91,12 +101,19 @@ export function parseDockerConfig(text: string): DockerConfig {
   if (isRecord(raw.auths)) {
     for (const [key, entry] of Object.entries(raw.auths)) {
       if (!isRecord(entry)) continue;
-      config.auths[normalizeRegistryKey(key)] = {
-        auth: typeof entry.auth === "string" && entry.auth !== "" ? entry.auth : undefined,
-        identitytoken:
-          typeof entry.identitytoken === "string" && entry.identitytoken !== ""
-            ? entry.identitytoken
-            : undefined,
+      const str = (v: unknown) => (typeof v === "string" && v !== "" ? v : undefined);
+      // docker also accepts the user and password as separate fields
+      const user = str(entry.username);
+      const password = str(entry.password);
+      const host = normalizeRegistryKey(key);
+      // a host-only key wins over a repository-scoped one ("quay.io/org")
+      if (config.auths[host] && key.replace(/^[a-z]+:\/\//i, "").includes("/")) continue;
+      config.auths[host] = {
+        auth:
+          str(entry.auth) ??
+          (user && password ? Buffer.from(`${user}:${password}`).toString("base64") : undefined),
+        identitytoken: str(entry.identitytoken),
+        registrytoken: str(entry.registrytoken),
       };
     }
   }
@@ -117,7 +134,7 @@ export function parseDockerConfig(text: string): DockerConfig {
 export function registryHost(tag: string): string {
   const first = tag.split("/")[0] ?? "";
   if (tag.includes("/") && (first.includes(".") || first.includes(":") || first === "localhost")) {
-    return first.toLowerCase();
+    return normalizeRegistryKey(first);
   }
   return "docker.io";
 }
@@ -131,7 +148,9 @@ export function authSource(config: DockerConfig, host: string): AuthSource {
   if (helper) return { kind: "helper", helper };
   if (config.credsStore) return { kind: "helper", helper: config.credsStore };
   const entry = config.auths[host];
-  if (entry && (entry.auth || entry.identitytoken)) return { kind: "entry", entry };
+  if (entry && (entry.auth || entry.identitytoken || entry.registrytoken)) {
+    return { kind: "entry", entry };
+  }
   return { kind: "none" };
 }
 
@@ -158,7 +177,8 @@ export function registryAuth(host: string, warn: (m: string) => void): CraneAuth
   const source = authSource(parseDockerConfig(fs.readFileSync(file, "utf-8")), host);
   if (source.kind === "none") return undefined;
   if (source.kind === "entry") {
-    return { auth: source.entry.auth, identitytoken: source.entry.identitytoken };
+    const { auth, identitytoken, registrytoken } = source.entry;
+    return { auth, identitytoken, registrytoken };
   }
 
   const helper = `docker-credential-${source.helper}`;
@@ -220,6 +240,48 @@ export function parseLayers(json: string): docker.ImageLayer[] {
   });
 }
 
+export type TaggerSummary = { special: string[]; maxMtime: number };
+
+/** The tagger's JSON line (see relayer-tag.py). */
+export function parseTaggerSummary(stdout: string): TaggerSummary {
+  const line = stdout.trim().split("\n").pop() ?? "";
+  const raw: unknown = JSON.parse(line);
+  if (!isRecord(raw) || !Array.isArray(raw.special) || typeof raw.max_mtime !== "number") {
+    throw util.CLIError(`image re-layering: unexpected tagger output '${line.slice(0, 200)}'`);
+  }
+  return {
+    special: raw.special.filter((p): p is string => typeof p === "string"),
+    maxMtime: raw.max_mtime,
+  };
+}
+
+const LABEL_KEY = "com.milaboratories.package-builder.relayer";
+export const RELAYER_LEFTOVER_HOURS = 6;
+
+/** Removes relayer volumes older than RELAYER_LEFTOVER_HOURS (left by interrupted runs). */
+function sweepLeftovers(): void {
+  const list = spawnSync("docker", ["volume", "ls", "-q", "--filter", `label=${LABEL_KEY}`], {
+    encoding: "utf-8",
+  });
+  const names = (list.stdout ?? "").split("\n").filter((n) => n !== "");
+  if (list.status !== 0 || names.length === 0) return;
+  const cutoff = Date.now() - RELAYER_LEFTOVER_HOURS * 3600 * 1000;
+  for (const name of names) {
+    const created = spawnSync("docker", ["volume", "inspect", name, "--format", "{{.CreatedAt}}"], {
+      encoding: "utf-8",
+    });
+    const ms = Date.parse(
+      (created.stdout ?? "")
+        .trim()
+        .replace(" ", "T")
+        .replace(/ (\S+)$/, ""),
+    );
+    if (Number.isFinite(ms) && ms < cutoff) {
+      spawnSync("docker", ["volume", "rm", name], { stdio: "ignore" }); // fails if in use
+    }
+  }
+}
+
 /** Unix seconds of an image's Created time (docker inspect), 0 if unreadable. */
 export function createdEpoch(created: string): number {
   const ms = Date.parse(created.trim());
@@ -244,14 +306,16 @@ const CRANE_PUSH =
  * Re-layers local image `localTag` (see the file header) and pushes it as `pushTag`.
  * Layers above the size limit are reported like docker.checkLayerSizes does, but by
  * compressed size, which is what the registry receives.
+ * Returns false, having pushed nothing, when the image cannot be re-layered (special files);
+ * the caller then pushes it as it is.
  */
-export function relayerAndPush(localTag: string, pushTag: string, logger: winston.Logger): void {
+export function relayerAndPush(localTag: string, pushTag: string, logger: winston.Logger): boolean {
+  sweepLeftovers();
   const id = randomBytes(6).toString("hex");
-  const label = "com.milaboratories.package-builder.relayer=" + id; // for sweeping leftovers
+  const label = `${LABEL_KEY}=${id}`;
   const rootfs = `pl-relayer-rootfs-${id}`;
   const oci = `pl-relayer-oci-${id}`;
   const tools = defaults.DOCKER_RELAYER_TOOLS_IMAGE;
-  let container = "";
   const started = Date.now();
   const step = (message: string) =>
     logger.info(`  [${Math.round((Date.now() - started) / 1000)}s] ${message}`);
@@ -261,59 +325,63 @@ export function relayerAndPush(localTag: string, pushTag: string, logger: winsto
     run("docker volume create", "docker", ["volume", "create", "--label", label, rootfs]);
     run("docker volume create", "docker", ["volume", "create", "--label", label, oci]);
 
-    step("exporting the image filesystem");
-    // a placeholder command: images without CMD/ENTRYPOINT (FROM scratch) cannot be created
-    // otherwise. The container is never started.
-    container = run("docker create", "docker", [
-      "create",
-      "--label",
-      label,
-      localTag,
-      "/pl-relayer-placeholder",
-    ]).trim();
-    run("docker export", "bash", [
+    step("flattening the image filesystem");
+    // crane copies the save stream to a temp file first: put it on the (still empty) oci volume
+    run("docker save | crane export", "bash", [
       "-o",
       "pipefail",
       "-c",
-      'docker export "$1" | docker run --rm -i -v "$2":/r "$3" ' +
+      'docker save "$1" | docker run --rm -i -v "$2":/scratch -e TMPDIR=/scratch --entrypoint crane "$3" export - - ' +
+        '| docker run --rm -i -v "$4":/r "$5" ' +
         "tar --numeric-owner --xattrs --xattrs-include='*' --acls -xpf - -C /r",
-      "relayer-export",
-      container,
+      "relayer-flatten",
+      localTag,
+      oci,
+      defaults.DOCKER_RELAYER_CRANE_IMAGE,
       rootfs,
       tools,
     ]);
-    run("docker rm", "docker", ["rm", "-v", container]);
-    container = "";
 
     step("grouping files by package");
     const inspect = (format: string) =>
       run("docker inspect", "docker", ["image", "inspect", localTag, "--format", format]).trim();
     const workdir = inspect("{{.Config.WorkingDir}}");
-    run(
-      "tagging files",
-      "docker",
-      [
-        "run",
-        "--rm",
-        "-i",
-        "-v",
-        `${rootfs}:/r`,
-        tools,
-        "python3",
-        "-I",
-        "-",
-        "/r",
-        workdir,
-        String(defaults.DOCKER_RELAYER_COMPONENT_MAX_BYTES),
-      ],
-      { input: fs.readFileSync(paths.assets("relayer-tag.py"), "utf-8") },
+    const summary = parseTaggerSummary(
+      run(
+        "tagging files",
+        "docker",
+        [
+          "run",
+          "--rm",
+          "-i",
+          "-v",
+          `${rootfs}:/r`,
+          tools,
+          "python3",
+          "-I",
+          "-",
+          "/r",
+          workdir,
+          String(defaults.DOCKER_RELAYER_COMPONENT_MAX_BYTES),
+        ],
+        { input: fs.readFileSync(paths.assets("relayer-tag.py"), "utf-8") },
+      ),
     );
+    if (summary.special.length > 0) {
+      logger.warn(
+        `Image '${localTag}' has ${summary.special.length} FIFO, socket or device file(s), which ` +
+          `chunkah cannot store (${summary.special.slice(0, 3).join(", ")}); pushing it ` +
+          `without re-layering.`,
+      );
+      return false;
+    }
 
     step("writing package layers (chunkah)");
     const config = run("docker inspect", "docker", ["image", "inspect", localTag]);
-    // The tagger already set every mtime; the image's build time as chunkah's clamp keeps
-    // them (all are earlier) and gives the image a real creation time.
-    const epoch = createdEpoch(inspect("{{.Created}}")) || Math.floor(Date.now() / 1000);
+    // The tagger already set every mtime; chunkah writes min(mtime, clamp), so the clamp must
+    // not be below any of them. The image's build time also gives a real creation time.
+    const created = createdEpoch(inspect("{{.Created}}")) || Math.floor(Date.now() / 1000);
+    const epoch = Math.max(created, summary.maxMtime);
     run(
       "chunkah",
       "docker",
@@ -333,10 +401,6 @@ export function relayerAndPush(localTag: string, pushTag: string, logger: winsto
         "--compressed",
         "--max-layers",
         String(defaults.DOCKER_RELAYER_MAX_LAYERS),
-        "--prune",
-        "/.dockerenv",
-        "--prune",
-        "/dev/console",
         "--output",
         "oci:/out/image",
       ],
@@ -370,7 +434,8 @@ export function relayerAndPush(localTag: string, pushTag: string, logger: winsto
     // crane looks Docker Hub up under docker's legacy key
     const craneHost = host === "docker.io" ? "https://index.docker.io/v1/" : host;
     run(
-      "crane push",
+      `crane push of '${pushTag}' (if the error above mentions authentication or denied ` +
+        `access, log in with 'docker login ${host}' first)`,
       "docker",
       [
         "run",
@@ -383,10 +448,9 @@ export function relayerAndPush(localTag: string, pushTag: string, logger: winsto
         `${oci}:/out:ro`,
         "-e",
         "PL_PUSH_TAG",
-        "-e",
-        "HTTPS_PROXY",
-        "-e",
-        "NO_PROXY",
+        ...["HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy"]
+          .filter((v) => process.env[v])
+          .flatMap((v) => ["-e", v]),
         "--entrypoint",
         "sh",
         defaults.DOCKER_RELAYER_CRANE_IMAGE,
@@ -401,8 +465,8 @@ export function relayerAndPush(localTag: string, pushTag: string, logger: winsto
       },
     );
     step("done");
+    return true;
   } finally {
-    if (container !== "") spawnSync("docker", ["rm", "-f", "-v", container], { stdio: "ignore" });
     spawnSync("docker", ["volume", "rm", "-f", rootfs, oci], { stdio: "ignore" });
   }
 }

@@ -897,9 +897,7 @@ export class Core {
       this.logger.info(`Publishing docker image '${tag}' with tag '${pushTag}'`);
     }
 
-    if (dockerRelayer.isEnabled()) {
-      dockerRelayer.relayerAndPush(tag, pushTag, this.logger);
-    } else {
+    if (!dockerRelayer.isEnabled() || !dockerRelayer.relayerAndPush(tag, pushTag, this.logger)) {
       docker.push(pushTag);
     }
   }

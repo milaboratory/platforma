@@ -5,21 +5,32 @@
 #   2. sets deterministic mtimes, so an unchanged component gives a byte-identical layer on the
 #      next build (see "mtimes" below).
 #
-# Usage: python3 - <rootfs> <app_dir> <max_component_bytes> [--dry-run]
+# Usage: python3 - <rootfs> <app_dir> <max_component_bytes> [--dry-run] [--no-xattrs]
 #   app_dir              the image's own code (WORKDIR), its own component; "" to skip
 #   max_component_bytes  a component bigger than this is split into several, by path order
 #   --dry-run            print "<path>\t<component>\t<mtime>" lines (component "" when the file
 #                        is left to chunkah) instead of changing the filesystem
+#   --no-xattrs          change mtimes and .pyc files but write no xattrs (for tests)
+# Without --dry-run, stdout gets one JSON line: {"special": [paths of FIFOs, sockets and
+# devices, which chunkah cannot store], "max_mtime": the highest mtime set}.
 #
 # Owners: Debian packages (dpkg lists), conda packages (conda-meta), pip packages (dist-info
 # RECORD; pip wins over the others, since pip runs last), then app_dir for files no package
 # owns. Remaining files are grouped by directory, unless the image has an RPM or pacman
-# database: chunkah reads those itself. All links of a hard-linked file get one component, so
-# chunkah keeps them as hard links.
+# database: chunkah reads those itself. All links of a hard-linked file get one component
+# (a package owner if any link has one), so chunkah keeps them as hard links.
 #
-# mtimes: every file and directory gets mtime 0, except a .py file that has a timestamp-based
-# .pyc (the default of pip, conda and the stdlib): it gets the source mtime recorded in that
-# .pyc, so Python keeps using the .pyc instead of recompiling the module on every start.
+# mtimes and .pyc: every file and directory gets mtime 0, so identical content gives identical
+# layers. A timestamp-based .pyc (the default of pip, conda and the stdlib) records its
+# source's mtime and size, so it would no longer match. Hence, for each __pycache__/*.pyc:
+#   - Python >= 3.7, valid now (recorded mtime and size match the .py): its header is
+#     rewritten to the unchecked-hash form (PEP 552); the bytecode is unchanged and Python
+#     uses it without looking at the source mtime, as for the python template's own .pyc;
+#   - Python <= 3.6, valid now: no hash form exists, so the .py keeps its mtime;
+#   - stale (the .py changed after compiling): left alone; with the .py at mtime 0 it stays
+#     stale, so Python recompiles it, as it would in the original image.
+# Other mtime-keyed caches (fontconfig, AppCDS) are rebuilt at run time after this.
+import importlib.util
 import json
 import os
 import re
@@ -51,7 +62,9 @@ class Tree:
         self.links = []  # host paths of symlinks
         self.inodes = defaultdict(list)  # (dev, ino) -> image paths, files with nlink > 1
         self.dist_infos, self.conda_metas = [], []
-        self.pyc_mtime = {}  # image path of a .py -> source mtime in its timestamp-based .pyc
+        self.pyc_mtime = {}  # image path of a .py -> mtime it keeps (valid py<=3.6 .pyc)
+        self.pyc_to_hash = []  # (host .pyc path, host .py path): valid timestamp .pyc, py>=3.7
+        self.special = []  # image paths of FIFOs, sockets and device files
         for dirpath, dirnames, filenames in os.walk(root):
             self.dirs.append(dirpath)
             for d in dirnames:
@@ -69,6 +82,7 @@ class Tree:
                     self.links.append(full)
                     continue
                 if not stat.S_ISREG(st.st_mode):
+                    self.special.append(img(root, full))
                     continue
                 p = img(root, full)
                 self.files[p] = st.st_size
@@ -81,17 +95,41 @@ class Tree:
         m = PYC_NAME.match(name)
         if not m:
             return
+        source = os.path.join(os.path.dirname(os.path.dirname(full)), m.group(1) + ".py")
+        p = img(self.root, source)
+        if p is None or not os.path.isfile(source) or os.path.islink(source):
+            return
         try:
             with open(full, "rb") as fh:
                 header = fh.read(16)
+            st = os.stat(source)
         except OSError:
             return
-        if len(header) < 16 or int.from_bytes(header[4:8], "little") != 0:
-            return  # too short, or hash-based: no source mtime to keep
-        source = os.path.join(os.path.dirname(os.path.dirname(full)), m.group(1) + ".py")
-        p = img(self.root, source)
-        if p is not None:
-            self.pyc_mtime.setdefault(p, int.from_bytes(header[8:12], "little"))
+        if len(header) < 12 or header[2:4] != b"\r\n":
+            return
+        magic = int.from_bytes(header[0:2], "little")
+        mtime_now, size_now = int(st.st_mtime) & 0xFFFFFFFF, st.st_size & 0xFFFFFFFF
+        if magic >= 3390:  # Python 3.7+: magic, flags, then mtime + size or a hash
+            if len(header) < 16 or int.from_bytes(header[4:8], "little") != 0:
+                return  # hash-based already: independent of the source mtime
+            recorded = (int.from_bytes(header[8:12], "little"), int.from_bytes(header[12:16], "little"))
+            if recorded == (mtime_now, size_now):
+                self.pyc_to_hash.append((full, source))
+        else:  # Python <= 3.6: magic, mtime, size
+            recorded = (int.from_bytes(header[4:8], "little"), int.from_bytes(header[8:12], "little"))
+            if recorded == (mtime_now, size_now):
+                self.pyc_mtime.setdefault(p, recorded[0])
+
+
+def pyc_to_unchecked_hash(pyc, source):
+    """Rewrites a valid timestamp .pyc as an unchecked-hash .pyc; the bytecode is unchanged."""
+    with open(pyc, "rb") as fh:
+        data = fh.read()
+    with open(source, "rb") as fh:
+        digest = importlib.util.source_hash(fh.read())
+    flags = (1).to_bytes(4, "little")  # bit 0: hash-based; bit 1 (check_source) unset
+    with open(pyc, "wb") as fh:
+        fh.write(data[0:4] + flags + digest + data[16:])
 
 
 def dpkg_owners(tree, owner):
@@ -213,6 +251,11 @@ def split_big(files, assigned, max_bytes):
     return out
 
 
+def is_group(comp):
+    """True for components that are not a package: directory groups, app, or none."""
+    return comp is None or comp.startswith("dir/") or comp == "app"
+
+
 def assign(tree, app_dir, max_bytes):
     owner = {}
     dpkg_owners(tree, owner)
@@ -236,10 +279,11 @@ def assign(tree, app_dir, max_bytes):
         assigned[p] = comp
     assigned = split_big(tree.files, assigned, max_bytes)
 
-    # all links of one inode in one component: the first link (by path) decides
+    # all links of one inode in one component: the first link (by path) with a package
+    # owner decides, else the first link
     for paths in tree.inodes.values():
-        first = min(paths)
-        comp = assigned.get(first)
+        ranked = sorted(paths, key=lambda q: (is_group(assigned.get(q)), q))
+        comp = assigned.get(ranked[0])
         for p in paths:
             if comp is None:
                 assigned.pop(p, None)
@@ -251,6 +295,7 @@ def assign(tree, app_dir, max_bytes):
 def main():
     root, app_dir, max_bytes = os.path.normpath(sys.argv[1]), sys.argv[2], int(sys.argv[3])
     dry_run = "--dry-run" in sys.argv[4:]
+    no_xattrs = "--no-xattrs" in sys.argv[4:]
     tree = Tree(root)
     assigned = assign(tree, app_dir, max_bytes)
 
@@ -258,13 +303,17 @@ def main():
         for p in sorted(tree.files):
             print(f"{p}\t{assigned.get(p, '')}\t{tree.pyc_mtime.get(p, 0)}")
     else:
-        for p, comp in assigned.items():
-            os.setxattr(os.path.join(root, p.lstrip("/")), "user.component", comp.encode())
+        for pyc, source in tree.pyc_to_hash:
+            pyc_to_unchecked_hash(pyc, source)
+        if not no_xattrs:
+            for p, comp in assigned.items():
+                os.setxattr(os.path.join(root, p.lstrip("/")), "user.component", comp.encode())
         for p in tree.files:
             t = tree.pyc_mtime.get(p, 0)
             os.utime(os.path.join(root, p.lstrip("/")), (t, t), follow_symlinks=False)
         for host in tree.links + tree.dirs:
             os.utime(host, (0, 0), follow_symlinks=False)
+        print(json.dumps({"special": sorted(tree.special), "max_mtime": max(tree.pyc_mtime.values(), default=0)}))
 
     sizes = defaultdict(int)
     for p, comp in assigned.items():
@@ -272,7 +321,8 @@ def main():
     biggest = sorted(sizes.items(), key=lambda kv: -kv[1])[:5]
     print(
         f"relayer: {len(assigned)} of {len(tree.files)} files in {len(sizes)} components, "
-        f"{len(tree.pyc_mtime)} sources kept at their .pyc mtime; biggest: "
+        f"{len(tree.pyc_to_hash)} .pyc made hash-based, {len(tree.pyc_mtime)} py<=3.6 sources "
+        f"kept at their .pyc mtime; biggest: "
         + ", ".join(f"{c} {s / 1024**3:.2f} GiB" for c, s in biggest),
         file=sys.stderr,
     )
