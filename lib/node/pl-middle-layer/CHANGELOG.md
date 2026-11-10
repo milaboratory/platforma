@@ -1,5 +1,20 @@
 # @milaboratories/pl-middle-layer
 
+## 2.4.0
+
+### Minor Changes
+
+- 1bea6a2: Add `watchBlockStatusTree`: the live action-context tree of a block run with per-context state, readings and subtree counters plus the heaviest branches, built from the same per-context folds as the summary. A context's children are present only while it is expanded via `setBlockStatusTreeExpanded`.
+
+### Patch Changes
+
+- Updated dependencies [1bea6a2]
+  - @milaboratories/pl-model-middle-layer@1.39.0
+  - @milaboratories/pf-driver@1.9.17
+  - @platforma-sdk/model@1.88.15
+  - @platforma-sdk/block-tools@2.19.1
+  - @milaboratories/pf-spec-driver@1.5.17
+
 ## 2.3.0
 
 ### Minor Changes
