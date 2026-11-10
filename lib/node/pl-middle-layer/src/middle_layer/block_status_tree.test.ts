@@ -251,3 +251,26 @@ test("closing the project terminates its watches and refuses new ones", async ()
     await expect(prj.watchBlockStatus(blockId)).rejects.toThrow(/project is closed/);
   });
 }, 120_000);
+
+test("the tree shares the watch and follows the expansion", async () => {
+  await withMl(async (ml) => {
+    const { prj, blockId } = await projectWithBlock(ml);
+    const run = await plantRoot(ml.pl, prj, blockId);
+
+    const summary = await prj.watchBlockStatus(blockId);
+    const tree = await prj.watchBlockStatusTree(blockId);
+    const first = await tree.getValue();
+    expect(first.summary.runId).toBe(run);
+    expect(first.root?.children).toEqual([]);
+
+    // The expansion is the tree's own input: setting it recomputes the tree.
+    await prj.setBlockStatusTreeExpanded(blockId, [first.root!.contextId]);
+    await tree.getValue();
+
+    // The tree holds the watch on its own once the summary lets go.
+    await prj.unwatchBlockStatus(blockId);
+    expect((await summary.getValue()).runId).toBe(run);
+    await prj.unwatchBlockStatus(blockId);
+    expect((await tree.getValue()).summary.runId).toBeUndefined();
+  });
+}, 120_000);
