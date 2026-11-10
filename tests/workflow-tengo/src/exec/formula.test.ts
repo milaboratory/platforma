@@ -1,6 +1,7 @@
 import { Pl } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 import * as env from "../env";
+import { getLongTestTimeout } from "@milaboratories/test-helpers";
 
 /**
  * End-to-end proof that resource formulas (RAM / CPU) are
@@ -179,7 +180,7 @@ for (const tc of constCases) {
       expect(Number(ramStr)).eq(tc.expectedRam);
       expect(Number(cpuStr)).eq(tc.expectedCpu);
     },
-    60000,
+    getLongTestTimeout(60_000),
   );
 }
 
