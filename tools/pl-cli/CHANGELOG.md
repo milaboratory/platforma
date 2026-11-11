@@ -1,5 +1,11 @@
 # @platforma-sdk/pl-cli
 
+## 0.11.0
+
+### Minor Changes
+
+- 64402da: Add `pl-cli admin instance-stats`.
+
 ## 0.10.28
 
 ### Patch Changes
