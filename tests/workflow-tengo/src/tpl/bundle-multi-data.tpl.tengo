@@ -6,8 +6,12 @@ self.awaitState("columns", "PColumnBundle")
 
 self.body(func(inputs) {
 	cols := inputs.columns.getColumns("multi")
+	// a column without data has `data` undefined
+	data := func(col) {
+		return is_undefined(col.data) ? { noData: true } : col.data
+	}
 	return {
-		first: cols[0].data,
-		second: cols[1].data
+		first: data(cols[0]),
+		second: data(cols[1])
 	}
 })
