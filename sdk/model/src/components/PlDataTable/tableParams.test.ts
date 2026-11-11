@@ -137,7 +137,7 @@ describe("collectSearchColumns", () => {
     candidate("secret", { axesSpec: [sample, clone], valueType: "String" }, "hidden"),
   ];
 
-  test("searches visible columns and axes, skipping sheet axes and optional columns", () => {
+  test("searches visible columns, skipping sheet axes and optional columns", () => {
     const found = collectSearchColumns({
       columns,
       isAxisHidden: () => false,
@@ -145,10 +145,21 @@ describe("collectSearchColumns", () => {
       hiddenColIds: null,
     }).map((c) => c.id);
     expect(found).toEqual([
-      { type: "axis", id: getAxisId(clone) },
       { type: "column", id: col("label") },
       { type: "column", id: col("count") },
     ]);
+  });
+
+  test("searches the label column instead of the axis it names", () => {
+    const found = collectSearchColumns({
+      columns,
+      isAxisHidden: () => false,
+      sheetAxes: [],
+      hiddenColIds: null,
+    }).map((c) => c.id);
+    expect(found).toContainEqual({ type: "axis", id: getAxisId(sample) });
+    expect(found).toContainEqual({ type: "column", id: col("label") });
+    expect(found).not.toContainEqual({ type: "axis", id: getAxisId(clone) });
   });
 
   test("follows the user's hidden list instead of the optional defaults", () => {
@@ -159,7 +170,6 @@ describe("collectSearchColumns", () => {
       hiddenColIds: [{ type: "column", id: col("count") }],
     }).map((c) => c.id);
     expect(found).toEqual([
-      { type: "axis", id: getAxisId(clone) },
       { type: "axis", id: getAxisId(sample) },
       { type: "column", id: col("label") },
       { type: "column", id: col("extra") },

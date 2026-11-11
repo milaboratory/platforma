@@ -11,7 +11,9 @@ import type {
 import {
   canonicalizeJson,
   getAxisId,
+  isLabelColumn,
   isLinkerColumn,
+  matchAxisId,
   ValueType,
 } from "@milaboratories/pl-model-common";
 import { isNil } from "es-toolkit";
@@ -104,9 +106,11 @@ export function createSheetFilters(sheetsState: PlDataTableSheetState[]): PlData
 
 /**
  * The columns the fast search looks into: the visible ones, and the visible axes
- * except those a sheet fixes to a single value, where every row would match.
- * Hidden are columns the block's rules hide, linker columns, and the columns in
- * the user's hidden list, or, while the user has not touched it, the optional ones.
+ * except those a sheet fixes to a single value, where every row would match, and
+ * those the table shows through their label column, whose raw values are never
+ * on screen. Hidden are columns the block's rules hide, linker columns, and the
+ * columns in the user's hidden list, or, while the user has not touched it, the
+ * optional ones.
  */
 export function collectSearchColumns(params: {
   columns: PlDataTableSearchCandidate[];
@@ -116,9 +120,17 @@ export function collectSearchColumns(params: {
 }): PlDataTableSearchColumn[] {
   const { columns, isAxisHidden, sheetAxes, hiddenColIds } = params;
   const sheetAxisKeys = new Set(sheetAxes.map(axisKey));
-  const shownAxes = uniqueAxes(columns.flatMap((c) => c.spec.axesSpec)).filter(
-    (axis) => !sheetAxisKeys.has(axisKey(getAxisId(axis))) && !isAxisHidden(axis),
-  );
+  const labeledAxes = columns
+    .filter((c) => isLabelColumn(c.spec))
+    .flatMap((c) => c.spec.axesSpec.map(getAxisId));
+  const shownAxes = uniqueAxes(columns.flatMap((c) => c.spec.axesSpec)).filter((axis) => {
+    const id = getAxisId(axis);
+    return (
+      !sheetAxisKeys.has(axisKey(id)) &&
+      !isAxisHidden(axis) &&
+      !labeledAxes.some((labeled) => matchAxisId(labeled, id))
+    );
+  });
   const shownColumns = columns.filter((c) => c.visibility !== "hidden" && !isLinkerColumn(c.spec));
 
   const hidden = new Set(
