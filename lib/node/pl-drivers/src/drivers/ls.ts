@@ -146,6 +146,9 @@ export class LsDriver implements InternalLsDriver {
     validateAbsolute(localPath);
 
     const stat = await fsp.stat(localPath, { bigint: true });
+    // A dropped folder reaches here as a path too; without this check the import
+    // starts and fails later with an unclear error.
+    if (!stat.isFile()) throw new Error(`Not a file, cannot be imported: ${localPath}`);
     return createUploadImportHandle(
       localPath,
       this.signer,
@@ -208,12 +211,16 @@ export class LsDriver implements InternalLsDriver {
       // and the later works differently on different versions.
       const absolutePath = path.join(lsRoot, dirent.name);
 
-      entries.push({
-        type: dirent.isFile() ? "file" : "dir",
-        name: dirent.name,
-        fullPath: absolutePath,
-        handle: await this.getLocalFileHandle(absolutePath),
-      });
+      entries.push(
+        dirent.isFile()
+          ? {
+              type: "file",
+              name: dirent.name,
+              fullPath: absolutePath,
+              handle: await this.getLocalFileHandle(absolutePath),
+            }
+          : { type: "dir", name: dirent.name, fullPath: absolutePath },
+      );
     }
 
     return { entries };
