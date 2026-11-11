@@ -94,14 +94,39 @@ export function readPlDataTableUserParams(
   };
 }
 
-/** One filter per sheet, selecting the value picked on it. */
+/**
+ * One filter per sheet, selecting the values picked on it. A sheet that takes
+ * all its values filters nothing.
+ */
 export function createSheetFilters(sheetsState: PlDataTableSheetState[]): PlDataTableFilterNode[] {
-  return sheetsState.map((sheet) => {
+  return sheetsState.flatMap((sheet): PlDataTableFilterNode[] => {
     const column: PTableColumnId = { type: "axis", id: sheet.axisId };
-    return typeof sheet.value === "number"
-      ? { type: "equal", column, x: sheet.value }
-      : { type: "patternEquals", column, value: sheet.value };
+    if ("value" in sheet) return [sheetValueFilter(column, sheet.value)];
+    if ("allValues" in sheet) return [];
+    return [sheetValuesFilter(column, sheet.values)];
   });
+}
+
+/**
+ * Whether the sheet shows a single value. Every row then holds the same value
+ * of the sheet's axis, so the axis is neither shown nor searched.
+ */
+export function isSheetFixedToOneValue(sheet: PlDataTableSheetState): boolean {
+  return "value" in sheet || ("values" in sheet && sheet.values.length === 1);
+}
+
+/**
+ * The sorting the table is built with: the block's fixed sorting first, then the
+ * rest, which is the user's sorting or the block's default while the user has
+ * not sorted. Entries of the rest on a column the fixed sorting already orders
+ * by are left out.
+ */
+export function joinSorting(fixed: PTableSorting[], rest: PTableSorting[]): PTableSorting[] {
+  const fixedColumns = new Set(fixed.map((s) => canonicalizeJson<PTableColumnId>(s.column)));
+  return [
+    ...fixed,
+    ...rest.filter((s) => !fixedColumns.has(canonicalizeJson<PTableColumnId>(s.column))),
+  ];
 }
 
 /**
@@ -115,6 +140,7 @@ export function createSheetFilters(sheetsState: PlDataTableSheetState[]): PlData
 export function collectSearchColumns(params: {
   columns: PlDataTableSearchCandidate[];
   isAxisHidden: (axis: AxisSpec) => boolean;
+  /** Axes a sheet fixes to one value */
   sheetAxes: AxisId[];
   hiddenColIds: null | PTableColumnId[];
 }): PlDataTableSearchColumn[] {
@@ -193,6 +219,29 @@ export function joinFilters(
 export type PlDataTableFilterNode = FilterSpecNode<PlDataTableFilterSpecLeaf>;
 
 // Internals
+
+function sheetValueFilter(column: PTableColumnId, value: string | number): PlDataTableFilterNode {
+  return typeof value === "number"
+    ? { type: "equal", column, x: value }
+    : { type: "patternEquals", column, value };
+}
+
+function sheetValuesFilter(
+  column: PTableColumnId,
+  values: (string | number)[],
+): PlDataTableFilterNode {
+  const texts = values.filter((v): v is string => typeof v === "string");
+  const parts: PlDataTableFilterNode[] = [
+    ...(texts.length > 0 ? [{ type: "inSet" as const, column, value: texts }] : []),
+    ...values.flatMap((v): PlDataTableFilterNode[] =>
+      typeof v === "number" ? [{ type: "equal", column, x: v }] : [],
+    ),
+  ];
+  const [first, ...rest] = parts;
+  // No value picked: the sheet shows no rows.
+  if (first === undefined) return { type: "inSet", column, value: [] };
+  return rest.length === 0 ? first : { type: "or", filters: parts };
+}
 
 function findEntry(
   state: PlDataTableStateV2Normalized,

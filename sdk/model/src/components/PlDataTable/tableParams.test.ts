@@ -11,7 +11,9 @@ import {
   collectSearchColumns,
   createSearchFilter,
   createSheetFilters,
+  isSheetFixedToOneValue,
   joinFilters,
+  joinSorting,
   readPlDataTableUserParams,
   type PlDataTableFilterNode,
   type PlDataTableSearchCandidate,
@@ -123,6 +125,64 @@ describe("createSheetFilters", () => {
     ).toEqual([
       { type: "patternEquals", column: { type: "axis", id: sampleAxis }, value: "s1" },
       { type: "equal", column: { type: "axis", id: roundAxis }, x: 3 },
+    ]);
+  });
+
+  test("selects the values picked on a sheet showing several", () => {
+    const column: PTableColumnId = { type: "axis", id: getAxisId(axis("sample")) };
+    expect(createSheetFilters([{ axisId: column.id, values: ["s1", "s2", 3] }])).toEqual([
+      {
+        type: "or",
+        filters: [
+          { type: "inSet", column, value: ["s1", "s2"] },
+          { type: "equal", column, x: 3 },
+        ],
+      },
+    ]);
+    expect(createSheetFilters([{ axisId: column.id, values: ["s1"] }])).toEqual([
+      { type: "inSet", column, value: ["s1"] },
+    ]);
+  });
+
+  test("filters nothing for a sheet taking all values, and every row out when none is picked", () => {
+    const column: PTableColumnId = { type: "axis", id: getAxisId(axis("sample")) };
+    expect(createSheetFilters([{ axisId: column.id, allValues: true }])).toEqual([]);
+    expect(createSheetFilters([{ axisId: column.id, values: [] }])).toEqual([
+      { type: "inSet", column, value: [] },
+    ]);
+  });
+});
+
+describe("isSheetFixedToOneValue", () => {
+  const axisId = getAxisId(axis("sample"));
+
+  test("holds for a single value, also picked on a sheet showing several", () => {
+    expect(isSheetFixedToOneValue({ axisId, value: "s1" })).toBe(true);
+    expect(isSheetFixedToOneValue({ axisId, values: ["s1"] })).toBe(true);
+  });
+
+  test("does not hold for several values or all of them", () => {
+    expect(isSheetFixedToOneValue({ axisId, values: ["s1", "s2"] })).toBe(false);
+    expect(isSheetFixedToOneValue({ axisId, allValues: true })).toBe(false);
+  });
+});
+
+describe("joinSorting", () => {
+  const sample: PTableColumnId = { type: "axis", id: getAxisId(axis("sample")) };
+  const count: PTableColumnId = { type: "column", id: col("count") };
+
+  test("puts the fixed sorting first and drops the rest's entries on its columns", () => {
+    expect(
+      joinSorting(
+        [{ column: sample, ascending: true, naAndAbsentAreLeastValues: true }],
+        [
+          { column: count, ascending: false, naAndAbsentAreLeastValues: false },
+          { column: sample, ascending: false, naAndAbsentAreLeastValues: false },
+        ],
+      ),
+    ).toEqual([
+      { column: sample, ascending: true, naAndAbsentAreLeastValues: true },
+      { column: count, ascending: false, naAndAbsentAreLeastValues: false },
     ]);
   });
 });

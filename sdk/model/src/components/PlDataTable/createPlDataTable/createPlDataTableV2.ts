@@ -35,6 +35,7 @@ import {
   collectSearchColumns,
   createSearchFilter,
   createSheetFilters,
+  isSheetFixedToOneValue,
   joinFilters,
   readPlDataTableUserParams,
 } from "../tableParams";
@@ -104,7 +105,7 @@ export function createPlDataTableV2<A, U>(
             : "default",
       })),
       isAxisHidden: (axis) => isColumnHidden(axis),
-      sheetAxes: params.sheetsState.map((sheet) => sheet.axisId),
+      sheetAxes: params.sheetsState.filter(isSheetFixedToOneValue).map((sheet) => sheet.axisId),
       hiddenColIds: params.hiddenColIds,
     }),
   );

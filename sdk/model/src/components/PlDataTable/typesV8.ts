@@ -47,14 +47,35 @@ export type PlDataTableSheet = {
   options: ListOptionBase<string | number>[];
   /** default (selected) value */
   defaultValue?: string | number;
+  /** Whether the user picks one value of the axis at a time, or any number of them */
+  selection: "single" | "multiple";
 };
 
-export type PlDataTableSheetState = {
-  /** id of the axis */
-  axisId: AxisId;
-  /** selected value */
-  value: string | number;
-};
+/**
+ * The values picked on a sheet. A sheet with `selection: "single"` stores one
+ * `value`; a sheet with `selection: "multiple"` stores the picked `values`, or
+ * `allValues` to take every value the sheet offers, including ones that appear
+ * later.
+ */
+export type PlDataTableSheetState =
+  | {
+      /** id of the axis */
+      axisId: AxisId;
+      /** selected value */
+      value: string | number;
+    }
+  | {
+      /** id of the axis */
+      axisId: AxisId;
+      /** selected values */
+      values: (string | number)[];
+    }
+  | {
+      /** id of the axis */
+      axisId: AxisId;
+      /** every value of the sheet, including ones that appear later */
+      allValues: true;
+    };
 
 /** Tree-based filter state compatible with PlAdvancedFilter's RootFilter */
 export type PlDataTableFilterMeta = {

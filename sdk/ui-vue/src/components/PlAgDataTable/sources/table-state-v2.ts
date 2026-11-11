@@ -65,9 +65,13 @@ export function reduceTableState(
 }
 
 /**
- * The value shown on each sheet: the saved one while the sheet still offers it,
- * otherwise the sheet's default, otherwise its first option. Sheets without
- * options are not shown and get no entry.
+ * The values shown on each sheet. A sheet showing one value keeps the saved one
+ * while the sheet still offers it; a sheet showing several keeps taking all its
+ * values, or the saved values it still offers. When nothing saved is left, the sheet shows its
+ * default, otherwise its first option. A saved state of the other kind, from
+ * before the sheet changed how many values it shows, gives what it can: its
+ * value, or its first value still offered. Sheets without options are not shown
+ * and get no entry.
  */
 export function resolveSheetsState(
   sheets: PlDataTableSheet[],
@@ -75,16 +79,23 @@ export function resolveSheetsState(
 ): PlDataTableSheetState[] {
   return sheets
     .filter((sheet) => sheet.options.length > 0)
-    .map((sheet) => {
+    .map((sheet): PlDataTableSheetState => {
       const axisId = getAxisId(sheet.axis);
-      const savedValue = saved.find((s) => isJsonEqual(s.axisId, axisId))?.value;
-      const value =
-        !isNil(savedValue) && isSheetOption(sheet, savedValue)
-          ? savedValue
-          : !isNil(sheet.defaultValue) && isSheetOption(sheet, sheet.defaultValue)
-            ? sheet.defaultValue
-            : sheet.options[0].value;
-      return { axisId, value };
+      const savedState = saved.find((s) => isJsonEqual(s.axisId, axisId));
+      if (sheet.selection === "multiple" && !isNil(savedState) && "allValues" in savedState) {
+        return { axisId, allValues: true };
+      }
+      const savedValues =
+        isNil(savedState) || "allValues" in savedState
+          ? []
+          : "value" in savedState
+            ? [savedState.value]
+            : savedState.values;
+      const offered = savedValues.filter((value) => isSheetOption(sheet, value));
+      if (sheet.selection === "multiple") {
+        return { axisId, values: offered.length > 0 ? offered : [defaultSheetValue(sheet)] };
+      }
+      return { axisId, value: offered[0] ?? defaultSheetValue(sheet) };
     });
 }
 
@@ -270,6 +281,12 @@ function createEntry(sourceId: string): PlDataTableStateV2CacheEntry {
 
 function isSheetOption(sheet: PlDataTableSheet, value: string | number): boolean {
   return sheet.options.some((option) => option.value === value);
+}
+
+function defaultSheetValue(sheet: PlDataTableSheet): string | number {
+  return !isNil(sheet.defaultValue) && isSheetOption(sheet, sheet.defaultValue)
+    ? sheet.defaultValue
+    : sheet.options[0].value;
 }
 
 /**
