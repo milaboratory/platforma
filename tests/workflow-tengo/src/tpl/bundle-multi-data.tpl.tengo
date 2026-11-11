@@ -1,0 +1,13 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+self.defineOutputs(["first", "second"])
+
+self.awaitState("columns", "PColumnBundle")
+
+self.body(func(inputs) {
+	cols := inputs.columns.getColumns("multi")
+	return {
+		first: cols[0].data,
+		second: cols[1].data
+	}
+})

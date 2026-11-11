@@ -178,7 +178,13 @@ _create := func(family, spec, ctx, options) {
 
 	// pass data only if needed, otherwise we are not waiting for data to complete
 	if ops.data {
-		rb.createInputField("data").set(resolve.getFutureOutputField("data"))
+		data := resolve.getFutureOutputField("data")
+		rb.createInputField("data").set(data)
+		// the data map of a multi-hit result links after its spec map; PColumnBundle awaits this
+		// field, and the decoder reads the map from it
+		if !ops.first {
+			rb.createInputField("multiData").set(data)
+		}
 	}
 
 	// the data structure differs in this case; the single ref, data and spec are stored
@@ -274,9 +280,12 @@ resultUnmarshaller := func() {
 				// format list of results
 
 				specs := resource.get("spec").inputs() // map of specs
-				datas := undefined
-				if resource.hasInputField("data") {
-					datas = resource.get("data") // map of datas
+				datas := undefined // map of datas
+				if resource.hasInputField("multiData") {
+					// the field PColumnBundle awaits; `data` may not be set yet
+					datas = resource.get("multiData")
+				} else if resource.hasInputField("data") {
+					datas = resource.get("data")
 				}
 
 				result := []

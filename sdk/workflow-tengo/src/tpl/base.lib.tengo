@@ -92,7 +92,8 @@ AWAIT_TEMPLATES := {
 	],
 	"PColumnBundle": [
 		[{ wildcard: "*" }, { match: "^ref$" }, "ResourceReady"], // optional ref field
-		[{ wildcard: "*" }, "spec", "ResourceReady"]
+		[{ wildcard: "*" }, "spec", "ResourceReady"],
+		[{ wildcard: "*" }, { match: "^multiData$" }, "Set"] // data map of a multi-hit result
 	],
 	"PColumnBundleWithPartitions": [
 		[{ wildcard: "*" }, { match: "^ref$" }, "ResourceReady"], // optional ref field
