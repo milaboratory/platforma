@@ -122,6 +122,32 @@ describe("foldBlockStatusTree", () => {
     expect(tree.root).toMatchObject({ ended: true, failure: "OOM killed" });
   });
 
+  it("ends every node a cancelled run left unfinished, and keeps finished ones as they were", () => {
+    const tree = foldBlockStatusTree(
+      context({
+        id: "root",
+        transitions: [
+          { namespace: "render", atMs: ms(0), state: "Running" },
+          {
+            namespace: "core",
+            reporter: "root",
+            atMs: ms(90_000),
+            state: "Terminated",
+            reason: "cancelled",
+          },
+        ],
+        children: [sample("done", 1_000, 5_000), sample("busy", 10_000)],
+      }),
+      none,
+    );
+
+    const [done, busy] = tree.root?.children ?? [];
+    expect(done).toMatchObject({ ended: true, failure: undefined });
+    expect(busy).toMatchObject({ ended: true, failure: "cancelled", onMachine: false });
+    expect(busy?.state).toBeUndefined();
+    expect(tree.root?.subtreeActiveContexts).toBe(0);
+  });
+
   it("counts compute per subtree, a running command up to the run's latest report", () => {
     const tree = foldBlockStatusTree(
       context({
