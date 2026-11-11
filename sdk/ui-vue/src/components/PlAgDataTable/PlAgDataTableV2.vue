@@ -32,7 +32,7 @@ import { DeferredCircular, ensureNodeVisible } from "./sources/focus-row";
 import { PlAgDataTableRowNumberColId } from "./sources/row-number";
 import type { PlAgCellButtonAxisParams } from "./sources/table-source-v2";
 import { calculateGridOptions, effectiveVisibility } from "./sources/table-source-v2";
-import { isStoredStateApplied, readGridReport } from "./sources/grid-state";
+import { createGridRestoreState, isStoredStateApplied, readGridReport } from "./sources/grid-state";
 import { useTableState } from "./sources/table-state-v2";
 import type {
   PlAgDataTableV2Controller,
@@ -132,7 +132,7 @@ let isReloading = false;
 const boundSourceId = shallowRef<null | string>(null);
 gridOptions.value.onGridPreDestroyed = (event) => {
   if (!isReloading) saveGridState(event.api, makePartialState(event.api.getState()));
-  gridOptions.value.initialState = gridState.value;
+  gridOptions.value.initialState = restoreState.value;
   gridApi.value = null;
 };
 gridOptions.value.onRowDoubleClicked = (event) => {
@@ -142,7 +142,7 @@ gridOptions.value.onStateUpdated = (event) => {
   saveGridState(event.api, makePartialState(event.state));
   // Keep initialState in step with the stored grid state, so the grid recreated
   // by the reload watch below comes back with it.
-  gridOptions.value.initialState = gridState.value;
+  gridOptions.value.initialState = restoreState.value;
 
   if (!isJsonEqual(event.sources, ["columnSizing"])) {
     event.api.autoSizeColumns(
@@ -163,6 +163,7 @@ const defaultFilters = computed(() =>
 const {
   sourceId: shownSourceId,
   gridState,
+  sorting,
   hiddenColIds,
   getEntry,
   updateGrid,
@@ -173,7 +174,14 @@ const {
   resetDefaultFilters,
 } = useTableState(tableState, settings, defaultFilters);
 const sheets = computed(() => (settings.value.sourceId !== null ? settings.value.sheets : []));
-gridOptions.value.initialState = gridState.value;
+const restoreState = computed(() =>
+  createGridRestoreState({
+    gridState: gridState.value,
+    sorting: sorting.value,
+    hiddenColIds: hiddenColIds.value,
+  }),
+);
+gridOptions.value.initialState = restoreState.value;
 
 /**
  * Store what the grid reports under the source its columns belong to: while
@@ -248,16 +256,19 @@ function getDefaultHiddenColIds(
 // columns of a source whose stored state it does not show yet
 const reloadKey = ref(0);
 watch(
-  () => [gridApi.value, gridState.value, boundSourceId.value] as const,
-  ([gridApi, gridState, boundSourceId]) => {
+  () => [gridApi.value, restoreState.value, boundSourceId.value] as const,
+  ([gridApi, restoreState, boundSourceId]) => {
     if (!gridApi || gridApi.isDestroyed() || boundSourceId !== shownSourceId.value) return;
     const selfState = makePartialState(gridApi.getState());
     const gridColIds = new Set(
       (gridApi.getAllGridColumns() ?? []).map((column) => column.getColId() as PlTableColumnIdJson),
     );
-    if (!isJsonEqual(gridState, {}) && !isStoredStateApplied(gridState, selfState, gridColIds)) {
+    if (
+      !isJsonEqual(restoreState, {}) &&
+      !isStoredStateApplied(restoreState, selfState, gridColIds)
+    ) {
       isReloading = true;
-      gridOptions.value.initialState = gridState;
+      gridOptions.value.initialState = restoreState;
       ++reloadKey.value;
       nextTick(() => {
         isReloading = false;

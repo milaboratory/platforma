@@ -14,6 +14,7 @@ import {
   type PlDataTableFilters,
   type PlDataTableFiltersWithMeta,
   type PTableColumnId,
+  type PTableSorting,
 } from "@platforma-sdk/model";
 import {
   computed,
@@ -96,6 +97,8 @@ export function useTableState(
   sourceId: ComputedRef<null | string>;
   /** The grid's own state for the source on screen, to restore the grid from */
   gridState: ComputedRef<PlDataTableGridStateCore>;
+  /** Sorting the user set on the source on screen; `null` while untouched */
+  sorting: ComputedRef<null | PTableSorting[]>;
   /** Columns the user hid on the source on screen; `null` while untouched */
   hiddenColIds: ComputedRef<null | PTableColumnId[]>;
   getEntry: (sourceId: string) => undefined | PlDataTableStateV2CacheEntry;
@@ -157,6 +160,7 @@ export function useTableState(
   }
 
   const gridState = computed<PlDataTableGridStateCore>(() => entry.value?.gridState ?? {});
+  const sorting = computed(() => entry.value?.sorting ?? null);
   const hiddenColIds = computed(() => entry.value?.hiddenColIds ?? null);
 
   const sheetsState = computed<PlDataTableSheetState[]>({
@@ -198,6 +202,7 @@ export function useTableState(
   return {
     sourceId,
     gridState,
+    sorting,
     hiddenColIds,
     getEntry: (id) => findEntry(state.value, id),
     updateGrid: (id, grid) => edit({ sourceId: id, patch: grid }),

@@ -1,5 +1,6 @@
 import { isJsonEqual } from "@milaboratories/helpers";
 import {
+  canonicalizeJson,
   parseJson,
   type PlDataTableGridStateCore,
   type PlDataTableStateV2CacheEntry,
@@ -50,6 +51,28 @@ export function readGridReport(
     const defaults = defaultHiddenColIds();
     return defaults.length > 0 ? defaults.map((id) => parseJson<PTableColumnId>(id)) : null;
   }
+}
+
+/**
+ * The state to restore the grid from: the stored report, with the user's
+ * choices that a report leaves out spelled out. AG Grid omits a cleared sorting
+ * and an all-shown column set from its reports; without them, a grid still
+ * showing an older choice, such as one open in another view, would keep it and
+ * report it back.
+ */
+export function createGridRestoreState(fields: PlDataTableGridFields): PlDataTableGridStateCore {
+  const { gridState, sorting, hiddenColIds } = fields;
+  return {
+    ...gridState,
+    ...(isNil(gridState.sort) &&
+      !isNil(sorting) && { sort: { sortModel: sorting.map(convertPTableSortingToAgSortItem) } }),
+    ...(isNil(gridState.columnVisibility) &&
+      !isNil(hiddenColIds) && {
+        columnVisibility: {
+          hiddenColIds: hiddenColIds.map((id) => canonicalizeJson<PTableColumnId>(id)),
+        },
+      }),
+  };
 }
 
 /** AG Grid's sort model as table sorting; the least values are the NA ones when ascending. */
@@ -169,4 +192,13 @@ function keepColumnsInGrid<T>(
 /** Hidden columns are a set; put them in one order so either side compares alike. */
 function sortIds(ids: PlTableColumnIdJson[]): PlTableColumnIdJson[] {
   return [...ids].sort();
+}
+
+function convertPTableSortingToAgSortItem(
+  sorting: PTableSorting,
+): NonNullable<PlDataTableGridStateCore["sort"]>["sortModel"][number] {
+  return {
+    colId: canonicalizeJson<PTableColumnId>(sorting.column),
+    sort: sorting.ascending ? "asc" : "desc",
+  };
 }

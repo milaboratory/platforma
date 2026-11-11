@@ -6,6 +6,7 @@ import type {
 } from "@platforma-sdk/model";
 import {
   convertAgSortingToPTableSorting,
+  createGridRestoreState,
   isStoredStateApplied,
   readGridReport,
 } from "./grid-state";
@@ -137,6 +138,36 @@ describe("readGridReport", () => {
       sorting: [{ column: a, ascending: false, naAndAbsentAreLeastValues: false }],
       hiddenColIds: [a],
     });
+  });
+});
+
+describe("createGridRestoreState", () => {
+  const a = { type: "column", id: "a" as ColumnUniversalId } as const;
+
+  it("spells out the sorting and hidden columns the report leaves out", () => {
+    expect(
+      createGridRestoreState({ gridState: order(colA), sorting: [], hiddenColIds: [] }),
+    ).toEqual({ ...order(colA), sort: { sortModel: [] }, columnVisibility: { hiddenColIds: [] } });
+    expect(
+      createGridRestoreState({
+        gridState: {},
+        sorting: [{ column: a, ascending: false, naAndAbsentAreLeastValues: false }],
+        hiddenColIds: [a],
+      }),
+    ).toEqual({ ...hidden(colA), sort: { sortModel: [{ colId: colA, sort: "desc" }] } });
+  });
+
+  it("keeps the report's own parts and adds nothing for untouched settings", () => {
+    const reported = { ...order(colA), ...sorted(colB) };
+    const sorting = [{ column: a, ascending: true, naAndAbsentAreLeastValues: true }];
+    expect(createGridRestoreState({ gridState: reported, sorting, hiddenColIds: null })).toEqual(
+      reported,
+    );
+  });
+
+  it("makes a grid still sorted elsewhere drop the sorting the user cleared", () => {
+    const restore = createGridRestoreState({ gridState: {}, sorting: [], hiddenColIds: null });
+    expect(isStoredStateApplied(restore, sorted(colA), grid)).toBe(false);
   });
 });
 
