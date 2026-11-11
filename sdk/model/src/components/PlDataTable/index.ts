@@ -25,8 +25,6 @@ export {
   createPlDataTableStateV2,
 } from "./state-migration";
 
-export { readPlDataTableSheetsState } from "./tableParams";
-
 export { createPlDataTableSheet } from "./createPlDataTableSheet";
 export { createPlDataTable, discoverTableColumnSnaphots } from "./createPlDataTable";
 export { createPlDataTableV2 } from "./createPlDataTable/createPlDataTableV2";

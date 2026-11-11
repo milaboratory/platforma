@@ -74,20 +74,7 @@ export type createPlDataTableOptionsV3 = (
 ) & {
   tableState?: PlDataTableStateV2;
 
-  /** Default filters: shown to the user, who can edit or suppress them. */
   filters?: PlDataTableFilters;
-  /**
-   * Filters applied on every render on top of everything the user set. They are
-   * not stored, not shown and cannot be removed by the user, so they follow the
-   * block value they are built from.
-   */
-  fixedFilters?: PlDataTableFilters;
-  /**
-   * Build the table without the user's sheet selection, keeping the rest of the
-   * user's settings. For a second table over the same state that replaces the
-   * sheet with its own filter, such as an export of several sheet values at once.
-   */
-  ignoreSheets?: boolean;
   sorting?: PTableSorting[];
   primaryJoinType?: "inner" | "full";
 
@@ -191,11 +178,10 @@ export function createPlDataTableV3<A, U>(
   const remapedDefaultFilters = remapFilterColumnIds(options.filters, resolver);
   const filters = filterFilters(
     joinFilters([
-      ...(options.ignoreSheets === true ? [] : createSheetFilters(params.sheetsState)),
+      ...createSheetFilters(params.sheetsState),
       params.userFilters,
       searchFilter,
       params.defaultFilters ?? remapedDefaultFilters,
-      remapFilterColumnIds(options.fixedFilters, resolver),
     ]),
     resolver,
   );

@@ -12,7 +12,6 @@ import {
   createSearchFilter,
   createSheetFilters,
   joinFilters,
-  readPlDataTableSheetsState,
   readPlDataTableUserParams,
   type PlDataTableFilterNode,
   type PlDataTableSearchCandidate,
@@ -76,21 +75,6 @@ describe("readPlDataTableUserParams", () => {
     );
     expect(params.sorting).toEqual(sorting);
     expect(params.hiddenColIds).toEqual([column]);
-  });
-});
-
-describe("readPlDataTableSheetsState", () => {
-  test("returns the sheet values of the pointed-at source", () => {
-    const sheetsState = [{ axisId: getAxisId(axis("sample")), value: "s2" }];
-    expect(
-      readPlDataTableSheetsState(
-        state("A", [entry("A", { sheetsState }), entry("B", { sheetsState: [] })]),
-      ),
-    ).toEqual(sheetsState);
-  });
-
-  test("returns nothing for a table that has never been shown", () => {
-    expect(readPlDataTableSheetsState(undefined)).toEqual([]);
   });
 });
 

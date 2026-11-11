@@ -16,7 +16,6 @@ import {
 } from "@milaboratories/pl-model-common";
 import { isNil } from "es-toolkit";
 import { distillFilterSpec } from "../../filters";
-import { upgradePlDataTableStateV2, type PlDataTableStateV2 } from "./state-migration";
 import type {
   PlDataTableFilters,
   PlDataTableFiltersWithMeta,
@@ -91,14 +90,6 @@ export function readPlDataTableUserParams(
     sorting: entry.sorting,
     hiddenColIds: entry.hiddenColIds,
   };
-}
-
-/** The sheet values picked for the source the stored state points at. */
-export function readPlDataTableSheetsState(
-  tableState: undefined | PlDataTableStateV2,
-): PlDataTableSheetState[] {
-  const state = upgradePlDataTableStateV2(tableState);
-  return findEntry(state, state.pTableParams.sourceId)?.sheetsState ?? [];
 }
 
 /** One filter per sheet, selecting the value picked on it. */
