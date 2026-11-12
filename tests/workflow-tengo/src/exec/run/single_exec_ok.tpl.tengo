@@ -1,11 +1,12 @@
 /**
- * one exec that succeeds. Used as the expensive upstream step in
- * the case where an intermediate template, not the command, is what fails.
+ * one exec that succeeds and returns the current time in nanoseconds. Used as the
+ * upstream step in the case where an intermediate template, not the command, is what
+ * fails. Its only input is the test's `seed`, so its CID is stable across renders
+ * with the same seed.
  */
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 exec := import("@platforma-sdk/workflow-tengo:exec")
-fmt := import("fmt")
 
 self.defineOutputs(["main"])
 
@@ -17,7 +18,9 @@ self.body(func(inputs) {
 		cmd("/usr/bin/env").
 		arg("bash").
 		arg("-c").
-		arg(fmt.sprintf("echo %q > out.txt", inputs.payload)).
+		arg("date +%s%N > out.txt").
+		arg("okstage").
+		arg(inputs.seed).
 		saveFileContent("out.txt").
 		run()
 

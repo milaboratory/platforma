@@ -1,9 +1,12 @@
 /**
  * two chained execs where the second one fails.
  *
- * Stage 1 is the expensive step that succeeds; stage 2 consumes its file and exits
- * non-zero. Both commands are deterministic, so stage 1's CID is stable across
- * renders and a surviving result can be recovered instead of recomputed.
+ * Stage 1 writes the current time in nanoseconds to a file. Its only input is the
+ * test's `seed`, so its CID is stable across renders with the same seed: a retry that
+ * recovers it gets the same timestamp back, a retry that re-runs it gets a new one.
+ *
+ * Stage 2 prints that timestamp to stderr and exits 42. stderr is part of the error
+ * message, which is how the test reads the timestamp.
  *
  * Stage 1's result is deliberately NOT exposed as a template output. An output field
  * would hold it from GC on its own and the test would pass without the feature under
@@ -12,7 +15,6 @@
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 exec := import("@platforma-sdk/workflow-tengo:exec")
-fmt := import("fmt")
 
 self.defineOutputs(["main"])
 
@@ -24,7 +26,9 @@ self.body(func(inputs) {
 		cmd("/usr/bin/env").
 		arg("bash").
 		arg("-c").
-		arg(fmt.sprintf("echo %q > mid.txt", inputs.payload)).
+		arg("date +%s%N > mid.txt").
+		arg("stage1").
+		arg(inputs.seed).
 		saveFile("mid.txt").
 		run()
 
@@ -35,7 +39,7 @@ self.body(func(inputs) {
 		cmd("/usr/bin/env").
 		arg("bash").
 		arg("-c").
-		arg("cat mid.txt >&2; echo 'stage2 died on purpose' >&2; exit 42").
+		arg("echo \"stage1-time=$(cat mid.txt)\" >&2; echo 'stage2 died on purpose' >&2; exit 42").
 		addFile("mid.txt", stage1.getFile("mid.txt")).
 		saveStdoutContent().
 		run()

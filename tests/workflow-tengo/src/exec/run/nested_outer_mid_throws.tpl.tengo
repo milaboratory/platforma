@@ -16,7 +16,7 @@ self.defineOutputs(["main"])
 
 self.body(func(inputs) {
 	execRun := render.create(execTpl, {
-		payload: inputs.payload
+		seed: inputs.seed
 	})
 
 	thrower := render.create(throwerTpl, {

@@ -13,7 +13,7 @@ self.defineOutputs(["main"])
 
 self.body(func(inputs) {
 	run := render.create(midTpl, {
-		payload: inputs.payload
+		seed: inputs.seed
 	})
 
 	return {
