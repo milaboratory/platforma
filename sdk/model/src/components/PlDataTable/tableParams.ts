@@ -96,14 +96,16 @@ export function readPlDataTableUserParams(
 
 /**
  * One filter per sheet, selecting the values picked on it. A sheet that takes
- * all its values filters nothing.
+ * all its values filters nothing, and so does one with no value picked: that
+ * choice is unfinished, and the UI never saves it but falls back to the
+ * sheet's default.
  */
 export function createSheetFilters(sheetsState: PlDataTableSheetState[]): PlDataTableFilterNode[] {
   return sheetsState.flatMap((sheet): PlDataTableFilterNode[] => {
     const column: PTableColumnId = { type: "axis", id: sheet.axisId };
     if ("value" in sheet) return [sheetValueFilter(column, sheet.value)];
     if ("allValues" in sheet) return [];
-    return [sheetValuesFilter(column, sheet.values)];
+    return sheetValuesFilter(column, sheet.values);
   });
 }
 
@@ -133,9 +135,10 @@ export function joinSorting(fixed: PTableSorting[], rest: PTableSorting[]): PTab
  * The columns the fast search looks into: the visible ones, and the visible axes
  * except those a sheet fixes to a single value, where every row would match, and
  * those the table shows through their label column, whose raw values are never
- * on screen. Hidden are columns the block's rules hide, linker columns, and the
- * columns in the user's hidden list, or, while the user has not touched it, the
- * optional ones.
+ * on screen. The label column of an axis a sheet fixes to a single value is not
+ * shown either, for the same reason as the axis. Hidden are columns the block's
+ * rules hide, linker columns, and the columns in the user's hidden list, or,
+ * while the user has not touched it, the optional ones.
  */
 export function collectSearchColumns(params: {
   columns: PlDataTableSearchCandidate[];
@@ -157,7 +160,15 @@ export function collectSearchColumns(params: {
       !labeledAxes.some((labeled) => matchAxisId(labeled, id))
     );
   });
-  const shownColumns = columns.filter((c) => c.visibility !== "hidden" && !isLinkerColumn(c.spec));
+  const shownColumns = columns.filter(
+    (c) =>
+      c.visibility !== "hidden" &&
+      !isLinkerColumn(c.spec) &&
+      !(
+        isLabelColumn(c.spec) &&
+        c.spec.axesSpec.some((axis) => sheetAxisKeys.has(axisKey(getAxisId(axis))))
+      ),
+  );
 
   const hidden = new Set(
     (
@@ -229,7 +240,7 @@ function sheetValueFilter(column: PTableColumnId, value: string | number): PlDat
 function sheetValuesFilter(
   column: PTableColumnId,
   values: (string | number)[],
-): PlDataTableFilterNode {
+): PlDataTableFilterNode[] {
   const texts = values.filter((v): v is string => typeof v === "string");
   const parts: PlDataTableFilterNode[] = [
     ...(texts.length > 0 ? [{ type: "inSet" as const, column, value: texts }] : []),
@@ -237,10 +248,7 @@ function sheetValuesFilter(
       typeof v === "number" ? [{ type: "equal", column, x: v }] : [],
     ),
   ];
-  const [first, ...rest] = parts;
-  // No value picked: the sheet shows no rows.
-  if (first === undefined) return { type: "inSet", column, value: [] };
-  return rest.length === 0 ? first : { type: "or", filters: parts };
+  return parts.length > 1 ? [{ type: "or", filters: parts }] : parts;
 }
 
 function findEntry(

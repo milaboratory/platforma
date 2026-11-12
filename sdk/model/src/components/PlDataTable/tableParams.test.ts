@@ -144,12 +144,10 @@ describe("createSheetFilters", () => {
     ]);
   });
 
-  test("filters nothing for a sheet taking all values, and every row out when none is picked", () => {
+  test("filters nothing for a sheet taking all values or with none picked", () => {
     const column: PTableColumnId = { type: "axis", id: getAxisId(axis("sample")) };
     expect(createSheetFilters([{ axisId: column.id, allValues: true }])).toEqual([]);
-    expect(createSheetFilters([{ axisId: column.id, values: [] }])).toEqual([
-      { type: "inSet", column, value: [] },
-    ]);
+    expect(createSheetFilters([{ axisId: column.id, values: [] }])).toEqual([]);
   });
 });
 
@@ -220,6 +218,19 @@ describe("collectSearchColumns", () => {
     expect(found).toContainEqual({ type: "axis", id: getAxisId(sample) });
     expect(found).toContainEqual({ type: "column", id: col("label") });
     expect(found).not.toContainEqual({ type: "axis", id: getAxisId(clone) });
+  });
+
+  test("skips the label column of an axis a sheet fixes to one value", () => {
+    const found = collectSearchColumns({
+      columns,
+      isAxisHidden: () => false,
+      sheetAxes: [getAxisId(clone)],
+      hiddenColIds: null,
+    }).map((c) => c.id);
+    expect(found).toEqual([
+      { type: "axis", id: getAxisId(sample) },
+      { type: "column", id: col("count") },
+    ]);
   });
 
   test("follows the user's hidden list instead of the optional defaults", () => {
