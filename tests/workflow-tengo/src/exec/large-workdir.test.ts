@@ -1,5 +1,6 @@
 import { Pl } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
+import { getLongTestTimeout } from "@milaboratories/test-helpers";
 
 /*
  * End-to-end check for the E2BIG failure on large working directories
@@ -36,5 +37,5 @@ tplTest.concurrent(
   // Building 10000 workdir entries means 10000 value resources plus the map
   // that holds them, all in one transaction. That is slow on the backend, so
   // the default 15s test timeout is not enough.
-  300_000,
+  getLongTestTimeout(300_000),
 );

@@ -1,6 +1,7 @@
 import { Pl } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
 import * as env from "../env";
+import { getLongTestTimeout } from "@milaboratories/test-helpers";
 
 /**
  * End-to-end proof that resource formulas (RAM / CPU) are
@@ -58,7 +59,7 @@ async function libraryFileHandle(
   name = FIXTURE_NAME,
 ) {
   const storages = await driverKit.lsDriver.getStorageList();
-  const library = storages.find((s) => s.name === env.libraryStorage);
+  const library = env.findLibraryStorage(storages);
   if (!library) throw new Error(`library storage "${env.libraryStorage}" not found`);
   const files = await driverKit.lsDriver.listFiles(library.handle, "");
   const ourFile = files.entries.find((f) => f.name === name);
@@ -179,7 +180,7 @@ for (const tc of constCases) {
       expect(Number(ramStr)).eq(tc.expectedRam);
       expect(Number(cpuStr)).eq(tc.expectedCpu);
     },
-    60000,
+    getLongTestTimeout(60_000),
   );
 }
 
