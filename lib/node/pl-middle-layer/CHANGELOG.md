@@ -1,5 +1,46 @@
 # @milaboratories/pl-middle-layer
 
+## 2.5.0
+
+### Minor Changes
+
+- 92cf16f: New `ColumnsCollection.discoverRoots`: find the columns the given ones hang off
+
+  `discover` starts from anchors and walks linkers down to what they contain (anchored on `sample`, it reaches `cell`). There was no way to go the other way, from `cell` to the `sample`-level columns above it. `discoverRoots` takes the columns you have and returns the roots they hang off:
+
+  ```ts
+  const found = collection.discoverRoots({
+    leaves: [cellRef],
+    mode: "enrichment",
+    maxHops: 4,
+  });
+  // found: Array<{ root: ColumnRecipe; leaf: ColumnRecipe; path: ColumnRecipe[] }>
+  ```
+
+  Each entry is exactly what `discover({ anchors: { r: root } })` would return for the leaf: `leaf` is the requested column as a discovered column carrying the linker path and qualifications, so the table is built from `root` as the anchor plus `leaf`, the same way as for any discovered column. `discover` is unchanged.
+
+  The engine side is the new `discoverRoots` request of the spec frame (`PFrameSpecDriver.discoverRoots`), from milaboratory/pframes-rs#295.
+
+### Patch Changes
+
+- Updated dependencies [ec020f0]
+- Updated dependencies [e628f46]
+- Updated dependencies [92cf16f]
+  - @platforma-sdk/block-tools@2.19.2
+  - @platforma-sdk/workflow-tengo@6.22.3
+  - @milaboratories/pl-model-common@1.56.0
+  - @milaboratories/pl-model-middle-layer@1.40.0
+  - @milaboratories/pf-spec-driver@1.6.0
+  - @milaboratories/columns-collection-driver@0.3.0
+  - @platforma-sdk/model@1.90.0
+  - @milaboratories/pf-driver@1.9.18
+  - @milaboratories/pl-client@3.22.2
+  - @milaboratories/pl-crash-recorder@0.3.12
+  - @milaboratories/pl-drivers@2.0.2
+  - @milaboratories/pl-model-backend@1.4.47
+  - @milaboratories/pl-errors@1.4.62
+  - @milaboratories/pl-tree@1.18.1
+
 ## 2.4.2
 
 ### Patch Changes

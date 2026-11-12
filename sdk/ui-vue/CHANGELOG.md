@@ -1,5 +1,17 @@
 # @platforma-sdk/ui-vue
 
+## 1.90.0
+
+### Patch Changes
+
+- 7959b69: PlAgDataTableV2: a destroyed grid clears the table's grid api only when it is the grid on screen, so the column manager and export buttons stay after the inner grid is replaced.
+- Updated dependencies [92cf16f]
+  - @milaboratories/pl-model-common@1.56.0
+  - @milaboratories/pf-spec-driver@1.6.0
+  - @milaboratories/columns-collection-driver@0.3.0
+  - @platforma-sdk/model@1.90.0
+  - @milaboratories/uikit@2.17.9
+
 ## 1.89.0
 
 ### Minor Changes

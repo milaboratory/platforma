@@ -1,5 +1,15 @@
 # @platforma-sdk/block-tools
 
+## 2.19.2
+
+### Patch Changes
+
+- ec020f0: `structure refresh` sets `block.meta.changelog` to `file:CHANGELOG.md` and creates a header-only `block/CHANGELOG.md` when the file is missing. Blocks that pointed the field at the repository-root `CHANGELOG.md` showed a changelog that never changed, because changesets writes release notes to `block/CHANGELOG.md`.
+- Updated dependencies [92cf16f]
+  - @milaboratories/pl-model-common@1.56.0
+  - @milaboratories/pl-model-middle-layer@1.40.0
+  - @milaboratories/pl-model-backend@1.4.47
+
 ## 2.19.1
 
 ### Patch Changes
