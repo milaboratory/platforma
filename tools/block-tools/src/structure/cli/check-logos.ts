@@ -9,23 +9,22 @@ export type LogoFinding = { severity: "error" | "warning"; message: string };
 /** Examine the files that `block.meta.logo` and `block.meta.organization.logo`
  *  link to with `file:`. A logo that was read and written again as UTF-8 text
  *  is an error: no image viewer can open it. Any other unusable logo is a
- *  warning. */
-export function checkBlockLogos(blockRoot: string): LogoFinding[] {
-  const facade = ["block", "."]
-    .map((dir) => path.resolve(blockRoot, dir))
-    .map((dir) => ({ dir, meta: blockMeta(path.join(dir, "package.json")) }))
-    .find((candidate) => candidate.meta !== undefined);
-  if (facade === undefined) return [];
-
-  const links: [string, unknown][] = [
-    ["block.meta.logo", property(facade.meta, "logo")],
-    ["block.meta.organization.logo", property(property(facade.meta, "organization"), "logo")],
-  ];
-  return links.flatMap(([field, link]) =>
-    typeof link === "string" && link.startsWith("file:")
-      ? checkLogo(blockRoot, facade.dir, field, link)
-      : [],
-  );
+ *  warning. `facadePaths` are the block-relative paths of the facade packages
+ *  that discovery found. */
+export function checkBlockLogos(blockRoot: string, facadePaths: string[]): LogoFinding[] {
+  return facadePaths.flatMap((facadePath) => {
+    const facadeDir = path.resolve(blockRoot, facadePath);
+    const meta = blockMeta(path.join(facadeDir, "package.json"));
+    const links: [string, unknown][] = [
+      ["block.meta.logo", property(meta, "logo")],
+      ["block.meta.organization.logo", property(property(meta, "organization"), "logo")],
+    ];
+    return links.flatMap(([field, link]) =>
+      typeof link === "string" && link.startsWith("file:")
+        ? checkLogo(blockRoot, facadeDir, field, link)
+        : [],
+    );
+  });
 }
 
 function checkLogo(

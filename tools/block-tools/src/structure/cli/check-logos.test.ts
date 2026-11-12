@@ -44,7 +44,7 @@ function blockWithLogo(logo: unknown): void {
 
 /** `severity` and the end of the message of each finding. */
 function findings(): string[] {
-  return checkBlockLogos(dir).map((f) => `${f.severity}: ${f.message.split("', ")[1]}`);
+  return checkBlockLogos(dir, ["block"]).map((f) => `${f.severity}: ${f.message.split("', ")[1]}`);
 }
 
 describe("checkBlockLogos", () => {
@@ -52,7 +52,7 @@ describe("checkBlockLogos", () => {
     blockWithLogo("file:../logos/block.png");
     write("logos/block.png", DAMAGED_PNG);
 
-    expect(checkBlockLogos(dir)).toEqual([
+    expect(checkBlockLogos(dir, ["block"])).toEqual([
       {
         severity: "error",
         message:
@@ -107,11 +107,15 @@ describe("checkBlockLogos", () => {
     expect(findings()).toEqual([]);
   });
 
-  test("reads a facade at the block root, and returns nothing when there is no facade", () => {
-    expect(checkBlockLogos(dir)).toEqual([]);
-
+  test("reads each facade path that it gets, at any location", () => {
     write("package.json", JSON.stringify({ block: { meta: { logo: "file:logos/gone.png" } } }));
-    expect(findings()).toEqual(["warning: but 'logos/gone.png' does not exist."]);
+    write("facade/package.json", JSON.stringify({ block: { meta: { logo: "file:gone.svg" } } }));
+
+    expect(checkBlockLogos(dir, [])).toEqual([]);
+    expect(checkBlockLogos(dir, ["", "facade"]).map((f) => f.message.split("', ")[1])).toEqual([
+      "but 'logos/gone.png' does not exist.",
+      "but 'facade/gone.svg' does not exist.",
+    ]);
   });
 });
 

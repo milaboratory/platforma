@@ -90,7 +90,8 @@ export async function runStructureForPath(input: RunStructureInput): Promise<Run
       }),
   });
 
-  const logoFindings = input.updateDepsOnly ? [] : checkBlockLogos(root);
+  const facadePaths = ctx.modules.filter((m) => m.scope === "block").map((m) => m.path);
+  const logoFindings = input.updateDepsOnly ? [] : checkBlockLogos(root, facadePaths);
   return { blockPath: input.blockPath, changes: result.changes, logoFindings };
 }
 
