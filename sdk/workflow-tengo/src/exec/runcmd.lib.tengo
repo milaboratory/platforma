@@ -809,8 +809,11 @@ builder := func(workdir, ...initialState) {
 			argsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_ARGS, json.encode(options.args))
 			runRes.getField(_FIELD_ARGS).set(argsRes)
 
-			// the runner reports the run of the command into the context of this template; linked before the lock
-			actionContext.inherit(runRes.id)
+			// the runner reports the run of the command into the context of this template; linked before the lock.
+			// Not on v3: its schema has no actionContext field yet, and the backend refuses to create it.
+			if !useV3 {
+				actionContext.inherit(runRes.id)
+			}
 
 			built := runRes.lockAndBuild()
 			outputs := runRes.outputs()
