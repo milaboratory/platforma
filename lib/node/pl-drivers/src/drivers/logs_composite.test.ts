@@ -61,6 +61,7 @@ function resource(
     type,
     kind: data === undefined ? "Structural" : "Value",
     originalResourceId: NullSignedResourceId,
+    canonicalId: new Uint8Array(0),
     error: NullSignedResourceId,
     inputsLocked: data !== undefined,
     outputsLocked: data !== undefined,
