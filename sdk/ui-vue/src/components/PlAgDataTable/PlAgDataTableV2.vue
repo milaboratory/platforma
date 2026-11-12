@@ -133,7 +133,8 @@ const boundSourceId = shallowRef<null | string>(null);
 gridOptions.value.onGridPreDestroyed = (event) => {
   if (!isReloading) saveGridState(event.api, makePartialState(event.api.getState()));
   gridOptions.value.initialState = restoreState.value;
-  gridApi.value = null;
+  // A replaced grid destroyed after its successor is ready must leave the successor's api in place
+  if (gridApi.value?.getGridId() === event.api.getGridId()) gridApi.value = null;
 };
 gridOptions.value.onRowDoubleClicked = (event) => {
   if (event.data && event.data.axesKey) emit("rowDoubleClicked", event.data.axesKey);
