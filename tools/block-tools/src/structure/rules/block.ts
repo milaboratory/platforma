@@ -52,6 +52,14 @@ export function blockRules(): void {
     seed("logos/block-logo.png", binaryFile("block/logos/block-logo.png"));
     seed("logos/organization-logo.png", binaryFile("block/logos/organization-logo.png"));
 
+    // Target of `block.meta.changelog`. Changesets writes the facade's release
+    // notes here; the header-only file keeps `block-tools pack` resolvable
+    // before the first release.
+    scaffold(
+      "CHANGELOG.md",
+      generate((ctx) => `# ${ctx.blockVars.facadeName}\n`),
+    );
+
     managed(
       "package.json",
       generate((ctx) => blockPackageJsonInitial(ctx)),
