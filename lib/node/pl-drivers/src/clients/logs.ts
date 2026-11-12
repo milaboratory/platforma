@@ -4,12 +4,12 @@ import { notEmpty } from "@milaboratories/ts-helpers";
 import type { Dispatcher } from "undici";
 import type { WireClientProvider, WireClientProviderFactory } from "@milaboratories/pl-client";
 import {
-  addRTypeToMetadata,
-  callAbortSignal,
-  createRTypeRoutingHeader,
   RestAPI,
+  addRTypeToMetadata,
+  createRTypeRoutingHeader,
   parseSignedResourceId,
   signatureToBase64Url,
+  withCallAbortSignal,
 } from "@milaboratories/pl-client";
 import type { StreamingAPI_Response } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol";
 import { StreamingClient } from "../proto-grpc/github.com/milaboratory/pl/controllers/shared/grpc/streamingapi/protocol.client";
@@ -52,42 +52,43 @@ export class ClientLogs {
   ): Promise<StreamingAPI_Response> {
     const { globalId: rIdGlobal, signature: rIdSig } = parseSignedResourceId(rId);
     const client = this.wire.get();
-    const abort = callAbortSignal(options?.abort);
-    if (client instanceof StreamingClient) {
-      return (
-        await client.lastLines(
-          {
-            resourceId: rIdGlobal,
-            resourceSignature: rIdSig,
+    return await withCallAbortSignal(options?.abort, async (abort) => {
+      if (client instanceof StreamingClient) {
+        return (
+          await client.lastLines(
+            {
+              resourceId: rIdGlobal,
+              resourceSignature: rIdSig,
+              lineCount: lineCount,
+              offset: offsetBytes,
+              search: searchStr,
+            },
+            addRTypeToMetadata(rType, { ...options, abort }),
+          )
+        ).response;
+      }
+
+      const resp = (
+        await client.POST("/v1/last-lines", {
+          body: {
+            resourceId: rIdGlobal.toString(),
+            resourceSignature: signatureToBase64Url(rIdSig),
             lineCount: lineCount,
-            offset: offsetBytes,
-            search: searchStr,
+            offset: offsetBytes.toString(),
+            search: searchStr ?? "",
+            searchRe: "",
           },
-          addRTypeToMetadata(rType, { ...options, abort }),
-        )
-      ).response;
-    }
+          headers: { ...createRTypeRoutingHeader(rType) },
+          signal: abort,
+        })
+      ).data!;
 
-    const resp = (
-      await client.POST("/v1/last-lines", {
-        body: {
-          resourceId: rIdGlobal.toString(),
-          resourceSignature: signatureToBase64Url(rIdSig),
-          lineCount: lineCount,
-          offset: offsetBytes.toString(),
-          search: searchStr ?? "",
-          searchRe: "",
-        },
-        headers: { ...createRTypeRoutingHeader(rType) },
-        signal: abort,
-      })
-    ).data!;
-
-    return {
-      data: Buffer.from(resp.data, "base64"),
-      size: BigInt(resp.size),
-      newOffset: BigInt(resp.newOffset),
-    };
+      return {
+        data: Buffer.from(resp.data, "base64"),
+        size: BigInt(resp.size),
+        newOffset: BigInt(resp.newOffset),
+      };
+    });
   }
 
   /** Reads the file forward and returns the text,
@@ -102,42 +103,42 @@ export class ClientLogs {
   ): Promise<StreamingAPI_Response> {
     const { globalId: rIdGlobal2, signature: rIdSig2 } = parseSignedResourceId(rId);
     const client = this.wire.get();
-    const abort = callAbortSignal(options?.abort);
+    return await withCallAbortSignal(options?.abort, async (abort) => {
+      if (client instanceof StreamingClient) {
+        return (
+          await client.readText(
+            {
+              resourceId: notEmpty(rIdGlobal2),
+              resourceSignature: rIdSig2,
+              readLimit: BigInt(lineCount),
+              offset: offsetBytes,
+              search: searchStr,
+            },
+            addRTypeToMetadata(rType, { ...options, abort }),
+          )
+        ).response;
+      }
 
-    if (client instanceof StreamingClient) {
-      return (
-        await client.readText(
-          {
-            resourceId: notEmpty(rIdGlobal2),
-            resourceSignature: rIdSig2,
-            readLimit: BigInt(lineCount),
-            offset: offsetBytes,
-            search: searchStr,
+      const resp = (
+        await client.POST("/v1/read/text", {
+          body: {
+            resourceId: rIdGlobal2.toString(),
+            resourceSignature: signatureToBase64Url(rIdSig2),
+            readLimit: lineCount.toString(),
+            offset: offsetBytes.toString(),
+            search: searchStr ?? "",
+            searchRe: "",
           },
-          addRTypeToMetadata(rType, { ...options, abort }),
-        )
-      ).response;
-    }
+          headers: { ...createRTypeRoutingHeader(rType) },
+          signal: abort,
+        })
+      ).data!;
 
-    const resp = (
-      await client.POST("/v1/read/text", {
-        body: {
-          resourceId: rIdGlobal2.toString(),
-          resourceSignature: signatureToBase64Url(rIdSig2),
-          readLimit: lineCount.toString(),
-          offset: offsetBytes.toString(),
-          search: searchStr ?? "",
-          searchRe: "",
-        },
-        headers: { ...createRTypeRoutingHeader(rType) },
-        signal: abort,
-      })
-    ).data!;
-
-    return {
-      data: Buffer.from(resp.data, "base64"),
-      size: BigInt(resp.size),
-      newOffset: BigInt(resp.newOffset),
-    };
+      return {
+        data: Buffer.from(resp.data, "base64"),
+        size: BigInt(resp.size),
+        newOffset: BigInt(resp.newOffset),
+      };
+    });
   }
 }
