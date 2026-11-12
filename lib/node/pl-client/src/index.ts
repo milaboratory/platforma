@@ -1,3 +1,4 @@
+export { withCallAbortSignal } from "./core/abort_signal";
 export * from "./core/types";
 export * as Pl from "./helpers/pl";
 export * from "./core/config";
