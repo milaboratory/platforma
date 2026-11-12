@@ -14,6 +14,7 @@ export * from "./core/final";
 export * from "./core/finality";
 export * from "./core/tree_filter";
 export * from "./core/user_resources";
+export * from "./core/controllers";
 export * from "./core/wire";
 export * from "./helpers/tx_helpers";
 export * from "./helpers/poll";
