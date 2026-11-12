@@ -12,6 +12,7 @@ import { NodeTemplateProvider } from "../engine/templates";
 import { run as engineRun, type Change } from "../engine/runner";
 import { discoverRunContext } from "../engine/discovery-fs";
 import { STRUCTURE } from "../structure-definition";
+import { checkBlockLogos, type LogoFinding } from "./check-logos";
 import {
   matchesBumpPattern,
   buildRegistryLookupForNames,
@@ -35,6 +36,8 @@ export type RunStructureInput = {
 export type RunStructureResult = {
   blockPath: string;
   changes: Change[];
+  /** Unusable logos. Empty under `--update-deps-only`, which examines no logo. */
+  logoFindings: LogoFinding[];
 };
 
 /** Resolve the registry lookup for `--update-deps-only`: prefetch npm
@@ -87,7 +90,8 @@ export async function runStructureForPath(input: RunStructureInput): Promise<Run
       }),
   });
 
-  return { blockPath: input.blockPath, changes: result.changes };
+  const logoFindings = input.updateDepsOnly ? [] : checkBlockLogos(root);
+  return { blockPath: input.blockPath, changes: result.changes, logoFindings };
 }
 
 /** Expand glob patterns among the positional block paths. POSIX shells expand
@@ -105,6 +109,22 @@ export function expandBlockPaths(paths: string[]): string[] {
   });
   return [...new Set(expanded)];
 }
+
+/** Print the logo findings of one block. Returns true when one is an error. */
+export function reportLogoFindings(
+  blockPath: string,
+  findings: LogoFinding[],
+  logger: { warn(msg: string): void; error(msg: string): void },
+): boolean {
+  for (const finding of findings) {
+    const line = `  ${blockPath}: ${finding.severity}: ${finding.message}`;
+    if (finding.severity === "error") logger.error(line);
+    else logger.warn(line);
+  }
+  return findings.some((finding) => finding.severity === "error");
+}
+
+export const LOGO_ERROR = "One or more blocks have a damaged logo. Replace the logo file.";
 
 /** One-line-per-change summary for CLI output. */
 export function formatChanges(blockPath: string, changes: Change[]): string {
