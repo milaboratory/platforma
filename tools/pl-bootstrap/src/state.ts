@@ -7,7 +7,6 @@ import type { SpawnOptions } from "node:child_process";
 import type * as types from "./templates/types";
 
 export type runInfo = {
-  configPath?: string;
   apiPort?: number;
   apiAddr?: string;
   logPath?: string;

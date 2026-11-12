@@ -181,6 +181,7 @@ const READY: Omit<ExtendedResourceData, "id" | "kind" | "type" | "fields"> = {
   resourceReady: true,
   final: true,
   kv: [],
+  canonicalId: new Uint8Array(0),
 };
 
 const PROJECT_FIELDS: readonly FakeProjectField[] = [

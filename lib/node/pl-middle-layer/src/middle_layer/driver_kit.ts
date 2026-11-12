@@ -102,7 +102,7 @@ export async function initDriverKit(
     ),
   ]);
 
-  const downloadClient = createDownloadClient(ops.logger, pl, ops.localProjections);
+  const downloadClient = createDownloadClient(ops.logger, pl);
   const logsClient = createLogsClient(pl, ops.logger);
   const uploadBlobClient = createUploadBlobClient(pl, ops.logger);
   const uploadProgressClient = createUploadProgressClient(pl, ops.logger);
@@ -138,7 +138,6 @@ export async function initDriverKit(
     ops.logger,
     pl,
     signer,
-    ops.localProjections,
     ops.openFileDialogCallback,
     ops.virtualLocalStoragesOverride,
   );

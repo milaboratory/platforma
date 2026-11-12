@@ -1,8 +1,8 @@
 import { resolve } from "node:path";
 import * as fs from "node:fs";
-import { getDefaultPlVersion } from "@milaboratories/pl-deployments";
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { z } from "zod";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -29,6 +29,14 @@ export function composeFiles(): string[] {
 
 export function readFileSync(...p: string[]): Buffer {
   return fs.readFileSync(path(...p));
+}
+
+/** The backend version `pl-dev` downloads and runs unless a version is given: `pl-version` in package.json. */
+export function getDefaultPlVersion(): string {
+  const packageJson = z
+    .object({ "pl-version": z.string() })
+    .parse(JSON.parse(readFileSync("package.json").toString()));
+  return packageJson["pl-version"];
 }
 
 export function plImageTag(version?: string): string {

@@ -11,7 +11,7 @@ wf.prepare(func(args) {
 	return { hits: wf.query(args.query) }
 })
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	hitRef := args.hits[0].ref
 	decoded := render.createEphemeral(decodeTpl, {
 		items: { again: wf.resolve(hitRef) },

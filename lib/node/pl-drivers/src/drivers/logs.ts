@@ -219,6 +219,10 @@ export class LogsDriver implements sdk.LogsDriver {
       return await this.logsStreamDriver.readText(handle, lineCount, offsetBytes, searchStr);
     return await this.downloadDriver.readText(handle, lineCount, offsetBytes, searchStr);
   }
+
+  async [Symbol.asyncDispose](): Promise<void> {
+    await this.logsStreamDriver[Symbol.asyncDispose]();
+  }
 }
 
 function isBlob(rInfo: ResourceInfo) {

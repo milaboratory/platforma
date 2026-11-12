@@ -1,5 +1,61 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.22.3
+
+### Patch Changes
+
+- e628f46: Update pframes-rs-wasip2 to 1.3.0, which adds the `discoverRoots` request. `discoverColumns` and `buildQuery` behave as in 1.2.0.
+  - @platforma-open/milaboratories.software-ptabler@2.3.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.7
+
+## 6.22.2
+
+### Patch Changes
+
+- 581be9f: v2 workflow: the `effect` output omits its `imports` section when the body imports nothing, leaving an empty map; an effect that lists imports is unchanged.
+  - @platforma-open/milaboratories.software-ptabler@2.3.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.7
+
+## 6.22.1
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @platforma-open/milaboratories.software-ptabler@2.3.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.7
+
+## 6.22.0
+
+### Minor Changes
+
+- daa13ed: `v2.workflow` renders a third output, `effect`, and calls the body as `fn(args, effect)`. `effect.importFile(source)` imports an upload grant (`upload://upload/…`) or a library file (`index://index/…`) and returns the imported file. The render lists each import under `effect.imports.<source>` as an `ImportEntry/1` with the fields `upload` (upload grants only), `progress` and `file`, so the engine reports the import and, for an upload grant, sends the upload; no block output has to. A body that succeeds always sets `effect`, with an empty `imports` map when nothing is imported, and `importFile` refuses calls made after the body has returned.
+
+  Breaking for v2 workflows: a body declared as `func(args)` must become `func(args, effect)` — until it does, the render fails with `wrong number of arguments: want=1, got=2` — and the output guard now requires exactly `result`, `exports` and `effect`.
+
+### Patch Changes
+
+- bb23557: `validation`: a tag value may contain `=`, so a schema such as `string,regex=^x=y$` checks the whole regex instead of the part before its first `=`.
+
+## 6.21.1
+
+### Patch Changes
+
+- fe4ff52: exec: `cache()` is deprecated. Use `cacheMillis`, `cacheSeconds`, `cacheMinutes`, `cacheHours` or `cacheDays`. The `cache()` doc comment now tells to build the duration with the 'times' library constants
+
+## 6.21.0
+
+### Minor Changes
+
+- 3ba694e: Add `canonicalId()` to the template object (`tpl`): a pure template reads the canonical ID of its own renderer from the template body. The function fails in ephemeral templates, which have no canonical ID. Add `canonicalIdExposure` to `feats`: true when the backend reports `canonicalIDExposure`, `supportsScratchSpaceRequests` or `scratchSpace`.
+
+  On backends that do not give final canonical IDs, the new internal `ll.canonical-id` library calculates a missing canonical ID on the template level with the backend formula. `anonymize` uses it, so it gives correct field names also on backends v4.2.0 to v4.3.0, which did not give the canonical ID of value resources. On those backends, anonymized names change one time. On backends before v1.34.0, which cannot calculate SHA-256, a missing canonical ID causes an error that tells to update the backend.
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler@2.3.0
+- @platforma-open/milaboratories.software-ptexter@1.2.6
+
 ## 6.20.0
 
 ### Minor Changes

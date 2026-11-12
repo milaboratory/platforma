@@ -1,5 +1,53 @@
 # @milaboratories/pf-driver
 
+## 1.9.18
+
+### Patch Changes
+
+- Updated dependencies [e628f46]
+- Updated dependencies [92cf16f]
+  - @milaboratories/pf-spec@1.1.0
+  - @milaboratories/pl-model-common@1.56.0
+  - @milaboratories/pl-model-middle-layer@1.40.0
+
+## 1.9.17
+
+### Patch Changes
+
+- Updated dependencies [1bea6a2]
+  - @milaboratories/pl-model-middle-layer@1.39.0
+  - @milaboratories/pf-spec@1.0.17
+
+## 1.9.16
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-model-common@1.55.2
+  - @milaboratories/pl-model-middle-layer@1.38.0
+  - @milaboratories/pf-spec@1.0.16
+
+## 1.9.15
+
+### Patch Changes
+
+- Updated dependencies [82dd041]
+  - @milaboratories/pl-model-middle-layer@1.37.0
+  - @milaboratories/pf-spec@1.0.15
+
+## 1.9.14
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-model-middle-layer@1.36.0
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pf-spec@1.0.14
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/helpers@1.14.7
+
 ## 1.9.13
 
 ### Patch Changes

@@ -3,7 +3,7 @@
 wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
 ex := import("@platforma-sdk/workflow-tengo:v2.exports")
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	outputs := { x: 1 }
 	if args.kind == "literal" {
 		outputs = { x: undefined }

@@ -1,5 +1,66 @@
 # @milaboratories/uikit
 
+## 2.17.9
+
+### Patch Changes
+
+- Updated dependencies [92cf16f]
+  - @platforma-sdk/model@1.90.0
+
+## 2.17.8
+
+### Patch Changes
+
+- Updated dependencies [470744c]
+  - @platforma-sdk/model@1.89.0
+
+## 2.17.7
+
+### Patch Changes
+
+- Updated dependencies [b556b15]
+  - @platforma-sdk/model@1.88.16
+
+## 2.17.6
+
+### Patch Changes
+
+- @platforma-sdk/model@1.88.15
+
+## 2.17.5
+
+### Patch Changes
+
+- @platforma-sdk/model@1.88.14
+
+## 2.17.4
+
+### Patch Changes
+
+- @platforma-sdk/model@1.88.13
+
+## 2.17.3
+
+### Patch Changes
+
+- Updated dependencies [d3a7b19]
+  - @platforma-sdk/model@1.88.10
+
+## 2.17.2
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/helpers@1.14.7
+  - @platforma-sdk/model@1.88.8
+
+## 2.17.1
+
+### Patch Changes
+
+- ad84d77: PlAlert draws its `icon` with PlIcon24, in the text colour, centred on the first row; the global icon classes it used are gone, so it showed none.
+
 ## 2.17.0
 
 ### Minor Changes

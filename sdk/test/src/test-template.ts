@@ -200,7 +200,6 @@ export const tplTest = plTest.extend<{
 
     const driverKit = await initDriverKit(pl, tmpFolder, frontendDownloadPath, {
       localSecret: MiddleLayer.generateLocalSecret(),
-      localProjections: [], // TODO must be different with local pl
       openFileDialogCallback: () => {
         throw new Error("Not implemented.");
       },

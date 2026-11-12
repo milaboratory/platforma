@@ -1,5 +1,70 @@
 # @milaboratories/pl-mcp-server
 
+## 45.0.0
+
+### Patch Changes
+
+- Updated dependencies [92cf16f]
+  - @milaboratories/pl-middle-layer@2.5.0
+  - @platforma-sdk/model@1.90.0
+
+## 44.0.0
+
+### Patch Changes
+
+- Updated dependencies [470744c]
+  - @platforma-sdk/model@1.89.0
+  - @milaboratories/pl-middle-layer@2.4.2
+
+## 43.0.0
+
+### Patch Changes
+
+- Updated dependencies [1bea6a2]
+  - @milaboratories/pl-middle-layer@2.4.0
+  - @platforma-sdk/model@1.88.15
+
+## 42.0.0
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-middle-layer@2.3.0
+  - @platforma-sdk/model@1.88.14
+
+## 41.0.0
+
+### Patch Changes
+
+- Updated dependencies [82dd041]
+  - @milaboratories/pl-middle-layer@2.2.0
+  - @platforma-sdk/model@1.88.13
+
+## 40.0.0
+
+### Patch Changes
+
+- Updated dependencies [d3a7b19]
+  - @milaboratories/pl-middle-layer@2.1.0
+  - @platforma-sdk/model@1.88.10
+
+## 39.0.0
+
+### Patch Changes
+
+- Updated dependencies [e40ccc1]
+  - @milaboratories/pl-middle-layer@2.0.0
+
+## 38.0.0
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-middle-layer@1.77.0
+  - @platforma-sdk/model@1.88.8
+
 ## 37.0.0
 
 ### Minor Changes

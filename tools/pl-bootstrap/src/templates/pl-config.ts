@@ -1,4 +1,3 @@
-import fs from "node:fs";
 import * as types from "./types";
 import { assertNever, resolveTilde } from "../util";
 import state from "../state";
@@ -85,7 +84,6 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
     listen: options?.grpc?.listen ?? "localhost:6345",
     tls: {
       enable: defaultBool(options?.grpc?.tls?.enable, false),
-      clientAuthMode: options?.grpc?.tls?.clientAuthMode ?? "NoAuth",
       certFile: options?.grpc?.tls?.certFile ?? `${localRoot}/certs/tls.cert`,
       keyFile: options?.grpc?.tls?.keyFile ?? `${localRoot}/certs/tls.key`,
 
@@ -159,7 +157,6 @@ export function loadDefaults(jwtKey: string, options?: types.plOptions): types.p
     debug,
     numCpu: options?.numCpu,
     storages: { primary, work, library },
-    hacks: { libraryDownloadable: true },
   };
 }
 
@@ -202,105 +199,145 @@ function defaultStorageSettings(
   return storage;
 }
 
-export function render(options: types.plSettings): string {
-  const disableMon = options.monitoring.enabled ? "" : " disabled";
-  const disableDbg = options.debug.enabled ? "" : " disabled";
-  const libraryDownloadable = options.hacks.libraryDownloadable ? "true" : "false";
-  let miLicenseSecret = options.license.value;
-  if (options.license.file != "") {
-    miLicenseSecret = fs.readFileSync(options.license.file).toString().trimEnd();
+/** Storage IDs the yaml configuration of earlier versions declared: kept so existing instances keep their data. */
+const PrimaryStorageID = "main";
+const WorkStorageID = "work";
+const LibraryStorageID = "library";
+
+/**
+ * Backend command-line options and environment for a local instance.
+ * Check `platforma --help` for the options.
+ *
+ * @param masterSecretFile - a file with the master secret, required by htpasswd and LDAP auth.
+ */
+export function cliArgs(
+  options: types.plSettings,
+  masterSecretFile: string,
+): { args: string[]; env: NodeJS.ProcessEnv } {
+  const env: NodeJS.ProcessEnv = {};
+  const args: string[] = ["--quiet"];
+
+  const grpc = splitHostPort(options.grpc.listen);
+  args.push(`--listen-address=${grpc.host}`);
+  if (grpc.port) args.push(`--listen-port=${grpc.port}`);
+  if (options.grpc.tls.enable) {
+    args.push(`--listen-tls=${options.grpc.tls.certFile},${options.grpc.tls.keyFile}`);
   }
 
-  let cpuLimit = "";
-  if (options.numCpu) {
-    cpuLimit = `
-    resources:
-      cpu: ${options.numCpu}
-`;
+  if (options.monitoring.enabled) {
+    const mon = splitHostPort(options.monitoring.listen);
+    args.push(`--monitoring-ip=${mon.host}`);
+    if (mon.port) args.push(`--monitoring-port=${mon.port}`);
+  } else {
+    args.push("--no-monitoring");
   }
 
-  return `
-license:
-  value: '${options.license.value}'
-  file: '${options.license.file}'
+  if (options.debug.enabled) {
+    const dbg = splitHostPort(options.debug.listen);
+    args.push("--debug-enabled", `--debug-ip=${dbg.host}`);
+    if (dbg.port) args.push(`--debug-port=${dbg.port}`);
+  }
 
-logging:
-  level: '${options.log.level}'
-  destinations:
-    - path: '${options.log.path}'
-      rotation:
-        maxSize: 1GiB
-        maxBackups: 15
-        compress: true
+  if (options.license.file !== "") args.push(`--license-file=${options.license.file}`);
+  // The value goes through the environment to keep it out of the process list.
+  else if (options.license.value !== "") env.PL_LICENSE = options.license.value;
 
-monitoring${disableMon}:
-  listen: '${options.monitoring.listen}'
+  args.push(
+    `--log-level=${options.log.level}`,
+    `--log-dst=file://${options.log.path}`,
+    "--log-rotation-size=1GiB",
+    "--log-rotation-backups=15",
+  );
 
-debug${disableDbg}:
-  listen: '${options.debug.listen}'
+  let hasAuthDriver = false;
+  for (const drv of options.core.auth.drivers) {
+    switch (drv.driver) {
+      case "htpasswd":
+        args.push(`--auth-htpasswd=${drv.path}`);
+        hasAuthDriver = true;
+        break;
+      case "ldap":
+        args.push(`--auth-ldap-server=${drv.serverUrl}`, `--auth-ldap-dn=${drv.defaultDN}`);
+        hasAuthDriver = true;
+        break;
+      case "jwt":
+        // the backend signs tokens with the master secret
+        break;
+      default:
+        assertNever(drv);
+    }
+  }
+  if (hasAuthDriver) args.push(`--master-secret-file=${masterSecretFile}`);
 
-core:
-  logging:
-    extendedInfo: true
-    dumpResourceData: false
+  args.push(
+    `--main-root=${options.localRoot}`,
+    `--db-dir=${options.core.db.path}`,
+    `--packages-dir=${options.localRoot}/packages`,
+    `--work-dir=${options.storages.work.rootPath}`,
+    `--primary-storage-id=${PrimaryStorageID}`,
+    `--work-storage-id=${WorkStorageID}`,
+  );
 
-  grpc:
-    listen: '${options.grpc.listen}'
+  const primary = options.storages.primary;
+  switch (primary.type) {
+    case "FS":
+      args.push(`--primary-storage-fs=${primary.rootPath}`);
+      break;
+    case "S3":
+      args.push(`--primary-storage-s3=${s3URL(primary)}`);
+      if (primary.region) args.push(`--primary-storage-s3-region=${primary.region}`);
+      if (primary.key) args.push(`--primary-storage-s3-key=${staticValue(primary.key)}`);
+      if (primary.secret) env.PL_PRIMARY_STORAGE_S3_SECRET = staticValue(primary.secret);
+      if (primary.presignEndpoint && primary.presignEndpoint !== primary.endpoint) {
+        args.push(`--primary-storage-s3-external-endpoint=${primary.presignEndpoint}`);
+      }
+      break;
+    default:
+      assertNever(primary);
+  }
 
-    tlsEnabled: ${JSON.stringify(options.grpc.tls.enable)}
-    tls:
-      clientAuthMode: '${options.grpc.tls.clientAuthMode}'
-      certificates:
-        - certFile: '${options.grpc.tls.certFile}'
-          keyFile: '${options.grpc.tls.keyFile}'
+  const library = options.storages.library;
+  const lib = (v: string) => `${LibraryStorageID}=${v}`;
+  switch (library.type) {
+    case "FS":
+      args.push(`--data-library-fs=${lib(library.rootPath)}`);
+      break;
+    case "S3":
+      args.push(`--data-library-s3=${lib(s3URL(library))}`);
+      if (library.region) args.push(`--data-library-s3-region=${lib(library.region)}`);
+      if (library.key) args.push(`--data-library-s3-key=${lib(staticValue(library.key))}`);
+      if (library.secret) env.PL_DATA_LIBRARY_S3_SECRET = lib(staticValue(library.secret));
+      if (library.presignEndpoint && library.presignEndpoint !== library.endpoint) {
+        args.push(`--data-library-s3-external-endpoint=${lib(library.presignEndpoint)}`);
+      }
+      break;
+    default:
+      assertNever(library);
+  }
 
+  args.push("--keep-good-workdirs=20m", "--keep-faulty-workdirs=1h");
+  if (options.numCpu) args.push(`--runner-local-cpu=${options.numCpu}`);
 
-  authEnabled: ${JSON.stringify(options.core.auth.enabled)}
-  auth: ${JSON.stringify(options.core.auth.drivers)}
-  db:
-    path: '${options.core.db.path}'
+  return { args, env };
+}
 
-controllers:
-  data:
-    main:
-      storages:
-          main:
-              mode: primary
-              downloadable: true
+/** Splits 'host:port' listen address. */
+function splitHostPort(listen: string): { host: string; port?: string } {
+  const i = listen.lastIndexOf(":");
+  if (i < 0) return { host: listen };
+  return { host: listen.slice(0, i), port: listen.slice(i + 1) };
+}
 
-          library:
-              mode: passive
-              downloadable: ${libraryDownloadable}
+/** S3 storage URL in the form the backend options take. */
+function s3URL(s: types.s3StorageSettings): string {
+  const prefix = s.keyPrefix ? `/${s.keyPrefix.replace(/^\/+/, "")}` : "";
+  if (!s.endpoint) return `s3://${s.bucketName}${prefix}`;
+  return `${s.endpoint.replace(/\/+$/, "")}/${s.bucketName}${prefix}`;
+}
 
-          work:
-              mode: active
-              downloadable: false
-
-    storages:
-      - ${JSON.stringify(options.storages.primary)}
-      - ${JSON.stringify(options.storages.library)}
-      - ${JSON.stringify(options.storages.work)}
-
-  runner:
-    type: local
-    storageRoot: '${options.storages.work.rootPath}'
-    workdirCacheOnSuccess: 20m
-    workdirCacheOnFailure: 1h
-${cpuLimit}
-    secrets:
-      - map:
-          MI_LICENSE: ${JSON.stringify(miLicenseSecret)}
-
-  packageLoader:
-    packagesRoot: '${options.localRoot}/packages'
-
-  workflows:
-    features:
-      pureFutureFields: true
-      commandExpressions: true
-      workdirLimits: true
-      computeLimits: false
-`;
+/** The backend options take S3 credentials without the 'static:' prefix of the yaml configuration. */
+function staticValue(v: string): string {
+  return v.startsWith("static:") ? v.slice("static:".length) : v;
 }
 
 function defaultBool(v: boolean | undefined, def: boolean): boolean {

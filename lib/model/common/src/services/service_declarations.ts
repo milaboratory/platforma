@@ -40,6 +40,7 @@ export const Services = {
       "createSpecFrame",
       "listColumns",
       "discoverColumns",
+      "discoverRoots",
       "deleteColumn",
       "evaluateQuery",
       "buildQuery",
@@ -53,6 +54,7 @@ export const Services = {
       "createSpecFrame",
       "listColumns",
       "discoverColumns",
+      "discoverRoots",
       "deleteColumn",
       "evaluateQuery",
       "buildQuery",
@@ -102,6 +104,7 @@ export const Services = {
       "addSource",
       "discover",
       "filter",
+      "discoverRoots",
     ] as const,
     uiMethods: [
       "create",
@@ -111,6 +114,7 @@ export const Services = {
       "addSource",
       "discover",
       "filter",
+      "discoverRoots",
     ] as const,
   }),
 };

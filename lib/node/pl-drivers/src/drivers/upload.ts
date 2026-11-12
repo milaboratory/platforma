@@ -178,9 +178,12 @@ export class UploadDriver {
     this.keepRunning = false;
   }
 
+  private readonly terminating = new AbortController();
+
   /** Stops polling loop and waits for it to finish */
   public async terminate(): Promise<void> {
     this.stopUpdating();
+    this.terminating.abort();
     if (this.currentLoop !== undefined) {
       await this.currentLoop;
     }
@@ -203,17 +206,23 @@ export class UploadDriver {
       try {
         await asyncPool(
           this.opts.nConcurrentGetProgresses,
-          this.getAllNotDoneProgresses().map((p) => async () => await p.updateStatus()),
+          this.getAllNotDoneProgresses().map(
+            (task) => async () => await task.updateStatus(this.terminating.signal),
+          ),
         );
 
-        toNotify.forEach((n) => n.resolve());
-      } catch (e: any) {
-        console.error(e);
-        toNotify.forEach((n) => n.reject(e));
+        for (const scheduled of toNotify) scheduled.resolve();
+      } catch (error: unknown) {
+        console.error(error);
+        for (const scheduled of toNotify) scheduled.reject(error);
       }
 
       if (!this.keepRunning) break;
-      await scheduler.wait(this.opts.pollingInterval);
+      try {
+        await scheduler.wait(this.opts.pollingInterval, { signal: this.terminating.signal });
+      } catch {
+        break;
+      }
     }
 
     this.currentLoop = undefined;

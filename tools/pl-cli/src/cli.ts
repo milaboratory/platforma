@@ -7,6 +7,7 @@ import projectDeleteCommand from "./cmd/project/delete";
 import adminCopyProjectCommand from "./cmd/admin/copy-project";
 import adminUserListCommand from "./cmd/admin/user-list";
 import adminDeleteUserCommand from "./cmd/admin/delete-user";
+import adminInstanceStatsCommand from "./cmd/admin/instance-stats";
 import maintenanceListResourcesCommand from "./cmd/maintenance/list-resources";
 import maintenanceSetResourceErrorCommand from "./cmd/maintenance/set-resource-error";
 
@@ -28,6 +29,7 @@ export function buildProgram(): Command {
   admin.addCommand(adminCopyProjectCommand());
   admin.addCommand(adminUserListCommand());
   admin.addCommand(adminDeleteUserCommand());
+  admin.addCommand(adminInstanceStatsCommand());
   program.addCommand(admin);
 
   const maintenance = new Command("maintenance").description(

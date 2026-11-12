@@ -1,5 +1,12 @@
 import { createVitestConfig } from "@milaboratories/build-configs";
-import { defineConfig } from "vitest/config";
+import { configDefaults, defineConfig } from "vitest/config";
+
+// The 10k-file workdir test makes the backend workflow controller busy for
+// about a minute. The controller runs one template at a time, so in this time
+// the templates of all other tests wait, and tests with a 15s budget fail on
+// timeouts. This test must not run at the same time as other test files: its
+// project has a higher groupOrder, so it starts only after all other files end.
+const ISOLATED_TESTS = ["src/exec/large-workdir.test.ts"];
 
 export default defineConfig(
   createVitestConfig({
@@ -18,6 +25,24 @@ export default defineConfig(
         seed: Number(process.env.VITEST_SEED ?? Date.now()),
         concurrent: false,
       },
+      projects: [
+        {
+          extends: true,
+          test: {
+            name: "shared-backend",
+            exclude: [...configDefaults.exclude, ...ISOLATED_TESTS],
+            sequence: { groupOrder: 0 },
+          },
+        },
+        {
+          extends: true,
+          test: {
+            name: "isolated",
+            include: ISOLATED_TESTS,
+            sequence: { groupOrder: 1 },
+          },
+        },
+      ],
     },
   }),
 );

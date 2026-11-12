@@ -57,7 +57,7 @@ pl-dev svc create local MyLocalPl
 pl-dev svc up MyLocalPl
 ```
 
-The tool will download Platforma Backend archive for your OS and architecture, generate configuration file and all necessary directories.
+The tool will download Platforma Backend archive for your OS and architecture, and create all necessary directories. The backend is configured with command-line options.
 `up` command will make the service instance start.
 
 ### How-To's

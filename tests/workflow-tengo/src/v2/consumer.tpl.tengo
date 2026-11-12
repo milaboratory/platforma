@@ -2,7 +2,7 @@
 wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
 ex := import("@platforma-sdk/workflow-tengo:v2.exports")
 
-wf.body(func(args) {
+wf.body(func(args, effect) {
 	r := wf.resolve(args.source)
 	return {
 		outputs: { spec: r.spec, data: r.data },

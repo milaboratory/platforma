@@ -1,5 +1,19 @@
 # @milaboratories/ts-builder
 
+## 1.8.0
+
+### Minor Changes
+
+- 2d57c27: Read `tsconfig.build.json` when a package has one: declaration output (`build`), `type-check` and `check` use it instead of `tsconfig.json`, so `tsconfig.json` can cover tests for editors and language servers while test files stay out of `dist`.
+
+## 1.7.4
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/ts-configs@1.4.1
+
 ## 1.7.3
 
 ### Patch Changes

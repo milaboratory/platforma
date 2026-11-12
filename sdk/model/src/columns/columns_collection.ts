@@ -4,6 +4,7 @@ import type {
   ColumnsCollectionDriverModel,
   ColumnsDiscoverOptions,
   ColumnsFilterOptions,
+  DiscoverRootsOptions,
   SerializedColumnsSource,
 } from "@milaboratories/pl-model-common";
 import type { GlobalCfgRenderCtx } from "../render/internal";
@@ -59,6 +60,21 @@ export function isColumnsCollection(value: unknown): value is ColumnsCollection 
 }
 
 /**
+ * A root found by {@link ColumnsCollectionImpl.discoverRoots}: `leaf` is the
+ * requested column exactly as `discover({ anchors: { r: root } })` would
+ * return it — carrying the linker `path` and qualifications — so the table is
+ * built from `root` as the anchor plus `leaf`.
+ */
+export interface DiscoveredRoot {
+  /** The column the leaf hangs off. */
+  readonly root: ColumnRecipe;
+  /** The requested column, discovered from the root. */
+  readonly leaf: ColumnRecipe;
+  /** Linker columns from the root to the leaf; empty when they join directly. */
+  readonly path: ColumnRecipe[];
+}
+
+/**
  * Sandbox proxy over the host-side `ColumnsCollection` driver. The driver
  * owns all column-set state; this object only carries an opaque
  * {@link CollectionHandle} plus a reference to the driver service.
@@ -109,6 +125,23 @@ export class ColumnsCollectionImpl {
 
   filter(options: ColumnsFilterOptions): ColumnsCollection {
     return new ColumnsCollectionImpl(this.driver.filter(this.handle, options), this.driver);
+  }
+
+  /**
+   * Finds the roots the given columns hang off: the columns that, used as
+   * `anchors` of {@link discover}, would reach them. One entry per root, leaf
+   * and linker path; entries whose columns are not yet resolvable are skipped.
+   */
+  discoverRoots(options: DiscoverRootsOptions): DiscoveredRoot[] {
+    return this.driver.discoverRoots(this.handle, options).flatMap((ids) => {
+      const root = ColumnRecipe(ids.root);
+      const leaf = ColumnRecipe(ids.leaf);
+      const path = ids.path
+        .map((id) => ColumnRecipe(id))
+        .filter((c): c is ColumnRecipe => !isNil(c));
+      if (isNil(root) || isNil(leaf) || path.length !== ids.path.length) return [];
+      return [{ root, leaf, path }];
+    });
   }
 }
 

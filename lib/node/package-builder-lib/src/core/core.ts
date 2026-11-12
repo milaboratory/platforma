@@ -520,6 +520,7 @@ export class Core {
     const name = this.pkgInfo.artifactName(artifact);
 
     docker.build(context, dockerfile, localTag, name, this.pkgInfo.version);
+    docker.checkLayerSizes(localTag, (message) => this.logger.warn(message));
 
     const imageHash = docker.getImageHash(localTag);
     const dstTag = docker.generateRemoteTagName(name, imageHash, registry);
@@ -770,7 +771,7 @@ export class Core {
     this.logger.info(
       `Publishing package '${artifactName}' for platform '${platform}' into registry '${registry.name}'`,
     );
-    this.logger.debug(`  registry storage URL: '${storageURL}'`);
+    this.logger.debug(`  registry storage URL: '${util.redactUrl(storageURL)}'`);
     this.logger.debug(`  archive to publish: '${archivePath}'`);
     this.logger.debug(`  target package name: '${dstName}'`);
 

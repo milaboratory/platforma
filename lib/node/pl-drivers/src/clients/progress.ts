@@ -5,11 +5,12 @@ import type {
   PlClient,
 } from "@milaboratories/pl-client";
 import {
+  RestAPI,
   addRTypeToMetadata,
   createRTypeRoutingHeader,
-  RestAPI,
   parseSignedResourceId,
   signatureToBase64Url,
+  withCallAbortSignal,
 } from "@milaboratories/pl-client";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import { notEmpty } from "@milaboratories/ts-helpers";
@@ -60,17 +61,17 @@ export class ClientProgress {
     const client = this.wire.get();
 
     const { globalId, signature } = parseSignedResourceId(id);
-    let report: ProgressAPI_Report;
-    if (client instanceof ProgressClient) {
-      report = notEmpty(
-        (
-          await client.getStatus(
-            { resourceId: globalId, resourceSignature: signature },
-            addRTypeToMetadata(type, options),
-          ).response
-        ).report,
-      );
-    } else {
+    const report: ProgressAPI_Report = await withCallAbortSignal(options?.abort, async (abort) => {
+      if (client instanceof ProgressClient) {
+        return notEmpty(
+          (
+            await client.getStatus(
+              { resourceId: globalId, resourceSignature: signature },
+              addRTypeToMetadata(type, { ...options, abort }),
+            ).response
+          ).report,
+        );
+      }
       const resp = (
         await client.POST("/v1/get-progress", {
           body: {
@@ -78,16 +79,20 @@ export class ClientProgress {
             resourceSignature: signatureToBase64Url(signature),
           },
           headers: { ...createRTypeRoutingHeader(type) },
+          signal:
+            typeof options?.timeout === "number"
+              ? AbortSignal.any([abort, AbortSignal.timeout(options.timeout)])
+              : abort,
         })
       ).data!.report;
-      report = {
+      return {
         done: resp.done,
         progress: resp.progress,
         bytesProcessed: BigInt(resp.bytesProcessed),
         bytesTotal: BigInt(resp.bytesTotal),
         name: resp.name,
       };
-    }
+    });
 
     return {
       done: report.done,
