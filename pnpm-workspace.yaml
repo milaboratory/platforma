@@ -269,7 +269,7 @@ catalog:
   # and then `REQUIRES_PFRAMES_VERSION` after a week or two, to give the users time to update desktop
   # before SDK starts requiring a newer version of desktop.
   "@milaboratories/pframes-rs-node": 1.2.0
-  "@milaboratories/pframes-rs-wasip2": 1.2.0
+  "@milaboratories/pframes-rs-wasip2": 1.3.0
   "@bytecodealliance/jco-transpile": ^0.20.0
   "@bytecodealliance/preview2-shim": ^0.30.0
 

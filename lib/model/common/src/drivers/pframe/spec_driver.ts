@@ -11,6 +11,7 @@ import type {
   AxisValueType,
   ColumnValueType,
 } from "./spec";
+import type { ColumnUniversalId } from "./spec/ids";
 import type { PTableColumnId, PTableColumnSpec } from "./table_common";
 import type { PTableRecordFilter } from "./table_calculate";
 import { DataQuery, DataQueryBooleanExpression, SpecQuery, SpecQueryJoinEntry } from "./query";
@@ -179,6 +180,47 @@ export interface DiscoverColumnsResponse {
   hits: DiscoverColumnsResponseHit[];
 }
 
+/**
+ * Request for discovering roots: the columns that, used as anchors, would
+ * reach the given ones. Where {@link DiscoverColumnsRequest} starts from
+ * anchors, this starts from columns already in the frame (the leaves).
+ */
+export interface DiscoverRootsRequest {
+  /** Leaves: ids of frame columns to discover roots for (at least one) */
+  columns: ColumnUniversalId[];
+  /** Roots must match these selectors (OR-ed); empty or omitted matches all columns */
+  includeColumns?: MultiColumnSelector[];
+  /** Roots matching these selectors (OR-ed) are dropped; applied after include filter */
+  excludeColumns?: MultiColumnSelector[];
+  /** Maximum number of linker hops between a root and a leaf (0 = direct only) */
+  maxHops?: number;
+  /** Matching constraints, with the root as the source and the leaf as the hit */
+  constraints: DiscoverColumnsConstraints;
+}
+
+/**
+ * A root found for one leaf. `path` and `mappingVariants` are exactly what
+ * {@link PFrameSpecDriver.discoverColumns} anchored on `root` reports for
+ * `leaf`: the path runs from the root to the leaf, `forQueries` qualifies the
+ * root and `forHit` qualifies the leaf.
+ */
+export interface DiscoverRootsResponseHit {
+  /** The discovered root column */
+  root: PColumnIdAndSpec;
+  /** The requested column this root reaches */
+  leaf: ColumnUniversalId;
+  /** Linker steps from the root to the leaf; empty when they join directly */
+  path: DiscoverColumnsStepInfo[];
+  /** Possible ways to join the leaf onto the root */
+  mappingVariants: DiscoverColumnsMappingVariant[];
+}
+
+/** Response from discover roots */
+export interface DiscoverRootsResponse {
+  /** One entry per (root, leaf, path) */
+  hits: DiscoverRootsResponseHit[];
+}
+
 /** Request for deleting an entry from a given axes integration */
 export interface DeleteColumnRequest {
   /** Already integrated axes with qualifications */
@@ -228,6 +270,9 @@ export interface PFrameSpecDriver {
     handle: SpecFrameHandle,
     request: DiscoverColumnsRequest,
   ): DiscoverColumnsResponse;
+
+  /** Discover the roots the given columns hang off: what, used as anchors, reaches them. */
+  discoverRoots(handle: SpecFrameHandle, request: DiscoverRootsRequest): DiscoverRootsResponse;
 
   /** Delete an entry from a given axes integration */
   deleteColumn(handle: SpecFrameHandle, request: DeleteColumnRequest): DeleteColumnResponse;

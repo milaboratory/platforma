@@ -198,8 +198,8 @@ catalogs:
       specifier: 1.2.0
       version: 1.2.0
     '@milaboratories/pframes-rs-wasip2':
-      specifier: 1.2.0
-      version: 1.2.0
+      specifier: 1.3.0
+      version: 1.3.0
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.9
       version: 2.2.9
@@ -2825,7 +2825,7 @@ importers:
         version: link:../../../tools/build-configs
       '@milaboratories/pframes-rs-wasip2':
         specifier: 'catalog:'
-        version: 1.2.0
+        version: 1.3.0
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../../tools/ts-builder
@@ -4173,7 +4173,7 @@ importers:
     dependencies:
       '@milaboratories/pframes-rs-wasip2':
         specifier: 'catalog:'
-        version: 1.2.0
+        version: 1.3.0
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 2.2.9
@@ -5699,8 +5699,8 @@ packages:
       '@milaboratories/pl-model-common': ^1.51.0
       '@milaboratories/pl-model-middle-layer': ^1.34.0
 
-  '@milaboratories/pframes-rs-wasip2@1.2.0':
-    resolution: {integrity: sha512-veQz38MXRMqbN3So8vwiyg9Cpeua/svPnM3kyLa6oocQVmBcRjXgg6X81YEFczQh1FMsSHSWyY3wFGD4Ho2xLQ==}
+  '@milaboratories/pframes-rs-wasip2@1.3.0':
+    resolution: {integrity: sha512-O5M/yHNZsFpX0sMNMitqFhFypVDyVihe7sB7ZIC/twSu2oYfNQq+AAkPYkekQOtrGiETLotIsujgIU+nsPupLg==}
 
   '@milaboratories/software-pframes-conv@2.2.9':
     resolution: {integrity: sha512-w+GaazDSqEgqYUJ38I5lgOsggyZJpcBVGvDMHIX1pyTdvPjWAOWu3mLkScaYuWeitFfh8aAedf5vrLqXtnX8bw==}
@@ -10659,7 +10659,7 @@ snapshots:
       commander: 15.0.0
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasip2@1.2.0': {}
+  '@milaboratories/pframes-rs-wasip2@1.3.0': {}
 
   '@milaboratories/software-pframes-conv@2.2.9': {}
 
