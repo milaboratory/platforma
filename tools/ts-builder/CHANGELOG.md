@@ -1,5 +1,11 @@
 # @milaboratories/ts-builder
 
+## 1.8.0
+
+### Minor Changes
+
+- 2d57c27: Read `tsconfig.build.json` when a package has one: declaration output (`build`), `type-check` and `check` use it instead of `tsconfig.json`, so `tsconfig.json` can cover tests for editors and language servers while test files stay out of `dist`.
+
 ## 1.7.4
 
 ### Patch Changes

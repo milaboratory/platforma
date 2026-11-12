@@ -1,5 +1,132 @@
 # @milaboratories/pl-middle-layer
 
+## 2.6.1
+
+### Patch Changes
+
+- Updated dependencies [fd21724]
+  - @platforma-sdk/model@1.90.2
+
+## 2.6.0
+
+### Minor Changes
+
+- af78d3a: Fix a memory leak on the gRPC wire: every transaction and request that got a long-lived `abortSignal` stayed in memory until that signal aborted. The project refresh loop and the tree synchronization pass such a signal since pl-client 3.21.1, so an idle middle layer grew by about 14 kB of heap plus the size of the response per transaction.
+
+  - `PlClient` transactions listen to `ops.abortSignal` themselves and stop listening when the transaction ends. An abort still ends a running transaction at once.
+  - `listUserResources`, `ClientLogs.lastLines`, `ClientLogs.readText`, `ClientProgress.getStatus`, and the download URL request detach from the caller's signal when the request ends.
+  - The download URL request honors its abort signal on the REST wire too.
+  - `LLPlClient.createTx` throws the abort reason when `ops.abortSignal` is already aborted.
+  - **BREAKING:** pl-client now needs Node 24 at runtime, as its `engines` field already says: `withCallAbortSignal` uses `DisposableStack`. On Node 22 the wrapped requests throw `ReferenceError: DisposableStack is not defined`. A block whose CI runs Node 22 or older must move to Node 24 before it takes this version of `@platforma-sdk/test`.
+  - **BREAKING:** `callAbortSignal` is removed: the signal it returned stayed in memory in the same way. Use the new `withCallAbortSignal`. pl-middle-layer re-exports pl-client, and `@platforma-sdk/test` re-exports pl-middle-layer as `ML`, so the same applies to both.
+
+### Patch Changes
+
+- Updated dependencies [af78d3a]
+  - @milaboratories/pl-client@3.23.0
+  - @milaboratories/pl-drivers@2.0.3
+  - @milaboratories/pl-tree@1.18.2
+  - @milaboratories/pl-model-backend@1.4.48
+  - @milaboratories/pl-errors@1.4.63
+  - @platforma-sdk/block-tools@2.19.3
+  - @platforma-sdk/workflow-tengo@6.22.3
+
+## 2.5.0
+
+### Minor Changes
+
+- 92cf16f: New `ColumnsCollection.discoverRoots`: find the columns the given ones hang off
+
+  `discover` starts from anchors and walks linkers down to what they contain (anchored on `sample`, it reaches `cell`). There was no way to go the other way, from `cell` to the `sample`-level columns above it. `discoverRoots` takes the columns you have and returns the roots they hang off:
+
+  ```ts
+  const found = collection.discoverRoots({
+    leaves: [cellRef],
+    mode: "enrichment",
+    maxHops: 4,
+  });
+  // found: Array<{ root: ColumnRecipe; leaf: ColumnRecipe; path: ColumnRecipe[] }>
+  ```
+
+  Each entry is exactly what `discover({ anchors: { r: root } })` would return for the leaf: `leaf` is the requested column as a discovered column carrying the linker path and qualifications, so the table is built from `root` as the anchor plus `leaf`, the same way as for any discovered column. `discover` is unchanged.
+
+  The engine side is the new `discoverRoots` request of the spec frame (`PFrameSpecDriver.discoverRoots`), from milaboratory/pframes-rs#295.
+
+### Patch Changes
+
+- Updated dependencies [ec020f0]
+- Updated dependencies [e628f46]
+- Updated dependencies [92cf16f]
+  - @platforma-sdk/block-tools@2.19.2
+  - @platforma-sdk/workflow-tengo@6.22.3
+  - @milaboratories/pl-model-common@1.56.0
+  - @milaboratories/pl-model-middle-layer@1.40.0
+  - @milaboratories/pf-spec-driver@1.6.0
+  - @milaboratories/columns-collection-driver@0.3.0
+  - @platforma-sdk/model@1.90.0
+  - @milaboratories/pf-driver@1.9.18
+  - @milaboratories/pl-client@3.22.2
+  - @milaboratories/pl-crash-recorder@0.3.12
+  - @milaboratories/pl-drivers@2.0.2
+  - @milaboratories/pl-model-backend@1.4.47
+  - @milaboratories/pl-errors@1.4.62
+  - @milaboratories/pl-tree@1.18.1
+
+## 2.4.2
+
+### Patch Changes
+
+- Updated dependencies [470744c]
+  - @platforma-sdk/model@1.89.0
+
+## 2.4.1
+
+### Patch Changes
+
+- Updated dependencies [b556b15]
+  - @platforma-sdk/model@1.88.16
+
+## 2.4.0
+
+### Minor Changes
+
+- 1bea6a2: Add `watchBlockStatusTree`: the live action-context tree of a block run with per-context state, readings and subtree counters plus the heaviest branches, built from the same per-context folds as the summary. A context's children are present only while it is expanded via `setBlockStatusTreeExpanded`.
+
+### Patch Changes
+
+- Updated dependencies [1bea6a2]
+  - @milaboratories/pl-model-middle-layer@1.39.0
+  - @milaboratories/pf-driver@1.9.17
+  - @platforma-sdk/model@1.88.15
+  - @platforma-sdk/block-tools@2.19.1
+  - @milaboratories/pf-spec-driver@1.5.17
+
+## 2.3.0
+
+### Minor Changes
+
+- 9aea514: `Project.watchBlockStatus()` folds a block's action-context tree into a live `BlockStatusSummary`, with the run's jobs counted per state as the backend reports it, one computable per context so a report re-reads only its own context, and the project tree prunes the action-context fields. `PlTreeNodeAccessor` gains `listKeyValuesAsString(prefix)` and `listFields()`.
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+- Updated dependencies [5744a50]
+- Updated dependencies [581be9f]
+  - @milaboratories/pl-model-common@1.55.2
+  - @milaboratories/pl-client@3.22.1
+  - @milaboratories/pl-tree@1.18.0
+  - @milaboratories/pl-model-middle-layer@1.38.0
+  - @platforma-sdk/block-tools@2.19.0
+  - @platforma-sdk/workflow-tengo@6.22.2
+  - @milaboratories/columns-collection-driver@0.2.15
+  - @milaboratories/pf-spec-driver@1.5.16
+  - @milaboratories/pf-driver@1.9.16
+  - @milaboratories/pl-crash-recorder@0.3.11
+  - @milaboratories/pl-drivers@2.0.1
+  - @platforma-sdk/model@1.88.14
+  - @milaboratories/pl-model-backend@1.4.46
+  - @milaboratories/pl-errors@1.4.61
+
 ## 2.2.0
 
 ### Minor Changes

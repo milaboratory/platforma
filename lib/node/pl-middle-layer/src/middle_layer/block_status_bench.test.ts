@@ -3,13 +3,22 @@
  * pl-tree holding the action contexts, its accessors, and the computable over them. No backend.
  *
  * A run is a root with one branch per 1 000 jobs and the jobs under the branches. Each job carries
- * the transitions a real one writes. A report is one new transition on one job, as a command
- * reports its next state.
+ * the transitions a real one writes. Three changes are timed, each followed by a read:
  *
- * Off by default; run with `BLOCK_STATUS_BENCH=1 npx vitest run src/middle_layer/block_status_bench`.
+ * - a report: one new transition on one job, as a command reports its next state;
+ * - a new job: one more context under a branch, as a run fans out;
+ * - an expansion: the tree opens another branch (the tree reader only).
+ *
+ * The "full walk" reader folds the whole tree in one computable, as the fold did before it got one
+ * computable per context; it is the baseline.
+ *
+ * Off by default; run with
+ * `BLOCK_STATUS_BENCH=1 NODE_OPTIONS=--expose-gc npx vitest run src/middle_layer/block_status_bench`.
+ * With `--expose-gc` each run size starts after a collection, so the previous run's garbage does
+ * not land in its first read.
  */
 
-import { Computable } from "@milaboratories/computable";
+import { Computable, WatchableValue } from "@milaboratories/computable";
 import type { SignedResourceId } from "@milaboratories/pl-client";
 import {
   createSignedResourceId,
@@ -18,19 +27,59 @@ import {
 } from "@milaboratories/pl-client";
 import type { ExtendedResourceData, PlTreeEntry } from "@milaboratories/pl-tree";
 import { PlTreeState } from "@milaboratories/pl-tree";
-import type { BlockStatusSummary } from "@milaboratories/pl-model-middle-layer";
 import { expect, test } from "vitest";
 import { ActionContextType } from "../mutator/template/render_block";
-import { entrySummary } from "./block_status_tree";
+import { foldSubtree, summarize } from "./block_status_fold";
+import { actionContextNode, entrySummary, subtreeFold } from "./block_status_tree";
+import { blockStatusTree } from "./block_status_tree_fold";
 
 const JobsPerBranch = 1_000;
-const Sizes = [1_000, 10_000, 100_000];
-const Reports = 20;
+const Sizes = [1_000, 10_000, 100_000, 250_000];
+/** Changes of each kind per run size; the table gives their median and slowest. */
+const Changes = 20;
 
-/** The computable under test: the summary of the run rooted at `entry`. */
-function summaryOf(entry: PlTreeEntry): Computable<BlockStatusSummary> {
-  return entrySummary(entry, true, (err) => console.error(err));
+/** What a reader computes over the run, and how to open a context when it shows a tree. */
+type Reader = { value: Computable<unknown>; expand?: (contextId: string) => void };
+
+/** The whole tree folded in one computable: every change re-reads every context. */
+function fullWalkOf(entry: PlTreeEntry): Reader {
+  return {
+    value: Computable.make((ctx) =>
+      summarize(foldSubtree(actionContextNode(ctx.accessor(entry).node()))),
+    ),
+  };
 }
+
+/** The summary as `watchBlockStatus` gives it: one computable per context. */
+function summaryOf(entry: PlTreeEntry): Reader {
+  return { value: entrySummary(entry, true, (err) => console.error(err)) };
+}
+
+/** The tree as `watchBlockStatusTree` gives it, with the root and the expanded contexts open. */
+function treeOf(entry: PlTreeEntry): Reader {
+  const expanded = new WatchableValue<string[]>([]);
+  return {
+    value: Computable.make(
+      (ctx) => ({
+        expanded: expanded.getValue(ctx),
+        fold: subtreeFold(entry, new Set(), (e) => console.error(e)),
+      }),
+      {
+        postprocessValue: ({ expanded, fold }) => {
+          if (fold === undefined) throw new Error("the root did not fold");
+          return blockStatusTree(fold, summarize(fold), new Set(expanded));
+        },
+      },
+    ),
+    expand: (contextId) => expanded.setValue([contextId], "bench expansion"),
+  };
+}
+
+const Readers = [
+  { name: "full walk (before)", make: fullWalkOf },
+  { name: "summary", make: summaryOf },
+  { name: "tree", make: treeOf },
+];
 
 const t0 = 1_800_000_000_000_000_000n;
 
@@ -115,6 +164,7 @@ function buildRun(size: number) {
   const jobs: SignedResourceId[] = [];
 
   const branches: SignedResourceId[] = [];
+  const branchJobs = new Map<SignedResourceId, SignedResourceId[]>();
   for (let made = 1; made < size;) {
     const branch = rid();
     branches.push(branch);
@@ -126,6 +176,7 @@ function buildRun(size: number) {
       jobs.push(job);
       resources.set(job, contextData(job, `job ${j}`, [], jobKv(num(job))));
     }
+    branchJobs.set(branch, children);
     resources.set(
       branch,
       contextData(branch, `branch ${branches.length}`, children, [
@@ -140,56 +191,96 @@ function buildRun(size: number) {
 
   const tree = new PlTreeState(root, DefaultFinalResourceDataPredicate);
   tree.updateFromResourceData([...resources.values()]);
-  return { tree, resources, jobs, num };
+
+  /** One more job under the `i`-th branch, as a run fans out. */
+  const addJob = (i: number) => {
+    const branch = branches[i % branches.length];
+    const job = rid();
+    const jobData = contextData(job, `job ${num(job)}`, [], jobKv(num(job)));
+    const children = [...branchJobs.get(branch)!, job];
+    branchJobs.set(branch, children);
+    const grown = contextData(
+      branch,
+      `branch ${i % branches.length}`,
+      children,
+      resources.get(branch)!.kv,
+    );
+    resources.set(job, jobData);
+    resources.set(branch, grown);
+    tree.updateFromResourceData([jobData, grown]);
+  };
+
+  /** One more transition on a job, as a command reports its next state. */
+  const report = (i: number) => {
+    const job = jobs[(i * 7919) % jobs.length];
+    const data = resources.get(job)!;
+    const updated = {
+      ...data,
+      kv: [
+        ...data.kv,
+        transition("exec", num(job) + 2, t0 + 10_000_000_000n + BigInt(i), "Completed"),
+      ],
+    };
+    resources.set(job, updated);
+    tree.updateFromResourceData([updated]);
+  };
+
+  return { tree, branches, report, addJob };
 }
 
-async function timed<T>(fn: () => Promise<T>): Promise<{ ms: number; value: T }> {
+async function timed(fn: () => Promise<unknown>): Promise<number> {
   const start = performance.now();
-  const value = await fn();
-  return { ms: performance.now() - start, value };
+  await fn();
+  return performance.now() - start;
 }
 
-const fmt = (ms: number) => (ms < 10 ? ms.toFixed(2) : ms.toFixed(0));
+/** Times `changes` changes, each followed by a read: "median / slowest" in ms. */
+async function perChange(reader: Reader, change: (i: number) => void): Promise<string> {
+  const ms: number[] = [];
+  for (let i = 0; i < Changes; i++) {
+    change(i);
+    ms.push(await timed(() => reader.value.getValue()));
+  }
+  ms.sort((a, b) => a - b);
+  return `${fmt(ms[Math.floor(ms.length / 2)])} / ${fmt(ms[ms.length - 1])}`;
+}
+
+function fmt(ms: number): string {
+  if (ms >= 1000) return `${(ms / 1000).toFixed(1)} s`;
+  return ms < 10 ? ms.toFixed(2) : ms.toFixed(0);
+}
 
 test.skipIf(process.env.BLOCK_STATUS_BENCH === undefined)(
-  "block status fold: first read and one report, by run size",
-  { timeout: 600_000 },
+  "block status fold: first read and each kind of change, by run size",
+  { timeout: 1_800_000 },
   async () => {
     const rows: string[] = [];
-    for (const size of Sizes) {
-      const { tree, resources, jobs, num } = buildRun(size);
-      const summary = summaryOf(tree.entry());
+    for (const { name, make } of Readers)
+      for (const size of Sizes) {
+        globalThis.gc?.();
+        const run = buildRun(size);
+        const reader = make(run.tree.entry());
 
-      const first = await timed(() => summary.getValue());
-      expect(first.value.totalContexts).toBe(size);
-
-      const perReport: number[] = [];
-      for (let i = 0; i < Reports; i++) {
-        const job = jobs[(i * 7919) % jobs.length];
-        const data = resources.get(job)!;
-        const updated = {
-          ...data,
-          kv: [
-            ...data.kv,
-            transition("exec", num(job) + 2, t0 + 10_000_000_000n + BigInt(i), "Completed"),
-          ],
-        };
-        resources.set(job, updated);
-        tree.updateFromResourceData([updated]);
-        perReport.push((await timed(() => summary.getValue())).ms);
+        const first = await timed(() => reader.value.getValue());
+        const report = await perChange(reader, run.report);
+        const newJob = await perChange(reader, run.addJob);
+        const { expand } = reader;
+        const expansion =
+          expand === undefined
+            ? "n/a"
+            : await perChange(reader, (i) => expand(String(run.branches[i % run.branches.length])));
+        expect(await reader.value.getValue()).toBeDefined();
+        rows.push(
+          `| ${name} | ${size.toLocaleString("en")} | ${fmt(first)} | ${report} | ${newJob} | ${expansion} |`,
+        );
       }
-      perReport.sort((a, b) => a - b);
-      const median = perReport[Math.floor(perReport.length / 2)];
-      const worst = perReport[perReport.length - 1];
-      rows.push(
-        `| ${size.toLocaleString("en")} | ${fmt(first.ms)} | ${fmt(median)} | ${fmt(worst)} |`,
-      );
-    }
 
     console.log(
       [
-        "| Contexts | First read, ms | One report, median ms | One report, worst ms |",
-        "|---:|---:|---:|---:|",
+        `Times in ms, "median / slowest" of ${Changes} changes each.`,
+        "",
+        "| Reader | Contexts | First read | Report on a job | New job | Expand a branch |",
+        "|---|---:|---:|---:|---:|---:|",
         ...rows,
       ].join("\n"),
     );

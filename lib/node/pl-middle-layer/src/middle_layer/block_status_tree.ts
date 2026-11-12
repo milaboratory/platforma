@@ -1,5 +1,5 @@
 /**
- * The live action-context tree of one block render, and the computable that folds it.
+ * The live action-context tree of one block render, and the computables that fold it.
  *
  * A status tree is its own {@link SynchronizedTreeState}, seeded at the root action context of the
  * render rather than at the project. It has to be separate: the project tree prunes the context
@@ -14,7 +14,7 @@ import { isNullSignedResourceId, ResourceTypeName, treeFilter } from "@milaborat
 import { Computable, WatchableValue } from "@milaboratories/computable";
 import type { PlTreeEntry, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
-import type { BlockStatusSummary } from "@milaboratories/pl-model-middle-layer";
+import type { BlockStatusSummary, BlockStatusTree } from "@milaboratories/pl-model-middle-layer";
 import {
   EmptyBlockStatusSummary,
   UnreadableBlockStatusSummary,
@@ -23,6 +23,7 @@ import {
 import { setTimeout } from "node:timers/promises";
 import type { ActionContextNode, SubtreeFold } from "./block_status_fold";
 import { childContexts, foldContext, mergeSubtree, summarize } from "./block_status_fold";
+import { blockStatusTree, emptyBlockStatusTree } from "./block_status_tree_fold";
 import type { BlockActionContextMode } from "./block_action_context";
 import { ActionContextLinkCapability } from "../mutator/template/render_block";
 import { projectFieldName } from "../model/project_model";
@@ -149,15 +150,21 @@ export function entrySummary(
 ): Computable<BlockStatusSummary> {
   return Computable.make(() => ({ fold: subtreeFold(entry, new Set(), onError) }), {
     key: `block-status-summary/${entry.id}`,
-    postprocessValue: ({ fold }) => {
-      // The counters of a context that could not be read are unknown, not zero.
-      if (fold === undefined) return UnreadableBlockStatusSummary;
-      const summary = summarize(fold);
-      if (reportsSupported || summary.totalContexts === 0) return summary;
-      // The context exists and carries its data, but no transition can ever arrive.
-      return { ...summary, availability: "unsupported" as const };
-    },
+    postprocessValue: ({ fold }) => summaryOfFold(fold, reportsSupported),
   });
+}
+
+/** The summary of a fold, or of a root context that could not be read. */
+function summaryOfFold(
+  fold: SubtreeFold | undefined,
+  reportsSupported: boolean,
+): BlockStatusSummary {
+  // The counters of a context that could not be read are unknown, not zero.
+  if (fold === undefined) return UnreadableBlockStatusSummary;
+  const summary = summarize(fold);
+  if (reportsSupported || summary.totalContexts === 0) return summary;
+  // The context exists and carries its data, but no transition can ever arrive.
+  return { ...summary, availability: "unsupported" };
 }
 
 /** What {@link BlockStatusWatch.start} watches. */
@@ -197,6 +204,18 @@ export class BlockStatusWatch {
 
   public readonly summary: Computable<BlockStatusSummary>;
 
+  /**
+   * The contexts whose children {@link tree} shows. Shared by every holder: two windows on one
+   * block see one expansion.
+   */
+  private readonly expanded = new WatchableValue<ReadonlySet<string>>(new Set());
+
+  /**
+   * The run's tree, context by context, over the same synchronized tree as {@link summary}. It
+   * keeps its own per-context computables, so watching it doubles the cost of a report.
+   */
+  public readonly tree: Computable<BlockStatusTree>;
+
   private readonly env: MiddleLayerEnvironment;
   private readonly projectRid: SignedResourceId;
   private readonly blockId: string;
@@ -227,6 +246,38 @@ export class BlockStatusWatch {
         this.env.logger.warn(new Error("block status fold failed", { cause: err })),
       );
     });
+    // The expansion is read in the body, so expanding re-runs it; the per-context computables
+    // under it keep their keys and so their cached folds.
+    this.tree = Computable.make(
+      (ctx) => {
+        const entry = this.source.getValue(ctx);
+        return {
+          seeded: entry !== undefined,
+          expanded: [...this.expanded.getValue(ctx)],
+          fold:
+            entry === undefined
+              ? undefined
+              : subtreeFold(entry, new Set(), (err) =>
+                  this.env.logger.warn(new Error("block status tree fold failed", { cause: err })),
+                ),
+        };
+      },
+      {
+        postprocessValue: ({ seeded, expanded, fold }) => {
+          if (!seeded)
+            return emptyBlockStatusTree(
+              reportsSupported ? EmptyBlockStatusSummary : UnsupportedBlockStatusSummary,
+            );
+          if (fold === undefined) return emptyBlockStatusTree(UnreadableBlockStatusSummary);
+          return blockStatusTree(fold, summaryOfFold(fold, reportsSupported), new Set(expanded));
+        },
+      },
+    );
+  }
+
+  /** Replaces the set of contexts whose children {@link tree} shows. */
+  public setExpanded(contextIds: readonly string[]): void {
+    this.expanded.setValue(new Set(contextIds), "block status tree expansion changed");
   }
 
   /**
@@ -294,6 +345,7 @@ export class BlockStatusWatch {
     this.current = undefined;
     this.source.setValue(undefined, "block status watch terminated");
     this.summary.resetState();
+    this.tree.resetState();
     await this.terminateTree(held?.tree);
   }
 

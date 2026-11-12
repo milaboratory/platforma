@@ -201,3 +201,50 @@ describe("ColumnsCollection.filter", () => {
     expect(ids).toEqual([c1.id, c2.id]);
   });
 });
+
+describe("ColumnsCollection.discoverRoots", () => {
+  const cellAxis: AxisSpec = { name: "cell", type: "Int" };
+  const sampleAxis: AxisSpec = { name: "sample", type: "Long" };
+  const linkerSpec: PColumnSpec = {
+    ...spec("cellToSample", [cellAxis, sampleAxis]),
+    annotations: { "pl7.app/isLinkerColumn": "true" },
+  };
+
+  const cellData = { id: gid("cellData"), spec: spec("cellData", [cellAxis]) };
+  const linker = { id: gid("cellToSample"), spec: linkerSpec };
+  const sampleData = { id: gid("sampleData"), spec: spec("sampleData", [sampleAxis]) };
+
+  beforeEach(() => handle.installAmbientCtx());
+  afterEach(() => handle.uninstallAmbientCtx());
+
+  test("finds the column the given one hangs off, with the linker path", () => {
+    const found = makeCollection([cellData, linker, sampleData]).discoverRoots({
+      leaves: [cellData.id],
+      maxHops: 1,
+    });
+
+    expect(found.map((r) => r.root.id)).toEqual([sampleData.id]);
+    expect(found[0]?.path.map((c) => c.id)).toEqual([linker.id]);
+  });
+
+  test("the leaf is what discover anchored on the root returns", () => {
+    const collection = makeCollection([cellData, linker, sampleData]);
+    const [found] = collection.discoverRoots({ leaves: [cellData.id], maxHops: 1 });
+
+    const discovered = collection
+      .discover({ anchors: { r: sampleData.id }, maxHops: 1 })
+      .getColumnIds();
+
+    expect(found).toBeDefined();
+    expect(discovered).toContain(found?.leaf.id);
+  });
+
+  test("a column at the top of the hierarchy has no roots", () => {
+    const found = makeCollection([cellData, linker, sampleData]).discoverRoots({
+      leaves: [sampleData.id],
+      maxHops: 1,
+    });
+
+    expect(found).toEqual([]);
+  });
+});

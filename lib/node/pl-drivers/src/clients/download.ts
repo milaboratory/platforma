@@ -1,12 +1,13 @@
 /* eslint-disable n/no-unsupported-features/node-builtins */
 import type { WireClientProvider, WireClientProviderFactory } from "@milaboratories/pl-client";
 import {
-  addRTypeToMetadata,
-  stringifyWithResourceId,
   RestAPI,
+  addRTypeToMetadata,
   createRTypeRoutingHeader,
   parseSignedResourceId,
   signatureToBase64Url,
+  stringifyWithResourceId,
+  withCallAbortSignal,
 } from "@milaboratories/pl-client";
 import type { ResourceInfo } from "@milaboratories/pl-tree";
 import { PerfTimer } from "@milaboratories/helpers";
@@ -176,16 +177,17 @@ export class ClientDownload {
     options?: RpcOptions,
     signal?: AbortSignal,
   ): Promise<DownloadAPI_GetDownloadURL_Response> {
-    const withAbort = options ?? {};
-    withAbort.abort = signal;
-
     const { globalId, signature } = parseSignedResourceId(id);
     const client = this.wire.get();
     if (client instanceof DownloadClient) {
-      return await client.getDownloadURL(
-        { resourceId: globalId, resourceSignature: signature, isInternalUse: false },
-        addRTypeToMetadata(type, withAbort),
-      ).response;
+      return await withCallAbortSignal(
+        signal,
+        async (abort) =>
+          await client.getDownloadURL(
+            { resourceId: globalId, resourceSignature: signature, isInternalUse: false },
+            addRTypeToMetadata(type, { ...options, abort }),
+          ).response,
+      );
     } else {
       return (
         await client.POST("/v1/get-download-url", {
@@ -195,6 +197,7 @@ export class ClientDownload {
             isInternalUse: false,
           },
           headers: { ...createRTypeRoutingHeader(type) },
+          ...(signal !== undefined && { signal }),
         })
       ).data!;
     }

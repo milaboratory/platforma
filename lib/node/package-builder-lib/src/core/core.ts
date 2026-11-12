@@ -520,6 +520,7 @@ export class Core {
     const name = this.pkgInfo.artifactName(artifact);
 
     docker.build(context, dockerfile, localTag, name, this.pkgInfo.version);
+    docker.checkLayerSizes(localTag, (message) => this.logger.warn(message));
 
     const imageHash = docker.getImageHash(localTag);
     const dstTag = docker.generateRemoteTagName(name, imageHash, registry);

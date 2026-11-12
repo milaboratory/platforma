@@ -1,5 +1,60 @@
 # @platforma-sdk/pl-cli
 
+## 0.11.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.6.1
+
+## 0.11.3
+
+### Patch Changes
+
+- Updated dependencies [af78d3a]
+  - @milaboratories/pl-client@3.23.0
+  - @milaboratories/pl-middle-layer@2.6.0
+
+## 0.11.2
+
+### Patch Changes
+
+- Updated dependencies [92cf16f]
+  - @milaboratories/pl-middle-layer@2.5.0
+  - @milaboratories/pl-client@3.22.2
+
+## 0.11.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.4.2
+
+## 0.11.0
+
+### Minor Changes
+
+- 64402da: Add `pl-cli admin instance-stats`.
+
+## 0.10.28
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.4.1
+
+## 0.10.27
+
+### Patch Changes
+
+- Updated dependencies [1bea6a2]
+  - @milaboratories/pl-middle-layer@2.4.0
+
+## 0.10.26
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-client@3.22.1
+  - @milaboratories/pl-middle-layer@2.3.0
+
 ## 0.10.25
 
 ### Patch Changes

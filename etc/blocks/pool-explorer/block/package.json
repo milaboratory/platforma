@@ -48,7 +48,8 @@
         "name": "MiLaboratories Inc",
         "url": "https://milaboratories.com/"
       },
-      "marketplaceRanking": 10
+      "marketplaceRanking": 10,
+      "changelog": "file:CHANGELOG.md"
     }
   }
 }

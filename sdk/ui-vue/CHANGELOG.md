@@ -1,5 +1,70 @@
 # @platforma-sdk/ui-vue
 
+## 1.90.2
+
+### Patch Changes
+
+- Updated dependencies [fd21724]
+  - @platforma-sdk/model@1.90.2
+  - @milaboratories/uikit@2.17.10
+
+## 1.90.0
+
+### Patch Changes
+
+- 7959b69: PlAgDataTableV2: a destroyed grid clears the table's grid api only when it is the grid on screen, so the column manager and export buttons stay after the inner grid is replaced.
+- Updated dependencies [92cf16f]
+  - @milaboratories/pl-model-common@1.56.0
+  - @milaboratories/pf-spec-driver@1.6.0
+  - @milaboratories/columns-collection-driver@0.3.0
+  - @platforma-sdk/model@1.90.0
+  - @milaboratories/uikit@2.17.9
+
+## 1.89.0
+
+### Minor Changes
+
+- 470744c: PlAgDataTableV2 no longer hangs on "Data is not computed" or "Loading data…" when it mounts on a source its saved state does not name.
+
+  - The model builds the table from the saved settings of the source the UI shows, including the fast search; `pTableParams` keeps only the pointer to that source, and its other fields are now typed `null`.
+  - Each source's cache entry keeps its sorting and hidden columns in its own `sorting` and `hiddenColIds` fields. `gridState` stays the grid's own state, kept only to restore the grid; nothing but the grid reads it.
+  - The table writes its state through one path: every write brings the saved state in line with the source on screen and applies the user's pending edits, so mounting on a new source writes the same way a sort does. Edits the platform has not reported back yet survive a re-push of the older state.
+  - Grid state reports are stored under the source the grid's columns belong to.
+  - While the model computes, the table shows the running placeholder instead of "Data is not computed".
+
+### Patch Changes
+
+- Updated dependencies [470744c]
+  - @platforma-sdk/model@1.89.0
+  - @milaboratories/uikit@2.17.8
+
+## 1.88.16
+
+### Patch Changes
+
+- Updated dependencies [b556b15]
+  - @platforma-sdk/model@1.88.16
+  - @milaboratories/uikit@2.17.7
+
+## 1.88.15
+
+### Patch Changes
+
+- @platforma-sdk/model@1.88.15
+- @milaboratories/pf-spec-driver@1.5.17
+- @milaboratories/uikit@2.17.6
+
+## 1.88.14
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-model-common@1.55.2
+  - @milaboratories/columns-collection-driver@0.2.15
+  - @milaboratories/pf-spec-driver@1.5.16
+  - @platforma-sdk/model@1.88.14
+  - @milaboratories/uikit@2.17.5
+
 ## 1.88.13
 
 ### Patch Changes

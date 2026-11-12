@@ -23,7 +23,7 @@ import {
 } from "./config";
 import type { GrpcOptions } from "@protobuf-ts/grpc-transport";
 import { GrpcTransport } from "@protobuf-ts/grpc-transport";
-import { callAbortSignal } from "./driver";
+import { withCallAbortSignal } from "./abort_signal";
 import { LLPlTransaction } from "./ll_transaction";
 import { setResourceSignaturesRequired } from "./types";
 import { parsePlJwt } from "../util/pl";
@@ -1058,19 +1058,17 @@ export class LLPlClient implements WireClientProviderFactory {
       throw new Error("ListUserResources requires gRPC wire protocol; REST is not supported");
     }
 
-    const call = cl.listUserResources(
-      {
-        login: opts.login ?? "",
-        startFrom: opts.startFrom ?? 0n,
-        limit: opts.limit ?? 0,
-      },
-      { abort: callAbortSignal(opts.abortSignal) },
-    );
-    const responses: grpcTypes.AuthAPI_ListUserResources_Response[] = [];
-    for await (const msg of call.responses) {
-      responses.push(msg);
-    }
-    return responses;
+    return await withCallAbortSignal(opts.abortSignal, async (abort) => {
+      const call = cl.listUserResources(
+        {
+          login: opts.login ?? "",
+          startFrom: opts.startFrom ?? 0n,
+          limit: opts.limit ?? 0,
+        },
+        { abort },
+      );
+      return await Array.fromAsync(call.responses);
+    });
   }
 
   /** Returns the authenticated caller's session id and effective role.
@@ -1129,9 +1127,9 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   createTx(rw: boolean, ops: PlCallOps = {}): LLPlTransaction {
+    ops.abortSignal?.throwIfAborted();
     return new LLPlTransaction((abortSignal) => {
       let totalAbortSignal = abortSignal;
-      if (ops.abortSignal) totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
 
       const timeout =
         ops.timeout ??
@@ -1179,7 +1177,7 @@ export class LLPlClient implements WireClientProviderFactory {
       }
 
       throw new Error(`transactions are not supported for wire protocol ${this._wireProto}`);
-    });
+    }, ops.abortSignal);
   }
 
   /** Closes underlying transport */

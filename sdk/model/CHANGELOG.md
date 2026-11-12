@@ -1,5 +1,78 @@
 # @platforma-sdk/model
 
+## 1.90.2
+
+### Patch Changes
+
+- fd21724: `createPFrameForGraphs` no longer fails with `Duplicate column id … in provider ResultPool` when a block passes result pool columns among its own columns under their result pool ids. A column offered by several column providers is taken once, from the first of them; the same id is an error only within one provider, or when two providers give it to different columns.
+
+## 1.90.0
+
+### Minor Changes
+
+- 92cf16f: New `ColumnsCollection.discoverRoots`: find the columns the given ones hang off
+
+  `discover` starts from anchors and walks linkers down to what they contain (anchored on `sample`, it reaches `cell`). There was no way to go the other way, from `cell` to the `sample`-level columns above it. `discoverRoots` takes the columns you have and returns the roots they hang off:
+
+  ```ts
+  const found = collection.discoverRoots({
+    leaves: [cellRef],
+    mode: "enrichment",
+    maxHops: 4,
+  });
+  // found: Array<{ root: ColumnRecipe; leaf: ColumnRecipe; path: ColumnRecipe[] }>
+  ```
+
+  Each entry is exactly what `discover({ anchors: { r: root } })` would return for the leaf: `leaf` is the requested column as a discovered column carrying the linker path and qualifications, so the table is built from `root` as the anchor plus `leaf`, the same way as for any discovered column. `discover` is unchanged.
+
+  The engine side is the new `discoverRoots` request of the spec frame (`PFrameSpecDriver.discoverRoots`), from milaboratory/pframes-rs#295.
+
+### Patch Changes
+
+- Updated dependencies [92cf16f]
+  - @milaboratories/pl-model-common@1.56.0
+  - @milaboratories/pl-model-middle-layer@1.40.0
+  - @milaboratories/ptabler-expression-js@1.2.50
+
+## 1.89.0
+
+### Minor Changes
+
+- 470744c: PlAgDataTableV2 no longer hangs on "Data is not computed" or "Loading data…" when it mounts on a source its saved state does not name.
+
+  - The model builds the table from the saved settings of the source the UI shows, including the fast search; `pTableParams` keeps only the pointer to that source, and its other fields are now typed `null`.
+  - Each source's cache entry keeps its sorting and hidden columns in its own `sorting` and `hiddenColIds` fields. `gridState` stays the grid's own state, kept only to restore the grid; nothing but the grid reads it.
+  - The table writes its state through one path: every write brings the saved state in line with the source on screen and applies the user's pending edits, so mounting on a new source writes the same way a sort does. Edits the platform has not reported back yet survive a re-push of the older state.
+  - Grid state reports are stored under the source the grid's columns belong to.
+  - While the model computes, the table shows the running placeholder instead of "Data is not computed".
+
+## 1.88.16
+
+### Patch Changes
+
+- b556b15: PlDataTable: carry table state saved before the column-access rework over to the current column ids.
+
+  Sorting, hidden columns, column order and filters saved before the rework kept discovered column ids without the `__isDiscovered` marker. The current id parser rejects them, so a block with such a saved sorting failed its whole table output with `extractPObjectId: unrecognized column id structure`.
+
+  - A new state version (v9) rewrites those ids to the current form, so the saved choices survive. Pre-rework anchored and filtered ids, which name a column relative to an anchor the state does not hold, are dropped; a sorting left empty this way falls back to the default.
+  - The table's column resolver now drops a reference whose id it cannot parse instead of throwing.
+
+## 1.88.15
+
+### Patch Changes
+
+- Updated dependencies [1bea6a2]
+  - @milaboratories/pl-model-middle-layer@1.39.0
+
+## 1.88.14
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-model-common@1.55.2
+  - @milaboratories/pl-model-middle-layer@1.38.0
+  - @milaboratories/ptabler-expression-js@1.2.49
+
 ## 1.88.13
 
 ### Patch Changes

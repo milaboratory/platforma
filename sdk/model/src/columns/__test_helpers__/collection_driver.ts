@@ -56,12 +56,14 @@ const COLUMNS_COLLECTION_METHODS: ReadonlyArray<string> = [
   "addSource",
   "discover",
   "filter",
+  "discoverRoots",
 ];
 
 const PFRAME_SPEC_METHODS: ReadonlyArray<string> = [
   "createSpecFrame",
   "listColumns",
   "discoverColumns",
+  "discoverRoots",
   "deleteColumn",
   "evaluateQuery",
   "buildQuery",
@@ -93,6 +95,7 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
     addSource: (h, srcs) => impl.addSource(h, srcs, bindings).key,
     discover: (h, o) => impl.discover(h, o, bindings).key,
     filter: (h, o) => impl.filter(h, o, bindings).key,
+    discoverRoots: (h, o) => impl.discoverRoots(h, o, bindings),
   };
 
   let installedCtx: GlobalCfgRenderCtx | undefined;

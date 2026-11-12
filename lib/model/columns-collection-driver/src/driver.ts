@@ -13,8 +13,12 @@ import type {
   DiscoverColumnsOptions,
   DiscoverColumnsResponse,
   DiscoverColumnsStepInfo,
+  DiscoverRootsOptions,
+  DiscoverRootsResponse,
+  DiscoveredRootIds,
   MatchQualifications,
   NativePObjectId,
+  PColumnIdAndSpec,
   PColumnSpec,
   PFrameSpecDriver,
   PObjectId,
@@ -186,6 +190,39 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     return this.runDiscovery(handle, { ...options, maxHops: 0 }, host);
   }
 
+  discoverRoots(
+    handle: CollectionHandle,
+    options: DiscoverRootsOptions,
+    host: ColumnsCollectionDriverHost<A>,
+  ): DiscoveredRootIds[] {
+    const ids = this.getColumns(handle, host);
+    if (ids.length === 0) return [];
+
+    const specDriver = host.getSpecDriver();
+    const specMap = effectiveSpecs(ids, host);
+    // Leaves resolve like anchors; their position stands in for an anchor's
+    // name in error messages.
+    const named = Object.fromEntries(options.leaves.map((leaf, i) => [`leaves[${i}]`, leaf]));
+    const leaves = Object.values(resolveAnchors(named, specMap, specDriver));
+    if (leaves.length === 0) return [];
+
+    using specFrame = specDriver.createSpecFrame(Object.fromEntries(specMap.entries()));
+
+    const response = specDriver.discoverRoots(specFrame.key, {
+      columns: leaves,
+      includeColumns: options.include
+        ? convertColumnSelectorToMultiColumnSelector(options.include)
+        : undefined,
+      excludeColumns: options.exclude
+        ? convertColumnSelectorToMultiColumnSelector(options.exclude)
+        : undefined,
+      constraints: matchingModeToConstraints(options.mode ?? "enrichment"),
+      maxHops: options.maxHops ?? 4,
+    });
+
+    return mapRootHits(response, specMap);
+  }
+
   async dispose(): Promise<void> {
     this.registry.clear();
   }
@@ -273,13 +310,7 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
     }
 
     const specDriver = host.getSpecDriver();
-    const specMap = new Map<ColumnUniversalId, PColumnSpec>();
-    for (const id of ids) {
-      const leaf = extractPObjectId(id);
-      const spec = host.resolveSpec(leaf);
-      if (spec === undefined || !isPColumnSpec(spec)) continue;
-      specMap.set(id, reconstructSpecFromId(spec, id));
-    }
+    const specMap = effectiveSpecs(ids, host);
 
     const anchors = options.anchors;
     const hasAnchors = anchors !== undefined && Object.keys(anchors).length > 0;
@@ -318,6 +349,45 @@ export class ColumnsCollectionDriverImpl<A extends AccessorLike<A> = AccessorLik
   }
 }
 
+/** Specs of the collection's columns as the engine must see them, keyed by collection id. */
+function effectiveSpecs<A extends AccessorLike<A>>(
+  ids: ReadonlyArray<ColumnUniversalId>,
+  host: ColumnsCollectionDriverHost<A>,
+): Map<ColumnUniversalId, PColumnSpec> {
+  const specMap = new Map<ColumnUniversalId, PColumnSpec>();
+  for (const id of ids) {
+    const spec = host.resolveSpec(extractPObjectId(id));
+    if (spec === undefined || !isPColumnSpec(spec)) continue;
+    specMap.set(id, reconstructSpecFromId(spec, id));
+  }
+  return specMap;
+}
+
+/**
+ * One entry per root, leaf, path and mapping variant. The leaf is encoded the
+ * way {@link mapHitsWithDiscovery} encodes a hit of `discover` anchored on the
+ * root, with the root standing in as the only anchor.
+ */
+function mapRootHits(
+  response: DiscoverRootsResponse,
+  specs: ReadonlyMap<ColumnUniversalId, PColumnSpec>,
+): DiscoveredRootIds[] {
+  const out: DiscoveredRootIds[] = [];
+  for (const hit of response.hits) {
+    const root = engineColumnId(hit.root, specs);
+    const path = hit.path.map((step) => buildLinkerStep(step, specs));
+    const linkers = path.map((step) => step.column);
+
+    for (const variant of hit.mappingVariants) {
+      const quals = remapAnchorQualifications(variant.qualifications, [hit.root.columnId]);
+      const leaf =
+        path.length === 0 && quals === undefined ? hit.leaf : applyDiscovery(hit.leaf, path, quals);
+      out.push({ root, leaf, path: linkers });
+    }
+  }
+  return out;
+}
+
 function mapHitsDirect(
   response: DiscoverColumnsResponse,
   effectiveSpecs: ReadonlyMap<ColumnUniversalId, PColumnSpec>,
@@ -338,14 +408,7 @@ function mapHitsWithDiscovery(
 ): ColumnUniversalId[] {
   const out: ColumnUniversalId[] = [];
   for (const hit of response.hits) {
-    const originalId = hit.hit.columnId;
-    const originalSpec =
-      specs.get(originalId) ??
-      throwError(
-        `ColumnsCollectionDriverImpl: discover hit column "${originalId}" not found in collection`,
-      );
-    const hitDelta = deriveSpecDelta(originalSpec, hit.hit.spec);
-    const baseId = isEmptySpecDelta(hitDelta) ? originalId : applyOverride(originalId, hitDelta);
+    const baseId = engineColumnId(hit.hit, specs);
     const path = hit.path.map((step) => buildLinkerStep(step, specs));
 
     for (const variant of hit.mappingVariants) {
@@ -356,6 +419,23 @@ function mapHitsWithDiscovery(
     }
   }
   return out;
+}
+
+/**
+ * Collection id for a column the engine returned. The engine may report a spec
+ * that differs from the collection's (e.g. normalised), and that difference is
+ * kept as an override on top of the original id.
+ */
+function engineColumnId(
+  column: PColumnIdAndSpec,
+  specs: ReadonlyMap<ColumnUniversalId, PColumnSpec>,
+): ColumnUniversalId {
+  const originalId = column.columnId;
+  const originalSpec =
+    specs.get(originalId) ??
+    throwError(`ColumnsCollectionDriverImpl: column "${originalId}" not found in collection`);
+  const delta = deriveSpecDelta(originalSpec, column.spec);
+  return isEmptySpecDelta(delta) ? originalId : applyOverride(originalId, delta);
 }
 
 function buildLinkerStep(

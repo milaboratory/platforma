@@ -1,5 +1,21 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.22.3
+
+### Patch Changes
+
+- e628f46: Update pframes-rs-wasip2 to 1.3.0, which adds the `discoverRoots` request. `discoverColumns` and `buildQuery` behave as in 1.2.0.
+  - @platforma-open/milaboratories.software-ptabler@2.3.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.7
+
+## 6.22.2
+
+### Patch Changes
+
+- 581be9f: v2 workflow: the `effect` output omits its `imports` section when the body imports nothing, leaving an empty map; an effect that lists imports is unchanged.
+  - @platforma-open/milaboratories.software-ptabler@2.3.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.7
+
 ## 6.22.1
 
 ### Patch Changes

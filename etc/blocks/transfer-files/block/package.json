@@ -50,7 +50,8 @@
         "name": "MiLaboratories Inc",
         "url": "https://milaboratories.com/",
         "logo": "file:logos/organization-logo.png"
-      }
+      },
+      "changelog": "file:CHANGELOG.md"
     }
   }
 }

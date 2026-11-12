@@ -411,7 +411,6 @@ export class PlClient {
       const release = ops?.lockId ? await advisoryLock(ops.lockId, ops.abortSignal) : () => {};
 
       try {
-        ops?.abortSignal?.throwIfAborted();
         // opening low-level tx
         const llTx = this.ll.createTx(writable, ops);
         // wrapping it into high-level tx (this also asynchronously sends initialization message)

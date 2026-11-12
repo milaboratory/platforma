@@ -3,6 +3,7 @@ import type {
   CollectionHandle,
   ColumnsCollectionDriverHost,
   DiscoverColumnsOptions,
+  DiscoverRootsOptions,
   InferServiceModel,
   PoolEntry,
   SerializedColumnsSource,
@@ -26,6 +27,7 @@ import type {
   BuildQueryInput,
   DeleteColumnRequest,
   DiscoverColumnsRequest,
+  DiscoverRootsRequest,
   PFrameDef,
   SpecQuery,
   PTableDef,
@@ -94,6 +96,14 @@ export function getServiceInjectors(): ServiceInjectorMap {
             driver.discoverColumns(
               vm.vm.getString(handle) as SpecFrameHandle,
               vm.importObjectViaJson(request) as DiscoverColumnsRequest,
+            ),
+          ),
+
+        discoverRoots: (handle: QuickJSHandle, request: QuickJSHandle) =>
+          vm.exportObjectViaJson(
+            driver.discoverRoots(
+              vm.vm.getString(handle) as SpecFrameHandle,
+              vm.importObjectViaJson(request) as DiscoverRootsRequest,
             ),
           ),
 
@@ -270,6 +280,15 @@ export function getServiceInjectors(): ServiceInjectorMap {
                 vm.importObjectViaJson(opts) as DiscoverColumnsOptions,
                 bindings,
               ),
+            ),
+          ),
+
+        discoverRoots: (handle: QuickJSHandle, opts: QuickJSHandle) =>
+          vm.exportObjectViaJson(
+            driver.discoverRoots(
+              vm.vm.getString(handle) as CollectionHandle,
+              vm.importObjectViaJson(opts) as DiscoverRootsOptions,
+              bindings,
             ),
           ),
       };

@@ -2,7 +2,11 @@ import type { Branded } from "../../branding";
 import type { PoolEntry } from "../../pool_entry";
 import type { AccessorHandle, AccessorLike, UpstreamBlockCtx } from "../../columns/types";
 import type { ColumnUniversalId } from "../pframe/spec/ids";
-import type { ColumnsDiscoverOptions, ColumnsFilterOptions } from "./discover_columns_options";
+import type {
+  ColumnsDiscoverOptions,
+  ColumnsFilterOptions,
+  DiscoverRootsOptions,
+} from "./discover_columns_options";
 import type { PFrameSpecDriver } from "../pframe/spec_driver";
 import type { PObjectId, PObjectSpec } from "../../pool";
 
@@ -13,6 +17,18 @@ import type { PObjectId, PObjectSpec } from "../../pool";
  * sees raw refcounting.
  */
 export type CollectionHandle = Branded<string, "CollectionHandle">;
+
+/**
+ * A root found by `discoverRoots`, as ids. `leaf` is the requested column as
+ * `discover` anchored on `root` would return it — a discovered id carrying the
+ * path and qualifications — so `root` as the anchor plus `leaf` builds the
+ * table. `path` repeats the linkers on the way, root first.
+ */
+export interface DiscoveredRootIds {
+  readonly root: ColumnUniversalId;
+  readonly leaf: ColumnUniversalId;
+  readonly path: ColumnUniversalId[];
+}
 
 /**
  * JSON descriptor crossing the VM bridge in place of a sandbox
@@ -102,6 +118,9 @@ export interface ColumnsCollectionDriverModel {
 
   /** Selector-only filter (no anchor traversal). Returns a fresh handle. */
   filter(handle: CollectionHandle, options: ColumnsFilterOptions): CollectionHandle;
+
+  /** Roots the given columns hang off, one entry per (root, leaf, path). */
+  discoverRoots(handle: CollectionHandle, options: DiscoverRootsOptions): DiscoveredRootIds[];
 }
 
 /**
@@ -143,4 +162,10 @@ export interface ColumnsCollectionDriver {
     options: ColumnsFilterOptions,
     host: ColumnsCollectionDriverHost,
   ): PoolEntry<CollectionHandle>;
+
+  discoverRoots(
+    handle: CollectionHandle,
+    options: DiscoverRootsOptions,
+    host: ColumnsCollectionDriverHost,
+  ): DiscoveredRootIds[];
 }

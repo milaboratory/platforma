@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pl-model-common",
-  "version": "1.55.1",
+  "version": "1.56.0",
   "description": "Platforma SDK Model",
   "files": [
     "./dist/**/*",
