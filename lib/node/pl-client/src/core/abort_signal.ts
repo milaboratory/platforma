@@ -7,9 +7,13 @@ export async function withCallAbortSignal<T>(
 ): Promise<T> {
   signal?.throwIfAborted();
   const controller = new AbortController();
-  using links = new DisposableStack();
-  if (signal !== undefined) {
-    links.use(addAbortListener(signal, () => controller.abort(signal.reason)));
+  const link =
+    signal === undefined
+      ? undefined
+      : addAbortListener(signal, () => controller.abort(signal.reason));
+  try {
+    return await call(controller.signal);
+  } finally {
+    link?.[Symbol.dispose]();
   }
-  return await call(controller.signal);
 }
