@@ -19,4 +19,4 @@ const found = collection.discoverRoots({ leaves: [cellRef], mode: "enrichment", 
 
 Each entry is exactly what `discover({ anchors: { r: root } })` would return for the leaf: `leaf` is the requested column as a discovered column carrying the linker path and qualifications, so the table is built from `root` as the anchor plus `leaf`, the same way as for any discovered column. `discover` is unchanged.
 
-The engine side is the new `discoverRoots` request of the spec frame (`PFrameSpecDriver.discoverRoots`), from platforma-open/pframes-rs#295.
+The engine side is the new `discoverRoots` request of the spec frame (`PFrameSpecDriver.discoverRoots`), from milaboratory/pframes-rs#295.
