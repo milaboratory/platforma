@@ -2268,7 +2268,7 @@ message MaintenanceAPI {
       // servers, requires nothing.
       //
       // All list see pl/platform/api/plapiserver/server_capabilities.go
-      repeated string required_capabilities = 10;
+      repeated string required_client_capabilities = 10;
 
       // next free: 11
     }
