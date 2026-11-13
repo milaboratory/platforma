@@ -157,6 +157,24 @@ export class PermissionDeniedError extends Error {
   }
 }
 
+/**
+ * The backend requires client capabilities this client does not implement
+ * (`MaintenanceAPI.Ping.Response.required_capabilities`). The client is too old
+ * for this backend: the user must update it. Retrying does not help.
+ */
+export class ClientUpdateRequiredError extends Error {
+  name = "ClientUpdateRequiredError";
+  constructor(
+    public readonly missingCapabilities: readonly string[],
+    public readonly serverVersion: string,
+  ) {
+    super(
+      `ClientUpdateRequired: backend ${serverVersion} requires client capabilities ` +
+        `this client does not implement: ${missingCapabilities.join(", ")}. Update the client.`,
+    );
+  }
+}
+
 export class DisconnectedError extends Error {
   name = "DisconnectedError";
   constructor(message: string) {
