@@ -15,16 +15,19 @@
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
 
 self.defineOutputs(["main"])
+
+// busybox `sh` in an image, so the commands also run on a Kubernetes backend.
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
 self.body(func(inputs) {
 	stage1 := exec.builder().
 		name("recovery-stage1").
 		cpu(1).ram("50Mi").
 		inLightQueue().
-		cmd("/usr/bin/env").
-		arg("bash").
+		software(shellSw).
 		arg("-c").
 		arg("date +%s%N > mid.txt").
 		arg("stage1").
@@ -36,8 +39,7 @@ self.body(func(inputs) {
 		name("recovery-stage2").
 		cpu(1).ram("50Mi").
 		inLightQueue().
-		cmd("/usr/bin/env").
-		arg("bash").
+		software(shellSw).
 		arg("-c").
 		arg("echo \"stage1-time=$(cat mid.txt)\" >&2; echo 'stage2 died on purpose' >&2; exit 42").
 		addFile("mid.txt", stage1.getFile("mid.txt")).

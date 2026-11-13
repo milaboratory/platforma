@@ -3,6 +3,7 @@ import type { TestRenderResults, TplTestHelpers } from "@platforma-sdk/test";
 import { tplTest } from "@platforma-sdk/test";
 import type { ExpectStatic } from "vitest";
 import { randomUUID } from "node:crypto";
+import { getLongTestTimeout } from "@milaboratories/test-helpers";
 
 /**
  * A failed computation must keep its inputs, so a retry re-runs only the step that
@@ -18,7 +19,9 @@ import { randomUUID } from "node:crypto";
  * its own, and the timestamps would match without the backend doing anything.
  */
 
-const TIME_PATTERN = /stage1-time=(\d+)/;
+// A nanosecond epoch has 19 digits. Fewer means `date` ignored %N and printed whole
+// seconds, which a fast retry could repeat without recovering anything.
+const TIME_PATTERN = /stage1-time=(\d{19,})\b/;
 
 async function renderAndAwaitError(
   helper: TplTestHelpers,
@@ -44,7 +47,7 @@ function upstreamTime(expect: ExpectStatic, err: unknown, errorFragment: string)
   const message = err instanceof Error ? err.message : "";
   expect(message).toContain(errorFragment);
   const match = TIME_PATTERN.exec(message);
-  expect(match, `no stage1-time in the error message:\n${message}`).not.toBeNull();
+  expect(match, `no nanosecond stage1-time in the error message:\n${message}`).not.toBeNull();
   return match?.[1] ?? "";
 }
 
@@ -79,14 +82,19 @@ tplTest(
       errorFragment: "stage2 died on purpose",
     });
   },
+  getLongTestTimeout(60_000),
 );
 
-tplTest("nested templates: exec fails in the deepest one", async ({ helper, expect }) => {
-  await runRecoveryScenario(helper, expect, {
-    template: "exec.run.nested_outer_exec_fails",
-    errorFragment: "stage2 died on purpose",
-  });
-});
+tplTest(
+  "nested templates: exec fails in the deepest one",
+  async ({ helper, expect }) => {
+    await runRecoveryScenario(helper, expect, {
+      template: "exec.run.nested_outer_exec_fails",
+      errorFragment: "stage2 died on purpose",
+    });
+  },
+  getLongTestTimeout(60_000),
+);
 
 tplTest(
   "nested templates: exec succeeds and an intermediate template throws",
@@ -96,4 +104,5 @@ tplTest(
       errorFragment: "intermediate template failed on purpose",
     });
   },
+  getLongTestTimeout(60_000),
 );
