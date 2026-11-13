@@ -1,35 +1,35 @@
-import { z } from "zod";
+import * as v from "valibot";
 import type { AxisQualification } from "./drivers/pframe/spec/selectors";
 import type { PObjectId } from "./pool/spec";
 
 /** One output of one block: the block and the name of the output in its output context. */
-export const BlockOutput = z.object({
-  blockId: z.string().describe("Upstream block id"),
-  name: z.string().describe("Name of the output provided to the upstream block's output context"),
+export const BlockOutput = v.object({
+  /** Upstream block id */
+  blockId: v.string(),
+  /** Name of the output provided to the upstream block's output context */
+  name: v.string(),
 });
-export type BlockOutput = Readonly<z.infer<typeof BlockOutput>>;
+export type BlockOutput = Readonly<v.InferOutput<typeof BlockOutput>>;
 
-export const PlRef = z
-  .object({
-    __isRef: z
-      .literal(true)
-      .describe("Crucial marker for the block dependency tree reconstruction"),
-    ...BlockOutput.shape,
-    requireEnrichments: z
-      .literal(true)
-      .optional()
-      .describe(
-        "True if current block that stores this reference in its args, may need enrichments " +
-          "for the references value originating from the blocks in between current and referenced block",
-      ),
-  })
-  .describe(
-    "Universal reference type, allowing to set block connections. It is crucial that " +
-      "{@link __isRef} is present and equal to true, internal logic relies on this marker " +
-      "to build block dependency trees.",
-  )
-  .readonly();
-export type PlRef = z.infer<typeof PlRef>;
+/**
+ * Universal reference type, allowing to set block connections. It is crucial that
+ * {@link __isRef} is present and equal to true, internal logic relies on this marker
+ * to build block dependency trees.
+ */
+export const PlRef = v.pipe(
+  v.object({
+    /** Crucial marker for the block dependency tree reconstruction */
+    __isRef: v.literal(true),
+    ...BlockOutput.entries,
+    /**
+     * True if current block that stores this reference in its args, may need enrichments
+     * for the references value originating from the blocks in between current and referenced block
+     */
+    requireEnrichments: v.optional(v.literal(true)),
+  }),
+  v.readonly(),
+);
+export type PlRef = v.InferOutput<typeof PlRef>;
 /** @deprecated use {@link PlRef} */
 export type Ref = PlRef;
 
