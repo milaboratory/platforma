@@ -42,14 +42,14 @@ describe.skipIf(!hasPython)("relayer-tag.py", () => {
     );
   }
 
-  /** [path, component, mtime] rows of a dry run. */
-  function lines(stdout: string): [string, string, string][] {
+  /** [path, component] rows of a dry run. */
+  function lines(stdout: string): [string, string][] {
     return stdout
       .split("\n")
       .filter((l) => l !== "")
       .map((l) => {
-        const [p, comp, mtime] = l.split("\t");
-        return [p ?? "", comp ?? "", mtime ?? ""];
+        const [p, comp] = l.split("\t");
+        return [p ?? "", comp ?? ""];
       });
   }
 
@@ -232,27 +232,6 @@ describe.skipIf(!hasPython)("relayer-tag.py", () => {
     expect(components()["/usr/bin/bash"]).toBe("deb/bash");
   });
 
-  /** A .pyc header: Python >= 3.7 (magic, flags, mtime, size) or <= 3.6 (magic, mtime, size). */
-  function pyc(opts: { magic: number; flags?: number; mtime: number; size: number }): Buffer {
-    const parts = [Buffer.from([opts.magic & 0xff, opts.magic >> 8, 0x0d, 0x0a])];
-    const u32 = (v: number) => {
-      const b = Buffer.alloc(4);
-      b.writeUInt32LE(v >>> 0, 0);
-      return b;
-    };
-    if (opts.flags !== undefined) parts.push(u32(opts.flags));
-    parts.push(u32(opts.mtime), u32(opts.size), Buffer.from("BYTECODE"));
-    return Buffer.concat(parts);
-  }
-
-  /** Writes a .py with the given mtime and size, plus its __pycache__ .pyc. */
-  function module(dir: string, name: string, pycName: string, header: Buffer, mtime: number) {
-    file(`${dir}/${name}.py`, 20);
-    fs.utimesSync(path.join(root, `${dir}/${name}.py`), mtime, mtime);
-    fs.mkdirSync(path.join(root, `${dir}/__pycache__`), { recursive: true });
-    fs.writeFileSync(path.join(root, `${dir}/__pycache__/${pycName}`), header);
-  }
-
   function runForReal(): string {
     const result = spawnSync("python3", ["-", root, "/app", "1000", "--no-xattrs"], {
       input: script,
@@ -262,59 +241,25 @@ describe.skipIf(!hasPython)("relayer-tag.py", () => {
     return result.stdout;
   }
 
-  it("makes a valid timestamp .pyc (py >= 3.7) hash-based and sets every mtime to 0", () => {
+  it("sets every mtime to 0 and leaves .pyc files as they are", () => {
     const lib = "usr/local/lib/python3.12";
-    module(
-      lib,
-      "os",
-      "os.cpython-312.pyc",
-      pyc({ magic: 3531, flags: 0, mtime: 1700000000, size: 20 }),
-      1700000000,
-    );
-    module(
-      lib,
-      "re",
-      "re.cpython-312.opt-1.pyc",
-      pyc({ magic: 3531, flags: 0, mtime: 1700000000, size: 20 }),
-      1700000000,
-    );
-
-    const summary = JSON.parse(runForReal());
-
-    for (const name of ["os.cpython-312.pyc", "re.cpython-312.opt-1.pyc"]) {
-      const data = fs.readFileSync(path.join(root, `${lib}/__pycache__/${name}`));
-      expect(data.readUInt32LE(4), name).toBe(1); // unchecked-hash flag
-      expect(data.subarray(16).toString(), name).toBe("BYTECODE"); // bytecode unchanged
+    file(`${lib}/os.py`);
+    file(`${lib}/__pycache__/os.cpython-312.pyc`);
+    const pycPath = path.join(root, `${lib}/__pycache__/os.cpython-312.pyc`);
+    const before = fs.readFileSync(pycPath);
+    fs.symlinkSync("os.py", path.join(root, `${lib}/os_link.py`));
+    for (const p of [`${lib}/os.py`, pycPath, lib]) {
+      fs.utimesSync(path.isAbsolute(p) ? p : path.join(root, p), 1700000000, 1700000000);
     }
-    expect(fs.statSync(path.join(root, `${lib}/os.py`)).mtimeMs).toBe(0);
-    expect(fs.statSync(path.join(root, lib)).mtimeMs).toBe(0);
-    expect(summary).toEqual({ special: [], max_mtime: 0 });
-  });
-
-  it("leaves a stale .pyc stale, so Python recompiles it as in the original image", () => {
-    const lib = "usr/local/lib/python3.12";
-    // the .py was edited (same size) after compiling: recorded mtime differs from the file's
-    const stale = pyc({ magic: 3531, flags: 0, mtime: 1600000000, size: 20 });
-    module(lib, "mymod", "mymod.cpython-312.pyc", stale, 1700000000);
-
-    runForReal();
-
-    expect(fs.readFileSync(path.join(root, `${lib}/__pycache__/mymod.cpython-312.pyc`))).toEqual(
-      stale,
-    );
-    expect(fs.statSync(path.join(root, `${lib}/mymod.py`)).mtimeMs).toBe(0);
-  });
-
-  it("keeps the .py mtime of a valid Python <= 3.6 .pyc, which has no hash form", () => {
-    const lib = "usr/local/lib/python3.6";
-    const old = pyc({ magic: 3379, mtime: 1500000000, size: 20 });
-    module(lib, "json", "json.cpython-36.pyc", old, 1500000000);
 
     const summary = JSON.parse(runForReal());
 
-    expect(fs.statSync(path.join(root, `${lib}/json.py`)).mtimeMs).toBe(1500000000 * 1000);
-    expect(fs.readFileSync(path.join(root, `${lib}/__pycache__/json.cpython-36.pyc`))).toEqual(old);
-    expect(summary.max_mtime).toBe(1500000000);
+    expect(fs.statSync(path.join(root, `${lib}/os.py`)).mtimeMs).toBe(0);
+    expect(fs.statSync(pycPath).mtimeMs).toBe(0);
+    expect(fs.readFileSync(pycPath)).toEqual(before);
+    expect(fs.lstatSync(path.join(root, `${lib}/os_link.py`)).mtimeMs).toBe(0);
+    expect(fs.statSync(path.join(root, lib)).mtimeMs).toBe(0);
+    expect(summary).toEqual({ special: [] });
   });
 
   it.skipIf(process.platform === "win32")("reports FIFOs, which chunkah cannot store", () => {

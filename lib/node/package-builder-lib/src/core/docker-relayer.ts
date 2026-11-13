@@ -9,16 +9,15 @@
 //   1. flatten the image's layers into a docker volume (`docker save | crane export`: the
 //      image's own files, with whiteouts applied and file capabilities kept);
 //   2. assets/relayer-tag.py tags each file with its owning package (pip, conda, dpkg, the
-//      image's WORKDIR, else the directory), splits packages above a size cap, sets mtime 0,
-//      and makes valid timestamp .pyc hash-based so they stay valid;
+//      image's WORKDIR, else the directory), splits packages above a size cap, sets mtime 0;
 //   3. chunkah (https://github.com/coreos/chunkah) writes an OCI image with one layer per
 //      package, or per few packages, at most DOCKER_RELAYER_MAX_LAYERS;
 //   4. crane pushes that OCI layout.
 // An unchanged package gives a byte-identical layer, so a one-package bump uploads (and a
 // node pulls) about one package.
 //
-// What differs from the local image: the layers; file mtimes and timestamp .pyc headers (see
-// relayer-tag.py); a user.component xattr on each file. Like `docker push`, only the
+// What differs from the local image: the layers; file mtimes (so timestamp-based .pyc are
+// recompiled on import; see relayer-tag.py); a user.component xattr on each file. Like `docker push`, only the
 // security.capability xattr of the original files survives (docker's layer tars keep no other
 // xattrs or ACLs). chunkah keeps user, env, entrypoint, cmd, workdir, labels, volumes and
 // exposed ports; it drops the docker-only healthcheck, shell, onbuild and the history.
@@ -240,18 +239,17 @@ export function parseLayers(json: string): docker.ImageLayer[] {
   });
 }
 
-export type TaggerSummary = { special: string[]; maxMtime: number };
+export type TaggerSummary = { special: string[] };
 
 /** The tagger's JSON line (see relayer-tag.py). */
 export function parseTaggerSummary(stdout: string): TaggerSummary {
   const line = stdout.trim().split("\n").pop() ?? "";
   const raw: unknown = JSON.parse(line);
-  if (!isRecord(raw) || !Array.isArray(raw.special) || typeof raw.max_mtime !== "number") {
+  if (!isRecord(raw) || !Array.isArray(raw.special)) {
     throw util.CLIError(`image re-layering: unexpected tagger output '${line.slice(0, 200)}'`);
   }
   return {
     special: raw.special.filter((p): p is string => typeof p === "string"),
-    maxMtime: raw.max_mtime,
   };
 }
 
@@ -378,10 +376,8 @@ export function relayerAndPush(localTag: string, pushTag: string, logger: winsto
 
     step("writing package layers (chunkah)");
     const config = run("docker inspect", "docker", ["image", "inspect", localTag]);
-    // The tagger already set every mtime; chunkah writes min(mtime, clamp), so the clamp must
-    // not be below any of them. The image's build time also gives a real creation time.
-    const created = createdEpoch(inspect("{{.Created}}")) || Math.floor(Date.now() / 1000);
-    const epoch = Math.max(created, summary.maxMtime);
+    // chunkah's creation time and mtime clamp; the tagger already set every mtime to 0
+    const epoch = createdEpoch(inspect("{{.Created}}")) || Math.floor(Date.now() / 1000);
     run(
       "chunkah",
       "docker",

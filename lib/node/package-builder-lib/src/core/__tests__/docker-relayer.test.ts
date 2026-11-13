@@ -105,9 +105,8 @@ describe("docker-relayer", () => {
   });
 
   it("reads the tagger's summary line", () => {
-    expect(parseTaggerSummary('{"special": ["/app/pipe"], "max_mtime": 5}\n')).toEqual({
+    expect(parseTaggerSummary('relayer: summary\n{"special": ["/app/pipe"]}\n')).toEqual({
       special: ["/app/pipe"],
-      maxMtime: 5,
     });
     expect(() => parseTaggerSummary("relayer: 3 files")).toThrow();
   });
