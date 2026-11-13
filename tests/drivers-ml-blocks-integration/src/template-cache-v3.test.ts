@@ -1,5 +1,6 @@
 import { BlockPointer } from "@milaboratories/milaboratories.test-enter-numbers";
 import {
+  anyResourceIdToBigint,
   field,
   isNotNullSignedResourceId,
   poll,
@@ -105,7 +106,8 @@ describe("V3 template cache", () => {
         const resolvedLegacy = isNotNullSignedResourceId(legacyOriginal)
           ? legacyOriginal
           : legacyId;
-        expect(resolvedCached).toBe(resolvedLegacy);
+        // One id can carry a signature and the other not, so compare the ids without signatures.
+        expect(anyResourceIdToBigint(resolvedCached)).toBe(anyResourceIdToBigint(resolvedLegacy));
       });
     },
     30000,
