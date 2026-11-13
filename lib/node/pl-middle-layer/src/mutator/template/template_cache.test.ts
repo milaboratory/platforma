@@ -1,4 +1,5 @@
 import {
+  anyResourceIdToBigint,
   ensureSignedResourceIdNotNull,
   field,
   isNotNullSignedResourceId,
@@ -255,9 +256,10 @@ describe("template cache produces equivalent resources", () => {
 
       // After dedup, both should resolve to the same canonical resource.
       // Either one points to the other, or both point to a common original.
+      // One id can carry a signature and the other not, so compare the ids without signatures.
       const resolvedCached = isNotNullSignedResourceId(cachedOriginal) ? cachedOriginal : cachedId;
       const resolvedLegacy = isNotNullSignedResourceId(legacyOriginal) ? legacyOriginal : legacyId;
-      expect(resolvedCached).toBe(resolvedLegacy);
+      expect(anyResourceIdToBigint(resolvedCached)).toBe(anyResourceIdToBigint(resolvedLegacy));
     });
   }, 30000);
 });
