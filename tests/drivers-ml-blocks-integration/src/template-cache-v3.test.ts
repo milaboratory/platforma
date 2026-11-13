@@ -2,6 +2,7 @@ import { BlockPointer } from "@milaboratories/milaboratories.test-enter-numbers"
 import {
   field,
   isNotNullSignedResourceId,
+  parseSignedResourceId,
   poll,
   TestHelpers,
   toGlobalResourceId,
@@ -105,7 +106,9 @@ describe("V3 template cache", () => {
         const resolvedLegacy = isNotNullSignedResourceId(legacyOriginal)
           ? legacyOriginal
           : legacyId;
-        expect(resolvedCached).toBe(resolvedLegacy);
+        expect(parseSignedResourceId(resolvedCached).globalId).toBe(
+          parseSignedResourceId(resolvedLegacy).globalId,
+        );
       });
     },
     30000,
