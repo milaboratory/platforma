@@ -1,4 +1,4 @@
-import { createVitestConfig } from "@milaboratories/build-configs";
+import { createVitestConfig, testTimeoutMs } from "@milaboratories/build-configs";
 import { configDefaults, defineConfig } from "vitest/config";
 
 // The 10k-file workdir test makes the backend workflow controller busy for
@@ -13,7 +13,7 @@ export default defineConfig(
     test: {
       pool: "forks",
       setupFiles: ["./vitest/setup.worker-jitter.ts"],
-      testTimeout: 15000,
+      testTimeout: testTimeoutMs(15_000),
       maxConcurrency: 1,
       // PL_TEST_MAX_WORKERS lets a CI backend with spare job capacity run more
       // test files at once; 2 when unset.

@@ -16,9 +16,10 @@ function findMonorepoRoot(startDir: string): string | undefined {
 
 const DEFAULT_TEST_TIMEOUT_MS = 5_000;
 
-function testTimeoutMs(): number {
+/** The per-test budget: `PL_TEST_TIMEOUT` when set, else `fallback`. */
+export function testTimeoutMs(fallback = DEFAULT_TEST_TIMEOUT_MS): number {
   const configured = Number(process.env.PL_TEST_TIMEOUT);
-  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_TEST_TIMEOUT_MS;
+  return Number.isFinite(configured) && configured > 0 ? configured : fallback;
 }
 
 export const TestTags = {
