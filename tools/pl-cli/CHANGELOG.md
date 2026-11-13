@@ -1,5 +1,23 @@
 # @platforma-sdk/pl-cli
 
+## 0.12.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.6.3
+
+## 0.12.0
+
+### Minor Changes
+
+- 41cdddf: Add the `pl-cli maintenance controller` command group. `list` prints the registered controllers with their IDs and resources fixup levels. `rerun-fixups --controller-name <type> | --controller-id <id>` sets the resources fixup level of the selected controllers to 0, so each of them applies its one-time resources fixups again on the next backend start. Use it after a rollback to a backend version without resources fixups. `pl-client` gets `listRegisteredControllers`, and `PlTransaction` gets `setControllerKValue` and `getControllerKValueIfExists` for the controller key-value store (controller or admin credentials).
+
+### Patch Changes
+
+- Updated dependencies [41cdddf]
+  - @milaboratories/pl-client@3.24.0
+  - @milaboratories/pl-middle-layer@2.6.2
+
 ## 0.11.4
 
 ### Patch Changes
