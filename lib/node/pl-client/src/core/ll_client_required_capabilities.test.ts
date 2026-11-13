@@ -47,6 +47,7 @@ test("missingClientCapabilities returns every unknown token in order", () => {
 
 test("build refuses a backend that requires an unknown client capability", async () => {
   const { authMethods } = stubPing(["future:v1"]);
+  const close = vi.spyOn(LLPlClient.prototype, "close");
 
   const build = LLPlClient.build("http://127.0.0.1:1");
 
@@ -57,6 +58,35 @@ test("build refuses a backend that requires an unknown client capability", async
     serverVersion: "9.9.9",
   });
   expect(authMethods).not.toHaveBeenCalled();
+  expect(close).toHaveBeenCalledOnce();
+});
+
+test("build refuses the backend on the wire protocol autodetect path too", async () => {
+  const { ping, authMethods } = stubPing(["future:v1"]);
+
+  const build = LLPlClient.build("http://127.0.0.1:1", { useAutoDetectWireProtocol: true });
+
+  await expect(build).rejects.toBeInstanceOf(ClientUpdateRequiredError);
+  expect(ping).toHaveBeenCalledOnce();
+  expect(authMethods).not.toHaveBeenCalled();
+});
+
+test("REST ping reads an absent required_capabilities field as an empty list", async () => {
+  stubPing([]);
+  const client = await LLPlClient.build("http://127.0.0.1:1");
+  vi.mocked(LLPlClient.prototype.ping).mockRestore();
+  // An old backend: the REST ping answer has no capability fields at all.
+  const restClient = {
+    GET: vi.fn().mockResolvedValue({ data: { coreVersion: "1.0.0", coreFullVersion: "1.0.0" } }),
+  };
+  Object.defineProperty(client, "clientProvider", { value: { get: () => restClient } });
+
+  const resp = await client.ping();
+
+  expect(restClient.GET).toHaveBeenCalledWith("/v1/ping");
+  expect(resp.requiredCapabilities).toEqual([]);
+  expect(resp.capabilities).toEqual([]);
+  await client.close();
 });
 
 test("build accepts a backend that requires no client capabilities", async () => {
