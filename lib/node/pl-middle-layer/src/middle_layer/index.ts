@@ -4,13 +4,21 @@ export * from "./driver_kit";
 export * from "./ops";
 export type { TreeSnapshotMiss, TreeSnapshotStat } from "./tree_snapshot_store";
 export { ProjectsField, ProjectsResourceType } from "./project_list";
-export type { OutgoingShare, PendingShare } from "./sharing_list";
+export { FoldersField, FoldersResourceType } from "./folders";
+export type { FoldersListing, FoldersProjectEntry, FoldersTemplateEntry } from "./folders";
+export type { OutgoingShare, AvailableShare, EnvelopeFolderSummary } from "./sharing_list";
 export { TemplatesField } from "./template_list";
 export type {
   CreateProjectFromTemplateOutcome,
   SaveProjectAsTemplateOutcome,
-  ShareTemplateOutcome,
   StoredTemplateData,
   TemplateId,
   TemplateListEntry,
 } from "./template_list";
+export type {
+  BlockActionReading,
+  BlockActionContextMode,
+  BlockActionContextNode,
+  BlockActionTransition,
+} from "./block_action_context";
+export { InstanceStatsContextTypeName, parseInstanceStats } from "./instance_stats";

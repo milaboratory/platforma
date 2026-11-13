@@ -10,10 +10,11 @@ const props = defineProps<{
 const OPTIONS: Operand[] = ["and", "or"];
 </script>
 <template>
-  <div v-bind="$attrs" :class="$style.block">
+  <div data-testid="pl-advanced-filter-operands" v-bind="$attrs" :class="$style.block">
     <div
       v-for="op in OPTIONS"
       :key="op"
+      data-testid="pl-advanced-filter-operand"
       :class="[$style.operand, { [$style.active]: op === props.active && !props.disabled }]"
       @click="!props.disabled && props.onSelect(op)"
     >

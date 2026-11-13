@@ -31,11 +31,12 @@ const trackTransforms = [-40, -50, -50, -50, -80];
 </script>
 
 <template>
-  <div :class="[$style.component]" :style="style">
-    <div :class="$style.track">
+  <div data-testid="pl-chart-stacked-bar-row" :class="[$style.component]" :style="style">
+    <div data-testid="pl-chart-stacked-bar-track" :class="$style.track">
       <div
         v-for="(v, i) in [0, 25, 50, 75, 100]"
         :key="i"
+        data-testid="pl-chart-stacked-bar-tick"
         :style="{
           left: `${v}%`,
           '--transform': `translateX(${trackTransforms[i]}%)`,
@@ -43,11 +44,18 @@ const trackTransforms = [-40, -50, -50, -50, -80];
         :data-content="`${v}%`"
       />
     </div>
-    <div :class="$style.container">
-      <div v-if="!parts.length" :class="$style.notReady">Not ready</div>
+    <div data-testid="pl-chart-stacked-bar-bar" :class="$style.container">
+      <div
+        v-if="!parts.length"
+        data-testid="pl-chart-stacked-bar-not-ready"
+        :class="$style.notReady"
+      >
+        Not ready
+      </div>
       <div
         v-for="(p, i) in parts"
         :key="i"
+        data-testid="pl-chart-stacked-bar-segment"
         :title.prop="p.description ?? p.label"
         :style="{
           width: `${p.fraction}%`,

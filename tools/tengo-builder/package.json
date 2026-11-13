@@ -1,6 +1,6 @@
 {
   "name": "@platforma-sdk/tengo-builder",
-  "version": "4.0.25",
+  "version": "4.1.24",
   "description": "Pl Tengo Template Builder",
   "license": "UNLICENSED",
   "bin": {
@@ -20,7 +20,7 @@
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
   "dependencies": {
@@ -37,10 +37,11 @@
     "@milaboratories/ts-configs": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
+    "shx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   }
 }

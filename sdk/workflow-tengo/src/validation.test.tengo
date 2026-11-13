@@ -98,3 +98,10 @@ TestValidateJSONTree := func() {
 	}
 	test.isEqual(validation.isValid(js, schema), false)
 }
+
+TestRegexTagKeepsEqualsSigns := func() {
+	schema := `string,regex=^x=y$`
+
+	test.isEqual(validation.isValid("x=y", schema), true)
+	test.isEqual(validation.isValid("x=z", schema), false)
+}

@@ -7,6 +7,7 @@ import type {
   PlDataTableStateV2,
   PlSelectionModel,
   PlTableColumnIdJson,
+  PTableColumnId,
   PTableColumnSpec,
   PTableKey,
 } from "@platforma-sdk/model";
@@ -20,7 +21,7 @@ import {
 } from "@platforma-sdk/model";
 import type { CellRendererSelectorFunc, GridApi, GridState } from "ag-grid-enterprise";
 import { AgGridVue } from "ag-grid-vue3";
-import { computed, effectScope, nextTick, ref, toRefs, watch, watchEffect } from "vue";
+import { computed, effectScope, nextTick, ref, shallowRef, toRefs, watch, watchEffect } from "vue";
 import PlAgCsvExporter from "../PlAgCsvExporter/PlAgCsvExporter.vue";
 import { PlAgGridColumnManager } from "../PlAgGridColumnManager";
 import PlTableFiltersV2 from "../PlTableFilters/PlTableFiltersV2.vue";
@@ -31,6 +32,7 @@ import { DeferredCircular, ensureNodeVisible } from "./sources/focus-row";
 import { PlAgDataTableRowNumberColId } from "./sources/row-number";
 import type { PlAgCellButtonAxisParams } from "./sources/table-source-v2";
 import { calculateGridOptions, effectiveVisibility } from "./sources/table-source-v2";
+import { createGridRestoreState, isStoredStateApplied, readGridReport } from "./sources/grid-state";
 import { useTableState } from "./sources/table-state-v2";
 import type {
   PlAgDataTableV2Controller,
@@ -38,7 +40,6 @@ import type {
   PlAgOverlayLoadingParams,
   PlAgOverlayNoRowsParams,
   PlDataTableSettingsV2,
-  PlDataTableSheetsSettings,
   PlTableRowId,
 } from "./types";
 import { useFilterableColumns } from "./compositions/useFilterableColumns";
@@ -127,29 +128,22 @@ const { gridApi, gridOptions } = useGrid({
   cellRendererSelector: props.cellRendererSelector,
 });
 let isReloading = false;
+/** Source the grid's columns were built for; `null` while the grid has none. */
+const boundSourceId = shallowRef<null | string>(null);
 gridOptions.value.onGridPreDestroyed = (event) => {
-  if (!isReloading) {
-    gridOptions.value.initialState = gridState.value = normalizeGridState(
-      makePartialState(event.api.getState()),
-      gridState.value,
-      event.api,
-      getColumnsMeta(),
-    );
-  }
-  gridApi.value = null;
+  if (!isReloading) saveGridState(event.api, makePartialState(event.api.getState()));
+  gridOptions.value.initialState = restoreState.value;
+  // A replaced grid destroyed after its successor is ready must leave the successor's api in place
+  if (gridApi.value?.getGridId() === event.api.getGridId()) gridApi.value = null;
 };
 gridOptions.value.onRowDoubleClicked = (event) => {
   if (event.data && event.data.axesKey) emit("rowDoubleClicked", event.data.axesKey);
 };
 gridOptions.value.onStateUpdated = (event) => {
-  const partialState = normalizeGridState(
-    makePartialState(event.state),
-    gridState.value,
-    event.api,
-    getColumnsMeta(),
-  );
-  // We have to keep initialState synchronized with gridState for gridState recovery after key updating.
-  gridOptions.value.initialState = gridState.value = partialState;
+  saveGridState(event.api, makePartialState(event.state));
+  // Keep initialState in step with the stored grid state, so the grid recreated
+  // by the reload watch below comes back with it.
+  gridOptions.value.initialState = restoreState.value;
 
   if (!isJsonEqual(event.sources, ["columnSizing"])) {
     event.api.autoSizeColumns(
@@ -160,7 +154,7 @@ gridOptions.value.onStateUpdated = (event) => {
   }
 };
 
-const [filterableColumns, visibleFilterableColumns] = useFilterableColumns(
+const [filterableColumns] = useFilterableColumns(
   () => settings.value.sourceId,
   () => gridOptions.value.columnDefs ?? null,
 );
@@ -168,26 +162,48 @@ const defaultFilters = computed(() =>
   settings.value.sourceId !== null ? settings.value.model?.defaultFilters : undefined,
 );
 const {
+  sourceId: shownSourceId,
   gridState,
+  sorting,
+  hiddenColIds,
+  getEntry,
+  updateGrid,
   sheetsState,
   searchString,
   filtersState,
   defaultFiltersState,
   resetDefaultFilters,
-} = useTableState(tableState, settings, visibleFilterableColumns, defaultFilters);
-const sheetsSettings = computed<PlDataTableSheetsSettings>(() => {
-  const settingsCopy = { ...settings.value };
-  return settingsCopy.sourceId !== null
-    ? {
-        sheets: settingsCopy.sheets ?? [],
-        cachedState: [...sheetsState.value],
-      }
-    : {
-        sheets: [],
-        cachedState: [],
-      };
-});
-gridOptions.value.initialState = gridState.value;
+} = useTableState(tableState, settings, defaultFilters);
+const sheets = computed(() => (settings.value.sourceId !== null ? settings.value.sheets : []));
+const restoreState = computed(() =>
+  createGridRestoreState({
+    gridState: gridState.value,
+    sorting: sorting.value,
+    hiddenColIds: hiddenColIds.value,
+  }),
+);
+gridOptions.value.initialState = restoreState.value;
+
+/**
+ * Store what the grid reports under the source its columns belong to: while
+ * the table switches sources the grid still holds the previous source's
+ * columns, and their state must not land on the new source.
+ */
+function saveGridState(api: GridApi<PlAgDataTableV2Row>, reported: PlDataTableGridStateCore) {
+  const sourceId = boundSourceId.value;
+  // AG Grid reports an entirely empty state until its columns have been taken
+  // into its own state. Such a report says nothing about the user's choices, and
+  // reading defaults from the live columns at that point would invent some.
+  // Wait for the grid to say something about itself; it always does once its
+  // columns are in.
+  if (sourceId === null || isJsonEqual(reported, {})) return;
+  updateGrid(
+    sourceId,
+    readGridReport(reported, getEntry(sourceId), () =>
+      getDefaultHiddenColIds(api, getColumnsMeta()),
+    ),
+  );
+}
 
 // Restore proper types erased by AgGrid
 function makePartialState(state: GridState): PlDataTableGridStateCore {
@@ -211,69 +227,6 @@ function makePartialState(state: GridState): PlDataTableGridStateCore {
         }
       | undefined,
   };
-}
-
-// AG Grid omits parts of its state that carry no information — columnVisibility
-// when every column is visible, sort when nothing is sorted. The model needs
-// "no state yet" (fall back to the block's defaults) to stay distinguishable
-// from "user explicitly cleared it" (store []), so both are normalized against
-// the previous state before the state is persisted.
-function normalizeGridState(
-  partialState: PlDataTableGridStateCore,
-  prevState: PlDataTableGridStateCore,
-  api: GridApi<PlAgDataTableV2Row>,
-  columnsMeta: PlDataTableColumnsMeta | undefined,
-): PlDataTableGridStateCore {
-  return normalizeSort(
-    normalizeColumnVisibility(partialState, prevState, api, columnsMeta),
-    prevState,
-  );
-}
-
-// AG Grid returns sort: undefined when no column is sorted. Left as-is that
-// erases the block's default sorting the moment any unrelated grid state is
-// persisted, so the undefined is only turned into an explicit empty sort model
-// once the user has actually sorted something before.
-function normalizeSort(
-  partialState: PlDataTableGridStateCore,
-  prevState: PlDataTableGridStateCore,
-): PlDataTableGridStateCore {
-  if (partialState.sort !== undefined) return partialState;
-
-  if (prevState.sort !== undefined) {
-    // Had an explicit sort model before → user cleared the sorting → store [].
-    return { ...partialState, sort: { sortModel: [] } };
-  }
-
-  // Never sorted → leave undefined so the model applies its default sorting.
-  return partialState;
-}
-
-// AG Grid returns columnVisibility: undefined when all columns are visible.
-// We need to distinguish "no state yet" (use isColumnOptional defaults) from
-// "user explicitly showed all columns" (store []). This function normalizes
-// the undefined from AG Grid based on the previous state.
-function normalizeColumnVisibility(
-  partialState: PlDataTableGridStateCore,
-  prevState: PlDataTableGridStateCore,
-  api: GridApi<PlAgDataTableV2Row>,
-  columnsMeta: PlDataTableColumnsMeta | undefined,
-): PlDataTableGridStateCore {
-  if (partialState.columnVisibility !== undefined) return partialState;
-
-  if (prevState.columnVisibility !== undefined) {
-    // Had explicit visibility state before → user made all columns visible → store [].
-    return { ...partialState, columnVisibility: { hiddenColIds: [] } };
-  }
-
-  // No previous explicit state → compute defaults from current columns
-  // to replicate: hide: hiddenColIds?.includes(colId) ?? isColumnOptional(spec.spec)
-  const defaultHidden = getDefaultHiddenColIds(api, columnsMeta);
-  if (defaultHidden.length > 0) {
-    return { ...partialState, columnVisibility: { hiddenColIds: defaultHidden } };
-  }
-
-  return partialState;
 }
 
 /** Sidecar display meta is only on the `model` branch of the settings union. */
@@ -300,29 +253,23 @@ function getDefaultHiddenColIds(
     .map((col) => col.getColId() as PlTableColumnIdJson);
 }
 
-// Normalize for comparison: an absent and an empty columnVisibility / sort mean
-// the same thing to AG Grid, and must not count as a state change to reload on.
-function stateForReloadCompare(state: PlDataTableGridStateCore): PlDataTableGridStateCore {
-  const cv = state.columnVisibility;
-  const normalizedCv = !cv || cv.hiddenColIds.length === 0 ? undefined : state.columnVisibility;
-  const sort = state.sort;
-  const normalizedSort = !sort || sort.sortModel.length === 0 ? undefined : sort;
-  return { ...state, columnVisibility: normalizedCv, sort: normalizedSort };
-}
-
-// Reload AgGrid when new state arrives from server
+// Reload AgGrid when new state arrives from server, or when the grid takes the
+// columns of a source whose stored state it does not show yet
 const reloadKey = ref(0);
 watch(
-  () => [gridApi.value, gridState.value] as const,
-  ([gridApi, gridState]) => {
-    if (!gridApi || gridApi.isDestroyed()) return;
+  () => [gridApi.value, restoreState.value, boundSourceId.value] as const,
+  ([gridApi, restoreState, boundSourceId]) => {
+    if (!gridApi || gridApi.isDestroyed() || boundSourceId !== shownSourceId.value) return;
     const selfState = makePartialState(gridApi.getState());
+    const gridColIds = new Set(
+      (gridApi.getAllGridColumns() ?? []).map((column) => column.getColId() as PlTableColumnIdJson),
+    );
     if (
-      !isJsonEqual(gridState, {}) &&
-      !isJsonEqual(stateForReloadCompare(gridState), stateForReloadCompare(selfState))
+      !isJsonEqual(restoreState, {}) &&
+      !isStoredStateApplied(restoreState, selfState, gridColIds)
     ) {
       isReloading = true;
-      gridOptions.value.initialState = gridState;
+      gridOptions.value.initialState = restoreState;
       ++reloadKey.value;
       nextTick(() => {
         isReloading = false;
@@ -402,7 +349,6 @@ watch(
     if (!gridApi || gridApi.isDestroyed()) return;
     // Verify that this is not a false watch trigger
     if (isJsonEqual(settings, oldSettings)) return;
-    ++generation.value;
     try {
       // Hide no rows overlay if it is shown, or else loading overlay will not be shown
       gridApi.hideOverlay();
@@ -410,6 +356,8 @@ watch(
 
       // No data source selected -> reset state to default
       if (settings.sourceId === null) {
+        ++generation.value;
+        boundSourceId.value = null;
         gridApi.updateGridOptions({
           loading: true,
           loadingOverlayComponentParams: {
@@ -431,12 +379,27 @@ watch(
         return;
       }
 
+      // The model is between handles — it is recomputing. Nothing is started here,
+      // so moving the generation would only cancel the calculation in flight and
+      // leave whatever it was going to do (not least taking the loading overlay
+      // down) undone — which is how the table came to sit on "Loading data…"
+      // forever. The exception is a change of source: then the calculation in
+      // flight belongs to the old one and must not be allowed to land under the
+      // new settings.
       if (
         settings.model?.fullTableHandle === undefined ||
         settings.model?.visibleTableHandle === undefined
       ) {
+        if (settings.sourceId !== oldSettings?.sourceId) ++generation.value;
+        // A grid that already shows a table keeps showing it; one that is still
+        // waiting says why.
+        if (gridApi.getGridOption("loading") === true) {
+          setLoadingVariant(gridApi, settings.pending ? "running" : "not-ready");
+        }
         return;
       }
+
+      ++generation.value;
 
       // Data source changed -> show full page loader, clear selection
       if (settings.sourceId !== oldSettings?.sourceId) {
@@ -458,16 +421,17 @@ watch(
         }
       }
 
-      // Model updated -> show skeletons instead of data
+      // Model built for another source -> show skeletons until it catches up.
+      // A model that reports no source was built from a state that names none,
+      // or does not take the state at all, and is shown as it is.
       const sourceChanged =
-        settings.model?.sourceId && settings.model.sourceId !== settings.sourceId;
-      if (!settings.model || sourceChanged) {
-        const state = gridApi.getServerSideGroupLevelState();
-        const rowCount = !sourceChanged && state.length > 0 ? state[0].rowCount : 1;
+        settings.model.sourceId !== null && settings.model.sourceId !== settings.sourceId;
+      if (sourceChanged) {
+        if (gridApi.getGridOption("loading") === true) setLoadingVariant(gridApi, "loading");
         return gridApi.updateGridOptions({
           serverSideDatasource: {
             getRows: (params) => {
-              params.success({ rowData: [], rowCount });
+              params.success({ rowData: [], rowCount: 1 });
             },
           },
         });
@@ -475,6 +439,7 @@ watch(
 
       // Model ready -> calculate new state
       const stateGeneration = generation.value;
+      const stateSourceId = settings.sourceId;
       calculateGridOptions({
         generation,
         pfDriver: getRawPlatformaInstance().pFrameDriver,
@@ -483,7 +448,7 @@ watch(
         columnsMeta: settings.model?.columnsMeta,
         sheets: settings.sheets ?? [],
         dataRenderedTracker,
-        hiddenColIds: gridState.value.columnVisibility?.hiddenColIds,
+        hiddenColIds: hiddenColIds.value?.map((id) => canonicalizeJson<PTableColumnId>(id)),
         cellButtonAxisParams: {
           showCellButtonForAxisId: props.showCellButtonForAxisId,
           cellButtonInvokeRowsOnDoubleClick: props.cellButtonInvokeRowsOnDoubleClick,
@@ -496,6 +461,7 @@ watch(
           gridApi.updateGridOptions({
             ...options,
           });
+          boundSourceId.value = stateSourceId;
           if (selection.value) {
             // Update selection if axesSpec changed, as order of axes may have changed and so we need to remap selected keys
             const { axesSpec: oldAxesSpec, selectedKeys: oldSelectedKeys } = selection.value;
@@ -546,6 +512,8 @@ watch(
           console.trace(error);
         })
         .finally(() => {
+          // Only the current calculation may take the overlay down: a superseded
+          // one would hide the overlay the newer settings just put up.
           if (gridApi.isDestroyed() || stateGeneration !== generation.value) return;
           gridApi.updateGridOptions({
             loading: false,
@@ -559,6 +527,18 @@ watch(
     }
   },
 );
+
+function setLoadingVariant(
+  api: GridApi<PlAgDataTableV2Row>,
+  variant: PlAgOverlayLoadingParams["variant"],
+): void {
+  api.updateGridOptions({
+    loadingOverlayComponentParams: {
+      ...gridOptions.value.loadingOverlayComponentParams,
+      variant,
+    } satisfies PlAgOverlayLoadingParams,
+  });
+}
 
 watch(
   () => ({
@@ -598,7 +578,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div :class="$style.container">
+  <div data-testid="pl-ag-data-table" :class="$style.container">
     <PlAgGridColumnManager v-if="gridApi && !disableColumnsPanel" :api="gridApi" />
     <PlTableFiltersV2
       v-if="!disableFiltersPanel"
@@ -606,6 +586,7 @@ watchEffect(() => {
       :default-filters="defaultFiltersState"
       :pframe-handle="'model' in settings ? settings?.model?.fullPframeHandle : undefined"
       :columns="filterableColumns"
+      :columns-meta="getColumnsMeta()"
       @updateFilters="(v) => (filtersState = v)"
       @resetDefaultFilters="resetDefaultFilters"
       @updateDefaultFilters="(v) => (defaultFiltersState = v)"
@@ -617,7 +598,11 @@ watchEffect(() => {
       :table-handle="'model' in settings ? settings?.model?.visibleTableHandle : undefined"
       :columns-meta="getColumnsMeta()"
     />
-    <PlAgDataTableSheets v-model="sheetsState" :settings="sheetsSettings">
+    <PlAgDataTableSheets
+      :sheets="sheets"
+      :state="sheetsState"
+      :on-change="(state) => (sheetsState = state)"
+    >
       <template v-if="$slots['before-sheets']" #before>
         <slot name="before-sheets" />
       </template>
@@ -628,6 +613,7 @@ watchEffect(() => {
     <PlTableFastSearch v-model="searchString" />
     <AgGridVue
       :key="reloadKey"
+      data-testid="pl-ag-data-table-grid"
       :theme="AgGridTheme"
       :class="$style.grid"
       :grid-options="gridOptions"

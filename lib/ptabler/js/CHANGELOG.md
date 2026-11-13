@@ -1,5 +1,79 @@
 # @milaboratories/ptabler-expression-js
 
+## 1.2.50
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.34
+
+## 1.2.49
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.33
+
+## 1.2.48
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @platforma-open/milaboratories.software-ptabler.schema@1.15.32
+
+## 1.2.47
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.31
+
+## 1.2.46
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.30
+
+## 1.2.45
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.29
+
+## 1.2.44
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.28
+
+## 1.2.43
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.27
+
+## 1.2.42
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.26
+
+## 1.2.41
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.25
+
+## 1.2.40
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.24
+
+## 1.2.39
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler.schema@1.15.23
+
 ## 1.2.38
 
 ### Patch Changes

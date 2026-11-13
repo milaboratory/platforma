@@ -28,9 +28,19 @@ const settings = computed<PlChartHistogramSettings | undefined>(() => {
 </script>
 
 <template>
-  <div ref="root" class="pl-ag-chart-histogram-cell">
-    <PlChartHistogram v-if="settings" :settings="settings" />
-    <div v-else class="pl-ag-chart-histogram-cell__not-ready">Not ready</div>
+  <div ref="root" data-testid="pl-ag-chart-histogram-cell" class="pl-ag-chart-histogram-cell">
+    <PlChartHistogram
+      v-if="settings"
+      data-testid="pl-ag-chart-histogram-cell-chart"
+      :settings="settings"
+    />
+    <div
+      v-else
+      data-testid="pl-ag-chart-histogram-cell-not-ready"
+      class="pl-ag-chart-histogram-cell__not-ready"
+    >
+      Not ready
+    </div>
   </div>
 </template>
 

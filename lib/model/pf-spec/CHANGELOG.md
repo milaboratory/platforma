@@ -1,5 +1,160 @@
 # @milaboratories/pf-spec
 
+## 1.1.0
+
+### Minor Changes
+
+- 92cf16f: New `ColumnsCollection.discoverRoots`: find the columns the given ones hang off
+
+  `discover` starts from anchors and walks linkers down to what they contain (anchored on `sample`, it reaches `cell`). There was no way to go the other way, from `cell` to the `sample`-level columns above it. `discoverRoots` takes the columns you have and returns the roots they hang off:
+
+  ```ts
+  const found = collection.discoverRoots({
+    leaves: [cellRef],
+    mode: "enrichment",
+    maxHops: 4,
+  });
+  // found: Array<{ root: ColumnRecipe; leaf: ColumnRecipe; path: ColumnRecipe[] }>
+  ```
+
+  Each entry is exactly what `discover({ anchors: { r: root } })` would return for the leaf: `leaf` is the requested column as a discovered column carrying the linker path and qualifications, so the table is built from `root` as the anchor plus `leaf`, the same way as for any discovered column. `discover` is unchanged.
+
+  The engine side is the new `discoverRoots` request of the spec frame (`PFrameSpecDriver.discoverRoots`), from milaboratory/pframes-rs#295.
+
+### Patch Changes
+
+- e628f46: Update pframes-rs-wasip2 to 1.3.0, which adds the `discoverRoots` request. `discoverColumns` and `buildQuery` behave as in 1.2.0.
+- Updated dependencies [92cf16f]
+  - @milaboratories/pl-model-common@1.56.0
+  - @milaboratories/pl-model-middle-layer@1.40.0
+
+## 1.0.17
+
+### Patch Changes
+
+- Updated dependencies [1bea6a2]
+  - @milaboratories/pl-model-middle-layer@1.39.0
+
+## 1.0.16
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-model-common@1.55.2
+  - @milaboratories/pl-model-middle-layer@1.38.0
+
+## 1.0.15
+
+### Patch Changes
+
+- Updated dependencies [82dd041]
+  - @milaboratories/pl-model-middle-layer@1.37.0
+
+## 1.0.14
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-model-middle-layer@1.36.0
+  - @milaboratories/pl-model-common@1.55.1
+
+## 1.0.13
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+  - @milaboratories/pl-model-middle-layer@1.35.0
+
+## 1.0.12
+
+### Patch Changes
+
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-model-common@1.54.2
+  - @milaboratories/pl-model-middle-layer@1.34.6
+
+## 1.0.11
+
+### Patch Changes
+
+- 6a1b104: Update `@bytecodealliance/jco-transpile` to 0.20.0 and `@bytecodealliance/preview2-shim` to 0.30.0, the versions that pframes-rs 1.2.0 builds with (jco 1.39.0). The `preview2-shim` peer dependency is now `^0.30.0`. The generated bindings also run on `preview2-shim` 0.20, so a consumer that pins the older shim gets only a peer warning; it should still move to `^0.30.0`.
+- 79f8dbc: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.2.0. JsonPartitioned parts are sorted by axes on read, so a part written in another key order no longer gives wrong join rows. Same-axes outer joins no longer re-sort. pframes-rs-node requires Node 24. Bump runenv-python-3 to 1.16.1, which bundles polars-pf 1.2.0 for ptabler.
+  - @milaboratories/pl-model-common@1.54.1
+  - @milaboratories/pl-model-middle-layer@1.34.5
+
+## 1.0.10
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @milaboratories/pl-model-common@1.54.0
+  - @milaboratories/pl-model-middle-layer@1.34.4
+
+## 1.0.9
+
+### Patch Changes
+
+- Updated dependencies [5d27046]
+  - @milaboratories/pl-model-middle-layer@1.34.3
+
+## 1.0.8
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+  - @milaboratories/pl-model-middle-layer@1.34.2
+
+## 1.0.7
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-model-common@1.52.0
+  - @milaboratories/pl-model-middle-layer@1.34.1
+
+## 1.0.6
+
+### Patch Changes
+
+- Updated dependencies [61aefa1]
+  - @milaboratories/pl-model-middle-layer@1.34.0
+
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+  - @milaboratories/pl-model-middle-layer@1.33.0
+
+## 1.0.4
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+  - @milaboratories/pl-model-middle-layer@1.32.2
+
+## 1.0.3
+
+### Patch Changes
+
+- 31a3f60: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.61. The Linux pframes-rs-node addon no longer ships debug info. Its download shrinks from 208 MB to about 28 MB. Bump runenv-python-3 to 1.13.2, which bundles polars-pf 1.1.61 for ptabler.
+
+## 1.0.2
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pl-model-common@1.49.0
+  - @milaboratories/pl-model-middle-layer@1.32.1
+
 ## 1.0.1
 
 ### Patch Changes

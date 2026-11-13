@@ -14,7 +14,7 @@
     }
   },
   "scripts": {
-    "build": "rm -rf dist && pl-tengo build",
+    "build": "shx rm -rf dist && pl-tengo build",
     "test": "vitest run --coverage",
     "format": "/usr/bin/env emacs --quick --script ./format.el",
     "format-stdin": "/usr/bin/env emacs --quick --script ./format-stdin.el",
@@ -41,12 +41,14 @@
     "@milaboratories/ts-configs": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
     "@platforma-open/milaboratories.software-test-utils": "catalog:",
+    "@platforma-open/milaboratories.software-venv-identity-test": "workspace:*",
     "@platforma-sdk/tengo-builder": "workspace:*",
     "@platforma-sdk/test": "workspace:*",
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "dedent": "catalog:",
     "es-toolkit": "catalog:",
+    "shx": "catalog:",
     "vitest": "catalog:"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-configs",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "exports": {
     "./package.json": "./package.json",
     "./browser": "./src/tsconfig.browser.json",
@@ -13,6 +13,9 @@
     "./*": "./src/*"
   },
   "scripts": {
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz"
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz"
+  },
+  "devDependencies": {
+    "shx": "catalog:"
   }
 }

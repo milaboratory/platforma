@@ -14,7 +14,6 @@ import * as fsp from "node:fs/promises";
 import * as path from "node:path";
 import { Writable } from "node:stream";
 import type { ClientDownload } from "../../clients/download";
-import { UnknownStorageError, WrongLocalFileUrl } from "../../clients/download";
 import { isDownloadNetworkError400 } from "../../helpers/download_errors";
 import { resourceIdToString, stringifyWithResourceId } from "@milaboratories/pl-client";
 
@@ -153,8 +152,6 @@ export function nonRecoverableError(e: any) {
   return (
     e instanceof DownloadAborted ||
     isDownloadNetworkError400(e) ||
-    e instanceof UnknownStorageError ||
-    e instanceof WrongLocalFileUrl ||
     // file that we downloads from was moved or deleted.
     e?.code == "ENOENT" ||
     // A resource was deleted.

@@ -127,10 +127,6 @@ export const PlSourcesOptions = (): Option[] => [
   ),
 ];
 
-export const ConfigOptions = (): Option[] => [
-  new Option("--config <path>", "use custom Platforma Backend config"),
-];
-
 export const StoragePrimaryURLOptions = (): Option[] => [
   new Option(
     "--storage-primary <url>",
@@ -197,7 +193,6 @@ export interface Flags {
   "pl-workdir"?: string;
   "pl-binary"?: string;
   "pl-sources"?: string;
-  config?: string;
   "storage-primary"?: string;
   "storage-work"?: string;
   "storage-library"?: string;
@@ -230,7 +225,6 @@ export function toFlags(o: Record<string, unknown>): Flags {
     "pl-workdir": o.plWorkdir as string | undefined,
     "pl-binary": o.plBinary as string | undefined,
     "pl-sources": o.plSources as string | undefined,
-    config: o.config as string | undefined,
     "storage-primary": o.storagePrimary as string | undefined,
     "storage-work": o.storageWork as string | undefined,
     "storage-library": o.storageLibrary as string | undefined,

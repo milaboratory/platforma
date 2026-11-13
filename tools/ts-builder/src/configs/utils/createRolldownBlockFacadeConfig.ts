@@ -1,4 +1,5 @@
 import type { RolldownOptions } from "rolldown";
+import { buildTsconfig } from "./buildTsconfig";
 import { dts } from "rolldown-plugin-dts";
 
 export interface RolldownBlockFacadeConfigProps {
@@ -22,7 +23,7 @@ export function createRolldownBlockFacadeConfig(
     // the runtime .js must bundle its inlined helpers, so nothing heavy follows
     // the consumer's install.
     external: () => false,
-    plugins: [dts({ tsconfig: "tsconfig.json", emitDtsOnly: false, sourcemap: true })],
+    plugins: [dts({ tsconfig: buildTsconfig(), emitDtsOnly: false, sourcemap: true })],
     output: {
       dir: output,
       format: "es",

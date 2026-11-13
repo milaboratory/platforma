@@ -1,5 +1,26 @@
 # @milaboratories/ts-builder
 
+## 1.8.0
+
+### Minor Changes
+
+- 2d57c27: Read `tsconfig.build.json` when a package has one: declaration output (`build`), `type-check` and `check` use it instead of `tsconfig.json`, so `tsconfig.json` can cover tests for editors and language servers while test files stay out of `dist`.
+
+## 1.7.4
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/ts-configs@1.4.1
+
+## 1.7.3
+
+### Patch Changes
+
+- 813e9fd: Update oxfmt to 0.75.0 (tinypool security fix). oxfmt formats some code differently; run `pnpm fmt` after the update.
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+
 ## 1.7.2
 
 ### Patch Changes

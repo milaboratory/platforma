@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import * as defaults from "../defaults";
 import type * as artifacts from "./schemas/artifacts";
 import * as util from "./util";
+import * as envs from "./envs";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
@@ -114,13 +115,6 @@ export function build(
       // regardless of host arch (cross-compile via qemu on non-x64 hosts).
       "--platform",
       defaults.DOCKER_BUILD_PLATFORM,
-      // Disable buildkit's SLSA provenance + SBOM attestations. They embed
-      // build-time timestamps into the manifest list, which produces a fresh
-      // image digest on every build of identical source. That breaks the
-      // content-addressable tag scheme (every dev rebuild re-pushes a new
-      // tag) and defeats publishDockerImage's `remoteImageExists` smart-skip.
-      "--provenance=false",
-      "--sbom=false",
       "-t",
       tag,
       context,
@@ -138,6 +132,8 @@ export function build(
       env: {
         ...process.env, // PATH variable from parent process affects execution
         HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+        // Disables buildx default provenance so the image ID stays stable; podman ignores it.
+        BUILDX_NO_DEFAULT_ATTESTATIONS: "1",
       },
     },
   );
@@ -171,6 +167,113 @@ export function push(tag: string) {
         `(for a private ECR use 'aws ecr' and your region instead of 'ecr-public'/us-east-1).`,
     );
   }
+}
+
+export type ImageLayer = {
+  /** Uncompressed layer size in bytes, as `docker history` reports it; undefined if unreadable. */
+  bytes: number | undefined;
+  /** The Dockerfile instruction that created the layer. */
+  createdBy: string;
+};
+
+/** Layers of a local image, newest first (the order of `docker history`). */
+export function getImageLayers(tag: string): ImageLayer[] {
+  const result = spawnSync(
+    "docker",
+    ["history", "--no-trunc", "--human=false", "--format", "{{.Size}}\t{{.CreatedBy}}", tag],
+    {
+      encoding: "utf-8",
+      env: {
+        ...process.env, // PATH variable from parent process affects execution
+        HOME: process.env.HOME || os.homedir(), // Ensure HOME is set
+      },
+    },
+  );
+  if (result.error) {
+    throw result.error;
+  }
+  if (result.status !== 0) {
+    throw util.CLIError(`'docker history ${tag}' failed with status ${result.status}`);
+  }
+  return parseImageHistory(result.stdout ?? "");
+}
+
+export function parseImageHistory(output: string): ImageLayer[] {
+  return output
+    .split("\n")
+    .filter((line) => line.trim() !== "")
+    .map((line) => {
+      const tab = line.indexOf("\t");
+      const size = (tab === -1 ? line : line.slice(0, tab)).trim();
+      // Only plain digits: a humanized size such as "8.59GB" must not read as 8 bytes.
+      return {
+        bytes: /^\d+$/.test(size) ? Number(size) : undefined,
+        createdBy: tab === -1 ? "" : line.slice(tab + 1).trim(),
+      };
+    });
+}
+
+/**
+ * Layers bigger than `limit` bytes. Registries finalize an uploaded layer in one request, and
+ * a client gives up waiting for that request after a fixed time (30 s in containerd >= 2.3), so
+ * multi-GB layers can fail to push even though the upload itself completed.
+ */
+export function oversizedLayers(layers: ImageLayer[], limit: number): ImageLayer[] {
+  return layers.filter((layer) => layer.bytes !== undefined && layer.bytes > limit);
+}
+
+/**
+ * Report image layers bigger than the limit: PL_DOCKER_MAX_LAYER_BYTES when set (then an
+ * oversized layer fails the build), defaults.DOCKER_MAX_LAYER_BYTES otherwise (then it warns).
+ * Runs after the build and before the push, so the failure names the layer instead of
+ * surfacing as a registry timeout.
+ */
+export function checkLayerSizes(tag: string, warn: (message: string) => void): void {
+  const raw = process.env[envs.PL_DOCKER_MAX_LAYER_BYTES]?.trim();
+  const enforced = raw !== undefined && raw !== "";
+  const limit = enforced ? Number(raw) : defaults.DOCKER_MAX_LAYER_BYTES;
+  if (!Number.isSafeInteger(limit) || limit <= 0) {
+    throw util.CLIError(
+      `${envs.PL_DOCKER_MAX_LAYER_BYTES} must be a positive number of bytes, got '${raw}'`,
+    );
+  }
+
+  let layers: ImageLayer[];
+  try {
+    layers = getImageLayers(tag);
+  } catch (e) {
+    // The check is advisory unless enforced; never let it break a build that succeeded.
+    if (enforced) throw e;
+    warn(`Could not check layer sizes of '${tag}': ${String(e)}`);
+    return;
+  }
+
+  const unreadable = layers.filter((layer) => layer.bytes === undefined).length;
+  if (unreadable > 0) {
+    const message =
+      `Could not read the size of ${unreadable} layer(s) of '${tag}' from 'docker history'; ` +
+      `layer sizes were not checked for those.`;
+    if (enforced) throw util.CLIError(message);
+    warn(message);
+  }
+
+  const oversized = oversizedLayers(layers, limit);
+  if (oversized.length === 0) {
+    return;
+  }
+
+  const gib = (bytes: number) => `${(bytes / 1024 ** 3).toFixed(2)} GiB`;
+  const message =
+    `Image '${tag}' has ${oversized.length} layer(s) above ${gib(limit)} (uncompressed):\n` +
+    oversized.map((l) => `  ${gib(l.bytes ?? 0)}  ${l.createdBy.slice(0, 160)}`).join("\n") +
+    `\nRegistries may not finalize a layer this big before the pushing client gives up ` +
+    `('timeout awaiting response headers'). Split the step that creates it into several ` +
+    `RUN/COPY steps, or shrink what it installs. Autogenerated python images already split ` +
+    `their dependencies; an oversized layer there means a single file above the limit.`;
+  if (enforced) {
+    throw util.CLIError(message);
+  }
+  warn(message);
 }
 
 export function addTag(imageIdOrTag: string, newTag: string) {

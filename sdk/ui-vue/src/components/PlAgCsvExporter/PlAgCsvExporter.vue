@@ -34,7 +34,12 @@ const teleportTarget = usePlBlockPageTitleTeleportTarget("PlAgCsvExporter");
 
 <template>
   <Teleport v-if="teleportTarget && csvExportAvailable" :to="teleportTarget">
-    <PlBtnGhost :loading="exporting" icon="export" @click.stop="initiateExport">
+    <PlBtnGhost
+      data-testid="pl-ag-csv-exporter"
+      :loading="exporting"
+      icon="export"
+      @click.stop="initiateExport"
+    >
       Export
     </PlBtnGhost>
   </Teleport>

@@ -1,5 +1,169 @@
 # @milaboratories/pl-mcp-server
 
+## 46.0.0
+
+### Patch Changes
+
+- Updated dependencies [af78d3a]
+  - @milaboratories/pl-middle-layer@2.6.0
+
+## 45.0.0
+
+### Patch Changes
+
+- Updated dependencies [92cf16f]
+  - @milaboratories/pl-middle-layer@2.5.0
+  - @platforma-sdk/model@1.90.0
+
+## 44.0.0
+
+### Patch Changes
+
+- Updated dependencies [470744c]
+  - @platforma-sdk/model@1.89.0
+  - @milaboratories/pl-middle-layer@2.4.2
+
+## 43.0.0
+
+### Patch Changes
+
+- Updated dependencies [1bea6a2]
+  - @milaboratories/pl-middle-layer@2.4.0
+  - @platforma-sdk/model@1.88.15
+
+## 42.0.0
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-middle-layer@2.3.0
+  - @platforma-sdk/model@1.88.14
+
+## 41.0.0
+
+### Patch Changes
+
+- Updated dependencies [82dd041]
+  - @milaboratories/pl-middle-layer@2.2.0
+  - @platforma-sdk/model@1.88.13
+
+## 40.0.0
+
+### Patch Changes
+
+- Updated dependencies [d3a7b19]
+  - @milaboratories/pl-middle-layer@2.1.0
+  - @platforma-sdk/model@1.88.10
+
+## 39.0.0
+
+### Patch Changes
+
+- Updated dependencies [e40ccc1]
+  - @milaboratories/pl-middle-layer@2.0.0
+
+## 38.0.0
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-middle-layer@1.77.0
+  - @platforma-sdk/model@1.88.8
+
+## 37.0.0
+
+### Minor Changes
+
+- f7a9989: Read the block action context tree. `Project.getBlockActionContext(blockId, mode)` returns the action context of a block render with its baggage, transitions, readings and child renders, read in one transaction. The MCP server exposes it as the `get_block_action_context` tool, cut to `maxDepth` levels and the latest `maxTransitions` per node, with `contextId` to read a subtree.
+
+### Patch Changes
+
+- Updated dependencies [f7a9989]
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-middle-layer@1.76.0
+
+## 36.0.0
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @platforma-sdk/model@1.88.0
+  - @milaboratories/pl-middle-layer@1.75.0
+
+## 35.0.0
+
+### Patch Changes
+
+- Updated dependencies [e813654]
+  - @platforma-sdk/model@1.87.0
+  - @milaboratories/pl-middle-layer@1.74.18
+
+## 34.0.1
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [79f8dbc]
+- Updated dependencies [615bd8c]
+  - @milaboratories/pl-middle-layer@1.74.12
+  - @platforma-sdk/model@1.86.3
+
+## 34.0.0
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @platforma-sdk/model@1.86.0
+  - @milaboratories/pl-middle-layer@1.74.9
+
+## 33.0.0
+
+### Patch Changes
+
+- Updated dependencies [2a781e0]
+  - @platforma-sdk/model@1.85.0
+  - @milaboratories/pl-middle-layer@1.74.4
+
+## 32.0.0
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-middle-layer@1.74.0
+  - @platforma-sdk/model@1.84.17
+
+## 31.0.0
+
+### Patch Changes
+
+- Updated dependencies [61aefa1]
+  - @milaboratories/pl-middle-layer@1.73.0
+  - @platforma-sdk/model@1.84.3
+
+## 30.0.0
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+- Updated dependencies [cadf144]
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-middle-layer@1.72.0
+  - @platforma-sdk/model@1.84.1
+
+## 29.0.0
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @platforma-sdk/model@1.84.0
+  - @milaboratories/pl-middle-layer@1.71.16
+
 ## 28.0.0
 
 ### Patch Changes

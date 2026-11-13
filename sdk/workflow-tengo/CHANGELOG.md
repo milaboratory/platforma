@@ -1,5 +1,422 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.22.3
+
+### Patch Changes
+
+- e628f46: Update pframes-rs-wasip2 to 1.3.0, which adds the `discoverRoots` request. `discoverColumns` and `buildQuery` behave as in 1.2.0.
+  - @platforma-open/milaboratories.software-ptabler@2.3.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.7
+
+## 6.22.2
+
+### Patch Changes
+
+- 581be9f: v2 workflow: the `effect` output omits its `imports` section when the body imports nothing, leaving an empty map; an effect that lists imports is unchanged.
+  - @platforma-open/milaboratories.software-ptabler@2.3.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.7
+
+## 6.22.1
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @platforma-open/milaboratories.software-ptabler@2.3.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.7
+
+## 6.22.0
+
+### Minor Changes
+
+- daa13ed: `v2.workflow` renders a third output, `effect`, and calls the body as `fn(args, effect)`. `effect.importFile(source)` imports an upload grant (`upload://upload/…`) or a library file (`index://index/…`) and returns the imported file. The render lists each import under `effect.imports.<source>` as an `ImportEntry/1` with the fields `upload` (upload grants only), `progress` and `file`, so the engine reports the import and, for an upload grant, sends the upload; no block output has to. A body that succeeds always sets `effect`, with an empty `imports` map when nothing is imported, and `importFile` refuses calls made after the body has returned.
+
+  Breaking for v2 workflows: a body declared as `func(args)` must become `func(args, effect)` — until it does, the render fails with `wrong number of arguments: want=1, got=2` — and the output guard now requires exactly `result`, `exports` and `effect`.
+
+### Patch Changes
+
+- bb23557: `validation`: a tag value may contain `=`, so a schema such as `string,regex=^x=y$` checks the whole regex instead of the part before its first `=`.
+
+## 6.21.1
+
+### Patch Changes
+
+- fe4ff52: exec: `cache()` is deprecated. Use `cacheMillis`, `cacheSeconds`, `cacheMinutes`, `cacheHours` or `cacheDays`. The `cache()` doc comment now tells to build the duration with the 'times' library constants
+
+## 6.21.0
+
+### Minor Changes
+
+- 3ba694e: Add `canonicalId()` to the template object (`tpl`): a pure template reads the canonical ID of its own renderer from the template body. The function fails in ephemeral templates, which have no canonical ID. Add `canonicalIdExposure` to `feats`: true when the backend reports `canonicalIDExposure`, `supportsScratchSpaceRequests` or `scratchSpace`.
+
+  On backends that do not give final canonical IDs, the new internal `ll.canonical-id` library calculates a missing canonical ID on the template level with the backend formula. `anonymize` uses it, so it gives correct field names also on backends v4.2.0 to v4.3.0, which did not give the canonical ID of value resources. On those backends, anonymized names change one time. On backends before v1.34.0, which cannot calculate SHA-256, a missing canonical ID causes an error that tells to update the backend.
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler@2.3.0
+- @platforma-open/milaboratories.software-ptexter@1.2.6
+
+## 6.20.0
+
+### Minor Changes
+
+- 8d28bcd: Column value references: `ColumnValueId` names one value of a column a block picked, and template relocation repoints the producer block inside it. The value is always a string: a value of a number column is its decimal string (`String(cell)`), so the same value picked from a number cell and from a text cell is the same id, and ids compare with `===`. `createColumnValueId` refuses a value that is not a string, and an id whose value is not a string is not a `ColumnValueId`.
+  A value picker is made like a data table, in two halves. The model gives `createColumnValueOptions({ valueColumn, labelColumn? }, { ctx? })` as an output — each column an id, a column or a recipe — a frame holding the value column and the label column, `resolving` while either is, `absent` once the value column is gone (a gone label column leaves the values to label themselves), each with the value column it was made for. The UI reads it through the frame, so a column of any storage format can be picked from: `readColumnValueOptions(model)` gives the distinct non-missing values as `{ value: ColumnValueId, label }` options in natural order of labels, each labelled by the label column in its row or by itself (`deriveColumnValueOptions`, `deriveLabelledColumnValueOptions`). In Vue, as with a table, the output reaches the dropdown through settings: `usePlColumnValueSettings({ source, valueColumn })` makes them out of the output and the column picked now — `none`, `pending` until the output is computed for that pick, `absent`, or `present` — and `<PlColumnValueDropdown>` and `<PlColumnValueDropdownMulti>` take them as `settings`: `PlDropdown` and `PlDropdownMulti` over the values, loading until they are read and telling why a column offers none; `exclude` leaves out values, and other attributes and the slots go to the dropdown.
+  `columnValueLabel(picked)` names a picked value to the user: the value a column value id picks, or the string as is when it is not such an id.
+  In workflows, `workflow.column-value` reads such ids back into plain values, always strings: `valueOf` for one id, `valuesOf` for an array of them.
+  The middle layer computes the column links of each block: `dependencies` — outputs of other blocks the block's args reference: its current args, else those of its last run — and `dependents` — blocks whose args reference the block's outputs. They reach the app and the block UI as `columnLinks` of the block state (`BlockStateInternalV3`, `BlockStateV3`): `BlockColumnLinks` with `blockId`, the block they are of, the two sides as lists of `ColumnLink` — the referenced block output (`producer`), the block holding the reference (`holderBlockId`), the column id, the picked values, the check and the column label — and `labels` of the other blocks they name; `undefined` while they are not computed, and in app versions that do not compute them. They are computed only for blocks whose model declares the `supportsColumnLinks` feature flag, which `BlockModelV3` sets, so blocks built with an earlier SDK add no work. Each block's links are computed on their own: its dependencies read its args and the last runs of the blocks they reference; its dependents read the args of every block below it — those of its last run for a block without current args — and its own last run. So a run of a block recomputes its dependents and the dependencies of the blocks that reference it — and, while it has no current args, the dependents of every block above it; an edit of a block's args recomputes its own dependencies and the dependents of every block above it, whether it references them or not. Each reference carries the picked values and a `LinkCheck`, read the same on both sides, checked against what the producer's last run exports: whether the column is exported and whether it holds the picked values. A reference to a block that has no last run is `notRun`: the block has to be run first. A reference to a block whose last run is still rendering its results is `pending`; one whose last run failed to render them is `unavailable`. A reference to an output its producer does not export is `unavailable`: among `dependents`, the dependent block cannot run against it. A reference to a block that is not above the block holding it is `unavailable` too. A column counts as exported once its spec is in the producer's last run; picked values are checked against those its `pl7.app/discreteValues` annotation lists, else against its data. A reference whose column values cannot be read is `unreadable`; one whose column lacks picked values is `missingValues`, with the values it lacks. Each reference carries the column's label: the exported column's, or, when the producer's last run does not export it, that of the column the producer prepares before it is run; the status is still judged by the last run alone. The middle layer labels the blocks by their titles, the names the project shows.
+  `PlBlockDependencies` turns column links into the alerts shown above a block, one per side, for the links that need attention: an error when an output this block uses is unavailable or lacks picked values; a warning, noting that the links are checked against this block's last run, with advice to add the missing data and run the block or reconfigure those blocks, when blocks using this block's outputs use an output it does not export or pick values it lacks; a block that has not been run yet provides no output, so links to it raise these alerts as to an output that is not provided. Columns are named by their label; output names are shown only as hints. Outputs of one block that are not exported and have no known label share one alert line ("uses 2 outputs this block does not export"). Value pickers tell, from the same links, which block was to provide a missing column or column value and what went wrong, or, when its column is provided while other inputs of the block are not, that it waits for them: the options of one input may be made from another. `computeDependencies` and `computeDependents` are in `@milaboratories/pl-model-common`; turning links into alerts and picker tooltips stays inside `@platforma-sdk/ui-vue`.
+  `PlBlockDependencies` (`<PlBlockDependencies />`) shows those alerts in a block UI that places it, from the column links the app provides, and nothing when it provides none; each other block is named by `PlBlockName`. The reader can fold the warning about blocks using this block's outputs to its title by clicking the title, which then counts the blocks ("2 blocks"); the fold is the reader's own, kept in the browser storage under the block id, and a folded warning is marked "Updated" once it says something else than when it was folded. The error about this block's own inputs does not fold. `PlAlert` takes a `label` slot in place of the `label` text, and leaves out the text area when given no text.
+  `PlBlockName` (`<PlBlockName :block-id="id" :name="label" />`) shows the name of another block of the project: a link opening that block when the app can open blocks, and plain text otherwise.
+  Block UIs can ask the app to open another block of the same project: `PlatformaV3` has an optional `openBlock(blockId)`, absent in app versions that cannot do it; in Vue, `useOpenBlock()` returns a function opening a block by id, or `undefined` when the app cannot.
+  `PlDropdown` and `PlDropdownMulti` show a selected column value id by the value it picks: as is while the options load, and as "<value> — not available" when the options lack it, unless `missingValueLabel` is given.
+  `PlValueLabel` (`<PlValueLabel :value="item" :options="options" />`) shows a selected value as text the way a dropdown does: by its option's label, a column value id by the value it picks, and a value the options lack as not available, in error color.
+  `PlDropdown`, `PlDropdownMulti`, `PlDropdownRef`, `PlDropdownMultiRef` and `PlValueLabel` take `missingValueTooltip`, a tooltip explaining a selected value missing from the options, and `missingValueLabel`, the text shown in its place: each one text for every such value, or a function giving it — the tooltip content — per value, `undefined` when there is nothing to tell. The ones `@platforma-sdk/ui-vue` exports pass both themselves when the app provides column links, for a missing column — selected by id or by ref — and a missing column value: the tooltip names the block that was to provide the column, as a link to it, and what went wrong — it does not provide the column (a block that has not been run yet provides none), the column lacks the value, or the block is still computing it; when the column is provided while other inputs of the block are not, the tooltip says it waits for them. The value is shown by the picked value, or by the label of a column selected as a whole: alone while it waits, as "<name> — not available" otherwise.
+  `PlDatasetSelector` explains a selected dataset or filter the options lack the same way, by the column it selects: the dataset first, then its filter.
+  `PlDropdownRef` and `PlDropdownMultiRef` show a missing value as "Value not available", like the other dropdowns, instead of "Upstream value removed".
+  Inside a `PlTooltip`, `--txt-link` is the tooltip link color, so links drawn with it — `PlBlockName` among them — read on the dark tooltip background like the tooltip's own links.
+
+### Patch Changes
+
+- @platforma-open/milaboratories.software-ptabler@2.3.0
+- @platforma-open/milaboratories.software-ptexter@1.2.6
+
+## 6.19.0
+
+### Minor Changes
+
+- c40e26d: Block action context in templates. `render()` sets the action context of the rendered template from the action context of the current renderer: a new `ActionContext` with a copy of the parent context baggage and its own `name` (the imported template name, or the new `name` option), linked from the parent context; a new sinkhole with the same baggage when the current renderer is in the sinkhole; nothing when it has no action context. The link is the render's optional `actionContext` service field, set once, so the template cannot change it. `render(tpl, inputs, { actionContext: false })` puts a template and everything below it into the sinkhole: reports are dropped, but the baggage passes down. `self.actionContext()` and `smart.resource.actionContext()` return a handle with `record(namespace, state, ...detail)` and `setReading(namespace, key, value)`, which write to the context with `tx.resourceKeyValueSetAsync`; `self.actionContext().baggage()` returns the baggage of the current context or sinkhole (e.g. `run-id`, `block-id`), and `render(tpl, inputs, { actionContext: { ...baggage } })` gives a render a new action context, for templates rendered outside a block. Exec and workdir resources a template creates (ComputeRequest, RunCommand, WorkdirFill, WorkdirSave) are linked to the template's action context with `actionContext.inherit(rid)`, so the runner and the data controller report into it. Every link is created in the transaction that creates the resource, before its inputs are locked. Everything is a no-op unless the backend has the primitives (`feats.kvAsync`, `feats.optionalFieldsInSchemas`).
+
+## 6.18.0
+
+### Minor Changes
+
+- eff75ea: The v2 layer (`:v2.*`) for platforma2 workflows, unstable. platforma2 is the next block runtime: a block exports a typed values tree and downstream blocks read it through BContext/2 contexts. The layer has the `v2.workflow` entry (outputs `result` and `exports`), typed export constructors in `v2.exports`, the BContext/2 query API in `v2.bquery`, and the `v2.export-for-ui` template. In it a ref is `{block, workflow, name}`; a single lookup finds exactly one value or fails; query options are checked.
+
+  `workflow.bquery` gains `forFamily(n)`, the query API of resolver family `n`: 1 is the existing functions (BResolveSingle/1, BResolveChoice/1 over BContext/1), 2 resolves over BContext/2; the shared result decoder decodes family-2 results. `pframes.bundle` gains `createBuilderWith` and `pframes.table-builder` gains `tableBuilderWith`, which take the query API to resolve with. The `:tpl` API gains `definedOutputs()`. Existing public signatures and the family-1 path are preserved, except that `resolve` no longer writes into the caller's options map.
+
+## 6.17.3
+
+### Patch Changes
+
+- 1cb516a: pt.run() sends the ptabler workflow as gzip-compressed JSON. A workflow with many steps (for example, one frame for each sample) can be larger than the 4 MiB gRPC message limit of the platform. Before this change, such a workflow failed with "grpc: received message larger than max". On a backend without gzipEncode, pt.run() sends plain JSON as before. ptabler reads a workflow file with a ".gz" suffix (for example, "workflow.json.gz") as gzip-compressed.
+- Updated dependencies [1cb516a]
+  - @platforma-open/milaboratories.software-ptabler@2.3.0
+
+## 6.17.2
+
+### Patch Changes
+
+- 089402e: Write the keys of a Json column's `.jdata` file in axis value order: numbers as numbers (so `[9]` comes before `[10]`, and `[-10]` before `[-1]`) and strings in byte order. Writing the file is also faster than with `canonical.encode`, which `writeFile` used before: 0.55 s instead of 14.8 s for 70,000 rows. The file bytes change, so ptabler steps that read such a column run again once after the update.
+- 79f8dbc: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.2.0. JsonPartitioned parts are sorted by axes on read, so a part written in another key order no longer gives wrong join rows. Same-axes outer joins no longer re-sort. pframes-rs-node requires Node 24. Bump runenv-python-3 to 1.16.1, which bundles polars-pf 1.2.0 for ptabler.
+- Updated dependencies [79f8dbc]
+  - @platforma-open/milaboratories.software-ptabler@2.2.1
+  - @platforma-open/milaboratories.software-ptexter@1.2.6
+
+## 6.17.1
+
+### Patch Changes
+
+- 2157f48: Fix `slices.quickSort` and `slices.quickSortFn` overflowing the Tengo stack on sorted input. The sort used the last element as the pivot, so a sorted list of about 290 elements failed with `index out of range [2048] with length 2048`. `resolveAst` sorts the already sorted input file list of every exec with a resource formula, so a ptabler run with about 283 or more input files failed. The sort now uses Hoare partitioning around the middle element and recurses only into the smaller part, so the recursion depth is at most log2(n).
+
+## 6.17.0
+
+### Minor Changes
+
+- 48fd5df: Add a DuckDB engine for Parquet PColumn imports, lifting the row ceilings that kept
+  large long-format columns from importing at all (MILAB-7195).
+
+  Polars indexes rows with a u32, so the step chain the SDK emits for a Parquet import
+  refuses any file over 2^32 rows. The new `import_parquet_frame` step does the
+  projection, cast, null filter and sort in one out-of-core DuckDB pass and hands the
+  result to `polars_pf.convert`, which `write_frame` already used for the write. Opt in
+  per import with `importEngine: "duckdb"`; it covers plain projection-and-cast specs,
+  and anything using preProcess, naRegex, filterOutRegex or an index axis keeps the
+  Polars chain.
+
+  Two further limits sit behind that one and are also addressed. DuckDB's sort keeps
+  per-thread buffers, so the thread count is now derived from the memory budget rather
+  than the core count. Parquet stores a row group's ordinal as an i16, capping a file
+  at 32767 groups, so the row group size is derived from the row count; frames that fit
+  the default are unchanged. Because sorting at this size is expensive in scratch, the
+  step first checks whether the input is already ordered by its axes and streams
+  straight through when it is.
+
+  The sort tuning is scoped to the new step. `write_frame` issues the same ORDER BY
+  and has the same exposure, but only at a row count no caller has reached, and capping
+  its threads would slow every PFrame the platform writes.
+
+### Patch Changes
+
+- Updated dependencies [48fd5df]
+  - @platforma-open/milaboratories.software-ptabler@2.2.0
+
+## 6.16.0
+
+### Minor Changes
+
+- 2a781e0: tableBuilder: setColumnJoin("left" | "full" | "inner") and a per-column join option control how columns added with addColumn / addColumns are joined onto the primaries. The default stays "full". Use "left" with a filtered primary so added columns don't bring back keys the filter removed.
+
+  buildDatasetOptions: new requireEnrichments option (default true). Set it to false for blocks that only need the dataset and its filters, so blocks that enrich the dataset no longer make them stale when they run.
+
+  PlDatasetSelector: a stored selection whose requireEnrichments flag differs from the options' is now shown instead of appearing empty.
+
+## 6.15.0
+
+### Minor Changes
+
+- e69c8e8: `pt.workflow()` gains setters for the auto-sized CPU request, `between(intercept + slope × size, floor, ceiling)`:
+
+  - `.cpuFloor(cores)`: the floor. Default 2.
+  - `.cpuIntercept(cores)`: the intercept. Default 2.
+  - `.cpuSlope(slope)`: cores per GiB of input, at least 0, kept to two decimals. Default 1 core per 16 GiB.
+  - `.cpuCeiling(cores)`: the ceiling. Default 8 on the default curve. `.cpuSlope()` or `.cpuIntercept()` removes the default ceiling.
+
+  `.cpu(n)` still replaces the formula. The default CPU request does not change.
+
+## 6.14.0
+
+### Minor Changes
+
+- 06ada71: ptabler auto-sized RAM request is now `max(intercept + slope × size, floor)`, with no upper limit:
+
+  - Slope: 10 GiB per input GiB (was 6). `.memSlope(slope)` sets it. It must be an integer of at least 0. Slope 0 gives a flat request of `max(intercept, floor)`.
+  - Intercept: 4 GiB (was 2 GiB). `.memIntercept(bytes)` sets it. It must be at least 4 GiB.
+  - Floor: 4 GiB (was 2 GiB). `.memFloor(bytes)` sets it. A floor above 256 GiB is now accepted.
+  - The 256 GiB ceiling is removed. The backend still clamps a request that no node can give.
+  - The static fallback, for backends that cannot evaluate resource formulas, is `max(intercept, floor)` in bytes.
+  - `RAM_CAP_GIB` is removed from the `:pt.sizing` exports. `ramFormula` takes an options map `{ floor, slope, intercept }`.
+
+## 6.13.0
+
+### Minor Changes
+
+- 7dde18a: `pt.workflow()` gains `.polarsMaxThreads(threads)`. It sets the Polars thread count of a ptabler run.
+
+  - `.polarsMaxThreads(n)` uses n threads, or the granted cores if fewer. n must be an integer of at least 2.
+  - `.polarsMaxThreads("granted")` uses all granted cores, and never fewer than 2.
+  - The default stays at 8 threads, or the granted cores if fewer.
+
+  More threads use more memory. The auto-sized RAM request does not change with this setting.
+
+## 6.12.1
+
+### Patch Changes
+
+- 893ee62: ptabler runs clamp `POLARS_MAX_THREADS` to 8, whatever cpu the run is granted. The auto-sized RAM request is calibrated at 8 Polars threads; above 12 threads a run could need more than it was granted.
+
+## 6.12.0
+
+### Minor Changes
+
+- 1c11af2: pt: put the ptabler spill on scratch space, sized from the plan
+
+  ptabler spills into `{system.scratch.path}/ptabler-spill`: the tables pframes-rs writes for each `read_frame`, the DuckDB sort files, and now also the `unsorted.parquet` and `intermediate.parquet` files of `write_frame`. Before, all of it went to the working directory, which on AWS is EFS in Elastic Throughput mode and bills every GB read and written.
+
+  The run requests scratch space with a formula in `:pt.sizing`:
+
+      scratch = size * (16 * (read_frames + 1) + 2 * write_frames)
+
+  and 0 below 16 GiB, so a small run keeps its spill on the working directory's filesystem and does not wait for a volume. The factors cover the measured peak of every tested data shape by 1.8x or more. `pt.workflow().scratchFreeSpace(amount)` sets the request by hand.
+
+  `exec`: a `scratchFreeSpace` formula may now evaluate to 0, which asks for the temporary directory without a sized device, as a static 0 does. Before, 0 failed the positive-integer check.
+
+### Patch Changes
+
+- Updated dependencies [974b2c1]
+- Updated dependencies [1c11af2]
+  - @platforma-open/milaboratories.software-ptabler@2.1.14
+
+## 6.11.1
+
+### Patch Changes
+
+- 946a752: fix: xsv converter can be launched in k8s installations.
+- Updated dependencies [7b5f8f1]
+  - @platforma-open/milaboratories.software-ptabler@2.1.13
+  - @platforma-open/milaboratories.software-ptexter@1.2.6
+
+## 6.11.0
+
+### Minor Changes
+
+- ff119f5: pt: size the default ptabler RAM request from the measured plan shapes, and add `memFloor()`
+
+  The default request becomes `between(2 GiB + 6 * size, 2 GiB, 256 GiB)`, from
+  `between(2 GiB + 4 * size, 2 GiB, 64 GiB)`. The CPU formula, the 2 GiB floor and the
+  `4GiB` static fallback do not change. An explicit `mem()` still wins.
+
+  The old `4 x` slope sat below the steepest plan shape. Measured need per GiB of input,
+  at 8 Polars threads:
+
+  | plan shape                       | need per input GiB        |
+  | -------------------------------- | ------------------------- |
+  | concat + aggregate with `max_by` | **4.94**                  |
+  | bulk export                      | 2.92                      |
+  | single-cell export               | 1.40                      |
+  | `write_frame`                    | `4.13 x^0.68`, sub-linear |
+
+  Each law is fitted on real inputs, R2 0.97 or better. One formula serves every shape,
+  so it carries the steepest.
+
+  8 threads is the ceiling this formula runs at. The CPU formula clamps to 8, and no call
+  site in the SDK or in any block sets `cpu` without also setting `mem`. The same
+  aggregate shape needs `6.85 x` at 32 threads, which only a site that pins `cpu` above 8
+  and leaves `mem` auto would reach.
+
+  The slope is 6 rather than 5. The margin covers a known unit mismatch: the fits are
+  against uncompressed TSV bytes, and `f.size()` reports stored blob bytes, so a parquet
+  input understates the volume the plan decodes. Splitting the two input classes is
+  separate work.
+
+  The shallower shapes are now over-granted. This is deliberate. The backend clamps an
+  oversized request without a log and sets pod requests == limits, so an over-grant costs
+  concurrency and an under-grant costs an OOM kill with no traceback.
+
+  `pt.workflow().memFloor(bytes)` raises the lower bound of the auto-sized request and
+  leaves auto-sizing on. `annotations/compute` used a flat `.mem("12GiB")`, which ignored
+  input volume even though the run reads a column bundle. It now takes 12 GiB as a floor
+  and the measured slope above it. Use `memFloor()` rather than `mem()` when the intent
+  is "at least this much".
+
+  `memFloor()` rejects a floor above the 256 GiB ceiling. Raising the ceiling to match
+  would make `between(floor, floor)` return the floor for every input, which is the flat
+  pin the setter exists to avoid. Use `mem()` for a fixed request above the ceiling.
+
+  The two formulas move out of the template body into `:pt.sizing`, so they can be unit
+  tested against a fake metric resolver rather than only read. `pt/sizing.test.tengo`
+  covers the floor, the slope, both ceilings and the CPU curve.
+
+### Patch Changes
+
+- Updated dependencies [e4f6443]
+  - @platforma-open/milaboratories.software-ptabler@2.1.12
+  - @platforma-open/milaboratories.software-ptexter@1.2.5
+
+## 6.10.5
+
+### Patch Changes
+
+- 17536f5: `pl-tengo imports` replaces the clean-imports shell script.
+
+  Unused tengo imports used to be found by a bash script that only `workflow-tengo` could run.
+  It needed bash, `mapfile` and a GNU-ish `grep` and `awk`, so no block had access to it, and it
+  read the source with a plain text search. That search had no idea what a comment is, so an
+  alias left behind in a comment counted as a usage and the import survived. It also had no word
+  boundary, so `ll` looked used whenever an unrelated `xll.` appeared, and it only looked at
+  Platforma artifact imports — the whole tengo standard library was invisible to it.
+
+  The check now runs inside the builder, on the parser the compiler itself uses. Comments come
+  back empty from that parser, so an alias mentioned only in a comment is correctly reported as
+  unused. Every import is checked, the standard library included.
+
+  An import counts as used when its alias appears with a dot somewhere else in the code:
+  `text.split(...)`. A module passed around as a plain value is not recognised as a usage, so
+  such an import is reported. This is deliberate. Keeping an import the source no longer needs
+  costs nothing at runtime, while dropping one it does need breaks the build.
+
+  The command has three modes. `--check` reports and fails without touching a file, `--fix`
+  removes the unused imports, and with neither option it fixes the sources for a person and
+  checks them for CI. CI must report the problem, not make a change nobody reviewed.
+
+  A source the parser cannot read is reported and left as it is, while the other sources are
+  still cleaned and the command exits with an error. One broken source no longer blocks the
+  cleanup of everything else, and `pl-tengo check` reports the parse problem in full right after.
+
+  `workflow-tengo` now calls the command instead of the script, so both `scripts/clean-imports.sh`
+  and the `scripts/build.sh` wrapper around it are gone.
+
+  - @platforma-open/milaboratories.software-ptabler@2.1.11
+  - @platforma-open/milaboratories.software-ptexter@1.2.4
+
+## 6.10.4
+
+### Patch Changes
+
+- 31a3f60: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.61. The Linux pframes-rs-node addon no longer ships debug info. Its download shrinks from 208 MB to about 28 MB. Bump runenv-python-3 to 1.13.2, which bundles polars-pf 1.1.61 for ptabler.
+- d326918: The TMPDIR compatibility layer now also works on Windows.
+
+  A backend from before the temporary-directory contract has the SDK provide `TMPDIR` itself, through
+  a wrapper script staged into the working directory. That wrapper is a POSIX shell script, so a
+  Windows host used to be a hard error telling the user to update the backend — which stopped blocks
+  that were running fine before the contract existed.
+
+  Windows now gets a wrapper of its own: a `.cmd` batch file that creates `<workdir>\.pl\tmp` and sets
+  `TMPDIR`, `TMP` and `TEMP` to it. `TEMP` is the one the POSIX wrapper has no reason to set and this
+  one must — Win32 `GetTempPath`, which most native software reaches its temporary directory through,
+  reads `TMP` then `TEMP` and never `TMPDIR`.
+
+  Which wrapper is staged follows the shape that will actually run, not the host: a command in a
+  container gets the shell script even on a Windows machine, because the container is Linux. Only the
+  one that runs is written, so no command's identity — and no command's cache — changes on a host that
+  was already working.
+
+  One consequence worth knowing on Windows: the runner already starts every local command through
+  `cmd.exe /c`, and the batch file forwards its arguments with `%*`, so an argument is parsed by
+  cmd.exe twice instead of once. A literal `%name%` inside an argument is therefore expanded one more
+  time than before. Quoted arguments, spaces and `&`, `|`, `>` are unaffected.
+
+- Updated dependencies [31a3f60]
+  - @platforma-open/milaboratories.software-ptabler@2.1.11
+
+## 6.10.3
+
+### Patch Changes
+
+- Updated dependencies [cdbc497]
+  - @platforma-open/milaboratories.software-ptabler@2.1.10
+
+## 6.10.2
+
+### Patch Changes
+
+- 7104497: Save python dependency specs into the run environment so its identity reflects them
+
+  A python run environment was saved holding only the bare venv, and its dependencies were installed
+  afterwards. Its content hash was therefore a function of the interpreter alone, so two environments
+  built from one interpreter were indistinguishable and deduplication handed every software whichever
+  was registered first — a script could run under another package's venv and fail to import a
+  dependency it declares.
+
+  The dependency files are now written into the environment before it is saved, as conda already does
+  with `env-spec.yaml` and R with `renv.lock`.
+
+## 6.10.1
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+- Updated dependencies [f2ed96c]
+  - @platforma-open/milaboratories.software-ptabler@2.1.9
+  - @platforma-open/milaboratories.software-ptexter@1.2.4
+
+## 6.10.0
+
+### Minor Changes
+
+- f107d76: A command that asks for scratch space always gets TMPDIR and TMP, on every backend.
+
+  `exec.builder().resources({ onCPU: { scratchFreeSpace: … } })` now guarantees both variables,
+  pointed at `<workdir>/.pl/tmp` — the same location `{system.scratch.path}` names. A size is still
+  what decides whether a fast device sits behind that path; `0` asks for the directory alone.
+
+  Backends that provide this themselves are used directly. On one that does not, the SDK stages a
+  small POSIX shell script into the working directory and routes the command through it: the script
+  creates the directory, exports both variables, and `exec`s the command with its arguments
+  untouched. `{system.scratch.path}` is rewritten to a workdir-relative path on those backends too,
+  where the expression would otherwise fail to evaluate at all rather than render empty.
+
+  Two consequences worth knowing:
+
+  - A block no longer needs to branch on `hasScratchSpace` to arrange its own temporary storage.
+  - On Windows the workaround cannot run, so an old backend there is refused with an error naming
+    the fix. Windows ships only as a built-in backend, whose version is ours to update.
+  - Which backends get the workaround is decided per request, not per backend. 4.4.0 through 4.4.3
+    report scratch storage but still decide `TMPDIR` from the _size_ asked for, so a sized request
+    there is left alone — it already names the real scratch device — while a request of `0`, which
+    those backends answer with no `TMPDIR` and a scratch path naming the working directory root, gets
+    the wrapper like any older backend.
+
 ## 6.9.0
 
 ### Minor Changes

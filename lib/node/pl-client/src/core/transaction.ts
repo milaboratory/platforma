@@ -1,3 +1,4 @@
+import type { BackendCapability } from "./capabilities";
 import type {
   ColorProof,
   LocalResourceId,
@@ -52,7 +53,7 @@ import {
   deepFreeze,
   notEmpty,
 } from "@milaboratories/ts-helpers";
-import { isNotFoundError } from "./errors";
+import { isAbortedError, isNotFoundError } from "./errors";
 import type { FinalResourceDataPredicate } from "./final";
 import type { LRUCache } from "lru-cache";
 import type { ResourceDataCacheRecord } from "./cache";
@@ -90,10 +91,13 @@ export type ResourceTreeItem = ResourceData & { kv: KeyValue[]; traverseWasStopp
 
 /** A single frame from the resourceTree() stream.
  *
- * When the server advertises `treeStopMarker:v1`, a stop-matched node is emitted
- * as a lightweight marker instead of a full resource payload. Callers must
- * narrow on `frameKind` before accessing type-specific fields.
+ * A node the request's `traverseStopRules` matched is emitted as a lightweight marker
+ * instead of a full resource payload. Callers must narrow on `frameKind` before accessing
+ * type-specific fields.
  * Note: `frameKind` is distinct from `ResourceData.kind` (which is the resource kind).
+ *
+ * Under `changedSinceToken` there are no markers: stop rules do not apply, and an unchanged
+ * resource produces no frame at all.
  */
 export type ResourceTreeFrame =
   | (ResourceTreeItem & { frameKind: "resource" })
@@ -243,6 +247,7 @@ async function notFoundToUndefined<T>(cb: () => Promise<T>): Promise<T | undefin
  * This class encapsulates finalization stage and provides ready-to-communication transaction object.
  * */
 export class PlTransaction {
+  private readonly txOpen: Promise<{ id: bigint; sinceToken?: Uint8Array }>;
   private readonly globalTxId: Promise<bigint>;
   private readonly localTxId: number = PlTransaction.nextLocalTxId();
 
@@ -274,12 +279,15 @@ export class PlTransaction {
     public readonly name: string,
     public readonly writable: boolean,
     private readonly _clientRoot: OptionalSignedResourceId,
-    private readonly finalPredicate: FinalResourceDataPredicate,
+    /** What {@link sharedResourceDataCache} may keep. */
+    private readonly cachePredicate: FinalResourceDataPredicate,
     private readonly sharedResourceDataCache: LRUCache<SignedResourceId, ResourceDataCacheRecord>,
     private readonly enableFormattedErrors: boolean = false,
+    /** Capabilities the backend advertises, see {@link hasCapability}. */
+    private readonly backendCapabilities: (capability: BackendCapability) => boolean = () => false,
   ) {
     // initiating transaction
-    this.globalTxId = this.sendSingleAndParse(
+    this.txOpen = this.sendSingleAndParse(
       {
         oneofKind: "txOpen",
         txOpen: {
@@ -290,14 +298,22 @@ export class PlTransaction {
             : TxAPI_Open_Request_WritableTx.NOT_WRITABLE,
         },
       },
-      (r) => notEmpty(r.txOpen.tx?.id),
+      (response) => ({
+        id: notEmpty(response.txOpen.tx?.id),
+        // Empty on a server without treeChangedSince:v1, and on a writable transaction,
+        // which is served none: its reads see this transaction's own uncommitted writes,
+        // so a token earned here could pin state that never commits.
+        sinceToken:
+          response.txOpen.nextSinceToken.length > 0 ? response.txOpen.nextSinceToken : undefined,
+      }),
     );
+    this.globalTxId = this.txOpen.then((opened) => opened.id);
 
     void this.track(this.globalTxId);
 
     // To avoid floating promise
     this.globalTxId.catch((err) => {
-      if (!this.globalTxIdWasAwaited) {
+      if (!this.globalTxIdWasAwaited && !isAbortedError(err)) {
         console.warn(err);
       }
     });
@@ -686,33 +702,33 @@ export class PlTransaction {
   }
 
   /** This method may return stale resource state from cache if resource was removed */
-  public async getResourceData(rId: AnyResourceRef, loadFields: true): Promise<ResourceData>;
+  public getResourceData(rId: AnyResourceRef, loadFields: true): Promise<ResourceData>;
   /** This method may return stale resource state from cache if resource was removed */
-  public async getResourceData(rId: AnyResourceRef, loadFields: false): Promise<BasicResourceData>;
+  public getResourceData(rId: AnyResourceRef, loadFields: false): Promise<BasicResourceData>;
   /** This method may return stale resource state from cache if resource was removed */
-  public async getResourceData(
+  public getResourceData(
     rId: AnyResourceRef,
     loadFields: boolean,
   ): Promise<BasicResourceData | ResourceData>;
   /** This method may return stale resource state from cache if ignoreCache == false if resource was removed */
-  public async getResourceData(
+  public getResourceData(
     rId: AnyResourceRef,
     loadFields: true,
     ignoreCache: boolean,
   ): Promise<ResourceData>;
   /** This method may return stale resource state from cache if ignoreCache == false if resource was removed */
-  public async getResourceData(
+  public getResourceData(
     rId: AnyResourceRef,
     loadFields: false,
     ignoreCache: boolean,
   ): Promise<BasicResourceData>;
   /** This method may return stale resource state from cache if ignoreCache == false if resource was removed */
-  public async getResourceData(
+  public getResourceData(
     rId: AnyResourceRef,
     loadFields: boolean,
     ignoreCache: boolean,
   ): Promise<BasicResourceData | ResourceData>;
-  public async getResourceData(
+  public getResourceData(
     rId: AnyResourceRef,
     loadFields: boolean = true,
     ignoreCache: boolean = false,
@@ -742,9 +758,12 @@ export class PlTransaction {
             ...this.toSignedResourceId(rId),
             loadFields: loadFields,
             showSoftDeletes: false,
+            // Always empty: an on-demand read asks for what the caller does not hold, so a
+            // token here could only suppress the one body it came for.
+            changedSinceToken: new Uint8Array(0),
           },
         },
-        (r) => protoToResource(notEmpty(r.resourceGet.resource)),
+        (response) => protoToResource(notEmpty(response.resourceGet.resource)),
       );
 
       this._stat.rGetDataNetRequests++;
@@ -753,7 +772,7 @@ export class PlTransaction {
 
       // we will cache only final resource data states
       // caching result even if we were ignore the cache
-      if (isResourceId(rId) && this.finalPredicate(result)) {
+      if (isResourceId(rId) && this.cachePredicate(result)) {
         deepFreeze(result);
         const fromCache = this.sharedResourceDataCache.get(rId);
         if (fromCache) {
@@ -784,19 +803,19 @@ export class PlTransaction {
     });
   }
 
-  public async getResourceDataIfExists(
+  public getResourceDataIfExists(
     rId: AnyResourceRef,
     loadFields: true,
   ): Promise<ResourceData | undefined>;
-  public async getResourceDataIfExists(
+  public getResourceDataIfExists(
     rId: AnyResourceRef,
     loadFields: false,
   ): Promise<BasicResourceData | undefined>;
-  public async getResourceDataIfExists(
+  public getResourceDataIfExists(
     rId: AnyResourceRef,
     loadFields: boolean,
   ): Promise<BasicResourceData | ResourceData | undefined>;
-  public async getResourceDataIfExists(
+  public getResourceDataIfExists(
     rId: AnyResourceRef,
     loadFields: boolean = true,
   ): Promise<BasicResourceData | ResourceData | undefined> {
@@ -811,6 +830,46 @@ export class PlTransaction {
       if (result === undefined && isResourceId(rId)) this.sharedResourceDataCache.delete(rId);
 
       return result;
+    });
+  }
+
+  /**
+   * Lists resources of the given type, in ascending order of resource ID.
+   * The backend allows this request only for admin and controller roles.
+   *
+   * Use `after` and `limit` to read a long list page by page: give the ID of the
+   * last resource of the previous page as `after` for the next page.
+   */
+  public listResourcesByType(
+    type: ResourceType,
+    opts: {
+      /** Maximum number of resources to return. 0 (the default) returns all resources. */
+      limit?: number;
+      /** Return only resources with IDs greater than this ID. */
+      after?: AnyResourceRef;
+      /** Load the fields of each resource. Resource error is reported only when true. */
+      loadFields?: boolean;
+    } = {},
+  ): Promise<ResourceData[]> {
+    return this.track(async () => {
+      const after = opts.after === undefined ? 0n : this.toSignedResourceId(opts.after).resourceId;
+      return await this.sendMultiAndParse(
+        {
+          oneofKind: "resourceListByType",
+          resourceListByType: {
+            resourceType: type,
+            limit: opts.limit ?? 0,
+            after,
+            resolveDuplicates: false,
+            loadFields: opts.loadFields ?? false,
+            showSoftDeletes: false,
+          },
+        },
+        (responses) =>
+          responses.map((response) =>
+            protoToResource(notEmpty(response.resourceListByType.resource)),
+          ),
+      );
     });
   }
 
@@ -983,7 +1042,7 @@ export class PlTransaction {
     );
   }
 
-  public async getFieldIfExists(fId: AnyFieldRef): Promise<FieldData | undefined> {
+  public getFieldIfExists(fId: AnyFieldRef): Promise<FieldData | undefined> {
     return this.track(notFoundToUndefined(async () => await this.getField(fId)));
   }
 
@@ -1005,7 +1064,7 @@ export class PlTransaction {
   // KV
   //
 
-  public async listKeyValues(rId: AnyResourceRef): Promise<KeyValue[]> {
+  public listKeyValues(rId: AnyResourceRef): Promise<KeyValue[]> {
     return this.track(async () => {
       const result = await this.sendMultiAndParse(
         {
@@ -1014,9 +1073,11 @@ export class PlTransaction {
             ...this.toSignedResourceId(rId),
             startFrom: "",
             limit: 0,
+            // Always empty, as for the single resource read above.
+            changedSinceToken: new Uint8Array(0),
           },
         },
-        (r) => r.map((e) => e.resourceKeyValueList.record!),
+        (responses) => responses.map((response) => response.resourceKeyValueList.record!),
       );
 
       this._stat.kvListRequests++;
@@ -1027,7 +1088,7 @@ export class PlTransaction {
     });
   }
 
-  public async listKeyValuesString(rId: AnyResourceRef): Promise<KeyValueString[]> {
+  public listKeyValuesString(rId: AnyResourceRef): Promise<KeyValueString[]> {
     return this.track(async () =>
       (await this.listKeyValues(rId)).map(({ key, value }) => ({
         key,
@@ -1036,11 +1097,11 @@ export class PlTransaction {
     );
   }
 
-  public async listKeyValuesIfResourceExists(rId: AnyResourceRef): Promise<KeyValue[] | undefined> {
+  public listKeyValuesIfResourceExists(rId: AnyResourceRef): Promise<KeyValue[] | undefined> {
     return this.track(notFoundToUndefined(async () => await this.listKeyValues(rId)));
   }
 
-  public async listKeyValuesStringIfResourceExists(
+  public listKeyValuesStringIfResourceExists(
     rId: AnyResourceRef,
   ): Promise<KeyValueString[] | undefined> {
     return this.track(notFoundToUndefined(async () => await this.listKeyValuesString(rId)));
@@ -1059,6 +1120,11 @@ export class PlTransaction {
     });
   }
 
+  /** True iff the backend of this transaction advertises the capability token. */
+  public hasCapability(capability: BackendCapability): boolean {
+    return this.backendCapabilities(capability);
+  }
+
   public deleteKValue(rId: AnyResourceRef, key: string): void {
     this.sendVoidAsync({
       oneofKind: "resourceKeyValueDelete",
@@ -1069,7 +1135,7 @@ export class PlTransaction {
     });
   }
 
-  public async getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
+  public getKValue(rId: AnyResourceRef, key: string): Promise<Uint8Array> {
     return this.track(async () => {
       const result = await this.sendSingleAndParse(
         {
@@ -1079,7 +1145,7 @@ export class PlTransaction {
             key,
           },
         },
-        (r) => r.resourceKeyValueGet.value,
+        (response) => response.resourceKeyValueGet.value,
       );
 
       this._stat.kvGetRequests++;
@@ -1089,18 +1155,15 @@ export class PlTransaction {
     });
   }
 
-  public async getKValueString(rId: AnyResourceRef, key: string): Promise<string> {
+  public getKValueString(rId: AnyResourceRef, key: string): Promise<string> {
     return this.track(async () => Buffer.from(await this.getKValue(rId, key)).toString());
   }
 
-  public async getKValueJson<T>(rId: AnyResourceRef, key: string): Promise<T> {
+  public getKValueJson<T>(rId: AnyResourceRef, key: string): Promise<T> {
     return this.track(async () => JSON.parse(await this.getKValueString(rId, key)) as T);
   }
 
-  public async getKValueIfExists(
-    rId: AnyResourceRef,
-    key: string,
-  ): Promise<Uint8Array | undefined> {
+  public getKValueIfExists(rId: AnyResourceRef, key: string): Promise<Uint8Array | undefined> {
     return this.track(async () => {
       const result = await this.sendSingleAndParse(
         {
@@ -1110,8 +1173,10 @@ export class PlTransaction {
             key,
           },
         },
-        (r) =>
-          r.resourceKeyValueGetIfExists.exists ? r.resourceKeyValueGetIfExists.value : undefined,
+        (response) =>
+          response.resourceKeyValueGetIfExists.exists
+            ? response.resourceKeyValueGetIfExists.value
+            : undefined,
       );
 
       this._stat.kvGetRequests++;
@@ -1121,22 +1186,67 @@ export class PlTransaction {
     });
   }
 
-  public async getKValueStringIfExists(
-    rId: AnyResourceRef,
-    key: string,
-  ): Promise<string | undefined> {
+  public getKValueStringIfExists(rId: AnyResourceRef, key: string): Promise<string | undefined> {
     return this.track(async () => {
       const data = await this.getKValueIfExists(rId, key);
       return data === undefined ? undefined : Buffer.from(data).toString();
     });
   }
 
-  public async getKValueJsonIfExists<T>(rId: AnyResourceRef, key: string): Promise<T | undefined> {
+  public getKValueJsonIfExists<T>(rId: AnyResourceRef, key: string): Promise<T | undefined> {
     return this.track(async () => {
       const str = await this.getKValueStringIfExists(rId, key);
       if (str === undefined) return undefined;
       return JSON.parse(str) as T;
     });
+  }
+
+  //
+  // Controller key-value store
+  //
+
+  /**
+   * Sets a value in the key-value store of a registered controller.
+   * Requires controller or admin credentials.
+   */
+  public setControllerKValue(
+    controllerType: string,
+    key: string,
+    value: Uint8Array | string,
+  ): void {
+    this.sendVoidAsync({
+      oneofKind: "controllerKeyValueSet",
+      controllerKeyValueSet: {
+        controllerType,
+        key,
+        value: toBytes(value),
+      },
+    });
+  }
+
+  /**
+   * Reads a value from the key-value store of a registered controller.
+   * Returns undefined when the key does not exist. Requires controller or admin credentials.
+   */
+  public getControllerKValueIfExists(
+    controllerType: string,
+    key: string,
+  ): Promise<Uint8Array | undefined> {
+    return this.track(async () =>
+      this.sendSingleAndParse(
+        {
+          oneofKind: "controllerKeyValueGetIfExists",
+          controllerKeyValueGetIfExists: {
+            controllerType,
+            key,
+          },
+        },
+        (response) =>
+          response.controllerKeyValueGetIfExists.exists
+            ? response.controllerKeyValueGetIfExists.value
+            : undefined,
+      ),
+    );
   }
 
   //
@@ -1163,6 +1273,21 @@ export class PlTransaction {
   public async getGlobalTxId() {
     this.globalTxIdWasAwaited = true;
     return await this.globalTxId;
+  }
+
+  /**
+   * The change token this transaction was opened at, to hand back as
+   * {@link resourceTree}'s `changedSinceToken` on a later poll. `undefined` when the server
+   * does not advertise `treeChangedSince:v1`, and on a writable transaction, which is served
+   * none.
+   *
+   * Store it only after a whole response has been applied - kept after a partial apply, the
+   * dropped resources are never sent again - and discard it when the traversal shape changes,
+   * which the token cannot express itself. Opaque: never parse one, and never compare across
+   * instances.
+   */
+  public getNextSinceToken(): Promise<Uint8Array | undefined> {
+    return this.track(async () => (await this.txOpen).sinceToken);
   }
 
   /** Closes output event stream */
@@ -1202,16 +1327,29 @@ export class PlTransaction {
    *   with `traverseWasStopped = true` and their children are not visited.
    *   This wire field accepts only one filter. Compose multiple rules via
    *   `treeFilter.and(...)` / `treeFilter.or(...)`.
+   *   Deprecated, and ignored under `changedSinceToken`: a stop rule prunes on mutable state,
+   *   so on a delta walk it would hide a changed subtree behind a resource that merely
+   *   flipped a gate.
    * @param opts.includeKv         - When true, each yielded item includes KV entries.
    * @param opts.maxDepth          - Optional depth cap.
+   * @param opts.changedSinceToken - A token from {@link getNextSinceToken}. Yields only
+   *   resources newer than it, and the walk ENDS at an unchanged one, so a change beneath one
+   *   is not reached. A response may reference resources it does not carry; read those back
+   *   with `unconditionalDepth`. An unusable token is answered with the full tree, not an error.
+   * @param opts.unconditionalDepth - Emit every resource at or below this depth whatever its
+   *   change token says, the seed being depth 0. Ignored without `changedSinceToken`. Absent
+   *   differs from 0, which takes the seeds alone.
    */
   public resourceTree(
     seeds: (ResourceData | SignedResourceId)[],
     opts?: {
       fieldFilter?: ResourceAPI_Tree_Filter;
+      /** @deprecated prune with `changedSinceToken` instead; ignored under one. */
       traverseStopRules?: ResourceAPI_Tree_Filter;
       includeKv?: boolean;
       maxDepth?: number;
+      changedSinceToken?: Uint8Array;
+      unconditionalDepth?: number;
     },
   ): AsyncIterable<ResourceTreeFrame> {
     if (seeds.length === 0) {
@@ -1238,8 +1376,9 @@ export class PlTransaction {
         includeKv: opts?.includeKv ?? false,
         maxDepth: opts?.maxDepth,
         showSoftDeletes: false,
-        // Empty token requests the full tree — this call has no continuation to resume.
-        changedSinceToken: new Uint8Array(0),
+        // Empty requests the full tree.
+        changedSinceToken: opts?.changedSinceToken ?? new Uint8Array(0),
+        unconditionalDepth: opts?.unconditionalDepth,
       },
     });
 
@@ -1261,7 +1400,7 @@ export class PlTransaction {
               }
 
               if (!frame.resource) {
-                // Stop-marker frame: no resource body; server advertised treeStopMarker:v1.
+                // A traverseStopRules match, sent without a body.
                 const id = createSignedResourceId(
                   frame.resourceId,
                   toResourceSignature(frame.resourceSignature),

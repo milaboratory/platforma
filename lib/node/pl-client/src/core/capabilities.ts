@@ -17,12 +17,30 @@
 export type BackendCapability =
   | "auth:v2"
   | "treeFilter:v2"
+  // Delta tree reads: Tree, ResourceAPI.Get and ResourceKVAPI.List accept a
+  // changed_since_token and answer with only what changed since it. Narrower in name
+  // than in reach, since it gates all three.
+  | "treeChangedSince:v1"
+  // Same token, different wire contract: an unchanged resource is omitted and ends the walk.
+  // v1 backends instead emit a body-less frame for it, which this client reads as a stop
+  // marker, so delta tree sync is gated on v2.
+  | "treeChangedSince:v2"
   | "wasm:v1"
+  // Advertised only where the deployment actually has scratch storage, not merely where the
+  // build understands a 'scratchFreeSpace' request: a client that sees this stops arranging
+  // its own temporary storage. Off unless pl was started with --has-scratch-space.
+  | "scratchSpace:v1"
   // Project-sharing capability tokens.
   | "crossTreeRefs:v1" // cross-color field attach (accept a foreign-colored shared envelope)
   | "userListing:v1" // list users for the recipient picker
   | "publicGrants:v1" // public (everyone) grants allowed for any role
-  | "txListGrants:v1"; // list grants inside a transaction (batched recipient reads)
+  | "txListGrants:v1" // list grants inside a transaction (batched recipient reads)
+  // Optional fields declared in resource schemas, created in the creating transaction before any
+  // explicit input lock.
+  | "optionalFieldsInSchemas:v1"
+  // The instance statistics context: one per instance, readable by every user, its readings
+  // written by the executor runner (CPU, RAM, GPU, jobs).
+  | "instanceStats:v1";
 
 /** True iff `capabilities` advertises the requested token. */
 export function hasCapability(

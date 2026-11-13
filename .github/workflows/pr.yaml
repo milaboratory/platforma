@@ -39,6 +39,10 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     secrets: inherit
 
+  test-k8s-s3:
+    uses: ./.github/workflows/_test-k8s-s3.yaml
+    secrets: inherit
+
   debug:
     needs: [check-pnpm-consistency, test]
     if: ${{ failure() && contains(github.event.pull_request.labels.*.name, 'debug') }}

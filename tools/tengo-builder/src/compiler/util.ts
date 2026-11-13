@@ -64,3 +64,33 @@ export function isUUID(uuid: string): boolean {
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
   return uuidRegex.test(uuid.toLowerCase());
 }
+
+/**
+ * Collect all '.tengo' files in the directory and its subdirectories.
+ *
+ * The depth limit keeps the walk cheap: without it a scan started in a wrong
+ * place can become unbearably slow and even get the node process OOM killed.
+ * Increase the limit if you need to.
+ */
+export function getTengoFiles(dir: string, depth: number): string[] {
+  if (depth === 0) {
+    return [];
+  }
+
+  const files = fs.readdirSync(dir, { withFileTypes: true });
+
+  let tengoFiles: string[] = [];
+  files.forEach((file) => {
+    const absPath = path.join(dir, file.name);
+
+    if (file.isDirectory()) {
+      tengoFiles = tengoFiles.concat(getTengoFiles(absPath, depth - 1));
+    }
+
+    if (!file.isDirectory() && file.name.endsWith(".tengo")) {
+      tengoFiles.push(absPath);
+    }
+  });
+
+  return tengoFiles;
+}

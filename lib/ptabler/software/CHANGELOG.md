@@ -1,5 +1,103 @@
 # @platforma-open/software-ptabler
 
+## 2.3.1
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+
+## 2.3.0
+
+### Minor Changes
+
+- 1cb516a: pt.run() sends the ptabler workflow as gzip-compressed JSON. A workflow with many steps (for example, one frame for each sample) can be larger than the 4 MiB gRPC message limit of the platform. Before this change, such a workflow failed with "grpc: received message larger than max". On a backend without gzipEncode, pt.run() sends plain JSON as before. ptabler reads a workflow file with a ".gz" suffix (for example, "workflow.json.gz") as gzip-compressed.
+
+## 2.2.1
+
+### Patch Changes
+
+- 79f8dbc: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.2.0. JsonPartitioned parts are sorted by axes on read, so a part written in another key order no longer gives wrong join rows. Same-axes outer joins no longer re-sort. pframes-rs-node requires Node 24. Bump runenv-python-3 to 1.16.1, which bundles polars-pf 1.2.0 for ptabler.
+
+## 2.2.0
+
+### Minor Changes
+
+- 48fd5df: Add a DuckDB engine for Parquet PColumn imports, lifting the row ceilings that kept
+  large long-format columns from importing at all (MILAB-7195).
+
+  Polars indexes rows with a u32, so the step chain the SDK emits for a Parquet import
+  refuses any file over 2^32 rows. The new `import_parquet_frame` step does the
+  projection, cast, null filter and sort in one out-of-core DuckDB pass and hands the
+  result to `polars_pf.convert`, which `write_frame` already used for the write. Opt in
+  per import with `importEngine: "duckdb"`; it covers plain projection-and-cast specs,
+  and anything using preProcess, naRegex, filterOutRegex or an index axis keeps the
+  Polars chain.
+
+  Two further limits sit behind that one and are also addressed. DuckDB's sort keeps
+  per-thread buffers, so the thread count is now derived from the memory budget rather
+  than the core count. Parquet stores a row group's ordinal as an i16, capping a file
+  at 32767 groups, so the row group size is derived from the row count; frames that fit
+  the default are unchanged. Because sorting at this size is expensive in scratch, the
+  step first checks whether the input is already ordered by its axes and streams
+  straight through when it is.
+
+  The sort tuning is scoped to the new step. `write_frame` issues the same ORDER BY
+  and has the same exposure, but only at a row count no caller has reached, and capping
+  its threads would slow every PFrame the platform writes.
+
+## 2.1.14
+
+### Patch Changes
+
+- 974b2c1: Size the DuckDB memory limit of the `write_frame` sort from the free memory. The DuckDB default is 80% of the memory it detects (the cgroup limit or the RAM). It ignores the memory that the Polars phase still holds, so the process was OOM-killed in the sort. On Linux, the limit is now 70% of the detected memory minus the resident size of the process, never below 16 MiB, and never above the DuckDB default. On macOS and Windows the DuckDB default stays.
+- 1c11af2: pt: put the ptabler spill on scratch space, sized from the plan
+
+  ptabler spills into `{system.scratch.path}/ptabler-spill`: the tables pframes-rs writes for each `read_frame`, the DuckDB sort files, and now also the `unsorted.parquet` and `intermediate.parquet` files of `write_frame`. Before, all of it went to the working directory, which on AWS is EFS in Elastic Throughput mode and bills every GB read and written.
+
+  The run requests scratch space with a formula in `:pt.sizing`:
+
+      scratch = size * (16 * (read_frames + 1) + 2 * write_frames)
+
+  and 0 below 16 GiB, so a small run keeps its spill on the working directory's filesystem and does not wait for a volume. The factors cover the measured peak of every tested data shape by 1.8x or more. `pt.workflow().scratchFreeSpace(amount)` sets the request by hand.
+
+  `exec`: a `scratchFreeSpace` formula may now evaluate to 0, which asks for the temporary directory without a sized device, as a static 0 does. Before, 0 failed the positive-integer check.
+
+## 2.1.13
+
+### Patch Changes
+
+- 7b5f8f1: Let the docker build flags reach the build.
+
+  Both packages define their own `turbo.json`, and a task's `passThroughEnv` replaces the root list rather than extending it. Theirs named only `AWS_*` and `PL_AWS_*`, so `PL_DOCKER_NO_BUILD` and its siblings were stripped before the build ran and the CI defaults applied instead: build the image and push it.
+
+## 2.1.12
+
+### Patch Changes
+
+- e4f6443: Let the docker build flags reach the build.
+
+  Both packages define their own `turbo.json`, and a task's `passThroughEnv` replaces the root list rather than extending it. Theirs named only `AWS_*` and `PL_AWS_*`, so `PL_DOCKER_NO_BUILD` and its siblings were stripped before the build ran and the CI defaults applied instead: build the image and push it.
+
+## 2.1.11
+
+### Patch Changes
+
+- 31a3f60: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.61. The Linux pframes-rs-node addon no longer ships debug info. Its download shrinks from 208 MB to about 28 MB. Bump runenv-python-3 to 1.13.2, which bundles polars-pf 1.1.61 for ptabler.
+
+## 2.1.10
+
+### Patch Changes
+
+- cdbc497: Writing a table back over the file it was read from no longer crashes.
+
+  The read is lazy, so sinking straight to the target truncated a file polars was still reading. A local filesystem hides that behind cached pages; a network filesystem does not, and the process died with a bus error. A write to a file the same workflow also reads now lands in a sibling temporary file that is moved into place once every sink has been collected, carrying the target's mode across so a file staged writable stays writable. Every other write keeps the direct sink it always had.
+
+## 2.1.9
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+
 ## 2.1.8
 
 ### Patch Changes

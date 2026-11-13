@@ -1,5 +1,25 @@
 # @milaboratories/computable
 
+## 2.9.10
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-error-like@1.12.11
+  - @milaboratories/ts-helpers@1.9.1
+
+## 2.9.9
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/pl-error-like@1.12.10
+
 ## 2.9.8
 
 ### Patch Changes

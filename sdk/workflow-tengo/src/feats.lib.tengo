@@ -64,6 +64,9 @@ export ll.toStrict({
 	// true when backend supports blob size retrieval via ll.getBlobSize()
 	hasBlobSize:            ll.methodExists(plapi, "getBlobSize"),
 
+	// true when backend supports gzip compression via ll.gzipEncode()
+	hasGzip:                ll.methodExists(plapi, "gzipEncode"),
+
 	// true when backend supports docker packages
 	isDockerAvailable:        _isEnabled("dockerSupport"),
 
@@ -79,13 +82,37 @@ export ll.toStrict({
 	// true when backend supports "ContextDomain" query predicate in block resolver
 	contextDomainQuery:       _isEnabled("contextDomainQuery"),
 
-	// true when the backend understands scratch space requests ('scratchFreeSpace' in a
-	// compute quota). Understanding the request is not the same as being able to serve it:
-	// a deployment with no scratch storage leaves the command its default temporary storage.
+	// true when the BUILD understands a scratch space request: it parses 'scratchFreeSpace' in a
+	// compute quota, renders '{system.scratch.*}', and guarantees TMPDIR and TMP to every command
+	// that asks - pointed at the same location either way. A property of the backend's code, so a
+	// backend that has it always reports it; one that does not simply never mentions it, which is
+	// how a block tells "understood" from "not understood at all".
+	supportsScratchSpaceRequests: _isEnabled("supportsScratchSpaceRequests"),
+
+	// true when THIS DEPLOYMENT backs that guarantee with real scratch storage. Says nothing about
+	// whether the request is understood - see supportsScratchSpaceRequests for that - only whether
+	// the temporary directory sits on a fast device or on the working directory's own filesystem.
 	hasScratchSpace:          _isEnabled("scratchSpace"),
 
 	// true when backend populates the multi-step 'progress' map output field
 	// on Blob* import/upload resources. When false, the SDK synthesizes the
 	// same map shape locally (single entry "01" → handle).
-	multiStepProgress:        _isEnabled("multiStepProgress")
+	multiStepProgress:        _isEnabled("multiStepProgress"),
+
+	// true when the backend gives final canonical IDs: a canonical ID is empty until the backend
+	// sets it, and it does not change after that. Older backends can give a canonical ID that
+	// changes later, or an empty one forever. Backends before 'canonicalIDExposure' do not report
+	// it, but all backends that report 'supportsScratchSpaceRequests' or 'scratchSpace' (v4.4.0
+	// and later) already give final canonical IDs.
+	canonicalIdExposure:      _isEnabled("canonicalIDExposure") ||
+		_isEnabled("supportsScratchSpaceRequests") ||
+		_isEnabled("scratchSpace"),
+
+	// true when tx.resourceKeyValueSetAsync is available: a resource metadata set applied after the commit.
+	kvAsync:                  _isEnabled("kvAsync"),
+
+	// true when a resource schema can declare fields optional, so templates create them in the transaction
+	// that creates the resource, before an explicit lock (e.g. the "actionContext" link of block action
+	// context). "optionalServiceField" is its former name.
+	optionalFieldsInSchemas:  _isEnabled("optionalFieldsInSchemas") || _isEnabled("optionalServiceField")
 })

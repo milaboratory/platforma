@@ -1,7 +1,12 @@
 import { describe, expect, it, test } from "vitest";
 import canonicalize from "canonicalize";
 import type { ColumnUniversalId } from "@milaboratories/pl-model-common";
-import { canonicalizeJson, createColumnDiscoveredId } from "@milaboratories/pl-model-common";
+import {
+  canonicalizeJson,
+  createColumnDiscoveredId,
+  createColumnValueId,
+  createGlobalPObjectId,
+} from "@milaboratories/pl-model-common";
 import { inferAllReferencedBlocks, outputRef } from "./args";
 
 describe("inferAllReferencedBlocks", () => {
@@ -157,4 +162,37 @@ test("a block id in a map KEY is an upstream too", () => {
   const result = inferAllReferencedBlocks({ anchor: discovered });
 
   expect([...result.upstreams].sort()).toEqual(["A", "B", "D"]);
+});
+
+describe("a column value id names its producer as an upstream", () => {
+  const value = createColumnValueId({
+    column: createGlobalPObjectId("samples", "metadata.condition"),
+    value: "treated",
+  });
+
+  test("as a value", () => {
+    const result = inferAllReferencedBlocks({ target: value });
+
+    expect(result.upstreams).toEqual(new Set(["samples"]));
+    expect(result.missingReferences).toBe(false);
+  });
+
+  test("as a map key", () => {
+    const result = inferAllReferencedBlocks({ ranks: { [value]: 1 } });
+
+    expect(result.upstreams).toEqual(new Set(["samples"]));
+  });
+
+  test("under one extra stringify pass", () => {
+    const result = inferAllReferencedBlocks({ blob: JSON.stringify(value) });
+
+    expect(result.upstreams).toEqual(new Set(["samples"]));
+  });
+
+  test("outside the allowed set it is a missing reference", () => {
+    const result = inferAllReferencedBlocks({ target: value }, new Set(["other"]));
+
+    expect(result.upstreams.size).toBe(0);
+    expect(result.missingReferences).toBe(true);
+  });
 });

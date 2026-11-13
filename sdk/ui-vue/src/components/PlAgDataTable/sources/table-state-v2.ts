@@ -1,160 +1,191 @@
 import {
   createDefaultPTableParams,
-  parseJson,
+  getAxisId,
   upgradePlDataTableStateV2,
   type FilterSpec,
-  type FilterSpecLeaf,
-  type PTableColumnId,
-  type PTableColumnSpec,
   type PlDataTableGridStateCore,
+  type PlDataTableSheet,
   type PlDataTableSheetState,
   type PlDataTableStateV2,
   type PlDataTableStateV2CacheEntry,
   type PlDataTableStateV2Normalized,
-  type PTableParamsV2,
-  type PTableSorting,
   type PlDataTableFilterSpecLeaf,
   type PlDataTableFilterMeta,
   type PlDataTableFilters,
-  distillFilterSpec,
-  PlDataTableFiltersWithMeta,
-  getPTableColumnId,
+  type PlDataTableFiltersWithMeta,
+  type PTableColumnId,
+  type PTableSorting,
 } from "@platforma-sdk/model";
-import { computed, type Ref, type WritableComputedRef } from "vue";
+import {
+  computed,
+  shallowRef,
+  watch,
+  type ComputedRef,
+  type Ref,
+  type WritableComputedRef,
+} from "vue";
 import type { PlDataTableSettingsV2 } from "../types";
-import { isJsonEqual, randomInt, getField, Nil } from "@milaboratories/helpers";
-import { computedCached } from "@milaboratories/uikit";
-import { isStringValueType, isNumericValueType } from "../../PlAdvancedFilter/utils";
-import { debounce, isNil } from "es-toolkit";
+import type { PlDataTableGridFields } from "./grid-state";
+import { isJsonEqual, randomInt, getField, type Nil } from "@milaboratories/helpers";
+import { isNil } from "es-toolkit";
+
+/** The source the table shows, as the stored state has to describe it. */
+export type PlDataTableTarget = {
+  sourceId: string;
+  sheets: PlDataTableSheet[];
+};
+
+/** A change the user made to the settings of one source. */
+export type PlDataTableEdit = {
+  sourceId: string;
+  patch: Partial<Omit<PlDataTableStateV2CacheEntry, "sourceId">>;
+};
+
+/**
+ * The stored state with the edits applied and, when a source is on screen,
+ * brought in line with it: the stored state points at that source, the source
+ * has an entry at the recent end of the cache, and its sheet selection names a
+ * value each sheet offers.
+ *
+ * Every write of the table state is this function's result, whether the user
+ * edited something or only the source on screen changed, so a table mounted
+ * on a source the stored state does not point at writes the same way a sort
+ * does.
+ */
+export function reduceTableState(
+  stored: PlDataTableStateV2Normalized,
+  target: null | PlDataTableTarget,
+  edits: PlDataTableEdit[],
+): PlDataTableStateV2Normalized {
+  const edited = edits.reduce(applyEdit, stored);
+  const aligned = isNil(target) ? edited : alignWithTarget(edited, target);
+  return aligned.stateCache.length > CACHE_DEPTH
+    ? { ...aligned, stateCache: aligned.stateCache.slice(-CACHE_DEPTH) }
+    : aligned;
+}
+
+/**
+ * The value shown on each sheet: the saved one while the sheet still offers it,
+ * otherwise the sheet's default, otherwise its first option. Sheets without
+ * options are not shown and get no entry.
+ */
+export function resolveSheetsState(
+  sheets: PlDataTableSheet[],
+  saved: PlDataTableSheetState[],
+): PlDataTableSheetState[] {
+  return sheets
+    .filter((sheet) => sheet.options.length > 0)
+    .map((sheet) => {
+      const axisId = getAxisId(sheet.axis);
+      const savedValue = saved.find((s) => isJsonEqual(s.axisId, axisId))?.value;
+      const value =
+        !isNil(savedValue) && isSheetOption(sheet, savedValue)
+          ? savedValue
+          : !isNil(sheet.defaultValue) && isSheetOption(sheet, sheet.defaultValue)
+            ? sheet.defaultValue
+            : sheet.options[0].value;
+      return { axisId, value };
+    });
+}
 
 export function useTableState(
   tableStateDenormalized: Ref<PlDataTableStateV2>,
   settings: Ref<PlDataTableSettingsV2>,
-  columns: Ref<PTableColumnSpec[]>,
   defaultFilters: Ref<Nil | PlDataTableFilters>,
 ): {
-  gridState: WritableComputedRef<PlDataTableGridStateCore>;
+  /** Source whose settings the controls show and edit; `null` while there is none. */
+  sourceId: ComputedRef<null | string>;
+  /** The grid's own state for the source on screen, to restore the grid from */
+  gridState: ComputedRef<PlDataTableGridStateCore>;
+  /** Sorting the user set on the source on screen; `null` while untouched */
+  sorting: ComputedRef<null | PTableSorting[]>;
+  /** Columns the user hid on the source on screen; `null` while untouched */
+  hiddenColIds: ComputedRef<null | PTableColumnId[]>;
+  getEntry: (sourceId: string) => undefined | PlDataTableStateV2CacheEntry;
+  updateGrid: (sourceId: string, grid: PlDataTableGridFields) => void;
   sheetsState: WritableComputedRef<PlDataTableSheetState[]>;
-
   searchString: WritableComputedRef<string>;
-  filtersState: Ref<PlDataTableFiltersWithMeta>;
-  defaultFiltersState: Ref<null | PlDataTableFiltersWithMeta>;
+  filtersState: WritableComputedRef<PlDataTableFiltersWithMeta>;
+  defaultFiltersState: WritableComputedRef<null | PlDataTableFiltersWithMeta>;
   resetDefaultFilters: () => void;
 } {
-  const tableStateNormalized = computedCached<PlDataTableStateV2Normalized>({
-    get: () => upgradePlDataTableStateV2(tableStateDenormalized.value),
-    set: debounce((newState) => (tableStateDenormalized.value = newState), 300),
-    writeThrough: true,
+  const stored = computed(() => upgradePlDataTableStateV2(tableStateDenormalized.value));
+  const target = computed<null | PlDataTableTarget>(() =>
+    settings.value.sourceId === null
+      ? null
+      : { sourceId: settings.value.sourceId, sheets: settings.value.sheets },
+  );
+
+  // Edits are kept until the stored state reports them back. Until then the
+  // platform may hand back a state that predates them: a change by another
+  // author, such as a running block, replaces the whole block state with the
+  // project's copy, which lacks edits still waiting to be sent. Each such push
+  // would otherwise undo what the user just did.
+  const pendingEdits = shallowRef<PlDataTableEdit[]>([]);
+  const state = computed(() => reduceTableState(stored.value, target.value, pendingEdits.value));
+
+  function commit(): void {
+    const base = stored.value;
+    const unconfirmed = pendingEdits.value.filter(
+      (edit) =>
+        !isJsonEqual(
+          reduceTableState(base, target.value, [edit]),
+          reduceTableState(base, target.value, []),
+        ),
+    );
+    if (unconfirmed.length !== pendingEdits.value.length) pendingEdits.value = unconfirmed;
+
+    const next = reduceTableState(base, target.value, unconfirmed);
+    if (!isJsonEqual(next, base)) tableStateDenormalized.value = next;
+  }
+  watch([stored, target, pendingEdits], commit, { immediate: true });
+
+  function edit(change: PlDataTableEdit): void {
+    pendingEdits.value = [...pendingEdits.value, change];
+    commit();
+  }
+
+  // While the model reports an error there is no source on screen; the
+  // controls keep showing the last one, so a filter that caused the error can
+  // still be removed.
+  const sourceId = computed<null | string>(() => {
+    const current = settings.value;
+    if (current.sourceId !== null) return current.sourceId;
+    return current.error !== null ? stored.value.pTableParams.sourceId : null;
   });
+  const entry = computed(() => findEntry(state.value, sourceId.value));
 
-  const tableState = computed<PlDataTableStateV2CacheEntryNullable>({
-    get: () => {
-      const defaultState = makeDefaultState();
+  function editCurrent(patch: PlDataTableEdit["patch"]): void {
+    if (sourceId.value !== null) edit({ sourceId: sourceId.value, patch });
+  }
 
-      const sourceId = settings.value.sourceId;
-      const undefinedSourceId = "error" in settings.value && settings.value.error == null;
-      if (!sourceId && undefinedSourceId) return defaultState;
-
-      const suitableSourceId = sourceId ?? tableStateNormalized.value.stateCache.at(-1)?.sourceId;
-      if (!suitableSourceId) return defaultState;
-
-      const cachedState = tableStateNormalized.value.stateCache.find(
-        (entry) => entry.sourceId === suitableSourceId,
-      );
-      if (!cachedState) return { ...defaultState, sourceId: suitableSourceId };
-
-      return cachedState;
-    },
-    set: (state) => {
-      const newState: PlDataTableStateV2Normalized = {
-        ...tableStateNormalized.value,
-        pTableParams: createDefaultPTableParams(),
-      };
-
-      if (state.sourceId) {
-        newState.pTableParams = createPTableParams(state, columns.value);
-
-        const stateIdx = newState.stateCache.findIndex(
-          (entry) => entry.sourceId === state.sourceId,
-        );
-        if (stateIdx !== -1) {
-          newState.stateCache.splice(stateIdx, 1);
-        }
-        const CacheDepth = 5;
-        newState.stateCache.push(state);
-        newState.stateCache = newState.stateCache.slice(-CacheDepth);
-      }
-
-      if (!isJsonEqual(tableStateNormalized.value, newState)) {
-        tableStateNormalized.value = newState;
-      }
-    },
-  });
-
-  const gridState = computed<PlDataTableGridStateCore>({
-    get: () => tableState.value.gridState,
-    set: (gridState) => {
-      const oldState = tableState.value;
-      if (oldState.sourceId) {
-        tableState.value = {
-          ...oldState,
-          gridState,
-        };
-      }
-    },
-  });
+  const gridState = computed<PlDataTableGridStateCore>(() => entry.value?.gridState ?? {});
+  const sorting = computed(() => entry.value?.sorting ?? null);
+  const hiddenColIds = computed(() => entry.value?.hiddenColIds ?? null);
 
   const sheetsState = computed<PlDataTableSheetState[]>({
-    get: () => tableState.value.sheetsState,
-    set: (sheetsState) => {
-      const oldState = tableState.value;
-      if (oldState.sourceId) {
-        tableState.value = {
-          ...oldState,
-          sheetsState,
-        };
-      }
-    },
+    get: () => entry.value?.sheetsState ?? [],
+    set: (sheetsState) => editCurrent({ sheetsState }),
   });
 
-  // --- User filters (editable by user) ---
   const filtersState = computed<PlDataTableFiltersWithMeta>({
     get: () => {
-      const raw = tableState.value.filtersState;
+      const raw = entry.value?.filtersState;
       return isNil(raw) ? getEmptyGroupWithMeta() : normalizeFiltersState(raw);
     },
-    set: (filtersState: PlDataTableFiltersWithMeta) => {
-      const oldState = tableState.value;
-      if (oldState.sourceId) {
-        tableState.value = {
-          ...oldState,
-          filtersState,
-        };
-      }
-    },
+    set: (filtersState) => editCurrent({ filtersState }),
   });
 
-  // --- Default filters (from model, separate list) ---
   const defaultFiltersState = computed<null | PlDataTableFiltersWithMeta>({
     get: () => {
-      const raw = tableState.value.defaultFiltersState;
-      if (!isNil(raw)) {
-        return normalizeFiltersState(raw);
-      }
+      const raw = entry.value?.defaultFiltersState;
+      if (!isNil(raw)) return normalizeFiltersState(raw);
       if (!isNil(defaultFilters.value)) {
         return annotateFiltersWithIds(normalizeFiltersState(defaultFilters.value));
       }
       return null;
     },
-    set: (defaultFiltersState: null | PlDataTableFiltersWithMeta) => {
-      const oldState = tableState.value;
-      if (oldState.sourceId) {
-        tableState.value = {
-          ...oldState,
-          defaultFiltersState,
-        };
-      }
-    },
+    set: (defaultFiltersState) => editCurrent({ defaultFiltersState }),
   });
 
   function resetDefaultFilters(): void {
@@ -164,20 +195,17 @@ export function useTableState(
   }
 
   const searchString = computed<string>({
-    get: () => tableState.value.searchString ?? "",
-    set: (searchString: string) => {
-      const oldState = tableState.value;
-      if (oldState.sourceId) {
-        tableState.value = {
-          ...oldState,
-          searchString,
-        };
-      }
-    },
+    get: () => entry.value?.searchString ?? "",
+    set: (searchString) => editCurrent({ searchString }),
   });
 
   return {
+    sourceId,
     gridState,
+    sorting,
+    hiddenColIds,
+    getEntry: (id) => findEntry(state.value, id),
+    updateGrid: (id, grid) => edit({ sourceId: id, patch: grid }),
     sheetsState,
     searchString,
     filtersState,
@@ -186,60 +214,62 @@ export function useTableState(
   };
 }
 
-// --- Types ---
+// Internals
 
-type PlDataTableStateV2CacheEntryNullable =
-  | PlDataTableStateV2CacheEntry
-  | {
-      sourceId: null;
-      gridState: Record<string, never>;
-      sheetsState: [];
-      filtersState: null;
-      defaultFiltersState: null;
-      searchString?: string;
-    };
+const CACHE_DEPTH = 5;
 
 type FilterNode = FilterSpec<PlDataTableFilterSpecLeaf>;
 type AnnotatedFilterSpec = FilterSpec<PlDataTableFilterSpecLeaf, PlDataTableFilterMeta>;
 
-// --- Core ---
-
-function createPTableParams(
-  state: PlDataTableStateV2CacheEntry,
-  filterableColumns: PTableColumnSpec[],
-): PTableParamsV2 {
-  // User filters: sheets + user filter state + search
-  const searchNode = createSearchFilterNode(filterableColumns, state.searchString);
-  const unsuppressedUserFilters = isNil(state.filtersState)
-    ? null
-    : stripSuppressedFilters(state.filtersState);
-  const userParts = [
-    ...convertPartitionFiltersToFilterSpec(state.sheetsState),
-    ...(isNil(unsuppressedUserFilters) ? [] : [unsuppressedUserFilters]),
-    ...(isNil(searchNode) ? [] : [searchNode]),
-  ];
-  const filters: null | PlDataTableFilters = distillFilterSpec(
-    userParts.length === 0
-      ? null
-      : userParts.length === 1
-        ? userParts[0]
-        : { type: "and", filters: userParts },
-  );
-  const unsuppressedDefaultFilters = isNil(state.defaultFiltersState)
-    ? null
-    : stripSuppressedFilters(state.defaultFiltersState);
-  const defaultFilters: null | PlDataTableFilters = isNil(unsuppressedDefaultFilters)
-    ? null
-    : // If all filters are suppressed, we should pass an empty filter group instead of null to prevent fallback to defaults in the model
-      (distillFilterSpec(unsuppressedDefaultFilters) ?? getEmptyGroup());
-
+function applyEdit(
+  state: PlDataTableStateV2Normalized,
+  { sourceId, patch }: PlDataTableEdit,
+): PlDataTableStateV2Normalized {
+  const current = findEntry(state, sourceId);
+  const entry = { ...(current ?? createEntry(sourceId)), ...patch };
   return {
-    sourceId: state.sourceId,
-    hiddenColIds: getHiddenColIds(state.gridState.columnVisibility),
-    sorting: convertAgSortingToPTableSorting(state.gridState.sort),
-    filters,
-    defaultFilters,
+    ...state,
+    stateCache: isNil(current)
+      ? [...state.stateCache, entry]
+      : state.stateCache.map((e) => (e === current ? entry : e)),
   };
+}
+
+function alignWithTarget(
+  state: PlDataTableStateV2Normalized,
+  { sourceId, sheets }: PlDataTableTarget,
+): PlDataTableStateV2Normalized {
+  const current = findEntry(state, sourceId) ?? createEntry(sourceId);
+  const entry = { ...current, sheetsState: resolveSheetsState(sheets, current.sheetsState) };
+  return {
+    ...state,
+    stateCache: [...state.stateCache.filter((e) => e.sourceId !== sourceId), entry],
+    pTableParams: { ...createDefaultPTableParams(), sourceId },
+  };
+}
+
+function findEntry(
+  state: PlDataTableStateV2Normalized,
+  sourceId: null | string,
+): undefined | PlDataTableStateV2CacheEntry {
+  if (isNil(sourceId)) return undefined;
+  return state.stateCache.find((e) => e.sourceId === sourceId);
+}
+
+function createEntry(sourceId: string): PlDataTableStateV2CacheEntry {
+  return {
+    sourceId,
+    gridState: {},
+    sorting: null,
+    hiddenColIds: null,
+    sheetsState: [],
+    filtersState: null,
+    defaultFiltersState: null,
+  };
+}
+
+function isSheetOption(sheet: PlDataTableSheet, value: string | number): boolean {
+  return sheet.options.some((option) => option.value === value);
 }
 
 /**
@@ -314,53 +344,6 @@ function getEmptyGroupWithMeta(): PlDataTableFiltersWithMeta {
 }
 
 /**
- * Recursively removes nodes where isSuppressed === true from a PlDataTableFiltersWithMeta tree.
- */
-function stripSuppressedFilters(node: PlDataTableFiltersWithMeta): PlDataTableFiltersWithMeta {
-  return {
-    ...node,
-    filters: node.filters
-      .filter((child) => !("isSuppressed" in child && child.isSuppressed === true))
-      .map((child) =>
-        "filters" in child && (child.type === "and" || child.type === "or")
-          ? stripSuppressedFilters(child as PlDataTableFiltersWithMeta)
-          : child,
-      ),
-  };
-}
-
-function createSearchFilterNode(
-  columns: PTableColumnSpec[],
-  search: null | undefined | string,
-): null | FilterSpec<FilterSpecLeaf<PTableColumnId>> {
-  const trimmed = search?.trim();
-  if (isNil(trimmed) || trimmed.length === 0) return null;
-
-  const parts: FilterSpec<FilterSpecLeaf<PTableColumnId>>[] = [];
-  const numericValue = Number(trimmed);
-  const isValidNumber = trimmed.length > 0 && !isNaN(numericValue) && isFinite(numericValue);
-
-  for (const col of columns) {
-    const column = getPTableColumnId(col);
-    const spec = col.spec;
-
-    if (isStringValueType(spec)) {
-      parts.push({ type: "patternEquals", column, value: trimmed });
-    }
-
-    if (isNumericValueType(spec) && isValidNumber) {
-      parts.push({ type: "equal", column, x: numericValue });
-    }
-  }
-
-  if (parts.length === 0) return null;
-
-  return { type: "or", filters: parts };
-}
-
-// --- Helpers ---
-
-/**
  * Recursively ensures every node in a filter tree has an `id` field.
  * Does not set `source` meta — defaults are now a separate list.
  */
@@ -398,52 +381,4 @@ function annotateNodeWithIds(
     default:
       return { ...node, id: getField(node, "id") ?? randomInt() } as AnnotatedFilterSpec;
   }
-}
-
-// --- Utilities ---
-
-function convertPartitionFiltersToFilterSpec(
-  sheetsState: PlDataTableSheetState[],
-): FilterSpec<FilterSpecLeaf<PTableColumnId>>[] {
-  return sheetsState.map((s) => {
-    const column: PTableColumnId = { type: "axis", id: s.axisId };
-    return typeof s.value === "number"
-      ? { type: "equal" as const, column, x: s.value }
-      : { type: "patternEquals" as const, column, value: s.value };
-  });
-}
-
-/**
- * AG Grid omits `sort` from its state while nothing is sorted, so the absent
- * state must stay distinguishable from an explicitly emptied sort model: the
- * model falls back to the block's default sorting on `null` only, and treats
- * `[]` as "user cleared the sorting" (see `resolveSorting` in
- * `createPlDataTableV3`). `normalizeSort` in `PlAgDataTableV2.vue` turns the
- * absent state into `{ sortModel: [] }` once an explicit one has been seen.
- */
-export function convertAgSortingToPTableSorting(
-  state: PlDataTableGridStateCore["sort"],
-): PTableSorting[] | null {
-  if (isNil(state)) return null;
-  return state.sortModel.map((item) => ({
-    column: parseJson<PTableColumnId>(item.colId),
-    ascending: item.sort === "asc",
-    naAndAbsentAreLeastValues: item.sort === "asc",
-  }));
-}
-
-function getHiddenColIds(
-  state: PlDataTableGridStateCore["columnVisibility"],
-): PTableColumnId[] | null {
-  return state?.hiddenColIds?.map((json) => parseJson<PTableColumnId>(json)) ?? null;
-}
-
-function makeDefaultState(): PlDataTableStateV2CacheEntryNullable {
-  return {
-    sourceId: null,
-    gridState: {},
-    sheetsState: [],
-    filtersState: null,
-    defaultFiltersState: null,
-  };
 }

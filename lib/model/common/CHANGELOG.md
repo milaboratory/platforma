@@ -1,5 +1,270 @@
 # @milaboratories/pl-model-common
 
+## 1.56.0
+
+### Minor Changes
+
+- 92cf16f: New `ColumnsCollection.discoverRoots`: find the columns the given ones hang off
+
+  `discover` starts from anchors and walks linkers down to what they contain (anchored on `sample`, it reaches `cell`). There was no way to go the other way, from `cell` to the `sample`-level columns above it. `discoverRoots` takes the columns you have and returns the roots they hang off:
+
+  ```ts
+  const found = collection.discoverRoots({
+    leaves: [cellRef],
+    mode: "enrichment",
+    maxHops: 4,
+  });
+  // found: Array<{ root: ColumnRecipe; leaf: ColumnRecipe; path: ColumnRecipe[] }>
+  ```
+
+  Each entry is exactly what `discover({ anchors: { r: root } })` would return for the leaf: `leaf` is the requested column as a discovered column carrying the linker path and qualifications, so the table is built from `root` as the anchor plus `leaf`, the same way as for any discovered column. `discover` is unchanged.
+
+  The engine side is the new `discoverRoots` request of the spec frame (`PFrameSpecDriver.discoverRoots`), from milaboratory/pframes-rs#295.
+
+## 1.55.2
+
+### Patch Changes
+
+- 9aea514: `Project.watchBlockStatus()` folds a block's action-context tree into a live `BlockStatusSummary`, with the run's jobs counted per state as the backend reports it, one computable per context so a report re-reads only its own context, and the project tree prunes the action-context fields. `PlTreeNodeAccessor` gains `listKeyValuesAsString(prefix)` and `listFields()`.
+
+## 1.55.1
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-error-like@1.12.11
+  - @milaboratories/helpers@1.14.7
+
+## 1.55.0
+
+### Minor Changes
+
+- 9901322: Args issues: `BlockModelV3.argsIssues(({ args, data }) => ArgsIssue[])` finds what keeps a block from running, so `args()` can build args even from incomplete data instead of throwing. It is set after `.args()` and throws when called before it; setting `.args()` again drops it. It is called after `args()`, with its result and the block data.
+  `BlockModelV3.prerunArgsIssues(({ prerunArgs, data }) => ArgsIssue[])` does the same for staging. It is set after `.prerunArgs()` and throws when called before it, `.args()` alone included; setting `.prerunArgs()` again drops it. It is called after `prerunArgs()`, with its result and the block data, and not when `prerunArgs()` returned `undefined`, which skips staging as before. `prerunArgs` is typed by what `.prerunArgs()` returns: `.prerunArgs()` is now generic in its return type, and `BlockModelV3` has a trailing `PrerunArgs` type parameter, `unknown` by default.
+  `ArgsIssue` is `{ severity: "error" | "warning"; message: string }`, in `@milaboratories/pl-model-common` with `parseArgsIssue` and `parseArgsIssues` for values of unknown origin; any severity other than `"warning"` is read as an error. An error of `argsIssues` blocks Run, an error of `prerunArgsIssues` skips staging; a warning does neither. A throw from either, or a result that is not a list of issues, counts as one error carrying the thrown or parser message. A throw from `args()` or `prerunArgs()` keeps its meaning: no args, no staging.
+  The `__pl_args_derive` callback returns `{ value: args, issues }` when nothing blocks the run, `issues` being the warnings; `{ error, args, issues }` when `argsIssues` found errors, `error` joining their messages with "; "; and `{ error }`, as before, when `args()` threw.
+  The `__pl_prerunArgs_derive` callback returns `{ value: prerunArgs, issues }` to stage, `issues` being the warnings; `{ error, issues }` when errors were found, `error` joining their messages; and `{ error }`, as before, when the lambda building the prerun args threw. A block with its own `.prerunArgs()` is checked by its `prerunArgsIssues`, and its `argsIssues` is not consulted. A block without its own `.prerunArgs()` is staged with its args only while its `argsIssues` finds no errors in them.
+  A block without `argsIssues` and `prerunArgsIssues` derives the same args and prerun args as before; the results only carry an extra `issues: []`.
+  The middle layer stores the block's args in `currentArgs` whenever `args()` produced them, and with every args it derives for a block with model API version 2, the errors `argsIssues` found in them in the block's `inputsValid` project field, as `{ argsFingerprint, errors }`: `errors` is the list of error issues, empty when the block may run, `argsFingerprint` the SHA-256 of the canonical JSON of the args they were found in. The field exists while the block has args, is rewritten only when its content changes, is duplicated with the block and deleted with it, and is deleted when a block pack update moves the block to model API version 1. A field that is missing, cannot be read, or whose fingerprint does not match the current args — a project saved before this middle layer, or args written by a middle layer that does not know the field — records no errors, so the block is runnable as before: such a middle layer refuses every block whose `argsIssues` could find errors, and the field is neither derived again nor rewritten on its account. A block with args errors is not runnable: its `inputsValid` in the project overview is false, so its Run is disabled, and rendering its production throws, as it does for a block without args. Its dependent blocks may not run while it needs to run itself; a block whose results are up to date keeps feeding them. Other blocks keep the earlier rule: a block that is not valid — one with model API version 1 whose `inputsValid` is false, or one whose code cannot run here — keeps every block below it from running. Errors of `prerunArgsIssues` are not stored: they leave the block without `currentPrerunArgs`, which skips its staging, as a failed derivation does.
+  A block whose model has no `argsIssues`, or was built with an earlier SDK, behaves as before: args that `args()` returns are runnable, and a throw leaves it without args and not runnable; with model API version 2, its `inputsValid` field holds no errors. A middle layer that knows args issues reads the results of older models the same as before.
+  The SDK sets the new `requiresArgsIssues` feature flag (`BlockCodeKnownFeatureFlags`) on every block it builds, as it does `requiresModelAPIVersion`. A block built with this SDK therefore requires an app whose middle layer supports args issues, which registers `requiresArgsIssues` among its runtime capabilities: an older desktop app refuses the block, since it would take incomplete args as runnable and run them.
+  Older middle layers read only `error` and `value` of both derive results, so a block without the flag whose prerun args have errors is not staged there, as with a throwing `prerunArgs()`.
+  Model outputs, sections, titles and other lambdas that read `ctx.args` now see the incomplete args of a block that uses `argsIssues`, where before they saw none.
+- 8d28bcd: Column value references: `ColumnValueId` names one value of a column a block picked, and template relocation repoints the producer block inside it. The value is always a string: a value of a number column is its decimal string (`String(cell)`), so the same value picked from a number cell and from a text cell is the same id, and ids compare with `===`. `createColumnValueId` refuses a value that is not a string, and an id whose value is not a string is not a `ColumnValueId`.
+  A value picker is made like a data table, in two halves. The model gives `createColumnValueOptions({ valueColumn, labelColumn? }, { ctx? })` as an output — each column an id, a column or a recipe — a frame holding the value column and the label column, `resolving` while either is, `absent` once the value column is gone (a gone label column leaves the values to label themselves), each with the value column it was made for. The UI reads it through the frame, so a column of any storage format can be picked from: `readColumnValueOptions(model)` gives the distinct non-missing values as `{ value: ColumnValueId, label }` options in natural order of labels, each labelled by the label column in its row or by itself (`deriveColumnValueOptions`, `deriveLabelledColumnValueOptions`). In Vue, as with a table, the output reaches the dropdown through settings: `usePlColumnValueSettings({ source, valueColumn })` makes them out of the output and the column picked now — `none`, `pending` until the output is computed for that pick, `absent`, or `present` — and `<PlColumnValueDropdown>` and `<PlColumnValueDropdownMulti>` take them as `settings`: `PlDropdown` and `PlDropdownMulti` over the values, loading until they are read and telling why a column offers none; `exclude` leaves out values, and other attributes and the slots go to the dropdown.
+  `columnValueLabel(picked)` names a picked value to the user: the value a column value id picks, or the string as is when it is not such an id.
+  In workflows, `workflow.column-value` reads such ids back into plain values, always strings: `valueOf` for one id, `valuesOf` for an array of them.
+  The middle layer computes the column links of each block: `dependencies` — outputs of other blocks the block's args reference: its current args, else those of its last run — and `dependents` — blocks whose args reference the block's outputs. They reach the app and the block UI as `columnLinks` of the block state (`BlockStateInternalV3`, `BlockStateV3`): `BlockColumnLinks` with `blockId`, the block they are of, the two sides as lists of `ColumnLink` — the referenced block output (`producer`), the block holding the reference (`holderBlockId`), the column id, the picked values, the check and the column label — and `labels` of the other blocks they name; `undefined` while they are not computed, and in app versions that do not compute them. They are computed only for blocks whose model declares the `supportsColumnLinks` feature flag, which `BlockModelV3` sets, so blocks built with an earlier SDK add no work. Each block's links are computed on their own: its dependencies read its args and the last runs of the blocks they reference; its dependents read the args of every block below it — those of its last run for a block without current args — and its own last run. So a run of a block recomputes its dependents and the dependencies of the blocks that reference it — and, while it has no current args, the dependents of every block above it; an edit of a block's args recomputes its own dependencies and the dependents of every block above it, whether it references them or not. Each reference carries the picked values and a `LinkCheck`, read the same on both sides, checked against what the producer's last run exports: whether the column is exported and whether it holds the picked values. A reference to a block that has no last run is `notRun`: the block has to be run first. A reference to a block whose last run is still rendering its results is `pending`; one whose last run failed to render them is `unavailable`. A reference to an output its producer does not export is `unavailable`: among `dependents`, the dependent block cannot run against it. A reference to a block that is not above the block holding it is `unavailable` too. A column counts as exported once its spec is in the producer's last run; picked values are checked against those its `pl7.app/discreteValues` annotation lists, else against its data. A reference whose column values cannot be read is `unreadable`; one whose column lacks picked values is `missingValues`, with the values it lacks. Each reference carries the column's label: the exported column's, or, when the producer's last run does not export it, that of the column the producer prepares before it is run; the status is still judged by the last run alone. The middle layer labels the blocks by their titles, the names the project shows.
+  `PlBlockDependencies` turns column links into the alerts shown above a block, one per side, for the links that need attention: an error when an output this block uses is unavailable or lacks picked values; a warning, noting that the links are checked against this block's last run, with advice to add the missing data and run the block or reconfigure those blocks, when blocks using this block's outputs use an output it does not export or pick values it lacks; a block that has not been run yet provides no output, so links to it raise these alerts as to an output that is not provided. Columns are named by their label; output names are shown only as hints. Outputs of one block that are not exported and have no known label share one alert line ("uses 2 outputs this block does not export"). Value pickers tell, from the same links, which block was to provide a missing column or column value and what went wrong, or, when its column is provided while other inputs of the block are not, that it waits for them: the options of one input may be made from another. `computeDependencies` and `computeDependents` are in `@milaboratories/pl-model-common`; turning links into alerts and picker tooltips stays inside `@platforma-sdk/ui-vue`.
+  `PlBlockDependencies` (`<PlBlockDependencies />`) shows those alerts in a block UI that places it, from the column links the app provides, and nothing when it provides none; each other block is named by `PlBlockName`. The reader can fold the warning about blocks using this block's outputs to its title by clicking the title, which then counts the blocks ("2 blocks"); the fold is the reader's own, kept in the browser storage under the block id, and a folded warning is marked "Updated" once it says something else than when it was folded. The error about this block's own inputs does not fold. `PlAlert` takes a `label` slot in place of the `label` text, and leaves out the text area when given no text.
+  `PlBlockName` (`<PlBlockName :block-id="id" :name="label" />`) shows the name of another block of the project: a link opening that block when the app can open blocks, and plain text otherwise.
+  Block UIs can ask the app to open another block of the same project: `PlatformaV3` has an optional `openBlock(blockId)`, absent in app versions that cannot do it; in Vue, `useOpenBlock()` returns a function opening a block by id, or `undefined` when the app cannot.
+  `PlDropdown` and `PlDropdownMulti` show a selected column value id by the value it picks: as is while the options load, and as "<value> — not available" when the options lack it, unless `missingValueLabel` is given.
+  `PlValueLabel` (`<PlValueLabel :value="item" :options="options" />`) shows a selected value as text the way a dropdown does: by its option's label, a column value id by the value it picks, and a value the options lack as not available, in error color.
+  `PlDropdown`, `PlDropdownMulti`, `PlDropdownRef`, `PlDropdownMultiRef` and `PlValueLabel` take `missingValueTooltip`, a tooltip explaining a selected value missing from the options, and `missingValueLabel`, the text shown in its place: each one text for every such value, or a function giving it — the tooltip content — per value, `undefined` when there is nothing to tell. The ones `@platforma-sdk/ui-vue` exports pass both themselves when the app provides column links, for a missing column — selected by id or by ref — and a missing column value: the tooltip names the block that was to provide the column, as a link to it, and what went wrong — it does not provide the column (a block that has not been run yet provides none), the column lacks the value, or the block is still computing it; when the column is provided while other inputs of the block are not, the tooltip says it waits for them. The value is shown by the picked value, or by the label of a column selected as a whole: alone while it waits, as "<name> — not available" otherwise.
+  `PlDatasetSelector` explains a selected dataset or filter the options lack the same way, by the column it selects: the dataset first, then its filter.
+  `PlDropdownRef` and `PlDropdownMultiRef` show a missing value as "Value not available", like the other dropdowns, instead of "Upstream value removed".
+  Inside a `PlTooltip`, `--txt-link` is the tooltip link color, so links drawn with it — `PlBlockName` among them — read on the dark tooltip background like the tooltip's own links.
+
+## 1.54.2
+
+### Patch Changes
+
+- 9cff344: `ColumnsCollection` holds columns only: its driver lists an id only once it has read a column spec for it, so it skips ids whose spec is not readable in the current render and exports that are not columns, such as the `kind: "File"` library of MiXCR Clonotyping. `AccessorColumnsProvider`, `ResultPoolColumnsProvider` and `buildDatasetOptions` skip them too. For such an export, `Column(id)`, `DataColumn.fromId`, `DataColumn.fromPlRef` and `DataColumn.fromAccessor` throw `ColumnAbsentError`; the status getters still report `present`, since status tells only whether the spec is readable. The driver ships with the desktop app; the rest reaches a block when it is rebuilt with this SDK. `ColumnsCollectionDriverHost.resolveSpec` now returns any `PObjectSpec`, and `ColumnsCollectionDriver.isEmpty` takes the host.
+
+## 1.54.1
+
+### Patch Changes
+
+- Updated dependencies [4cc1e4e]
+  - @milaboratories/helpers@1.14.6
+  - @milaboratories/pl-error-like@1.12.10
+
+## 1.54.0
+
+### Minor Changes
+
+- bb4e8d4: Mark columns reached through a peer link with a link icon. A peer link joins two datasets' main axes (the second axis of a `pl7.app/isAnchor` column), e.g. a clonotype to its nearest known antibody, so the columns behind it describe a different clonotype than the row. Hovering the icon shows "Reached via <link label>".
+
+  - `PlColumnLabel` (uikit) takes an option (`{ label, linkHint }`) and draws the label with the link icon and its hover text. Every table and dropdown below uses it.
+  - Tables: the header, Manage Columns and the table filter show the icon, and list peer-linked columns after the others. `PlDataTableColumnMeta.linkHint` carries the hover text, the same field dropdown options use. Same-named columns reached through different links, or one through a link and one directly, no longer get a "via" postfix; the icon and its hover text tell them apart.
+  - Dropdowns: options take an optional `linkHint`, the hover text. `PlDropdown` shows it on the icon, and on the closed field's tooltip. `deriveColumnOptions` and the new `deriveRecipeOptions` set it and list peer-linked options last.
+  - New helpers: `collectDatasetAxes`, `getResultPoolDatasetAxes`, `findPeerLinks`, `describePeerLinks`, `createPeerLinkFinder`, `peerLinkedLast`.
+
+## 1.53.0
+
+### Minor Changes
+
+- de59755: A `template-v1` document may carry an optional `label` and `description`, each read trimmed and dropped when blank; `withTemplateMeta` sets or removes them. The middle layer's new `importTemplate` stores a template from a document under the label it is given, taking the document's description as the template's own.
+
+## 1.52.0
+
+### Minor Changes
+
+- f4567dd: Finality is one table built in layers (`FinalityTable`): `StrictFinality` (the base: nothing
+  observable changes after final, except the writes its entries name), `CacheFinality` (adds the
+  types whose only later writes are KV; used by the transaction resource cache) and `TreeFinality`
+  (adds `Blob` and `StreamManager` under the reader assumptions stated at their entries; the
+  default `PlClient.finalPredicate`). A layer only adds to its parent.
+  `DefaultFinalResourceDataPredicate` is deprecated and delegates to `TreeFinality`.
+  Finality rules: `BResolveSingle`, `BResolveChoice` and `BlobCopy/*` are final once ready (or a
+  duplicate, or errored) with outputs locked and every supplied field settled; `LSProvider` is
+  never final; `Frontend/FromLocalTgz`, `json/bool`, `json/null` and `json/errorTrace` are always
+  final. The project tree's stop rules are generated from `TreeFinality`, each entry declaring how
+  it translates. `ResourceTypePrefix.BlobCopy` identifies blob-copy resource types.
+
+## 1.51.0
+
+### Minor Changes
+
+- cadf144: Folders: projects and templates can be arranged in a tree
+
+  **The document.** One user's folder tree is one JSON document at schema version 1: the folders,
+  each with a name, an optional parent and an optional description, plus two maps — `assignments`
+  from a project to the folder holding it, and `templateAssignments` from a template to its folder.
+  An item neither map mentions is at the top level. The document lives in a `Folders` singleton of
+  its own on the user's client root (`FoldersField`, `FoldersResourceType`), created by the middle
+  layer's init; nothing is added to the projects resource. Every write mints a new immutable value
+  and re-points the singleton's one field.
+
+  **The healing read.** `decodeStoredFoldersDocument` turns what is stored into a `FoldersDecoded`.
+  No document means no folders, and writable. A document written by a newer build, or one that
+  cannot be read as schema version 1, reads as no folders with `writable: false` and a `problem`, so
+  a build that does not understand a tree never overwrites it with its own truncated view.
+
+  `healFolders` resolves the decoded document against the project and template lists into a
+  `FoldersView`. The read heals and never fails: an item the document does not mention is at the
+  top level, an assignment naming an item that is gone is ignored, and a folder whose parent is
+  missing, or which sits in a cycle, is lifted to the top level and flagged `lifted`. No input can
+  make a project or a template disappear. `validateFoldersDocument` is the write path's
+  counterpart: a write that would persist a broken document — a cycle, a missing parent, a blank
+  folder name, two items of one name in one parent — is refused.
+
+  `MiddleLayer.folders` publishes a `FoldersListing`: the folders, every project
+  (`FoldersProjectEntry`) and every template (`FoldersTemplateEntry`), each with its `folder`,
+  `ancestors` and `path`. The folder tree, the project list and the template list are read in one
+  computable, and nothing is published while any of them is still syncing, so an item is never
+  shown at the top level first and then moved into its folder.
+
+  **One namespace per parent.** Folders, projects and templates inside one parent share one
+  namespace, and names are compared ignoring case and surrounding whitespace (`foldersNameTaken`).
+  A name a person typed is refused when it is taken, with `"X" is already used here.`; a name the
+  middle layer chose is suffixed instead — `X (Copy)`, `X (Copy 2)` (`foldersUniqueName`). Names
+  already stored are never rewritten: a collision an account already holds is tolerated, and either
+  side of it can still be renamed. While the folder document cannot be read, project and template
+  renames are not checked, since treating every item as top-level would turn the per-parent rule
+  into a global one.
+
+  **Folder operations.** `MiddleLayer` gains `createFolder`, `renameFolder`,
+  `setFolderDescription`, `previewFoldersMove`, `moveFolderItems`, `previewFolderDeletion`,
+  `deleteFolder` and `duplicateFolder`. `createProject` and `createProjectFromTemplate` take the
+  folder the new project lands in. A folder name is stored trimmed, and a blank one is refused.
+
+  **Reset.** `MiddleLayer.resetFolders` replaces a folder document this build cannot read, newer or
+  unreadable, with an empty one, leaving every project and template at the top level; it is refused
+  while the document reads fine.
+
+  **Move: preview, then confirm.** A move takes any mix of folders, projects and templates into one
+  destination. `planFoldersMove` produces the plan the preview shows — every item and the name it
+  ends up with, templates included — and `moveFolderItems` recomputes it inside the write
+  transaction. `commitFoldersMove` commits only when the recomputed plan equals the confirmed one
+  (`foldersMovePlansEqual`); otherwise nothing is written and the `FoldersMoveOutcome` is
+  `plan-changed`, carrying the fresh plan to confirm again. A move that renames something needs a
+  confirmed plan (`needs-confirmation`), and a move that cannot be planned reports `cannot-plan`
+  with its `FoldersMoveIssue`s. A folder moves with everything inside it, and an item selected
+  together with a folder that holds it travels with that folder.
+
+  **Recursive delete, always confirmed.** Deleting a folder destroys it, every folder beneath it,
+  and every project and template held anywhere in that subtree, in one transaction.
+  `planFoldersRemoval` returns the `FoldersRemoval` naming exactly what goes. A deletion cannot be
+  undone, so `deleteFolder` requires that removal back as `confirmedRemoval` however little it
+  destroys, and `commitFoldersRemoval` refuses it as `plan-changed` when the subtree has changed
+  since: a project dropped into the folder after the dialog opened aborts the deletion rather than
+  being destroyed unseen.
+
+  **No depth limit.** Folders nest to any depth. A cycle is refused by the write path and cut by
+  the read.
+
+  **Placement follows the source.** A duplicate of a project, and a template saved from one, land in
+  the folder holding their source, placed in the transaction that creates them (`inheritedFolder`).
+  `duplicateFolder` copies a whole subtree beside its source, under `X (Copy)`.
+
+  **Descriptions.** Projects, templates and folders carry free text beside their name:
+  `ProjectMeta.description`, `TemplateListEntry.description` (written by
+  `MiddleLayer.setTemplateDescription`) and `FolderEntry.description` (written by
+  `MiddleLayer.setFolderDescription`). A description is stored trimmed (`normalizeDescription`);
+  blank clears it, and nothing is stored for a thing nobody described. A duplicate, a snapshot taken
+  for a share and a copy taken out of one all carry the source's description.
+  `saveProjectAsTemplate` takes the new template's description after its label; without one the
+  template is stored undescribed.
+
+  `TemplateId` moves to `@milaboratories/pl-model-common`, beside `ProjectId`, so the model package
+  can name what it places. `@milaboratories/pl-middle-layer` still exports it. `asProjectId`,
+  `asTemplateId` and `asFolderId` brand a string already known to be such an id, such as one a caller
+  hands back.
+
+  The template list skips, rather than throws on, an entry that is not a fully synced template, the
+  way the project list does, so one such entry no longer takes the whole list down.
+
+  **Visible changes to released API:**
+
+  - `setProjectMeta` takes a patch (`Partial<ProjectMeta>`) and leaves the fields it is not given as
+    they are, so a rename can no longer revert a description written in between.
+  - `setProjectMeta` and `renameTemplate` throw when the new name is already used by something else
+    in the same parent, compared ignoring case and surrounding whitespace: renaming a project to
+    `SAMPLES` beside a `Samples` is refused, while the same name in two different folders is fine.
+    The check runs in the rename's own transaction, so two renames racing for one name cannot both
+    win.
+  - `setProjectMeta`, `renameTemplate` and `saveProjectAsTemplate` store the name trimmed.
+  - `saveProjectAsTemplate` without a label names the template to be free beside its source project
+    (`X (Copy)` for a project `X`), and throws when a label it is given is already used there.
+  - `duplicateProject` without `rename` names the copy beside its source, `X (Copy)`, where it used
+    to reuse the source's label. A label returned by `rename` is kept as it is; when it is taken
+    beside the source, the copy lands at the top level.
+  - The "not found" errors read `Project X not found in the project list.` and
+    `Template X not found in the template list.`
+
+## 1.50.0
+
+### Minor Changes
+
+- 3716dcb: Graph aesthetic annotations: new `pl7.app/graph/shape` carries a default dot shape per column value (R shape codes). `pl7.app/graph/palette` gains `midPoint`, `min`, `max` and `log` for continuous columns, and its `mapping` is now optional so a continuous default needs no per-value entries. Both annotations are defaults a user can override in the interface.
+
+## 1.49.0
+
+### Minor Changes
+
+- e8f26d6: Applying a template repoints the block ids held inside a domain.
+
+  An axis a block produced names that block in its domain — `pl7.app/sampleId` carries the id of
+  the block that defined the samples, a clonotype key the id of the run that called the clonotypes.
+  Those are references, but `relocateBlockIds` skipped them: it rewrites what it recognizes as a
+  column identifier, and a domain entry is neither. A block whose params named an axis therefore
+  applied still pointing at the project it was exported from, and the chart or table bound to that
+  axis came back empty.
+
+  Which entries are repointed is decided by the key, against the new `BlockScopedDomain` set. A
+  template's entry ids are only required to be non-empty strings, so a hand-written document names
+  its entries readably — and a qualifier reading `closest` must not be taken for an entry called
+  `closest` merely because both strings match. The failure modes are what make a list the right
+  shape here: a key on it can only hold a block id, so listing one cannot corrupt anything, while a
+  key left off is simply not relocated, which is the behaviour from before.
+
+  Two things to know:
+
+  - A domain inside an identifier this package recognizes is spec data and is left alone, as before.
+    An overridden column's `specOverrides.domain` is reached by taking that id apart, never by the
+    generic walk, so it does not move.
+  - Only identifiers that travel as objects are reached. One flattened into a canonical string whose
+    shape this package does not recognize — an anchored id, a `PTableColumnSpec` inside saved table
+    state — stays opaque, exactly as it was. A block that wants an axis reference to survive a
+    template has to hand it over taken apart.
+
+  The set covers the `pl7.app/*` vocabulary. A block inventing a block-scoped domain of its own needs
+  it added here, and until then a template carrying that domain applies still naming the project it
+  came from.
+
 ## 1.48.0
 
 ### Minor Changes

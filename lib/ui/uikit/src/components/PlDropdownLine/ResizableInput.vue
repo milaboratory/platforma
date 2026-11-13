@@ -36,9 +36,10 @@ function handleInput(event: Event) {
 </script>
 
 <template>
-  <div class="resizable-input">
+  <div class="resizable-input" data-testid="pl-resizable-input">
     <span :style="styles" class="resizable-input__size-span">{{ text }}</span>
     <input
+      data-testid="pl-dropdown-line-input"
       v-bind="$attrs"
       :placeholder="placeholder"
       :value="props.modelValue"

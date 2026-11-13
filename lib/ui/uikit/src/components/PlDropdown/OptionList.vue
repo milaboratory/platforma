@@ -42,6 +42,7 @@ defineExpose({
     ref="overlay"
     :root="rootRef"
     class="pl-dropdown__options"
+    data-testid="pl-dropdown-options"
     tabindex="-1"
     :gap="3"
   >
@@ -49,8 +50,9 @@ defineExpose({
       v-for="[group, items] in groups.entries()"
       :key="group"
       :class="{ 'group-container': hasGroups }"
+      data-testid="pl-dropdown-option-group"
     >
-      <TextLabel>{{ group }}</TextLabel>
+      <TextLabel data-testid="pl-dropdown-option-group-label">{{ group }}</TextLabel>
       <div>
         <DropdownListItem
           v-for="(item, index) in items"
@@ -59,11 +61,16 @@ defineExpose({
           :is-selected="item.isSelected"
           :is-hovered="item.isActive"
           :size="optionSize"
+          data-testid="pl-dropdown-option"
           @click.stop="selectOption(item.value)"
         />
       </div>
     </div>
-    <div v-if="rest.length" :class="{ 'group-container': hasGroups }">
+    <div
+      v-if="rest.length"
+      :class="{ 'group-container': hasGroups }"
+      data-testid="pl-dropdown-option-group"
+    >
       <TextLabel />
       <div>
         <DropdownListItem
@@ -73,10 +80,13 @@ defineExpose({
           :is-selected="item.isSelected"
           :is-hovered="item.isActive"
           :size="optionSize"
+          data-testid="pl-dropdown-option"
           @click.stop="selectOption(item.value)"
         />
       </div>
     </div>
-    <div v-if="!optionsLength" class="nothing-found">Nothing found</div>
+    <div v-if="!optionsLength" class="nothing-found" data-testid="pl-dropdown-options-empty">
+      Nothing found
+    </div>
   </DropdownOverlay>
 </template>

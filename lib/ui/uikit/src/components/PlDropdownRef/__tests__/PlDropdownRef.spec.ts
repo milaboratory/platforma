@@ -77,10 +77,10 @@ describe("PlDropdownRef", () => {
 
     const missing = wrapper.find(".input-value--missing");
     expect(missing.exists()).toBe(true);
-    expect(missing.text()).toBe("Upstream value removed");
+    expect(missing.text()).toBe("Value not available");
   });
 
-  it("forwards a caller-supplied missingValueLabel that overrides the Ref default", async () => {
+  it("forwards a caller-supplied missingValueLabel that overrides the default", async () => {
     const wrapper = mount(PlDropdownRef, {
       props: {
         modelValue: {

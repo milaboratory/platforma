@@ -45,15 +45,21 @@ useEventListener(document, "keydown", (evt: KeyboardEvent) => {
         ref="modal"
         class="pl-slide-modal"
         :style="{ width: props.width }"
+        data-testid="pl-pure-slide-modal"
         v-bind="attrs"
         @keyup.esc="emit('update:modelValue', false)"
       >
-        <PlCloseModalBtn class="close-dialog-btn" @click="emit('update:modelValue', false)" />
+        <PlCloseModalBtn
+          data-testid="pl-slide-modal-close"
+          class="close-dialog-btn"
+          @click="emit('update:modelValue', false)"
+        />
         <slot />
       </div>
     </TransitionSlidePanel>
     <div
       v-if="props.modelValue && props.shadow"
+      data-testid="pl-slide-modal-shadow"
       class="pl-slide-modal__shadow"
       @keyup.esc="emit('update:modelValue', false)"
     />

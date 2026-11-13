@@ -1,3 +1,4 @@
+export { withCallAbortSignal } from "./core/abort_signal";
 export * from "./core/types";
 export * as Pl from "./helpers/pl";
 export * from "./core/config";
@@ -10,8 +11,10 @@ export * from "./core/unauth_client";
 export * from "./core/auth";
 export * from "./core/capabilities";
 export * from "./core/final";
+export * from "./core/finality";
 export * from "./core/tree_filter";
 export * from "./core/user_resources";
+export * from "./core/controllers";
 export * from "./core/wire";
 export * from "./helpers/tx_helpers";
 export * from "./helpers/poll";

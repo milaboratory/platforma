@@ -26,7 +26,7 @@ import type { Dispatcher } from "undici";
 import { LRUCache } from "lru-cache";
 import type { ResourceDataCacheRecord } from "./cache";
 import type { FinalResourceDataPredicate } from "./final";
-import { DefaultFinalResourceDataPredicate } from "./final";
+import { CacheFinality, TreeFinality } from "./final";
 import type { AllTxStat, TxStat } from "./stat";
 import { addStat, initialTxStat } from "./stat";
 import type { WireConnection } from "./wire";
@@ -96,7 +96,9 @@ export class PlClient {
   // Caching
   //
 
-  /** This function determines whether resource data can be cached */
+  /** The default finality predicate of trees built on this client ({@link TreeFinality} unless
+   * given); a tree may override it, or keep its explicit roots non-final with
+   * `rootsNeverFinal`. The transaction resource cache always uses {@link CacheFinality}. */
   public readonly finalPredicate: FinalResourceDataPredicate;
 
   /** Resource data cache, to minimize redundant data rereading from remote db */
@@ -133,7 +135,7 @@ export class PlClient {
 
     this.txDelay = conf.txDelay;
     this.forceSync = conf.forceSync;
-    this.finalPredicate = ops.finalPredicate ?? DefaultFinalResourceDataPredicate;
+    this.finalPredicate = ops.finalPredicate ?? TreeFinality.predicate();
     this.resourceDataCache = new LRUCache({
       maxSize: conf.maxCacheBytes,
       sizeCalculation: (v) => (v.basicData.data?.length ?? 0) + 64,
@@ -234,6 +236,15 @@ export class PlClient {
     opts: { login?: string; createIfNotExists?: boolean } = {},
   ): Promise<SignedResourceId | undefined> {
     return this.userResources.getUserRoot(opts);
+  }
+
+  /**
+   * The resources of a type that are shared with the authenticated user, as signed ids. Matched by
+   * type name only, so a newer version of the type is still found.
+   * @throws if the backend does not implement ListUserResources, or on a REST connection.
+   */
+  public async listSharedResourcesByType(resourceTypeName: string): Promise<SignedResourceId[]> {
+    return await this.userResources.listSharedResourcesByType(resourceTypeName);
   }
 
   public get conf(): PlClientConfig {
@@ -397,7 +408,7 @@ export class PlClient {
     let retryState = createRetryState(ops?.retryOptions ?? this.defaultRetryOptions);
 
     while (true) {
-      const release = ops?.lockId ? await advisoryLock(ops.lockId) : () => {};
+      const release = ops?.lockId ? await advisoryLock(ops.lockId, ops.abortSignal) : () => {};
 
       try {
         // opening low-level tx
@@ -408,8 +419,10 @@ export class PlClient {
           name,
           writable,
           clientRoot,
-          this.finalPredicate,
+          CacheFinality.predicate(),
           this.resourceDataCache,
+          false,
+          (capability) => this.ll.hasCapability(capability),
         );
 
         // Auto-set default color proof from the client root's signature.
@@ -431,16 +444,16 @@ export class PlClient {
           // collecting stat
           this._txCommittedStat = addStat(this._txCommittedStat, tx.stat);
           ok = true;
-        } catch (e: unknown) {
+        } catch (error: unknown) {
           // the only recoverable
-          if (e instanceof TxCommitConflict) {
+          if (error instanceof TxCommitConflict) {
             // ignoring
             // collecting stat
             this._txConflictStat = addStat(this._txConflictStat, tx.stat);
           } else {
             // collecting stat
             this._txErrorStat = addStat(this._txErrorStat, tx.stat);
-            throw e;
+            throw error;
           }
         } finally {
           // close underlying grpc stream, if not yet done

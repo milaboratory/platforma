@@ -1,5 +1,159 @@
 # @milaboratories/pf-spec-driver
 
+## 1.6.0
+
+### Minor Changes
+
+- 92cf16f: New `ColumnsCollection.discoverRoots`: find the columns the given ones hang off
+
+  `discover` starts from anchors and walks linkers down to what they contain (anchored on `sample`, it reaches `cell`). There was no way to go the other way, from `cell` to the `sample`-level columns above it. `discoverRoots` takes the columns you have and returns the roots they hang off:
+
+  ```ts
+  const found = collection.discoverRoots({
+    leaves: [cellRef],
+    mode: "enrichment",
+    maxHops: 4,
+  });
+  // found: Array<{ root: ColumnRecipe; leaf: ColumnRecipe; path: ColumnRecipe[] }>
+  ```
+
+  Each entry is exactly what `discover({ anchors: { r: root } })` would return for the leaf: `leaf` is the requested column as a discovered column carrying the linker path and qualifications, so the table is built from `root` as the anchor plus `leaf`, the same way as for any discovered column. `discover` is unchanged.
+
+  The engine side is the new `discoverRoots` request of the spec frame (`PFrameSpecDriver.discoverRoots`), from milaboratory/pframes-rs#295.
+
+### Patch Changes
+
+- Updated dependencies [e628f46]
+- Updated dependencies [92cf16f]
+  - @milaboratories/pf-spec@1.1.0
+  - @milaboratories/pl-model-common@1.56.0
+
+## 1.5.17
+
+### Patch Changes
+
+- @milaboratories/pf-spec@1.0.17
+
+## 1.5.16
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-model-common@1.55.2
+  - @milaboratories/pf-spec@1.0.16
+
+## 1.5.15
+
+### Patch Changes
+
+- @milaboratories/pf-spec@1.0.15
+
+## 1.5.14
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/pf-spec@1.0.14
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/helpers@1.14.7
+
+## 1.5.13
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+  - @milaboratories/pf-spec@1.0.13
+
+## 1.5.12
+
+### Patch Changes
+
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-model-common@1.54.2
+  - @milaboratories/pf-spec@1.0.12
+
+## 1.5.11
+
+### Patch Changes
+
+- Updated dependencies [6a1b104]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [79f8dbc]
+  - @milaboratories/pf-spec@1.0.11
+  - @milaboratories/helpers@1.14.6
+  - @milaboratories/pl-model-common@1.54.1
+
+## 1.5.10
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @milaboratories/pl-model-common@1.54.0
+  - @milaboratories/pf-spec@1.0.10
+
+## 1.5.9
+
+### Patch Changes
+
+- @milaboratories/pf-spec@1.0.9
+
+## 1.5.8
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+  - @milaboratories/pf-spec@1.0.8
+
+## 1.5.7
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-model-common@1.52.0
+  - @milaboratories/pf-spec@1.0.7
+
+## 1.5.6
+
+### Patch Changes
+
+- @milaboratories/pf-spec@1.0.6
+
+## 1.5.5
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+  - @milaboratories/pf-spec@1.0.5
+
+## 1.5.4
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+  - @milaboratories/pf-spec@1.0.4
+
+## 1.5.3
+
+### Patch Changes
+
+- Updated dependencies [31a3f60]
+  - @milaboratories/pf-spec@1.0.3
+
+## 1.5.2
+
+### Patch Changes
+
+- Updated dependencies [f2ed96c]
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pf-spec@1.0.2
+  - @milaboratories/pl-model-common@1.49.0
+
 ## 1.5.1
 
 ### Patch Changes

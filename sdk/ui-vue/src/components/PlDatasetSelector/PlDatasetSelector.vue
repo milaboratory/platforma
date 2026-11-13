@@ -17,12 +17,19 @@ import type {
   DatasetOption,
   DatasetSelection,
   LabeledEnrichmentRefs,
+  PObjectId,
   PlRef,
 } from "@platforma-sdk/model";
-import { createDatasetSelection, createPrimaryRef, plRefsEqual } from "@platforma-sdk/model";
+import {
+  createDatasetSelection,
+  createGlobalPObjectId,
+  createPrimaryRef,
+  plRefsEqual,
+} from "@platforma-sdk/model";
 import type { ListOption } from "@milaboratories/uikit";
 import { PlDropdown } from "@milaboratories/uikit";
 import { computed } from "vue";
+import { useColumnLinksMissingValue } from "../ValuePickers/columnLinksMissingValue";
 
 const slots = defineSlots<{
   tooltip?: () => unknown;
@@ -88,8 +95,12 @@ const selectionValue = computed<Selection | undefined>(() => {
   // stored enrichments are a snapshot at selection time and won't match
   // `dropdownOptions` after `props.options` recomputes (e.g. when the
   // result pool gains or loses an enrichment column).
+  // The option's ref, not the stored one, for the same reason: a ref stored with
+  // a different `requireEnrichments` flag than the options carry (e.g. saved
+  // before a block changed its `buildDatasetOptions` mode) would not match any
+  // option and the selection would show empty.
   const option = props.options?.find((o) => plRefsEqual(o.primary.ref, primary.column, true));
-  return makeSelection(primary.column, primary.filter, option?.enrichments);
+  return makeSelection(option?.primary.ref ?? primary.column, primary.filter, option?.enrichments);
 });
 
 const dropdownOptions = computed<ListOption<Selection>[] | undefined>(() => {
@@ -111,6 +122,32 @@ const dropdownOptions = computed<ListOption<Selection>[] | undefined>(() => {
   return out;
 });
 
+const columnLinks = useColumnLinksMissingValue();
+
+/**
+ * The column a selection the options lack is shown and explained by: the dataset first, as the
+ * filter of a missing dataset is missing with it, then the filter; `undefined` when the column
+ * links tell nothing about either.
+ */
+function explainedColumn(): PObjectId | undefined {
+  const primary = model.value?.primary;
+  if (columnLinks === undefined || primary === undefined) return undefined;
+  const refs = primary.filter === undefined ? [primary.column] : [primary.column, primary.filter];
+  return refs
+    .map((ref) => createGlobalPObjectId(ref.blockId, ref.name))
+    .find((column) => columnLinks.tooltip(column) !== undefined);
+}
+
+const missingValueLabel = () => {
+  const column = explainedColumn();
+  return column === undefined ? undefined : columnLinks?.label(column);
+};
+
+const missingValueTooltip = () => {
+  const column = explainedColumn();
+  return column === undefined ? undefined : columnLinks?.tooltip(column);
+};
+
 function onChange(selection: Selection | undefined) {
   if (selection === undefined) {
     model.value = undefined;
@@ -125,6 +162,7 @@ function onChange(selection: Selection | undefined) {
 
 <template>
   <PlDropdown
+    data-testid="pl-dataset-selector"
     :model-value="selectionValue"
     :options="dropdownOptions"
     :label="label"
@@ -135,6 +173,8 @@ function onChange(selection: Selection | undefined) {
     :clearable="clearable"
     :required="required"
     :disabled="disabled"
+    :missing-value-label="missingValueLabel"
+    :missing-value-tooltip="missingValueTooltip"
     @update:model-value="onChange"
   >
     <template v-if="slots.tooltip" #tooltip>

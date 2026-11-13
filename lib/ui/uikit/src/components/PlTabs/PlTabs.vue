@@ -46,10 +46,14 @@ defineProps<{
 </script>
 
 <template>
-  <div :class="[style.component, { [style.disabled]: disabled, [style.topLine]: topLine }]">
+  <div
+    data-testid="pl-tabs"
+    :class="[style.component, { [style.disabled]: disabled, [style.topLine]: topLine }]"
+  >
     <Tab
       v-for="(opt, i) in options"
       :key="i"
+      data-testid="pl-tabs-tab"
       :tabindex="modelValue === opt.value || disabled || opt.disabled ? undefined : 0"
       :option="opt"
       :class="[
@@ -61,7 +65,7 @@ defineProps<{
       @click="emitModel(opt.value)"
     >
       <slot :name="opt.value" :option="opt">
-        <span>{{ opt.label }}</span>
+        <span data-testid="pl-tabs-tab-label">{{ opt.label }}</span>
       </slot>
     </Tab>
   </div>

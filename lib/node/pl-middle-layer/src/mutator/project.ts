@@ -22,8 +22,10 @@ import {
 } from "@milaboratories/pl-client";
 import {
   createRenderHeavyBlock,
+  type BlockActionContextBaggage,
   createBContextFromUpstreams,
   createBContextEnd,
+  recordBlockRunCancelled,
 } from "./template/render_block";
 import type {
   Block,
@@ -63,7 +65,7 @@ import type {
   BlockSettings,
   ProjectMeta,
 } from "@milaboratories/pl-model-middle-layer";
-import { InitialBlockSettings } from "@milaboratories/pl-model-middle-layer";
+import { InitialBlockSettings, normalizeProjectMeta } from "@milaboratories/pl-model-middle-layer";
 import Denque from "denque";
 import { exportContext, getPreparedExportTemplateEnvelope } from "./context_export";
 import { loadTemplate } from "./template/template_loading";
@@ -77,6 +79,14 @@ import {
 } from "@milaboratories/ts-helpers";
 import { gzipSync } from "node:zlib";
 import type { ProjectHelper } from "../model/project_helper";
+import {
+  derivedArgsValue,
+  argsErrorsFieldChange,
+  argsErrorsOfBlock,
+  type DerivedArgs,
+  type ArgsErrorsFieldChange,
+} from "../model/args_derivation";
+import type { ArgsIssue } from "@milaboratories/pl-model-common";
 import {
   extractConfig,
   UiError,
@@ -271,6 +281,24 @@ class BlockInfo {
 
   get currentPrerunArgs(): unknown {
     return this.currentPrerunArgsC();
+  }
+
+  private readonly argsErrorsC = cached(
+    () => `${this.fields.inputsValid?.modCount}:${this.fields.currentArgs?.modCount}`,
+    () =>
+      argsErrorsOfBlock({
+        modelAPIVersion: this.config.modelAPIVersion,
+        inputsValid: this.fields.inputsValid,
+        currentArgs: this.currentArgs,
+      }),
+  );
+
+  /**
+   * The errors the block's `argsIssues()` found in its current args. A block whose model API
+   * version has no args issues, or that has no current args, has none.
+   */
+  get argsErrors(): readonly ArgsIssue[] {
+    return this.argsErrorsC();
   }
 
   get stagingRendered(): boolean {
@@ -706,6 +734,15 @@ export class ProjectMutator {
     return { ref, value: jsonBytes, status: "Ready" };
   }
 
+  /** Baggage of the root action context of a block render. */
+  private blockActionContextBaggage(blockId: string, info: BlockInfo): BlockActionContextBaggage {
+    return {
+      name: this.getBlock(blockId).label,
+      blockPack: JSON.stringify(info.source),
+      blockId,
+    };
+  }
+
   private getBlock(blockId: string): Block {
     for (const block of allBlocks(this.struct)) if (block.id === blockId) return block;
     throw new Error("block not found");
@@ -756,6 +793,32 @@ export class ProjectMutator {
     return deleted;
   }
 
+  /**
+   * Brings the block's `inputsValid` field in line with what its args derivation found: the run
+   * errors of its args, none when it may run with them, and no field when it has no args.
+   */
+  private setArgsErrors(blockId: string, derivedArgs: DerivedArgs): void {
+    this.applyArgsErrorsChange(
+      blockId,
+      argsErrorsFieldChange(this.getBlockInfo(blockId).fields.inputsValid, derivedArgs),
+    );
+  }
+
+  private applyArgsErrorsChange(blockId: string, change: ArgsErrorsFieldChange): void {
+    switch (change.type) {
+      case "keep":
+        return;
+      case "delete":
+        this.deleteBlockFields(blockId, "inputsValid");
+        return;
+      case "write": {
+        const ref = this.tx.createValue(Pl.JsonObject, change.data);
+        this.setBlockField(blockId, "inputsValid", ref, "Ready", change.data);
+        return;
+      }
+    }
+  }
+
   private updateLastModified() {
     this.lastModified = Date.now();
     this.lastModifiedChanged = true;
@@ -782,6 +845,7 @@ export class ProjectMutator {
       this.setBlockFieldObj(blockId, "stagingCtxPrevious", fields.stagingCtx!);
       this.setBlockFieldObj(blockId, "stagingUiCtxPrevious", fields.stagingUiCtx!);
     }
+    this.deleteBlockFields(blockId, "stagingActionContext");
     if (this.deleteBlockFields(blockId, "stagingOutput", "stagingCtx", "stagingUiCtx"))
       this.resetStagingRefreshTimestamp();
   }
@@ -797,7 +861,14 @@ export class ProjectMutator {
       this.setBlockFieldObj(blockId, "prodCtxPrevious", fields.prodCtx!);
       this.setBlockFieldObj(blockId, "prodUiCtxPrevious", fields.prodUiCtx!);
     }
-    this.deleteBlockFields(blockId, "prodOutput", "prodCtx", "prodUiCtx", "prodArgs");
+    this.deleteBlockFields(
+      blockId,
+      "prodOutput",
+      "prodCtx",
+      "prodUiCtx",
+      "prodArgs",
+      "prodActionContext",
+    );
   }
 
   /** Running blocks are reset, settled ones (Ready or finished Error) moved to limbo. Returns if
@@ -826,6 +897,7 @@ export class ProjectMutator {
       return true;
     } else {
       // reset - clean up any partial/inconsistent production stat
+      this.deleteBlockFields(blockId, "prodActionContext");
       return this.deleteBlockFields(
         blockId,
         "prodOutput",
@@ -908,21 +980,16 @@ export class ProjectMutator {
     }
 
     // Derive args from storage - set or clear currentArgs based on derivation result
-    const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
-      blockConfig,
-      initialStorageJson,
-    );
+    const derivedArgs = this.projectHelper.deriveArgsFromStorage(blockConfig, initialStorageJson);
     // args() legitimately returns undefined when inputs are incomplete/invalid;
     // treat that like a derivation failure and clear the field (never JSON-encode undefined).
-    if (!deriveArgsResult.error && deriveArgsResult.value !== undefined) {
-      this.setBlockFieldObj(
-        blockId,
-        "currentArgs",
-        this.createJsonFieldValue(deriveArgsResult.value),
-      );
+    const args = derivedArgsValue(derivedArgs);
+    if (args !== undefined) {
+      this.setBlockFieldObj(blockId, "currentArgs", this.createJsonFieldValue(args));
     } else {
       this.deleteBlockFields(blockId, "currentArgs");
     }
+    this.setArgsErrors(blockId, derivedArgs);
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
@@ -974,11 +1041,12 @@ export class ProjectMutator {
         );
 
         // Derive args from storage (VM extracts data internally)
-        const derivedArgsResult = this.projectHelper.deriveArgsFromStorage(
+        const derivedArgs = this.projectHelper.deriveArgsFromStorage(
           blockConfig,
           updatedStorageJson,
         );
-        args = derivedArgsResult.error ? undefined : derivedArgsResult.value;
+        args = derivedArgsValue(derivedArgs);
+        this.setArgsErrors(req.blockId, derivedArgs);
       } else {
         this.setBlockFieldObj(req.blockId, "blockStorage", this.createGzJsonFieldValue(req.state));
         if (req.state !== null && typeof req.state === "object" && "args" in req.state) {
@@ -1166,12 +1234,17 @@ export class ProjectMutator {
     const tpl = info.getTemplate(this.tx);
 
     // Use currentPrerunArgs for staging rendering
-    const results = createRenderHeavyBlock(this.tx, tpl, {
-      args: prerunArgsRef,
-      blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
-      isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(false)),
-      context: ctx,
-    });
+    const results = createRenderHeavyBlock(
+      this.tx,
+      tpl,
+      {
+        args: prerunArgsRef,
+        blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
+        isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(false)),
+        context: ctx,
+      },
+      this.blockActionContextBaggage(blockId, info),
+    );
 
     // Here we set the staging ctx to the input context of the staging workflow, not the output because exports
     // of one staging context should stay within the same block, and not travel downstream.
@@ -1182,6 +1255,8 @@ export class ProjectMutator {
     // thus creating a certain discrepancy between staging workflow context behavior and desktop's result pool.
     this.setBlockField(blockId, "stagingUiCtx", this.exportCtx(results.context), "NotReady");
     this.setBlockField(blockId, "stagingOutput", results.result, "NotReady");
+    if (results.actionContext !== undefined)
+      this.setBlockField(blockId, "stagingActionContext", results.actionContext, "NotReady");
   }
 
   private renderProductionFor(blockId: string) {
@@ -1194,6 +1269,13 @@ export class ProjectMutator {
       throw new Error(`Can't render production for block ${blockId}: currentArgs not set`);
     }
 
+    // Nor if its argsIssues() found errors in them
+    const argsErrors = info.argsErrors;
+    if (argsErrors.length > 0) {
+      const messages = argsErrors.map(({ message }) => message).join("; ");
+      throw new Error(`Can't render production for block ${blockId}: ${messages}`);
+    }
+
     const ctx = this.createProdCtx(this.getPendingProductionGraph().nodes.get(blockId)!.upstream);
 
     if (this.getBlock(blockId).renderingMode === "Light")
@@ -1201,12 +1283,17 @@ export class ProjectMutator {
 
     const tpl = info.getTemplate(this.tx);
 
-    const results = createRenderHeavyBlock(this.tx, tpl, {
-      args: info.fields.currentArgs.ref!,
-      blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
-      isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(true)),
-      context: ctx,
-    });
+    const results = createRenderHeavyBlock(
+      this.tx,
+      tpl,
+      {
+        args: info.fields.currentArgs.ref!,
+        blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
+        isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(true)),
+        context: ctx,
+      },
+      this.blockActionContextBaggage(blockId, info),
+    );
     this.setBlockField(
       blockId,
       "prodCtx",
@@ -1215,6 +1302,8 @@ export class ProjectMutator {
     );
     this.setBlockField(blockId, "prodUiCtx", this.exportCtx(results.context), "NotReady");
     this.setBlockField(blockId, "prodOutput", results.result, "NotReady");
+    if (results.actionContext !== undefined)
+      this.setBlockField(blockId, "prodActionContext", results.actionContext, "NotReady");
 
     // saving inputs for which we rendered the production
     this.setBlockFieldObj(blockId, "prodArgs", info.fields.currentArgs);
@@ -1266,11 +1355,9 @@ export class ProjectMutator {
       prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
 
       // Derive args from storage (VM extracts data internally)
-      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
-        blockConfig,
-        storageToWrite,
-      );
-      args = deriveArgsResult.error ? undefined : deriveArgsResult.value;
+      const derivedArgs = this.projectHelper.deriveArgsFromStorage(blockConfig, storageToWrite);
+      args = derivedArgsValue(derivedArgs);
+      this.setArgsErrors(blockId, derivedArgs);
     } else if (spec.storageMode === "legacy") {
       // Model API v1: use legacyState from spec
       const parsedState = JSON.parse(spec.legacyState);
@@ -1560,18 +1647,16 @@ export class ProjectMutator {
         this.deleteBlockFields(blockId, "currentPrerunArgs");
       }
 
-      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(newConfig, storageJson);
+      const derivedArgs = this.projectHelper.deriveArgsFromStorage(newConfig, storageJson);
       // args() legitimately returns undefined when inputs are incomplete/invalid;
       // treat that like a derivation failure and clear the field (never JSON-encode undefined).
-      if (!deriveArgsResult.error && deriveArgsResult.value !== undefined) {
-        this.setBlockFieldObj(
-          blockId,
-          "currentArgs",
-          this.createJsonFieldValue(deriveArgsResult.value),
-        );
+      const args = derivedArgsValue(derivedArgs);
+      if (args !== undefined) {
+        this.setBlockFieldObj(blockId, "currentArgs", this.createJsonFieldValue(args));
       } else {
         this.deleteBlockFields(blockId, "currentArgs");
       }
+      this.setArgsErrors(blockId, derivedArgs);
     };
 
     if (newClearState !== undefined) {
@@ -1587,6 +1672,9 @@ export class ProjectMutator {
       } else {
         // V1: Use setStates with legacy state format
         persistBlockPack();
+        // A V1 model tells whether the block may run by itself; args errors of an earlier V2 model
+        // no longer apply.
+        this.deleteBlockFields(blockId, "inputsValid");
         this.setStates([{ modelAPIVersion: 1, blockId, state: newClearState.state }]);
       }
     } else {
@@ -1617,6 +1705,9 @@ export class ProjectMutator {
       } else {
         // Legacy blocks (modelAPIVersion 1): persist block pack, set prerunArgs = currentArgs
         persistBlockPack();
+        // A V1 model tells whether the block may run by itself; args errors of an earlier V2 model
+        // no longer apply.
+        this.deleteBlockFields(blockId, "inputsValid");
         if (info.fields.currentArgs !== undefined) {
           this.setBlockFieldObj(blockId, "currentPrerunArgs", info.fields.currentArgs);
         }
@@ -1741,6 +1832,12 @@ export class ProjectMutator {
         // was actually stopped
         stopped.push(blockId);
 
+        // The run's status tree stays, so the user can see where it stopped; the next run replaces
+        // it. It is marked cancelled, because a destroyed render reports nothing of its own.
+        const actionContext = fields.prodActionContext?.ref;
+        if (actionContext !== undefined && isResource(actionContext))
+          recordBlockRunCancelled(this.tx, actionContext);
+
         // will try to stop all its downstreams
         for (const downstream of activeProdGraph.traverseIdsExcludingRoots("downstream", blockId)) {
           if (queued.has(downstream)) continue;
@@ -1796,9 +1893,20 @@ export class ProjectMutator {
 
   /** Updates project metadata */
   public setMeta(meta: ProjectMeta): void {
-    this.meta = meta;
+    this.meta = normalizeProjectMeta(meta);
     this.metaChanged = true;
     this.updateLastModified();
+  }
+
+  /**
+   * Updates the metadata fields the caller names, leaving the rest as they are.
+   *
+   * The merge happens against the metadata this mutator loaded inside the very transaction it
+   * writes in, so a rename and a description edit racing each other cannot make one of them
+   * revert the other's field.
+   */
+  public updateMeta(patch: Partial<ProjectMeta>): void {
+    this.setMeta({ ...this.meta, ...patch });
   }
 
   //
