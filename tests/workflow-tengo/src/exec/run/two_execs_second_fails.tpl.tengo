@@ -1,0 +1,54 @@
+/**
+ * two chained execs where the second one fails.
+ *
+ * Stage 1 writes a run marker to a file: the current time in seconds plus 8 random
+ * bytes, so no two executions write the same marker (busybox `date` has no %N for
+ * nanoseconds). Its only input is the test's `seed`, so its CID is stable across
+ * renders with the same seed: a retry that recovers it gets the same marker back, a
+ * retry that re-runs it gets a new one.
+ *
+ * Stage 2 prints that marker to stderr and exits 42. stderr is part of the error
+ * message, which is how the test reads the marker.
+ *
+ * Stage 1's result is deliberately NOT exposed as a template output. An output field
+ * would hold it from GC on its own and the test would pass without the feature under
+ * test doing anything.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["main"])
+
+// busybox `sh` in an image, so the commands also run on a Kubernetes backend.
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	stage1 := exec.builder().
+		name("recovery-stage1").
+		cpu(1).ram("50Mi").
+		inLightQueue().
+		software(shellSw).
+		arg("-c").
+		arg("echo \"$(date +%s)-$(od -An -N8 -tx1 /dev/urandom | tr -d ' \\n')\" > mid.txt").
+		arg("stage1").
+		arg(inputs.seed).
+		saveFile("mid.txt").
+		run()
+
+	stage2 := exec.builder().
+		name("recovery-stage2").
+		cpu(1).ram("50Mi").
+		inLightQueue().
+		software(shellSw).
+		arg("-c").
+		arg("echo \"stage1-run=$(cat mid.txt)\" >&2; echo 'stage2 died on purpose' >&2; exit 42").
+		addFile("mid.txt", stage1.getFile("mid.txt")).
+		saveStdoutContent().
+		run()
+
+	return {
+		main: stage2.getStdoutContent()
+	}
+})
