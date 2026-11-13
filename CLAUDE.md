@@ -36,7 +36,7 @@ No SCSS. Write plain CSS — `<style module>` in components, `.css` files elsewh
 
 ### Rules
 
-1. **No SCSS syntax** in new or edited styles: no `&`, no nesting, no `@import`, no mixins, no `$variables`. Spell every selector out in full.
+1. **No SCSS syntax** in new or edited styles: no `@import`, no mixins, no `$variables`.
 
 2. **`<style module>`, not `<style lang="scss" module>`.** A component whose styles you touch loses its `lang="scss"`.
 
