@@ -289,12 +289,12 @@ tplTest.concurrent(
 
     // The effect map, the imports map and the entry have locked inputs when the body returns.
     // The import error gets to them later: first to the entry, then to the imports map, then to
-    // the effect map. Thus wait until the effect map is ready or has an error. If you do not wait,
-    // the client can read the entry before the error gets to it, and the read gives no error.
+    // the effect map. The effect map can be ready before the error gets to the entry, and a read of
+    // the entry then gives no error. Thus keep waiting until the read of the entry throws the error.
     const effect = awaitStableState(
       render.computeOutput("effect", (a) => {
-        if (a === undefined || !a.getIsReadyOrError()) return undefined;
-        return input(input(a, "imports"), source)?.listInputFields();
+        input(input(a, "imports"), source)?.listInputFields();
+        return undefined;
       }),
       OUTPUT_TIMEOUT,
     );
