@@ -1,7 +1,8 @@
-import { computed, watch, ref } from "vue";
+import { useIntervalFn } from "@vueuse/core";
+import * as v from "valibot";
+import { computed, ref, watch } from "vue";
 import { useSdkPlugin } from "../../defineApp";
 import { Response } from "./validation";
-import { useIntervalFn } from "@vueuse/core";
 
 export function useInfo() {
   const sdk = useSdkPlugin();
@@ -25,11 +26,13 @@ export function useInfo() {
     return inputData.value && "__mnzDate" in inputData.value;
   });
 
-  const parsed = computed(() => Response.safeParse(app.value?.model.outputs["__mnzInfo"]));
+  const parsed = computed(() => v.safeParse(Response, app.value?.model.outputs["__mnzInfo"]));
 
-  const currentInfo = computed<Response | undefined>(() => parsed.value?.data);
+  const currentInfo = computed(() => (parsed.value.success ? parsed.value.output : undefined));
 
-  const error = computed(() => parsed.value?.error ?? info.value?.response?.error);
+  const error = computed(() =>
+    parsed.value.success ? info.value?.response?.error : v.summarize(parsed.value.issues),
+  );
 
   const info = ref<Response | undefined>(undefined);
 
@@ -39,12 +42,12 @@ export function useInfo() {
 
   watch(
     [currentInfo],
-    ([i]) => {
-      if (i) {
-        info.value = i;
-        const v = ++version.value;
+    ([nextInfo]) => {
+      if (nextInfo) {
+        info.value = nextInfo;
+        const currentVersion = ++version.value;
         setTimeout(() => {
-          if (version.value === v) {
+          if (version.value === currentVersion) {
             isLoading.value = false;
           }
         }, 1000);
@@ -70,9 +73,9 @@ export function useInfo() {
     inputData.value["__mnzDate"] = new Date().toISOString();
   };
 
-  watch(canRun, (v) => {
+  watch(canRun, (canRunValue) => {
     if (hasMonetization.value) {
-      (inputData.value as Record<string, unknown>)["__mnzCanRun"] = v;
+      (inputData.value as Record<string, unknown>)["__mnzCanRun"] = canRunValue;
     }
   });
 
