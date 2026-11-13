@@ -1,5 +1,6 @@
 /**
- * one exec that succeeds and returns the current time in nanoseconds. Used as the
+ * one exec that succeeds and returns a run marker: the current time in seconds plus 8
+ * random bytes, so no two executions return the same marker. Used as the
  * upstream step in the case where an intermediate template, not the command, is what
  * fails. Its only input is the test's `seed`, so its CID is stable across renders
  * with the same seed.
@@ -21,7 +22,7 @@ self.body(func(inputs) {
 		inLightQueue().
 		software(shellSw).
 		arg("-c").
-		arg("date +%s%N > out.txt").
+		arg("echo \"$(date +%s)-$(od -An -N8 -tx1 /dev/urandom | tr -d ' \\n')\" > out.txt").
 		arg("okstage").
 		arg(inputs.seed).
 		saveFileContent("out.txt").

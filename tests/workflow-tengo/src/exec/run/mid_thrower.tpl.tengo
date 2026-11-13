@@ -1,10 +1,10 @@
 /**
  * an intermediate template that fails on purpose.
  *
- * It takes the upstream exec's timestamp as an input, so by the time this body runs
+ * It takes the upstream exec's run marker as an input, so by the time this body runs
  * the command has already succeeded. The failure therefore comes from template code,
  * not from a command, which is the second shape the recovery hold has to survive.
- * The timestamp goes into the error message so the test can compare it across renders.
+ * The marker goes into the error message so the test can compare it across renders.
  */
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
@@ -14,8 +14,8 @@ text := import("text")
 self.defineOutputs(["main"])
 
 self.body(func(inputs) {
-	time := text.trim_space(string(inputs.value.getData()))
-	ll.panic("intermediate template failed on purpose; stage1-time=%s", time)
+	marker := text.trim_space(string(inputs.value.getData()))
+	ll.panic("intermediate template failed on purpose; stage1-run=%s", marker)
 
 	return {
 		main: inputs.value

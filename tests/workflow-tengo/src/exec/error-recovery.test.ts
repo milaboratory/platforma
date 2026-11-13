@@ -9,19 +9,19 @@ import { getLongTestTimeout } from "@milaboratories/test-helpers";
  * A failed computation must keep its inputs, so a retry re-runs only the step that
  * failed.
  *
- * In every scenario the upstream command succeeds and writes the current time in
- * nanoseconds; a later step fails and carries that timestamp in its error message.
- * The template is rendered twice with the same seed. If the retry recovered the
- * upstream result, both errors carry the same timestamp; if it re-ran the command,
- * the timestamps differ.
+ * In every scenario the upstream command succeeds and writes a run marker: the current
+ * time in seconds plus 8 random bytes, unique to that execution. A later step fails and
+ * carries the marker in its error message. The template is rendered twice with the
+ * same seed. If the retry recovered the upstream result, both errors carry the same
+ * marker; if it re-ran the command, the markers differ.
  *
  * The upstream result is never a template output: an output would hold it from GC on
- * its own, and the timestamps would match without the backend doing anything.
+ * its own, and the markers would match without the backend doing anything.
  */
 
-// A nanosecond epoch has 19 digits. Fewer means `date` ignored %N and printed whole
-// seconds, which a fast retry could repeat without recovering anything.
-const TIME_PATTERN = /stage1-time=(\d{19,})\b/;
+// Epoch seconds, a dash, 16 hex digits of randomness. The random part is what makes a
+// re-run distinguishable: seconds alone could repeat on a fast retry.
+const MARKER_PATTERN = /stage1-run=(\d+-[0-9a-f]{16})\b/;
 
 async function renderAndAwaitError(
   helper: TplTestHelpers,
@@ -42,18 +42,18 @@ async function renderAndAwaitError(
     .catch((e: unknown) => e);
 }
 
-function upstreamTime(expect: ExpectStatic, err: unknown, errorFragment: string): string {
+function upstreamMarker(expect: ExpectStatic, err: unknown, errorFragment: string): string {
   expect(err).toBeInstanceOf(Error);
   const message = err instanceof Error ? err.message : "";
   expect(message).toContain(errorFragment);
-  const match = TIME_PATTERN.exec(message);
-  expect(match, `no nanosecond stage1-time in the error message:\n${message}`).not.toBeNull();
+  const match = MARKER_PATTERN.exec(message);
+  expect(match, `no stage1-run marker in the error message:\n${message}`).not.toBeNull();
   return match?.[1] ?? "";
 }
 
 /**
  * One scenario: render `template` twice with the same seed, expect the same error both
- * times, and require the upstream timestamp to be identical.
+ * times, and require the upstream run marker to be identical.
  *
  * The seed is random per scenario run, so neither scenarios sharing an upstream command
  * nor a rerun against the same backend can recover a result left by an earlier run and
@@ -66,12 +66,12 @@ async function runRecoveryScenario(
 ): Promise<void> {
   const seed = randomUUID();
   const firstErr = await renderAndAwaitError(helper, opts.template, seed);
-  const firstTime = upstreamTime(expect, firstErr, opts.errorFragment);
+  const firstMarker = upstreamMarker(expect, firstErr, opts.errorFragment);
 
   const secondErr = await renderAndAwaitError(helper, opts.template, seed);
-  const secondTime = upstreamTime(expect, secondErr, opts.errorFragment);
+  const secondMarker = upstreamMarker(expect, secondErr, opts.errorFragment);
 
-  expect(secondTime, "the retry re-ran the upstream command").toBe(firstTime);
+  expect(secondMarker, "the retry re-ran the upstream command").toBe(firstMarker);
 }
 
 tplTest(
