@@ -239,6 +239,9 @@ catalogs:
     '@rollup/plugin-node-resolve':
       specifier: ^16.0.1
       version: 16.0.3
+    '@standard-schema/spec':
+      specifier: ^1.1.0
+      version: 1.1.0
     '@types/archiver':
       specifier: ^6.0.3
       version: 6.0.4
@@ -440,6 +443,9 @@ catalogs:
     utility-types:
       specifier: ^3.11.0
       version: 3.11.0
+    valibot:
+      specifier: ^1.5.0
+      version: 1.5.0
     vite:
       specifier: ^8.3.5
       version: 8.3.5
@@ -4068,6 +4074,9 @@ importers:
       '@platforma-sdk/model':
         specifier: workspace:*
         version: link:../model
+      '@standard-schema/spec':
+        specifier: 'catalog:'
+        version: 1.1.0
       '@types/d3-format':
         specifier: 'catalog:'
         version: 3.0.4
@@ -4156,6 +4165,9 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@7.0.2)
       vite:
         specifier: 'catalog:'
         version: 8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1)
@@ -9375,6 +9387,14 @@ packages:
     resolution: {integrity: sha512-6Z7Ma2aVEWisaL6TvBCy7P8rm2LQoPv6dJ7ecIaIixHcwfbJ0x7mWdbcwlIM5IGQxPZSFYeqRCqlOOeKoJYMkw==}
     engines: {node: '>= 4'}
 
+  valibot@1.5.0:
+    resolution: {integrity: sha512-nil6AkP2TChWL43Z5uJ6GTxX01CUA+g8LWUM+N/rB9NBbkUMaUsi9PUNzlUPgoKASgmx9f7eGOYpJ04/fSa6FQ==}
+    peerDependencies:
+      typescript: '>=5'
+    peerDependenciesMeta:
+      typescript:
+        optional: true
+
   vary@1.1.2:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
@@ -14012,6 +14032,10 @@ snapshots:
   util-deprecate@1.0.2: {}
 
   utility-types@3.11.0: {}
+
+  valibot@1.5.0(typescript@7.0.2):
+    optionalDependencies:
+      typescript: 7.0.2
 
   vary@1.1.2: {}
 
