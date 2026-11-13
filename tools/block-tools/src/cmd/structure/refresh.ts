@@ -5,6 +5,8 @@ import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import {
   runStructureForPath,
   formatChanges,
+  reportLogoFindings,
+  LOGO_ERROR,
   expandBlockPaths,
 } from "../../structure/cli/run-structure";
 
@@ -16,6 +18,7 @@ export async function runRefresh(opts: {
   templatesRoot: string;
   logger: MiLogger;
 }): Promise<void> {
+  let anyLogoError = false;
   for (const p of opts.paths) {
     const res = await runStructureForPath({
       blockPath: p,
@@ -26,7 +29,9 @@ export async function runRefresh(opts: {
       log: (m) => opts.logger.info(m),
     });
     opts.logger.info(formatChanges(p, res.changes));
+    if (reportLogoFindings(p, res.logoFindings, opts.logger)) anyLogoError = true;
   }
+  if (anyLogoError) throw new Error(`Structure refresh finished. ${LOGO_ERROR}`);
 }
 
 export function structureRefreshCommand(packageRoot: string): Command {

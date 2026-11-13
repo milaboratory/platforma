@@ -4,6 +4,8 @@ import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import {
   runStructureForPath,
   formatChanges,
+  reportLogoFindings,
+  LOGO_ERROR,
   expandBlockPaths,
 } from "../../structure/cli/run-structure";
 
@@ -23,6 +25,7 @@ export function structureCheckCommand(packageRoot: string): Command {
     const templatesRoot = path.join(packageRoot, "src", "structure", "templates");
 
     let anyChanged = false;
+    let anyLogoError = false;
     for (const p of paths) {
       const res = await runStructureForPath({
         blockPath: p,
@@ -34,6 +37,7 @@ export function structureCheckCommand(packageRoot: string): Command {
       });
       logger.info(formatChanges(p, res.changes));
       if (res.changes.length > 0) anyChanged = true;
+      if (reportLogoFindings(p, res.logoFindings, logger)) anyLogoError = true;
     }
 
     if (anyChanged) {
@@ -41,6 +45,7 @@ export function structureCheckCommand(packageRoot: string): Command {
         "Structure check failed: one or more blocks are out of date. Run `structure refresh`.",
       );
     }
+    if (anyLogoError) throw new Error(`Structure check failed: ${LOGO_ERROR}`);
   });
 
   return cmd;
