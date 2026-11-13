@@ -1,5 +1,6 @@
 import type { ResourceId } from "@milaboratories/pl-middle-layer";
 import { Pl, field, resourceType, toGlobalResourceId } from "@milaboratories/pl-middle-layer";
+import type { TplTestHelpers } from "@platforma-sdk/test";
 import { tplTest } from "@platforma-sdk/test";
 import crypto from "crypto";
 import { Templates } from "../..";
@@ -503,5 +504,136 @@ tplTest.concurrent(
     // spec is ready, data is still computing — body should run
     await mainResult.refreshState();
     expect(await mainResult.awaitStableValue()).eq("specs_ready");
+  },
+);
+
+async function renderMultiHitBundle(helper: TplTestHelpers, family: 1 | 2) {
+  const blockId = family === 1 ? "b1" : "b1/w1";
+  const refs = ["c1", "c2"].map((name) => JSON.stringify({ blockId, name }));
+  let dataField = field(0n as ResourceId, "data");
+
+  const result = await helper.renderTemplate(
+    true,
+    Templates["tpl.bundle-multi-data-unset"],
+    ["main", "first", "second"],
+    async (tx) => {
+      const specMap = tx.createStruct(resourceType("std/map", "1"));
+      for (const [index, ref] of refs.entries()) {
+        tx.createField(field(specMap, ref), "Input");
+        tx.setField(
+          field(specMap, ref),
+          tx.createValue(Pl.JsonObject, JSON.stringify({ name: `col${index + 1}` })),
+        );
+      }
+      tx.lockInputs(specMap);
+
+      const queryResult = tx.createStruct(resourceType("BQueryResult", "1"));
+      tx.createField(field(queryResult, "ops"), "Input");
+      tx.setField(
+        field(queryResult, "ops"),
+        tx.createValue(
+          Pl.JsonObject,
+          JSON.stringify({ first: false, single: false, ...(family === 2 && { family }) }),
+        ),
+      );
+      tx.createField(field(queryResult, "spec"), "Input");
+      tx.setField(field(queryResult, "spec"), specMap);
+      tx.createField(field(queryResult, "data"), "Input");
+      tx.lockInputs(queryResult);
+      dataField = field(await toGlobalResourceId(queryResult), "data");
+
+      const bundle = tx.createStruct(resourceType("PColumnBundle", "1"));
+      tx.createField(field(bundle, "cols"), "Input");
+      tx.setField(field(bundle, "cols"), queryResult);
+      tx.lockInputs(bundle);
+
+      return { input1: await toGlobalResourceId(bundle) };
+    },
+  );
+
+  return { result, refs, dataField };
+}
+
+tplTest.concurrent.for([{ family: 1 as const }, { family: 2 as const }])(
+  "PColumnBundle: multi-hit query with data not set yet, one column still computing (family $family)",
+  async ({ family }, { pl, helper, expect }) => {
+    const { result, refs, dataField } = await renderMultiHitBundle(helper, family);
+
+    const mainResult = result.computeOutput("main", (accessor) => accessor?.getDataAsJson());
+    expect(await mainResult.awaitStableValue()).toStrictEqual({
+      specs: [{ name: "col1" }, { name: "col2" }],
+      dataIsField: [true, true],
+    });
+
+    const first = result.computeOutput("first", (accessor) => accessor?.getDataAsJson());
+    const second = result.computeOutput("second", (accessor) => accessor?.getDataAsJson());
+    await first.refreshState();
+    expect(await first.getValue()).toBeUndefined();
+
+    await pl.withWriteTx("Test", async (tx) => {
+      const computing = tx.createStruct(resourceType("TestComputing", "1"));
+      tx.createField(field(computing, "value"), "Input");
+
+      const dataMap = tx.createStruct(resourceType("std/map", "1"));
+      tx.createField(field(dataMap, refs[0]), "Input");
+      tx.setField(field(dataMap, refs[0]), tx.createValue(Pl.JsonObject, JSON.stringify("data1")));
+      tx.createField(field(dataMap, refs[1]), "Input");
+      tx.setField(field(dataMap, refs[1]), field(computing, "value"));
+      tx.lockInputs(dataMap);
+      tx.setField(dataField, dataMap);
+      await tx.commit();
+    });
+
+    expect(await first.awaitStableValue()).eq("data1");
+    await second.refreshState();
+    expect(await second.getValue()).toBeUndefined();
+  },
+);
+
+tplTest.concurrent(
+  "PColumnBundle: multi-hit query with data not set yet, column without data (family 2)",
+  async ({ pl, helper, expect }) => {
+    const { result, refs, dataField } = await renderMultiHitBundle(helper, 2);
+
+    const mainResult = result.computeOutput("main", (accessor) => accessor?.getDataAsJson());
+    expect((await mainResult.awaitStableValue())?.dataIsField).toStrictEqual([true, true]);
+
+    const first = result.computeOutput("first", (accessor) => accessor?.getDataAsJson());
+    const second = result.computeOutput("second", (accessor) => accessor?.resourceType.name);
+    await second.refreshState();
+    expect(await second.getValue()).toBeUndefined();
+
+    await pl.withWriteTx("Test", async (tx) => {
+      const dataMap = tx.createStruct(resourceType("std/map", "1"));
+      tx.createField(field(dataMap, refs[0]), "Input");
+      tx.setField(field(dataMap, refs[0]), tx.createValue(Pl.JsonObject, JSON.stringify("data1")));
+      tx.lockInputs(dataMap);
+      tx.setField(dataField, dataMap);
+      await tx.commit();
+    });
+
+    expect(await first.awaitStableValue()).eq("data1");
+    expect(await second.awaitStableValue()).eq("BResolveSingleNoResult");
+  },
+);
+
+tplTest.concurrent.for([{ family: 1 as const }, { family: 2 as const }])(
+  "PColumnBundle: multi-hit query with data not set yet, data error (family $family)",
+  async ({ family }, { pl, helper, expect }) => {
+    const { result, dataField } = await renderMultiHitBundle(helper, family);
+
+    const mainResult = result.computeOutput("main", (accessor) => accessor?.getDataAsJson());
+    expect((await mainResult.awaitStableValue())?.dataIsField).toStrictEqual([true, true]);
+
+    const first = result.computeOutput("first", (accessor) => accessor?.getDataAsJson());
+    await first.refreshState();
+    expect(await first.getValue()).toBeUndefined();
+
+    await pl.withWriteTx("Test", async (tx) => {
+      tx.setFieldError(dataField, tx.createError("the_test_error"));
+      await tx.commit();
+    });
+
+    await expect(first.awaitStableValue()).rejects.toThrow(/the_test_error/);
   },
 );

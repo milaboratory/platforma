@@ -1,0 +1,21 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+self.defineOutputs(["main", "first", "second"])
+
+self.awaitState("input1", "PColumnBundle")
+
+self.body(func(inputs) {
+	cols := inputs.input1.getColumns("cols")
+	specs := []
+	dataIsField := []
+	for col in cols {
+		specs = append(specs, col.spec)
+		dataIsField = append(dataIsField, smart.isField(col.data))
+	}
+	return {
+		main: { specs: specs, dataIsField: dataIsField },
+		first: cols[0].data,
+		second: cols[1].data
+	}
+})
