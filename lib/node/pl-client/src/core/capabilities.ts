@@ -42,6 +42,27 @@ export type BackendCapability =
   // written by the executor runner (CPU, RAM, GPU, jobs).
   | "instanceStats:v1";
 
+/**
+ * Client capability tokens that this client implements. The backend lists the
+ * tokens it requires in `MaintenanceAPI.Ping.Response.required_capabilities`;
+ * a client that does not know one of them refuses to work with that backend
+ * (see `ClientUpdateRequiredError`).
+ *
+ * These are client features, not backend features: never put a
+ * `BackendCapability` here. Add a token when the client gets the feature the
+ * backend will start to require, in a release before the backend that requires
+ * it. Never remove a token.
+ */
+export function supportedClientCapabilities(): readonly string[] {
+  return [];
+}
+
+/** Returns the tokens of `required` that this client does not implement, in their order. */
+export function missingClientCapabilities(required: readonly string[] | undefined): string[] {
+  const supported = supportedClientCapabilities();
+  return (required ?? []).filter((capability) => !supported.includes(capability));
+}
+
 /** True iff `capabilities` advertises the requested token. */
 export function hasCapability(
   capabilities: readonly string[] | undefined,

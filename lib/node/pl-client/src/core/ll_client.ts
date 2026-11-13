@@ -30,7 +30,7 @@ import { parsePlJwt } from "../util/pl";
 import { type Dispatcher, interceptors } from "undici";
 import type { Middleware } from "openapi-fetch";
 import { inferAuthRefreshTime } from "./auth";
-import { hasCapability, type BackendCapability } from "./capabilities";
+import { hasCapability, missingClientCapabilities, type BackendCapability } from "./capabilities";
 import { defaultHttpDispatcher } from "@milaboratories/pl-http";
 import type { WireClientProvider, WireClientProviderFactory, WireConnection } from "./wire";
 import { parseHttpAuth } from "@milaboratories/pl-model-common";
@@ -50,7 +50,12 @@ import {
   TxAPI_ServerMessage,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import type { MiLogger } from "@milaboratories/ts-helpers";
-import { isAbortedError, isTransientCallFailure, isUnauthenticated } from "./errors";
+import {
+  ClientUpdateRequiredError,
+  isAbortedError,
+  isTransientCallFailure,
+  isUnauthenticated,
+} from "./errors";
 import { Timestamp } from "../proto-grpc/google/protobuf/timestamp";
 
 export interface PlCallOps {
@@ -192,6 +197,14 @@ export class LLPlClient implements WireClientProviderFactory {
     // warm-up land here. A single transient failure must not fail the whole connect.
     // (Not inside ping() itself: the autodetect path already wraps it in its own retry.)
     if (!pl._serverInfo) await pl.withIdempotentRetry("ping", () => pl.ping());
+
+    // Ping is the first request: refuse a backend that requires client features we lack
+    // before any other request reaches it.
+    const missing = missingClientCapabilities(pl.serverInfo.requiredCapabilities);
+    if (missing.length > 0) {
+      await pl.close();
+      throw new ClientUpdateRequiredError(missing, pl.serverInfo.coreVersion);
+    }
 
     // Install the process-global signature-strictness flag based on backend version.
     setResourceSignaturesRequired(pl.supportsResourceSignatures);
@@ -837,8 +850,8 @@ export class LLPlClient implements WireClientProviderFactory {
     if (cl instanceof GrpcPlApiClient) {
       resp = (await cl.ping({})).response;
     } else {
-      // The REST ping response predates the `capabilities` field (proto field 9).
-      // Old servers omit it; treat absence as empty capability list.
+      // The REST ping response predates the `capabilities` (proto field 9) and
+      // `required_capabilities` (field 10) fields. Old servers omit them; treat absence as empty.
       const pingData = notEmpty(
         (await cl.GET("/v1/ping")).data,
         "REST: empty response for ping request",
@@ -846,6 +859,7 @@ export class LLPlClient implements WireClientProviderFactory {
       resp = {
         ...(pingData as unknown as grpcTypes.MaintenanceAPI_Ping_Response),
         capabilities: (pingData as any).capabilities ?? [],
+        requiredCapabilities: (pingData as any).requiredCapabilities ?? [],
       };
     }
     this.recordRtt(performance.now() - startedAt);

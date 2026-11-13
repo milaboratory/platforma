@@ -991,6 +991,24 @@ export interface components {
        *      All list see pl/platform/api/plapiserver/server_capabilities.go
        */
       capabilities: string[];
+      /**
+       * @description Capabilities that every client must implement to work with this server.
+       *      Each entry is an opaque token "<feature>:<version>". These tokens are
+       *      a separate set from the 'capabilities' field above: they name client
+       *      features, not server features.
+       *
+       *      Ping is the first request of a client. A client that does not know one
+       *      or more tokens in this list is not compatible with this server: it must
+       *      stop and tell the user to update the client. It must not send other
+       *      requests to this server.
+       *
+       *      The server adds a token when it removes support for clients that do not
+       *      implement the feature. An empty list, or an unset field on old servers,
+       *      requires nothing.
+       *
+       *      All list see pl/platform/api/plapiserver/server_capabilities.go
+       */
+      requiredCapabilities: string[];
     };
     MiscAPI_ListResourceTypes_Response: {
       types: components["schemas"]["ResourceType"][];
