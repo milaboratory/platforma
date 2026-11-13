@@ -12,13 +12,6 @@ pnpm build
 # Testing
 
 For test running you have to launch platfrom backend first:
-```bash 
-pl-dev svc create local s3 dev \
-  --storage-library="$(pwd)/assets/" \
-  --auth-enabled;
-pl-dev svc up dev
-```
-Binary way
 ```bash
 ./platforma --license *** --data-library-fs=library=/path/to/platforma/assets
 ```

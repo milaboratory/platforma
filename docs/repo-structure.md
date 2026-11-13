@@ -3,7 +3,6 @@
 - `@platforma-sdk/model` = `sdk/model`
 - `@platforma-sdk/r-builder` = `tools/r-builder`
 - `@platforma-sdk/block-tools` = `tools/block-tools`
-- `@platforma-sdk/bootstrap` = `tools/pl-bootstrap`
 - `@platforma-sdk/tengo-builder` = `tools/tengo-builder`
 - `@platforma-sdk/package-builder` = `tools/package-builder`
 - `@milaboratories/ts-configs` = `tools/ts-configs`
