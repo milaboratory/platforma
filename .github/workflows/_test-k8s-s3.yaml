@@ -128,6 +128,8 @@ jobs:
           # Each command is a Job, so a case spends most of the default 60s scheduling pods
           # and pulling images.
           LONG_TEST_TIMEOUT: "300000"
+          # The default budget of a test, also spent on scheduling pods.
+          PL_TEST_TIMEOUT: "60000"
           DOCKER_BUILD_SUMMARY: "false"
           # The backend reads in-repo software as images. The build pushes them to Quay, as
           # `_test.yaml` does, and writes the containers.pl-open.science name into the .sw.json;
