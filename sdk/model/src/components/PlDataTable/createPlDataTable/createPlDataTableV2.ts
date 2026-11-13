@@ -30,7 +30,14 @@ import type { PlDataTableStateV2 } from "../state-migration";
 import { getMatchingLabelColumns } from "../labels";
 import { collectFilterSpecColumns, traverseFilterSpec } from "../../../filters/traverse";
 import { createPTableDefV2 } from "./createPTableDefV2";
-import { isColumnOptional } from "./utils";
+import { isColumnHidden, isColumnOptional } from "./utils";
+import {
+  collectSearchColumns,
+  createSearchFilter,
+  createSheetFilters,
+  joinFilters,
+  readPlDataTableUserParams,
+} from "../tableParams";
 import { DataColumn } from "../../../columns";
 import { createColumnResolver, type ColumnResolver } from "../columnResolver";
 import { isNil, type Nil } from "@milaboratories/helpers";
@@ -61,7 +68,7 @@ export function createPlDataTableV2<A, U>(
 ): PlDataTableModel | undefined {
   if (columns.length === 0) return undefined;
 
-  const tableStateNormalized = upgradePlDataTableStateV2(tableState);
+  const params = readPlDataTableUserParams(upgradePlDataTableStateV2(tableState));
   const allLabelColumns = getAllLabelColumns(ctx.resultPool) ?? [];
 
   let fullLabelColumns = getMatchingLabelColumns(columns, allLabelColumns);
@@ -84,8 +91,30 @@ export function createPlDataTableV2<A, U>(
 
   const resolver = createColumnResolver(fullColumns.map((c) => DataColumn.fromColumn(c)));
 
+  const searchFilter = createSearchFilter(
+    params.searchString,
+    collectSearchColumns({
+      columns: fullColumns.map((c) => ({
+        id: c.id,
+        spec: c.spec,
+        visibility: isColumnHidden(c.spec)
+          ? "hidden"
+          : isColumnOptional(c.spec)
+            ? "optional"
+            : "default",
+      })),
+      isAxisHidden: (axis) => isColumnHidden(axis),
+      sheetAxes: params.sheetsState.map((sheet) => sheet.axisId),
+      hiddenColIds: params.hiddenColIds,
+    }),
+  );
+
   // -- Filtering: rewrite via resolver, throw if any reference is unresolved --
-  const rawFilters = tableStateNormalized.pTableParams.filters;
+  const rawFilters = joinFilters([
+    ...createSheetFilters(params.sheetsState),
+    params.userFilters,
+    searchFilter,
+  ]);
   const rawDefaultFilters = options?.filters ?? undefined;
   const filters = remapFiltersThrowing(rawFilters, resolver, "filter");
   const defaultFilters = remapFiltersThrowing(
@@ -95,7 +124,7 @@ export function createPlDataTableV2<A, U>(
   );
 
   // -- Sorting: rewrite via resolver, throw if any reference is unresolved --
-  const userSorting = tableStateNormalized.pTableParams.sorting;
+  const userSorting = params.sorting;
   const rawSorting = (isNil(userSorting) ? options?.sorting : userSorting) ?? [];
   const sorting = remapSortingThrowing(rawSorting, resolver);
 
@@ -118,7 +147,7 @@ export function createPlDataTableV2<A, U>(
       // Inner join works as a filter - all columns must be present
       if (coreJoinType === "inner") return [];
 
-      const hiddenColIds = tableStateNormalized.pTableParams.hiddenColIds;
+      const hiddenColIds = params.hiddenColIds;
       if (hiddenColIds !== null) {
         return hiddenColIds
           .filter((s): s is PTableColumnIdColumn => s.type === "column")
@@ -176,7 +205,7 @@ export function createPlDataTableV2<A, U>(
   if (!visibleHandle) return undefined;
 
   return {
-    sourceId: tableStateNormalized.pTableParams.sourceId,
+    sourceId: params.sourceId,
     fullTableHandle: fullHandle,
     fullPframeHandle: pframeHandle,
     visibleTableHandle: visibleHandle,

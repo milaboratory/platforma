@@ -1,5 +1,129 @@
 # @milaboratories/pl-tree
 
+## 1.18.3
+
+### Patch Changes
+
+- Updated dependencies [41cdddf]
+  - @milaboratories/pl-client@3.24.0
+  - @milaboratories/pl-errors@1.4.64
+
+## 1.18.2
+
+### Patch Changes
+
+- af78d3a: Fix a memory leak on the gRPC wire: every transaction and request that got a long-lived `abortSignal` stayed in memory until that signal aborted. The project refresh loop and the tree synchronization pass such a signal since pl-client 3.21.1, so an idle middle layer grew by about 14 kB of heap plus the size of the response per transaction.
+
+  - `PlClient` transactions listen to `ops.abortSignal` themselves and stop listening when the transaction ends. An abort still ends a running transaction at once.
+  - `listUserResources`, `ClientLogs.lastLines`, `ClientLogs.readText`, `ClientProgress.getStatus`, and the download URL request detach from the caller's signal when the request ends.
+  - The download URL request honors its abort signal on the REST wire too.
+  - `LLPlClient.createTx` throws the abort reason when `ops.abortSignal` is already aborted.
+  - **BREAKING:** pl-client now needs Node 24 at runtime, as its `engines` field already says: `withCallAbortSignal` uses `DisposableStack`. On Node 22 the wrapped requests throw `ReferenceError: DisposableStack is not defined`. A block whose CI runs Node 22 or older must move to Node 24 before it takes this version of `@platforma-sdk/test`.
+  - **BREAKING:** `callAbortSignal` is removed: the signal it returned stayed in memory in the same way. Use the new `withCallAbortSignal`. pl-middle-layer re-exports pl-client, and `@platforma-sdk/test` re-exports pl-middle-layer as `ML`, so the same applies to both.
+
+- Updated dependencies [af78d3a]
+  - @milaboratories/pl-client@3.23.0
+  - @milaboratories/pl-errors@1.4.63
+
+## 1.18.1
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.22.2
+- @milaboratories/pl-errors@1.4.62
+
+## 1.18.0
+
+### Minor Changes
+
+- 9aea514: `Project.watchBlockStatus()` folds a block's action-context tree into a live `BlockStatusSummary`, with the run's jobs counted per state as the backend reports it, one computable per context so a report re-reads only its own context, and the project tree prunes the action-context fields. `PlTreeNodeAccessor` gains `listKeyValuesAsString(prefix)` and `listFields()`.
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-client@3.22.1
+  - @milaboratories/pl-errors@1.4.61
+
+## 1.17.2
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/computable@2.9.10
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pl-errors@1.4.60
+
+## 1.17.1
+
+### Patch Changes
+
+- 5adb3c8: Close the middle layer and its projects without waiting for request deadlines when the backend stops answering. Before, `MiddleLayer.close()` and `closeProject()` waited for running requests up to their deadlines (60 s for a project write, 300 s for a tree read).
+
+  - `SynchronizedTreeState.terminate()` cancels the running tree read and discovery request.
+  - `Project` close cancels the running project refresh and its wait for the project lock.
+  - The upload driver's `terminate()` cancels the running upload status requests.
+  - `PlClient` transactions stop waiting for their lock when their `abortSignal` fires.
+  - `listUserResources` and `listSharedResourcesByType` take an `abortSignal`.
+  - The upload status request now applies its timeout on the REST wire protocol too.
+  - A cancelled request no longer leaves unhandled promise rejections or an uncaught "cannot resolve rejected" error behind. `PlTransaction` reads return their tracked promise, and the gRPC interceptor drops headers that arrive after a call ended.
+  - A transaction whose open fails with an abort or a deadline no longer logs a warning; the caller still gets the error.
+
+- Updated dependencies [5adb3c8]
+- Updated dependencies [f08961f]
+- Updated dependencies [0692c00]
+  - @milaboratories/pl-client@3.21.1
+  - @milaboratories/pl-errors@1.4.59
+
+## 1.17.0
+
+### Minor Changes
+
+- f7d4c98: Expose the canonical id of a resource as `BasicResourceData.canonicalId`, and pin with a regression test that a committed pure resource reports a non-empty one.
+
+### Patch Changes
+
+- Updated dependencies [f7d4c98]
+  - @milaboratories/pl-client@3.21.0
+  - @milaboratories/pl-errors@1.4.58
+
+## 1.16.9
+
+### Patch Changes
+
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-client@3.20.0
+  - @milaboratories/pl-errors@1.4.57
+
+## 1.16.8
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.19.4
+- @milaboratories/pl-errors@1.4.56
+
+## 1.16.7
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.19.3
+- @milaboratories/pl-errors@1.4.55
+
+## 1.16.6
+
+### Patch Changes
+
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/computable@2.9.9
+  - @milaboratories/pl-client@3.19.2
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/pl-errors@1.4.54
+
 ## 1.16.5
 
 ### Patch Changes

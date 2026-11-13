@@ -7,3 +7,4 @@ export * from "./column_recipes";
 export * from "./column";
 export * from "./utils";
 export * from "./peer_links";
+export * from "./column_values";

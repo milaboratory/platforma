@@ -1,5 +1,46 @@
 # @platforma-sdk/bootstrap
 
+## 6.0.0
+
+### Major Changes
+
+- e882294: `pl-dev` starts a local backend (`start local`, `start local s3`, `svc create local`, `svc create local s3`) with command-line options instead of a generated `config.yaml`, as the backend no longer reads a YAML config. The `--config <path>` option is removed. Storage IDs (`main`, `work`, `library`) stay as before, so existing instances keep their data. The backend always requires authentication now: the instance uses the `users.htpasswd` file (or the LDAP server) as before, with a master secret generated once into `<storage>/master-secret`. A license passed as a value is written to `<storage>/license` and passed as a file. Requires a backend with `--primary-storage-id` and `--work-storage-id`.
+
+### Patch Changes
+
+- e40ccc1: Remove support for the Desktop App built-in backend. `@milaboratories/pl-deployments`, `@milaboratories/pl-config` and `@milaboratories/pl-healthcheck` are no longer published; `@milaboratories/pl-middle-layer` no longer re-exports `@milaboratories/pl-deployments`. The `localProjections` option is removed from the middle layer and driver kit options, `createDownloadClient` and `LsDriver.init` no longer take local projections, and `ClientDownload` no longer reads `storage://` URLs from the local disk: `LocalStorageProjection`, `parseLocalUrl`, `getFullPath`, `newLocalStorageIdsToRoot`, `WrongLocalFileUrl` and `UnknownStorageError` are gone. The LS driver always creates upload handles for local files and lists a data library with id `root` like any other. `pl-dev` keeps the default backend version in its own `pl-version`.
+
+## 5.3.54
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-deployments@3.0.26
+
+## 5.3.53
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@3.0.25
+
+## 5.3.52
+
+### Patch Changes
+
+- @milaboratories/pl-deployments@3.0.24
+
+## 5.3.51
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- 615bd8c: Replace `decompress` (path traversal advisories, no fixed release) with `yauzl` for zip archives and `tar` for the block boilerplate. Zip extraction now fails on entries and symlinks that lead outside the target folder, on entries written through a symlink, and on duplicate entries.
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/pl-deployments@3.0.23
+
 ## 5.3.50
 
 ### Patch Changes

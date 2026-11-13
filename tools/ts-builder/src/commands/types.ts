@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { buildTsconfig } from "../configs/utils/buildTsconfig";
 import { existsSync } from "node:fs";
 import { executeCommand, getGlobalOptions, requireTarget, resolveTypeChecker } from "./utils/index";
 import type { GlobalOptions } from "./utils/index";
@@ -30,7 +31,10 @@ export async function runTypeCheck(globalOpts: GlobalOptions, project: string): 
 
 export const typesCommand = new Command("type-check")
   .description("Type check the project")
-  .option("-p, --project <path>", "Path to tsconfig.json", "./tsconfig.json")
+  .option(
+    "-p, --project <path>",
+    "Path to tsconfig (default: tsconfig.build.json if present, else tsconfig.json)",
+  )
   .action(async (options, command) => {
-    await runTypeCheck(getGlobalOptions(command), options.project);
+    await runTypeCheck(getGlobalOptions(command), options.project ?? buildTsconfig());
   });

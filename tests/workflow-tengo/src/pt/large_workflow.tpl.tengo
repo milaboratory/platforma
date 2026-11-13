@@ -1,0 +1,36 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+file := import("@platforma-sdk/workflow-tengo:file")
+text := import("text")
+
+self.defineOutputs("out")
+
+// The workflow JSON of this template is larger than the gRPC message limit of the
+// platform (4 MiB): 1000 steps with a literal of 5000 characters each. Without
+// compression, pt.run() cannot create the resource that holds the workflow.
+STEPS := 1000
+FILLER_SIZE := 5000
+
+self.body(func(inputs) {
+	wf := pt.workflow()
+
+	df := wf.frame(inputs.inputTsv, {
+		xsvType: "tsv"
+	})
+
+	// Each step makes a separate table from the same input. Only the last table
+	// goes to the output. Polars does not have to run a long chain of steps.
+	filler := text.repeat("x", FILLER_SIZE)
+	last := undefined
+	for i := 0; i < STEPS; i++ {
+		last = df.withColumns(pt.lit(filler + string(i)).alias("filler"))
+	}
+
+	last.select(pt.col("a"), pt.col("filler").strLenChars().alias("n")).save("output.tsv")
+
+	ptablerResult := wf.run()
+
+	return {
+		out: file.exportFile(ptablerResult.getFile("output.tsv"))
+	}
+})

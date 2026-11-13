@@ -1,5 +1,470 @@
 # @milaboratories/pl-middle-layer
 
+## 2.6.3
+
+### Patch Changes
+
+- Updated dependencies [7ff7219]
+  - @platforma-sdk/block-tools@2.20.0
+
+## 2.6.2
+
+### Patch Changes
+
+- Updated dependencies [41cdddf]
+  - @milaboratories/pl-client@3.24.0
+  - @milaboratories/pl-model-backend@1.4.49
+  - @milaboratories/pl-drivers@2.0.4
+  - @milaboratories/pl-errors@1.4.64
+  - @milaboratories/pl-tree@1.18.3
+  - @platforma-sdk/block-tools@2.19.4
+  - @platforma-sdk/workflow-tengo@6.22.3
+
+## 2.6.1
+
+### Patch Changes
+
+- Updated dependencies [fd21724]
+  - @platforma-sdk/model@1.90.2
+
+## 2.6.0
+
+### Minor Changes
+
+- af78d3a: Fix a memory leak on the gRPC wire: every transaction and request that got a long-lived `abortSignal` stayed in memory until that signal aborted. The project refresh loop and the tree synchronization pass such a signal since pl-client 3.21.1, so an idle middle layer grew by about 14 kB of heap plus the size of the response per transaction.
+
+  - `PlClient` transactions listen to `ops.abortSignal` themselves and stop listening when the transaction ends. An abort still ends a running transaction at once.
+  - `listUserResources`, `ClientLogs.lastLines`, `ClientLogs.readText`, `ClientProgress.getStatus`, and the download URL request detach from the caller's signal when the request ends.
+  - The download URL request honors its abort signal on the REST wire too.
+  - `LLPlClient.createTx` throws the abort reason when `ops.abortSignal` is already aborted.
+  - **BREAKING:** pl-client now needs Node 24 at runtime, as its `engines` field already says: `withCallAbortSignal` uses `DisposableStack`. On Node 22 the wrapped requests throw `ReferenceError: DisposableStack is not defined`. A block whose CI runs Node 22 or older must move to Node 24 before it takes this version of `@platforma-sdk/test`.
+  - **BREAKING:** `callAbortSignal` is removed: the signal it returned stayed in memory in the same way. Use the new `withCallAbortSignal`. pl-middle-layer re-exports pl-client, and `@platforma-sdk/test` re-exports pl-middle-layer as `ML`, so the same applies to both.
+
+### Patch Changes
+
+- Updated dependencies [af78d3a]
+  - @milaboratories/pl-client@3.23.0
+  - @milaboratories/pl-drivers@2.0.3
+  - @milaboratories/pl-tree@1.18.2
+  - @milaboratories/pl-model-backend@1.4.48
+  - @milaboratories/pl-errors@1.4.63
+  - @platforma-sdk/block-tools@2.19.3
+  - @platforma-sdk/workflow-tengo@6.22.3
+
+## 2.5.0
+
+### Minor Changes
+
+- 92cf16f: New `ColumnsCollection.discoverRoots`: find the columns the given ones hang off
+
+  `discover` starts from anchors and walks linkers down to what they contain (anchored on `sample`, it reaches `cell`). There was no way to go the other way, from `cell` to the `sample`-level columns above it. `discoverRoots` takes the columns you have and returns the roots they hang off:
+
+  ```ts
+  const found = collection.discoverRoots({
+    leaves: [cellRef],
+    mode: "enrichment",
+    maxHops: 4,
+  });
+  // found: Array<{ root: ColumnRecipe; leaf: ColumnRecipe; path: ColumnRecipe[] }>
+  ```
+
+  Each entry is exactly what `discover({ anchors: { r: root } })` would return for the leaf: `leaf` is the requested column as a discovered column carrying the linker path and qualifications, so the table is built from `root` as the anchor plus `leaf`, the same way as for any discovered column. `discover` is unchanged.
+
+  The engine side is the new `discoverRoots` request of the spec frame (`PFrameSpecDriver.discoverRoots`), from milaboratory/pframes-rs#295.
+
+### Patch Changes
+
+- Updated dependencies [ec020f0]
+- Updated dependencies [e628f46]
+- Updated dependencies [92cf16f]
+  - @platforma-sdk/block-tools@2.19.2
+  - @platforma-sdk/workflow-tengo@6.22.3
+  - @milaboratories/pl-model-common@1.56.0
+  - @milaboratories/pl-model-middle-layer@1.40.0
+  - @milaboratories/pf-spec-driver@1.6.0
+  - @milaboratories/columns-collection-driver@0.3.0
+  - @platforma-sdk/model@1.90.0
+  - @milaboratories/pf-driver@1.9.18
+  - @milaboratories/pl-client@3.22.2
+  - @milaboratories/pl-crash-recorder@0.3.12
+  - @milaboratories/pl-drivers@2.0.2
+  - @milaboratories/pl-model-backend@1.4.47
+  - @milaboratories/pl-errors@1.4.62
+  - @milaboratories/pl-tree@1.18.1
+
+## 2.4.2
+
+### Patch Changes
+
+- Updated dependencies [470744c]
+  - @platforma-sdk/model@1.89.0
+
+## 2.4.1
+
+### Patch Changes
+
+- Updated dependencies [b556b15]
+  - @platforma-sdk/model@1.88.16
+
+## 2.4.0
+
+### Minor Changes
+
+- 1bea6a2: Add `watchBlockStatusTree`: the live action-context tree of a block run with per-context state, readings and subtree counters plus the heaviest branches, built from the same per-context folds as the summary. A context's children are present only while it is expanded via `setBlockStatusTreeExpanded`.
+
+### Patch Changes
+
+- Updated dependencies [1bea6a2]
+  - @milaboratories/pl-model-middle-layer@1.39.0
+  - @milaboratories/pf-driver@1.9.17
+  - @platforma-sdk/model@1.88.15
+  - @platforma-sdk/block-tools@2.19.1
+  - @milaboratories/pf-spec-driver@1.5.17
+
+## 2.3.0
+
+### Minor Changes
+
+- 9aea514: `Project.watchBlockStatus()` folds a block's action-context tree into a live `BlockStatusSummary`, with the run's jobs counted per state as the backend reports it, one computable per context so a report re-reads only its own context, and the project tree prunes the action-context fields. `PlTreeNodeAccessor` gains `listKeyValuesAsString(prefix)` and `listFields()`.
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+- Updated dependencies [5744a50]
+- Updated dependencies [581be9f]
+  - @milaboratories/pl-model-common@1.55.2
+  - @milaboratories/pl-client@3.22.1
+  - @milaboratories/pl-tree@1.18.0
+  - @milaboratories/pl-model-middle-layer@1.38.0
+  - @platforma-sdk/block-tools@2.19.0
+  - @platforma-sdk/workflow-tengo@6.22.2
+  - @milaboratories/columns-collection-driver@0.2.15
+  - @milaboratories/pf-spec-driver@1.5.16
+  - @milaboratories/pf-driver@1.9.16
+  - @milaboratories/pl-crash-recorder@0.3.11
+  - @milaboratories/pl-drivers@2.0.1
+  - @platforma-sdk/model@1.88.14
+  - @milaboratories/pl-model-backend@1.4.46
+  - @milaboratories/pl-errors@1.4.61
+
+## 2.2.0
+
+### Minor Changes
+
+- 82dd041: Rename `InstanceStats.availability` to `status` (type `InstanceStatsStatus`), and its "read" value to "ok".
+
+### Patch Changes
+
+- Updated dependencies [82dd041]
+  - @milaboratories/pl-model-middle-layer@1.37.0
+  - @milaboratories/pf-driver@1.9.15
+  - @platforma-sdk/model@1.88.13
+  - @platforma-sdk/block-tools@2.18.1
+  - @milaboratories/pf-spec-driver@1.5.15
+
+## 2.1.2
+
+### Patch Changes
+
+- Updated dependencies [187228d]
+  - @platforma-sdk/block-tools@2.18.0
+
+## 2.1.1
+
+### Patch Changes
+
+- Updated dependencies [c78669f]
+  - @platforma-sdk/block-tools@2.17.9
+
+## 2.1.0
+
+### Minor Changes
+
+- d3a7b19: The block subtitle now renders with the result pool, so `.subtitle()` can name the inputs a block reads (for example `ctx.resultPool.getPColumnSpecByRef(ref)`) without the UI caching that text in block data. The title stays args-only.
+
+### Patch Changes
+
+- Updated dependencies [d3a7b19]
+  - @platforma-sdk/model@1.88.10
+
+## 2.0.0
+
+### Major Changes
+
+- e40ccc1: Remove support for the Desktop App built-in backend. `@milaboratories/pl-deployments`, `@milaboratories/pl-config` and `@milaboratories/pl-healthcheck` are no longer published; `@milaboratories/pl-middle-layer` no longer re-exports `@milaboratories/pl-deployments`. The `localProjections` option is removed from the middle layer and driver kit options, `createDownloadClient` and `LsDriver.init` no longer take local projections, and `ClientDownload` no longer reads `storage://` URLs from the local disk: `LocalStorageProjection`, `parseLocalUrl`, `getFullPath`, `newLocalStorageIdsToRoot`, `WrongLocalFileUrl` and `UnknownStorageError` are gone. The LS driver always creates upload handles for local files and lists a data library with id `root` like any other. `pl-dev` keeps the default backend version in its own `pl-version`.
+
+### Patch Changes
+
+- Updated dependencies [e40ccc1]
+  - @milaboratories/pl-drivers@2.0.0
+
+## 1.77.0
+
+### Minor Changes
+
+- efac5cc: `MiddleLayer.instanceStats` reads the backend's instance statistics context (allocated CPU, RAM, GPUs and GPU memory out of capacity, running and queued jobs) every 10s, only when the backend advertises `instanceStats:v1`. `PlClient.listSharedResourcesByType` lists the resources of a type shared with the user.
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/pl-model-middle-layer@1.36.0
+  - @milaboratories/columns-collection-driver@0.2.14
+  - @milaboratories/pl-crash-recorder@0.3.10
+  - @milaboratories/pf-spec-driver@1.5.14
+  - @milaboratories/pl-deployments@3.0.26
+  - @milaboratories/computable@2.9.10
+  - @milaboratories/pl-drivers@1.16.43
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pf-driver@1.9.14
+  - @milaboratories/pl-errors@1.4.60
+  - @platforma-sdk/workflow-tengo@6.22.1
+  - @milaboratories/pl-model-backend@1.4.45
+  - @platforma-sdk/block-tools@2.17.8
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/pl-http@1.2.6
+  - @milaboratories/pl-tree@1.17.2
+  - @milaboratories/helpers@1.14.7
+  - @platforma-sdk/model@1.88.8
+  - @milaboratories/resolve-helper@1.1.3
+
+## 1.76.5
+
+### Patch Changes
+
+- 5adb3c8: Close the middle layer and its projects without waiting for request deadlines when the backend stops answering. Before, `MiddleLayer.close()` and `closeProject()` waited for running requests up to their deadlines (60 s for a project write, 300 s for a tree read).
+
+  - `SynchronizedTreeState.terminate()` cancels the running tree read and discovery request.
+  - `Project` close cancels the running project refresh and its wait for the project lock.
+  - The upload driver's `terminate()` cancels the running upload status requests.
+  - `PlClient` transactions stop waiting for their lock when their `abortSignal` fires.
+  - `listUserResources` and `listSharedResourcesByType` take an `abortSignal`.
+  - The upload status request now applies its timeout on the REST wire protocol too.
+  - A cancelled request no longer leaves unhandled promise rejections or an uncaught "cannot resolve rejected" error behind. `PlTransaction` reads return their tracked promise, and the gRPC interceptor drops headers that arrive after a call ended.
+  - A transaction whose open fails with an abort or a deadline no longer logs a warning; the caller still gets the error.
+
+- 0692c00: `MiddleLayer.close()` now stops the logs drivers, so they no longer poll the backend after a disconnect.
+
+  - `LogsDriver` is async-disposable, so the driver kit stops it on close.
+  - Disposing `LogsStreamDriver` cancels its running log requests and its polling loop. A cancelled request ends quietly.
+  - `ClientLogs.lastLines` and `readText` honor `options.abort`, on gRPC and REST.
+  - `LogsStreamDriver` takes a `LogsStreamClient`: any object with the `lastLines` and `readText` methods of `ClientLogs`.
+  - pl-client exports `callAbortSignal`, which gives one call an abort signal of its own.
+
+- Updated dependencies [5adb3c8]
+- Updated dependencies [f08961f]
+- Updated dependencies [0692c00]
+  - @milaboratories/pl-client@3.21.1
+  - @milaboratories/pl-tree@1.17.1
+  - @milaboratories/pl-drivers@1.16.42
+  - @milaboratories/pl-model-backend@1.4.44
+  - @milaboratories/pl-errors@1.4.59
+  - @platforma-sdk/block-tools@2.17.7
+  - @platforma-sdk/workflow-tengo@6.22.0
+
+## 1.76.4
+
+### Patch Changes
+
+- Updated dependencies [daa13ed]
+- Updated dependencies [bb23557]
+  - @platforma-sdk/workflow-tengo@6.22.0
+
+## 1.76.3
+
+### Patch Changes
+
+- Updated dependencies [fe4ff52]
+  - @platforma-sdk/workflow-tengo@6.21.1
+
+## 1.76.2
+
+### Patch Changes
+
+- Updated dependencies [f7d4c98]
+- Updated dependencies [3ba694e]
+  - @milaboratories/pl-client@3.21.0
+  - @milaboratories/pl-tree@1.17.0
+  - @platforma-sdk/workflow-tengo@6.21.0
+  - @milaboratories/pl-model-backend@1.4.43
+  - @milaboratories/pl-drivers@1.16.41
+  - @milaboratories/pl-errors@1.4.58
+  - @platforma-sdk/block-tools@2.17.6
+
+## 1.76.1
+
+### Patch Changes
+
+- @platforma-sdk/block-tools@2.17.5
+
+## 1.76.0
+
+### Minor Changes
+
+- f7a9989: Read the block action context tree. `Project.getBlockActionContext(blockId, mode)` returns the action context of a block render with its baggage, transitions, readings and child renders, read in one transaction. The MCP server exposes it as the `get_block_action_context` tool, cut to `maxDepth` levels and the latest `maxTransitions` per node, with `contextId` to read a subtree.
+- 9089e12: Create the action context of a heavy block render. The middle layer creates an `ActionContext` resource with `name`, `block-pack`, `block-id` and a new random `run-id` in the transaction that creates the render, points the render's optional `actionContext` service field to it, and keeps it in the `prodActionContext`/`stagingActionContext` block fields, because the render is garbage collected once its outputs resolve. It does this only when the backend advertises `optionalFieldsInSchemas:v1`, so older backends are not affected. `PlTransaction.hasCapability` tells which capabilities the backend of a transaction advertises.
+
+### Patch Changes
+
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-client@3.20.0
+  - @milaboratories/pl-model-backend@1.4.42
+  - @milaboratories/pl-drivers@1.16.40
+  - @milaboratories/pl-errors@1.4.57
+  - @milaboratories/pl-tree@1.16.9
+  - @platforma-sdk/block-tools@2.17.4
+  - @platforma-sdk/workflow-tengo@6.20.0
+
+## 1.75.0
+
+### Minor Changes
+
+- 9901322: Args issues: `BlockModelV3.argsIssues(({ args, data }) => ArgsIssue[])` finds what keeps a block from running, so `args()` can build args even from incomplete data instead of throwing. It is set after `.args()` and throws when called before it; setting `.args()` again drops it. It is called after `args()`, with its result and the block data.
+  `BlockModelV3.prerunArgsIssues(({ prerunArgs, data }) => ArgsIssue[])` does the same for staging. It is set after `.prerunArgs()` and throws when called before it, `.args()` alone included; setting `.prerunArgs()` again drops it. It is called after `prerunArgs()`, with its result and the block data, and not when `prerunArgs()` returned `undefined`, which skips staging as before. `prerunArgs` is typed by what `.prerunArgs()` returns: `.prerunArgs()` is now generic in its return type, and `BlockModelV3` has a trailing `PrerunArgs` type parameter, `unknown` by default.
+  `ArgsIssue` is `{ severity: "error" | "warning"; message: string }`, in `@milaboratories/pl-model-common` with `parseArgsIssue` and `parseArgsIssues` for values of unknown origin; any severity other than `"warning"` is read as an error. An error of `argsIssues` blocks Run, an error of `prerunArgsIssues` skips staging; a warning does neither. A throw from either, or a result that is not a list of issues, counts as one error carrying the thrown or parser message. A throw from `args()` or `prerunArgs()` keeps its meaning: no args, no staging.
+  The `__pl_args_derive` callback returns `{ value: args, issues }` when nothing blocks the run, `issues` being the warnings; `{ error, args, issues }` when `argsIssues` found errors, `error` joining their messages with "; "; and `{ error }`, as before, when `args()` threw.
+  The `__pl_prerunArgs_derive` callback returns `{ value: prerunArgs, issues }` to stage, `issues` being the warnings; `{ error, issues }` when errors were found, `error` joining their messages; and `{ error }`, as before, when the lambda building the prerun args threw. A block with its own `.prerunArgs()` is checked by its `prerunArgsIssues`, and its `argsIssues` is not consulted. A block without its own `.prerunArgs()` is staged with its args only while its `argsIssues` finds no errors in them.
+  A block without `argsIssues` and `prerunArgsIssues` derives the same args and prerun args as before; the results only carry an extra `issues: []`.
+  The middle layer stores the block's args in `currentArgs` whenever `args()` produced them, and with every args it derives for a block with model API version 2, the errors `argsIssues` found in them in the block's `inputsValid` project field, as `{ argsFingerprint, errors }`: `errors` is the list of error issues, empty when the block may run, `argsFingerprint` the SHA-256 of the canonical JSON of the args they were found in. The field exists while the block has args, is rewritten only when its content changes, is duplicated with the block and deleted with it, and is deleted when a block pack update moves the block to model API version 1. A field that is missing, cannot be read, or whose fingerprint does not match the current args — a project saved before this middle layer, or args written by a middle layer that does not know the field — records no errors, so the block is runnable as before: such a middle layer refuses every block whose `argsIssues` could find errors, and the field is neither derived again nor rewritten on its account. A block with args errors is not runnable: its `inputsValid` in the project overview is false, so its Run is disabled, and rendering its production throws, as it does for a block without args. Its dependent blocks may not run while it needs to run itself; a block whose results are up to date keeps feeding them. Other blocks keep the earlier rule: a block that is not valid — one with model API version 1 whose `inputsValid` is false, or one whose code cannot run here — keeps every block below it from running. Errors of `prerunArgsIssues` are not stored: they leave the block without `currentPrerunArgs`, which skips its staging, as a failed derivation does.
+  A block whose model has no `argsIssues`, or was built with an earlier SDK, behaves as before: args that `args()` returns are runnable, and a throw leaves it without args and not runnable; with model API version 2, its `inputsValid` field holds no errors. A middle layer that knows args issues reads the results of older models the same as before.
+  The SDK sets the new `requiresArgsIssues` feature flag (`BlockCodeKnownFeatureFlags`) on every block it builds, as it does `requiresModelAPIVersion`. A block built with this SDK therefore requires an app whose middle layer supports args issues, which registers `requiresArgsIssues` among its runtime capabilities: an older desktop app refuses the block, since it would take incomplete args as runnable and run them.
+  Older middle layers read only `error` and `value` of both derive results, so a block without the flag whose prerun args have errors is not staged there, as with a throwing `prerunArgs()`.
+  Model outputs, sections, titles and other lambdas that read `ctx.args` now see the incomplete args of a block that uses `argsIssues`, where before they saw none.
+- 8d28bcd: Column value references: `ColumnValueId` names one value of a column a block picked, and template relocation repoints the producer block inside it. The value is always a string: a value of a number column is its decimal string (`String(cell)`), so the same value picked from a number cell and from a text cell is the same id, and ids compare with `===`. `createColumnValueId` refuses a value that is not a string, and an id whose value is not a string is not a `ColumnValueId`.
+  A value picker is made like a data table, in two halves. The model gives `createColumnValueOptions({ valueColumn, labelColumn? }, { ctx? })` as an output — each column an id, a column or a recipe — a frame holding the value column and the label column, `resolving` while either is, `absent` once the value column is gone (a gone label column leaves the values to label themselves), each with the value column it was made for. The UI reads it through the frame, so a column of any storage format can be picked from: `readColumnValueOptions(model)` gives the distinct non-missing values as `{ value: ColumnValueId, label }` options in natural order of labels, each labelled by the label column in its row or by itself (`deriveColumnValueOptions`, `deriveLabelledColumnValueOptions`). In Vue, as with a table, the output reaches the dropdown through settings: `usePlColumnValueSettings({ source, valueColumn })` makes them out of the output and the column picked now — `none`, `pending` until the output is computed for that pick, `absent`, or `present` — and `<PlColumnValueDropdown>` and `<PlColumnValueDropdownMulti>` take them as `settings`: `PlDropdown` and `PlDropdownMulti` over the values, loading until they are read and telling why a column offers none; `exclude` leaves out values, and other attributes and the slots go to the dropdown.
+  `columnValueLabel(picked)` names a picked value to the user: the value a column value id picks, or the string as is when it is not such an id.
+  In workflows, `workflow.column-value` reads such ids back into plain values, always strings: `valueOf` for one id, `valuesOf` for an array of them.
+  The middle layer computes the column links of each block: `dependencies` — outputs of other blocks the block's args reference: its current args, else those of its last run — and `dependents` — blocks whose args reference the block's outputs. They reach the app and the block UI as `columnLinks` of the block state (`BlockStateInternalV3`, `BlockStateV3`): `BlockColumnLinks` with `blockId`, the block they are of, the two sides as lists of `ColumnLink` — the referenced block output (`producer`), the block holding the reference (`holderBlockId`), the column id, the picked values, the check and the column label — and `labels` of the other blocks they name; `undefined` while they are not computed, and in app versions that do not compute them. They are computed only for blocks whose model declares the `supportsColumnLinks` feature flag, which `BlockModelV3` sets, so blocks built with an earlier SDK add no work. Each block's links are computed on their own: its dependencies read its args and the last runs of the blocks they reference; its dependents read the args of every block below it — those of its last run for a block without current args — and its own last run. So a run of a block recomputes its dependents and the dependencies of the blocks that reference it — and, while it has no current args, the dependents of every block above it; an edit of a block's args recomputes its own dependencies and the dependents of every block above it, whether it references them or not. Each reference carries the picked values and a `LinkCheck`, read the same on both sides, checked against what the producer's last run exports: whether the column is exported and whether it holds the picked values. A reference to a block that has no last run is `notRun`: the block has to be run first. A reference to a block whose last run is still rendering its results is `pending`; one whose last run failed to render them is `unavailable`. A reference to an output its producer does not export is `unavailable`: among `dependents`, the dependent block cannot run against it. A reference to a block that is not above the block holding it is `unavailable` too. A column counts as exported once its spec is in the producer's last run; picked values are checked against those its `pl7.app/discreteValues` annotation lists, else against its data. A reference whose column values cannot be read is `unreadable`; one whose column lacks picked values is `missingValues`, with the values it lacks. Each reference carries the column's label: the exported column's, or, when the producer's last run does not export it, that of the column the producer prepares before it is run; the status is still judged by the last run alone. The middle layer labels the blocks by their titles, the names the project shows.
+  `PlBlockDependencies` turns column links into the alerts shown above a block, one per side, for the links that need attention: an error when an output this block uses is unavailable or lacks picked values; a warning, noting that the links are checked against this block's last run, with advice to add the missing data and run the block or reconfigure those blocks, when blocks using this block's outputs use an output it does not export or pick values it lacks; a block that has not been run yet provides no output, so links to it raise these alerts as to an output that is not provided. Columns are named by their label; output names are shown only as hints. Outputs of one block that are not exported and have no known label share one alert line ("uses 2 outputs this block does not export"). Value pickers tell, from the same links, which block was to provide a missing column or column value and what went wrong, or, when its column is provided while other inputs of the block are not, that it waits for them: the options of one input may be made from another. `computeDependencies` and `computeDependents` are in `@milaboratories/pl-model-common`; turning links into alerts and picker tooltips stays inside `@platforma-sdk/ui-vue`.
+  `PlBlockDependencies` (`<PlBlockDependencies />`) shows those alerts in a block UI that places it, from the column links the app provides, and nothing when it provides none; each other block is named by `PlBlockName`. The reader can fold the warning about blocks using this block's outputs to its title by clicking the title, which then counts the blocks ("2 blocks"); the fold is the reader's own, kept in the browser storage under the block id, and a folded warning is marked "Updated" once it says something else than when it was folded. The error about this block's own inputs does not fold. `PlAlert` takes a `label` slot in place of the `label` text, and leaves out the text area when given no text.
+  `PlBlockName` (`<PlBlockName :block-id="id" :name="label" />`) shows the name of another block of the project: a link opening that block when the app can open blocks, and plain text otherwise.
+  Block UIs can ask the app to open another block of the same project: `PlatformaV3` has an optional `openBlock(blockId)`, absent in app versions that cannot do it; in Vue, `useOpenBlock()` returns a function opening a block by id, or `undefined` when the app cannot.
+  `PlDropdown` and `PlDropdownMulti` show a selected column value id by the value it picks: as is while the options load, and as "<value> — not available" when the options lack it, unless `missingValueLabel` is given.
+  `PlValueLabel` (`<PlValueLabel :value="item" :options="options" />`) shows a selected value as text the way a dropdown does: by its option's label, a column value id by the value it picks, and a value the options lack as not available, in error color.
+  `PlDropdown`, `PlDropdownMulti`, `PlDropdownRef`, `PlDropdownMultiRef` and `PlValueLabel` take `missingValueTooltip`, a tooltip explaining a selected value missing from the options, and `missingValueLabel`, the text shown in its place: each one text for every such value, or a function giving it — the tooltip content — per value, `undefined` when there is nothing to tell. The ones `@platforma-sdk/ui-vue` exports pass both themselves when the app provides column links, for a missing column — selected by id or by ref — and a missing column value: the tooltip names the block that was to provide the column, as a link to it, and what went wrong — it does not provide the column (a block that has not been run yet provides none), the column lacks the value, or the block is still computing it; when the column is provided while other inputs of the block are not, the tooltip says it waits for them. The value is shown by the picked value, or by the label of a column selected as a whole: alone while it waits, as "<name> — not available" otherwise.
+  `PlDatasetSelector` explains a selected dataset or filter the options lack the same way, by the column it selects: the dataset first, then its filter.
+  `PlDropdownRef` and `PlDropdownMultiRef` show a missing value as "Value not available", like the other dropdowns, instead of "Upstream value removed".
+  Inside a `PlTooltip`, `--txt-link` is the tooltip link color, so links drawn with it — `PlBlockName` among them — read on the dark tooltip background like the tooltip's own links.
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+  - @platforma-sdk/model@1.88.0
+  - @platforma-sdk/workflow-tengo@6.20.0
+  - @milaboratories/pl-model-middle-layer@1.35.0
+  - @milaboratories/columns-collection-driver@0.2.13
+  - @milaboratories/pf-spec-driver@1.5.13
+  - @milaboratories/pf-driver@1.9.13
+  - @milaboratories/pl-client@3.19.4
+  - @milaboratories/pl-crash-recorder@0.3.9
+  - @milaboratories/pl-deployments@3.0.25
+  - @milaboratories/pl-drivers@1.16.39
+  - @platforma-sdk/block-tools@2.17.3
+  - @milaboratories/pl-model-backend@1.4.41
+  - @milaboratories/pl-errors@1.4.56
+  - @milaboratories/pl-tree@1.16.8
+
+## 1.74.19
+
+### Patch Changes
+
+- Updated dependencies [c40e26d]
+  - @platforma-sdk/workflow-tengo@6.19.0
+
+## 1.74.18
+
+### Patch Changes
+
+- Updated dependencies [e813654]
+  - @platforma-sdk/model@1.87.0
+
+## 1.74.17
+
+### Patch Changes
+
+- Updated dependencies [6a0d1d0]
+  - @platforma-sdk/block-tools@2.17.2
+
+## 1.74.16
+
+### Patch Changes
+
+- c8a246e: Make `MiddleLayer.init` issue its round trips concurrently: the init transaction's field reads, the six initial tree loads and the driver kit setup. Connecting to a remote backend at ~140 ms RTT drops from ~2.5 s to ~0.57 s.
+
+## 1.74.15
+
+### Patch Changes
+
+- Updated dependencies [eff75ea]
+  - @platforma-sdk/workflow-tengo@6.18.0
+
+## 1.74.14
+
+### Patch Changes
+
+- 9cff344: `ColumnsCollection` holds columns only: its driver lists an id only once it has read a column spec for it, so it skips ids whose spec is not readable in the current render and exports that are not columns, such as the `kind: "File"` library of MiXCR Clonotyping. `AccessorColumnsProvider`, `ResultPoolColumnsProvider` and `buildDatasetOptions` skip them too. For such an export, `Column(id)`, `DataColumn.fromId`, `DataColumn.fromPlRef` and `DataColumn.fromAccessor` throw `ColumnAbsentError`; the status getters still report `present`, since status tells only whether the spec is readable. The driver ships with the desktop app; the rest reaches a block when it is rebuilt with this SDK. `ColumnsCollectionDriverHost.resolveSpec` now returns any `PObjectSpec`, and `ColumnsCollectionDriver.isEmpty` takes the host.
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-model-common@1.54.2
+  - @milaboratories/columns-collection-driver@0.2.12
+  - @platforma-sdk/model@1.86.5
+  - @milaboratories/pl-model-middle-layer@1.34.6
+  - @milaboratories/pf-spec-driver@1.5.12
+  - @milaboratories/pf-driver@1.9.12
+  - @milaboratories/pl-client@3.19.3
+  - @milaboratories/pl-crash-recorder@0.3.8
+  - @milaboratories/pl-deployments@3.0.24
+  - @milaboratories/pl-drivers@1.16.38
+  - @platforma-sdk/block-tools@2.17.1
+  - @milaboratories/pl-model-backend@1.4.40
+  - @milaboratories/pl-errors@1.4.55
+  - @milaboratories/pl-tree@1.16.7
+  - @platforma-sdk/workflow-tengo@6.17.3
+
+## 1.74.13
+
+### Patch Changes
+
+- Updated dependencies [1cb516a]
+  - @platforma-sdk/workflow-tengo@6.17.3
+
+## 1.74.12
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- 79f8dbc: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.2.0. JsonPartitioned parts are sorted by axes on read, so a part written in another key order no longer gives wrong join rows. Same-axes outer joins no longer re-sort. pframes-rs-node requires Node 24. Bump runenv-python-3 to 1.16.1, which bundles polars-pf 1.2.0 for ptabler.
+- 615bd8c: Replace `decompress` (path traversal advisories, no fixed release) with `yauzl` for zip archives and `tar` for the block boilerplate. Zip extraction now fails on entries and symlinks that lead outside the target folder, on entries written through a symlink, and on duplicate entries.
+- Updated dependencies [39a9676]
+- Updated dependencies [91af6ad]
+- Updated dependencies [089402e]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [79f8dbc]
+- Updated dependencies [615bd8c]
+  - @platforma-sdk/block-tools@2.17.0
+  - @milaboratories/computable@2.9.9
+  - @milaboratories/pf-driver@1.9.11
+  - @milaboratories/pl-client@3.19.2
+  - @milaboratories/pl-deployments@3.0.23
+  - @milaboratories/pl-drivers@1.16.37
+  - @milaboratories/pl-http@1.2.5
+  - @platforma-sdk/workflow-tengo@6.17.2
+  - @milaboratories/pl-tree@1.16.6
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/helpers@1.14.6
+  - @milaboratories/pf-spec-driver@1.5.11
+  - @milaboratories/pl-model-backend@1.4.39
+  - @milaboratories/columns-collection-driver@0.2.11
+  - @milaboratories/pl-model-common@1.54.1
+  - @milaboratories/pl-model-middle-layer@1.34.5
+  - @milaboratories/pl-crash-recorder@0.3.7
+  - @milaboratories/pl-errors@1.4.54
+  - @platforma-sdk/model@1.86.3
+
 ## 1.74.11
 
 ### Patch Changes

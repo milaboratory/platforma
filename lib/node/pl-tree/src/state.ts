@@ -151,9 +151,16 @@ export class PlTreeResource implements ResourceDataWithFinalState {
 
   // kvChangedGlobal? = new ChangeSource();
   kvChangedPerKey? = new KeyedChangeSource();
+  /** Fires when the KV key SET changes, keyed by PREFIX: adding or removing a key fires every
+   * prefix of that key and nothing else, so a reader of `transition/` is not woken by a write
+   * under `attr/`. Value changes do not fire it, {@link kvChangedPerKey} covers those. A reader
+   * that lists keys it does not know in advance ({@link listKeyValues}) needs both. */
+  kvKeyListChanged? = new KeyedChangeSource();
 
   readonly id: SignedResourceId;
   originalResourceId: OptionalSignedResourceId;
+  /** Empty until the server fills it in; fixed from then on, like originalResourceId. */
+  canonicalId: Uint8Array;
 
   readonly kind: ResourceKind;
   readonly type: ResourceType;
@@ -177,6 +184,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
   constructor(initialState: BasicResourceData, logger?: MiLogger) {
     this.id = initialState.id;
     this.originalResourceId = initialState.originalResourceId;
+    this.canonicalId = initialState.canonicalId;
     this.kind = initialState.kind;
     this.type = initialState.type;
     this.data = initialState.data;
@@ -372,6 +380,62 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     return this.kv.get(key);
   }
 
+  /**
+   * Every KV entry whose key starts with `prefix`, in insertion order.
+   *
+   * For a reader that does not know the keys in advance. It watches the key set under `prefix`
+   * and every key it returns, so a key under the prefix appearing, disappearing or changing value
+   * all re-run the reader, and a key outside it does not.
+   *
+   * The order is the mirror's own insertion history, a function of the order this tree happened
+   * to learn the keys rather than of the backend's state: two trees over identical state can
+   * disagree, and so can one tree across a restart. Sort if the order matters.
+   *
+   * There is no `unstableIfNotFound`: an empty result on a non-final resource reports stable, so
+   * a caller that must tell "nothing yet" from "nothing ever" checks the resource itself.
+   */
+  public listKeyValues(
+    watcher: Watcher,
+    prefix: string = "",
+  ): { key: string; value: Uint8Array }[] {
+    this.kvKeyListChanged?.attachWatcher(prefix, watcher);
+    const ret: { key: string; value: Uint8Array }[] = [];
+    this.kv.forEach((value, key) => {
+      if (!key.startsWith(prefix)) return;
+      this.kvChangedPerKey?.attachWatcher(key, watcher);
+      ret.push({ key, value });
+    });
+    return ret;
+  }
+
+  /** Fires the key-set source for every prefix of `key`, which is exactly the set of prefix
+   * readers whose answer the key's appearance or removal can change. */
+  markKeyListChanged(key: string, marker: string): void {
+    const source = this.kvKeyListChanged;
+    if (source === undefined) return;
+    for (let i = 0; i <= key.length; i++) source.markChanged(key.slice(0, i), marker);
+  }
+
+  /** {@link listKeyValues} with the values decoded as UTF-8 text. */
+  public listKeyValuesString(
+    watcher: Watcher,
+    prefix: string = "",
+  ): { key: string; value: string }[] {
+    return this.listKeyValues(watcher, prefix).map(({ key, value }) => ({
+      key,
+      value: cachedDecode(value),
+    }));
+  }
+
+  /** Every field of the resource, whatever its type. Watches all three field-list sources, so a
+   * field of any type appearing or disappearing re-runs the reader. */
+  public listFields(watcher: Watcher): string[] {
+    if (!this.inputsLocked) this.inputAndServiceFieldListChanged?.attachWatcher(watcher);
+    if (!this.outputsLocked) this.outputFieldListChanged?.attachWatcher(watcher);
+    this.dynamicFieldListChanged?.attachWatcher(watcher);
+    return Array.from(this.fieldsMap.keys());
+  }
+
   public getKeyValueString(watcher: Watcher, key: string): string | undefined {
     const bytes = this.getKeyValue(watcher, key);
     if (bytes === undefined) return undefined;
@@ -414,6 +478,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
       outputsLocked: this.outputsLocked,
       error: this.error,
       originalResourceId: this.originalResourceId,
+      canonicalId: this.canonicalId,
       final: this.finalFlag,
     };
   }
@@ -444,6 +509,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.outputFieldListChanged?.markChanged("marked final");
     this.dynamicFieldListChanged?.markChanged("marked final");
     this.kvChangedPerKey?.markAllChanged("marked final");
+    this.kvKeyListChanged?.markAllChanged("marked final");
     this.finalChanged = undefined;
     this.resourceStateChange = undefined;
     this.dynamicFieldListChanged = undefined;
@@ -452,6 +518,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.lockedChange = undefined;
     // this.kvChangedGlobal = undefined;
     this.kvChangedPerKey = undefined;
+    this.kvKeyListChanged = undefined;
   }
 
   /** Used for invalidation */
@@ -465,6 +532,7 @@ export class PlTreeResource implements ResourceDataWithFinalState {
     this.dynamicFieldListChanged?.markChanged("marked all changed");
     // this.kvChangedGlobal?.markChanged('marked all changed');
     this.kvChangedPerKey?.markAllChanged("marked all changed");
+    this.kvKeyListChanged?.markAllChanged("marked all changed");
     this.resourceRemoved.markChanged("marked all changed");
   }
 }
@@ -589,6 +657,7 @@ export class PlTreeState {
     let errRd: ExtendedResourceData;
     let errRes: PlTreeResource | undefined;
     let errOriginalResourceId: OptionalSignedResourceId = NullSignedResourceId;
+    let errCanonicalId: Uint8Array = new Uint8Array(0);
     let errError: OptionalSignedResourceId = NullSignedResourceId;
     let errInputsLocked = false;
     let errOutputsLocked = false;
@@ -610,6 +679,7 @@ export class PlTreeState {
               outputsLocked: errOutputsLocked,
               error: errError,
               originalResourceId: errOriginalResourceId,
+              canonicalId: errCanonicalId,
               final: errFinal,
             };
       this.invalidateTree();
@@ -635,6 +705,7 @@ export class PlTreeState {
       if (resource !== undefined) {
         // updating existing resource
         errOriginalResourceId = resource.originalResourceId;
+        errCanonicalId = resource.canonicalId;
         errError = resource.error;
         errInputsLocked = resource.inputsLocked;
         errOutputsLocked = resource.outputsLocked;
@@ -646,6 +717,14 @@ export class PlTreeState {
 
         // updating resource version, even if it was not changed
         resource.version += 1;
+
+        // canonical id: empty until the server fills it in, fixed from then on
+        if (!Buffer.from(resource.canonicalId).equals(Buffer.from(rd.canonicalId))) {
+          if (resource.canonicalId.length !== 0)
+            unexpectedTransitionError("canonicalId can't change after it is set");
+          resource.canonicalId = rd.canonicalId;
+          changed = true;
+        }
 
         // duplicate / original
         if (resource.originalResourceId !== rd.originalResourceId) {
@@ -900,6 +979,10 @@ export class PlTreeState {
               kv.key,
               `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
             );
+            resource.markKeyListChanged(
+              kv.key,
+              `kv added for ${resourceIdToString(resource.id)}: ${kv.key}`,
+            );
             changed = true;
             if (stat) stat.kvChanged++;
           } else if (Buffer.compare(current, kv.value) !== 0) {
@@ -922,6 +1005,10 @@ export class PlTreeState {
             if (!newStateKeys.has(key)) {
               map.delete(key);
               notEmpty(resource!.kvChangedPerKey).markChanged(
+                key,
+                `kv deleted for ${resourceIdToString(resource!.id)}: ${key}`,
+              );
+              resource!.markKeyListChanged(
                 key,
                 `kv deleted for ${resourceIdToString(resource!.id)}: ${key}`,
               );

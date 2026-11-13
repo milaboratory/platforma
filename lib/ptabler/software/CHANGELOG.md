@@ -1,5 +1,23 @@
 # @platforma-open/software-ptabler
 
+## 2.3.1
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+
+## 2.3.0
+
+### Minor Changes
+
+- 1cb516a: pt.run() sends the ptabler workflow as gzip-compressed JSON. A workflow with many steps (for example, one frame for each sample) can be larger than the 4 MiB gRPC message limit of the platform. Before this change, such a workflow failed with "grpc: received message larger than max". On a backend without gzipEncode, pt.run() sends plain JSON as before. ptabler reads a workflow file with a ".gz" suffix (for example, "workflow.json.gz") as gzip-compressed.
+
+## 2.2.1
+
+### Patch Changes
+
+- 79f8dbc: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.2.0. JsonPartitioned parts are sorted by axes on read, so a part written in another key order no longer gives wrong join rows. Same-axes outer joins no longer re-sort. pframes-rs-node requires Node 24. Bump runenv-python-3 to 1.16.1, which bundles polars-pf 1.2.0 for ptabler.
+
 ## 2.2.0
 
 ### Minor Changes

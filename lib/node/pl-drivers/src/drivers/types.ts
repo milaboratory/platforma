@@ -93,20 +93,6 @@ export type ImportResourceSnapshot = UploadResourceSnapshot | IndexResourceSnaps
 // ls
 //
 
-/** Defines which storages from pl are available via local paths */
-export type LocalStorageProjection = {
-  /** Pl storage id */
-  readonly storageId: string;
-
-  /**
-   * Local path, the storage is mounted at.
-   *
-   * Empty string means that this storage accepts absolute paths, and operates inside the same OS.
-   * This matches the behaviour how pl interprets FS storage config.
-   * */
-  readonly localPath: string;
-};
-
 /** Allows to add parts of local FS as virtual storages, presenting homogeneous API to UI */
 export type VirtualLocalStorageSpec = {
   /** Stable machine identifier, must not intersect with other storage ids */

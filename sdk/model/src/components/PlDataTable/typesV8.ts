@@ -73,8 +73,12 @@ export type PlDataTableFiltersWithMeta = RootFilterSpec<
 export type PlDataTableStateV2CacheEntry = {
   /** DataSource identifier for state management */
   sourceId: string;
-  /** Internal ag-grid state */
+  /** The grid's own state, kept to restore the grid; opaque to everything but the grid */
   gridState: PlDataTableGridStateCore;
+  /** Sorting the user set; `null` while untouched, so the block's default applies, `[]` once cleared */
+  sorting: null | PTableSorting[];
+  /** Columns the user hid; `null` while untouched, so optional columns stay hidden */
+  hiddenColIds: null | PTableColumnId[];
   /** Sheets state */
   sheetsState: PlDataTableSheetState[];
   /** User filters state (tree-based, compatible with PlAdvancedFilter) */
@@ -85,28 +89,25 @@ export type PlDataTableStateV2CacheEntry = {
   searchString?: string;
 };
 
-export type PTableParamsV2 =
-  | {
-      sourceId: null;
-      hiddenColIds: null;
-      sorting: null;
-      filters: null;
-      defaultFilters: null;
-    }
-  | {
-      sourceId: string;
-      hiddenColIds: null | PTableColumnId[];
-      sorting: null | PTableSorting[];
-      filters: null | PlDataTableFilters;
-      defaultFilters: null | PlDataTableFilters;
-    };
+/**
+ * Which source the UI shows. The model builds the table from that source's cache
+ * entry; the remaining fields stay `null`, so a block version built against an
+ * earlier SDK reads the state as untouched.
+ */
+export type PTableParamsV2 = {
+  sourceId: null | string;
+  hiddenColIds: null;
+  sorting: null;
+  filters: null;
+  defaultFilters: null;
+};
 
 export type PlDataTableStateV2Normalized = {
-  /** Version for upgrades */
-  version: 8;
+  /** Version for upgrades. v9 has the v8 shape; it marks column ids rewritten to the current form. */
+  version: 9;
   /** Internal states, LRU cache for 5 sourceId-s */
   stateCache: PlDataTableStateV2CacheEntry[];
-  /** PTable params derived from the cache state for the current sourceId */
+  /** Which source the UI shows */
   pTableParams: PTableParamsV2;
 };
 

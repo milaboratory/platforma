@@ -1,5 +1,87 @@
 # @milaboratories/pl-errors
 
+## 1.4.64
+
+### Patch Changes
+
+- Updated dependencies [41cdddf]
+  - @milaboratories/pl-client@3.24.0
+
+## 1.4.63
+
+### Patch Changes
+
+- Updated dependencies [af78d3a]
+  - @milaboratories/pl-client@3.23.0
+
+## 1.4.62
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.22.2
+
+## 1.4.61
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-client@3.22.1
+
+## 1.4.60
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/ts-helpers@1.9.1
+
+## 1.4.59
+
+### Patch Changes
+
+- Updated dependencies [5adb3c8]
+- Updated dependencies [f08961f]
+- Updated dependencies [0692c00]
+  - @milaboratories/pl-client@3.21.1
+
+## 1.4.58
+
+### Patch Changes
+
+- Updated dependencies [f7d4c98]
+  - @milaboratories/pl-client@3.21.0
+
+## 1.4.57
+
+### Patch Changes
+
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-client@3.20.0
+
+## 1.4.56
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.19.4
+
+## 1.4.55
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.19.3
+
+## 1.4.54
+
+### Patch Changes
+
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/pl-client@3.19.2
+  - @milaboratories/ts-helpers@1.9.0
+
 ## 1.4.53
 
 ### Patch Changes

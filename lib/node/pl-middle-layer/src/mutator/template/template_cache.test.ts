@@ -2,6 +2,7 @@ import {
   ensureSignedResourceIdNotNull,
   field,
   isNotNullSignedResourceId,
+  parseSignedResourceId,
   poll,
   TestHelpers,
   toGlobalResourceId,
@@ -257,7 +258,9 @@ describe("template cache produces equivalent resources", () => {
       // Either one points to the other, or both point to a common original.
       const resolvedCached = isNotNullSignedResourceId(cachedOriginal) ? cachedOriginal : cachedId;
       const resolvedLegacy = isNotNullSignedResourceId(legacyOriginal) ? legacyOriginal : legacyId;
-      expect(resolvedCached).toBe(resolvedLegacy);
+      expect(parseSignedResourceId(resolvedCached).globalId).toBe(
+        parseSignedResourceId(resolvedLegacy).globalId,
+      );
     });
   }, 30000);
 });

@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.software-ptexter
 
+## 1.2.7
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+
 ## 1.2.6
 
 ### Patch Changes

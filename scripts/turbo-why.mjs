@@ -84,13 +84,23 @@ function resolveScript(scriptName) {
       process.exit(1);
     }
 
-    // Tokenize the script value, collecting leading KEY=value env vars
+    // Tokenize the script value, collecting leading KEY=value env vars.
+    // `cross-env` is the portable spelling of the same assignment, so it is
+    // transparent here: drop the wrapper and keep reading the vars behind it.
     const tokens = value.split(/\s+/);
     let i = 0;
-    while (i < tokens.length && /^\w+=\S+$/.test(tokens[i])) {
-      const [k, ...rest] = tokens[i].split("=");
-      env[k] = rest.join("=");
-      i++;
+    while (i < tokens.length) {
+      if (/^\w+=\S+$/.test(tokens[i])) {
+        const [k, ...v] = tokens[i].split("=");
+        env[k] = v.join("=");
+        i++;
+        continue;
+      }
+      if (tokens[i] === "cross-env" || tokens[i] === "cross-env-shell") {
+        i++;
+        continue;
+      }
+      break;
     }
     const rest = tokens.slice(i);
 
@@ -99,19 +109,13 @@ function resolveScript(scriptName) {
       return { turboArgs: rest.slice(2), env };
     }
 
-    // Case 2: pnpm <script> [-- extra-args]  →  follow the chain
+    // Case 2: pnpm <script> [extra-args]  →  follow the chain
     if (rest[0] === "pnpm") {
       const nextScript = rest[1];
-      // Collect extra args after `--` (e.g. pnpm test -- --force)
-      // but ignore `--` separator and args like --output-logs since those
-      // will be on the turbo level eventually
+      // Ignore extra args (e.g. pnpm test --force, --output-logs):
+      // they reach the turbo level eventually
       current = nextScript;
       continue;
-    }
-
-    // Case 3: npx turbo run <args>
-    if (rest[0] === "npx" && rest[1] === "turbo" && rest[2] === "run") {
-      return { turboArgs: rest.slice(3), env };
     }
 
     console.error(red(`Script "${scriptName}" does not resolve to a turbo command.`));
@@ -121,7 +125,7 @@ function resolveScript(scriptName) {
 }
 
 function runDryRun(turboArgs, env) {
-  const turboCmd = `npx turbo run ${turboArgs.join(" ")} --dry-run=json`;
+  const turboCmd = `pnpm exec turbo run ${turboArgs.join(" ")} --dry-run=json`;
   let stdout;
   try {
     stdout = execSync(turboCmd, {

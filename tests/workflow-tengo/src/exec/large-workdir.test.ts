@@ -1,5 +1,6 @@
 import { Pl } from "@milaboratories/pl-middle-layer";
 import { tplTest } from "@platforma-sdk/test";
+import { getLongTestTimeout } from "@milaboratories/test-helpers";
 
 /*
  * End-to-end check for the E2BIG failure on large working directories
@@ -15,6 +16,11 @@ import { tplTest } from "@platforma-sdk/test";
  * The message carries a random suffix on purpose: an exec step with a stable
  * CID is deduplicated by the backend, and a cached result would never start a
  * job at all.
+ *
+ * This file runs in the "isolated" vitest project, after all other test files
+ * (see vitest.config.mts). The 10000-entry workdir keeps the backend workflow
+ * controller busy for about a minute, and other tests that run at the same
+ * time fail on their timeouts.
  */
 tplTest.concurrent(
   "run-in-workdir-with-10k-files",
@@ -31,5 +37,5 @@ tplTest.concurrent(
   // Building 10000 workdir entries means 10000 value resources plus the map
   // that holds them, all in one transaction. That is slow on the backend, so
   // the default 15s test timeout is not enough.
-  300_000,
+  getLongTestTimeout(300_000),
 );

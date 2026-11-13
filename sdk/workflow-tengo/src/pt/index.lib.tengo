@@ -17,6 +17,8 @@ pframesSpec := import(":pframes.spec")
 render := import(":render")
 maps := import(":maps")
 canonical := import(":canonical")
+constants := import(":constants")
+feats := import(":feats")
 validation := import(":validation")
 
 /**
@@ -1229,7 +1231,6 @@ workflow := func() {
 			})
 
 			runInputs := {
-				workflowJsonStruct: workflowJsonStruct,
 				inFiles: inFilesMap,
 				inFilesContent: inFilesContentMap,
 				inFrames: inFramesDistilled,
@@ -1237,6 +1238,22 @@ workflow := func() {
 				outFilesContent: outContentFiles,
 				outFrames: outFrames
 			}
+			// One resource body must not be larger than the gRPC message limit of the
+			// platform (4 MiB). A workflow with many steps (for example, one frame for
+			// each sample) can be larger. The workflow JSON has much repetition, and gzip
+			// makes it much smaller. Old backends do not have gzipEncode. They get plain JSON.
+			if feats.hasGzip {
+				runInputs.workflowJsonGz = smart.createValueResource(
+					constants.RTYPE_BINARY_VALUE,
+					ll.gzipEncode(canonical.encode(workflowJsonStruct)))
+			} else {
+				runInputs.workflowJsonStruct = workflowJsonStruct
+			}
+
+			// The scratch sizing in :pt.workflow-run needs the frame step counts.
+			// It cannot read them from compressed JSON. We count the steps here.
+			frameSteps := sizing.countFrameSteps(workflowJsonStruct.workflow)
+
 			// render.create drops undefined meta inputs, so an unset setter leaves the run inputs unchanged.
 			runMetaInputs := {
 				name: runName,
@@ -1252,6 +1269,8 @@ workflow := func() {
 				memIntercept: memIntercept,
 				polarsMaxThreads: polarsMaxThreads,
 				scratchFreeSpace: scratchFreeSpace,
+				readFrames: frameSteps.readFrames,
+				writeFrames: frameSteps.writeFrames,
 				inputCache: inputCache
 			}
 			ptResult := render.create(workflowRunTpl, runInputs, {

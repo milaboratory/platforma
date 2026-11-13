@@ -238,6 +238,15 @@ export class PlClient {
     return this.userResources.getUserRoot(opts);
   }
 
+  /**
+   * The resources of a type that are shared with the authenticated user, as signed ids. Matched by
+   * type name only, so a newer version of the type is still found.
+   * @throws if the backend does not implement ListUserResources, or on a REST connection.
+   */
+  public async listSharedResourcesByType(resourceTypeName: string): Promise<SignedResourceId[]> {
+    return await this.userResources.listSharedResourcesByType(resourceTypeName);
+  }
+
   public get conf(): PlClientConfig {
     return this.ll.conf;
   }
@@ -399,7 +408,7 @@ export class PlClient {
     let retryState = createRetryState(ops?.retryOptions ?? this.defaultRetryOptions);
 
     while (true) {
-      const release = ops?.lockId ? await advisoryLock(ops.lockId) : () => {};
+      const release = ops?.lockId ? await advisoryLock(ops.lockId, ops.abortSignal) : () => {};
 
       try {
         // opening low-level tx
@@ -412,6 +421,8 @@ export class PlClient {
           clientRoot,
           CacheFinality.predicate(),
           this.resourceDataCache,
+          false,
+          (capability) => this.ll.hasCapability(capability),
         );
 
         // Auto-set default color proof from the client root's signature.
@@ -433,16 +444,16 @@ export class PlClient {
           // collecting stat
           this._txCommittedStat = addStat(this._txCommittedStat, tx.stat);
           ok = true;
-        } catch (e: unknown) {
+        } catch (error: unknown) {
           // the only recoverable
-          if (e instanceof TxCommitConflict) {
+          if (error instanceof TxCommitConflict) {
             // ignoring
             // collecting stat
             this._txConflictStat = addStat(this._txConflictStat, tx.stat);
           } else {
             // collecting stat
             this._txErrorStat = addStat(this._txErrorStat, tx.stat);
-            throw e;
+            throw error;
           }
         } finally {
           // close underlying grpc stream, if not yet done

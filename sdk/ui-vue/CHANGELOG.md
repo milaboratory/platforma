@@ -1,5 +1,166 @@
 # @platforma-sdk/ui-vue
 
+## 1.90.2
+
+### Patch Changes
+
+- Updated dependencies [fd21724]
+  - @platforma-sdk/model@1.90.2
+  - @milaboratories/uikit@2.17.10
+
+## 1.90.0
+
+### Patch Changes
+
+- 7959b69: PlAgDataTableV2: a destroyed grid clears the table's grid api only when it is the grid on screen, so the column manager and export buttons stay after the inner grid is replaced.
+- Updated dependencies [92cf16f]
+  - @milaboratories/pl-model-common@1.56.0
+  - @milaboratories/pf-spec-driver@1.6.0
+  - @milaboratories/columns-collection-driver@0.3.0
+  - @platforma-sdk/model@1.90.0
+  - @milaboratories/uikit@2.17.9
+
+## 1.89.0
+
+### Minor Changes
+
+- 470744c: PlAgDataTableV2 no longer hangs on "Data is not computed" or "Loading data…" when it mounts on a source its saved state does not name.
+
+  - The model builds the table from the saved settings of the source the UI shows, including the fast search; `pTableParams` keeps only the pointer to that source, and its other fields are now typed `null`.
+  - Each source's cache entry keeps its sorting and hidden columns in its own `sorting` and `hiddenColIds` fields. `gridState` stays the grid's own state, kept only to restore the grid; nothing but the grid reads it.
+  - The table writes its state through one path: every write brings the saved state in line with the source on screen and applies the user's pending edits, so mounting on a new source writes the same way a sort does. Edits the platform has not reported back yet survive a re-push of the older state.
+  - Grid state reports are stored under the source the grid's columns belong to.
+  - While the model computes, the table shows the running placeholder instead of "Data is not computed".
+
+### Patch Changes
+
+- Updated dependencies [470744c]
+  - @platforma-sdk/model@1.89.0
+  - @milaboratories/uikit@2.17.8
+
+## 1.88.16
+
+### Patch Changes
+
+- Updated dependencies [b556b15]
+  - @platforma-sdk/model@1.88.16
+  - @milaboratories/uikit@2.17.7
+
+## 1.88.15
+
+### Patch Changes
+
+- @platforma-sdk/model@1.88.15
+- @milaboratories/pf-spec-driver@1.5.17
+- @milaboratories/uikit@2.17.6
+
+## 1.88.14
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-model-common@1.55.2
+  - @milaboratories/columns-collection-driver@0.2.15
+  - @milaboratories/pf-spec-driver@1.5.16
+  - @platforma-sdk/model@1.88.14
+  - @milaboratories/uikit@2.17.5
+
+## 1.88.13
+
+### Patch Changes
+
+- @platforma-sdk/model@1.88.13
+- @milaboratories/pf-spec-driver@1.5.15
+- @milaboratories/uikit@2.17.4
+
+## 1.88.10
+
+### Patch Changes
+
+- Updated dependencies [d3a7b19]
+  - @platforma-sdk/model@1.88.10
+  - @milaboratories/uikit@2.17.3
+
+## 1.88.8
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/columns-collection-driver@0.2.14
+  - @milaboratories/pf-spec-driver@1.5.14
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/uikit@2.17.2
+  - @platforma-sdk/model@1.88.8
+
+## 1.88.3
+
+### Patch Changes
+
+- Updated dependencies [ad84d77]
+  - @milaboratories/uikit@2.17.1
+
+## 1.88.0
+
+### Minor Changes
+
+- 8d28bcd: Column value references: `ColumnValueId` names one value of a column a block picked, and template relocation repoints the producer block inside it. The value is always a string: a value of a number column is its decimal string (`String(cell)`), so the same value picked from a number cell and from a text cell is the same id, and ids compare with `===`. `createColumnValueId` refuses a value that is not a string, and an id whose value is not a string is not a `ColumnValueId`.
+  A value picker is made like a data table, in two halves. The model gives `createColumnValueOptions({ valueColumn, labelColumn? }, { ctx? })` as an output — each column an id, a column or a recipe — a frame holding the value column and the label column, `resolving` while either is, `absent` once the value column is gone (a gone label column leaves the values to label themselves), each with the value column it was made for. The UI reads it through the frame, so a column of any storage format can be picked from: `readColumnValueOptions(model)` gives the distinct non-missing values as `{ value: ColumnValueId, label }` options in natural order of labels, each labelled by the label column in its row or by itself (`deriveColumnValueOptions`, `deriveLabelledColumnValueOptions`). In Vue, as with a table, the output reaches the dropdown through settings: `usePlColumnValueSettings({ source, valueColumn })` makes them out of the output and the column picked now — `none`, `pending` until the output is computed for that pick, `absent`, or `present` — and `<PlColumnValueDropdown>` and `<PlColumnValueDropdownMulti>` take them as `settings`: `PlDropdown` and `PlDropdownMulti` over the values, loading until they are read and telling why a column offers none; `exclude` leaves out values, and other attributes and the slots go to the dropdown.
+  `columnValueLabel(picked)` names a picked value to the user: the value a column value id picks, or the string as is when it is not such an id.
+  In workflows, `workflow.column-value` reads such ids back into plain values, always strings: `valueOf` for one id, `valuesOf` for an array of them.
+  The middle layer computes the column links of each block: `dependencies` — outputs of other blocks the block's args reference: its current args, else those of its last run — and `dependents` — blocks whose args reference the block's outputs. They reach the app and the block UI as `columnLinks` of the block state (`BlockStateInternalV3`, `BlockStateV3`): `BlockColumnLinks` with `blockId`, the block they are of, the two sides as lists of `ColumnLink` — the referenced block output (`producer`), the block holding the reference (`holderBlockId`), the column id, the picked values, the check and the column label — and `labels` of the other blocks they name; `undefined` while they are not computed, and in app versions that do not compute them. They are computed only for blocks whose model declares the `supportsColumnLinks` feature flag, which `BlockModelV3` sets, so blocks built with an earlier SDK add no work. Each block's links are computed on their own: its dependencies read its args and the last runs of the blocks they reference; its dependents read the args of every block below it — those of its last run for a block without current args — and its own last run. So a run of a block recomputes its dependents and the dependencies of the blocks that reference it — and, while it has no current args, the dependents of every block above it; an edit of a block's args recomputes its own dependencies and the dependents of every block above it, whether it references them or not. Each reference carries the picked values and a `LinkCheck`, read the same on both sides, checked against what the producer's last run exports: whether the column is exported and whether it holds the picked values. A reference to a block that has no last run is `notRun`: the block has to be run first. A reference to a block whose last run is still rendering its results is `pending`; one whose last run failed to render them is `unavailable`. A reference to an output its producer does not export is `unavailable`: among `dependents`, the dependent block cannot run against it. A reference to a block that is not above the block holding it is `unavailable` too. A column counts as exported once its spec is in the producer's last run; picked values are checked against those its `pl7.app/discreteValues` annotation lists, else against its data. A reference whose column values cannot be read is `unreadable`; one whose column lacks picked values is `missingValues`, with the values it lacks. Each reference carries the column's label: the exported column's, or, when the producer's last run does not export it, that of the column the producer prepares before it is run; the status is still judged by the last run alone. The middle layer labels the blocks by their titles, the names the project shows.
+  `PlBlockDependencies` turns column links into the alerts shown above a block, one per side, for the links that need attention: an error when an output this block uses is unavailable or lacks picked values; a warning, noting that the links are checked against this block's last run, with advice to add the missing data and run the block or reconfigure those blocks, when blocks using this block's outputs use an output it does not export or pick values it lacks; a block that has not been run yet provides no output, so links to it raise these alerts as to an output that is not provided. Columns are named by their label; output names are shown only as hints. Outputs of one block that are not exported and have no known label share one alert line ("uses 2 outputs this block does not export"). Value pickers tell, from the same links, which block was to provide a missing column or column value and what went wrong, or, when its column is provided while other inputs of the block are not, that it waits for them: the options of one input may be made from another. `computeDependencies` and `computeDependents` are in `@milaboratories/pl-model-common`; turning links into alerts and picker tooltips stays inside `@platforma-sdk/ui-vue`.
+  `PlBlockDependencies` (`<PlBlockDependencies />`) shows those alerts in a block UI that places it, from the column links the app provides, and nothing when it provides none; each other block is named by `PlBlockName`. The reader can fold the warning about blocks using this block's outputs to its title by clicking the title, which then counts the blocks ("2 blocks"); the fold is the reader's own, kept in the browser storage under the block id, and a folded warning is marked "Updated" once it says something else than when it was folded. The error about this block's own inputs does not fold. `PlAlert` takes a `label` slot in place of the `label` text, and leaves out the text area when given no text.
+  `PlBlockName` (`<PlBlockName :block-id="id" :name="label" />`) shows the name of another block of the project: a link opening that block when the app can open blocks, and plain text otherwise.
+  Block UIs can ask the app to open another block of the same project: `PlatformaV3` has an optional `openBlock(blockId)`, absent in app versions that cannot do it; in Vue, `useOpenBlock()` returns a function opening a block by id, or `undefined` when the app cannot.
+  `PlDropdown` and `PlDropdownMulti` show a selected column value id by the value it picks: as is while the options load, and as "<value> — not available" when the options lack it, unless `missingValueLabel` is given.
+  `PlValueLabel` (`<PlValueLabel :value="item" :options="options" />`) shows a selected value as text the way a dropdown does: by its option's label, a column value id by the value it picks, and a value the options lack as not available, in error color.
+  `PlDropdown`, `PlDropdownMulti`, `PlDropdownRef`, `PlDropdownMultiRef` and `PlValueLabel` take `missingValueTooltip`, a tooltip explaining a selected value missing from the options, and `missingValueLabel`, the text shown in its place: each one text for every such value, or a function giving it — the tooltip content — per value, `undefined` when there is nothing to tell. The ones `@platforma-sdk/ui-vue` exports pass both themselves when the app provides column links, for a missing column — selected by id or by ref — and a missing column value: the tooltip names the block that was to provide the column, as a link to it, and what went wrong — it does not provide the column (a block that has not been run yet provides none), the column lacks the value, or the block is still computing it; when the column is provided while other inputs of the block are not, the tooltip says it waits for them. The value is shown by the picked value, or by the label of a column selected as a whole: alone while it waits, as "<name> — not available" otherwise.
+  `PlDatasetSelector` explains a selected dataset or filter the options lack the same way, by the column it selects: the dataset first, then its filter.
+  `PlDropdownRef` and `PlDropdownMultiRef` show a missing value as "Value not available", like the other dropdowns, instead of "Upstream value removed".
+  Inside a `PlTooltip`, `--txt-link` is the tooltip link color, so links drawn with it — `PlBlockName` among them — read on the dark tooltip background like the tooltip's own links.
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+  - @platforma-sdk/model@1.88.0
+  - @milaboratories/uikit@2.17.0
+  - @milaboratories/columns-collection-driver@0.2.13
+  - @milaboratories/pf-spec-driver@1.5.13
+
+## 1.87.0
+
+### Patch Changes
+
+- Updated dependencies [e813654]
+  - @platforma-sdk/model@1.87.0
+  - @milaboratories/uikit@2.16.3
+
+## 1.86.5
+
+### Patch Changes
+
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-model-common@1.54.2
+  - @milaboratories/columns-collection-driver@0.2.12
+  - @platforma-sdk/model@1.86.5
+  - @milaboratories/pf-spec-driver@1.5.12
+  - @milaboratories/uikit@2.16.2
+
+## 1.86.3
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- Updated dependencies [91af6ad]
+  - @milaboratories/uikit@2.16.1
+  - @milaboratories/pf-spec-driver@1.5.11
+  - @milaboratories/columns-collection-driver@0.2.11
+  - @milaboratories/pl-model-common@1.54.1
+  - @platforma-sdk/model@1.86.3
+
 ## 1.86.0
 
 ### Minor Changes

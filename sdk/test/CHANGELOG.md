@@ -1,5 +1,270 @@
 # @platforma-sdk/test
 
+## 1.90.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.6.3
+
+## 1.90.3
+
+### Patch Changes
+
+- Updated dependencies [41cdddf]
+  - @milaboratories/pl-client@3.24.0
+  - @milaboratories/pl-middle-layer@2.6.2
+  - @milaboratories/pl-tree@1.18.3
+
+## 1.90.2
+
+### Patch Changes
+
+- Updated dependencies [fd21724]
+  - @platforma-sdk/model@1.90.2
+  - @milaboratories/pl-middle-layer@2.6.1
+
+## 1.90.1
+
+### Patch Changes
+
+- af78d3a: Fix a memory leak on the gRPC wire: every transaction and request that got a long-lived `abortSignal` stayed in memory until that signal aborted. The project refresh loop and the tree synchronization pass such a signal since pl-client 3.21.1, so an idle middle layer grew by about 14 kB of heap plus the size of the response per transaction.
+
+  - `PlClient` transactions listen to `ops.abortSignal` themselves and stop listening when the transaction ends. An abort still ends a running transaction at once.
+  - `listUserResources`, `ClientLogs.lastLines`, `ClientLogs.readText`, `ClientProgress.getStatus`, and the download URL request detach from the caller's signal when the request ends.
+  - The download URL request honors its abort signal on the REST wire too.
+  - `LLPlClient.createTx` throws the abort reason when `ops.abortSignal` is already aborted.
+  - **BREAKING:** pl-client now needs Node 24 at runtime, as its `engines` field already says: `withCallAbortSignal` uses `DisposableStack`. On Node 22 the wrapped requests throw `ReferenceError: DisposableStack is not defined`. A block whose CI runs Node 22 or older must move to Node 24 before it takes this version of `@platforma-sdk/test`.
+  - **BREAKING:** `callAbortSignal` is removed: the signal it returned stayed in memory in the same way. Use the new `withCallAbortSignal`. pl-middle-layer re-exports pl-client, and `@platforma-sdk/test` re-exports pl-middle-layer as `ML`, so the same applies to both.
+
+- Updated dependencies [af78d3a]
+  - @milaboratories/pl-client@3.23.0
+  - @milaboratories/pl-middle-layer@2.6.0
+  - @milaboratories/pl-tree@1.18.2
+
+## 1.90.0
+
+### Patch Changes
+
+- Updated dependencies [92cf16f]
+  - @milaboratories/pl-middle-layer@2.5.0
+  - @platforma-sdk/model@1.90.0
+  - @milaboratories/pl-client@3.22.2
+  - @milaboratories/pl-tree@1.18.1
+
+## 1.89.0
+
+### Patch Changes
+
+- Updated dependencies [470744c]
+  - @platforma-sdk/model@1.89.0
+  - @milaboratories/pl-middle-layer@2.4.2
+
+## 1.88.16
+
+### Patch Changes
+
+- Updated dependencies [b556b15]
+  - @platforma-sdk/model@1.88.16
+  - @milaboratories/pl-middle-layer@2.4.1
+
+## 1.88.15
+
+### Patch Changes
+
+- Updated dependencies [1bea6a2]
+  - @milaboratories/pl-middle-layer@2.4.0
+  - @platforma-sdk/model@1.88.15
+
+## 1.88.14
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-client@3.22.1
+  - @milaboratories/pl-tree@1.18.0
+  - @milaboratories/pl-middle-layer@2.3.0
+  - @platforma-sdk/model@1.88.14
+
+## 1.88.13
+
+### Patch Changes
+
+- Updated dependencies [82dd041]
+  - @milaboratories/pl-middle-layer@2.2.0
+  - @platforma-sdk/model@1.88.13
+
+## 1.88.12
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.1.2
+
+## 1.88.11
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.1.1
+
+## 1.88.10
+
+### Patch Changes
+
+- Updated dependencies [d3a7b19]
+  - @milaboratories/pl-middle-layer@2.1.0
+  - @platforma-sdk/model@1.88.10
+
+## 1.88.9
+
+### Patch Changes
+
+- e40ccc1: Remove support for the Desktop App built-in backend. `@milaboratories/pl-deployments`, `@milaboratories/pl-config` and `@milaboratories/pl-healthcheck` are no longer published; `@milaboratories/pl-middle-layer` no longer re-exports `@milaboratories/pl-deployments`. The `localProjections` option is removed from the middle layer and driver kit options, `createDownloadClient` and `LsDriver.init` no longer take local projections, and `ClientDownload` no longer reads `storage://` URLs from the local disk: `LocalStorageProjection`, `parseLocalUrl`, `getFullPath`, `newLocalStorageIdsToRoot`, `WrongLocalFileUrl` and `UnknownStorageError` are gone. The LS driver always creates upload handles for local files and lists a data library with id `root` like any other. `pl-dev` keeps the default backend version in its own `pl-version`.
+- Updated dependencies [e40ccc1]
+  - @milaboratories/pl-middle-layer@2.0.0
+
+## 1.88.8
+
+### Patch Changes
+
+- 3147752: Raise the default `awaitBlockDone` timeout to 10s.
+
+  The signal the helper builds from this value spans the whole wait loop, not a
+  single change notification, so the default has to fit a block that is fetched
+  before it runs. At 5s that was a race on a cold runner for callers that do not
+  pass a timeout of their own.
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/pl-middle-layer@1.77.0
+  - @milaboratories/computable@2.9.10
+  - @milaboratories/pl-tree@1.17.2
+  - @platforma-sdk/model@1.88.8
+
+## 1.88.7
+
+### Patch Changes
+
+- Updated dependencies [5adb3c8]
+- Updated dependencies [f08961f]
+- Updated dependencies [0692c00]
+  - @milaboratories/pl-client@3.21.1
+  - @milaboratories/pl-tree@1.17.1
+  - @milaboratories/pl-middle-layer@1.76.5
+
+## 1.88.6
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.4
+
+## 1.88.5
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.3
+
+## 1.88.4
+
+### Patch Changes
+
+- Updated dependencies [f7d4c98]
+  - @milaboratories/pl-client@3.21.0
+  - @milaboratories/pl-tree@1.17.0
+  - @milaboratories/pl-middle-layer@1.76.2
+
+## 1.88.2
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.1
+
+## 1.88.1
+
+### Patch Changes
+
+- Updated dependencies [f7a9989]
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-middle-layer@1.76.0
+  - @milaboratories/pl-client@3.20.0
+  - @milaboratories/pl-tree@1.16.9
+
+## 1.88.0
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @platforma-sdk/model@1.88.0
+  - @milaboratories/pl-middle-layer@1.75.0
+  - @milaboratories/pl-client@3.19.4
+  - @milaboratories/pl-tree@1.16.8
+
+## 1.87.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.19
+
+## 1.87.0
+
+### Patch Changes
+
+- Updated dependencies [e813654]
+  - @platforma-sdk/model@1.87.0
+  - @milaboratories/pl-middle-layer@1.74.18
+
+## 1.86.8
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.17
+
+## 1.86.7
+
+### Patch Changes
+
+- Updated dependencies [c8a246e]
+  - @milaboratories/pl-middle-layer@1.74.16
+
+## 1.86.6
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.15
+
+## 1.86.5
+
+### Patch Changes
+
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-middle-layer@1.74.14
+  - @platforma-sdk/model@1.86.5
+  - @milaboratories/pl-client@3.19.3
+  - @milaboratories/pl-tree@1.16.7
+
+## 1.86.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.13
+
+## 1.86.3
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- 615bd8c: Replace `decompress` (path traversal advisories, no fixed release) with `yauzl` for zip archives and `tar` for the block boilerplate. Zip extraction now fails on entries and symlinks that lead outside the target folder, on entries written through a symlink, and on duplicate entries.
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [79f8dbc]
+- Updated dependencies [615bd8c]
+  - @milaboratories/computable@2.9.9
+  - @milaboratories/pl-client@3.19.2
+  - @milaboratories/pl-middle-layer@1.74.12
+  - @milaboratories/pl-tree@1.16.6
+  - @platforma-sdk/model@1.86.3
+
 ## 1.86.2
 
 ### Patch Changes

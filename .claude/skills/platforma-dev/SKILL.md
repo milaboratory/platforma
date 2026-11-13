@@ -28,7 +28,7 @@ pnpm install
 pnpm build
 ```
 
-Node >= 22 required. Package manager: pnpm 9.14+.
+Node >= 24 required. The root `packageManager` field pins pnpm.
 
 ### Build commands
 

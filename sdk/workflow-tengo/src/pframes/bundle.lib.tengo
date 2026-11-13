@@ -59,13 +59,14 @@ render := import(":render")
  *
  * === Parameters ===
  *
+ * @param q {Object} - The query API that resolves: `bquery` itself, or `bquery.forFamily(n)`
  * @param ctx {Context} - The context to use for resolution
  *
  * === Returns ===
  *
  * @returns {Object} PColumnBundleCollector object with methods to add and resolve references
  */
-createBuilder := func(ctx) {
+createBuilderWith := func(q, ctx) {
 	// reference key -> anchor id or ref
 	//   - if points to string resolution result can be taken from the anchor query
 	//   - if points to object resolution should be done separately
@@ -117,6 +118,9 @@ createBuilder := func(ctx) {
 		// Global-form PObjectId: canonicalize({__isRef: true, blockId, name}).
 		// Opaque id from cross-block result pool — must be resolved by ref, not as a query.
 		isGlobalRef := is_map(decodedId) && decodedId.__isRef == true
+		if isGlobalRef && maps.containsKey(q, "isRef") {
+			ll.panic("serialized value ids are not supported by this query API; add a ref {block, workflow, name} with addRef, got %v", id)
+		}
 		if isGlobalRef {
 			refKey := is_string(id) ? id : canonical.encode(decodedId)
 			if !is_undefined(queryKey) {
@@ -305,7 +309,7 @@ createBuilder := func(ctx) {
 		build: func() {
 			// 'queries' now directly contains the correct items (IDs, query sources, or full queries)
 			// ready to be passed to bquery.anchoredQuery.
-			resolveResult := bquery.anchoredQuery(ctx, anchors, queries, anchoredQueryOpts)
+			resolveResult := q.anchoredQuery(ctx, anchors, queries, anchoredQueryOpts)
 
 			bundle := smart.mapBuilder(pConstants.RTYPE_P_COLUMN_BUNDLE)
 
@@ -314,7 +318,7 @@ createBuilder := func(ctx) {
 					bundle.addRef(refKey, resolveResult.getAnchor(ref))
 					bundle.addRef(ref, resolveResult.getAnchor(ref))
 				} else {
-					bundle.addRef(refKey, bquery.resolve(ref, ctx))
+					bundle.addRef(refKey, q.resolve(ref, ctx))
 				}
 			}
 
@@ -327,6 +331,15 @@ createBuilder := func(ctx) {
 	}
 
 	return self
+}
+
+/**
+ * `createBuilderWith(bquery, ctx)`: a collector resolving with the family-1 query API.
+ *
+ * @param ctx {Context} - The context to use for resolution
+ */
+createBuilder := func(ctx) {
+	return createBuilderWith(bquery, ctx)
 }
 
 /**
@@ -392,6 +405,17 @@ pColumnBundleUnmarshaller := func() {
 
 				result := bResultUnmarshaller.parse(value.getValue(), parser)
 
+				// a family-2 result (its ref is {block, workflow, name}) has no `data` key for an item
+				// without data; for every other value, including an undefined result, the data is
+				// `r.data`. Told apart in memory, so a family-1 result costs no read.
+				dataOf := func(r) {
+					if !ll.isMap(r) || maps.containsKey(r, "data") || !maps.containsKey(r, "ref") ||
+						!ll.isMap(r.ref) || !maps.containsKey(r.ref, "block") {
+						return r.data
+					}
+					return undefined
+				}
+
 				if is_array(result) {
 					arr := []
 					for i, r in result {
@@ -400,7 +424,7 @@ pColumnBundleUnmarshaller := func() {
 						el := {
 							key: k,
 							spec: r.spec,
-							data: r.data
+							data: dataOf(r)
 						}
 						pool[k] = el
 						arr = append(arr, el)
@@ -410,7 +434,7 @@ pColumnBundleUnmarshaller := func() {
 					pool[resultKey] = {
 						key: resultKey,
 						spec: result.spec,
-						data: result.data
+						data: dataOf(result)
 					}
 				}
 			}
@@ -611,5 +635,6 @@ pColumnBundleUnmarshaller := func() {
 
 export ll.toStrict({
 	createBuilder: createBuilder,
+	createBuilderWith: createBuilderWith,
 	pColumnBundleUnmarshaller: pColumnBundleUnmarshaller
 })

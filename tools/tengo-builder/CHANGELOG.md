@@ -1,5 +1,79 @@
 # @platforma-sdk/tengo-builder
 
+## 4.1.24
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.49
+
+## 4.1.23
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.48
+
+## 4.1.22
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.47
+
+## 4.1.21
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.46
+
+## 4.1.20
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pl-model-backend@1.4.45
+  - @milaboratories/resolve-helper@1.1.3
+
+## 4.1.19
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.44
+
+## 4.1.18
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.43
+
+## 4.1.17
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.42
+
+## 4.1.16
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.41
+
+## 4.1.15
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.40
+
+## 4.1.14
+
+### Patch Changes
+
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/pl-model-backend@1.4.39
+
 ## 4.1.13
 
 ### Patch Changes

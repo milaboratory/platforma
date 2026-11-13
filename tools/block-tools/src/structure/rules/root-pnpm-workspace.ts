@@ -9,8 +9,9 @@
 //     generator seeds them with an obviously-invalid placeholder that the bump
 //     always overwrites. No version is stored here and there is no fallback.
 //   - infra / tooling: a `~`-floored set we control deliberately. No rule
-//     ever fetches these — refresh leaves them untouched and update-deps
-//     does not match them. Bump the floor here when authoring the scaffold.
+//     ever fetches these — refresh leaves them untouched (except turbo, see
+//     TURBO_VERSION) and update-deps does not match them. Bump the floor here
+//     when authoring the scaffold.
 //
 // Default refresh is purely structural: it verifies the workspace
 // `packages:` list matches the discovered modules and leaves every catalog
@@ -18,9 +19,23 @@
 // npm-latest for the SDK families) lives in the separate `onInitOrUpdate`
 // frame (`rootCatalogBumpRules`), which fires on init + update-deps only.
 
-import { ensureWorkspaceModulePaths, ensureCatalogAbsent, type RunContext } from "../engine/api";
+import {
+  ensureCatalogAbsent,
+  ensureCatalogAtLeast,
+  ensureCatalogVersion,
+  ensureWorkspaceListItems,
+  ensureWorkspaceMapEntries,
+  ensureWorkspaceModulePaths,
+  type RunContext,
+} from "../engine/api";
 import { matchesBumpPattern, type DerivedCatalogPin } from "../engine/registry-client";
 import { RETIRED_TOOLCHAIN_DEPS } from "./shared/retired-deps";
+import {
+  MINIMUM_RELEASE_AGE_EXCLUDE,
+  REQUIRED_BUILDS,
+  SKIPPED_BUILDS,
+  TURBO_VERSION,
+} from "./shared/toolchain";
 
 /** SDK packages that live in the catalog (membership only — no versions).
  *  Init fetches npm latest for each; refresh leaves them as the lockfile has
@@ -59,10 +74,11 @@ for (const name of SDK_CATALOG_PACKAGES) {
 }
 
 /** Infra / tooling — a `~`-floored curated set. Not exact-pinned on refresh
- *  and not bumped by update-deps. */
+ *  (refresh only raises turbo to `TURBO_VERSION`) and not bumped by update-deps. */
 export const INFRA_CATALOG_FLOOR: Record<string, string> = {
-  turbo: "~2.8.11",
+  turbo: TURBO_VERSION,
   shx: "~0.4.0",
+  "cross-env": "~10.1.0",
   "@changesets/cli": "~2.29.8",
   vitest: "~4.0.18",
   typescript: "~5.9.3",
@@ -118,8 +134,27 @@ export function rootPnpmWorkspaceInitial(ctx: RunContext): Record<string, unknow
   };
 }
 
+export function rootPnpmWorkspaceToolchainRules(): void {
+  ensureWorkspaceListItems("minimumReleaseAgeExclude", MINIMUM_RELEASE_AGE_EXCLUDE);
+  ensureWorkspaceMapEntries("allowBuilds", SKIPPED_BUILDS, { keepExisting: true });
+  ensureWorkspaceMapEntries("allowBuilds", REQUIRED_BUILDS);
+  // Curated infra floor, ADD-IF-ABSENT. This runs on EVERY refresh, not just
+  // init/update-deps, because the package.json rules hand out `catalog:`
+  // references for these on every refresh too (root devDeps: turbo, shx,
+  // cross-env, …). Seeding only on init/update-deps left a default refresh
+  // writing a `catalog:` for a key the catalog did not yet carry, and
+  // `pnpm install` then failed with ERR_PNPM_CATALOG_ENTRY_NOT_FOUND_FOR_SPEC.
+  // Add-if-absent keeps the refresh contract intact: a version the block
+  // already pins is never touched, and a seeded key is a fixpoint.
+  for (const [name, version] of Object.entries(INFRA_CATALOG_FLOOR)) {
+    ensureCatalogVersion(name, version);
+  }
+  ensureCatalogAtLeast("turbo", TURBO_VERSION);
+}
+
 export function rootPnpmWorkspaceRules(): void {
   ensureWorkspaceModulePaths();
+  rootPnpmWorkspaceToolchainRules();
   // Catalog side of the retired-dep cleanup — the per-package side sheds the
   // matching `catalog:` references.
   for (const name of RETIRED_TOOLCHAIN_DEPS) ensureCatalogAbsent(name);

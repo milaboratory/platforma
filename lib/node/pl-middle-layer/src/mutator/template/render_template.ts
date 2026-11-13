@@ -1,4 +1,4 @@
-import type { AnyRef, FieldRef, PlTransaction } from "@milaboratories/pl-client";
+import type { AnyRef, FieldRef, PlTransaction, ResourceRef } from "@milaboratories/pl-client";
 import { field, Pl } from "@milaboratories/pl-client";
 import type { ResourceType } from "@platforma-sdk/model";
 
@@ -27,6 +27,24 @@ export function createRenderTemplate<O extends string>(
   inputs: Pl.PlRecord,
   outputNames: O[],
 ): Record<O, FieldRef> {
+  return createRenderTemplateWithResource(tx, tpl, ephemeral, inputs, outputNames).outputs;
+}
+
+/**
+ * Same as {@link createRenderTemplate}, and also returns the render resource itself.
+ *
+ * With `actionContext`, the render's "actionContext" service field points to it. The link is created
+ * before the inputs are locked: the backend accepts it only in the creating transaction, ahead of
+ * any explicit input lock.
+ */
+export function createRenderTemplateWithResource<O extends string>(
+  tx: PlTransaction,
+  tpl: AnyRef,
+  ephemeral: boolean,
+  inputs: Pl.PlRecord,
+  outputNames: O[],
+  actionContext?: AnyRef,
+): { render: ResourceRef; outputs: Record<O, FieldRef> } {
   if (outputNames.length === 0) throw new Error("Zero output names provided");
   const rId = ephemeral ? tx.createEphemeral(EphRenderTemplate) : tx.createStruct(RenderTemplate);
 
@@ -35,7 +53,9 @@ export function createRenderTemplate<O extends string>(
 
   tx.createField(tplField, "Input", tpl);
   tx.createField(inputsField, "Input", Pl.createPlMap(tx, inputs, ephemeral));
+  if (actionContext !== undefined)
+    tx.createField(field(rId, "actionContext"), "Service", actionContext);
   tx.lockInputs(rId);
 
-  return Pl.futureRecord(tx, rId, outputNames, "Output", "outputs/");
+  return { render: rId, outputs: Pl.futureRecord(tx, rId, outputNames, "Output", "outputs/") };
 }

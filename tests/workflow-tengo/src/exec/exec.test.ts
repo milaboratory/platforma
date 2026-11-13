@@ -21,6 +21,10 @@ tplTest.concurrent("run-hello-world-go", async ({ helper, expect }) => {
 /*
  * Checks that default limits are applied per queue when no explicit cpu/ram is set.
  * Actual values are capped by min(queueLimit, queueDefault), so we assert > 0 and <= default.
+ *
+ * On k8s each job waits for Kueue admission; the backend caps its CPU request (3 in CI, so the
+ * heavy one asks for 3, not 16). When several CI runs share one ClusterQueue, that wait alone
+ * exceeds the 15s default timeout.
  */
 tplTest.concurrent.for([
   { queue: "ui-tasks", defaultCpuCores: 1, defaultRamBytes: 100 * 1024 * 1024 },
@@ -29,6 +33,7 @@ tplTest.concurrent.for([
   { queue: "light", defaultCpuCores: 1, defaultRamBytes: 512 * 1024 * 1024 },
 ])(
   "queue-default-limits ($queue)",
+  { timeout: 180_000 },
   async ({ queue, defaultCpuCores, defaultRamBytes }, { helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
@@ -85,9 +90,10 @@ tplTest.concurrent.for([{ gpuMemory: "16GiB" }])(
  * the render fails outright, so the test self-skips on a backend that advertises no scratch.
  */
 // The size is deliberately small: this test is about the request reaching the command, not
-// about how much can be allocated. Once the backend plans real storage capacity, a test that
+// about how much can be allocated. A deployment with a minimum scratch size gives at least that
+// minimum (PL_TEST_SCRATCH_MIN_GIB). Once the backend plans real storage capacity, a test that
 // asks for hundreds of gigabytes would start failing on whichever runner happens to be smaller.
-tplTest.concurrent.for([{ scratchFreeSpace: "1GiB", expectedGiB: "1" }])(
+tplTest.concurrent.for([{ scratchFreeSpace: "1GiB", expectedGiB: env.expectedScratchGiB(1) }])(
   "scratch-space (scratchFreeSpace=$scratchFreeSpace)",
   async ({ scratchFreeSpace, expectedGiB }, { helper, pl, expect, skip }) => {
     if (!pl.hasCapability("scratchSpace:v1")) {
@@ -132,8 +138,8 @@ tplTest.concurrent.for([{ scratchFreeSpace: "1GiB", expectedGiB: "1" }])(
  * exec runs either way, and the size the command sees is the evaluated one.
  */
 tplTest.concurrent.for([
-  { withFallback: true, expectedGiB: "2" },
-  { withFallback: false, expectedGiB: "2" },
+  { withFallback: true, expectedGiB: env.expectedScratchGiB(2) },
+  { withFallback: false, expectedGiB: env.expectedScratchGiB(2) },
 ])(
   "scratch-formula (withFallback=$withFallback)",
   async ({ withFallback, expectedGiB }, { helper, pl, expect, skip }) => {
@@ -324,7 +330,7 @@ tplTest.concurrent(
   "should run bash from the template, cat a file from a directory and returns its content as a value resource",
   async ({ driverKit, helper, expect }) => {
     const storages = await driverKit.lsDriver.getStorageList();
-    const library = storages.find((s) => s.name == env.libraryStorage);
+    const library = env.findLibraryStorage(storages);
     expect(library).toBeDefined();
     const files = await driverKit.lsDriver.listFiles(library!.handle, "");
     const ourFile = files.entries.find((f) => f.name == "answer_to_the_ultimate_question.txt");
