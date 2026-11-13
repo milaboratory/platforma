@@ -36,13 +36,11 @@ No SCSS. Write plain CSS — `<style module>` in components, `.css` files elsewh
 
 ### Rules
 
-1. **No SCSS syntax** in new or edited styles: no `@import`, no mixins, no `$variables`.
+1. **`<style module>`, not `<style lang="scss" module>`.** A component whose styles you touch loses its `lang="scss"`.
 
-2. **`<style module>`, not `<style lang="scss" module>`.** A component whose styles you touch loses its `lang="scss"`.
+2. **Custom properties for shared values** (`--txt-01`, `--border-color-default`, …), defined in `lib/ui/uikit/src/assets/variables.scss`. They are the replacement for SCSS variables, and they work at runtime, so a theme can redefine them.
 
-3. **Custom properties for shared values** (`--txt-01`, `--border-color-default`, …), defined in `lib/ui/uikit/src/assets/variables.scss`. They are the replacement for SCSS variables, and they work at runtime, so a theme can redefine them.
-
-4. **Existing `.scss` files stay** until something in them is rewritten. Do not convert a file wholesale as a side errand — convert the block you are already editing.
+3. **Existing `.scss` files stay** until something in them is rewritten. Do not convert a file wholesale as a side errand — convert the block you are already editing.
 
 ## Type Assertions
 
