@@ -1,0 +1,42 @@
+/**
+ * A fallback chain longer than the backend's attempt cap (exec fallbacks, AC2.3 on a default
+ * backend): root -> h1 -> h2 -> h3, each failing with exit 2 but the last.
+ *
+ * inputs.unnamed: bool, optional - root -> h1 -> h2, h2 succeeding, entries without names: the
+ *                 same key, SoftwareError[0], at every level
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["out", "attempts"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	shell := func(script) {
+		return exec.builder().
+			cpu(1).ram("50Mi").
+			software(shellSw).
+			arg("-c").
+			arg(script + " # " + inputs.nonce).
+			inLightQueue().
+			saveFileContent("out.txt")
+	}
+
+	if inputs.unnamed == true {
+		n2 := shell("echo h2 > out.txt")
+		n1 := shell("echo h1 > out.txt; exit 2").fallbacks({ SoftwareError: n2 })
+		res := shell("echo root > out.txt; exit 2").fallbacks({ SoftwareError: n1 }).run()
+		return { out: res.getFileContent("out.txt"), attempts: res.getAttempts() }
+	}
+
+	h3 := shell("echo h3 > out.txt")
+	h2 := shell("echo h2 > out.txt; exit 2").fallbacks({ SoftwareError: [{ name: "h3", builder: h3 }] })
+	h1 := shell("echo h1 > out.txt; exit 2").fallbacks({ SoftwareError: [{ name: "h2", builder: h2 }] })
+	root := shell("echo root > out.txt; exit 2").fallbacks({ SoftwareError: [{ name: "h1", builder: h1 }] })
+
+	res := root.run()
+	return { out: res.getFileContent("out.txt"), attempts: res.getAttempts() }
+})

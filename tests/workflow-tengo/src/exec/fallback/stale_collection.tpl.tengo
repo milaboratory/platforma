@@ -1,0 +1,27 @@
+/**
+ * A StreamCollection holding attempt and outcome fields of an earlier job, then a job start on it
+ * (exec fallbacks, review finding M2): attempt 0 of the new job removes them.
+ *
+ * inputs.nonce: string
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+render := import("@platforma-sdk/workflow-tengo:render")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+stream := import("@platforma-sdk/workflow-tengo:exec.stream")
+
+self.defineOutputs(["collection", "started"])
+
+startTpl := assets.importTemplate(":exec.fallback.stale_collection_start")
+
+self.body(func(inputs) {
+	c := stream.createCollection(smart.createJsonResource({ test: inputs.nonce }), "stdout.txt")
+	for name in ["attempt0", "attempt1", "attempt2", "outcome0", "outcome1", "outcome2"] {
+		c.createDynamicField(name).set(smart.createJsonResource("earlier job"))
+	}
+
+	r := render.createEphemeral(startTpl, { collections: smart.createMapResource({ "stdout.txt": c }) })
+
+	return { collection: c, started: r.output("started") }
+})

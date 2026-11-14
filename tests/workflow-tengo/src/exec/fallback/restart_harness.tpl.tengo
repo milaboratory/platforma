@@ -1,0 +1,67 @@
+/**
+ * Wave 2 of an exec on a given post-run working directory (exec fallbacks, spec §14, decision D5):
+ * :exec.wave2, the save chain with WorkdirSave v3 and the wd-retrier, as the outcome router
+ * renders it after a successful attempt. The attempt's own exec-impl inputs, used for a restart,
+ * come from the plan of an exec builder, prepared as exec.exec prepares attempt 0.
+ *
+ * Inputs: the pure and meta inputs of an exec.exec render (exec.builder().plan()), plus
+ *   __workdir: the post-run working directory to save
+ *   __ctx: map - the attempt context of the attempt that produced the directory, its success entry
+ *          last in the history, with attemptLimit and restartLimit
+ *   __collections: map, optional - file name -> StreamCollection
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+prepare := import("@platforma-sdk/workflow-tengo:exec.prepare")
+wave2 := import("@platforma-sdk/workflow-tengo:exec.wave2")
+
+execImplTpl := assets.importTemplate("@platforma-sdk/workflow-tengo:exec.exec-impl")
+
+self.awaitState("ResourceReady")
+
+self.body(func(inputs) {
+	raw := self.rawInputs()
+	impl := prepare.implInputs(inputs, raw)
+	impl.pure.execImplTpl = execImplTpl
+	if !is_undefined(raw.__collections) {
+		impl.pure.streamCollections = raw.__collections.getValue()
+	}
+
+	// the exec-impl inputs map a restart renders from: pure inputs and meta inputs
+	implInputs := smart.ephemeralMapBuilder()
+	for k, v in impl.pure {
+		implInputs.add(k, v)
+	}
+	for k, v in impl.meta {
+		implInputs.addMeta(k, v)
+	}
+	implInputs = implInputs.build()
+
+	settings := {
+		filesToSave: inputs.filesToSave,
+		filesContentToSave: inputs.filesContentToSave,
+		fileSetsToSave: inputs.fileSetsToSave,
+		fileSetsContentToSave: inputs.fileSetsContentToSave,
+		filesToStream: inputs.filesToStream
+	}
+
+	r := wave2.run({
+		workdir: raw.__workdir.getValue(),
+		settings: settings,
+		settingsRef: smart.createJsonResource(settings),
+		wdProcessors: inputs.wdProcessors,
+		v3: true,
+		attemptCtx: inputs.__ctx,
+		implInputs: implInputs,
+		streamCollectionsRef: is_undefined(raw.__collections) ? undefined : raw.__collections.getValue(),
+		execImplTpl: execImplTpl
+	})
+
+	return {
+		filesContent: r.filesContent,
+		wdProcessors: r.wdProcessors,
+		attempts: r.attempts
+	}
+})

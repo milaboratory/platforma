@@ -1,0 +1,12 @@
+// A workdir processor that reads out.txt through its own save (readFiles), the case that stalls
+// on a lost working directory unless the wd-retrier probes the directory first.
+
+self := import("@platforma-sdk/workflow-tengo:workdir.proc")
+
+self.readFiles(func(inputs) {
+	return { out: "out.txt" }
+})
+
+self.body(func(inputs) {
+	return { out: inputs.out }
+})

@@ -173,7 +173,6 @@ tpl := func(ops) {
 		template: func() {
 			return smart.resource(_templateId)
 		},
-
 		/**
 		 * Get the canonical ID of the current renderer (the RenderTemplate resource that runs this
 		 * template). Deduplication gives the same canonical ID to all renderers with the same
@@ -213,7 +212,7 @@ tpl := func(ops) {
 			return cid
 		},
 
-		_unmarshallers: copy(ops.unmarshallers),
+		_unmarshallers: is_undefined(ops.unmarshallers) ? [] : copy(ops.unmarshallers),
 
 		/**
 		 * Register a preprocessor of input resource. The preprocessor must have two
