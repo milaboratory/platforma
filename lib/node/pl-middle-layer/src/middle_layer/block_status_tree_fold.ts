@@ -18,6 +18,7 @@ import type {
   BlockStatusTreeTransition,
 } from "@milaboratories/pl-model-middle-layer";
 import { BlockStatusTreeHeaviestCount } from "@milaboratories/pl-model-middle-layer";
+import { BlockRunCancelledReason } from "../mutator/template/render_block";
 import type { ActionContextNode, ContextFold, SubtreeFold } from "./block_status_fold";
 import {
   compareNs,
@@ -52,24 +53,29 @@ export function blockStatusTree(
     return Number((closedNs + BigInt(open) * lastNs - openSinceSumNs) / 1_000_000n);
   };
 
+  // A stopped run's render is gone and reports nothing more, so its nodes keep the state they
+  // were in. Every node that had not ended was stopped with it.
+  const cancelled = summary.cancelled === true;
+
   const node = (fold: SubtreeFold, isRoot: boolean): BlockStatusTreeNode => {
     const { own } = fold;
-    const { holding } = own.folded;
+    const stopped = cancelled && !own.folded.terminal;
+    const holding = stopped ? undefined : own.folded.holding;
     return {
       contextId: own.id,
       name: nameOf(own),
       kind: kindOf(own),
       baggage: baggageOf(own),
       state: holding?.state,
-      onMachine: own.folded.onMachine,
+      onMachine: stopped ? false : own.folded.onMachine,
       enteredAt: holding === undefined ? undefined : nsToMs(holding.ns),
-      ended: own.folded.terminal,
-      failure: own.folded.failure || undefined,
+      ended: own.folded.terminal || stopped,
+      failure: own.folded.failure || (stopped ? BlockRunCancelledReason : undefined),
       transitions: transitionsOf(own),
       readings: readingsOf(own),
       childCount: fold.children.length,
       subtreeContexts: fold.contexts,
-      subtreeActiveContexts: fold.activeContexts,
+      subtreeActiveContexts: cancelled ? 0 : fold.activeContexts,
       subtreeComputeMs: computeMs(fold),
       children:
         isRoot || expanded.has(own.id)
