@@ -11,7 +11,9 @@ import {
   collectSearchColumns,
   createSearchFilter,
   createSheetFilters,
+  isSheetFixedToOneValue,
   joinFilters,
+  joinSorting,
   readPlDataTableUserParams,
   type PlDataTableFilterNode,
   type PlDataTableSearchCandidate,
@@ -125,6 +127,62 @@ describe("createSheetFilters", () => {
       { type: "equal", column: { type: "axis", id: roundAxis }, x: 3 },
     ]);
   });
+
+  test("selects the values picked on a sheet showing several", () => {
+    const column: PTableColumnId = { type: "axis", id: getAxisId(axis("sample")) };
+    expect(createSheetFilters([{ axisId: column.id, values: ["s1", "s2", 3] }])).toEqual([
+      {
+        type: "or",
+        filters: [
+          { type: "inSet", column, value: ["s1", "s2"] },
+          { type: "equal", column, x: 3 },
+        ],
+      },
+    ]);
+    expect(createSheetFilters([{ axisId: column.id, values: ["s1"] }])).toEqual([
+      { type: "inSet", column, value: ["s1"] },
+    ]);
+  });
+
+  test("filters nothing for a sheet taking all values or with none picked", () => {
+    const column: PTableColumnId = { type: "axis", id: getAxisId(axis("sample")) };
+    expect(createSheetFilters([{ axisId: column.id, allValues: true }])).toEqual([]);
+    expect(createSheetFilters([{ axisId: column.id, values: [] }])).toEqual([]);
+  });
+});
+
+describe("isSheetFixedToOneValue", () => {
+  const axisId = getAxisId(axis("sample"));
+
+  test("holds for a single value, also picked on a sheet showing several", () => {
+    expect(isSheetFixedToOneValue({ axisId, value: "s1" })).toBe(true);
+    expect(isSheetFixedToOneValue({ axisId, values: ["s1"] })).toBe(true);
+  });
+
+  test("does not hold for several values or all of them", () => {
+    expect(isSheetFixedToOneValue({ axisId, values: ["s1", "s2"] })).toBe(false);
+    expect(isSheetFixedToOneValue({ axisId, allValues: true })).toBe(false);
+  });
+});
+
+describe("joinSorting", () => {
+  const sample: PTableColumnId = { type: "axis", id: getAxisId(axis("sample")) };
+  const count: PTableColumnId = { type: "column", id: col("count") };
+
+  test("puts the fixed sorting first and drops the rest's entries on its columns", () => {
+    expect(
+      joinSorting(
+        [{ column: sample, ascending: true, naAndAbsentAreLeastValues: true }],
+        [
+          { column: count, ascending: false, naAndAbsentAreLeastValues: false },
+          { column: sample, ascending: false, naAndAbsentAreLeastValues: false },
+        ],
+      ),
+    ).toEqual([
+      { column: sample, ascending: true, naAndAbsentAreLeastValues: true },
+      { column: count, ascending: false, naAndAbsentAreLeastValues: false },
+    ]);
+  });
 });
 
 describe("collectSearchColumns", () => {
@@ -160,6 +218,19 @@ describe("collectSearchColumns", () => {
     expect(found).toContainEqual({ type: "axis", id: getAxisId(sample) });
     expect(found).toContainEqual({ type: "column", id: col("label") });
     expect(found).not.toContainEqual({ type: "axis", id: getAxisId(clone) });
+  });
+
+  test("skips the label column of an axis a sheet fixes to one value", () => {
+    const found = collectSearchColumns({
+      columns,
+      isAxisHidden: () => false,
+      sheetAxes: [getAxisId(clone)],
+      hiddenColIds: null,
+    }).map((c) => c.id);
+    expect(found).toEqual([
+      { type: "axis", id: getAxisId(sample) },
+      { type: "column", id: col("count") },
+    ]);
   });
 
   test("follows the user's hidden list instead of the optional defaults", () => {

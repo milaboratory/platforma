@@ -14,6 +14,7 @@ import {
   pTableValue,
   type PFrameDriver,
   type PlDataTableSheet,
+  type PlDataTableSheetState,
   type PTableVector,
   type AxisId,
   type PTableColumnSpec,
@@ -23,6 +24,7 @@ import {
   isLinkerColumn as isLinkerColumnSpec,
   isColumnHidden,
   isColumnOptional,
+  isSheetFixedToOneValue,
   matchAxisId,
   readAnnotation,
   readAnnotationJson,
@@ -85,6 +87,7 @@ export async function calculateGridOptions({
   generation,
   pfDriver,
   sheets,
+  sheetsState,
   fullTableHandle,
   visibleTableHandle,
   columnsMeta,
@@ -93,6 +96,8 @@ export async function calculateGridOptions({
   cellButtonAxisParams,
 }: {
   sheets: PlDataTableSheet[];
+  /** Values picked on the sheets */
+  sheetsState: PlDataTableSheetState[];
   pfDriver: PFrameDriver;
   generation: Ref<number>;
   fullTableHandle: PTableHandle;
@@ -126,7 +131,7 @@ export async function calculateGridOptions({
   // index mapping from full specs to visible subset (hidden columns → -1)
   const specsToVisibleSpecsMapping = buildSpecsToVisibleSpecsMapping(tableSpecs, visibleTableSpecs);
 
-  const isPartitionedAxis = createPartitionedAxisPredicate(sheets);
+  const isPartitionedAxis = createPartitionedAxisPredicate(sheets, sheetsState);
 
   // label columns indexed by labeled axis (used for displayability filter)
   const getLabelColumnIndex = collectLabelColumnsByAxis(tableSpecs, isPartitionedAxis);
@@ -442,10 +447,23 @@ function buildSpecsToVisibleSpecsMapping(
   );
 }
 
-/** Predicate that returns true when an axis is one of the sheet partition axes. */
-function createPartitionedAxisPredicate(sheets: PlDataTableSheet[]): (axisId: AxisId) => boolean {
-  const sheetAxesIds = sheets.map((sheet) => getAxisId(sheet.axis));
-  return (axisId) => sheetAxesIds.some((id) => matchAxisId(id, axisId));
+/**
+ * Predicate that returns true when an axis is the axis of a sheet showing one
+ * value. Every row then holds that value, so neither the axis nor its label
+ * column is shown; a sheet showing several values leaves both in view, so rows
+ * of different values can be told apart.
+ */
+function createPartitionedAxisPredicate(
+  sheets: PlDataTableSheet[],
+  sheetsState: PlDataTableSheetState[],
+): (axisId: AxisId) => boolean {
+  const fixedAxesIds = sheets
+    .map((sheet) => getAxisId(sheet.axis))
+    .filter((axisId) => {
+      const state = sheetsState.find((s) => matchAxisId(s.axisId, axisId));
+      return state === undefined || isSheetFixedToOneValue(state);
+    });
+  return (axisId) => fixedAxesIds.some((id) => matchAxisId(id, axisId));
 }
 
 /**
@@ -471,7 +489,11 @@ function collectLabelColumnsByAxis(
     labelColumns.find((info) => matchAxisId(info.axisId, axisId))?.labelColumnIdx ?? -1;
 }
 
-/** Indices of columns to display: drop partitioned axes, label/linker columns, hidden columns. */
+/**
+ * Indices of columns to display: drop the axes of sheets showing one value and
+ * their label columns, axes shown through their label column, linker columns
+ * and hidden columns.
+ */
 function selectDisplayableIndices(
   tableSpecs: PTableColumnSpec[],
   isPartitionedAxis: (axisId: AxisId) => boolean,
@@ -489,7 +511,11 @@ function selectDisplayableIndices(
               : effectiveVisibility(spec, meta) === "hidden") && !isPartitionedAxis(spec.id)
           );
         case "column":
-          return effectiveVisibility(spec, meta) !== "hidden" && !isLinkerColumnSpec(spec.spec);
+          return (
+            effectiveVisibility(spec, meta) !== "hidden" &&
+            !isLinkerColumnSpec(spec.spec) &&
+            !(isLabelColumnSpec(spec.spec) && isPartitionedAxis(getAxisId(spec.spec.axesSpec[0])))
+          );
       }
     })
     .map(([i]) => i)

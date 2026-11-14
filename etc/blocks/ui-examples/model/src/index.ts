@@ -105,6 +105,7 @@ export const platforma = BlockModelV3.create({ dataModel, kind })
           { value: 0, label: "Partition 1" },
           { value: 1, label: "Partition 2" },
         ],
+        selection: "single",
       } satisfies PlDataTableSheet,
     ];
     return rowCount > 0 ? sheets : [];
