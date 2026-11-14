@@ -68,9 +68,14 @@ jobs:
         with:
           version: v3.15.2
 
+      # A fresh password per run, so no fixed login to the backend lives in this public repo.
       - name: Create htpasswd secret
         run: |
-          HASH=$(openssl passwd -apr1 "testpassword1")
+          PW=$(openssl rand -hex 16)
+          echo "::add-mask::${PW}"
+          echo "PL_TEST_PASSWORD=${PW}" >> "$GITHUB_ENV"
+          echo "PL_TEST_ADMIN_PASSWORD=${PW}" >> "$GITHUB_ENV"
+          HASH=$(openssl passwd -apr1 "${PW}")
           kubectl create secret generic "${HTPASSWD_SECRET}" \
             --namespace "${NAMESPACE}" \
             --from-literal=htpasswd="testuser1:${HASH}" \
@@ -119,10 +124,9 @@ jobs:
           NODE_AUTH_TOKEN: ${{ steps.app-token.outputs.token }}
           # testuser1 is the only htpasswd user and an admin through PL_ADMIN_USERS in
           # values_ci_k8s-s3.yaml, so the regular and admin test users are the same login.
+          # PL_TEST_PASSWORD and PL_TEST_ADMIN_PASSWORD come from "Create htpasswd secret".
           PL_TEST_USER: testuser1
-          PL_TEST_PASSWORD: testpassword1
           PL_TEST_ADMIN_USER: testuser1
-          PL_TEST_ADMIN_PASSWORD: testpassword1
           PL_TEST_STORAGE_ID: test-assets
           PL_TEST_K8S: "1"
           # Each command is a Job, so a case spends most of the default 60s scheduling pods
