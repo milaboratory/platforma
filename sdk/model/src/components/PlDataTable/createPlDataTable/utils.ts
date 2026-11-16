@@ -18,7 +18,7 @@ import {
 } from "../../../labels/derive_distinct_tooltips";
 import type { ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
 import type { ColumnSelector, MatchQualifications } from "@milaboratories/pl-model-common";
-import { ColumnsCollection, hasColumnData, type ColumnRecipe } from "../../../columns";
+import { ColumnsCollection, getColumnDataState, type ColumnRecipe } from "../../../columns";
 import type { GlobalCfgRenderCtx } from "../../../render/internal";
 import { isNil, uniqBy } from "es-toolkit";
 import { getField } from "@milaboratories/helpers";
@@ -115,11 +115,12 @@ export function evaluateRules<R extends { match: ColumnSelector }>(
  * so it cannot perturb column identity (id-bearing spec overrides would
  * diverge the visible PTable's column ids from the full table / pframe).
  *
- * Mapping `ColumnFieldStatus` × actual byte-presence → `AnnotationDataStatus`:
+ * Mapping `ColumnFieldStatus` × the state of the data → `AnnotationDataStatus`:
  *   - `absent`                       → `"absent"`
  *   - `resolving`                    → `"computing"`
- *   - `present` + `hasColumnData()`  → `"ready"`
+ *   - `present` + bytes are there    → `"ready"`
  *   - `present` + no bytes yet       → `"computing"`
+ *   - `present` + the data failed    → `"error"`
  *
  * Intentionally scoped to visible columns — the probe is meaningful only for
  * what the user will actually see.
@@ -141,7 +142,14 @@ function deriveDataStatus(
   const field = column.getDataStatus();
   if (field === "absent") return "absent";
   if (field === "resolving") return "computing";
-  return hasColumnData(column, opts) ? "ready" : "computing";
+  switch (getColumnDataState(column, opts)) {
+    case "ready":
+      return "ready";
+    case "pending":
+      return "computing";
+    case "errored":
+      return "error";
+  }
 }
 
 /** Column shape required by label derivation. */

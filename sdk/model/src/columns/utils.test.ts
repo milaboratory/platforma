@@ -11,12 +11,18 @@ import {
   type SpecQuery,
   type ColumnUniversalId,
 } from "@milaboratories/pl-model-common";
-import { collectLinkerIds, hitQualifications, queriesQualifications } from "./utils";
+import {
+  collectLinkerIds,
+  getColumnDataState,
+  hasColumnData,
+  hitQualifications,
+  queriesQualifications,
+} from "./utils";
 import { ColumnDiscoveredRecipe } from "./column_recipes/column_discovered_recipe";
 import { ColumnFilteredRecipe } from "./column_recipes/column_filtered_recipe";
 import { ColumnOverriddenRecipe } from "./column_recipes/column_overrided_recipe";
 import type { ColumnFieldStatus, ColumnRecipe } from "./column_recipes/types";
-import { installStubRegistry } from "./__test_helpers__/stub_registry";
+import { installStubRegistry, type StubDataField } from "./__test_helpers__/stub_registry";
 
 // ── ctx mock ────────────────────────────────────────────────────────────────
 // ColumnDiscoveredRecipe pulls `getCfgRenderCtx()` for `pframeSpec`. Minimal
@@ -245,5 +251,82 @@ describe("queriesQualifications", () => {
     const d = discovered({ column: hit, queriesQualifications: quals });
     const wrapped = ColumnOverriddenRecipe.wrap(d, overrides());
     expect(queriesQualifications(wrapped)).toEqual(quals);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// getColumnDataState
+// ════════════════════════════════════════════════════════════════════════════
+
+describe("getColumnDataState", () => {
+  const first = createLocalPObjectId(["main", "out"], "first");
+  const second = createLocalPObjectId(["main", "out"], "second");
+  const leafSpec: PColumnSpec = {
+    kind: "PColumn",
+    name: "stub",
+    valueType: "String",
+    axesSpec: [],
+  };
+
+  /** A recipe that depends on the given leaves, in order. */
+  class RefsRecipe extends StubRecipe {
+    constructor(private readonly refs: PObjectId[]) {
+      super(refs[0], colNode(refs[0]));
+    }
+    override getReferencedIds(): PObjectId[] {
+      return this.refs;
+    }
+  }
+
+  /** A recipe over leaves whose `.data` fields are in the given states; `undefined` is no field. */
+  function recipeOver(leaves: [PObjectId, undefined | StubDataField][]): ColumnRecipe {
+    installStubRegistry(
+      activeCtx,
+      new Map(leaves.map(([id, data]) => [id, { spec: leafSpec, data }])),
+    );
+    return new RefsRecipe(leaves.map(([id]) => id));
+  }
+
+  test("ready when every data resource has bytes", () => {
+    const column = recipeOver([
+      [first, "ready"],
+      [second, "ready"],
+    ]);
+    expect(getColumnDataState(column)).toBe("ready");
+    expect(hasColumnData(column)).toBe(true);
+  });
+
+  test.each<undefined | StubDataField>([undefined, "unset", "pending"])(
+    "pending for a data field in state %s",
+    (data) => {
+      const column = recipeOver([[first, data]]);
+      expect(getColumnDataState(column)).toBe("pending");
+      expect(hasColumnData(column)).toBe(false);
+    },
+  );
+
+  test.each<StubDataField>(["errored", "erroredWithValue"])(
+    "errored for a data field in state %s",
+    (data) => {
+      const column = recipeOver([[first, data]]);
+      expect(getColumnDataState(column)).toBe("errored");
+      expect(hasColumnData(column)).toBe(false);
+    },
+  );
+
+  test("reports the failed data of a leaf that follows a ready one", () => {
+    const column = recipeOver([
+      [first, "ready"],
+      [second, "errored"],
+    ]);
+    expect(getColumnDataState(column)).toBe("errored");
+  });
+
+  test("stops at the first leaf whose data is not ready", () => {
+    const column = recipeOver([
+      [first, "pending"],
+      [second, "errored"],
+    ]);
+    expect(getColumnDataState(column)).toBe("pending");
   });
 });
