@@ -31,6 +31,21 @@ META_INPUT_GPU_FORMULA := "__gpuFormula__"
 META_INPUT_SCRATCH_FORMULA := "__scratchFormula__"
 REGULAR_INPUT_LINE_COUNT := "__metric_lineCount__"
 
+// Workdir files the command's stdout and stderr are written to. The exec builder
+// saves and streams them under these names; the exec templates expose their
+// streams as dedicated outputs (see STDOUT_STREAM_OUTPUT below).
+STDOUT_FILE := "stdout.txt"
+STDERR_FILE := "stderr.txt"
+
+// Exec template outputs holding the stdout / stderr stream managers directly.
+// A stream read through the "fileStreams" map needs a second, ephemeral getter
+// (the map only becomes final when the command exits); an ephemeral getter is
+// invisible to deduplication, so the exec could never be recovered on a re-run
+// while a block output referenced its log. One pure getter on these outputs
+// resolves while the command runs and stays recoverable.
+STDOUT_STREAM_OUTPUT := "stdoutStream"
+STDERR_STREAM_OUTPUT := "stderrStream"
+
 export ll.toStrict({
 	ARG_TYPE_STRING: ARG_TYPE_STRING,
 	ARG_TYPE_EXPRESSION: ARG_TYPE_EXPRESSION,
@@ -51,5 +66,10 @@ export ll.toStrict({
 	META_INPUT_CPU_FORMULA: META_INPUT_CPU_FORMULA,
 	META_INPUT_GPU_FORMULA: META_INPUT_GPU_FORMULA,
 	META_INPUT_SCRATCH_FORMULA: META_INPUT_SCRATCH_FORMULA,
-	REGULAR_INPUT_LINE_COUNT: REGULAR_INPUT_LINE_COUNT
+	REGULAR_INPUT_LINE_COUNT: REGULAR_INPUT_LINE_COUNT,
+
+	STDOUT_FILE: STDOUT_FILE,
+	STDERR_FILE: STDERR_FILE,
+	STDOUT_STREAM_OUTPUT: STDOUT_STREAM_OUTPUT,
+	STDERR_STREAM_OUTPUT: STDERR_STREAM_OUTPUT
 })

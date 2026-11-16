@@ -156,8 +156,8 @@ builder := func() {
 
 	mnz := monetization.init()
 
-	stdout := "stdout.txt"
-	stderr := "stderr.txt"
+	stdout := execConstants.STDOUT_FILE
+	stderr := execConstants.STDERR_FILE
 	stderrToStdout := false
 	stdoutFile := false
 	stderrFile := false
@@ -1716,12 +1716,25 @@ builder := func() {
 				},
 
 				/**
+				 * Reads the stdout or stderr stream from its dedicated exec output: one
+				 * pure getter, so the exec stays recoverable on a re-run while a block
+				 * output references the stream (see execConstants.STDOUT_STREAM_OUTPUT).
+				 * With stderrToStdout both names point at stdout's file and stream.
+				 */
+				_getStdStream: func(fileName) {
+					if fileName == execConstants.STDOUT_FILE {
+						return tpl.output(execConstants.STDOUT_STREAM_OUTPUT, cache)
+					}
+					return tpl.output(execConstants.STDERR_STREAM_OUTPUT, cache)
+				},
+
+				/**
 				 * Retrieves the stdout stream.
 				 */
 				getStdoutStream: func() {
 					ll.assert(stdoutStream,
 						"stdout stream was not saved, add saveStdoutStream() call to the exec builder")
-					return self.getFileStream(stdout)
+					return self._getStdStream(stdout)
 				},
 
 				/**
@@ -1730,7 +1743,7 @@ builder := func() {
 				getStderrStream: func() {
 					ll.assert(stderrStream,
 						"stderr stream was not saved, add saveStderrStream() call to the exec builder")
-					return self.getFileStream(stderr)
+					return self._getStdStream(stderr)
 				},
 
 				/**
