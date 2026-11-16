@@ -289,18 +289,25 @@ tplTest.concurrent(
       args: { sources: [source] },
     });
 
-    // The effect map, the imports map and the entry have locked inputs when the body returns.
-    // The import error gets to them later: first to the entry, then to the imports map, then to
-    // the effect map. Thus wait until the effect map is ready or has an error. If you do not wait,
-    // the client can read the entry before the error gets to it, and the read gives no error.
-    const effect = awaitStableState(
-      render.computeOutput("effect", (a) => {
-        if (a === undefined || !a.getIsReadyOrError()) return undefined;
-        return input(input(a, "imports"), source)?.listInputFields();
-      }),
-      OUTPUT_TIMEOUT,
-    );
-    await expect(effect).rejects.toThrow(/\/imports"[\s\S]*no-such-file\.txt[\s\S]*item not found/);
+    // The import error climbs one level at a time: entry, imports map, effect map. The client
+    // takes a field with no error as stable, so one read can end before the error or below the top.
+    const readError = async (): Promise<string | undefined> => {
+      try {
+        await awaitStableState(
+          render.computeOutput("effect", (a) => {
+            input(input(a, "imports"), source)?.listInputFields();
+            return undefined;
+          }),
+          OUTPUT_TIMEOUT,
+        );
+        return undefined;
+      } catch (e) {
+        return String(e);
+      }
+    };
+    await expect
+      .poll(readError, { timeout: OUTPUT_TIMEOUT, interval: 500 })
+      .toMatch(/\/imports"[\s\S]*no-such-file\.txt[\s\S]*item not found/);
   },
 );
 

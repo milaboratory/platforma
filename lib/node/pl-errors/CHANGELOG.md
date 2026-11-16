@@ -1,5 +1,12 @@
 # @milaboratories/pl-errors
 
+## 1.4.65
+
+### Patch Changes
+
+- Updated dependencies [fda52f0]
+  - @milaboratories/pl-client@3.25.0
+
 ## 1.4.64
 
 ### Patch Changes

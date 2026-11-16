@@ -4646,6 +4646,33 @@ export interface MaintenanceAPI_Ping_Response {
      * @generated from protobuf field: repeated string capabilities = 9
      */
     capabilities: string[];
+    /**
+     * Capabilities that every client must implement to work with this server.
+     * These tokens are a separate set from the 'capabilities' field above:
+     * they name client features, not server features.
+     *
+     * A client must call Ping before any other request and check this list.
+     * If the list has a token that the client does not know, the client is
+     * not compatible with this server: it must stop, tell the user to update
+     * the client, and send no other requests to this server. The server does
+     * not enforce the list: a client that does not check it gets no error
+     * from Ping or from other requests.
+     *
+     * Each entry is an opaque token "<feature>:<version>". Compare tokens as
+     * whole strings: a client that knows "foo:v1" does not know "foo:v2", so a
+     * client lists every version that it implements. Do not parse versions.
+     *
+     * The list applies to all clients: the Desktop App, CLI tools and other
+     * users of the client libraries. A token locks out every client that does
+     * not implement the feature. The server adds a token when it removes
+     * support for such clients. An empty list, or an unset field on old
+     * servers, requires nothing.
+     *
+     * All list see pl/platform/api/plapiserver/server_capabilities.go
+     *
+     * @generated from protobuf field: repeated string required_capabilities = 10
+     */
+    requiredCapabilities: string[];
 }
 /**
  * @generated from protobuf enum MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression
@@ -20904,7 +20931,8 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
             { no: 6, name: "platform", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 7, name: "os", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 8, name: "arch", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 9, name: "capabilities", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
+            { no: 9, name: "capabilities", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ },
+            { no: 10, name: "required_capabilities", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<MaintenanceAPI_Ping_Response>): MaintenanceAPI_Ping_Response {
@@ -20917,6 +20945,7 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         message.os = "";
         message.arch = "";
         message.capabilities = [];
+        message.requiredCapabilities = [];
         if (value !== undefined)
             reflectionMergePartial<MaintenanceAPI_Ping_Response>(this, message, value);
         return message;
@@ -20949,6 +20978,9 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
                     break;
                 case /* repeated string capabilities */ 9:
                     message.capabilities.push(reader.string());
+                    break;
+                case /* repeated string required_capabilities */ 10:
+                    message.requiredCapabilities.push(reader.string());
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -20986,6 +21018,9 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         /* repeated string capabilities = 9; */
         for (let i = 0; i < message.capabilities.length; i++)
             writer.tag(9, WireType.LengthDelimited).string(message.capabilities[i]);
+        /* repeated string required_capabilities = 10; */
+        for (let i = 0; i < message.requiredCapabilities.length; i++)
+            writer.tag(10, WireType.LengthDelimited).string(message.requiredCapabilities[i]);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

@@ -2246,7 +2246,31 @@ message MaintenanceAPI {
       // All list see pl/platform/api/plapiserver/server_capabilities.go
       repeated string capabilities = 9;
 
-      // next free: 10
+      // Capabilities that every client must implement to work with this server.
+      // These tokens are a separate set from the 'capabilities' field above:
+      // they name client features, not server features.
+      //
+      // A client must call Ping before any other request and check this list.
+      // If the list has a token that the client does not know, the client is
+      // not compatible with this server: it must stop, tell the user to update
+      // the client, and send no other requests to this server. The server does
+      // not enforce the list: a client that does not check it gets no error
+      // from Ping or from other requests.
+      //
+      // Each entry is an opaque token "<feature>:<version>". Compare tokens as
+      // whole strings: a client that knows "foo:v1" does not know "foo:v2", so a
+      // client lists every version that it implements. Do not parse versions.
+      //
+      // The list applies to all clients: the Desktop App, CLI tools and other
+      // users of the client libraries. A token locks out every client that does
+      // not implement the feature. The server adds a token when it removes
+      // support for such clients. An empty list, or an unset field on old
+      // servers, requires nothing.
+      //
+      // All list see pl/platform/api/plapiserver/server_capabilities.go
+      repeated string required_client_capabilities = 10;
+
+      // next free: 11
     }
   }
 

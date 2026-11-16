@@ -1,0 +1,34 @@
+/**
+ * one exec that succeeds and returns a run marker: the current time in seconds plus 8
+ * random bytes, so no two executions return the same marker. Used as the
+ * upstream step in the case where an intermediate template, not the command, is what
+ * fails. Its only input is the test's `seed`, so its CID is stable across renders
+ * with the same seed.
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["main"])
+
+// busybox `sh` in an image, so the commands also run on a Kubernetes backend.
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	run := exec.builder().
+		name("recovery-okstage").
+		cpu(1).ram("50Mi").
+		inLightQueue().
+		software(shellSw).
+		arg("-c").
+		arg("echo \"$(date +%s)-$(od -An -N8 -tx1 /dev/urandom | tr -d ' \\n')\" > out.txt").
+		arg("okstage").
+		arg(inputs.seed).
+		saveFileContent("out.txt").
+		run()
+
+	return {
+		main: run.getFileContent("out.txt")
+	}
+})

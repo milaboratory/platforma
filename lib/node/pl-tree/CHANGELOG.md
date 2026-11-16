@@ -1,5 +1,13 @@
 # @milaboratories/pl-tree
 
+## 1.18.4
+
+### Patch Changes
+
+- Updated dependencies [fda52f0]
+  - @milaboratories/pl-client@3.25.0
+  - @milaboratories/pl-errors@1.4.65
+
 ## 1.18.3
 
 ### Patch Changes
