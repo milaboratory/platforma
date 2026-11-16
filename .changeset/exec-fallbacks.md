@@ -14,5 +14,10 @@ fallbacks renders the same `exec.exec` inputs as before. On a backend without Ru
 failure is seen: the OOM plan with the most RAM runs in place of the root, or the root when there
 is no OOM handler, with a notice.
 
+Every command is linked to the block's action context, so its run records carry the block. A
+RunCommand v3 takes the link only on a backend that reports `runCommandV3ActionContext`; on older
+backends an exec without fallbacks stays on RunCommand v2 to keep the link, and an exec with
+fallbacks runs without it.
+
 `getAttempts()` is a record of how a run went, not a completion signal: on a result reused from an
 exec rendered by an SDK before this one it never resolves, so do not await it.

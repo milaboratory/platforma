@@ -809,9 +809,10 @@ builder := func(workdir, ...initialState) {
 			argsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_ARGS, json.encode(options.args))
 			runRes.getField(_FIELD_ARGS).set(argsRes)
 
-			// the runner reports the run of the command into the context of this template; linked before the lock.
-			// Not on v3: its schema has no actionContext field yet, and the backend refuses to create it.
-			if !useV3 {
+			// the runner reports the run of the command into the context of this template, and reads the
+			// block of its run records there; linked before the lock. A v3 command takes the link only on
+			// a backend with 'runCommandV3ActionContext': older ones refuse it.
+			if !useV3 || feats.runCommandV3ActionContext {
 				actionContext.inherit(runRes.id)
 			}
 

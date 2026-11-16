@@ -1,0 +1,21 @@
+// exec-fallbacks-root: renders exec-fallbacks with a new action context, as exec-root renders exec
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+
+self.defineOutputs(["context", "out", "v3Linked"])
+
+self.body(func(inputs) {
+	inner := render.createEphemeral(
+		assets.importTemplate(":action-context.exec-fallbacks"),
+		{},
+		{ actionContext: { "name": "root", "run-id": "run-exec-fallbacks" } }
+	)
+
+	return {
+		context: inner.output("context"),
+		out: inner.output("out"),
+		v3Linked: inner.output("v3Linked")
+	}
+})

@@ -114,5 +114,9 @@ export ll.toStrict({
 	// true when a resource schema can declare fields optional, so templates create them in the transaction
 	// that creates the resource, before an explicit lock (e.g. the "actionContext" link of block action
 	// context). "optionalServiceField" is its former name.
-	optionalFieldsInSchemas:  _isEnabled("optionalFieldsInSchemas") || _isEnabled("optionalServiceField")
+	optionalFieldsInSchemas:  _isEnabled("optionalFieldsInSchemas") || _isEnabled("optionalServiceField"),
+
+	// true when a RunCommand v3 takes the "actionContext" link, as v1 and v2 do: its run records then
+	// carry the block that ran it. Older backends with RunCommand v3 refuse the link.
+	runCommandV3ActionContext: _isEnabled("runCommandV3ActionContext")
 })
