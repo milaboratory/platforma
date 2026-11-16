@@ -19,16 +19,14 @@ const json = (tx: Pl.PlTransaction, v: unknown) => tx.createValue(Pl.JsonObject,
 // code 1"), not the process output, so nothing in it can match a messageMatch pattern.
 const ON_K8S = process.env.PL_TEST_K8S === "1";
 
-// What the backend offers an exec: "workdirSaveV3" — WorkdirSave v3, which an exec with fallbacks
-// saves with; "plainExecV3" — an exec without fallbacks runs on RunCommand v3 too (WorkdirSave v3,
-// and RunCommand v3 takes the action context link). Off the v3 path an exec's error has no attempt
-// history, and its outputs fail as before.
+// Whether the backend has WorkdirSave v3. Without it an exec without fallbacks runs on the
+// RunCommand v2 path: its error has no attempt history, and its outputs fail as before.
 type Helper = Parameters<Parameters<typeof tplTest>[1]>[0]["helper"];
-const backendHas = async (helper: Helper, capability: "workdirSaveV3" | "plainExecV3") =>
+const hasWorkdirSaveV3 = async (helper: Helper) =>
   (await helper
-    .renderTemplate(false, "exec.fallback.capability", [capability], () => ({}))
+    .renderTemplate(false, "exec.fallback.capability", ["workdirSaveV3"], () => ({}))
     .then((r) =>
-      r.computeOutput(capability, (a) => a?.getDataAsJson<boolean>()).awaitStableValue(),
+      r.computeOutput("workdirSaveV3", (a) => a?.getDataAsJson<boolean>()).awaitStableValue(),
     )) === true;
 
 // forceSaveV1: a backend with RunCommand v3 but without WorkdirSave v3 (the _forceWorkdirSaveV1
@@ -136,8 +134,7 @@ tplTest.concurrent(
       .catch((e: Error) => e);
     expect(error).toBeInstanceOf(Error);
     expect((error as Error).message).toContain("Exited with code 2.");
-    // the fallbacks are dropped: the exec runs as a plain one
-    if (await backendHas(helper, "plainExecV3"))
+    if (await hasWorkdirSaveV3(helper))
       expect((error as Error).message).toContain(
         "#0 root fail SoftwareError (exit 2) → no handler",
       );
@@ -302,12 +299,12 @@ const partialSaveCases = [
 tplTest.concurrent.for(partialSaveCases)(
   "exec: a saved file never written (v2: $forceV2, file set: $withFileSet)",
   async ({ forceV2, withFileSet }, { helper, expect }) => {
-    const saveV3 = await backendHas(helper, "workdirSaveV3");
-    const plainV3 = await backendHas(helper, "plainExecV3");
+    const ok =
+      forceV2 || !(await hasWorkdirSaveV3(helper))
+        ? ["stdout", "attempts", ...(withFileSet ? ["set"] : [])]
+        : [];
     const nonce = randomUUID();
     for (const withFallbacks of forceV2 ? [false] : [false, true]) {
-      const onV3 = !forceV2 && saveV3 && (withFallbacks || plainV3);
-      const ok = onV3 ? [] : ["stdout", "attempts", ...(withFileSet ? ["set"] : [])];
       for (const which of [
         "stdout",
         "written",

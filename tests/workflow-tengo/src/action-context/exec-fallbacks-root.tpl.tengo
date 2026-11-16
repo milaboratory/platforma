@@ -4,7 +4,7 @@ self := import("@platforma-sdk/workflow-tengo:tpl")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 render := import("@platforma-sdk/workflow-tengo:render")
 
-self.defineOutputs(["context", "out", "v3Linked"])
+self.defineOutputs(["context", "out"])
 
 self.body(func(inputs) {
 	inner := render.createEphemeral(
@@ -15,7 +15,6 @@ self.body(func(inputs) {
 
 	return {
 		context: inner.output("context"),
-		out: inner.output("out"),
-		v3Linked: inner.output("v3Linked")
+		out: inner.output("out")
 	}
 })

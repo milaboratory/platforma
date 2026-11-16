@@ -1,17 +1,10 @@
-// Whether the backend has WorkdirSave v3 (exec fallbacks), and whether an exec without fallbacks
-// runs on RunCommand v3 there: tests that depend on it read it here.
+// Whether the backend has WorkdirSave v3 (exec fallbacks): tests that depend on it read it here.
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
 limits := import("@platforma-sdk/workflow-tengo:exec.limits")
-feats := import("@platforma-sdk/workflow-tengo:feats")
 
-self.defineOutputs(["workdirSaveV3", "plainExecV3"])
+self.defineOutputs(["workdirSaveV3"])
 
 self.body(func(inputs) {
-	workdirSaveV3 := !is_undefined(limits.getWorkdirSaveV3Type("light"))
-	return {
-		workdirSaveV3: workdirSaveV3,
-		// as exec-impl routes it: a plain exec stays on v2 where v3 cannot carry the block
-		plainExecV3: workdirSaveV3 && feats.runCommandV3ActionContext
-	}
+	return { workdirSaveV3: !is_undefined(limits.getWorkdirSaveV3Type("light")) }
 })

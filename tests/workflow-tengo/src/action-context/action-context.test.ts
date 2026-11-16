@@ -264,9 +264,8 @@ tplTest.concurrent(
     //  1. Render a template with its own context; it runs a command with fallbacks, which runs as a
     //     RunCommand v3.
     //  2. The command finishes on its first plan.
-    //  3. On a backend whose RunCommand v3 takes the action context link, the runner recorded
-    //     Running and Completed on that command in the tree: its run records carry the block.
-    //  Older backends refuse the link on v3, and the SDK does not create it there.
+    //  3. The runner recorded Running and Completed on that command in the tree: the command is
+    //     linked to the action context, so its run records carry the block.
     //
 
     if (!hasActionContextPrimitives(pl)) return;
@@ -274,7 +273,7 @@ tplTest.concurrent(
     const result = await helper.renderTemplate(
       true,
       "action-context.exec-fallbacks-root",
-      ["context", "out", "v3Linked"],
+      ["context", "out"],
       () => ({}),
     );
 
@@ -282,10 +281,6 @@ tplTest.concurrent(
     expect(await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue()).eq(
       "ok",
     );
-    const linked = await result
-      .computeOutput("v3Linked", (a) => a?.getDataAsJson<boolean>())
-      .awaitStableValue();
-    if (linked !== true) return;
 
     // 3. The exec transitions land asynchronously after the commits: poll the tree.
     const rootRef = await result.computeOutput("context", (a) => a?.id).awaitStableValue();

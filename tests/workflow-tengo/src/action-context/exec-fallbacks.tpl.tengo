@@ -4,9 +4,8 @@ self := import("@platforma-sdk/workflow-tengo:tpl")
 smart := import("@platforma-sdk/workflow-tengo:smart")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 assets := import("@platforma-sdk/workflow-tengo:assets")
-feats := import("@platforma-sdk/workflow-tengo:feats")
 
-self.defineOutputs(["context", "out", "v3Linked"])
+self.defineOutputs(["context", "out"])
 
 shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
@@ -29,8 +28,6 @@ self.body(func(inputs) {
 
 	return {
 		context: smart.resource(contextId),
-		out: run.getStdoutContent(),
-		// the backend takes the action context link on a RunCommand v3
-		v3Linked: feats.runCommandV3ActionContext
+		out: run.getStdoutContent()
 	}
 })

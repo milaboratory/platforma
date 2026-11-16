@@ -364,11 +364,9 @@ self.body(func(inputs) {
 	// The outcome router serves fallbacks and the restart of a lost working directory. An exec
 	// with neither, on a backend without WorkdirSave v3, keeps the RunCommand v2 path: the router
 	// would only add renders between the command and its save, and their latency (an existing
-	// exec-heavy pframes test timed out on it in CI). It keeps it too where RunCommand v3 cannot
-	// take the action context link: the restart is not worth the block missing from its run records.
+	// exec-heavy pframes test timed out on it in CI).
 	routed := !is_undefined(inputs.fallbackPlans) || !is_undefined(inputs.attemptCtx) ||
 		(is_undefined(inputs[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1]) &&
-			feats.runCommandV3ActionContext &&
 			saveChain.hasWorkdirSaveV3(queue, settings))
 	useV3 := is_undefined(inputs[execConstants.META_INPUT_FORCE_RUN_COMMAND_V2]) &&
 		!is_undefined(limits.getRunCommandV3Type(queue)) && routed

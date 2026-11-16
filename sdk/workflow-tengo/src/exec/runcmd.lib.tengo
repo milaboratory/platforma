@@ -810,11 +810,8 @@ builder := func(workdir, ...initialState) {
 			runRes.getField(_FIELD_ARGS).set(argsRes)
 
 			// the runner reports the run of the command into the context of this template, and reads the
-			// block of its run records there; linked before the lock. A v3 command takes the link only on
-			// a backend with 'runCommandV3ActionContext': older ones refuse it.
-			if !useV3 || feats.runCommandV3ActionContext {
-				actionContext.inherit(runRes.id)
-			}
+			// block of its run records there; linked before the lock
+			actionContext.inherit(runRes.id)
 
 			built := runRes.lockAndBuild()
 			outputs := runRes.outputs()
