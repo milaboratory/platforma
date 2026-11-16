@@ -131,7 +131,6 @@ describe("the built-in tables", () => {
     "Dummy",
     "StdMap",
     "std/map",
-    "EphStdMap",
     "PFrame",
     "ParquetChunk",
     "BContext",
@@ -146,6 +145,7 @@ describe("the built-in tables", () => {
     "SoftwareInfo",
   ]);
   const neverFinal = new Set([
+    "EphStdMap",
     "UserProject",
     "Projects",
     "ClientRoot",

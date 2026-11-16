@@ -33,10 +33,6 @@ function expectedStopRules(): Filter {
       treeFilter.readyOrDuplicateOrError(),
     ),
     treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.EphStdMap),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
       treeFilter.resourceTypeEq(ResourceTypeName.PFrame),
       treeFilter.readyOrDuplicateOrError(),
     ),
