@@ -9,7 +9,8 @@ import {
 } from "@milaboratories/pl-model-common";
 import { DataColumnImpl } from "./data_column";
 import { _ctxProvidersCache } from "./column_providers";
-import { installStubRegistry } from "./__test_helpers__/stub_registry";
+import { installStubRegistry, type StubDataField } from "./__test_helpers__/stub_registry";
+import { TreeNodeAccessor } from "../render/accessor";
 
 // --- Ambient ctx mock ------------------------------------------------------
 // DataColumnImpl constructor pulls `getCfgRenderCtx()` from globalThis. A minimal
@@ -199,6 +200,47 @@ describe("DataColumnImpl resolution: fromId / fromAccessor / getStatus", () => {
     // resolving — id not in any provider but registry still enumerating.
     installStubRegistry(mockCtx, {}, { isFinal: false });
     expect(DataColumnImpl.getStatusById(baseLeaf)).toBe("resolving");
+  });
+});
+
+// --- data of a leaf ---------------------------------------------------------
+
+describe("DataColumnImpl data of a leaf", () => {
+  /** The leaf of a column whose spec is there and whose `.data` field is in the given state. */
+  function leafWithData(data: StubDataField): DataColumnImpl {
+    installStubRegistry(mockCtx, { [baseLeaf]: { spec: stubSpec, data } });
+    const leaf = DataColumnImpl.fromId(baseLeaf);
+    if (!(leaf instanceof DataColumnImpl)) throw new Error("leafWithData: no leaf");
+    return leaf;
+  }
+
+  test("gives the data resource of a field that has a value and no error", () => {
+    const leaf = leafWithData("ready");
+    expect(leaf.getData()).toBeInstanceOf(TreeNodeAccessor);
+    expect(leaf.hasDataError()).toBe(false);
+  });
+
+  test("gives no data for a field without a value yet, and no error", () => {
+    const leaf = leafWithData("unset");
+    expect(leaf.getData()).toBeUndefined();
+    expect(leaf.hasDataError()).toBe(false);
+  });
+
+  test.each<StubDataField>(["errored", "erroredWithValue"])(
+    "gives no data and reports the error of a field in state %s",
+    (data) => {
+      const leaf = leafWithData(data);
+      expect(leaf.getData()).toBeUndefined();
+      expect(leaf.hasDataError()).toBe(true);
+      // The status tells only that the field is there; it does not read the field.
+      expect(leaf.getDataStatus()).toBe("present");
+    },
+  );
+
+  test("a materialised column has no data error", () => {
+    const leaf = lazyOf(baseLeaf);
+    if (!(leaf instanceof DataColumnImpl)) throw new Error("no leaf");
+    expect(leaf.hasDataError()).toBe(false);
   });
 });
 

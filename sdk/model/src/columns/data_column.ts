@@ -72,6 +72,7 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
       getSpec: () => PColumnSpec;
       getData: () => ColumnData;
       getDataStatus: () => ColumnFieldStatus;
+      hasDataError: () => boolean;
     },
   ) {}
 
@@ -102,6 +103,16 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
       this.dataStatusCache = { value: this.options.getDataStatus() };
     }
     return this.dataStatusCache.value;
+  }
+
+  /**
+   * Whether the column's data failed: its `.data` field holds an error, and
+   * {@link getData} gives `undefined`. Reads the field, as {@link getData}
+   * does, so it is asked only where the data is read anyway;
+   * {@link getDataStatus} does not read it.
+   */
+  hasDataError(): boolean {
+    return this.options.hasDataError();
   }
 
   /**
@@ -145,8 +156,9 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
     if (spec === undefined || !isPColumnSpec(spec)) return undefined;
     return new DataColumnImpl(entry.id, {
       getSpec: () => spec,
-      getData: () => readDataAccessor(entry),
+      getData: () => readDataNode(entry),
       getDataStatus: () => readDataStatus(entry),
+      hasDataError: () => readData(entry).type === "errored",
     });
   }
 
@@ -167,6 +179,7 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
       getSpec: () => pColumn.spec,
       getData: () => pColumn.data,
       getDataStatus: () => "present",
+      hasDataError: () => false,
     });
   }
 
@@ -299,10 +312,35 @@ function getLeafEntryStatus(entry: LeafEntry<TreeNodeAccessor>): ColumnResolutio
   return "present";
 }
 
-const readDataAccessor = memoizeByEntry(
-  ({ accessor, name }: LeafEntry<TreeNodeAccessor>): undefined | TreeNodeAccessor =>
-    accessor.traverse({ field: `${name}.data`, assertFieldType: "Input", ignoreError: true }),
-);
+/**
+ * The `.data` field of a leaf: its data resource, none while the field has no
+ * value yet, or the fact that the field holds an error.
+ */
+type LeafDataRead =
+  | { readonly type: "node"; readonly node: undefined | TreeNodeAccessor }
+  | { readonly type: "errored" };
+
+/**
+ * One read of the leaf's `.data` field. A field that holds an error reads as
+ * `errored` whether or not it also has a value: the data resource behind it
+ * failed.
+ */
+const readData = memoizeByEntry(({ accessor, name }: LeafEntry<TreeNodeAccessor>): LeafDataRead => {
+  const field = `${name}.data`;
+  try {
+    return { type: "node", node: accessor.traverse({ field, assertFieldType: "Input" }) };
+  } catch (error) {
+    // Only a field that is there can hold an error; any other failure stays the caller's.
+    if (!accessor.listInputFields().includes(field)) throw error;
+    return { type: "errored" };
+  }
+});
+
+/** The leaf's data resource; `undefined` while it is not there, and when the data failed. */
+function readDataNode(entry: LeafEntry<TreeNodeAccessor>): undefined | TreeNodeAccessor {
+  const read = readData(entry);
+  return read.type === "node" ? read.node : undefined;
+}
 
 const readDataStatus = memoizeByEntry(
   ({ accessor, name }: LeafEntry<TreeNodeAccessor>): ColumnFieldStatus => {
