@@ -8,6 +8,7 @@ import {
   ResultPoolEntriesProvider,
   SpecOverrides,
   type ColumnEntriesProvider,
+  type LeafEntry,
   type PColumn,
   type PColumnSpec,
   type PObjectId,
@@ -59,7 +60,9 @@ export function buildColumnRegistry(
  * Throws when the id is not in the registry or the column has no resolved spec.
  * A `.data` field that has not yet materialised yields an empty value list — the
  * column refills on a later recomputation, mirroring the sandbox-side
- * `finalizePColumnData` behaviour rather than blocking the whole PFrame.
+ * `finalizePColumnData` behaviour rather than blocking the whole PFrame. A
+ * `.data` field that holds an error yields an empty value list too: one failed
+ * column leaves the other columns of the PFrame readable.
  */
 export function resolvePColumnById(
   registry: ColumnRegistry<PlTreeNodeAccessor>,
@@ -80,16 +83,25 @@ export function resolvePColumnById(
   if (spec === undefined) {
     throw new Error(`column ${String(pid)} has no resolved spec`);
   }
-  const data =
-    leaf.accessor.traverse({
-      field: `${leaf.name}.data`,
-      assertFieldType: "Input",
-      ignoreError: true,
-    }) ?? [];
 
   return {
     id: id as PObjectId,
     spec: applySpecOverrides(spec, overrides),
-    data,
+    data: readColumnData(leaf),
   };
+}
+
+//
+// Internals
+//
+
+/**
+ * The data resource of a column, or an empty value list when its `.data` field
+ * has no value yet or holds an error. The field's error counts even when the
+ * field also has a value: the data resource behind it failed.
+ */
+function readColumnData(leaf: LeafEntry<PlTreeNodeAccessor>): PColumnValues | PlTreeNodeAccessor {
+  const field = leaf.accessor.getField({ field: `${leaf.name}.data`, assertFieldType: "Input" });
+  if (field === undefined || field.error !== undefined) return [];
+  return field.value ?? [];
 }
