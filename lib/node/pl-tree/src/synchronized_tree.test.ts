@@ -849,20 +849,22 @@ test("a tree of shared roots survives a re-login: it rediscovers the roots under
   }
 }, 60_000);
 
-// The v2 effect's layout: effect map -> imports map -> entry -> the importer's `blob` output. The
-// backend makes a map ready once each entry points to a resource with a final status; the importer
-// can still fail after that, and the core then lifts its error up through the entry and the maps.
+// The v2 effect's layout: effect map -> imports map -> entry -> a locked resource with work to do,
+// as a BlobIndex is. Such a resource has a final status as soon as its inputs are locked, so the
+// maps above it get ready; its controller can still set an error on it after that (a BlobIndex
+// that finds no file), and the core then lifts the error up through the entry and the maps.
 test("an error that reaches an ephemeral map after it is ready gets into the tree", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
     const ids = await pl.withWriteTx(
       "LateEphMapError",
       async (tx) => {
-        const importer = tx.createStruct(TestStructuralResourceType1);
-        tx.createField(field(importer, "blob"), "Output");
-        tx.lockInputs(importer);
+        // unique data, so the index is not a duplicate of one an earlier run failed
+        const index = tx.createStruct(TestStructuralResourceType1, randomUUID());
+        tx.createField(field(index, "blob"), "Output");
+        tx.lockInputs(index);
 
         const entry = tx.createStruct(TestStructuralResourceType1);
-        tx.createField(field(entry, "file"), "Input", field(importer, "blob"));
+        tx.createField(field(entry, "file"), "Input", index);
         tx.lockInputs(entry);
 
         const imports = tx.createEphemeral(Pl.EphStdMap);
@@ -885,7 +887,7 @@ test("an error that reaches an ephemeral map after it is ready gets into the tre
         tx.createField(rootField, "Dynamic");
         tx.setField(rootField, holder);
         await tx.commit();
-        return { importer: await importer.globalId, holder: await holder.globalId };
+        return { index: await index.globalId, holder: await holder.globalId };
       },
       { sync: true },
     );
@@ -919,7 +921,7 @@ test("an error that reaches an ephemeral map after it is ready gets into the tre
       await pl.withWriteTx(
         "LateEphMapErrorSet",
         async (tx) => {
-          tx.setFieldError(field(ids.importer, "blob"), tx.createError("late map error"));
+          tx.setResourceError(ids.index, tx.createError("late map error"));
           await tx.commit();
         },
         { sync: true },
