@@ -4116,12 +4116,12 @@ importers:
       lru-cache:
         specifier: 'catalog:'
         version: 11.5.3
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@7.0.2)
       vue:
         specifier: 'catalog:'
         version: 3.5.44(typescript@7.0.2)
-      zod:
-        specifier: 'catalog:'
-        version: 3.25.76
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -4165,9 +4165,6 @@ importers:
       typescript:
         specifier: 'catalog:'
         version: 7.0.2
-      valibot:
-        specifier: 'catalog:'
-        version: 1.5.0(typescript@7.0.2)
       vite:
         specifier: 'catalog:'
         version: 8.3.5(@types/node@24.19.2)(sass@1.83.4)(yaml@2.9.1)
