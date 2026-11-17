@@ -38,9 +38,9 @@ STDOUT_FILE := "stdout.txt"
 STDERR_FILE := "stderr.txt"
 
 // Exec template outputs holding the stdout / stderr stream managers directly.
-// A stream read through the "fileStreams" map needs a second, ephemeral getter
-// (the map only becomes final when the command exits); an ephemeral getter is
-// invisible to deduplication, so the exec could never be recovered on a re-run
+// A stream only becomes final when the command exits, so a map of streams would
+// need a second, ephemeral getter to read one before that; an ephemeral getter is
+// invisible to deduplication, and the exec could never be recovered on a re-run
 // while a block output referenced its log. One pure getter on these outputs
 // resolves while the command runs and stays recoverable.
 STDOUT_STREAM_OUTPUT := "stdoutStream"

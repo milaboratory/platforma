@@ -33,7 +33,6 @@ self.defineOutputs(
 	"fileSets",
 	"fileSetsContent",
 	"progress",
-	"fileStreams",
 	"stdoutStream",
 	"stderrStream",
 	"wdProcessors"
@@ -219,7 +218,6 @@ self.body(func(inputs) {
 		filesContent: execImpl.output("filesContent"),
 		fileSets: execImpl.output("fileSets"),
 		fileSetsContent: execImpl.output("fileSetsContent"),
-		fileStreams: execImpl.output("fileStreams"),
 		stdoutStream: execImpl.output("stdoutStream"),
 		stderrStream: execImpl.output("stderrStream"),
 		wdProcessors: execImpl.output("wdProcessors"),
