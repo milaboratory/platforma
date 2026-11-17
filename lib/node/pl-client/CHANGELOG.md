@@ -1,5 +1,13 @@
 # @milaboratories/pl-client
 
+## 3.26.1
+
+### Patch Changes
+
+- c1869c8: Update undici to 7.30.2, which fixes six security advisories in the cache and redirect interceptors and in Subresource Integrity checks. The `undici` dependency range is now `~7.30.2`.
+- Updated dependencies [c1869c8]
+  - @milaboratories/pl-http@1.2.7
+
 ## 3.26.0
 
 ### Minor Changes

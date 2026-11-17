@@ -1,5 +1,12 @@
 # @platforma-sdk/package-builder
 
+## 3.18.1
+
+### Patch Changes
+
+- Updated dependencies [c1869c8]
+  - @platforma-sdk/package-builder-lib@1.7.1
+
 ## 3.18.0
 
 ### Minor Changes

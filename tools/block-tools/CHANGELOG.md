@@ -1,5 +1,15 @@
 # @platforma-sdk/block-tools
 
+## 2.20.3
+
+### Patch Changes
+
+- c1869c8: Update undici to 7.30.2, which fixes six security advisories in the cache and redirect interceptors and in Subresource Integrity checks. The `undici` dependency range is now `~7.30.2`.
+- Updated dependencies [c1869c8]
+  - @milaboratories/pl-http@1.2.7
+  - @platforma-sdk/package-builder-lib@1.7.1
+  - @milaboratories/pl-model-backend@1.4.52
+
 ## 2.20.2
 
 ### Patch Changes
