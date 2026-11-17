@@ -200,7 +200,7 @@ export class LLPlClient implements WireClientProviderFactory {
 
     // Ping is the first request: refuse a backend that requires client features we lack
     // before any other request reaches it.
-    const missing = missingClientCapabilities(pl.serverInfo.requiredCapabilities);
+    const missing = missingClientCapabilities(pl.serverInfo.requiredClientCapabilities);
     if (missing.length > 0) {
       await pl.close();
       throw new ClientUpdateRequiredError(missing, pl.serverInfo.coreVersion);
@@ -851,7 +851,8 @@ export class LLPlClient implements WireClientProviderFactory {
       resp = (await cl.ping({})).response;
     } else {
       // The REST ping response predates the `capabilities` (proto field 9) and
-      // `required_capabilities` (field 10) fields. Old servers omit them; treat absence as empty.
+      // `required_client_capabilities` (field 10) fields. Old servers omit them; treat absence as
+      // empty. Field 10 was named `required_capabilities` in unreleased servers, so read that too.
       const pingData = notEmpty(
         (await cl.GET("/v1/ping")).data,
         "REST: empty response for ping request",
@@ -859,7 +860,10 @@ export class LLPlClient implements WireClientProviderFactory {
       resp = {
         ...(pingData as unknown as grpcTypes.MaintenanceAPI_Ping_Response),
         capabilities: (pingData as any).capabilities ?? [],
-        requiredCapabilities: (pingData as any).requiredCapabilities ?? [],
+        requiredClientCapabilities:
+          (pingData as any).requiredClientCapabilities ??
+          (pingData as any).requiredCapabilities ??
+          [],
       };
     }
     this.recordRtt(performance.now() - startedAt);
@@ -1078,6 +1082,7 @@ export class LLPlClient implements WireClientProviderFactory {
           login: opts.login ?? "",
           startFrom: opts.startFrom ?? 0n,
           limit: opts.limit ?? 0,
+          types: [],
         },
         { abort },
       );
@@ -1099,6 +1104,7 @@ export class LLPlClient implements WireClientProviderFactory {
       return {
         sessionId: Uint8Array.from(Buffer.from(resp.sessionId, "base64")),
         role: resp.role as AuthAPI_Role,
+        canListUsers: resp.canListUsers ?? false,
       };
     }
   }

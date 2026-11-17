@@ -3,6 +3,7 @@ syntax = "proto3";
 package MiLaboratories.PL.API;
 
 import "github.com/googleapis/googleapis/google/api/annotations.proto";
+import "github.com/googleapis/googleapis/google/rpc/error_details.proto";
 import "github.com/googleapis/googleapis/google/rpc/status.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/api_types.proto";
 import "github.com/milaboratory/pl/plapi/plapiproto/base_types.proto";
@@ -412,6 +413,147 @@ service Platform {
 //      multi_message.is_last = true;
 //      multi_message.is_empty = true.
 //
+// Error model
+//
+// Every error status the Platform API produces carries exactly one google.rpc.ErrorInfo detail with
+// domain "platforma.bio" and reason set to the name of an ErrorReason value, for example
+// "RESOURCE_NOT_FOUND". It is carried by a call's status, by the error of a transaction response
+// (TxAPI.ServerMessage.error), and by the status that ends a transaction stream. ErrorInfo carries no
+// metadata. The gRPC code states the class of an error, the reason its cause: decide what to do from
+// the reason, and treat a reason you do not know by its code. The reason survives the message hiding
+// some roles get. Each value lists the code it comes with. ErrorInfo is defined in
+// google/rpc/error_details.proto, imported above; in a status's details it has the type URL
+// "type.googleapis.com/google.rpc.ErrorInfo".
+//
+// Statuses produced by the gRPC library itself before a request reaches the server - a message that
+// cannot be decoded, one over the size limit, a broken connection - carry no ErrorInfo. A WebSocket
+// transaction gets no status for the end of its stream.
+enum ErrorReason {
+  // Never sent.
+  ERROR_REASON_UNSPECIFIED = 0;
+
+  // UNAUTHENTICATED: the JWT is missing, malformed, signed by another instance, or names an unknown
+  // role. Log in again.
+  TOKEN_INVALID = 1;
+  // UNAUTHENTICATED: the JWT is valid except that it expired. It can no longer be refreshed; log in
+  // again.
+  TOKEN_EXPIRED = 2;
+  // UNAUTHENTICATED: Login with credentials the login method rejected.
+  CREDENTIALS_INVALID = 3;
+  // UNAUTHENTICATED: the session behind a valid JWT is gone - revoked, ended at the identity
+  // provider, or its user removed. Log in again.
+  SESSION_REVOKED = 4;
+  // UNAUTHENTICATED or FAILED_PRECONDITION: the credentials were accepted but the login is refused -
+  // the user is not provisioned, the email is not verified, or the identity is claimed by another
+  // user.
+  LOGIN_REFUSED = 5;
+  // NOT_FOUND: the login method the request names does not exist on this server.
+  LOGIN_METHOD_NOT_CONFIGURED = 6;
+  // UNAVAILABLE: an external identity provider (SSO, LDAP) could not complete the session check or
+  // refresh. The session is not known to be gone; retry later.
+  IDENTITY_PROVIDER_UNAVAILABLE = 7;
+
+  // PERMISSION_DENIED: the caller's role may not call the method, refresh its token, or switch to
+  // the requested role.
+  ROLE_DENIED = 10;
+  // PERMISSION_DENIED: a resource signature or a color proof does not verify - malformed, altered,
+  // for another resource, or issued in another session (for example before a re-login). Every cause
+  // has the same message. Fetch the reference again.
+  SIGNATURE_INVALID = 11;
+  // PERMISSION_DENIED: a read-only reference or color proof was used where write access is required.
+  READ_ONLY_REFERENCE = 12;
+  // PERMISSION_DENIED: a writable reference was combined with a read-only reference of another
+  // color.
+  COLOR_MISMATCH = 13;
+  // PERMISSION_DENIED: the resource schema forbids the operation for the caller's role.
+  SCHEMA_DENIED = 14;
+  // PERMISSION_DENIED: granting or revoking more than the caller's own access.
+  PERMISSION_CEILING = 15;
+  // INVALID_ARGUMENT: a creation presented no color proof, and the transaction has no default color.
+  COLOR_REQUIRED = 16;
+
+  // NOT_FOUND: the referenced resource is not available - absent, soft-deleted, or no longer covered
+  // by the caller's grants. Inside a transaction these cannot be told apart; see "Resource
+  // availability".
+  RESOURCE_NOT_FOUND = 20;
+  // NOT_FOUND: the resource is available, but the named field does not exist.
+  FIELD_NOT_FOUND = 21;
+  // NOT_FOUND: the key-value key does not exist.
+  KEY_NOT_FOUND = 22;
+  // NOT_FOUND: no resource is registered under the name.
+  NAME_NOT_FOUND = 23;
+  // NOT_FOUND: the named user does not exist.
+  USER_NOT_FOUND = 24;
+  // NOT_FOUND: the subscription does not exist.
+  SUBSCRIPTION_NOT_FOUND = 25;
+  // FAILED_PRECONDITION: a grant names a user the server does not know.
+  TARGET_USER_UNKNOWN = 26;
+
+  // INVALID_ARGUMENT: the request is malformed or its arguments are invalid.
+  INVALID_REQUEST = 30;
+  // ALREADY_EXISTS: the resource or name already exists, and the request asked to fail in that case.
+  ALREADY_EXISTS = 31;
+  // INVALID_ARGUMENT: the transaction already used the local resource ID the request creates.
+  LOCAL_ID_IN_USE = 32;
+  // FAILED_PRECONDITION: the lease is held by another holder.
+  LEASE_HELD = 33;
+  // UNIMPLEMENTED: the method, or the feature it needs, is not available on this server.
+  NOT_SUPPORTED = 34;
+  // UNIMPLEMENTED: the method was removed; it stays in the protocol only for wire compatibility.
+  DEPRECATED_API = 35;
+
+  // INTERNAL, or UNKNOWN for an error the server could not classify: a server-side failure. The
+  // message may be hidden. It is also the reason of a status of any other code that a server
+  // component produced without naming its cause; decide such a status by its code.
+  INTERNAL = 40;
+  // UNAVAILABLE: the server is stopping; retry on a new connection.
+  SERVER_SHUTTING_DOWN = 41;
+  // CANCELLED: the call was cancelled.
+  CANCELLED = 42;
+  // DEADLINE_EXCEEDED: the call ran out of time.
+  DEADLINE_EXCEEDED = 43;
+}
+
+// Errors and resource signatures
+//
+// Any error other than NOT_FOUND discards the transaction and ends the stream; NOT_FOUND fails only
+// the request it answers. A resource signature proves a color: the access context it was issued
+// under, a root resource and the permissions granted on it. A request whose resource signature or
+// color proof does not verify - signed in another session, for another resource, or damaged - fails
+// with PERMISSION_DENIED, reason SIGNATURE_INVALID and the message "invalid resource signature", the
+// same for every cause. A request naming a reference that is not available fails with NOT_FOUND (see
+// "Resource availability"). An unavailable reference does not stop the checks of the request's later
+// references: one that fails otherwise - a signature that does not verify, say - decides the error,
+// which discards the transaction. A request whose only refusals are unavailable references fails with
+// the NOT_FOUND of an unavailable reference.
+//
+// Resource availability
+//
+// Inside a transaction, a reference is available when its resource is present in the transaction's
+// current state and, for a caller whose grants are checked, a grant still covers the color its
+// signature proves - the grant on the color's root was not revoked, nor narrowed below the color's
+// permissions, before the transaction opened or earlier in it. A soft-deleted resource is not present
+// unless the request sets show_soft_deletes. A resource the transaction created and a request names
+// by its local ID is proven by the color it was created with, and must still be present; a local ID
+// no creation of the transaction bound - never created, or its creation was refused - names nothing.
+// Availability is checked for every resource a request names: its subject, the resource holding a
+// field it names, a resource or field it sets as a field's value or error, and the root of a color
+// proof (the color_proof of SetDefaultColor and of the resource creations). It is not checked for the
+// local IDs a request creates, a listing's cursor, or subscription and filter IDs.
+//
+// An unavailable reference is answered the same way whatever made it unavailable - an absent
+// resource and a withdrawn grant cannot be told apart - with the same code, message, ErrorInfo and
+// effect on the transaction, and nothing written:
+//   - ResourceExists answers exists: false.
+//   - A Tree request leaves the entry point out (see ResourceAPI.Tree.Request.seeds).
+//   - Every other request fails with NOT_FOUND, the message "resource not found" and reason
+//     RESOURCE_NOT_FOUND, and the transaction goes on.
+// Availability concerns resources only: a missing field or key-value key keeps its own answer. A
+// caller whose signatures are not checked (admin, controller) is not checked for availability, apart
+// from unbound local IDs; for a workflow caller, whose grants are not checked, only presence is, and
+// not for the root of its color proofs. A refused SetDefaultColor changes nothing: the default color set before it
+// stays. The transaction's default color is not checked again when a creation uses it.
+//
 message TxAPI {
   message ClientMessage {
     uint32 request_id = 1;
@@ -501,6 +643,7 @@ message TxAPI {
       AuthAPI.GrantAccess.Request grant_access = 410; // grant access to a resource within transaction
       AuthAPI.RevokeAccess.Request revoke_access = 411; // revoke access to a resource within transaction
       AuthAPI.ListGrants.Request list_grants = 412; // list grants on a resource within transaction
+      AuthAPI.ListUserResources.TxRequest list_user_resources = 413; // list resources granted to the caller within transaction
     }
   }
 
@@ -604,6 +747,7 @@ message TxAPI {
       AuthAPI.GrantAccess.Response grant_access = 410;
       AuthAPI.RevokeAccess.Response revoke_access = 411;
       AuthAPI.ListGrants.TxResponse list_grants = 412;
+      AuthAPI.ListUserResources.TxResponse list_user_resources = 413;
     }
 
     google.rpc.Status error = 3;
@@ -630,8 +774,10 @@ message TxAPI {
       // then sits above it while one that had is visible to this transaction's
       // reads. One token per transaction, however many tree reads it issues.
       //
-      // Absent on a WRITABLE open, which is issued no token: the walk would see
-      // that transaction's own uncommitted writes (see changed_since_token).
+      // Absent on a WRITABLE open, which is issued no token. Writable
+      // transactions may present an earlier read-only token on servers advertising
+      // "writeTxChangedSince:v1", but their responses must never enter a client
+      // cache or mirror because they can contain uncommitted writes.
       //
       // Also accepted by ResourceAPI.Get and ResourceKVAPI.List, which apply the
       // same per-resource emission rule.
@@ -810,6 +956,8 @@ message ResourceAPI {
     }
 
     message Response {
+      // False for a resource that is not available to the caller (see "Resource availability"):
+      // absent, soft-deleted, or no longer covered by the caller's grants alike.
       bool exists = 1;
     }
   }
@@ -838,19 +986,23 @@ message ResourceAPI {
 
       // Same token and same emission rule as ResourceAPI.Tree's
       // changed_since_token: the response carries a resource only when its own
-      // change token is newer than the point this one denotes, and otherwise
-      // comes back with resource unset. Empty or absent (the default) always
-      // returns the body.
+      // change token is newer than the point this one denotes or this transaction
+      // changed it, and otherwise comes back with resource unset. Empty or absent
+      // (the default) always returns the body.
       //
       // A client on a per-resource read path takes this so it answers the same
       // way the tree does; one that wants a body regardless simply omits it.
       // There is no unconditional_depth here - nothing traverses, so there is no
       // depth to bound.
       //
-      // Ignored on a WRITABLE transaction, for the reason given on
-      // ResourceAPI.Tree.Request.changed_since_token. Gated by the same
-      // "treeChangedSince:v1" capability, whose name is narrower than what it
-      // covers.
+      // Supported in read-only transactions by "treeChangedSince:v2" and in
+      // writable transactions by "writeTxChangedSince:v1". A writable transaction
+      // honours an earlier read-only token, but a resource it changed receives
+      // the same answer as without a token, including deletion visibility and
+      // errors. Metadata writes always count, even when undone; a state or field
+      // value restored exactly may stop counting. See ResourceAPI.Tree's token comment
+      // for the conservative open-watermark fallback and client cache restrictions.
+      // Older servers ignore this token in writable transactions.
       bytes changed_since_token = 5;
 
       // next free: 6;
@@ -878,8 +1030,8 @@ message ResourceAPI {
         // After == 100 means listing will NOT contain resources with ID = 100 and lower.
         uint64 after = 6;
 
-        // True value makes the API return original resources instead of duplicates.
-        bool resolve_duplicates = 4;
+        // The server ignores this field: it never returns an original in place of a duplicate.
+        bool resolve_duplicates = 4 [deprecated = true];
 
         // Load fields for each resource in list.
         bool load_fields = 5;
@@ -969,8 +1121,11 @@ message ResourceAPI {
       bytes resource_signature = 3;
 
       // Limit the maximum depth the tree is traversed.
-      // The resource <resource_id> is considered at depth = 0, the values of its fields
-      // are on depth = 1 and so on.
+      // The resource <resource_id>, or every seed, is considered at depth = 0, the values of
+      // its fields are on depth = 1 and so on. A resource's depth is its shortest distance
+      // from any seed of the color it is reached under, through the resources the walk
+      // descends: reached by two paths, it is measured along the shorter one. A resource
+      // reached under two colors has a depth under each (see seeds).
       // The maximum uint32 value disables the limit entirely.
       // A 0 value makes the API return only a single resource <resource_id> and is actually
       // equal to Get.Request
@@ -1015,10 +1170,49 @@ message ResourceAPI {
       optional Filter traverse_stop_rules = 7 [deprecated = true];
 
       // Optional alternative entry points for multi-root traversal.
-      // When non-empty, the traversal starts from each listed seed instead
-      // of resource_id. Servers advertise support via "treeSeeds:v1" in
-      // MaintenanceAPI.Ping.Response.capabilities; old servers ignore this
-      // field. resource_id is used as the sole root when seeds is empty.
+      // When non-empty, the traversal starts from the listed seeds instead
+      // of resource_id. resource_id is used as the sole root when seeds is
+      // empty; a request with neither seeds nor resource_id walks nothing and
+      // is answered empty.
+      //
+      // An entry point that is not available (see "Resource availability") -
+      // its resource absent, soft-deleted without show_soft_deletes, or no
+      // longer covered by the caller's grants - is left out: it yields no frame
+      // and no error, and the walk starts from the other entry points; with none
+      // left, the answer is empty. resource_id next to seeds is checked the same
+      // way but never walked. A seed's resource always gets a frame when the walk
+      // reaches it and unconditional_depth is at least 0, so under such a walk a
+      // seed without a frame is a gone entry point, unless another entry point
+      // reaches the same resource; a delta walk otherwise sends no frame for an
+      // unchanged resource.
+      //
+      // Every seed is at depth 0, and the walk is one breadth-first front across
+      // all of them: frames are in nondecreasing depth from the seeds, every
+      // non-seed frame follows a frame that references it, and a resource
+      // reachable from several seeds, or by several paths, is emitted at most
+      // once per color. Order within one depth is unspecified, and a resource's
+      // subtree need not arrive contiguously.
+      //
+      // A color is the access context a signature proves. Each seed is walked
+      // under its own color - the one the caller's verifier resolves for it (its
+      // signature's color, for a role that must present valid signatures), or,
+      // for a resource this transaction created and the seed names by its local
+      // ID, the color it was created with - and every resource reached from it
+      // carries that color. For a role whose responses are signed, a frame's
+      // resource, its original-resource reference and its fields' value and error
+      // references are signed with it; a controller's responses carry no
+      // signatures. A resource reached under two colors - two seeds naming it
+      // under different colors, or seeds of different colors whose trees meet
+      // below them - is two nodes,
+      // each visited and sent on its own, at most once per color: max_depth,
+      // unconditional_depth, changed_since_token and the filters apply under each
+      // color separately. So a reference a body carries names its target under
+      // exactly the signature the target's own frame carries, when the walk sends
+      // one. No color an earlier request proved or an earlier response carried
+      // applies to a later request, apart from the creation colors of local IDs
+      // and the transaction's default color (SetDefaultColor).
+      // Servers advertise this contract via "colorPerReference:v1" in
+      // MaintenanceAPI.Ping.Response.capabilities.
       repeated SeedResource seeds = 8;
 
       // When false (default), soft-deleted resources are treated as not found
@@ -1027,14 +1221,15 @@ message ResourceAPI {
       bool show_soft_deletes = 9;
 
       // An opaque continuation token, taken verbatim from the next_since_token an
-      // earlier transaction's Open response carried. The server returns bodies
-      // only for resources that changed after the point this token denotes; every
+      // earlier read-only transaction's Open response carried. The server returns
+      // bodies for resources changed after that point or in this transaction; every
       // other visited resource is passed over in silence, producing no frame at
       // all. Empty or absent (the default) requests the full tree.
       //
-      // A response therefore contains exactly the resources whose own change
-      // token is newer than the point this one denotes, and nothing else. Two
-      // obligations follow, both of them the client's:
+      // A response therefore contains resources changed in this transaction or
+      // whose own change token is newer than this point, reached through resources
+      // the response carries - plus, under unconditional_depth, what
+      // that field adds. Two obligations follow, both of them the client's:
       //
       //   - Absence is not removal. A resource missing from a delta response is
       //     either unchanged or gone, and the two are indistinguishable. Detect
@@ -1079,28 +1274,55 @@ message ResourceAPI {
       // unconditional_depth under the same token are NOT a shape change: what
       // they return is dated the same as the poll they came with.
       //
-      // Ignored on a WRITABLE transaction, which also receives no
-      // next_since_token: the walk sees that transaction's uncommitted writes, so
-      // delta skipping there could pin a body describing state that never
-      // committed. Poll from a read-only transaction.
+      // On servers advertising "writeTxChangedSince:v1", writable transactions
+      // honour an earlier read-only token. A resource changed in this transaction
+      // receives the same answer as without a token: a full body, or no frame for
+      // a hidden deletion. Metadata writes always count, even when undone; a state
+      // or field value restored exactly may stop counting.
       //
-      // Servers advertise support via "treeChangedSince:v1" in
+      // This guarantee covers VISITED resources only. An unchanged resource ends
+      // its branch; descendants are neither visited nor conflict-tracked by this
+      // walk. Writable clients must seed every resource they hold whose body, or
+      // (with include_kv) whose KV, can still change.
+      // References through changed fields are walked because their owner is sent
+      // in full, subject to the normal depth, field filter and visibility limits.
+      // Skipped visited resources remain conflict-tracked.
+      //
+      // Open watermark fallback: a writable transaction's open watermark is its
+      // NextSinceToken, sampled before its snapshot opens. A token strictly above
+      // it requests a full read. Every writer with an ID at or below the
+      // watermark had finished, including discarded ones; later writers may
+      // also have finished. It is not a snapshot timestamp. Correctness for
+      // later-snapshot tokens rests on conflict
+      // checks. Writable opens issue no token, and writable responses must never
+      // enter a client cache or mirror.
+      // Older servers ignore the token in writable transactions and answer in full.
+      //
+      // Servers advertise support via "treeChangedSince:v2" in
       // MaintenanceAPI.Ping.Response.capabilities; old servers ignore this field
       // and always send the full tree.
       bytes changed_since_token = 10;
 
-      // Depths at or below this one are emitted whatever changed_since_token
-      // says, the seed being depth 0. Explicitly optional: absent means no
+      // Resources at or below this depth are emitted whatever changed_since_token
+      // says, the seeds being depth 0: every resource within this depth of a seed
+      // is emitted under that seed's color (see seeds), as long as it exists, is
+      // visible, and is reached
+      // along fields the field filter and the caller's schema access keep (an
+      // error trace is a leaf). Depth is measured as for max_depth, by the
+      // shortest path, and max_depth still bounds it. It does not bound the walk:
+      // beyond it the token decides, so a changed resource that a sent body
+      // references is still emitted. Explicitly optional: absent means no
       // unconditional depth, which differs from 0. Ignored without
       // changed_since_token, which already sends everything.
       //
       // This is how a client reads what a delta response referenced but did not
       // carry. One Tree request naming the unknown IDs in seeds, under the same
-      // token, returns them here while everything the client already holds below
-      // the frontier stays skipped. The depth is the lever: 0 takes the seeds
-      // alone, 1 takes a level per round trip, a depth past the subtree takes it
-      // whole. Without it such a request comes back empty, and empty is
-      // indistinguishable from not-found.
+      // token, returns every one of them that exists and is visible, with what
+      // lies within this depth below them; beyond it, only what changed after the
+      // token is sent. The depth is the lever: 0 bypasses the token for the seeds
+      // alone, 1 for a level more per round trip, a depth past the subtree for
+      // all of it. Without it such a request comes back empty for resources
+      // older than the token, and empty is indistinguishable from not-found.
       optional uint32 unconditional_depth = 11;
 
       // next free: 12;
@@ -1342,10 +1564,25 @@ message NotificationAPI {
     message Request {
       uint64 subscription = 1;
       uint32 max_notifications = 2;
+
+      // seen_token is the seen_token of the previous response for this subscription. Empty reads the
+      // queue from its start. Pass it back unchanged, so the read does not step over acknowledged
+      // notifications.
+      bytes seen_token = 3;
+
+      // skip_delivered makes each read return only the notifications after the last read, also the ones
+      // that are not acknowledged yet, so a client can keep a notification and read the next batch. Without
+      // it, each read returns every notification that is not acknowledged again. A restart of the client
+      // or of the backend reads from the start of the queue in both modes. A seen_token of the other mode
+      // reads from the start of the queue.
+      bool skip_delivered = 4;
     }
 
     message Response {
       repeated Notification notifications = 1;
+
+      // seen_token is the read position to pass to the next read of this subscription. It is opaque.
+      bytes seen_token = 2;
     }
   }
 
@@ -1508,10 +1745,17 @@ message ControllerAPI {
     message Request {
       string controller_type = 1;
       uint32 max_notifications = 2;
+
+      // seen_token is the seen_token of the previous response for this controller. Empty reads the
+      // queue from its start.
+      bytes seen_token = 3;
     }
 
     message Response {
       repeated Notification notifications = 1;
+
+      // seen_token is the read position to pass to the next read of this controller. It is opaque.
+      bytes seen_token = 2;
     }
   }
 
@@ -1577,18 +1821,24 @@ message ResourceKVAPI {
 
       // Same token and same emission rule as ResourceAPI.Tree's
       // changed_since_token: the listing runs only when the resource's own change
-      // token is newer than the point this one denotes, and otherwise comes back
-      // with no records at all. Empty or absent (the default) always lists.
+      // token is newer than the point this one denotes or this transaction changed
+      // the resource, and otherwise comes back with no records at all. Empty or
+      // absent (the default) always lists.
       //
-      // No records therefore means the metadata is unchanged, empty, or gone,
-      // indistinguishably - which costs nothing, because a client only sends the
-      // token for a resource whose metadata it already holds. One that wants the
-      // listing regardless omits it.
+      // No records means unchanged OR emptied; a delta listing cannot tell them
+      // apart. A client holding records learns they are gone only from a
+      // tokenless listing, or from Tree with include_kv, whose frame carries the
+      // full KV. A reader in a writable transaction should therefore prefer Tree
+      // with include_kv. One that wants the listing regardless omits the token.
       //
-      // Ignored on a WRITABLE transaction, for the reason given on
-      // ResourceAPI.Tree.Request.changed_since_token. Gated by the same
-      // "treeChangedSince:v1" capability, whose name is narrower than what it
-      // covers.
+      // Supported in read-only transactions by "treeChangedSince:v2" and in
+      // writable transactions by "writeTxChangedSince:v1". A writable transaction
+      // honours an earlier read-only token, but a resource it changed receives
+      // the same answer as without a token, including deletion visibility and
+      // errors. Metadata writes always count, even when undone; a state or field
+      // value restored exactly may stop counting. See ResourceAPI.Tree's token comment
+      // for the conservative open-watermark fallback and client cache restrictions.
+      // Older servers ignore this token in writable transactions.
       bytes changed_since_token = 5;
 
       // next free: 6;
@@ -1620,6 +1870,11 @@ message ResourceKVAPI {
 
       string key = 2;
       bytes value = 3;
+
+      // Set the key asynchronously: the system applies the change after the commit, by priority, and
+      // reads in this transaction do not show it (docs/kv-async-write-contract.md). Gated by the
+      // "kvAsync:v1" capability: an older backend ignores the field and sets the key synchronously.
+      bool async = 5;
     }
 
     message Response {}
@@ -1658,6 +1913,9 @@ message ResourceKVAPI {
       bytes resource_signature = 3;
 
       string key = 2;
+
+      // Delete the key asynchronously, as ResourceKVAPI.Set.Request.async sets it.
+      bool async = 4;
     }
 
     message Response {}
@@ -2013,6 +2271,11 @@ message AuthAPI {
     message Response {
       bytes session_id = 1;
       Role role = 2;
+      // can_list_users tells if the caller can call ListUsers. The server configuration
+      // (--show-user-list-to) and the caller's role give the value. Servers that advertise
+      // the 'userListing:v2' capability set this field. Older servers do not know the field,
+      // so it is always false there.
+      bool can_list_users = 3;
     }
   }
 
@@ -2118,11 +2381,18 @@ message AuthAPI {
       // limit = 2 with non-zero start_from returns 2 shared resources.
       // Zero returns all resources.
       uint32 limit = 3;
+
+      // types keeps only the shared resources of these types; empty lists every type. A resource
+      // is kept when its type name equals an entry's name and that entry's version is empty or
+      // equal to the resource type's version. The filter never applies to the user root. A
+      // resource the filter drops does not count towards limit.
+      repeated Base.ResourceType types = 4;
     }
 
     // Multi-message: first message contains UserRoot (only when start_from == 0),
     message Response {
       oneof entry {
+        // Deprecated: get the user root with GetUserRoot. It is still sent, on the first page.
         UserRoot user_root = 1;
         SharedResource shared_resource = 2;
       }
@@ -2137,6 +2407,58 @@ message AuthAPI {
       bytes resource_signature = 2;
       Base.ResourceType resource_type = 3;
       Grant.Permissions permissions = 4;
+    }
+
+    // TxRequest lists the resources shared with the caller - granted to them, or to everyone -
+    // inside a transaction, in resource-ID order. The caller's user root is never listed: get it
+    // with GetUserRoot. The listing reads the transaction's snapshot, which other transactions'
+    // changes do not reach: each signature it hands out passes the signature and grant checks of
+    // later requests in the same transaction, within the permissions it carries, and a grant another
+    // transaction revokes after this one opened is still listed and its signature still passes.
+    // Those requests' permission and schema checks still apply.
+    //
+    // In a writable transaction, the listing also sees the transaction's own grant changes: a grant
+    // made earlier in it is listed, one revoked earlier in it is not, one narrowed earlier in it is
+    // listed with its new permissions; a signature issued before a revocation or narrowing then fails
+    // with NOT_FOUND. A signature for a grant made in a transaction that is then discarded names a
+    // grant that never existed, and fails with NOT_FOUND afterwards. Everything the listing reads -
+    // every grant, and the state of every resource it examines, the ones the filter drops included -
+    // joins the transaction's conflict set: a concurrent change to any of them makes the commit fail
+    // with a conflict.
+    //
+    // The response is one entry per message; a listing with no entries is a single empty last
+    // message (multi_message.is_empty). A role refusal arrives as one message without
+    // multi_message. A grant record or a resource that cannot be read ends the response with that
+    // error.
+    //
+    // The caller is the transaction's user; there is no listing for another login.
+    message TxRequest {
+      // types keeps only the resources of these types; empty lists every type. A resource is kept
+      // when its type name equals an entry's name and that entry's version is empty or equal to the
+      // resource type's version.
+      repeated Base.ResourceType types = 1;
+
+      // start_from lists from this resource ID on: pass the previous response's next_resource_id
+      // to continue a listing. Zero starts at the beginning.
+      uint64 start_from = 2;
+
+      // limit caps the number of entries in the response; zero lists them all. A resource the
+      // filter drops does not count.
+      uint32 limit = 3;
+    }
+
+    // TxResponse is one message of the listing: an entry, or, after the last entry when limit cut
+    // the listing short, the ID to continue from. For a caller whose responses are signed, each
+    // entry's resource_signature carries the color of its grant: the resource itself with the
+    // granted permissions. A controller's entries are unsigned, like all its responses. A resource
+    // granted both to the caller and to everyone is listed once, with the caller's own grant.
+    // Resources that are deleted, or marked deleted, are not listed.
+    message TxResponse {
+      SharedResource shared_resource = 1;
+
+      // Set only on a message after the last entry, when limit was reached and more resources
+      // remain; it carries no entry. Use it as start_from in the next request.
+      uint64 next_resource_id = 2;
     }
   }
 
