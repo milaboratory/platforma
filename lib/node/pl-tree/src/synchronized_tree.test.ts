@@ -3,6 +3,7 @@ import {
   DefaultFinalResourceDataPredicate,
   field,
   GrantType,
+  Pl,
   PlClient,
   TestHelpers,
   UnauthenticatedPlClient,
@@ -846,4 +847,92 @@ test("a tree of shared roots survives a re-login: it rediscovers the roots under
       await cleanup.close();
     }
   }
+}, 60_000);
+
+// The v2 effect's layout: effect map -> imports map -> entry -> the importer's `blob` output. The
+// backend makes a map ready once each entry points to a resource with a final status; the importer
+// can still fail after that, and the core then lifts its error up through the entry and the maps.
+test("an error that reaches an ephemeral map after it is ready gets into the tree", async () => {
+  await TestHelpers.withTempRoot(async (pl) => {
+    const ids = await pl.withWriteTx(
+      "LateEphMapError",
+      async (tx) => {
+        const importer = tx.createStruct(TestStructuralResourceType1);
+        tx.createField(field(importer, "blob"), "Output");
+        tx.lockInputs(importer);
+
+        const entry = tx.createStruct(TestStructuralResourceType1);
+        tx.createField(field(entry, "file"), "Input", field(importer, "blob"));
+        tx.lockInputs(entry);
+
+        const imports = tx.createEphemeral(Pl.EphStdMap);
+        tx.createField(field(imports, "source"), "Input", entry);
+        tx.lockInputs(imports);
+
+        const effect = tx.createEphemeral(Pl.EphStdMap);
+        tx.createField(field(effect, "imports"), "Input", imports);
+        tx.lockInputs(effect);
+
+        const empty = tx.createEphemeral(Pl.EphStdMap);
+        tx.lockInputs(empty);
+
+        const holder = tx.createEphemeral(Pl.EphStdMap);
+        tx.createField(field(holder, "effect"), "Input", effect);
+        tx.createField(field(holder, "empty"), "Input", empty);
+        tx.lockInputs(holder);
+
+        const rootField = field(tx.clientRoot, "lateEphMapError");
+        tx.createField(rootField, "Dynamic");
+        tx.setField(rootField, holder);
+        await tx.commit();
+        return { importer: await importer.globalId, holder: await holder.globalId };
+      },
+      { sync: true },
+    );
+
+    const tree = await SynchronizedTreeState.init(pl, ids.holder, {
+      stopPollingDelay: 60_000,
+      pollingInterval: 10,
+    });
+    try {
+      // Reads the effect once it is ready, as a reader of a settled effect does.
+      const readImports = () =>
+        Computable.make((c) => {
+          const effect = c.accessor(tree.entry()).node().traverse("effect");
+          return effect?.getIsReadyOrError() ? effect.traverse("imports")?.id : undefined;
+        });
+      await expect.poll(async () => await readImports().getValue()).toBeDefined();
+      // A ready map with no entries has nothing below it to fail, so it is final.
+      const emptyIsFinal = Computable.make((c) =>
+        c.accessor(tree.entry()).node().traverse("empty")?.getIsFinal(),
+      );
+      expect(await emptyIsFinal.getValue()).toBe(true);
+
+      await pl.withWriteTx(
+        "LateEphMapErrorSet",
+        async (tx) => {
+          tx.setFieldError(field(ids.importer, "blob"), tx.createError("late map error"));
+          await tx.commit();
+        },
+        { sync: true },
+      );
+
+      await expect
+        .poll(
+          async () => {
+            await tree.refreshState();
+            try {
+              await readImports().getValue();
+              return "no error";
+            } catch (e) {
+              return String(e);
+            }
+          },
+          { timeout: 20_000, interval: 100 },
+        )
+        .toMatch(/\/imports"[\s\S]*late map error/);
+    } finally {
+      await tree.terminate();
+    }
+  });
 }, 60_000);

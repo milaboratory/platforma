@@ -131,7 +131,6 @@ describe("the built-in tables", () => {
     "Dummy",
     "StdMap",
     "std/map",
-    "EphStdMap",
     "PFrame",
     "ParquetChunk",
     "BContext",
@@ -191,6 +190,9 @@ describe("the built-in tables", () => {
         stream.value === downloadable.value
       );
     }
+    // an entry can fail after the map is ready; only a map with no fields is safe
+    if (name === "EphStdMap")
+      return r.resourceReady && r.fields !== undefined && r.fields.length === 0;
     if (alwaysFinal.has(name)) return true;
     if (finalWhenTerminal.has(name)) return terminal(r);
     if (neverFinal.has(name)) return false;

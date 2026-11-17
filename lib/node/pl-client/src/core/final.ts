@@ -11,6 +11,12 @@ export { readyOrDuplicateOrError } from "./finality";
 // the resources built from it, and the first duplicate's `hasOriginalListeners` flag on its
 // original, backend-internal and never on the wire. An entry's `why` names any other write
 // it accepts. A layer adds only the types whose later writes its consumer does not observe.
+//
+// Backend "ready" asks only that every input points to a resource with a final status. Such a
+// resource can still get an error later, from its controller (a BlobIndex that finds no file),
+// and the core lifts that error through every resource above it, ready ones included. EphStdMap
+// is not final at ready while it has fields, for that reason; the other types final at ready
+// can miss such an error the same way.
 
 // Where the backend's filter stops earlier than the predicate. An early stop is safe: the
 // backend sends a body-less stop marker, and the streaming loader fetches every stopped resource
@@ -48,6 +54,11 @@ const never = (match: FinalityEntry["match"], why: string): FinalityEntry => ({
   rule: "never",
   why,
 });
+
+/** Ready, and known to have no fields: a resource with no inputs gets no late error from them. */
+function readyWithNoFields(r: Parameters<FinalResourceDataPredicate>[0]): boolean {
+  return r.resourceReady && r.fields !== undefined && r.fields.length === 0;
+}
 
 /** The base layer: nothing observable (state, fields, KV) changes after the rule holds, whatever
  * the consumer prunes. Exceptions: the data-loss error cascade, the `hasOriginalListeners` flag,
@@ -92,7 +103,6 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
   ...[
     ResourceTypeName.StdMap,
     ResourceTypeName.StdMapSlash,
-    ResourceTypeName.EphStdMap,
     ResourceTypeName.PFrame,
     ResourceTypeName.ParquetChunk,
     ResourceTypeName.BContext,
@@ -154,6 +164,14 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
       "outputs are locked at creation and point at result maps that are completed and locked " +
       "as resolution finishes",
     stopRule: earlyOnFieldErrorsWithOutputs,
+  },
+  {
+    match: { name: ResourceTypeName.EphStdMap },
+    rule: { custom: readyWithNoFields },
+    why:
+      "an entry can fail after the map is ready, and the core then puts the error on the map's " +
+      "field, as a v2 effect's failed import does; a ready map with no fields has nothing to fail",
+    stopRule: { none: "a stop rule cannot count fields" },
   },
   never({ name: ResourceTypeName.UserProject }, "blocks and fields come and go over its life"),
   never({ name: ResourceTypeName.Projects }, "projects are added and removed"),

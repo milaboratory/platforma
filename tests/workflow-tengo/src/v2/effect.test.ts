@@ -287,8 +287,10 @@ tplTest.concurrent(
       args: { sources: [source] },
     });
 
-    // The import error climbs one level at a time: entry, imports map, effect map. The client
-    // takes a field with no error as stable, so one read can end before the error or below the top.
+    // The effect map can be ready before the import fails: on an S3 library the index finds the
+    // file missing later. The core then lifts the error up through the entry, the imports map and
+    // the effect map. A read with no error yet is stable, so read again until the error reaches
+    // the effect map; the tree refetches an EphStdMap with fields, so the error gets to the read.
     const readError = async (): Promise<string | undefined> => {
       try {
         await awaitStableState(
