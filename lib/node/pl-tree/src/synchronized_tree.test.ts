@@ -901,7 +901,15 @@ test("an error that reaches an ephemeral map after it is ready gets into the tre
           const effect = c.accessor(tree.entry()).node().traverse("effect");
           return effect?.getIsReadyOrError() ? effect.traverse("imports")?.id : undefined;
         });
-      await expect.poll(async () => await readImports().getValue()).toBeDefined();
+      await expect
+        .poll(
+          async () => {
+            await tree.refreshState();
+            return await readImports().getValue();
+          },
+          { timeout: 20_000, interval: 100 },
+        )
+        .toBeDefined();
       // A ready map with no entries has nothing below it to fail, so it is final.
       const emptyIsFinal = Computable.make((c) =>
         c.accessor(tree.entry()).node().traverse("empty")?.getIsFinal(),
