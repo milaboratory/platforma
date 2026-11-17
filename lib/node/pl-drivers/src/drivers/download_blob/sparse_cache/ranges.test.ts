@@ -1,5 +1,10 @@
-import { Ranges, normalizeRanges } from "./ranges";
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
+import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
 import { describe, it, expect } from "vitest";
+import { CorruptedRangesError } from "./cache";
+import { Ranges, normalizeRanges, readRangesFile } from "./ranges";
 
 describe("normalizeRanges", () => {
   const cases: { name: string; input: Ranges; expected: Ranges }[] = [
@@ -112,4 +117,19 @@ describe("normalizeRanges", () => {
       expect(tc.input).toEqual(tc.expected);
     });
   }
+});
+
+describe("readRangesFile", () => {
+  it.each([
+    ["invalid JSON", "{"],
+    ["a schema mismatch", JSON.stringify({ ranges: [{ from: -1, to: 0 }] })],
+  ])("reports %s as corrupted", async (_, content) => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), "ranges-"));
+    const file = path.join(dir, "file.ranges.json");
+    await fs.writeFile(file, content);
+    await expect(readRangesFile(new ConsoleLoggerAdapter(), file)).rejects.toBeInstanceOf(
+      CorruptedRangesError,
+    );
+    await fs.rm(dir, { recursive: true });
+  });
 });
