@@ -1,4 +1,5 @@
-//tengo:hash_override 9DD4E4C3-279E-4A53-8819-966309422B3C
+//tengo:hash_override 6FB763E3-AB0C-4676-8F74-C7E23069DCCF
+// We need hash override to prevent block recalculation. Changing it will force all block recalculation.
 
 /**
  * Creates and fill a workdir, runs a command on it
