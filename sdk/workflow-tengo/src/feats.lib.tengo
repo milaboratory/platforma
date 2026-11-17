@@ -89,6 +89,11 @@ export ll.toStrict({
 	// how a block tells "understood" from "not understood at all".
 	supportsScratchSpaceRequests: _isEnabled("supportsScratchSpaceRequests"),
 
+	// true when the backend enforces a run's time limit: it reads 'timeLimit' (whole seconds) in a
+	// compute quota, kills a run that goes over it and reports the failure as TimeIsUp. A backend
+	// without it ignores the field and runs the command without a bound.
+	runTimeLimit:             _isEnabled("runTimeLimit"),
+
 	// true when THIS DEPLOYMENT backs that guarantee with real scratch storage. Says nothing about
 	// whether the request is understood - see supportsScratchSpaceRequests for that - only whether
 	// the temporary directory sits on a fast device or on the working directory's own filesystem.

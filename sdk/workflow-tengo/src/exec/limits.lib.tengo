@@ -11,11 +11,61 @@ oop := import(":oop")
 validation := import(":validation")
 smart := import(":smart")
 json := import("json")
+text := import("text")
 constants := import(":exec.constants")
 feats := import(":feats")
 actionContext := import(":action-context")
 
 _RTYPE_QUOTA := { Name: "Quota", Version: "1" }
+
+// Seconds per unit of a duration string. Days are the largest unit: a time limit is a bound on
+// one run, and weeks are not one.
+_TIME_UNIT_SECONDS := { s: 1, m: 60, h: 3600, d: 86400 }
+// A duration string: one or more "<integer><unit>" parts, units s, m, h, d, each at most once and
+// largest first ("1h30m", "2d", "90s").
+_TIME_LIMIT_RE := "^([0-9]+d)?([0-9]+h)?([0-9]+m)?([0-9]+s)?$"
+
+/**
+ * Parses a time limit into whole seconds, or panics with a message prefixed by ctx.
+ *
+ * A time limit is how long one run of the software may take on the wall clock, from the moment it
+ * starts. The backend kills a run that goes over it and reports the failure as TimeIsUp, which a
+ * .fallbacks() handler can catch.
+ *
+ * @param value: number | string - positive integer seconds, or a duration string made of
+ *                                 "<integer><unit>" parts with units d, h, m, s, largest first:
+ *                                 "90s", "30m", "24h", "1h30m", "2d".
+ * @param ctx: string - prefix of the error message, naming the setter.
+ * @return int - seconds, at least 1.
+ */
+parseTimeLimit := func(value, ctx) {
+	if is_int(value) {
+		ll.assert(value > 0, "%s: time limit must be a positive number of seconds, got %d", ctx, value)
+		return value
+	}
+	if is_float(value) {
+		ll.assert(value == float(int(value)) && value > 0, "%s: time limit must be a positive whole number of seconds, got %v", ctx, value)
+		return int(value)
+	}
+	ll.assert(is_string(value), "%s: time limit must be a number of seconds or a duration string like \"30m\", \"24h\" or \"1h30m\", got %v", ctx, value)
+
+	s := text.to_lower(text.trim_space(value))
+	ll.assert(s != "" && text.re_match(_TIME_LIMIT_RE, s),
+		"%s: time limit %q is not a duration: use integer parts with units d, h, m, s, largest first, like \"90s\", \"30m\", \"24h\", \"1h30m\", \"2d\"", ctx, value)
+
+	total := 0
+	number := 0
+	for c in s {
+		if c >= '0' && c <= '9' {
+			number = number * 10 + int(c - '0')
+		} else {
+			total += number * _TIME_UNIT_SECONDS[string(c)]
+			number = 0
+		}
+	}
+	ll.assert(total > 0, "%s: time limit must be positive, got %q", ctx, value)
+	return total
+}
 
 /**
  * Get resource types for command execution in given queue.
@@ -96,6 +146,7 @@ quotaBuilder := func() {
 	ram_request := undefined
 	gpu_request := undefined
 	scratch_request := undefined
+	time_limit := undefined
 
 	self = ll.toStrict({
 		/**
@@ -190,6 +241,21 @@ quotaBuilder := func() {
 		},
 
 		/**
+		 * Wall-clock time one run may take once the software starts. The backend kills a run
+		 * that goes over it and reports TimeIsUp; without it the backend's default applies.
+		 * A backend that does not know time limits ignores it.
+		 *
+		 * @param value: number | string | undefined - seconds, or a duration string ("30m",
+		 *                                             "24h", "1h30m"); see parseTimeLimit.
+		 * @return builder
+		 */
+		timeLimit: func(value) {
+			time_limit = is_undefined(value) ? undefined : parseTimeLimit(value, "exec.quota.builder.timeLimit")
+
+			return self
+		},
+
+		/**
 		 * Create Quota resource.
 		 *
 		 * @return smart.resource - reference to the resulting value resource
@@ -211,6 +277,10 @@ quotaBuilder := func() {
 			}
 			if !is_undefined(scratch_request) {
 				data.scratchFreeSpace = scratch_request
+			}
+			if !is_undefined(time_limit) {
+				// whole seconds, a JSON integer: the backend reads it as such
+				data.timeLimit = time_limit
 			}
 
 			return smart.ephemeralBuilder(_RTYPE_QUOTA, json.encode(data)).lockAndBuild()
@@ -336,6 +406,7 @@ export ll.toStrict({
 	getResourceTypes:                getResourceTypes,
 	getRunCommandV3Type:             getRunCommandV3Type,
 	getWorkdirSaveV3Type:            getWorkdirSaveV3Type,
+	parseTimeLimit:                  parseTimeLimit,
 	quotaBuilder:                    quotaBuilder,
 	storageSpaceRequestBuilder:      storageSpaceRequestBuilder,
 	computeRequestBuilder:           computeRequestBuilder

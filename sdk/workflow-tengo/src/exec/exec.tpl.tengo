@@ -79,7 +79,8 @@ inputSchema := {
 		"cpu,?": "number",
 		"ram,?": ["or", "number", "string"],
 		"gpuMemory,?": "string",
-		"scratchFreeSpace,?": ["or", "number", "string"]
+		"scratchFreeSpace,?": ["or", "number", "string"],
+		"timeLimit,?": "number"
 	}
 }
 

@@ -29,9 +29,10 @@ ROOT_PLAN := "root"
 
 /**
  * Failure reasons a policy may handle, with the attributes a handler entry may narrow on and the
- * type each one has. Reasons no backend reports yet (TimeIsUp, WorkdirOutOfSpace,
- * ScratchOutOfSpace) are accepted, so a handler starts working the day the backend attributes
- * them. OOM has no exit code to narrow on: a kill reports none on Kubernetes. Unallocated is never
+ * type each one has. TimeIsUp is a run the backend killed at its time limit (exec.hasRunTimeLimit:
+ * a backend without time limits never reports it). Reasons no backend reports yet
+ * (WorkdirOutOfSpace, ScratchOutOfSpace) are accepted, so a handler starts working the day the
+ * backend attributes them. OOM has no exit code to narrow on: a kill reports none on Kubernetes. Unallocated is never
  * handleable: the RunCommand errors instead. InfraError is not offered: a block has nothing to run
  * instead of a failure of the infrastructure.
  */

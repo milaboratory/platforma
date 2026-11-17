@@ -116,7 +116,8 @@ inputSchema := {
 		"cpu,?": "number",
 		"ram,?": ["or", "number", "string"],
 		"gpuMemory,?": "string",
-		"scratchFreeSpace,?": ["or", "number", "string"]
+		"scratchFreeSpace,?": ["or", "number", "string"],
+		"timeLimit,?": "number"
 	}
 }
 
@@ -290,6 +291,10 @@ self.body(func(inputs) {
 	}
 	if !is_undefined(quota.scratchFreeSpace) {
 		computeRequest.scratchFreeSpace = quota.scratchFreeSpace
+	}
+	// Whole seconds, the plan's own: a TimeIsUp handler's plan carries the limit its builder set.
+	if !is_undefined(quota.timeLimit) {
+		computeRequest.timeLimit = quota.timeLimit
 	}
 	computeAllocationRef := delayedCompAlloc.create(wdBefore, computeRequest)
 

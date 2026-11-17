@@ -1,0 +1,11 @@
+// Whether the backend enforces a run's time limit: the time-limit tests read it here and skip on a
+// backend that would let the root sleep to the end.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+self.defineOutputs(["runTimeLimit"])
+
+self.body(func(inputs) {
+	return { runTimeLimit: exec.hasRunTimeLimit }
+})

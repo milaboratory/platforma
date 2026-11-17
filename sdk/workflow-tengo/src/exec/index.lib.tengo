@@ -111,6 +111,8 @@ _newState := func() {
 		ramRequest: undefined,
 		gpuMemory: undefined,
 		scratchFreeSpace: undefined,
+		// whole seconds; undefined = the backend's default (see .timeLimit())
+		timeLimit: undefined,
 
 		// resource-formula builder state (ram / cpu / vram formulas + addFile tags).
 		// Set by .resources({ ... }); each *FormulaAst holds a plain formula AST and
@@ -484,6 +486,11 @@ _planOf := func(st) {
 	scratchRequest := is_undefined(st.scratchFreeSpace) ? 0 : st.scratchFreeSpace
 	if is_int(scratchRequest) { scratchRequest = string(scratchRequest) + "b" }
 	quotaData.scratchFreeSpace = scratchRequest
+	// Whole seconds, a JSON integer. Sent only when the block set one: absent means the backend's
+	// default. A backend that predates time limits ignores the field.
+	if !is_undefined(st.timeLimit) {
+		quotaData.timeLimit = st.timeLimit
+	}
 	metaExecInputs := {
 		quota: smart.createJsonResource(quotaData)
 	}
@@ -993,6 +1000,30 @@ _makeBuilder := func(st) {
 		},
 
 		/**
+		 * Sets how long one run of the command may take on the wall clock, counted from the moment
+		 * the software starts (queueing and image pulls do not count). The backend kills a run
+		 * that goes over it and reports the failure as TimeIsUp: a .fallbacks() handler can catch
+		 * it, for example with a plan that uses faster parameters or allows more time. Without a
+		 * time limit the backend's default applies (30 hours unless the deployment changed it).
+		 *
+		 * A backend that predates time limits ignores the request (exec.hasRunTimeLimit tells).
+		 * Like the rest of the root's quota, the limit does not take part in the exec's identity:
+		 * changing it alone does not compute the exec anew.
+		 *
+		 * The same setting is the `timeLimit` key of .resources({ ... }).
+		 *
+		 * @param value: number | string - positive whole seconds, or a duration string made of
+		 *                                 integer parts with units d, h, m, s, largest first:
+		 *                                 "90s", "30m", "24h", "1h30m", "2d".
+		 * @return builder
+		 */
+		timeLimit: func(value) {
+			st.timeLimit = limits.parseTimeLimit(value, "exec.builder.timeLimit")
+
+			return self
+		},
+
+		/**
 		 * @deprecated: use mem() instead.
 		 * Deprecated: use mem() instead.
 		 *
@@ -1068,8 +1099,15 @@ _makeBuilder := func(st) {
 		 * serviceFields support; on a backend without it the formula instead
 		 * enters the exec CID — evaluation is still correct, only dedup is lost.)
 		 *
+		 * `timeLimit` (optional, top level, shared by both blocks) bounds the wall-clock time one
+		 * run may take once the software starts; see .timeLimit(). A run over it is killed and
+		 * fails as TimeIsUp, which .fallbacks() can handle:
+		 *
+		 *   .resources({ timeLimit: "24h", onCPU: { cpu: 8, ram: "32GiB" } })
+		 *
 		 * @param spec: {
 		 *     queue?: string,
+		 *     timeLimit?: number (seconds) | string ("30m", "24h", "1h30m"),
 		 *     onCPU?: { cpu, ram: <static | formula> },
 		 *     onGPU?: { cpu, ram, vram: <static | formula> }
 		 *   }
@@ -1077,9 +1115,9 @@ _makeBuilder := func(st) {
 		 */
 		resources: func(spec) {
 			ll.assert(ll.isMap(spec), "exec.builder.resources: expected a config map")
-			allowed := { queue: true, onCPU: true, onGPU: true }
+			allowed := { queue: true, timeLimit: true, onCPU: true, onGPU: true }
 			for k, _ in spec {
-				ll.assert(!is_undefined(allowed[k]), "exec.builder.resources: unknown key %q (allowed: queue, onCPU, onGPU)", k)
+				ll.assert(!is_undefined(allowed[k]), "exec.builder.resources: unknown key %q (allowed: queue, timeLimit, onCPU, onGPU)", k)
 			}
 			hasCPU := !is_undefined(spec.onCPU)
 			hasGPU := !is_undefined(spec.onGPU)
@@ -1088,6 +1126,11 @@ _makeBuilder := func(st) {
 			if !is_undefined(spec.queue) {
 				validation.assertType(spec.queue, "string", "exec.builder.resources: queue must be a string")
 				st.queue = spec.queue
+			}
+			// One limit for both blocks: how long the run may take does not depend on the node
+			// it lands on. Left as it was when the spec does not name it.
+			if !is_undefined(spec.timeLimit) {
+				st.timeLimit = limits.parseTimeLimit(spec.timeLimit, "exec.builder.resources.timeLimit")
 			}
 
 			// Per-dimension setters: a formula (exec.formula chain / AST) sets the
@@ -1850,6 +1893,8 @@ _makeBuilder := func(st) {
 		 *   SoftwareError: exitCode (int), messageMatch (regex over the last log lines)
 		 *   GPUMissed:     backendHasGPU (bool), timeout (int, ms)
 		 *   OOM, UnknownError, TimeIsUp, WorkdirOutOfSpace, ScratchOutOfSpace: none
+		 * TimeIsUp is a run killed at its time limit (.timeLimit() or resources({ timeLimit })); a
+		 * handler builder may set a larger limit of its own.
 		 *
 		 * `name` is the plan key shown in getAttempts() and in the final error; without it the key
 		 * is "<reason>[<index>]". A handler builder may declare its own fallbacks. Every handler
@@ -2294,5 +2339,7 @@ export ll.toStrict({
 	// also backs the GPU-required guard: onGPU without onCPU (or a static
 	// .gpuMemory()) on a GPU-less backend is a permanent error.
 	hasGpu: feats.hasGpu,
+	// true when the backend enforces .timeLimit(): kills a run over it and reports TimeIsUp
+	hasRunTimeLimit: feats.runTimeLimit,
 	formula: execFormula
 })

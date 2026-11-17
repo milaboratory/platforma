@@ -14,7 +14,8 @@ tpl := assets.importTemplate(":exec.delayed-compute-allocation.impl")
  * which is a prerequisite for the computation itself.
  *
  * @param workdir reference to a workdir
- * @param req map with queue, cpu, ram, gpuMemory and scratchFreeSpace. Everything but queue is optional.
+ * @param req map with queue, cpu, ram, gpuMemory, scratchFreeSpace and timeLimit (whole seconds).
+ *            Everything but queue is optional.
  * @return reference to a compute allocation
  */
 create := func(workdir, req) {
@@ -23,7 +24,8 @@ create := func(workdir, req) {
 		"cpu,?": "number",
 		"ram,?": ["or", "number", "string"],
 		"gpuMemory,?": "string",
-		"scratchFreeSpace,?": ["or", "number", "string"]
+		"scratchFreeSpace,?": ["or", "number", "string"],
+		"timeLimit,?": "number"
 	}, "request must be a valid request")
 
 	reqMap := { queue: req.queue }
@@ -38,6 +40,9 @@ create := func(workdir, req) {
 	}
 	if !is_undefined(req.scratchFreeSpace) {
 		reqMap.scratchFreeSpace = req.scratchFreeSpace
+	}
+	if !is_undefined(req.timeLimit) {
+		reqMap.timeLimit = req.timeLimit
 	}
 
 	delayedComputeAllocation := render.createEphemeral(tpl, {

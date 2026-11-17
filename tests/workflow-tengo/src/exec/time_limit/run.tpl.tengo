@@ -1,0 +1,79 @@
+/**
+ * An exec whose root sleeps past its time limit, with or without a TimeIsUp handler (exec time
+ * limits, MILAB-6913).
+ *
+ * inputs.nonce: string - keeps the pure exec.exec render from deduplicating against earlier runs
+ * inputs.policy: string - what the root declares:
+ *   "fast"     - TimeIsUp -> "fast": a different, quick command (cheaper parameters)
+ *   "moreTime" - TimeIsUp -> "moreTime": the same command with a larger time limit
+ *   "none"     - no fallbacks: the time limit failure ends the exec
+ *   "inTime"   - the root finishes well within its limit and succeeds on its own
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+self.defineOutputs(["out", "attempts"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+// The root's limit is short, the root's sleep is well past it, and the larger limit leaves room
+// for the same sleep with plenty to spare, on Kubernetes too (the limit counts from the start of
+// the container, so neither the queue nor the image pull eats into it).
+ROOT_LIMIT := "5s"
+ROOT_SLEEP := 60
+LARGER_LIMIT := "5m"
+
+self.body(func(inputs) {
+	shell := func(script) {
+		return exec.builder().
+			software(shellSw).
+			arg("-c").
+			arg(script + " # " + inputs.nonce).
+			inLightQueue().
+			saveFileContent("out.txt")
+	}
+
+	policy := inputs.policy
+	root := undefined
+
+	if policy == "fast" {
+		// The static setter path: .cpu()/.ram() plus .timeLimit()
+		root = shell("sleep " + string(ROOT_SLEEP) + "; echo root > out.txt").
+			cpu(1).ram("50Mi").
+			timeLimit(ROOT_LIMIT)
+		fast := shell("echo fast > out.txt").cpu(1).ram("50Mi")
+		root.fallbacks({ TimeIsUp: [{ name: "fast", builder: fast }] })
+
+	} else if policy == "moreTime" {
+		// The resources() path: the handler is a copy that differs only in its time limit
+		root = shell("sleep 15; echo ok > out.txt").
+			resources({ timeLimit: ROOT_LIMIT, onCPU: { cpu: 1, ram: "50Mi" } })
+		moreTime := root.copy().resources({ timeLimit: LARGER_LIMIT, onCPU: { cpu: 1, ram: "50Mi" } })
+		root.fallbacks({ TimeIsUp: [{ name: "moreTime", builder: moreTime }] })
+
+	} else if policy == "none" {
+		root = shell("sleep " + string(ROOT_SLEEP) + "; echo root > out.txt").
+			cpu(1).ram("50Mi").
+			timeLimit(ROOT_LIMIT)
+
+	} else if policy == "inTime" {
+		root = shell("sleep 1; echo ok > out.txt").
+			cpu(1).ram("50Mi").
+			timeLimit(LARGER_LIMIT)
+		fast := shell("echo fast > out.txt").cpu(1).ram("50Mi")
+		root.fallbacks({ TimeIsUp: [{ name: "fast", builder: fast }] })
+
+	} else {
+		ll.panic("unknown policy %q", policy)
+	}
+
+	res := root.run()
+
+	return {
+		out: res.getFileContent("out.txt"),
+		attempts: res.getAttempts()
+	}
+})

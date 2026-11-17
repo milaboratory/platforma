@@ -23,6 +23,9 @@ self.body(func(inputs) {
 	if !is_undefined(request.scratchFreeSpace) {
 		qb.scratchFreeSpace(request.scratchFreeSpace)
 	}
+	if !is_undefined(request.timeLimit) {
+		qb.timeLimit(request.timeLimit)
+	}
 	quotaRef := qb.build()
 
 	computeRequestRef := limits.computeRequestBuilder().

@@ -1,0 +1,63 @@
+test := import(":test")
+exec := import(":exec")
+ll := import(":ll")
+limits := import(":exec.limits")
+
+// A time limit bounds how long one run of a command may take once the software starts. These tests
+// cover how a limit is spelled and that every builder setter takes it; that the backend kills a run
+// over it and the TimeIsUp handler runs is asserted end to end by the integration test
+// (tests/workflow-tengo/src/exec/time-limit.test.ts).
+
+TestParseTimeLimitSeconds := func() {
+	test.isEqual(1, limits.parseTimeLimit(1, "t"))
+	test.isEqual(90, limits.parseTimeLimit(90, "t"))
+	test.isEqual(108000, limits.parseTimeLimit(108000, "t"))
+	test.isEqual(5, limits.parseTimeLimit(5.0, "t"), "a whole float is whole seconds")
+}
+
+TestParseTimeLimitDurationStrings := func() {
+	test.isEqual(90, limits.parseTimeLimit("90s", "t"))
+	test.isEqual(1800, limits.parseTimeLimit("30m", "t"))
+	test.isEqual(86400, limits.parseTimeLimit("24h", "t"))
+	test.isEqual(5400, limits.parseTimeLimit("1h30m", "t"))
+	test.isEqual(172800, limits.parseTimeLimit("2d", "t"))
+	test.isEqual(93784, limits.parseTimeLimit("1d2h3m4s", "t"))
+	test.isEqual(3600, limits.parseTimeLimit(" 1H ", "t"), "case and surrounding spaces are ignored")
+	test.isEqual(30, limits.parseTimeLimit("0m30s", "t"), "a zero part is fine while the total is positive")
+}
+
+TestTimeLimitSetter := func() {
+	b := exec.builder().
+		cmd("test").
+		cpu(1).
+		mem("2GiB").
+		timeLimit("2h")
+
+	test.isTrue(ll.methodExists(b, "run"), "timeLimit() must return the builder")
+}
+
+TestTimeLimitInResources := func() {
+	b := exec.builder().
+		cmd("test").
+		resources({ timeLimit: 600, onCPU: { cpu: 1, ram: "2GiB" } })
+
+	test.isTrue(ll.methodExists(b, "run"), "resources() must accept a top-level timeLimit")
+
+	b2 := exec.builder().
+		cmd("test").
+		resources({
+			queue: "heavy",
+			timeLimit: "1h30m",
+			onCPU: { cpu: 1, ram: "2GiB" },
+			onGPU: { cpu: 2, ram: "4GiB", vram: "16GiB" }
+		})
+
+	test.isTrue(ll.methodExists(b2, "run"), "timeLimit applies to both blocks")
+}
+
+TestTimeLimitSurvivesCopy := func() {
+	main := exec.builder().cmd("test").cpu(1).mem("2GiB").timeLimit("10m")
+	longer := main.copy().timeLimit("1h")
+
+	test.isTrue(ll.methodExists(longer, "run"), "a copy takes its own time limit")
+}
