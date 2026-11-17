@@ -464,6 +464,118 @@ describe("createAppV3", { timeout: 20_000 }, () => {
     app.closedRef = true;
   });
 
+  it("should keep an unsaved edit when the outputs change before the save lands", async () => {
+    const state = createDefaultState();
+    const platforma = createMockApiV3<Data, Args, Outputs>(state, defaultBlockModelInfo());
+    // A save that takes its time, as in a large project.
+    const mutateStorage = platforma.mutateStorage.bind(platforma);
+    platforma.mutateStorage = async (payload, author) => {
+      await delay(patchPoolingDelay * 3);
+      return mutateStorage(payload, author);
+    };
+    const initialState = await platforma.loadBlockState();
+    if ("error" in initialState) throw initialState.error;
+
+    const { app } = createAppV3<Data, Args, Outputs>(initialState.value!, platforma, {
+      debug: false,
+      debounceSpan: 10,
+    });
+
+    app.model.data.count = 5;
+    await delay(50);
+
+    // The save is on its way. The state the server holds is still the previous author's.
+    state.setOutputs({ doubled: { ok: true, value: 42, stable: true } });
+    await delay(patchPoolingDelay + 50);
+
+    expect(app.model.outputs.doubled).toEqual(42);
+    expect(app.model.data).toEqual({ count: 5, label: "" });
+
+    app.model.data.label = "hello";
+
+    await app.allSettled();
+    await delay(patchPoolingDelay * 2 + 50);
+
+    expect(state.blockStorage.__data).toEqual({ count: 5, label: "hello" });
+    expect(app.model.data).toEqual({ count: 5, label: "hello" });
+
+    app.closedRef = true;
+  });
+
+  it("should keep an unsaved edit when the section changes before the save lands", async () => {
+    const state = createDefaultState();
+    const platforma = createMockApiV3<Data, Args, Outputs>(state, defaultBlockModelInfo());
+    const mutateStorage = platforma.mutateStorage.bind(platforma);
+    platforma.mutateStorage = async (payload, author) => {
+      await delay(patchPoolingDelay * 3);
+      return mutateStorage(payload, author);
+    };
+    const initialState = await platforma.loadBlockState();
+    if ("error" in initialState) throw initialState.error;
+
+    const { app } = createAppV3<Data, Args, Outputs>(initialState.value!, platforma, {
+      debug: false,
+      debounceSpan: 10,
+    });
+
+    app.model.data.count = 5;
+    await delay(50);
+
+    await app.navigateTo("/second" as `/${string}`);
+    await delay(patchPoolingDelay + 50);
+
+    expect(app.model.data).toEqual({ count: 5, label: "" });
+
+    app.model.data.label = "hello";
+
+    await app.allSettled();
+    await delay(patchPoolingDelay * 2 + 50);
+
+    expect(state.blockStorage.__data).toEqual({ count: 5, label: "hello" });
+    expect(app.model.data).toEqual({ count: 5, label: "hello" });
+
+    app.closedRef = true;
+  });
+
+  it("should keep unsaved plugin data when the outputs change before the save lands", async () => {
+    type F = PluginFactory<PluginData, undefined, { formatted: string }>;
+    const pluginId = "counter" as PluginHandle<F>;
+
+    const state = createDefaultState({ [pluginId]: defaultPluginData() });
+    const platforma = createMockApiV3<Data, Args, Outputs>(
+      state,
+      defaultBlockModelInfo([pluginId]),
+    );
+    const mutateStorage = platforma.mutateStorage.bind(platforma);
+    platforma.mutateStorage = async (payload, author) => {
+      await delay(patchPoolingDelay * 3);
+      return mutateStorage(payload, author);
+    };
+    const initialState = await platforma.loadBlockState();
+    if ("error" in initialState) throw initialState.error;
+
+    const { app, pluginAccess } = createAppV3<Data, Args, Outputs>(initialState.value!, platforma, {
+      debug: false,
+      debounceSpan: 10,
+    });
+
+    const pluginState = pluginAccess.getOrCreatePluginState(pluginId);
+    pluginState.model.data.value = 11;
+    await delay(50);
+
+    state.setOutputs({ doubled: { ok: true, value: 42, stable: true } });
+    await delay(patchPoolingDelay + 50);
+
+    expect(pluginState.model.data).toEqual({ value: 11 });
+
+    await app.allSettled();
+    await delay(patchPoolingDelay * 2 + 50);
+
+    expect(pluginState.model.data).toEqual({ value: 11 });
+
+    app.closedRef = true;
+  });
+
   it("should report output errors", async () => {
     const state = new BlockStateV3Mock<Data, Outputs>(
       defaultData(),
