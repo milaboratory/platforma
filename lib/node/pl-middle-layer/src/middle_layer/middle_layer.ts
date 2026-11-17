@@ -305,6 +305,17 @@ export class MiddleLayer {
   }
 
   /**
+   * Whether the UI can offer the "pick a user" recipient picker: the authenticated user can list
+   * the users of the server. The server decides per role (`userListing:v2` + the session's
+   * `can_list_users`); an older `userListing:v1` backend lets all roles list users. When false,
+   * the UI offers paste-a-login. Not a security boundary: listUsers still gets PERMISSION_DENIED
+   * (see `isPermissionDenied` from pl-client) if the server says no.
+   */
+  public get userListingAvailable(): boolean {
+    return this.pl.canListUsers;
+  }
+
+  /**
    * Whether the UI offers share-with-everybody — no role policy lives in the UI:
    *   serverCapabilities.has("publicGrants:v1") && canGrantToEveryone(currentUserRole)
    * Not a security boundary: a crafted call still hits the backend's role +
