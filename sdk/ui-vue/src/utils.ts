@@ -1,6 +1,7 @@
 import type { ErrorLike, OutputWithStatus } from "@platforma-sdk/model";
-import type { OptionalResult } from "./types";
+import type { StandardSchemaV1 } from "@standard-schema/spec";
 import type { ZodError } from "zod";
+import type { OptionalResult } from "./types";
 
 export class UnresolvedError extends Error {
   name = "UnresolvedError";
@@ -77,14 +78,28 @@ export const ensureError = (cause: unknown) => {
   return Error(String(cause));
 };
 
+/** @deprecated Errors from any Standard Schema library are formatted by `createModel`. */
 export const isZodError = (err: Error): err is ZodError => {
   return err.name === "ZodError";
 };
 
-export const formatZodError = (err: ZodError) => {
-  const { formErrors, fieldErrors } = err.flatten();
-  const _fieldErrors = Object.entries(fieldErrors).map(([field, errors]) => {
-    return field + ":" + errors?.join(",");
+/** @deprecated Use {@link formatSchemaIssues}. */
+export const formatZodError = (err: ZodError) => formatSchemaIssues(err.issues);
+
+/** Formats Standard Schema issues as `form errors; field:message,message`, grouped by the first path key. */
+export const formatSchemaIssues = (issues: readonly StandardSchemaV1.Issue[]): string => {
+  const byField = Map.groupBy(issues, (issue) => {
+    const segment = issue.path?.[0];
+    return typeof segment === "object" ? segment.key : segment;
   });
-  return formErrors.concat(_fieldErrors).join("; ");
+  return [
+    ...(byField.get(undefined) ?? []).map((issue) => issue.message),
+    ...byField
+      .entries()
+      .filter(([field]) => field !== undefined)
+      .map(
+        ([field, fieldIssues]) =>
+          `${String(field)}:${fieldIssues.map((issue) => issue.message).join(",")}`,
+      ),
+  ].join("; ");
 };
