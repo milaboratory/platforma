@@ -6,7 +6,7 @@ export { ResourceTypeName, ResourceTypePrefix };
 export type { FinalResourceDataPredicate } from "./finality";
 export { readyOrDuplicateOrError } from "./finality";
 
-// The finality tables, one layer per consumer. Every layer accepts two backend writes after
+// The finality tables, one layer per consumer (baseline run, comment only). Every layer accepts two backend writes after
 // final: a data-loss error cascade, lifting the error of a stored blob found lost or corrupt to
 // the resources built from it, and the first duplicate's `hasOriginalListeners` flag on its
 // original, backend-internal and never on the wire. An entry's `why` names any other write
