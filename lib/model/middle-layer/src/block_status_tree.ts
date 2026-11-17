@@ -56,9 +56,11 @@ export type BlockStatusTreeNode = {
   readonly onMachine: boolean;
   /** When the node entered {@link state}, ms since the epoch. */
   readonly enteredAt?: number;
-  /** True once the node's render has ended and every reporter in it has too. */
+  /** True once the node's render has ended and every reporter in it has too, or the run was
+   * cancelled. */
   readonly ended: boolean;
-  /** The engine's reason, set when the render terminated. */
+  /** The engine's reason, set when the render terminated; `cancelled` for a node the user's stop
+   * ended. */
   readonly failure?: string;
   /** Every transition of every reporter, oldest first, whatever its state. */
   readonly transitions: readonly BlockStatusTreeTransition[];
