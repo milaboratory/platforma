@@ -1233,18 +1233,6 @@ builder := func() {
 		},
 
 		/**
-		 * A command to stream a file by a given file name.
-		 *
-		 * @param fileName: string - the name of the file to stream.
-		 */
-		streamFile: func(fileName) {
-			fileName = path.canonize(fileName)
-			sets.add(filesToStream, fileName)
-
-			return self
-		},
-
-		/**
 		 * Set stdout file name
 		 */
 		stdoutFileName: func(fileName) {
@@ -1671,18 +1659,6 @@ builder := func() {
 					ll.assert(sets.hasElement(filesContentToSave, fileName),
 						"file '%s' content was not saved, add saveFileContent() call to the exec builder", fileName)
 					return tpl.output("filesContent", cache).getFutureInputField(fileName)
-				},
-
-				/**
-				 * Retrieves a file stream.
-				 *
-				 * @param fileName: string
-				 * @return field - a reference to the file stream resource.
-				 */
-				getFileStream: func(fileName) {
-					ll.assert(sets.hasElement(filesToStream, fileName),
-						"file '%s' stream was not saved, add streamFile() call to the exec builder", fileName)
-					return tpl.output("fileStreams", cache).getFutureInputField(fileName, true)
 				},
 
 				/**
