@@ -1,5 +1,5 @@
 import type { Branded } from "@milaboratories/pl-model-common";
-import { z } from "zod";
+import * as v from "valibot";
 
 /**
  * Schema version this build writes and fully understands.
@@ -33,14 +33,12 @@ export interface FolderEntry {
   readonly description?: string;
 }
 
-export const FolderEntry: z.ZodType<FolderEntry, z.ZodTypeDef, unknown> = z
-  .object({
-    id: folderId(),
-    name: z.string().min(1),
-    parent: folderId().optional(),
-    description: z.string().optional(),
-  })
-  .strict();
+export const FolderEntry: v.GenericSchema<unknown, FolderEntry> = v.strictObject({
+  id: folderId(),
+  name: v.pipe(v.string(), v.minLength(1)),
+  parent: v.optional(folderId()),
+  description: v.optional(v.string()),
+});
 
 /**
  * The whole folder tree of one user, as one persisted document.
@@ -64,14 +62,12 @@ export interface FoldersDocument {
   readonly templateAssignments: Readonly<Record<string, FolderId>>;
 }
 
-export const FoldersDocument: z.ZodType<FoldersDocument, z.ZodTypeDef, unknown> = z
-  .object({
-    schemaVersion: z.literal(FOLDERS_SCHEMA_VERSION),
-    folders: z.array(FolderEntry),
-    assignments: z.record(z.string().min(1), folderId()),
-    templateAssignments: z.record(z.string().min(1), folderId()),
-  })
-  .strict();
+export const FoldersDocument: v.GenericSchema<unknown, FoldersDocument> = v.strictObject({
+  schemaVersion: v.literal(FOLDERS_SCHEMA_VERSION),
+  folders: v.array(FolderEntry),
+  assignments: v.record(v.pipe(v.string(), v.minLength(1)), folderId()),
+  templateAssignments: v.record(v.pipe(v.string(), v.minLength(1)), folderId()),
+});
 
 /** The document of a user who has never made a folder. */
 export function emptyFoldersDocument(): FoldersDocument {
@@ -92,5 +88,5 @@ export function emptyFoldersDocument(): FoldersDocument {
  * cannot be swapped by accident in the code consuming them.
  */
 function folderId() {
-  return z.string().min(1).transform(asFolderId);
+  return v.pipe(v.string(), v.minLength(1), v.transform(asFolderId));
 }

@@ -1,5 +1,5 @@
 import path from "node:path";
-import { tryLoadFile } from "../util";
+import { parseSchema, tryLoadFile } from "../util";
 import type { BlockPackDescriptionAbsolute } from "./model";
 import {
   resolveBlockPackDescription,
@@ -46,7 +46,7 @@ export async function tryLoadPackDescription(
     const descriptionNotParsed = packageJson[BlockDescriptionPackageJsonField];
     if (descriptionNotParsed === undefined) return undefined;
     const descriptionRaw = {
-      ...BlockPackDescriptionFromPackageJsonRaw.parse(descriptionNotParsed),
+      ...parseSchema(BlockPackDescriptionFromPackageJsonRaw, descriptionNotParsed),
       id: {
         ...parsePackageName(
           notEmpty(
@@ -54,7 +54,7 @@ export async function tryLoadPackDescription(
             `"name" not found in ${fullPackageJsonPath}`,
           ),
         ),
-        version: SemVer.parse(packageJson["version"]),
+        version: parseSchema(SemVer, packageJson["version"]),
       },
     };
     return await resolveBlockPackDescription(descriptionRaw, moduleRoot);
@@ -75,7 +75,7 @@ export async function loadPackDescriptionRaw(moduleRoot: string): Promise<BlockP
       `Block description (field ${BlockDescriptionPackageJsonField}) not found in ${fullPackageJsonPath}.`,
     );
   return {
-    ...BlockPackDescriptionFromPackageJsonRaw.parse(descriptionNotParsed),
+    ...parseSchema(BlockPackDescriptionFromPackageJsonRaw, descriptionNotParsed),
     id: {
       ...parsePackageName(
         notEmpty(
@@ -83,7 +83,7 @@ export async function loadPackDescriptionRaw(moduleRoot: string): Promise<BlockP
           `"name" not found in ${fullPackageJsonPath}`,
         ),
       ),
-      version: SemVer.parse(packageJson["version"]),
+      version: parseSchema(SemVer, packageJson["version"]),
     },
     featureFlags: {},
   };
@@ -113,7 +113,7 @@ export async function loadPackDescriptionFromManifest(
 ): Promise<BlockPackDescriptionAbsolute> {
   const manifestPath = path.resolve(blockPackDir, BlockPackManifestFile);
   const raw = JSON.parse(await fsp.readFile(manifestPath, { encoding: "utf-8" })) as unknown;
-  const manifest = BlockPackManifest.parse(raw);
+  const manifest = parseSchema(BlockPackManifest, raw);
   const components = resolveManifestBlockComponents(manifest.description.components, blockPackDir);
   const meta = await resolveManifestBlockPackMeta(manifest.description.meta, blockPackDir);
   return {

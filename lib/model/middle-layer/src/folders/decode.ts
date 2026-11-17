@@ -1,3 +1,4 @@
+import * as v from "valibot";
 import { FOLDERS_SCHEMA_VERSION, FoldersDocument, emptyFoldersDocument } from "./document";
 
 /** Why a stored document could not be read as it stands. */
@@ -103,14 +104,14 @@ function decodeFoldersValue(value: unknown): FoldersDecoded {
       },
     };
 
-  const result = FoldersDocument.safeParse(value);
+  const result = v.safeParse(FoldersDocument, value);
   if (!result.success)
     return unreadable(
       `the folder document does not match schema ${FOLDERS_SCHEMA_VERSION}: ` +
-        result.error.issues.map(formatIssue).join("; "),
+        result.issues.map(formatIssue).join("; "),
     );
 
-  return readable(result.data);
+  return readable(result.output);
 }
 
 function readable(document: FoldersDocument): FoldersDecoded {
@@ -129,12 +130,9 @@ function isMapping(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function formatIssue(issue: {
-  readonly path: readonly PropertyKey[];
-  readonly message: string;
-}): string {
-  const path = issue.path.map((segment) => String(segment)).join(".");
-  return path === "" ? issue.message : `${path}: ${issue.message}`;
+function formatIssue(issue: v.BaseIssue<unknown>): string {
+  const path = v.getDotPath(issue);
+  return path === null ? issue.message : `${path}: ${issue.message}`;
 }
 
 function errorText(error: unknown): string {

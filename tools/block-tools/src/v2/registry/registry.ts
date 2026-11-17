@@ -52,7 +52,7 @@ import type { KindImplementer, KindVersionOverview } from "./schema_kinds";
 import type { RelativeContentReader } from "../model";
 import { addRelativePathPrefix } from "../model";
 import { randomUUID } from "node:crypto";
-import { calculateSha256 } from "../../util";
+import { calculateSha256, parseSchema } from "../../util";
 
 export interface BlockRegistrySettings {
   skipSnapshotCreation?: boolean;
@@ -267,7 +267,10 @@ export class BlockRegistryV2 {
       // Create pre-write snapshot in force mode if package overview exists
       if (mode === "force" && pOverviewContent !== undefined) {
         const preWriteTimestamp = this.generatePreWriteTimestamp();
-        const existingOverview = PackageOverview.parse(JSON.parse(pOverviewContent.toString()));
+        const existingOverview = parseSchema(
+          PackageOverview,
+          JSON.parse(pOverviewContent.toString()),
+        );
         await this.createPackageOverviewSnapshot(
           packageInfo.package,
           existingOverview,
@@ -280,28 +283,30 @@ export class BlockRegistryV2 {
           ? { schema: "v2", versions: [] }
           : pOverviewContent === undefined
             ? { schema: "v2", versions: [] }
-            : PackageOverview.parse(JSON.parse(pOverviewContent.toString()));
+            : parseSchema(PackageOverview, JSON.parse(pOverviewContent.toString()));
       this.logger.info(
         `Updating ${packageInfo.package.organization}:${packageInfo.package.name} overview${mode === "force" ? " (starting empty in force mode)" : ""}, ${packageOverview.versions.length} records`,
       );
 
       // removing versions that we will update
-      const droppedVersions = packageOverview.versions.filter((e) =>
-        packageInfo.versions.has(e.description.id.version),
+      const droppedVersions = packageOverview.versions.filter((entry) =>
+        packageInfo.versions.has(entry.description.id.version),
       );
       const newVersions = packageOverview.versions.filter(
-        (e) => !packageInfo.versions.has(e.description.id.version),
+        (entry) => !packageInfo.versions.has(entry.description.id.version),
       );
 
-      for (const e of droppedVersions) {
-        if (!e.description.kind) continue;
-        const ovPath = kindOverviewPath(npmNameToKindPath(parseKindRef(e.description.kind).name));
-        mergeIntoKindOverview(ovPath, blockPackIdToString(e.description.id));
+      for (const entry of droppedVersions) {
+        if (!entry.description.kind) continue;
+        const ovPath = kindOverviewPath(
+          npmNameToKindPath(parseKindRef(entry.description.kind).name),
+        );
+        mergeIntoKindOverview(ovPath, blockPackIdToString(entry.description.id));
       }
 
       // reading new entries
-      for (const [v] of packageInfo.versions.entries()) {
-        const version = v.toString();
+      for (const [versionKey] of packageInfo.versions.entries()) {
+        const version = versionKey.toString();
         const id: BlockPackId = {
           ...packageInfo.package,
           version,
@@ -312,15 +317,16 @@ export class BlockRegistryV2 {
         if (!manifestContent) continue; // absent package
         const sha256 = await calculateSha256(manifestContent);
         // listing channels
-        const channels = (await this.storage.listFiles(packageChannelPrefix(id))).filter((f) => {
-          if (f.match(ChannelNameRegexp)) return true;
+        const channels = (await this.storage.listFiles(packageChannelPrefix(id))).filter((file) => {
+          if (file.match(ChannelNameRegexp)) return true;
           else {
-            this.logger.warn(`Unexpected channel in ${blockPackIdToString(id)}: ${f}`);
+            this.logger.warn(`Unexpected channel in ${blockPackIdToString(id)}: ${file}`);
             return false;
           }
         });
         // pushing the overview
-        const description = BlockPackManifest.parse(
+        const description = parseSchema(
+          BlockPackManifest,
           JSON.parse(manifestContent.toString("utf8")),
         ).description;
         newVersions.push({
@@ -363,13 +369,14 @@ export class BlockRegistryV2 {
 
       // calculating all channels
       const allChannels = new Set<string>();
-      for (const v of newVersions) for (const c of v.channels) allChannels.add(c);
+      for (const entry of newVersions)
+        for (const channel of entry.channels) allChannels.add(channel);
 
       // patching corresponding entry in overview
       overviewPackages = overviewPackages.filter(
-        (e) =>
-          e.id.organization !== packageInfo.package.organization ||
-          e.id.name !== packageInfo.package.name,
+        (overviewPackage) =>
+          overviewPackage.id.organization !== packageInfo.package.organization ||
+          overviewPackage.id.name !== packageInfo.package.name,
       );
       const packagePrefix = `${packageInfo.package.organization}/${packageInfo.package.name}`;
       overviewPackages.push({
@@ -378,24 +385,26 @@ export class BlockRegistryV2 {
           name: packageInfo.package.name,
         },
         // left for backward compatibility
-        allVersions: newVersions.map((e) => e.description.id.version).reverse(),
+        allVersions: newVersions.map((entry) => entry.description.id.version).reverse(),
         allVersionsWithChannels: newVersions
-          .map((e) => ({ version: e.description.id.version, channels: e.channels }))
+          .map((entry) => ({ version: entry.description.id.version, channels: entry.channels }))
           .reverse(),
         // left for backward compatibility
         latest: addRelativePathPrefix(newVersions[0].description, packagePrefix),
         // left for backward compatibility
         latestManifestSha256: newVersions[0].manifestSha256,
         latestByChannel: Object.fromEntries(
-          [...allChannels, AnyChannel].map((c) => {
-            // if c === 'any' the first element will be "found"
-            const v = newVersions.find((v) => c === AnyChannel || v.channels.indexOf(c) !== -1);
-            if (!v) throw new Error("Assertion error");
+          [...allChannels, AnyChannel].map((channel) => {
+            // if channel === 'any' the first element will be "found"
+            const entry = newVersions.find(
+              (candidate) => channel === AnyChannel || candidate.channels.includes(channel),
+            );
+            if (!entry) throw new Error("Assertion error");
             return [
-              c,
+              channel,
               {
-                description: addRelativePathPrefix(v.description, packagePrefix),
-                manifestSha256: v?.manifestSha256,
+                description: addRelativePathPrefix(entry.description, packagePrefix),
+                manifestSha256: entry.manifestSha256,
               },
             ];
           }),
@@ -410,7 +419,7 @@ export class BlockRegistryV2 {
       const kept = plan.rebuild
         ? []
         : ((await this.getKindOverviewAt(ovPath))?.implementers ?? []).filter(
-            (e) => !plan.replacedBlockIds.has(blockPackIdToString(e.id)),
+            (implementer) => !plan.replacedBlockIds.has(blockPackIdToString(implementer.id)),
           );
       const merged = [...kept, ...plan.add];
 
@@ -432,14 +441,14 @@ export class BlockRegistryV2 {
       const kindVersions: KindVersionOverview[] = [...byKindVersion.entries()]
         .map(([kindVersion, impls]) => {
           const allChannels = new Set<string>();
-          for (const i of impls) for (const c of i.channels) allChannels.add(c);
+          for (const impl of impls) for (const channel of impl.channels) allChannels.add(channel);
           const latestByChannel = Object.fromEntries(
-            [...allChannels, AnyChannel].map((c) => {
+            [...allChannels, AnyChannel].map((channel) => {
               const candidate = impls
-                .filter((i) => c === AnyChannel || i.channels.indexOf(c) !== -1)
-                .sort((a, b) => compareSemver(b.id.version, a.id.version))[0];
+                .filter((impl) => channel === AnyChannel || impl.channels.includes(channel))
+                .sort((left, right) => compareSemver(right.id.version, left.id.version))[0];
               if (!candidate) throw new Error("Assertion error");
-              return [c, candidate.id];
+              return [channel, candidate.id];
             }),
           );
           return { kindVersion, latestByChannel };
@@ -518,7 +527,7 @@ export class BlockRegistryV2 {
   ): Promise<undefined | PackageOverview> {
     const content = await this.storage.getFile(packageOverviewPath(name));
     if (content === undefined) return undefined;
-    return PackageOverview.parse(JSON.parse(content.toString()));
+    return parseSchema(PackageOverview, JSON.parse(content.toString()));
   }
 
   public async getGlobalOverview(): Promise<undefined | GlobalOverviewReg> {
@@ -531,7 +540,7 @@ export class BlockRegistryV2 {
   private async getKindOverviewAt(path: string): Promise<KindOverview | undefined> {
     const content = await this.storage.getFile(path);
     if (content === undefined) return undefined;
-    return KindOverview.parse(JSON.parse(content.toString()));
+    return parseSchema(KindOverview, JSON.parse(content.toString()));
   }
 
   private async marchChanged(id: BlockPackId) {
@@ -681,7 +690,7 @@ export class BlockRegistryV2 {
     // NET-NEW source-hash immutability guard (absent / equal / differ).
     const existing = await this.storage.getFile(`${prefix}/${KindManifestFileName}`);
     if (existing !== undefined) {
-      const prev = KindManifest.parse(JSON.parse(existing.toString()));
+      const prev = parseSchema(KindManifest, JSON.parse(existing.toString()));
       if (prev.sourceHash === kindManifest.sourceHash) {
         this.logger.info(
           `Kind ${npmName}@${version} already published with identical source — no-op`,
@@ -713,7 +722,7 @@ export class BlockRegistryV2 {
     }
 
     // manifest LAST = commit marker; stamp firstUploadTimestamp when absent.
-    const toStore = KindManifest.parse({
+    const toStore = parseSchema(KindManifest, {
       ...kindManifest,
       firstUploadTimestamp: kindManifest.firstUploadTimestamp ?? Date.now(),
     } satisfies KindManifest);
