@@ -52,9 +52,12 @@ _assertValidCpuRequest := func(amount, ctx) {
 	validation.assertType(amount, "number", ctx + ": amount of cores must be a number")
 	ll.assert(amount > 0, ctx + ": amount of cores should be greater than 0")
 }
+// A size string is held to the same floor when it parses: "0GiB" would otherwise reach the backend,
+// which replaces a zero request with the queue default.
 _assertValidMemRequest := func(amount, ctx) {
 	validation.assertType(amount, ["or", "number", "string"], ctx + ": RAM amount should be a number or string")
-	ll.assert(is_string(amount) || amount >= 16 * units.MiB, ctx + ": amount in bytes should be at least 16MiB")
+	bytes := fallback.ramBytes(amount)
+	ll.assert(is_undefined(bytes) || bytes >= 16 * units.MiB, ctx + ": RAM amount should be at least 16MiB, got %v", amount)
 }
 // A VRAM request is a size string ("16GiB") or a number of bytes. The static
 // .gpuMemory() takes a string; a formula .staticFallback() may resolve to a
@@ -62,7 +65,8 @@ _assertValidMemRequest := func(amount, ctx) {
 // including the 16MiB floor that catches a bytes-where-GiB-was-meant mistake.
 _assertValidGpuRequest := func(amount, ctx) {
 	validation.assertType(amount, ["or", "number", "string"], ctx + ": VRAM amount must be a number of bytes or a size string like '16GiB'")
-	ll.assert(is_string(amount) || amount >= 16 * units.MiB, ctx + ": VRAM amount in bytes should be at least 16MiB (did you pass bytes instead of GiB?)")
+	bytes := fallback.ramBytes(amount)
+	ll.assert(is_undefined(bytes) || bytes >= 16 * units.MiB, ctx + ": VRAM amount should be at least 16MiB (did you pass bytes instead of GiB?), got %v", amount)
 }
 // A scratch request is a size string ("500GiB") or a number of bytes, with the same 16MiB floor
 // that catches a bytes-where-GiB-was-meant mistake.
@@ -1835,17 +1839,17 @@ _makeBuilder := func(st) {
 
 		/**
 		 * Declares what runs instead when the command fails for a known reason. Needs a backend
-		 * with RunCommand v3. On an older one no failure is seen: the OOM plan with the most RAM
-		 * (any depth of OOM handlers) runs in place of the root, or the root without OOM
-		 * handlers, and a failure is an error, both with a notice.
+		 * with RunCommand v3. On an older one no failure is seen: a GPU plan gives way to its
+		 * GPUMissed plan, then the OOM plan with the most RAM (any depth of OOM handlers) runs in
+		 * place of the plan reached, or that plan itself without OOM handlers; a failure is an
+		 * error, with a notice.
 		 *
 		 * The policy maps a failure reason to a handler: an exec builder, or an ordered list of
 		 * entries { <attributes>?, name?, builder }, the first matching one wins. An entry with no
 		 * attributes matches any failure of that reason. Reasons and their attributes:
 		 *   SoftwareError: exitCode (int), messageMatch (regex over the last log lines)
-		 *   OOM:           exitCode (int)
 		 *   GPUMissed:     backendHasGPU (bool), timeout (int, ms)
-		 *   UnknownError, TimeIsUp, WorkdirOutOfSpace, ScratchOutOfSpace, InfraError: none
+		 *   OOM, UnknownError, TimeIsUp, WorkdirOutOfSpace, ScratchOutOfSpace: none
 		 *
 		 * `name` is the plan key shown in getAttempts() and in the final error; without it the key
 		 * is "<reason>[<index>]". A handler builder may declare its own fallbacks. Every handler
@@ -2000,12 +2004,27 @@ _makeBuilder := func(st) {
 
 		/**
 		 * The plan on a backend without RunCommand v3, where no failure is seen and no fallback
-		 * runs: the OOM plan with the most RAM runs in place of the root, so the exec does not
-		 * fail where a fallback would have saved it. Without OOM handlers the root runs.
+		 * runs. A GPU plan with a GPUMissed handler gives way to that handler's plan, as often as
+		 * the chain goes: a GPU may be out of stock, the CPU plan runs anywhere. Then the OOM
+		 * plan with the most RAM below the plan reached runs in its place, so the exec does not
+		 * fail where a fallback would have saved it. The plan reached runs when it has no OOM
+		 * handlers.
 		 *
 		 * @param rootPlanned: map - the root's own plan, _planWithoutFallbacks()
 		 */
 		_planWithoutRunCommandV3: func(rootPlanned) {
+			start := self
+			startKey := undefined
+			for start._requestsGpu() {
+				entries := start._fallbackEntries()
+				if is_undefined(entries) || is_undefined(entries.GPUMissed) {
+					break
+				}
+				// verify() has refused cycles
+				startKey = fallback.planKey("GPUMissed", 0, entries.GPUMissed[0])
+				start = entries.GPUMissed[0].builder
+			}
+
 			builders := {}
 			candidates := []
 			walk := undefined
@@ -2022,16 +2041,20 @@ _makeBuilder := func(st) {
 					walk(e.builder)
 				}
 			}
-			walk(self)
+			walk(start)
 
 			key := fallback.biggestOomPlan(candidates)
-			if is_undefined(key) {
+			if !is_undefined(key) {
+				start = builders[key]
+				startKey = key
+			}
+			if is_undefined(startKey) {
 				ll.print("exec.builder: the backend has no RunCommand v3, fallbacks are ignored; a failure is an error")
 				return rootPlanned
 			}
-			ll.print(fmt.sprintf("exec.builder: the backend has no RunCommand v3, the OOM plan %q with the most RAM runs instead of the root; a failure is an error", key))
-			planned := builders[key]._planWithoutFallbacks(st.forceRunCommandV2)
-			planned.inputs.runPlan = key
+			ll.print(fmt.sprintf("exec.builder: the backend has no RunCommand v3, the plan %q runs instead of the root; a failure is an error", startKey))
+			planned := start._planWithoutFallbacks(st.forceRunCommandV2)
+			planned.inputs.runPlan = startKey
 			return planned
 		},
 
@@ -2042,6 +2065,10 @@ _makeBuilder := func(st) {
 		// the RAM request as given: a static one, or the static fallback of a RAM formula
 		_ramRequest: func() {
 			return is_undefined(st.ramRequest) ? st.memFormulaFallback : st.ramRequest
+		},
+
+		_requestsGpu: func() {
+			return !is_undefined(st.gpuMemory) || !is_undefined(st.gpuFormulaAst)
 		},
 
 		_hasRunCommandV3: func() {

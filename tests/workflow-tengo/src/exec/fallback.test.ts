@@ -88,12 +88,13 @@ tplTest.concurrent(
   120_000,
 );
 
-// A backend without RunCommand v3 (the seam stands in for it) sees no failure: the OOM plan with
-// the most RAM, at any depth of OOM handlers, runs in place of the root; other reasons' plans never
-// do, and without OOM handlers the root runs.
+// A backend without RunCommand v3 (the seam stands in for it) sees no failure: a GPU plan gives
+// way to its GPUMissed plan, then the OOM plan with the most RAM, at any depth of OOM handlers,
+// runs in place of the root; other reasons' plans never do, and without OOM handlers the root runs.
 tplTest.concurrent.for([
   { policy: "oom", plan: "most" },
   { policy: "softwareError", plan: "root" },
+  { policy: "gpu", plan: "cpuMore" },
 ])(
   "exec fallbacks: without RunCommand v3 the biggest OOM plan runs ($policy -> $plan)",
   async ({ policy, plan }, { helper, expect }) => {
@@ -136,7 +137,7 @@ tplTest.concurrent(
     expect((error as Error).message).toContain("Exited with code 2.");
     if (await hasWorkdirSaveV3(helper))
       expect((error as Error).message).toContain(
-        "#0 root fail SoftwareError (exit 2) → no handler",
+        "#0 root fail SoftwareError (exit 2) → no fallback for this failure",
       );
   },
   120_000,
@@ -161,7 +162,7 @@ tplTest.concurrent(
     expect(msg).toContain("Latest output:");
     expect(msg).toContain("root-says-hello");
     expect(msg).toMatch(/Attempts \(1, backend cap \d+\):/);
-    expect(msg).toContain("#0 root fail SoftwareError (exit 1) → no handler");
+    expect(msg).toContain("#0 root fail SoftwareError (exit 1) → no fallback for this failure");
   },
   120_000,
 );

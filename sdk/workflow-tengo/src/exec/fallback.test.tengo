@@ -67,8 +67,8 @@ Test_historyText := func() {
 		"Attempts (2, backend cap 3):",
 		"  #0 root fail OOM (exit 137) → handler OOM \"moreRam\"",
 		"  #1 moreRam workdirMissing (restart 0) → restart",
-		"  #1 moreRam fail SoftwareError (exit 1) → no handler"
-	], "\n"), fallback.historyText(hist, 3, "no handler"))
+		"  #1 moreRam fail SoftwareError (exit 1) → no fallback for this failure"
+	], "\n"), fallback.historyText(hist, 3, "no fallback for this failure"))
 }
 
 Test_flatten_keys := func() {
@@ -151,14 +151,14 @@ Test_pick_firstMatchWins := func() {
 				{ exitCode: 3, plan: "c" },
 				{ plan: "d" }
 			],
-			OOM: [{ exitCode: 137, plan: "oom137" }, { plan: "oomAny" }]
+			OOM: [{ plan: "oomAny" }]
 		}
 	}
 	test.isEqual("a", fallback.pick(policy, { reason: "SoftwareError", exitCode: 3 }, ["no disk space"]))
 	test.isEqual("b", fallback.pick(policy, { reason: "SoftwareError", exitCode: 4 }, ["no disk space"]))
 	test.isEqual("c", fallback.pick(policy, { reason: "SoftwareError", exitCode: 3 }, ["other"]))
 	test.isEqual("d", fallback.pick(policy, { reason: "SoftwareError", exitCode: 1 }, []))
-	test.isEqual("oom137", fallback.pick(policy, { reason: "OOM", exitCode: 137 }, []))
+	test.isEqual("oomAny", fallback.pick(policy, { reason: "OOM", exitCode: 137 }, []))
 	test.isEqual("oomAny", fallback.pick(policy, { reason: "OOM" }, []))
 }
 

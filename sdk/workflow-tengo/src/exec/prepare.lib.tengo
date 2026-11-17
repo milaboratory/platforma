@@ -20,9 +20,12 @@ mnzSw := assets.importSoftware("@platforma-open/milaboratories.software-small-bi
 /**
  * @param inputs: map - the plan's inputs, resolved (pure and meta merged, as tpl.inputs() has them)
  * @param raw: map - the plan's pure input fields by name, as tpl.rawInputs() has them
+ * @param fail: func(msg), optional - called instead of a panic when a resource formula computes
+ *        an invalid request (see exec.formula.evaluateResource)
  * @return { pure: map, meta: map } - the inputs and the meta inputs of the exec-impl render
  */
-implInputs := func(inputs, raw) {
+implInputs := func(inputs, raw, ...fail) {
+	onFail := len(fail) > 0 ? fail[0] : undefined
 	plan := undefined
 	if (is_undefined(inputs.runOptions.software)) {
 		// Simple local command run, no software packages involved (backward compatibility)
@@ -73,18 +76,18 @@ implInputs := func(inputs, raw) {
 			}
 		}
 		if !is_undefined(memFormula) {
-			quota.ram = string(execFormula.evaluateResource(memFormula, resolver, "ram")) + "b"
+			quota.ram = string(execFormula.evaluateResource(memFormula, resolver, "ram", onFail)) + "b"
 		}
 		if !is_undefined(cpuFormula) {
-			quota.cpu = execFormula.evaluateResource(cpuFormula, resolver, "cpu")
+			quota.cpu = execFormula.evaluateResource(cpuFormula, resolver, "cpu", onFail)
 		}
 		if !is_undefined(gpuFormula) {
 			// VRAM bytes -> SizeUnit string (the quota's gpuMemory is a size string,
 			// parsed identically to ram). A positive integer is asserted, same as ram.
-			quota.gpuMemory = string(execFormula.evaluateResource(gpuFormula, resolver, "gpuMemory")) + "b"
+			quota.gpuMemory = string(execFormula.evaluateResource(gpuFormula, resolver, "gpuMemory", onFail)) + "b"
 		}
 		if !is_undefined(scratchFormula) {
-			quota.scratchFreeSpace = string(execFormula.evaluateScratch(scratchFormula, resolver)) + "b"
+			quota.scratchFreeSpace = string(execFormula.evaluateScratch(scratchFormula, resolver, onFail)) + "b"
 		}
 	}
 

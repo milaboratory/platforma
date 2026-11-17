@@ -30,18 +30,19 @@ ROOT_PLAN := "root"
 /**
  * Failure reasons a policy may handle, with the attributes a handler entry may narrow on and the
  * type each one has. Reasons no backend reports yet (TimeIsUp, WorkdirOutOfSpace,
- * ScratchOutOfSpace, InfraError) are accepted, so a handler starts working the day the backend
- * attributes them. Unallocated is never handleable: the RunCommand errors instead.
+ * ScratchOutOfSpace) are accepted, so a handler starts working the day the backend attributes
+ * them. OOM has no exit code to narrow on: a kill reports none on Kubernetes. Unallocated is never
+ * handleable: the RunCommand errors instead. InfraError is not offered: a block has nothing to run
+ * instead of a failure of the infrastructure.
  */
 REASONS := {
 	SoftwareError: { exitCode: "int", messageMatch: "string" },
-	OOM: { exitCode: "int" },
+	OOM: {},
 	GPUMissed: { backendHasGPU: "bool", timeout: "int" },
 	UnknownError: {},
 	TimeIsUp: {},
 	WorkdirOutOfSpace: {},
-	ScratchOutOfSpace: {},
-	InfraError: {}
+	ScratchOutOfSpace: {}
 }
 
 _ENTRY_KEYS := { name: true, builder: true }
@@ -363,7 +364,7 @@ _describeEntry := func(e) {
  *
  *   Attempts (2, backend cap 3):
  *     #0 root fail OOM (exit 137) → handler OOM "moreRam"
- *     #1 moreRam fail SoftwareError (exit 1) → no handler
+ *     #1 moreRam fail SoftwareError (exit 1) → no fallback for this failure
  *
  * @param hist: map[] - history entries, the last one is the attempt that ended the job
  * @param attemptLimit: int - outcome.attemptLimit
@@ -399,7 +400,7 @@ historyText := func(hist, attemptLimit, why) {
  *
  * @param oc: map - the last attempt's outcome
  * @param hist: map[] - history, including the last attempt
- * @param why: string - "no handler", "backend attempt limit reached", ...
+ * @param why: string - "no fallback for this failure", "backend attempt limit reached", ...
  * @param attemptLimit: int, optional - the cap the caller applied, when the outcome lacks it
  */
 exhaustedMessage := func(oc, hist, why, ...attemptLimit) {
