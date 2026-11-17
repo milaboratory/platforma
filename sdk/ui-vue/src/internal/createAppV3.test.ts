@@ -572,6 +572,7 @@ describe("createAppV3", { timeout: 20_000 }, () => {
     await delay(patchPoolingDelay * 2 + 50);
 
     expect(pluginState.model.data).toEqual({ value: 11 });
+    expect(state.blockStorage.__plugins?.[pluginId]?.__data).toEqual({ value: 11 });
 
     app.closedRef = true;
   });
