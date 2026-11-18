@@ -53,11 +53,13 @@ async function firstRender(helper: Helper, deleteWorkdir: boolean | "file") {
   // only a file the command wrote and the plan saves as a file, the directory kept: an Error
   // outcome, not a restart
   if (deleteWorkdir === "file") fs.rmSync(path.join(dir, "extra.txt"));
-  return wd!.id;
+  const outcome = await first.computeOutput("outcome", (a) => a?.id).awaitStableValue();
+  return { workdir: wd!.id, outcome: outcome! };
 }
 
 type SecondOptions = {
-  restartLimit: number;
+  infraAttemptLimit: number;
+  infraAttempts?: number;
   saveOutFile?: boolean;
   attempt?: number;
   restart?: number;
@@ -90,7 +92,7 @@ function readCollection(a: PlTreeNodeAccessor | undefined): Collection {
 /** The second render: wave 2 on that working directory. Undefined without WorkdirSave v3. */
 async function secondRender(
   helper: Helper,
-  workdir: Awaited<ReturnType<typeof firstRender>>,
+  first: Awaited<ReturnType<typeof firstRender>>,
   opts: SecondOptions,
 ) {
   const result = await helper.renderTemplate(
@@ -98,8 +100,10 @@ async function secondRender(
     "exec.fallback.restart",
     ["workdirSaveV3", "out", "processed", "attempts", "collection"],
     (tx) => ({
-      workdir,
-      restartLimit: json(tx, opts.restartLimit),
+      workdir: first.workdir,
+      outcome: first.outcome,
+      infraAttemptLimit: json(tx, opts.infraAttemptLimit),
+      infraAttempts: json(tx, opts.infraAttempts ?? 0),
       nonce: json(tx, randomUUID()),
       attempt: json(tx, opts.attempt ?? 0),
       restart: json(tx, opts.restart ?? 0),
@@ -146,7 +150,9 @@ const sha256 = (s: string) => createHash("sha256").update(s).digest("hex");
 tplTest.skipIf(WORK_ROOT === undefined)(
   "exec restart: a saved working directory is handed out, no restart",
   async ({ helper, expect, skip }) => {
-    const r = await secondRender(helper, await firstRender(helper, false), { restartLimit: 3 });
+    const r = await secondRender(helper, await firstRender(helper, false), {
+      infraAttemptLimit: 3,
+    });
     if (r === undefined) return skip("no WorkdirSave v3 on the backend");
     expect(r.out).toBe("first\n");
     expect(r.attempts).toEqual([{ attempt: 0, plan: "root", result: "success", exitCode: 0 }]);
@@ -157,12 +163,13 @@ tplTest.skipIf(WORK_ROOT === undefined)(
 tplTest.skipIf(WORK_ROOT === undefined)(
   "exec restart: a lost working directory runs the same plan again",
   async ({ helper, expect, skip }) => {
-    const r = await secondRender(helper, await firstRender(helper, true), { restartLimit: 3 });
+    const r = await secondRender(helper, await firstRender(helper, true), { infraAttemptLimit: 3 });
     if (r === undefined) return skip("no WorkdirSave v3 on the backend");
     expect(r.out).toBe("restarted\n");
+    // the restart is the job's next attempt, numbered by the backend
     expect(r.attempts).toEqual([
       { attempt: 0, plan: "root", result: "workdirMissing", restart: 0 },
-      { attempt: 0, plan: "root", result: "success", exitCode: 0 },
+      { attempt: 1, plan: "root", result: "success", exitCode: 0 },
     ]);
   },
   120_000,
@@ -175,7 +182,7 @@ tplTest.skipIf(WORK_ROOT === undefined)(
   "exec restart: a saved file gone from a kept directory fails the job, no restart",
   async ({ helper, expect, skip }) => {
     const r = await secondRender(helper, await firstRender(helper, "file"), {
-      restartLimit: 3,
+      infraAttemptLimit: 3,
       saveOutFile: true,
     });
     if (r === undefined) return skip("no WorkdirSave v3 on the backend");
@@ -188,14 +195,16 @@ tplTest.skipIf(WORK_ROOT === undefined)(
 );
 
 tplTest.skipIf(WORK_ROOT === undefined)(
-  "exec restart: the restart limit ends the job with the error",
+  "exec restart: the infrastructure attempt limit ends the job with the error",
   async ({ helper, expect, skip }) => {
-    const r = await secondRender(helper, await firstRender(helper, true), { restartLimit: 0 });
+    const r = await secondRender(helper, await firstRender(helper, true), { infraAttemptLimit: 1 });
     if (r === undefined) return skip("no WorkdirSave v3 on the backend");
     expect(r.out).toBeInstanceOf(Error);
-    expect((r.out as Error).message).toContain("Working directory lost, restart limit (0) reached");
     expect((r.out as Error).message).toContain(
-      "#0 root workdirMissing (restart 0) → restart limit reached",
+      "Working directory lost, infrastructure attempt limit (1) reached",
+    );
+    expect((r.out as Error).message).toContain(
+      "#0 root workdirMissing (restart 0) → infrastructure attempt limit reached",
     );
   },
   120_000,
@@ -207,7 +216,7 @@ tplTest.skipIf(WORK_ROOT === undefined).for([{ lost: false }, { lost: true }])(
   "exec restart: with a workdir processor (lost: $lost)",
   async ({ lost }, { helper, expect, skip }) => {
     const r = await secondRender(helper, await firstRender(helper, lost), {
-      restartLimit: 3,
+      infraAttemptLimit: 3,
       withProcessor: true,
     });
     if (r === undefined) return skip("no WorkdirSave v3 on the backend");
@@ -221,13 +230,13 @@ tplTest.skipIf(WORK_ROOT === undefined).for([{ lost: false }, { lost: true }])(
   120_000,
 );
 
-// A restart of a fallback attempt: same attempt index and plan, the restart writes attempt<K> of
-// the collection, and the restart counter is per job (spec §14.3).
+// A restart of a fallback attempt: the same plan, the restart writes attempt<K> of the collection
+// (spec §14.3), and the backend gives it the job's next attempt number.
 tplTest.skipIf(WORK_ROOT === undefined)(
-  "exec restart: a fallback attempt is restarted under its own index and plan",
+  "exec restart: a fallback attempt is restarted under its own plan",
   async ({ helper, expect, skip }) => {
     const r = await secondRender(helper, await firstRender(helper, true), {
-      restartLimit: 3,
+      infraAttemptLimit: 3,
       attempt: 1,
       withCollection: true,
     });
@@ -252,18 +261,19 @@ tplTest.skipIf(WORK_ROOT === undefined)(
 );
 
 tplTest.skipIf(WORK_ROOT === undefined)(
-  "exec restart: the restart counter is per job, across attempts",
+  "exec restart: the infrastructure budget is per job, across attempts",
   async ({ helper, expect, skip }) => {
     const r = await secondRender(helper, await firstRender(helper, true), {
-      restartLimit: 1,
+      infraAttemptLimit: 2,
+      infraAttempts: 1,
       attempt: 1,
       restart: 1,
     });
     if (r === undefined) return skip("no WorkdirSave v3 on the backend");
     expect(r.out).toBeInstanceOf(Error);
-    expect((r.out as Error).message).toContain("restart limit (1) reached");
+    expect((r.out as Error).message).toContain("infrastructure attempt limit (2) reached");
     expect((r.out as Error).message).toContain(
-      "#1 h1 workdirMissing (restart 1) → restart limit reached",
+      "#1 h1 workdirMissing (restart 1) → infrastructure attempt limit reached",
     );
   },
   120_000,

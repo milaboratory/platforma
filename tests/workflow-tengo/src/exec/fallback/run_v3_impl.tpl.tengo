@@ -21,7 +21,7 @@ self.body(func(inputs) {
 	if inputs.badExpression {
 		b.argExpression("{no.such.variable * 2}")
 	}
-	run := b.v3(0, undefined).build()
+	run := b.v3().build()
 
 	return {
 		outcome: run.outcome,

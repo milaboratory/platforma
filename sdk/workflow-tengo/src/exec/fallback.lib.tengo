@@ -31,9 +31,9 @@ ROOT_PLAN := "root"
  * Failure reasons a policy may handle, with the attributes a handler entry may narrow on and the
  * type each one has. Reasons no backend reports yet (TimeIsUp, WorkdirOutOfSpace,
  * ScratchOutOfSpace) are accepted, so a handler starts working the day the backend attributes
- * them. OOM has no exit code to narrow on: a kill reports none on Kubernetes. Unallocated is never
- * handleable: the RunCommand errors instead. InfraError is not offered: a block has nothing to run
- * instead of a failure of the infrastructure.
+ * them. OOM has no exit code to narrow on: a kill reports none on Kubernetes. InfraError is not
+ * offered: the backend retries a failure of the infrastructure itself, and a block has nothing to
+ * run instead of it.
  */
 REASONS := {
 	SoftwareError: { exitCode: "int", messageMatch: "string" },
@@ -48,7 +48,7 @@ REASONS := {
 _ENTRY_KEYS := { name: true, builder: true }
 
 // Reasons for which the process never started.
-_NEVER_STARTED := { GPUMissed: true, Unallocated: true }
+_NEVER_STARTED := { GPUMissed: true }
 
 /**
  * @return bool: whether v is an exec builder (exec.builder())
@@ -283,16 +283,6 @@ pick := func(policy, failDetails, lastLogLines) {
 }
 
 /**
- * @param oc: map - the outcome JSON of a failed attempt
- * @return bool - whether its process never started (GPUMissed): such an attempt cost nothing and
- *         does not count against the attempt cap
- */
-neverStarted := func(oc) {
-	return !is_undefined(oc.failDetails) && !is_undefined(oc.failDetails.reason) &&
-		!is_undefined(_NEVER_STARTED[oc.failDetails.reason])
-}
-
-/**
  * Composes the error text of a failed attempt from its outcome: the backend's meta lines, the
  * exit code, the command and the log tail, as the runner wrote it into the error before
  * RunCommand v3.
@@ -426,7 +416,6 @@ export ll.toStrict({
 	planKey: planKey,
 	flatten: flatten,
 	pick: pick,
-	neverStarted: neverStarted,
 	ramBytes: ramBytes,
 	biggestOomPlan: biggestOomPlan,
 	composeMessage: composeMessage,

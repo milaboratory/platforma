@@ -6,7 +6,7 @@
  *   all saved                 the save chain's outputs; the stream collections switch to the
  *                             attempt's files
  *   working directory lost    the same plan again from a fresh working directory (a restart, not
- *                             an attempt), at most restartLimit times per job
+ *                             an attempt), while the job's infrastructure budget (infraAttemptLimit) lasts
  *   any other save failure    in the outputs it concerns, as with WorkdirSave v1
  *
  * Two stages when the exec has workdir processors (spec §14.5). The processors read the post-run
@@ -32,7 +32,7 @@ saveChain := import(":exec.save-chain")
 stream := import(":exec.stream")
 
 // this attempt's exec-impl inputs: passed on to a restart, never read
-saveChain.keepOpaque(self, ["implInputs"])
+saveChain.keepOpaque(self, ["implInputs", "outcome"])
 
 _AWAIT_OUTCOME := self.rawInputs().awaitOutcome.getValue().getDataAsJson()
 _STAGE_PROBE := _AWAIT_OUTCOME == "probeOutcome"
@@ -104,16 +104,20 @@ self.body(func(inputs) {
 	}
 
 	// the attempt's success entry becomes a restart entry
+	succeeded := ctx.history[len(ctx.history) - 1]
 	hist := append(copy(ctx.history)[:len(ctx.history) - 1], {
-		attempt: ctx.attempt,
+		attempt: succeeded.attempt,
 		plan: ctx.plan,
 		result: "workdirMissing",
 		restart: ctx.restart
 	})
-	restartLimit := is_undefined(ctx.restartLimit) ? 0 : ctx.restartLimit
-	if ctx.restart >= restartLimit {
-		ll.panic("Working directory lost, restart limit (%v) reached: %s\n\n%s",
-			restartLimit, lost, fallback.historyText(hist, ctx.attemptLimit, "restart limit reached"))
+	// a lost working directory is an infrastructure failure: the restart spends the job's
+	// infrastructure budget, as the backend counts it
+	infraLimit := is_undefined(ctx.infraAttemptLimit) ? 1 : ctx.infraAttemptLimit
+	infraAttempts := is_undefined(ctx.infraAttempts) ? 0 : ctx.infraAttempts
+	if infraAttempts + 1 >= infraLimit {
+		ll.panic("Working directory lost, infrastructure attempt limit (%v) reached: %s\n\n%s",
+			infraLimit, lost, fallback.historyText(hist, ctx.attemptLimit, "infrastructure attempt limit reached"))
 	}
 
 	// the same plan again, with the attempt's own exec-impl inputs and the same attempt index; the
@@ -131,12 +135,13 @@ self.body(func(inputs) {
 	}
 	pure.attemptCtx = {
 		attempt: ctx.attempt,
-		jobId: ctx.jobId,
 		plan: ctx.plan,
 		restart: ctx.restart + 1,
-		unstartedAttempts: is_undefined(ctx.unstartedAttempts) ? 0 : ctx.unstartedAttempts,
+		restarted: true,
 		history: hist
 	}
+	// the restart continues the job from the lost run's outcome
+	pure.previousOutcome = raw.outcome.getValue()
 
 	r := render.createEphemeral(raw.execImplTpl.getValue(), pure, { metaInputs: meta })
 	res := {}

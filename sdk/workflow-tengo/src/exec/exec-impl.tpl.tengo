@@ -108,12 +108,13 @@ inputSchema := {
 	"fallbackPolicy,?": "any",
 	"attemptCtx,?": {
 		attempt: "number",
-		jobId: "string",
 		plan: "string",
 		restart: "number",
-		"unstartedAttempts,?": "number",
+		"restarted,?": "bool",
 		history: ["any"]
 	},
+	// the outcome of the run this attempt continues: the backend numbers the job's attempts from it
+	"previousOutcome,?": "any",
 	"streamCollections,?": "any",
 	"execImplTpl,?": "any",
 	// RunCommand v2 only: the fallback plan run in place of the root, for the attempts output
@@ -391,11 +392,16 @@ self.body(func(inputs) {
 
 	ctx := inputs.attemptCtx // undefined on attempt 0
 	attempt := is_undefined(ctx) ? 0 : ctx.attempt
-	// attempt 0 leaves jobId unset: the backend takes the RunCommand's own id
-	mainRunBuilder.v3(attempt, is_undefined(ctx) ? undefined : ctx.jobId, is_undefined(ctx) ? undefined : {
-		restart: ctx.restart,
-		unstartedAttempts: ctx.unstartedAttempts
-	})
+	// the backend numbers the job's attempts: a job's first command has no previous run, a fallback
+	// or a restart continues one
+	if is_undefined(self.rawInputs().previousOutcome) {
+		mainRunBuilder.v3()
+	} else {
+		mainRunBuilder.v3({
+			outcome: self.rawInputs().previousOutcome.getValue(),
+			restart: !is_undefined(ctx) && ctx.restarted == true
+		})
+	}
 	run := mainRunBuilder.build()
 
 	raw := self.rawInputs()

@@ -5,7 +5,9 @@
  * "first".
  *
  * inputs.workdir: the post-run working directory
- * inputs.restartLimit: number
+ * inputs.outcome: the outcome of the command that produced it
+ * inputs.infraAttemptLimit: number - the job's infrastructure budget, as the outcome publishes it
+ * inputs.infraAttempts: number, optional - infrastructure failures of the job before, 0 by default
  * inputs.nonce: string
  * inputs.attempt: number, optional - the attempt that produced the directory, 0 by default; a
  *                 later one has a history of failed attempts before it (a restart with fallbacks)
@@ -64,14 +66,15 @@ self.body(func(inputs) {
 
 	harnessInputs := maps.merge(planned.inputs, {
 		__workdir: self.rawInputs().workdir.getValue(),
+		__outcome: self.rawInputs().outcome.getValue(),
 		__ctx: {
 			attempt: attempt,
-			jobId: "restart-test",
 			plan: plan,
 			restart: is_undefined(inputs.restart) ? 0 : inputs.restart,
 			history: history,
 			attemptLimit: 3,
-			restartLimit: inputs.restartLimit
+			infraAttempts: is_undefined(inputs.infraAttempts) ? 0 : inputs.infraAttempts,
+			infraAttemptLimit: inputs.infraAttemptLimit
 		}
 	})
 

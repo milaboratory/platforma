@@ -6,8 +6,9 @@
  *
  * Inputs: the pure and meta inputs of an exec.exec render (exec.builder().plan()), plus
  *   __workdir: the post-run working directory to save
+ *   __outcome: the outcome of the command that produced the directory: a restart continues from it
  *   __ctx: map - the attempt context of the attempt that produced the directory, its success entry
- *          last in the history, with attemptLimit and restartLimit
+ *          last in the history, with attemptLimit, infraAttempts and infraAttemptLimit
  *   __collections: map, optional - file name -> StreamCollection
  */
 
@@ -18,6 +19,11 @@ prepare := import("@platforma-sdk/workflow-tengo:exec.prepare")
 wave2 := import("@platforma-sdk/workflow-tengo:exec.wave2")
 
 execImplTpl := assets.importTemplate("@platforma-sdk/workflow-tengo:exec.exec-impl")
+
+saveChain := import("@platforma-sdk/workflow-tengo:exec.save-chain")
+
+// the outcome is passed on, never read
+saveChain.keepOpaque(self, ["__outcome"])
 
 self.awaitState("ResourceReady")
 
@@ -55,6 +61,7 @@ self.body(func(inputs) {
 		v3: true,
 		attemptCtx: inputs.__ctx,
 		implInputs: implInputs,
+		outcome: raw.__outcome.getValue(),
 		streamCollectionsRef: is_undefined(raw.__collections) ? undefined : raw.__collections.getValue(),
 		execImplTpl: execImplTpl
 	})

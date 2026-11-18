@@ -35,8 +35,9 @@ _ownMap := func(own) {
  *   wdProcessors: map | undefined - name -> { tpl, tplArgs }
  *   v3: bool - save with WorkdirSave v3; the wd-retrier then restarts on a lost directory
  *   attemptCtx: map - the attempt context, history including this attempt's success entry,
- *                     attemptLimit and restartLimit
+ *                     attemptLimit, infraAttempts and infraAttemptLimit
  *   implInputs: reference - this attempt's exec-impl inputs map, for a restart
+ *   outcome: reference - this attempt's outcome: a restart continues the job from it
  *   streamCollections: map | undefined - file name -> StreamCollection
  *   streamCollectionsRef: reference | undefined - the same map, passed on
  *   execImplTpl: reference | undefined
@@ -46,6 +47,7 @@ _ownMap := func(own) {
 run := func(p) {
 	settings := p.settings
 	saved := saveChain.run(p.workdir, settings, p.wdProcessors, { v3: p.v3 })
+	ll.assert(!is_undefined(p.outcome), "exec.wave2: the attempt's outcome is required")
 
 	if !p.v3 {
 		// no WorkdirSave v3, no restart: the save chain's outputs as they are (spec §5)
@@ -82,6 +84,7 @@ run := func(p) {
 		settings: p.settingsRef,
 		attemptCtx: p.attemptCtx,
 		implInputs: p.implInputs,
+		outcome: p.outcome,
 		workdir: p.workdir,
 		outputs: outputs,
 		saveOutcome: saved.outcome

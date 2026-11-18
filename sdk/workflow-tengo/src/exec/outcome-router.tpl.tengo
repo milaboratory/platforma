@@ -57,12 +57,13 @@ self.body(func(inputs) {
 	// that rendered them
 	ctx := inputs.attemptCtx
 	if is_undefined(ctx) {
-		ctx = { attempt: 0, jobId: oc.jobId, plan: fallback.ROOT_PLAN, restart: 0, unstartedAttempts: 0, history: [] }
+		ctx = { attempt: 0, plan: fallback.ROOT_PLAN, restart: 0, history: [] }
 	}
 	// guaranteed by the outcome contract; a backend that published RunCommand v3 before it had the
 	// cap allows one attempt, the cautious reading
 	attemptLimit := is_undefined(oc.attemptLimit) ? 1 : oc.attemptLimit
-	entry := fallback.historyEntry(ctx.attempt, ctx.plan, oc)
+	// the backend numbers the job's attempts; ctx.attempt only indexes the stream collections
+	entry := fallback.historyEntry(is_undefined(oc.attempt) ? ctx.attempt : oc.attempt, ctx.plan, oc)
 	hist := append(copy(ctx.history), entry)
 
 	if oc.result == "success" {
@@ -79,8 +80,10 @@ self.body(func(inputs) {
 			attemptCtx: maps.merge(ctx, {
 				history: hist,
 				attemptLimit: attemptLimit,
-				restartLimit: oc.restartLimit
+				infraAttempts: is_undefined(oc.infraAttempts) ? 0 : oc.infraAttempts,
+				infraAttemptLimit: is_undefined(oc.infraAttemptLimit) ? 1 : oc.infraAttemptLimit
 			}),
+			outcome: raw.outcome.getValue(),
 			implInputs: raw.implInputs.getValue(),
 			streamCollections: inputs.streamCollections,
 			streamCollectionsRef: is_undefined(raw.streamCollections) ? undefined : raw.streamCollections.getValue(),
@@ -93,15 +96,13 @@ self.body(func(inputs) {
 	// exec.job-failed): the streams must end on this attempt's files first.
 	failure := undefined
 	next := fallback.pick(inputs.fallbackPolicy, oc.failDetails, oc.lastLogLines)
-	// an attempt that never started (its GPU never granted) cost nothing: the cap counts started
-	// attempts only, as the backend's does, up to as many unstarted ones as started
-	unstarted := is_undefined(ctx.unstartedAttempts) ? 0 : ctx.unstartedAttempts
-	if fallback.neverStarted(oc) {
-		unstarted += 1
-	}
+	// the backend counts the job's attempts: an attempt that never started (its GPU never granted)
+	// cost nothing and does not count against the cap, up to as many of them again
+	started := is_undefined(oc.startedAttempts) ? ctx.attempt + 1 : oc.startedAttempts
+	unstarted := is_undefined(oc.unstartedAttempts) ? 0 : oc.unstartedAttempts
 	if is_undefined(next) {
 		failure = fallback.exhaustedMessage(oc, hist, "no fallback for this failure", attemptLimit)
-	} else if ctx.attempt + 1 - unstarted >= attemptLimit || unstarted > attemptLimit {
+	} else if started >= attemptLimit || unstarted > attemptLimit {
 		failure = fallback.exhaustedMessage(oc, hist, "backend attempt limit reached", attemptLimit)
 	}
 
@@ -122,12 +123,12 @@ self.body(func(inputs) {
 	if is_undefined(failure) {
 		impl.pure.attemptCtx = {
 			attempt: ctx.attempt + 1,
-			jobId: ctx.jobId,
 			plan: next,
 			restart: ctx.restart,
-			unstartedAttempts: unstarted,
 			history: hist
 		}
+		// the backend numbers the next attempt from this one's outcome
+		impl.pure.previousOutcome = raw.outcome.getValue()
 		for name in ["streamCollections", "execImplTpl"] {
 			if !is_undefined(raw[name]) {
 				impl.pure[name] = raw[name].getValue()

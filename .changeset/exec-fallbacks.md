@@ -15,9 +15,11 @@ failure is seen: a GPU plan gives way to its GPUMissed plan, then the OOM plan w
 runs in place of the plan reached, or that plan when there is no OOM handler, with a notice.
 
 A job that no plan can continue fails with every attempt's log kept: each attempt's stream ends on
-its own saved file, and so does the stream a viewer follows. An attempt whose GPU was never granted
-does not count against the attempt cap, and a restart after a lost working directory is told apart
-from the run it replaces in the run telemetry; both need a backend with milaboratory/pl#2502.
+its own saved file, and so does the stream a viewer follows. The backend numbers the attempts of a job: a
+fallback or a restart links the outcome of the run it continues, and the outcome carries the job's
+counts. An attempt whose GPU was never granted does not count against the attempt cap, and a restart
+after a lost working directory spends the backend's infrastructure attempt budget
+(`infraAttemptLimit`). Needs a backend with milaboratory/pl#2502.
 
 Every command, RunCommand v3 included, is linked to the block's action context, so its run records
 carry the block. RunCommand v3 needs a backend whose v3 schema takes the link (milaboratory/pl#2471).
