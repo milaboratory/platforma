@@ -555,6 +555,8 @@ builder := func(workdir, ...initialState) {
 	useV3 := false
 	attempt := 0
 	jobId := undefined
+	restart := 0
+	unstartedAttempts := 0
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
 	nErrorLines := 200
@@ -581,12 +583,21 @@ builder := func(workdir, ...initialState) {
 		 * @param attemptIndex: int - the SDK attempt index of this command in its job, 0 first.
 		 * @param job: string | undefined - the job id shared by all attempts; undefined on the
 		 *             first attempt, where the backend takes this command's own id.
+		 * @param identity: map, optional - { restart: int, unstartedAttempts: int }: the index of
+		 *             this run of the attempt after a lost working directory, and how many attempts
+		 *             of the job before this one never started (GPUMissed), which the backend's
+		 *             attempt cap does not count. Both 0 by default; a backend that predates them
+		 *             ignores them.
 		 */
-		v3: func(attemptIndex, job) {
+		v3: func(attemptIndex, job, ...identity) {
 			ll.assert(is_int(attemptIndex) && attemptIndex >= 0, "runcmd.builder.v3: attempt must be a non-negative integer")
 			useV3 = true
 			attempt = attemptIndex
 			jobId = job
+			if len(identity) > 0 && !is_undefined(identity[0]) {
+				restart = is_undefined(identity[0].restart) ? 0 : identity[0].restart
+				unstartedAttempts = is_undefined(identity[0].unstartedAttempts) ? 0 : identity[0].unstartedAttempts
+			}
 			return self
 		},
 
@@ -801,6 +812,12 @@ builder := func(workdir, ...initialState) {
 			}
 			if useV3 && !is_undefined(jobId) {
 				buildOptions.jobId = jobId
+			}
+			if useV3 && restart > 0 {
+				buildOptions.restart = restart
+			}
+			if useV3 && unstartedAttempts > 0 {
+				buildOptions.unstartedAttempts = unstartedAttempts
 			}
 
 			optionsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_OPTIONS, json.encode(buildOptions))

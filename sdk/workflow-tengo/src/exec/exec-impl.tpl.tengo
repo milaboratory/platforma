@@ -111,6 +111,7 @@ inputSchema := {
 		jobId: "string",
 		plan: "string",
 		restart: "number",
+		"unstartedAttempts,?": "number",
 		history: ["any"]
 	},
 	"streamCollections,?": "any",
@@ -396,7 +397,10 @@ self.body(func(inputs) {
 	ctx := inputs.attemptCtx // undefined on attempt 0
 	attempt := is_undefined(ctx) ? 0 : ctx.attempt
 	// attempt 0 leaves jobId unset: the backend takes the RunCommand's own id
-	mainRunBuilder.v3(attempt, is_undefined(ctx) ? undefined : ctx.jobId)
+	mainRunBuilder.v3(attempt, is_undefined(ctx) ? undefined : ctx.jobId, is_undefined(ctx) ? undefined : {
+		restart: ctx.restart,
+		unstartedAttempts: ctx.unstartedAttempts
+	})
 	run := mainRunBuilder.build()
 
 	raw := self.rawInputs()
@@ -419,17 +423,31 @@ self.body(func(inputs) {
 	if !is_undefined(inputs[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1]) {
 		routerInputs.forceWorkdirSaveV1 = true
 	}
-	router := render.createEphemeral(routerTpl, routerInputs)
 
-	// one manager per streamed file, live on this attempt's workdir, ending on this attempt's own
-	// file, which the router saves on success and on a failure alike
-	managers := {}
-	streams := {}
+	// one live stream per streamed file, on this attempt's workdir; with collections the router
+	// gets them, to end a failed attempt's manager on its own file (stream.attemptFailed)
+	live := {}
 	if !is_undefined(settings.filesToStream) {
 		for fName in settings.filesToStream {
-			streams[fName] = stream.createWithLive(wdBefore, fName, router.output("streamOwn").getFutureInputField(fName))
-			managers[fName] = streams[fName].manager
+			live[fName] = stream.createLive(wdBefore, fName)
 		}
+	}
+	if !is_undefined(inputs.streamCollections) && len(live) > 0 {
+		liveMap := smart.ephemeralMapBuilder()
+		for fName, l in live {
+			liveMap.addRef(fName, l)
+		}
+		routerInputs.liveStreams = liveMap.build()
+	}
+	router := render.createEphemeral(routerTpl, routerInputs)
+
+	// one manager per streamed file, ending on this attempt's own file, which the router saves on
+	// success and on a failure alike
+	managers := {}
+	streams := {}
+	for fName, l in live {
+		managers[fName] = stream.managerOf(l, router.output("streamOwn").getFutureInputField(fName))
+		streams[fName] = { manager: managers[fName], live: l }
 	}
 	if !is_undefined(inputs.streamCollections) {
 		// attempt 0 of a job, not a restart of it: no attempt context

@@ -10,6 +10,7 @@
  *
  * The collection is read through the tree accessors. Blobs are compared by content hash: the
  * local test harness cannot download blobs of an FS primary storage. */
+import { Computable, type ComputableCtx } from "@milaboratories/computable";
 import { ConsoleLoggerAdapter } from "@milaboratories/helpers";
 import { createLogsClient } from "@milaboratories/pl-drivers";
 import { Pl } from "@milaboratories/pl-middle-layer";
@@ -58,6 +59,13 @@ function streamState(a: PlTreeNodeAccessor | undefined) {
 }
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+/** stderr without the lines the Kubernetes job wrapper adds ("[job-script] Process exited ..."). */
+const withoutJobScript = (text: string) =>
+  text
+    .split("\n")
+    .filter((line) => !line.startsWith("[job-script]"))
+    .join("\n");
 
 // forceSaveV1: a backend with RunCommand v3 but without WorkdirSave v3 (the _forceWorkdirSaveV1
 // seam): the streams behave the same.
@@ -111,7 +119,7 @@ tplTest.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
       const c = await composite("stdoutStream").catch(() => undefined);
       if (c !== undefined) composites.push(c.text);
       const e = await composite("errStream").catch(() => undefined);
-      if (e !== undefined) errComposites.push(e.text);
+      if (e !== undefined) errComposites.push(withoutJobScript(e.text));
       if (s.kind === "blob") break;
       await sleep(250);
     }
@@ -269,14 +277,105 @@ tplTest(
       if (handle !== undefined) {
         const resp = await driverKit.logDriver.readText(handle, 1000);
         if (!resp.shouldUpdateHandle) last = { handle, text: new TextDecoder().decode(resp.data) };
-        if (handle.startsWith("log+ready://") && last?.text.endsWith("handler-err\n")) break;
+        if (handle.startsWith("log+ready://") && last?.text.includes("handler-err\n")) break;
       }
       await sleep(250);
     }
     expect(last?.handle.startsWith("log+ready://")).toBe(true);
-    expect(last?.text).toBe(`${delimiter}handler-err\n`);
+    expect(withoutJobScript(last?.text ?? "")).toBe(`${delimiter}handler-err\n`);
   },
   180_000,
+);
+
+// Review of platforma#1948: a job that no plan can continue fails, and the collection's `stream`
+// ends on the last attempt's saved file instead of staying on its dead live stream
+tplTest(
+  "exec fallbacks: a failed job's stream ends on the last attempt's file",
+  async ({ helper, driverKit, expect }) => {
+    const result = await helper.renderTemplate(
+      false,
+      "exec.fallback.stream_of_failed_job",
+      ["stdoutStream", "attempts"],
+      (tx) => ({
+        nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
+      }),
+    );
+
+    // every output of the job is an error, and so is the result map holding them: read the
+    // stream past it
+    const stdoutStream = <R>(cb: (a: PlTreeNodeAccessor | undefined, ctx: ComputableCtx) => R) =>
+      Computable.make((ctx) =>
+        cb(
+          ctx
+            .accessor(result.resultEntry)
+            .node({ ignoreError: true })
+            .traverse({ field: "stdoutStream", assertFieldType: "Input", ignoreError: true }),
+          ctx,
+        ),
+      );
+    const attempts = await result
+      .computeOutput("attempts", (a) => a?.getDataAsJson<Attempt[]>())
+      .awaitStableValue()
+      .catch((e: Error) => e);
+    expect(attempts).toBeInstanceOf(Error);
+    expect((attempts as Error).message).toContain("#1 handler fail SoftwareError (exit 3)");
+
+    // what an old driver and getLastLogs read: `stream`, and the history entries
+    const read = (a: PlTreeNodeAccessor | undefined) => ({
+      stream: node(a?.traverse({ field: "stream", ignoreError: true })),
+      outcome0: node(a?.traverse({ field: "outcome0", ignoreError: true })).json,
+      outcome1: node(a?.traverse({ field: "outcome1", ignoreError: true })).json,
+      attempt0Stream: node(a?.traverse("attempt0", "stream")),
+      attempt1Stream: node(a?.traverse("attempt1", "stream")),
+    });
+    const deadline = Date.now() + 60_000;
+    let state: ReturnType<typeof read> | undefined;
+    while (Date.now() < deadline) {
+      state = await stdoutStream((a) => read(a)).getValue();
+      if (state?.stream.hash && state.outcome1 !== undefined && state.attempt0Stream.hash) break;
+      await sleep(250);
+    }
+    expect(state?.outcome1).toEqual({
+      attempt: 1,
+      plan: "handler",
+      result: "fail",
+      reason: "SoftwareError",
+      exitCode: 3,
+    });
+    // `stream` ends on attempt 1's saved file, as for a winner, not on its live stream
+    expect(state?.stream.type).toMatch(/^Blob/);
+    expect(state?.stream.hash).toBe(createHash("sha256").update("fallback-1\n").digest("hex"));
+    // each attempt's manager ends on its own file, not on an error
+    expect(state?.attempt0Stream.hash).toBe(createHash("sha256").update("root\n").digest("hex"));
+    expect(state?.attempt1Stream.hash).toBe(state?.stream.hash);
+
+    // the current driver: the composite log of a failed job, read as a viewer reads it
+    let composite: { handle: string; text: string } | string | undefined;
+    while (Date.now() < deadline) {
+      composite = await stdoutStream((a, ctx) => {
+        const entry = a?.persist();
+        return entry === undefined ? undefined : driverKit.logDriver.getLogHandle(entry, ctx);
+      })
+        .getValue()
+        .then(async (handle) => {
+          if (handle === undefined) return undefined;
+          const resp = await driverKit.logDriver.readText(handle, 1000);
+          return resp.shouldUpdateHandle
+            ? undefined
+            : { handle, text: new TextDecoder().decode(resp.data) };
+        })
+        .catch((e: Error) => `error: ${e.message.slice(0, 200)}`);
+      if (typeof composite === "string" || composite?.handle.startsWith("log+ready://")) break;
+      await sleep(250);
+    }
+    expect(typeof composite).toBe("object");
+    const ready = typeof composite === "object" ? composite : undefined;
+    expect(ready?.handle.startsWith("log+ready://")).toBe(true);
+    expect(ready?.text).toContain(
+      "root\n--- attempt 0 (root) failed: SoftwareError, exit code 2 ---\nfallback-1\n",
+    );
+  },
+  120_000,
 );
 
 // Review 2, m1: on RunCommand v2 getAttempts() follows the run: a failed run has no attempts
@@ -365,10 +464,13 @@ tplTest(
       if (state?.stream.hash && composite?.handle.startsWith("log+ready://")) break;
       await sleep(250);
     }
-    expect(state?.stream.hash).toBe(createHash("sha256").update("").digest("hex"));
+    // the handler's stderr: empty, or the job wrapper's lines on Kubernetes
+    expect(state?.stream.type).toMatch(/^Blob/);
     expect(state?.attempt0Stream.json).toEqual({ streamFileNotWritten: "stderr.txt" });
     expect(composite?.handle.startsWith("log+ready://")).toBe(true);
-    expect(composite?.text).toBe("--- attempt 0 (root) failed: SoftwareError, exit code 2 ---\n");
+    expect(withoutJobScript(composite?.text ?? "")).toBe(
+      "--- attempt 0 (root) failed: SoftwareError, exit code 2 ---\n",
+    );
   },
   120_000,
 );

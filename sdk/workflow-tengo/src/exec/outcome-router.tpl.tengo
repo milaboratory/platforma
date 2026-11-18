@@ -5,7 +5,8 @@
  *   success                     the save chain, then exec.wd-retrier on its outcomes (spec §14)
  *   failure, a handler matches  the handler's plan as the next attempt: a full exec-impl render
  *                               with a fresh working directory; its outputs are forwarded
- *   failure, nothing applies    the error: the composed message and the attempt history
+ *   failure, nothing applies    exec.job-failed with the composed message and the attempt
+ *                               history, once the streams end on this attempt's files
  *
  * An errored `outcome` or `workdir` (an infrastructure failure) makes inputs() panic with the
  * upstream message before the body runs, which is the propagation such errors need.
@@ -17,7 +18,6 @@
 
 self := import(":tpl.light")
 
-ll := import(":ll")
 smart := import(":smart")
 render := import(":render")
 assets := import(":assets")
@@ -35,12 +35,13 @@ slices := import(":slices")
 execConstants := import(":exec.constants")
 
 failedStreamsTpl := assets.importTemplate(":exec.failed-streams")
+jobFailedTpl := assets.importTemplate(":exec.job-failed")
 
 
 self.awaitState("ResourceReady")
 
 // this attempt's exec-impl inputs: passed on to a restart, never read
-saveChain.keepOpaque(self, ["implInputs"])
+saveChain.keepOpaque(self, ["implInputs", "liveStreams"])
 
 self.body(func(inputs) {
 	// run-command/outcome is not a plain JSON resource type, so inputs() leaves it as a resource
@@ -56,7 +57,7 @@ self.body(func(inputs) {
 	// that rendered them
 	ctx := inputs.attemptCtx
 	if is_undefined(ctx) {
-		ctx = { attempt: 0, jobId: oc.jobId, plan: fallback.ROOT_PLAN, restart: 0, history: [] }
+		ctx = { attempt: 0, jobId: oc.jobId, plan: fallback.ROOT_PLAN, restart: 0, unstartedAttempts: 0, history: [] }
 	}
 	// guaranteed by the outcome contract; a backend that published RunCommand v3 before it had the
 	// cap allows one attempt, the cautious reading
@@ -87,41 +88,55 @@ self.body(func(inputs) {
 		})
 	}
 
+	// What ends the job, when nothing continues it: the error text is the one the backend's error
+	// had before RunCommand v3, plus the history. The router does not fail itself (see
+	// exec.job-failed): the streams must end on this attempt's files first.
+	failure := undefined
 	next := fallback.pick(inputs.fallbackPolicy, oc.failDetails, oc.lastLogLines)
-	// the error text is the one the backend's error had before RunCommand v3, plus the history
-	if is_undefined(next) {
-		ll.panic("%s", fallback.exhaustedMessage(oc, hist, "no fallback for this failure", attemptLimit))
+	// an attempt that never started (its GPU never granted) cost nothing: the cap counts started
+	// attempts only, as the backend's does, up to as many unstarted ones as started
+	unstarted := is_undefined(ctx.unstartedAttempts) ? 0 : ctx.unstartedAttempts
+	if fallback.neverStarted(oc) {
+		unstarted += 1
 	}
-	if ctx.attempt + 1 >= attemptLimit {
-		ll.panic("%s", fallback.exhaustedMessage(oc, hist, "backend attempt limit reached", attemptLimit))
+	if is_undefined(next) {
+		failure = fallback.exhaustedMessage(oc, hist, "no fallback for this failure", attemptLimit)
+	} else if ctx.attempt + 1 - unstarted >= attemptLimit || unstarted > attemptLimit {
+		failure = fallback.exhaustedMessage(oc, hist, "backend attempt limit reached", attemptLimit)
 	}
 
-	// plan `next`, serialized by the builder: the inputs exec.exec would have received as a root;
-	// prepared here as exec.exec prepares attempt 0
-	planValues := inputs.fallbackPlans[next]
-	planRaw := raw.fallbackPlans.getValue().inputs()[next].getValue()
-	planInputs := maps.merge(planValues.inputs, planValues.meta)
-	// a resource formula of the plan that computes an invalid request ends the job, with the
-	// failed attempt and the history kept in the error
-	impl := prepare.implInputs(planInputs, planRaw.inputs().inputs.getValue().inputs(), func(msg) {
-		ll.panic("%s", fallback.exhaustedMessage(oc, hist,
-			fmt.sprintf("fallback %q not started: %s", next, msg), attemptLimit))
-	})
-	impl.pure.attemptCtx = {
-		attempt: ctx.attempt + 1,
-		jobId: ctx.jobId,
-		plan: next,
-		restart: ctx.restart,
-		history: hist
+	impl := undefined
+	if is_undefined(failure) {
+		// plan `next`, serialized by the builder: the inputs exec.exec would have received as a
+		// root; prepared here as exec.exec prepares attempt 0
+		planValues := inputs.fallbackPlans[next]
+		planRaw := raw.fallbackPlans.getValue().inputs()[next].getValue()
+		planInputs := maps.merge(planValues.inputs, planValues.meta)
+		// a resource formula of the plan that computes an invalid request ends the job, with the
+		// failed attempt and the history kept in the error
+		impl = prepare.implInputs(planInputs, planRaw.inputs().inputs.getValue().inputs(), func(msg) {
+			failure = fallback.exhaustedMessage(oc, hist,
+				fmt.sprintf("fallback %q not started: %s", next, msg), attemptLimit)
+		})
 	}
-	for name in ["streamCollections", "execImplTpl"] {
-		if !is_undefined(raw[name]) {
-			impl.pure[name] = raw[name].getValue()
+	if is_undefined(failure) {
+		impl.pure.attemptCtx = {
+			attempt: ctx.attempt + 1,
+			jobId: ctx.jobId,
+			plan: next,
+			restart: ctx.restart,
+			unstartedAttempts: unstarted,
+			history: hist
 		}
-	}
-	// the _forceWorkdirSaveV1() test seam holds for the whole job
-	if inputs.forceWorkdirSaveV1 == true {
-		impl.meta[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1] = smart.createJsonResource(true)
+		for name in ["streamCollections", "execImplTpl"] {
+			if !is_undefined(raw[name]) {
+				impl.pure[name] = raw[name].getValue()
+			}
+		}
+		// the _forceWorkdirSaveV1() test seam holds for the whole job
+		if inputs.forceWorkdirSaveV1 == true {
+			impl.meta[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1] = smart.createJsonResource(true)
+		}
 	}
 
 	// This attempt's streamed files (spec §13.3). One the attempt never wrote is not saved: the save
@@ -132,7 +147,16 @@ self.body(func(inputs) {
 	// may hold the error, is referenced by nothing among the router's outputs, so the failure loses
 	// this attempt's log only (spec §14.3). Without WorkdirSave v3 one save, as before, and such a
 	// failure spreads to the job's outputs.
+	// file name -> this attempt's live stream, to end its manager on its own file
+	liveStreams := {}
+	if !is_undefined(raw.liveStreams) {
+		for name, f in raw.liveStreams.getValue().inputs() {
+			liveStreams[name] = f.getValue()
+		}
+	}
 	streamOwn := undefined
+	// file name -> this attempt's final content of it, what the collections end on when the job ends
+	ownFiles := {}
 	if !is_undefined(settings.filesToStream) && len(settings.filesToStream) > 0 {
 		wdOut := raw.workdir.getValue()
 		listed := wdOut.getDataAsJson().files
@@ -155,6 +179,9 @@ self.body(func(inputs) {
 				workdir: probe.getWorkdirAfter(),
 				streamed: settings.filesToStream
 			}).output("streamOwn")
+			for name in settings.filesToStream {
+				ownFiles[name] = streamOwn.getFutureInputField(name)
+			}
 		} else {
 			own := smart.ephemeralMapBuilder()
 			failedFiles := undefined
@@ -167,10 +194,11 @@ self.body(func(inputs) {
 			}
 			for name in settings.filesToStream {
 				if slices.hasElement(written, name) {
-					own.addRef(name, file.exportFile(failedFiles.getFutureInputField(name)))
+					ownFiles[name] = file.exportFile(failedFiles.getFutureInputField(name))
 				} else {
-					own.addRef(name, stream.notWritten(name))
+					ownFiles[name] = stream.notWritten(name)
 				}
+				own.addRef(name, ownFiles[name])
 			}
 			streamOwn = own.build()
 		}
@@ -178,7 +206,24 @@ self.body(func(inputs) {
 		streamOwn = smart.ephemeralMapBuilder().build()
 	}
 
-	stream.attemptEnded(collections, ctx.attempt, entry, undefined)
+	if !is_undefined(failure) {
+		// the job ends here: `stream` of the collections ends on this attempt's files, and every
+		// other output takes the error
+		stream.attemptFailed(collections, ctx.attempt, entry, liveStreams, ownFiles, true)
+		failed := render.createEphemeral(jobFailedTpl, { message: failure })
+		return {
+			files: failed.output("files"),
+			filesContent: failed.output("filesContent"),
+			fileSets: failed.output("fileSets"),
+			fileSetsContent: failed.output("fileSetsContent"),
+			wdProcessors: failed.output("wdProcessors"),
+			progress: failed.output("progress"),
+			attempts: failed.output("attempts"),
+			streamOwn: streamOwn
+		}
+	}
+
+	stream.attemptFailed(collections, ctx.attempt, entry, liveStreams, ownFiles, false)
 
 	// attempt n+1 takes `stream` of the collections over when it starts
 	r := render.createEphemeral(raw.execImplTpl.getValue(), impl.pure, { metaInputs: impl.meta })

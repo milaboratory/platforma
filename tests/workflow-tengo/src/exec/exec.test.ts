@@ -26,6 +26,25 @@ tplTest.concurrent("run-hello-world-go", async ({ helper, expect }) => {
  * heavy one asks for 3, not 16). When several CI runs share one ClusterQueue, that wait alone
  * exceeds the 15s default timeout.
  */
+// Every exec states its cpu and ram requests: one that leaves either out is refused
+tplTest.concurrent.for([
+  { missing: "cpu", expected: "exec.builder: a cpu request is required" },
+  { missing: "ram", expected: "exec.builder: a ram request is required" },
+])(
+  "an exec without a $missing request is refused",
+  async ({ missing, expected }, { helper, expect }) => {
+    const result = await helper.renderTemplate(false, "exec.run.no_requests", ["out"], (tx) => ({
+      missing: tx.createValue(Pl.JsonObject, JSON.stringify(missing)),
+    }));
+    const error = await result
+      .computeOutput("out", (a) => a?.getDataAsString())
+      .awaitStableValue()
+      .catch((e: Error) => e);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toContain(expected);
+  },
+);
+
 tplTest.concurrent.for([
   { queue: "ui-tasks", defaultCpuCores: 1, defaultRamBytes: 100 * 1024 * 1024 },
   { queue: "heavy", defaultCpuCores: 16, defaultRamBytes: 32 * 1024 * 1024 * 1024 },

@@ -181,7 +181,11 @@ _newState := func() {
 		// test seams: render as on a backend without RunCommand v3 (_forceRunCommandV2()), or
 		// without WorkdirSave v3 (_forceWorkdirSaveV1())
 		forceRunCommandV2: false,
-		forceWorkdirSaveV1: false
+		forceWorkdirSaveV1: false,
+
+		// SDK-internal: the exec may run without cpu / ram requests, on its queue's defaults
+		// (_queueDefaultRequests())
+		queueDefaultRequests: false
 	}
 }
 
@@ -467,6 +471,15 @@ _planOf := func(st) {
 		// A VRAM formula computes gpuMemory at run time (in exec.tpl); leave the
 		// static quota's gpuMemory unset in that case, exactly as ram/cpu do.
 		if !is_undefined(st.gpuMemory) { quotaData.gpuMemory = st.gpuMemory }
+	}
+	// Every exec states what it needs: a queue's defaults fit no command in particular, and the
+	// telemetry, the block status panel and the resource formulas give a block what it takes to
+	// choose. A formula counts, as for a GPU above.
+	if !st.queueDefaultRequests {
+		ll.assert(!is_undefined(st.cpuRequest) || !is_undefined(st.cpuFormulaAst),
+			"exec.builder: a cpu request is required: call .cpu(cores) or .resources({ cpu: ... }). A queue's default fits no command in particular; the block run telemetry shows what a command really uses.")
+		ll.assert(!is_undefined(st.ramRequest) || !is_undefined(st.memFormulaAst),
+			"exec.builder: a ram request is required: call .mem(amount) or .resources({ ram: ... }). A queue's default fits no command in particular; the block run telemetry shows what a command really uses.")
 	}
 	// Scratch space stands on its own: it needs no cpu/ram companion, and a VRAM-style
 	// formula leaves the static field unset for the pure template to compute.
@@ -2132,6 +2145,16 @@ _makeBuilder := func(st) {
 		 */
 		_forceWorkdirSaveV1: func() {
 			st.forceWorkdirSaveV1 = true
+			return self
+		},
+
+		/**
+		 * SDK-internal: lets this exec run without cpu / ram requests, on the defaults of its
+		 * queue, as every exec could before the requests became mandatory. For the SDK's own
+		 * commands whose caller gave no requests; not for blocks.
+		 */
+		_queueDefaultRequests: func() {
+			st.queueDefaultRequests = true
 			return self
 		},
 

@@ -134,6 +134,7 @@ self.body(func(inputs) {
 		jobId: ctx.jobId,
 		plan: ctx.plan,
 		restart: ctx.restart + 1,
+		unstartedAttempts: is_undefined(ctx.unstartedAttempts) ? 0 : ctx.unstartedAttempts,
 		history: hist
 	}
 
