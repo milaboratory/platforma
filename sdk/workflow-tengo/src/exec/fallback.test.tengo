@@ -6,7 +6,7 @@ text := import("text")
 maps := import(":maps")
 
 _shell := func(script) {
-	return exec.builder().cmd("sh").arg("-c").arg(script).saveFile("out.tsv").saveStdoutStream()
+	return exec.builder().cmd("sh").cpu(1).mem("64MiB").arg("-c").arg(script).saveFile("out.tsv").saveStdoutStream()
 }
 
 _POLICY := {
@@ -118,7 +118,7 @@ Test_verify_refusesCyclesAndShapes := func() {
 
 Test_verify_streamsAndProcessors := func() {
 	root := _shell("root")
-	root.fallbacks({ OOM: _shell("h").saveStderrStream(), SoftwareError: exec.builder().cmd("sh").saveFile("out.tsv") })
+	root.fallbacks({ OOM: _shell("h").saveStderrStream(), SoftwareError: exec.builder().cmd("sh").cpu(1).mem("64MiB").saveFile("out.tsv") })
 	errors := root._verifyErrors()
 	test.isEqual([
 		"root → OOM[0]: saveFile: not in the root [\"stderr.txt\"]",

@@ -59,7 +59,8 @@ head := func(fileRef, opts) {
         arg("input.txt").
         arg("output.txt").
         addFile("input.txt", fileRef).
-        saveFileContent("output.txt")
+        saveFileContent("output.txt").
+        _queueDefaultRequests()
 
     result := cmdBuilder.run()
     return result.getFileContent("output.txt")

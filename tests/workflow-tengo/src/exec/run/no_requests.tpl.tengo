@@ -1,0 +1,20 @@
+/**
+ * An exec that leaves out its cpu or ram request: refused when it is rendered.
+ *
+ * inputs.missing: string - "cpu" or "ram", the request left out
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+
+self.defineOutputs(["out"])
+
+self.body(func(inputs) {
+	b := exec.builder().cmd("echo").arg("never").inLightQueue().saveStdoutContent()
+	if inputs.missing == "cpu" {
+		b.mem("50MiB")
+	} else {
+		b.cpu(1)
+	}
+	return { out: b.run().getStdoutContent() }
+})
