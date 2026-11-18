@@ -2,7 +2,11 @@
 import { useEventListener } from "../../composition/useEventListener";
 import type { ImportedFiles } from "../../types";
 import { between, notEmpty, tapIf } from "@milaboratories/helpers";
-import { getRawPlatformaInstance, type StorageHandle } from "@platforma-sdk/model";
+import {
+  getRawPlatformaInstance,
+  type ImportFileHandle,
+  type StorageHandle,
+} from "@platforma-sdk/model";
 import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, toRef, watch } from "vue";
 import { PlDropdown } from "../PlDropdown";
 import { PlIcon16 } from "../PlIcon16";
@@ -12,7 +16,7 @@ import { PlSearchField } from "../PlSearchField";
 import style from "./pl-file-dialog.module.scss";
 import { defaultData, useVisibleItems, vTextOverflown } from "./remote-helpers";
 import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from "./utils";
-import { expandRemoteFolders, type ExpandProgress } from "./remote-folder-walk";
+import { createLimiter, expandRemoteFolders } from "./remote-folder-walk";
 
 // note that on a Mac, a click combined with the control key is intercepted by the operating system and used to open a context menu, so ctrlKey is not detectable on click events.
 const isCtrlOrMeta = (ev: KeyboardEvent | MouseEvent) => ev.ctrlKey || ev.metaKey;
@@ -123,35 +127,157 @@ const selectedFolders = computed(() =>
   data.items.filter((f) => f.canBeSelected && f.selected && f.isDir),
 );
 
-const selectedLabel = computed(() => {
-  const files = selectedFiles.value.length;
-  const folders = selectedFolders.value.length;
-  if (folders === 0) return `Selected: ${files}`;
-  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
-  return `Selected: ${plural(files, "file")}, ${plural(folders, "folder")}`;
+/**
+ * The files below a selected folder, counted in the background as soon as it is selected.
+ * Import reuses the result, so a finished count makes Import instant.
+ */
+type FolderCount =
+  | { state: "counting"; controller: AbortController; filesFound: number; done: Promise<void> }
+  | { state: "done"; handles: ImportFileHandle[] }
+  | { state: "failed"; message: string };
+
+/** Keyed by folder path within the current storage. Replaced, never mutated. */
+const folderCounts = shallowRef<ReadonlyMap<string, FolderCount>>(new Map());
+
+/** One cap on listing calls for all folders being counted at once. */
+const listLimit = createLimiter(8);
+
+const setFolderCount = (path: string, count: FolderCount | undefined) => {
+  const next = new Map(folderCounts.value);
+  if (count) next.set(path, count);
+  else next.delete(path);
+  folderCounts.value = next;
+};
+
+const countFolder = (storageHandle: StorageHandle, path: string) => {
+  const controller = new AbortController();
+  const current = () => {
+    const count = folderCounts.value.get(path);
+    return count?.state === "counting" && count.controller === controller ? count : undefined;
+  };
+  const done = expandRemoteFolders(
+    (storage, dir) => getRawPlatformaInstance().lsDriver.listFiles(storage, dir),
+    storageHandle,
+    [path],
+    {
+      extensions: extensions.value,
+      signal: controller.signal,
+      limit: listLimit,
+      onProgress: ({ filesFound }) => {
+        const count = current();
+        if (count) setFolderCount(path, { ...count, filesFound });
+      },
+    },
+  ).then(
+    ({ handles }) => {
+      if (current()) setFolderCount(path, { state: "done", handles });
+    },
+    (err) => {
+      if (current()) setFolderCount(path, { state: "failed", message: String(err) });
+    },
+  );
+  setFolderCount(path, { state: "counting", controller, filesFound: 0, done });
+};
+
+/**
+ * Counts newly selected folders and stops counting deselected ones. Finished counts are
+ * kept, so selecting a folder again costs nothing; failed ones are dropped to retry.
+ */
+const syncFolderCounts = () => {
+  const storageHandle = data.storageEntry?.handle;
+  if (!storageHandle) return;
+  const wanted = new Set(selectedFolders.value.map((f) => f.path));
+  for (const [path, count] of folderCounts.value) {
+    if (wanted.has(path) || count.state === "done") continue;
+    if (count.state === "counting") count.controller.abort();
+    setFolderCount(path, undefined);
+  }
+  for (const path of wanted) {
+    if (!folderCounts.value.has(path)) countFolder(storageHandle, path);
+  }
+};
+
+const resetFolderCounts = () => {
+  for (const count of folderCounts.value.values()) {
+    if (count.state === "counting") count.controller.abort();
+  }
+  folderCounts.value = new Map();
+};
+
+watch(() => selectedFolders.value.map((f) => f.path).join("\n"), syncFolderCounts);
+
+const folderSummary = computed(() => {
+  let files = 0;
+  let counting = false;
+  const empty: string[] = [];
+  const failed: string[] = [];
+  for (const folder of selectedFolders.value) {
+    const count = folderCounts.value.get(folder.path);
+    if (count === undefined || count.state === "counting") {
+      counting = true;
+      files += count?.filesFound ?? 0;
+    } else if (count.state === "done") {
+      files += count.handles.length;
+      if (count.handles.length === 0) empty.push(folder.name);
+    } else {
+      failed.push(`${folder.name} (${count.message})`);
+    }
+  }
+  return { files, counting, empty, failed };
 });
 
-/** Set while selected folders are being expanded into files. */
-const importing = shallowRef<{ controller: AbortController; progress: ExpandProgress }>();
-const importError = shallowRef<string>();
+const selectedLabel = computed(() => {
+  const files = selectedFiles.value.length;
+  if (selectedFolders.value.length === 0) return `Selected: ${files}`;
+  const { files: inFolders, counting } = folderSummary.value;
+  const total = files + inFolders;
+  return `Selected: ${total} file${total === 1 ? "" : "s"}${counting ? " (counting…)" : ""}`;
+});
+
+/** Why the selected folders cannot be imported as they are; empty when they can. */
+const folderError = computed(() => {
+  const { empty, failed } = folderSummary.value;
+  if (failed.length > 0) return `Could not read: ${failed.join(", ")}`;
+  if (empty.length === 0) return "";
+  const what = props.extensions
+    ? `files with supported formats (${props.extensions.join(", ")})`
+    : "files";
+  return `No ${what} in: ${empty.join(", ")}. Deselect to import the rest.`;
+});
+
+/** Set while Import waits for selected folders to finish counting. */
+const importing = shallowRef<AbortController>();
 
 const isReady = computed(
   () =>
     selectedFiles.value.length + selectedFolders.value.length > 0 &&
     !!data.storageEntry?.handle &&
+    !folderError.value &&
     !importing.value,
 );
 
 const isImporting = computed(() => !!importing.value);
 
-const progressLabel = computed(() => {
-  const p = importing.value?.progress;
-  return p ? `Collecting files… ${p.foldersListed} folders read, ${p.filesFound} files found` : "";
-});
+/** Waits until none of `paths` is still being counted, or the signal aborts. */
+const waitForFolderCounts = async (paths: string[], signal: AbortSignal) => {
+  const aborted = new Promise<never>((_, reject) =>
+    signal.addEventListener("abort", () => reject(signal.reason), { once: true }),
+  );
+  aborted.catch(() => {});
+  for (;;) {
+    syncFolderCounts();
+    const pending = paths.flatMap((path) => {
+      const count = folderCounts.value.get(path);
+      return count?.state === "counting" ? [count.done] : [];
+    });
+    if (pending.length === 0) return;
+    await Promise.race([Promise.all(pending), aborted]);
+  }
+};
 
 /**
- * The files to import, with selected folders expanded. `undefined` when the import is
- * cancelled, fails, or a selected folder holds nothing to import; the reason is shown.
+ * The files to import, with selected folders expanded. `undefined` when the wait is
+ * cancelled or a selected folder cannot be imported; the reason is shown.
  */
 const getFilesToImport = async (): Promise<ImportedFiles | undefined> => {
   const storageHandle = notEmpty(data.storageEntry?.handle);
@@ -160,42 +286,34 @@ const getFilesToImport = async (): Promise<ImportedFiles | undefined> => {
   if (folders.length === 0) return { storageHandle, files };
 
   const controller = new AbortController();
-  importing.value = { controller, progress: { foldersListed: 0, filesFound: 0 } };
-  importError.value = undefined;
+  importing.value = controller;
   try {
-    const expanded = await expandRemoteFolders(
-      (storage, path) => getRawPlatformaInstance().lsDriver.listFiles(storage, path),
-      storageHandle,
-      folders,
-      {
-        extensions: extensions.value,
-        signal: controller.signal,
-        onProgress: (progress) => (importing.value = { controller, progress }),
-      },
-    );
-    if (expanded.emptyFolders.length > 0) {
-      const names = expanded.emptyFolders.map((p) => p.split("/").filter(Boolean).at(-1) ?? p);
-      const what = props.extensions
-        ? `files with supported formats (${props.extensions.join(", ")})`
-        : "files";
-      importError.value = `No ${what} in: ${names.join(", ")}. Deselect to import the rest.`;
-      return undefined;
-    }
-    return { storageHandle, files: [...files, ...expanded.handles] };
-  } catch (err) {
-    if (!controller.signal.aborted) importError.value = String(err);
+    await waitForFolderCounts(folders, controller.signal);
+  } catch {
     return undefined;
   } finally {
     importing.value = undefined;
   }
+  if (folderError.value) return undefined;
+  const inFolders: ImportFileHandle[] = [];
+  for (const path of folders) {
+    const count = folderCounts.value.get(path);
+    // Deselected while waiting: the selection changed under Import, so do nothing.
+    if (count?.state !== "done") return undefined;
+    inFolders.push(...count.handles);
+  }
+  return { storageHandle, files: [...files, ...inFolders] };
 };
 
-const cancelImport = () => importing.value?.controller.abort();
+/** Stops waiting; the counts go on while their folders stay selected. */
+const cancelImport = () => importing.value?.abort();
 
-onBeforeUnmount(cancelImport);
+onBeforeUnmount(() => {
+  cancelImport();
+  resetFolderCounts();
+});
 
 const setDirPath = (dirPath: string) => {
-  importError.value = undefined;
   data.dirPath = dirPath;
 };
 
@@ -292,6 +410,7 @@ watch(
   toRef(data, "storageEntry"),
   (entry) => {
     resetData();
+    resetFolderCounts();
     data.dirPath = entry?.initialFullPath ?? "";
   },
   { immediate: true },
@@ -308,7 +427,7 @@ watch(
       loadAvailableStorages();
     } else {
       cancelImport();
-      importError.value = undefined;
+      resetFolderCounts();
       Object.assign(data, defaultData());
     }
   },
@@ -392,15 +511,19 @@ const lsContainerRef = ref<HTMLElement | undefined>();
           <Shortcuts :container="lsContainerRef" />
         </div>
       </div>
-      <div v-if="importing" :class="$style.status" data-testid="pl-file-dialog-import-progress">
-        {{ progressLabel }}
-      </div>
       <div
-        v-else-if="importError"
+        v-if="folderError"
         :class="[$style.status, 'alert-error']"
         data-testid="pl-file-dialog-import-error"
       >
-        {{ importError }}
+        {{ folderError }}
+      </div>
+      <div
+        v-else-if="importing"
+        :class="$style.status"
+        data-testid="pl-file-dialog-import-progress"
+      >
+        Collecting files… {{ folderSummary.files }} found
       </div>
       <div
         v-if="data.currentLoadingPath !== undefined"

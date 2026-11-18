@@ -5,7 +5,7 @@ import type {
   LsEntry,
   StorageHandle,
 } from "@platforma-sdk/model";
-import { expandRemoteFolders, type ListFiles } from "./remote-folder-walk";
+import { createLimiter, expandRemoteFolders, type ListFiles } from "./remote-folder-walk";
 
 const storage: StorageHandle = "remote://test";
 
@@ -98,6 +98,23 @@ describe("expandRemoteFolders", () => {
     expect(result.handles).toHaveLength(40);
     expect(storageFake.peak()).toBeLessThanOrEqual(3);
     expect(seen.at(-1)).toBe(40);
+  });
+
+  test("walks sharing one limiter stay within it together", async () => {
+    const wells = Array.from({ length: 20 }, (_, i) => `p${i % 2}/W${i}/forward/IGH.ab1`);
+    const storageFake = fakeStorage(wells);
+    const limit = createLimiter(3);
+    const [a, b] = await Promise.all(
+      ["p0", "p1"].map((folder) =>
+        expandRemoteFolders(storageFake.listFiles, storage, [folder], {
+          extensions: undefined,
+          limit,
+        }),
+      ),
+    );
+    expect(a.handles).toHaveLength(10);
+    expect(b.handles).toHaveLength(10);
+    expect(storageFake.peak()).toBeLessThanOrEqual(3);
   });
 
   test("stops on abort", async () => {

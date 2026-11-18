@@ -16,8 +16,10 @@ export type ExpandOptions = {
   extensions: string[] | undefined;
   signal?: AbortSignal;
   onProgress?: (progress: ExpandProgress) => void;
-  /** At most this many `listFiles` calls in flight. */
+  /** At most this many `listFiles` calls in flight; ignored when `limit` is given. */
   concurrency?: number;
+  /** A limiter shared with other walks, so several walks together stay within one cap. */
+  limit?: Limiter;
 };
 
 export type ExpandResult = {
@@ -27,7 +29,10 @@ export type ExpandResult = {
   emptyFolders: string[];
 };
 
-function limiter(limit: number) {
+/** Runs the given calls at most `limit` at a time. */
+export type Limiter = <T>(fn: () => Promise<T>) => Promise<T>;
+
+export function createLimiter(limit: number): Limiter {
   let active = 0;
   const waiting: (() => void)[] = [];
   return async <T>(fn: () => Promise<T>): Promise<T> => {
@@ -50,9 +55,9 @@ export async function expandRemoteFolders(
   listFiles: ListFiles,
   storage: StorageHandle,
   folders: string[],
-  { extensions, signal, onProgress, concurrency = 8 }: ExpandOptions,
+  { extensions, signal, onProgress, concurrency = 8, limit }: ExpandOptions,
 ): Promise<ExpandResult> {
-  const limited = limiter(concurrency);
+  const limited = limit ?? createLimiter(concurrency);
   const progress: ExpandProgress = { foldersListed: 0, filesFound: 0 };
 
   const walk = async (dir: string, found: { path: string; handle: ImportFileHandle }[]) => {
