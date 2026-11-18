@@ -8,7 +8,7 @@ outcome: the outcome router runs the plan the policy names for the failure reaso
 by exit code or log match, OOM, GPUMissed with backendHasGPU / timeout, ...), up to the backend's attempt cap, and raises the
 same error text as before plus the attempt history when nothing applies. A successful attempt is
 saved with WorkdirSave v3, when the backend has it, and restarted from a fresh working directory when that directory was
-lost (a database restored from a snapshot), up to the backend's restart limit. With fallbacks the
+lost (a database restored from a snapshot), within the backend's infrastructure attempt budget. With fallbacks the
 stdout / stderr stream is a `StreamCollection/1` that follows the running attempt. An exec without
 fallbacks renders the same `exec.exec` inputs as before. On a backend without RunCommand v3 no
 failure is seen: a GPU plan gives way to its GPUMissed plan, then the OOM plan with the most RAM
