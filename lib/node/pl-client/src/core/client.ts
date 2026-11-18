@@ -35,6 +35,9 @@ import { plAddressToConfig } from "./config";
 import { UserResources } from "./user_resources";
 import type { UserDeletionReport } from "./user_resources";
 import type { BackendCapability } from "./capabilities";
+import { TxConflictLog } from "./tx_conflict_log";
+import type { TxOutcomeCounts } from "./tx_counts";
+import { TxCounter } from "./tx_counts";
 
 export type TxOps = PlCallOps & {
   sync?: boolean;
@@ -92,6 +95,10 @@ export class PlClient {
   private _txCommittedStat: TxStat = initialTxStat();
   private _txConflictStat: TxStat = initialTxStat();
   private _txErrorStat: TxStat = initialTxStat();
+  private readonly txCounter = new TxCounter();
+
+  /** Warns about retried commit conflicts; absent when the client was built without a logger. */
+  private readonly txConflictLog: TxConflictLog | undefined;
 
   //
   // Caching
@@ -137,6 +144,7 @@ export class PlClient {
     this.txDelay = conf.txDelay;
     this.forceSync = conf.forceSync;
     this.finalPredicate = ops.finalPredicate ?? TreeFinality.predicate();
+    this.txConflictLog = ops.logger === undefined ? undefined : new TxConflictLog(ops.logger);
     this.resourceDataCache = new LRUCache({
       maxSize: conf.maxCacheBytes,
       sizeCalculation: (v) => (v.basicData.data?.length ?? 0) + 64,
@@ -189,6 +197,11 @@ export class PlClient {
       conflict: this.txConflictStat,
       error: this.txErrorStat,
     };
+  }
+
+  /** Transaction attempts made through this client, by transaction name and outcome. */
+  public get txCountsByName(): Record<string, TxOutcomeCounts> {
+    return this.txCounter.snapshot();
   }
 
   /** Smoothed round-trip estimate in ms from ping timings, or undefined before the first
@@ -427,8 +440,10 @@ export class PlClient {
   ): Promise<T> {
     // for exponential / linear backoff
     let retryState = createRetryState(ops?.retryOptions ?? this.defaultRetryOptions);
+    let attempt = 0;
 
     while (true) {
+      attempt++;
       const release = ops?.lockId ? await advisoryLock(ops.lockId, ops.abortSignal) : () => {};
 
       try {
@@ -464,16 +479,28 @@ export class PlClient {
           result = await body(tx);
           // collecting stat
           this._txCommittedStat = addStat(this._txCommittedStat, tx.stat);
+          this.txCounter.record(name, tx.committed ? "committed" : "closed");
           ok = true;
         } catch (error: unknown) {
           // the only recoverable
           if (error instanceof TxCommitConflict) {
             // ignoring
             // collecting stat
-            this._txConflictStat = addStat(this._txConflictStat, tx.stat);
+            const stat = tx.stat;
+            this._txConflictStat = addStat(this._txConflictStat, stat);
+            this.txCounter.record(name, "conflict");
+            this.txConflictLog?.record({
+              name,
+              lockId: ops?.lockId,
+              attempt,
+              maxAttempts: retryState.options.maxAttempts,
+              nextDelay: retryState.nextDelay,
+              stat,
+            });
           } else {
             // collecting stat
             this._txErrorStat = addStat(this._txErrorStat, tx.stat);
+            this.txCounter.record(name, "error");
             throw error;
           }
         } finally {

@@ -261,6 +261,9 @@ export class PlTransaction {
    * Contract: there must be no async operations between setting this field to true and sending complete signal to stream. */
   private _completed = false;
 
+  /** True once the backend accepted this write transaction's commit. */
+  private _committed = false;
+
   private globalTxIdWasAwaited: boolean = false;
 
   public readonly pending = new PromiseTracker();
@@ -421,6 +424,11 @@ export class PlTransaction {
     return this._completed;
   }
 
+  /** True once the backend accepted this write transaction's commit; always false for a read transaction. */
+  public get committed() {
+    return this._committed;
+  }
+
   /** Commit & closes transaction. {@link TxCommitConflict} is thrown on
    * commit conflicts. */
   public async commit() {
@@ -448,6 +456,7 @@ export class PlTransaction {
       await this.drainAndAwaitPendingOps();
 
       if (!(await commitResponse)) throw new TxCommitConflict();
+      this._committed = true;
 
       await completeResult;
 
