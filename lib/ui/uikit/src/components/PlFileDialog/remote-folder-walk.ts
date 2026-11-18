@@ -29,6 +29,17 @@ export type ExpandResult = {
   emptyFolders: string[];
 };
 
+/** A folder below (or at) a selected folder could not be listed. */
+export class FolderListError extends Error {
+  constructor(
+    readonly path: string,
+    cause: unknown,
+  ) {
+    super(`Could not list ${path}: ${String(cause)}`, { cause });
+    this.name = "FolderListError";
+  }
+}
+
 /** Runs the given calls at most `limit` at a time. */
 export type Limiter = <T>(fn: () => Promise<T>) => Promise<T>;
 
@@ -62,8 +73,15 @@ export async function expandRemoteFolders(
 
   const walk = async (dir: string, found: { path: string; handle: ImportFileHandle }[]) => {
     signal?.throwIfAborted();
-    const { entries } = await limited(() => listFiles(storage, dir));
+    let listing: ListFilesResult;
+    try {
+      listing = await limited(() => listFiles(storage, dir));
+    } catch (err) {
+      signal?.throwIfAborted();
+      throw new FolderListError(dir, err);
+    }
     signal?.throwIfAborted();
+    const { entries } = listing;
 
     const subfolders: string[] = [];
     for (const entry of entries) {

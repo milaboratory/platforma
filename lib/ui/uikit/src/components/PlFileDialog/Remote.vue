@@ -16,7 +16,7 @@ import { PlSearchField } from "../PlSearchField";
 import style from "./pl-file-dialog.module.scss";
 import { defaultData, useVisibleItems, vTextOverflown } from "./remote-helpers";
 import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from "./utils";
-import { createLimiter, expandRemoteFolders } from "./remote-folder-walk";
+import { createLimiter, expandRemoteFolders, FolderListError } from "./remote-folder-walk";
 import { isJunkName } from "./folder-walk";
 
 // note that on a Mac, a click combined with the control key is intercepted by the operating system and used to open a context menu, so ctrlKey is not detectable on click events.
@@ -158,6 +158,23 @@ const setFolderCount = (path: string, count: FolderCount | undefined) => {
   folderCounts.value = next;
 };
 
+/**
+ * Where below the selected folder listing failed and why, to follow the folder's name:
+ * "/sub/dir: reason". The backend refuses a listing over its message size limit, which
+ * a folder with very many entries reaches.
+ */
+const describeListError = (err: unknown, selected: string): string => {
+  if (!(err instanceof FolderListError)) return `: ${String(err)}`;
+  const trim = (p: string) => p.replace(/\/+$/, "");
+  const below = trim(err.path).startsWith(trim(selected))
+    ? trim(err.path).slice(trim(selected).length)
+    : "";
+  const reason = /received message larger than max/i.test(String(err.cause))
+    ? "the folder has too many entries to list"
+    : String(err.cause);
+  return `${below}: ${reason}`;
+};
+
 const countFolder = (storageHandle: StorageHandle, path: string) => {
   const controller = new AbortController();
   const current = () => {
@@ -182,7 +199,8 @@ const countFolder = (storageHandle: StorageHandle, path: string) => {
       if (current()) setFolderCount(path, { state: "done", handles });
     },
     (err) => {
-      if (current()) setFolderCount(path, { state: "failed", message: String(err) });
+      if (current())
+        setFolderCount(path, { state: "failed", message: describeListError(err, path) });
     },
   );
   setFolderCount(path, { state: "counting", controller, filesFound: 0, done });
@@ -229,7 +247,7 @@ const folderSummary = computed(() => {
       files += count.handles.length;
       if (count.handles.length === 0) empty.push(folder.name);
     } else {
-      failed.push(`${folder.name} (${count.message})`);
+      failed.push(`${folder.name}${count.message}`);
     }
   }
   return { files, counting, empty, failed };
@@ -244,7 +262,7 @@ const selectedLabel = computed(() => {
 /** Why the selected folders cannot be imported as they are; empty when they can. */
 const folderError = computed(() => {
   const { empty, failed } = folderSummary.value;
-  if (failed.length > 0) return `Could not read: ${failed.join(", ")}`;
+  if (failed.length > 0) return `Could not read ${failed.join("; ")}`;
   if (empty.length === 0) return "";
   const what = props.extensions
     ? `files with supported formats (${props.extensions.join(", ")})`

@@ -5,7 +5,12 @@ import type {
   LsEntry,
   StorageHandle,
 } from "@platforma-sdk/model";
-import { createLimiter, expandRemoteFolders, type ListFiles } from "./remote-folder-walk";
+import {
+  createLimiter,
+  expandRemoteFolders,
+  FolderListError,
+  type ListFiles,
+} from "./remote-folder-walk";
 
 const storage: StorageHandle = "remote://test";
 
@@ -135,5 +140,16 @@ describe("expandRemoteFolders", () => {
     await expect(
       expandRemoteFolders(failing, storage, ["x"], { extensions: undefined }),
     ).rejects.toThrow("storage unavailable");
+  });
+
+  test("a listing error names the folder that failed", async () => {
+    const { listFiles } = fakeStorage(plates);
+    const failing: ListFiles = (storageHandle, dir) =>
+      dir === "data/plate-1/A02"
+        ? Promise.reject(new Error("too big"))
+        : listFiles(storageHandle, dir);
+    const run = expandRemoteFolders(failing, storage, ["data/plate-1"], { extensions: undefined });
+    await expect(run).rejects.toBeInstanceOf(FolderListError);
+    await expect(run).rejects.toMatchObject({ path: "data/plate-1/A02" });
   });
 });
