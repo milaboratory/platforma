@@ -7,6 +7,9 @@ import { GrpcClientProviderFactory } from "./grpc";
 import { test, expect } from "vitest";
 import * as TestHelpers from "../test/test_config";
 import { field } from "./transaction";
+import type { MiLogger } from "@milaboratories/ts-helpers";
+import { randomUUID } from "node:crypto";
+import { JsonObject } from "../helpers/pl";
 
 test("test client init", async () => {
   await getTestAdminClient(undefined);
@@ -124,5 +127,95 @@ test("the transaction resource cache reuses a JSON value but refetches a tree-fi
     expect(await cacheHitsOnSecondRead(value)).toBe(1);
     // its `stream` is reset after an error, so the cache must not keep its fields
     expect(await cacheHitsOnSecondRead(manager)).toBe(0);
+  });
+});
+
+test("a commit lost to a concurrent write is logged with the tx name, lock id and attempt", async () => {
+  const warnings: string[] = [];
+  const logger: MiLogger = {
+    info: () => {},
+    warn: (msg) => warnings.push(String(msg)),
+    error: () => {},
+  };
+  const { conf, auth } = await TestHelpers.getTestClientConf();
+  const pl = await PlClient.init(conf, auth, { logger });
+  const fieldName = `conflict_test_${randomUUID()}`;
+  const json = (v: number) => Buffer.from(JSON.stringify({ v }));
+
+  try {
+    await pl.withWriteTx("ConflictSeed", async (tx) => {
+      const f = field(tx.clientRoot, fieldName);
+      tx.createField(f, "Dynamic");
+      tx.setField(f, tx.createValue(JsonObject, json(0)));
+      await tx.commit();
+    });
+
+    let attempts = 0;
+    await pl.withWriteTx(
+      "ConflictLoser",
+      async (tx) => {
+        attempts++;
+        const f = field(tx.clientRoot, fieldName);
+        await tx.getField(f);
+        // the first attempt is overtaken by a write to the same field it has read
+        if (attempts === 1)
+          await pl.withWriteTx("ConflictWinner", async (tx2) => {
+            tx2.setField(field(tx2.clientRoot, fieldName), tx2.createValue(JsonObject, json(1)));
+            await tx2.commit();
+          });
+        tx.setField(f, tx.createValue(JsonObject, json(2)));
+        await tx.commit();
+      },
+      {
+        lockId: "conflict-test-lock",
+        retryOptions: {
+          type: "linearBackoff",
+          maxAttempts: 5,
+          initialDelay: 10,
+          backoffStep: 10,
+          jitter: 0,
+        },
+      },
+    );
+
+    expect(attempts).toBe(2);
+    expect(pl.txConflictStat.txCount).toBe(1);
+    expect(warnings).toHaveLength(1);
+    expect(warnings[0]).toContain('name="ConflictLoser"');
+    expect(warnings[0]).toContain("lockId=conflict-test-lock");
+    expect(warnings[0]).toContain("attempt=1/5");
+  } finally {
+    await pl.withWriteTx("ConflictCleanup", async (tx) => {
+      tx.removeField(field(tx.clientRoot, fieldName));
+      await tx.commit();
+    });
+    await pl.close();
+  }
+});
+
+test("transactions are counted by name and by how each attempt ended", async () => {
+  await TestHelpers.withTempRoot(async (pl) => {
+    await pl.withWriteTx("CountedWrite", async (tx) => {
+      tx.createValue(JsonObject, Buffer.from(JSON.stringify({ counted: true })));
+      await tx.commit();
+    });
+    await pl.withWriteTx("CountedNoOpWrite", async (tx) => {
+      await tx.getResourceData(tx.clientRoot, false);
+    });
+    await pl.withReadTx(
+      "CountedRead",
+      async (tx) => await tx.getResourceData(tx.clientRoot, false),
+    );
+    await expect(
+      pl.withReadTx("CountedFailure", async () => {
+        throw new Error("body failed");
+      }),
+    ).rejects.toThrow("body failed");
+
+    const counts = pl.txCountsByName;
+    expect(counts["CountedWrite"]).toEqual({ committed: 1, closed: 0, conflict: 0, error: 0 });
+    expect(counts["CountedNoOpWrite"]).toEqual({ committed: 0, closed: 1, conflict: 0, error: 0 });
+    expect(counts["CountedRead"]).toEqual({ committed: 0, closed: 1, conflict: 0, error: 0 });
+    expect(counts["CountedFailure"]).toEqual({ committed: 0, closed: 0, conflict: 0, error: 1 });
   });
 });

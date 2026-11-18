@@ -6,6 +6,7 @@ export * from "./core/client";
 export * from "./core/license";
 export * from "./core/driver";
 export * from "./core/transaction";
+export type { TxOutcome, TxOutcomeCounts } from "./core/tx_counts";
 export * from "./core/errors";
 export * from "./core/default_client";
 export * from "./core/unauth_client";
