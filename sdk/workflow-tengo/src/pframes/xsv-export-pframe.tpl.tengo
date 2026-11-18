@@ -18,6 +18,9 @@ self.body(func(inputs) {
 	queue := inputs.queue
 	cpu := inputs.cpu
 	mem := inputs.mem
+	memFloor := inputs.memFloor
+	memSlope := inputs.memSlope
+	memIntercept := inputs.memIntercept
 	inputCache := inputs.inputCache
 
 	resultFile := "result." + xsvType
@@ -77,6 +80,15 @@ self.body(func(inputs) {
 	}
 	if !is_undefined(mem) {
 		wf.mem(mem)
+	}
+	if !is_undefined(memFloor) {
+		wf.memFloor(memFloor)
+	}
+	if !is_undefined(memSlope) {
+		wf.memSlope(memSlope)
+	}
+	if !is_undefined(memIntercept) {
+		wf.memIntercept(memIntercept)
 	}
 	if !is_undefined(inputCache) {
 		wf.cacheInputs(inputCache)
