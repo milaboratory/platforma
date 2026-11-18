@@ -80,11 +80,20 @@ const closeModal = () => emit("update:modelValue", false);
 
 const remoteRef = useTemplateRef("remote");
 
-const submit = () => {
-  if (remoteRef.value?.isReady) {
-    emit("import:files", notEmpty(remoteRef.value?.getFilesToImport()));
+const submit = async () => {
+  const remote = remoteRef.value;
+  if (!remote?.isReady) return;
+  // Undefined when cancelled or nothing to import; Remote shows why.
+  const files = await remote.getFilesToImport();
+  if (files) {
+    emit("import:files", files);
     closeModal();
   }
+};
+
+const cancel = () => {
+  if (remoteRef.value?.isImporting) remoteRef.value.cancelImport();
+  else closeModal();
 };
 
 const importFiles = (importedFiles: ImportedFiles) => {
@@ -116,14 +125,12 @@ const importFiles = (importedFiles: ImportedFiles) => {
       <PlBtnPrimary
         style="min-width: 160px"
         :disabled="!remoteRef?.isReady"
+        :loading="remoteRef?.isImporting"
         data-testid="pl-file-dialog-import"
         @click.stop="submit"
         >Import</PlBtnPrimary
       >
-      <PlBtnGhost
-        :justify-center="false"
-        data-testid="pl-file-dialog-cancel"
-        @click.stop="closeModal"
+      <PlBtnGhost :justify-center="false" data-testid="pl-file-dialog-cancel" @click.stop="cancel"
         >Cancel</PlBtnGhost
       >
     </template>

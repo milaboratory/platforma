@@ -3,7 +3,7 @@ import { useEventListener } from "../../composition/useEventListener";
 import type { ImportedFiles } from "../../types";
 import { between, notEmpty, tapIf } from "@milaboratories/helpers";
 import { getRawPlatformaInstance, type StorageHandle } from "@platforma-sdk/model";
-import { computed, onMounted, reactive, ref, toRef, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, toRef, watch } from "vue";
 import { PlDropdown } from "../PlDropdown";
 import { PlIcon16 } from "../PlIcon16";
 import Shortcuts from "./Shortcuts.vue";
@@ -12,6 +12,7 @@ import { PlSearchField } from "../PlSearchField";
 import style from "./pl-file-dialog.module.scss";
 import { defaultData, useVisibleItems, vTextOverflown } from "./remote-helpers";
 import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from "./utils";
+import { expandRemoteFolders, type ExpandProgress } from "./remote-folder-walk";
 
 // note that on a Mac, a click combined with the control key is intercepted by the operating system and used to open a context menu, so ctrlKey is not detectable on click events.
 const isCtrlOrMeta = (ev: KeyboardEvent | MouseEvent) => ev.ctrlKey || ev.metaKey;
@@ -80,9 +81,11 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
           path: item.fullPath,
           name: item.name,
           isDir: item.type === "dir",
+          // A folder is imported as the files below it, so only where several files fit.
           canBeSelected:
-            item.type === "file" &&
-            (!extensions.value || extensions.value.some((ext) => item.fullPath.endsWith(ext))),
+            item.type === "dir"
+              ? !!props.multi
+              : !extensions.value || extensions.value.some((ext) => item.fullPath.endsWith(ext)),
           handle: item.type === "file" ? item.handle : undefined,
           selected: false,
         }))
@@ -116,14 +119,83 @@ const selectedFiles = computed(() =>
   data.items.filter((f) => f.canBeSelected && f.selected && !f.isDir),
 );
 
-const isReady = computed(() => selectedFiles.value.length > 0 && data.storageEntry?.handle);
+const selectedFolders = computed(() =>
+  data.items.filter((f) => f.canBeSelected && f.selected && f.isDir),
+);
 
-const getFilesToImport = () => ({
-  storageHandle: notEmpty(data.storageEntry?.handle),
-  files: selectedFiles.value.map((f) => f.handle!),
+const selectedLabel = computed(() => {
+  const files = selectedFiles.value.length;
+  const folders = selectedFolders.value.length;
+  if (folders === 0) return `Selected: ${files}`;
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  return `Selected: ${plural(files, "file")}, ${plural(folders, "folder")}`;
 });
 
+/** Set while selected folders are being expanded into files. */
+const importing = shallowRef<{ controller: AbortController; progress: ExpandProgress }>();
+const importError = shallowRef<string>();
+
+const isReady = computed(
+  () =>
+    selectedFiles.value.length + selectedFolders.value.length > 0 &&
+    !!data.storageEntry?.handle &&
+    !importing.value,
+);
+
+const isImporting = computed(() => !!importing.value);
+
+const progressLabel = computed(() => {
+  const p = importing.value?.progress;
+  return p ? `Collecting files… ${p.foldersListed} folders read, ${p.filesFound} files found` : "";
+});
+
+/**
+ * The files to import, with selected folders expanded. `undefined` when the import is
+ * cancelled, fails, or a selected folder holds nothing to import; the reason is shown.
+ */
+const getFilesToImport = async (): Promise<ImportedFiles | undefined> => {
+  const storageHandle = notEmpty(data.storageEntry?.handle);
+  const files = selectedFiles.value.flatMap((f) => (f.handle ? [f.handle] : []));
+  const folders = selectedFolders.value.map((f) => f.path);
+  if (folders.length === 0) return { storageHandle, files };
+
+  const controller = new AbortController();
+  importing.value = { controller, progress: { foldersListed: 0, filesFound: 0 } };
+  importError.value = undefined;
+  try {
+    const expanded = await expandRemoteFolders(
+      (storage, path) => getRawPlatformaInstance().lsDriver.listFiles(storage, path),
+      storageHandle,
+      folders,
+      {
+        extensions: extensions.value,
+        signal: controller.signal,
+        onProgress: (progress) => (importing.value = { controller, progress }),
+      },
+    );
+    if (expanded.emptyFolders.length > 0) {
+      const names = expanded.emptyFolders.map((p) => p.split("/").filter(Boolean).at(-1) ?? p);
+      const what = props.extensions
+        ? `files with supported formats (${props.extensions.join(", ")})`
+        : "files";
+      importError.value = `No ${what} in: ${names.join(", ")}. Deselect to import the rest.`;
+      return undefined;
+    }
+    return { storageHandle, files: [...files, ...expanded.handles] };
+  } catch (err) {
+    if (!controller.signal.aborted) importError.value = String(err);
+    return undefined;
+  } finally {
+    importing.value = undefined;
+  }
+};
+
+const cancelImport = () => importing.value?.controller.abort();
+
+onBeforeUnmount(cancelImport);
+
 const setDirPath = (dirPath: string) => {
+  importError.value = undefined;
   data.dirPath = dirPath;
 };
 
@@ -159,7 +231,7 @@ const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
 
     if (shiftKey && lastSelected !== undefined) {
       items.forEach((f) => {
-        if (between(f.id, lastSelected, file.id)) {
+        if (f.canBeSelected && between(f.id, lastSelected, file.id)) {
           f.selected = true;
         }
       });
@@ -235,6 +307,8 @@ watch(
     if (isOpen) {
       loadAvailableStorages();
     } else {
+      cancelImport();
+      importError.value = undefined;
       Object.assign(data, defaultData());
     }
   },
@@ -269,7 +343,9 @@ useEventListener(document, "keydown", (ev: KeyboardEvent) => {
 
 defineExpose({
   isReady,
+  isImporting,
   getFilesToImport,
+  cancelImport,
 });
 
 onMounted(loadAvailableStorages);
@@ -312,11 +388,19 @@ const lsContainerRef = ref<HTMLElement | undefined>();
           </template>
         </div>
         <div :class="style.selected">
-          <span data-testid="pl-file-dialog-selected-count"
-            >Selected: {{ selectedFiles.length }}</span
-          >
+          <span data-testid="pl-file-dialog-selected-count">{{ selectedLabel }}</span>
           <Shortcuts :container="lsContainerRef" />
         </div>
+      </div>
+      <div v-if="importing" :class="$style.status" data-testid="pl-file-dialog-import-progress">
+        {{ progressLabel }}
+      </div>
+      <div
+        v-else-if="importError"
+        :class="[$style.status, 'alert-error']"
+        data-testid="pl-file-dialog-import-error"
+      >
+        {{ importError }}
       </div>
       <div
         v-if="data.currentLoadingPath !== undefined"
@@ -339,8 +423,31 @@ const lsContainerRef = ref<HTMLElement | undefined>();
       </div>
       <div v-else :class="style['ls-body']" data-testid="pl-file-dialog-items">
         <template v-for="file in visibleItems" :key="file.id">
+          <!-- Several files fit: the row selects the folder, its name and chevron open it. -->
           <div
-            v-if="file.isDir"
+            v-if="file.isDir && multi"
+            :class="{ [style.canBeSelected]: true, [style.selected]: file.selected }"
+            data-testid="pl-file-dialog-dir"
+            @click.stop="(ev) => selectFile(ev, file)"
+            @dblclick.stop="setDirPath(file.path)"
+          >
+            <PlIcon16
+              name="chevron-right"
+              :class="$style.opener"
+              data-testid="pl-file-dialog-dir-open"
+              @click.stop="setDirPath(file.path)"
+            />
+            <span
+              v-text-overflown
+              :class="$style.opener"
+              :title="file.name"
+              data-testid="pl-file-dialog-dir-name"
+              @click.stop="setDirPath(file.path)"
+              >{{ file.name }}</span
+            >
+          </div>
+          <div
+            v-else-if="file.isDir"
             :class="style.isDir"
             data-testid="pl-file-dialog-dir"
             @click="setDirPath(file.path)"
@@ -362,3 +469,19 @@ const lsContainerRef = ref<HTMLElement | undefined>();
     </div>
   </div>
 </template>
+
+<style module>
+.opener {
+  cursor: pointer;
+}
+
+.opener:hover {
+  text-decoration: underline;
+}
+
+.status {
+  padding: 8px 24px 0;
+  font-size: 14px;
+  line-height: 20px;
+}
+</style>
