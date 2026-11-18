@@ -1,17 +1,18 @@
 /**
- * Custom metric collectors end to end (exec.formula.collector, MILAB-6912).
+ * Custom metrics end to end (exec.formula.customMetric, MILAB-6912).
  *
- * One collector run writes two metrics, the newline count and the byte count of the files it
- * reads, and the job's RAM and CPU are formulas over both. The job echoes the quota the backend
- * actually granted ({system.ram.bytes},{system.cpu}), so the test compares it with what the
- * formula should give.
+ * A template computes the newline count and the byte count of the files it reads, and the
+ * job's RAM and CPU are formulas over both; the two metrics share one run of the template. The
+ * job echoes the quota the backend actually granted ({system.ram.bytes},{system.cpu}), so the
+ * test compares it with what the formula should give.
  *
  * inputs.file: the library fixture (42 newlines, 327 bytes)
  * inputs.mode: string -
- *   "tag"      - the collector reads the job's own files under tag "reads" (one fixture)
- *   "explicit" - the collector reads files it was given (the fixture twice), the job stages none
- *   "invalid"  - the collector writes a float; the run fails naming the collector
- *   "fallback" - the root exits 2; its SoftwareError plan is the one sized by the collector
+ *   "tag"      - the metrics read the job's own files under tag "reads" (one fixture)
+ *   "explicit" - the metrics read files they were given (the fixture twice), the job stages none
+ *   "single"   - one metric whose template writes a bare integer
+ *   "invalid"  - the template writes a float; the run fails naming the metric
+ *   "fallback" - the root exits 2; its SoftwareError plan is the one sized by the metrics
  * inputs.nonce: string - keeps the renders from deduplicating against earlier runs
  */
 
@@ -20,15 +21,15 @@ exec := import("@platforma-sdk/workflow-tengo:exec")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 file := import("@platforma-sdk/workflow-tengo:file")
 ll := import("@platforma-sdk/workflow-tengo:ll")
-text := import("text")
-slices := import("@platforma-sdk/workflow-tengo:slices")
-maps := import("@platforma-sdk/workflow-tengo:maps")
 
 f := exec.formula
 
 self.defineOutputs(["limits", "attempts"])
 
 shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+statsMetricTpl := assets.importTemplate(":exec.metrics.custom_metric_stats")
+linesTpl := assets.importTemplate(":exec.metrics.custom_metric_lines")
+invalidTpl := assets.importTemplate(":exec.metrics.custom_metric_invalid")
 
 self.body(func(inputs) {
 	inputFile := file.importFile(inputs.file).file
@@ -43,36 +44,22 @@ self.body(func(inputs) {
 			arg(script + " # " + nonce)
 	}
 
-	// `cat | wc` prints the totals over every file, with no file names to strip
-	collectorDef := {
-		metrics: ["lines", "bytes"],
-		builder: func(files) {
-			names := slices.quickSort(maps.getKeys(files))
-			list := text.join(names, " ")
-			script := "printf '{\"lines\": %d, \"bytes\": %d}' $(cat " + list + " | wc -l) $(cat " + list + " | wc -c)"
-			if mode == "invalid" {
-				script = "printf '{\"lines\": 1.5, \"bytes\": 3}'"
-			}
-			b := shell(script).cpu(1).mem("64MiB")
-			for name in names {
-				b.addFile(name, files[name])
-			}
-			return b
-		},
-		output: "stdout"
-	}
-	if mode == "explicit" {
-		collectorDef.files = { "a.txt": inputFile, "b.txt": inputFile }
-	} else {
-		collectorDef.tag = "reads"
-	}
-	stats := f.collector("stats", collectorDef)
+	input := mode == "explicit" ? { "a.txt": inputFile, "b.txt": inputFile } : "reads"
+	statsTpl := mode == "invalid" ? invalidTpl : statsMetricTpl
 
-	// 512 MiB + 1 MiB per line; 2 cores above 400 bytes, else 1
-	resources := { onCPU: {
-		ram: stats.metric("lines").times(f.mib(1)).plus(f.mib(512)),
-		cpu: f.when(stats.metric("bytes").gt(400), 2).otherwise(1)
-	} }
+	resources := undefined
+	if mode == "single" {
+		lines := f.customMetric("lines", input, linesTpl)
+		resources = { onCPU: { ram: lines.times(f.mib(1)).plus(f.mib(512)), cpu: 1 } }
+	} else {
+		lines := f.customMetric("lines", input, statsTpl)
+		byteCount := f.customMetric("bytes", input, statsTpl)
+		// 512 MiB + 1 MiB per line; 2 cores above 400 bytes, else 1
+		resources = { onCPU: {
+			ram: lines.times(f.mib(1)).plus(f.mib(512)),
+			cpu: f.when(byteCount.gt(400), 2).otherwise(1)
+		} }
+	}
 
 	echo := func() {
 		b := shell("printf '%s,%s' \"$RAM\" \"$CPU\" > limits.txt").
@@ -93,7 +80,7 @@ self.body(func(inputs) {
 			addFile("input.txt", inputFile, { tag: "reads" }).
 			saveFileContent("limits.txt").
 			fallbacks({ SoftwareError: [{ exitCode: 2, name: "sized", builder: sized }] })
-	} else if mode == "tag" || mode == "explicit" || mode == "invalid" {
+	} else if mode == "tag" || mode == "explicit" || mode == "single" || mode == "invalid" {
 		job = echo().resources(resources)
 	} else {
 		ll.panic("custom_metric: unknown mode %v", mode)

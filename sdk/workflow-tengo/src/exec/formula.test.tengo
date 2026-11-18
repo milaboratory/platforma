@@ -393,63 +393,78 @@ TestFallbackNoFormulasIsPassthrough := func() {
 // ll.panic, which are terminal in Tengo (no recover) — they cannot be exercised
 // from a unit test and are verified by reading + the e2e formula_reject tpl.
 
-// ---- custom metric collectors ------------------------------------------------
+// ---- custom metrics -------------------------------------------------------------
 
-_statsCollector := func(def) {
-	d := { metrics: ["reads", "longestRead"], builder: func(files) { return undefined } }
-	for k, v in def { d[k] = v }
-	return f.collector("readStats", d)
+// A stand-in for assets.importTemplate(): customMetric keys its jobs by the template's id.
+_statsTpl := { id: 101 }
+_gcTpl := { id: 102 }
+
+TestCustomMetricAst := func() {
+	test.isEqual({ op: "metric", metric: "custom", source: "101|tag:reads", name: "reads", tag: "reads" },
+		f.astOf(f.customMetric("reads", "reads", _statsTpl)))
+	test.isEqual(7, f.astOf(f.customMetric("reads", "reads", _statsTpl, { default: 7 })).default)
+	test.isEqual("101|all", f.astOf(f.customMetric("reads", undefined, _statsTpl)).source)
+	explicit := f.astOf(f.customMetric("reads", { "b.fq": "r2", "a.fq": "r1" }, _statsTpl))
+	test.isEqual("101|files:a.fq,b.fq", explicit.source)
+	test.isEqual(["a.fq", "b.fq"], slices.quickSort(explicit.files))
 }
 
-TestCollectorMetricAst := func() {
-	stats := _statsCollector({ tag: "reads" })
-	test.isEqual({ op: "metric", metric: "custom", collector: "readStats", name: "reads",
-		declared: ["reads", "longestRead"], tag: "reads" }, f.astOf(stats.metric("reads")))
-	test.isEqual(7, f.astOf(stats.metric("reads", { default: 7 })).default)
-}
-
-TestCollectorsCarriedThroughChain := func() {
-	stats := _statsCollector({})
-	other := f.collector("gc", { metrics: ["percent"], builder: func(files) { return undefined } })
-	formula := f.when(stats.metric("longestRead").gt(300), f.gib(8)).
-		otherwise(stats.metric("reads").times(2).plus(other.metric("percent")).between(f.gib(1), f.gib(4))).
+TestCustomMetricsShareAJobPerTemplateAndFiles := func() {
+	reads := f.customMetric("reads", "reads", _statsTpl)
+	longest := f.customMetric("longestRead", "reads", _statsTpl)
+	gc := f.customMetric("gc", "reads", _gcTpl)
+	formula := f.when(longest.gt(300), f.gib(8)).
+		otherwise(reads.times(2).plus(gc).between(f.gib(1), f.gib(4))).
 		staticFallback(f.gib(2))
-	test.isEqual(["gc", "readStats"], slices.quickSort(maps.getKeys(f.collectorsOf(formula))))
-	test.isEqual(["reads", "longestRead"], f.collectorsOf(formula).readStats.metrics)
-	test.isEqual({}, f.collectorsOf(f.size("x").plus(1)))
-	test.isEqual({}, f.collectorsOf(f.gib(1)))
+	sources := f.sourcesOf(formula)
+	test.isEqual(["101|tag:reads", "102|tag:reads"], slices.quickSort(maps.getKeys(sources)))
+	test.isEqual(["longestRead", "reads"], slices.quickSort(sources["101|tag:reads"].names))
+	// another tag is another job
+	test.isEqual(2, len(f.sourcesOf(reads.plus(f.customMetric("reads", "other", _statsTpl)))))
+	test.isEqual({}, f.sourcesOf(f.size("x").plus(1)))
+	test.isEqual({}, f.sourcesOf(f.gib(1)))
 }
 
-TestCollectorResolvesFilesByTagAllAndExplicit := func() {
+TestCustomMetricJobLimit := func() {
+	m := f.customMetric("a", "t1", _statsTpl).plus(f.customMetric("b", "t2", _statsTpl)).plus(f.customMetric("c", "t3", _statsTpl))
+	test.isEqual(3, len(f.sourcesOf(m)))
+	// metrics of a job already counted do not count again
+	test.isEqual(3, len(f.sourcesOf(m.plus(f.customMetric("d", "t1", _statsTpl)))))
+}
+
+TestCustomMetricResolvesFilesByTagAllAndExplicit := func() {
 	tagMap := { "reads": ["r2.fq", "r1.fq"] }
 	allFiles := ["r1.fq", "r2.fq", "preset.json"]
 
-	byTag := f.resolveAst(_statsCollector({ tag: "reads" }).metric("reads"), tagMap, allFiles)
-	test.isEqual({ op: "custom", collector: "readStats", name: "reads", declared: ["reads", "longestRead"],
-		files: ["r1.fq", "r2.fq"] }, byTag)
+	byTag := f.resolveAst(f.customMetric("reads", "reads", _statsTpl), tagMap, allFiles)
+	test.isEqual({ op: "custom", source: "101|tag:reads", name: "reads", files: ["r1.fq", "r2.fq"] }, byTag)
 
-	all := f.resolveAst(_statsCollector({}).metric("reads"), tagMap, allFiles)
+	all := f.resolveAst(f.customMetric("reads", undefined, _statsTpl), tagMap, allFiles)
 	test.isEqual(["preset.json", "r1.fq", "r2.fq"], all.files)
 
 	// explicit files need not be among the exec's own
-	explicit := f.resolveAst(_statsCollector({ files: { "s_R1.fq": "ref1", "s_R2.fq": "ref2" } }).metric("reads"), tagMap, allFiles)
+	explicit := f.resolveAst(f.customMetric("reads", { "s_R1.fq": "ref1", "s_R2.fq": "ref2" }, _statsTpl), tagMap, allFiles)
 	test.isEqual(["s_R1.fq", "s_R2.fq"], explicit.files)
 
 	// no files: the default stands in, as for a built-in metric
-	none := f.resolveAst(_statsCollector({ tag: "missing" }).metric("reads", { default: 5 }), tagMap, allFiles)
+	none := f.resolveAst(f.customMetric("reads", "missing", _statsTpl, { default: 5 }), tagMap, allFiles)
 	test.isEqual({ op: "const", value: 5 }, none)
 }
 
-TestReferencedCollectors := func() {
-	stats := _statsCollector({ tag: "reads" })
-	formula := stats.metric("reads").times(4).atLeast(stats.metric("longestRead")).plus(f.size("reads"))
+TestReferencedSources := func() {
+	formula := f.customMetric("reads", "reads", _statsTpl).times(4).
+		atLeast(f.customMetric("longestRead", "reads", _statsTpl)).plus(f.size("reads"))
 	resolved := f.resolveAst(formula, { "reads": ["b", "a"] }, ["a", "b"])
-	test.isEqual({ readStats: ["a", "b"] }, f.referencedCollectors(resolved))
-	test.isEqual({}, f.referencedCollectors(f.resolveAst(f.size("reads"), { "reads": ["a"] }, ["a"])))
+	refs := f.referencedSources(resolved)
+	test.isEqual(["101|tag:reads"], maps.getKeys(refs))
+	test.isEqual(["a", "b"], refs["101|tag:reads"].files)
+	test.isEqual(["longestRead", "reads"], slices.quickSort(refs["101|tag:reads"].names))
+	test.isEqual({}, f.referencedSources(f.resolveAst(f.size("reads"), { "reads": ["a"] }, ["a"])))
 }
 
 TestEvaluateCustomMetric := func() {
-	stats := _statsCollector({ tag: "reads" })
+	reads := f.customMetric("reads", "reads", _statsTpl)
+	longest := f.customMetric("longestRead", "reads", _statsTpl)
 	values := { reads: 1000000, longestRead: 301 }
 	resolver := {
 		size: func(files) { return 0 },
@@ -457,27 +472,31 @@ TestEvaluateCustomMetric := func() {
 		custom: func(node) { return values[node.name] }
 	}
 	// the mixcr scratch shape: max(4 x bases, 11 x reads x longest^2) in whole units
-	formula := stats.metric("reads").times(4).atLeast(stats.metric("reads").dividedBy(1000).times(11).times(stats.metric("longestRead")).times(stats.metric("longestRead")).dividedBy(1000000000))
+	formula := reads.times(4).atLeast(reads.dividedBy(1000).times(11).times(longest).times(longest).dividedBy(1000000000))
 	resolved := f.resolveAst(formula, { "reads": ["a"] }, ["a"])
 	test.isEqual(4000000, f.evaluateResource(resolved, resolver, "scratch"))
 }
 
-TestParseCollectorOutput := func() {
-	declared := ["reads", "longestRead"]
+TestParseMetricOutput := func() {
+	test.isEqual({ values: { reads: 12 } },
+		f.parseMetricOutput(["reads"], bytes("{\"reads\": 12, \"longestRead\": 0}\n")))
 	test.isEqual({ values: { reads: 12, longestRead: 0 } },
-		f.parseCollectorOutput("readStats", declared, bytes("{\"reads\": 12, \"longestRead\": 0}\n")))
+		f.parseMetricOutput(["reads", "longestRead"], bytes("{\"reads\": 12, \"longestRead\": 0}")))
+	// one metric may read a bare integer
+	test.isEqual({ values: { reads: 42 } }, f.parseMetricOutput(["reads"], bytes("42\n")))
 
-	bad := func(data) {
-		res := f.parseCollectorOutput("readStats", declared, bytes(data))
+	bad := func(names, data) {
+		res := f.parseMetricOutput(names, bytes(data))
 		test.isTrue(!is_undefined(res.err), "expected an error for " + data)
-		test.isTrue(text.contains(res.err, "readStats"), "the error names the collector: " + res.err)
+		test.isTrue(text.contains(res.err, "reads"), "the error names the metric: " + res.err)
 		return res.err
 	}
-	test.isTrue(text.contains(bad("12"), "JSON object"))
-	test.isTrue(text.contains(bad(""), "JSON object"))
-	test.isTrue(text.contains(bad("{\"reads\": 12}"), "did not write metric \"longestRead\""))
-	test.isTrue(text.contains(bad("{\"reads\": 12, \"longestRead\": 1, \"extra\": 3}"), "does not declare"))
-	test.isTrue(text.contains(bad("{\"reads\": 1.5, \"longestRead\": 1}"), "non-negative integer"))
-	test.isTrue(text.contains(bad("{\"reads\": -1, \"longestRead\": 1}"), "non-negative integer"))
-	test.isTrue(text.contains(bad("{\"reads\": \"12\", \"longestRead\": 1}"), "non-negative integer"))
+	test.isTrue(text.contains(bad(["reads", "longestRead"], "12"), "JSON object"))
+	test.isTrue(text.contains(bad(["reads"], ""), "JSON object"))
+	test.isTrue(text.contains(bad(["reads"], "{\"other\": 12}"), "did not write it"))
+	test.isTrue(text.contains(bad(["reads"], "{\"reads\": 1.5}"), "non-negative integer"))
+	test.isTrue(text.contains(bad(["reads"], "1.5"), "JSON object"))
+	test.isTrue(text.contains(bad(["reads"], "{\"reads\": -1}"), "non-negative integer"))
+	test.isTrue(text.contains(bad(["reads"], "-1"), "non-negative integer"))
+	test.isTrue(text.contains(bad(["reads"], "{\"reads\": \"12\"}"), "non-negative integer"))
 }

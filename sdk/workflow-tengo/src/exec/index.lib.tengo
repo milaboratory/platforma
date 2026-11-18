@@ -41,8 +41,9 @@ lineCounterSoft := assets.importSoftware("@platforma-open/milaboratories.softwar
 // identifiers lexically — a closure cannot see a name declared textually after
 // the enclosing function).
 _lineCountResource := undefined
-// Forward declaration, as _lineCountResource: runs a custom metric collector (exec.formula.collector).
-_collectorResource := undefined
+// Forward declaration, as _lineCountResource: runs the template of a custom metric
+// (exec.formula.customMetric).
+_customMetricResource := undefined
 
 // _assertValidCpuRequest / _assertValidMemRequest / _assertValidGpuRequest hold
 // the single definition of a valid CPU / RAM / VRAM request, so the static
@@ -126,9 +127,9 @@ _newState := func() {
 		gpuFormulaFallback: undefined,
 		scratchFormulaAst: undefined,
 		scratchFormulaFallback: undefined,
-		// dimension (ram / cpu / vram / scratch) -> the collectors its formula's custom metrics
-		// read, { <name>: <collector> } (exec.formula.collector)
-		formulaCollectors: {},
+		// dimension (ram / cpu / vram / scratch) -> the jobs its formula's custom metrics need,
+		// { <source key>: <source> } (exec.formula.customMetric)
+		formulaSources: {},
 		fileTags: {},   // fileName -> tag (for f.size("tag") / f.lineCount("tag") aggregation)
 
 		commandName: "",
@@ -423,24 +424,23 @@ _planOf := func(st) {
 			allFiles := maps.getKeys(st.filesToAdd)
 
 			neededLineCount := {}
-			// collector name -> the files it runs over, across every dimension
-			neededCollectors := {}
-			// collector name -> collector, across every dimension
-			collectors := {}
+			// source key -> { source, files, names }: one template run per key, across every dimension
+			neededSources := {}
 			resolveDim := func(ast, dim) {
 				resolved := execFormula.resolveAst(ast, tagMap, allFiles)
 				refs := execFormula.referencedMetricFiles(resolved)
 				if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
-				dimCollectors := is_undefined(st.formulaCollectors[dim]) ? {} : st.formulaCollectors[dim]
-				for name, files in execFormula.referencedCollectors(resolved) {
-					c := dimCollectors[name]
-					ll.assert(!is_undefined(c), "exec.builder: the %s formula reads collector %q, but the formula was built without it", dim, name)
-					ll.assert(is_undefined(collectors[name]) || collectors[name].id == c.id,
-						"exec.builder: two different collectors are named %q; a collector name must be unique within an exec", name)
-					ll.assert(is_undefined(neededCollectors[name]) || neededCollectors[name] == files,
-						"exec.builder: collector %q reads different files in two formulas of one exec", name)
-					collectors[name] = c
-					neededCollectors[name] = files
+				dimSources := is_undefined(st.formulaSources[dim]) ? {} : st.formulaSources[dim]
+				for key, used in execFormula.referencedSources(resolved) {
+					src := dimSources[key]
+					ll.assert(!is_undefined(src), "exec.builder: the %s formula reads custom metrics %s, but the formula was built without their template", dim, text.join(used.names, ", "))
+					if is_undefined(neededSources[key]) {
+						neededSources[key] = { source: src, files: used.files, names: used.names }
+					} else {
+						ll.assert(neededSources[key].files == used.files,
+							"exec.builder: custom metrics %s read different files in two formulas of one exec", text.join(used.names, ", "))
+						neededSources[key].names = slices.unique(append(copy(neededSources[key].names), used.names...))
+					}
 				}
 				return resolved
 			}
@@ -448,21 +448,20 @@ _planOf := func(st) {
 			if !is_undefined(st.cpuFormulaAst) { resolvedCpu = resolveDim(st.cpuFormulaAst, "cpu") }
 			if !is_undefined(st.gpuFormulaAst) { resolvedGpu = resolveDim(st.gpuFormulaAst, "vram") }
 			if !is_undefined(st.scratchFormulaAst) { resolvedScratch = resolveDim(st.scratchFormulaAst, "scratch") }
-			ll.assert(len(collectors) <= execFormula.MAX_COLLECTORS,
-				"exec.builder: the resource formulas read %d collectors (%s), at most %d are allowed per exec",
-				len(collectors), text.join(slices.quickSort(maps.getKeys(collectors)), ", "), execFormula.MAX_COLLECTORS)
+			ll.assert(len(neededSources) <= execFormula.MAX_CUSTOM_METRIC_JOBS,
+				"exec.builder: the resource formulas read custom metrics from %d jobs, at most %d are allowed per exec",
+				len(neededSources), execFormula.MAX_CUSTOM_METRIC_JOBS)
 
-			if len(neededCollectors) > 0 {
+			if len(neededSources) > 0 {
 				outputs := {}
-				for name, files in neededCollectors {
-					c := collectors[name]
+				for key, need in neededSources {
 					refs := {}
-					for fn in files {
-						ref := is_undefined(c.files) ? st.filesToAdd[fn] : c.files[fn]
-						ll.assert(!is_undefined(ref), "exec.builder: collector %q reads file %q, which it has no resource for", name, fn)
+					for fn in need.files {
+						ref := is_undefined(need.source.files) ? st.filesToAdd[fn] : need.source.files[fn]
+						ll.assert(!is_undefined(ref), "exec.builder: custom metrics %s read file %q, which they have no resource for", text.join(need.names, ", "), fn)
 						refs[fn] = ref
 					}
-					outputs[name] = _collectorResource(c, refs)
+					outputs[key] = _customMetricResource(need.source.tpl, refs)
 				}
 				customMetricsMapResource = smart.createMapResource(outputs)
 			}
@@ -538,7 +537,7 @@ _planOf := func(st) {
 	if !is_undefined(resolvedGpu) { metaExecInputs[execConstants.META_INPUT_GPU_FORMULA] = smart.createJsonResource(resolvedGpu) }
 	if !is_undefined(resolvedScratch) { metaExecInputs[execConstants.META_INPUT_SCRATCH_FORMULA] = smart.createJsonResource(resolvedScratch) }
 	if !is_undefined(lineCountMapResource) { pureExecInputs[execConstants.REGULAR_INPUT_LINE_COUNT] = lineCountMapResource }
-	// The collector outputs (__metric_custom__) ride the regular rail for the same reason: they
+	// The custom metric template outputs (__metric_custom__) ride the regular rail for the same reason: they
 	// are computed and must be final before the formula reads them.
 	if !is_undefined(customMetricsMapResource) { pureExecInputs[execConstants.REGULAR_INPUT_CUSTOM_METRICS] = customMetricsMapResource }
 
@@ -1133,7 +1132,7 @@ _makeBuilder := func(st) {
 			setCpu := func(v, ctx) {
 				if execFormula.isFormula(v) {
 					st.cpuFormulaAst = execFormula.astOf(v)
-					st.formulaCollectors["cpu"] = execFormula.collectorsOf(v)
+					st.formulaSources["cpu"] = execFormula.sourcesOf(v)
 					st.cpuFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
 					if !is_undefined(fb) { _assertValidCpuRequest(fb, ctx + " cpu fallback"); st.cpuFormulaFallback = fb }
@@ -1142,14 +1141,14 @@ _makeBuilder := func(st) {
 					_assertValidCpuRequest(v, ctx + " cpu")
 					st.cpuRequest = v
 					st.cpuFormulaAst = undefined
-					delete(st.formulaCollectors, "cpu")
+					delete(st.formulaSources, "cpu")
 					st.cpuFormulaFallback = undefined
 				}
 			}
 			setRam := func(v, ctx) {
 				if execFormula.isFormula(v) {
 					st.memFormulaAst = execFormula.astOf(v)
-					st.formulaCollectors["ram"] = execFormula.collectorsOf(v)
+					st.formulaSources["ram"] = execFormula.sourcesOf(v)
 					st.memFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
 					if !is_undefined(fb) { _assertValidMemRequest(fb, ctx + " ram fallback"); st.memFormulaFallback = fb }
@@ -1158,14 +1157,14 @@ _makeBuilder := func(st) {
 					_assertValidMemRequest(v, ctx + " ram")
 					st.ramRequest = v
 					st.memFormulaAst = undefined
-					delete(st.formulaCollectors, "ram")
+					delete(st.formulaSources, "ram")
 					st.memFormulaFallback = undefined
 				}
 			}
 			setScratch := func(v, ctx) {
 				if execFormula.isFormula(v) {
 					st.scratchFormulaAst = execFormula.astOf(v)
-					st.formulaCollectors["scratch"] = execFormula.collectorsOf(v)
+					st.formulaSources["scratch"] = execFormula.sourcesOf(v)
 					st.scratchFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
 					if !is_undefined(fb) { _assertValidScratchRequest(fb, ctx + " scratchFreeSpace fallback"); st.scratchFormulaFallback = fb }
@@ -1174,14 +1173,14 @@ _makeBuilder := func(st) {
 					_assertValidScratchRequest(v, ctx + " scratchFreeSpace")
 					st.scratchFreeSpace = v
 					st.scratchFormulaAst = undefined
-					delete(st.formulaCollectors, "scratch")
+					delete(st.formulaSources, "scratch")
 					st.scratchFormulaFallback = undefined
 				}
 			}
 			setVram := func(v, ctx) {
 				if execFormula.isFormula(v) {
 					st.gpuFormulaAst = execFormula.astOf(v)
-					st.formulaCollectors["vram"] = execFormula.collectorsOf(v)
+					st.formulaSources["vram"] = execFormula.sourcesOf(v)
 					st.gpuFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
 					if !is_undefined(fb) { _assertValidGpuRequest(fb, ctx + " vram fallback"); st.gpuFormulaFallback = fb }
@@ -1190,7 +1189,7 @@ _makeBuilder := func(st) {
 					_assertValidGpuRequest(v, ctx + " vram")
 					st.gpuMemory = v
 					st.gpuFormulaAst = undefined
-					delete(st.formulaCollectors, "vram")
+					delete(st.formulaSources, "vram")
 					st.gpuFormulaFallback = undefined
 				}
 			}
@@ -2314,17 +2313,11 @@ _lineCountResource = func(fileName, fileRef) {
 	return res.getFileContent(countOut)
 }
 
-// _collectorResource runs a custom metric collector over its files and returns the content
-// resource of the JSON object it writes. The author's builder function gets the files and sets
-// the software, arguments, files and resources; the output is saved here.
-_collectorResource = func(c, refs) {
-	b := c.builder(copy(refs))
-	ll.assert(ll.isStrict(b) && ll.methodExists(b, "_execBuilderId"),
-		"exec.formula.collector(%q): builder must return an exec.builder(), got %v", c.name, b)
-	if c.output == "stdout" {
-		return b.saveStdoutContent().run().getStdoutContent()
-	}
-	return b.saveFileContent(c.output).run().getFileContent(c.output)
+// _customMetricResource renders the template of a custom metric over its files and returns
+// its `output`: the content resource the formula's metrics are parsed from at run time.
+_customMetricResource = func(tpl, refs) {
+	r := render.create(tpl, { files: smart.createMapResource(refs) })
+	return r.output("output")
 }
 
 export ll.toStrict({

@@ -3,8 +3,9 @@
 "@platforma-sdk/workflow-tengo-tests": patch
 ---
 
-Custom metrics for resource formulas. `exec.formula.collector(name, { metrics, builder(files), output?, tag? | files? })`
-declares author software that runs once over a set of input files before the job it sizes and writes
-several metrics at once, as a JSON object of non-negative integers; `collector.metric(name)` is a formula
-leaf like `size` / `lineCount`. At most 3 collectors per exec. Fallback plans read collectors too. A backend
-that cannot evaluate formulas uses the dimension's `.staticFallback()`, so the collector never runs there.
+Custom metrics for resource formulas. `exec.formula.customMetric(name, tag | files, tpl, { default }?)` is a
+formula leaf like `size` / `lineCount`, computed before the sized job by the author's template over input
+files. The template gets `files` and returns `output`: a JSON object with a non-negative integer per metric,
+or one integer when a single metric reads it. Metrics of one template over the same files share one run, so
+one run can feed several metrics. At most 3 such runs per exec. Fallback plans read custom metrics too. A
+backend that cannot evaluate formulas uses the dimension's `.staticFallback()`, so the template never runs there.

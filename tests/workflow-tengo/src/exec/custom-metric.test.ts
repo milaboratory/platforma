@@ -4,9 +4,10 @@ import { randomUUID } from "node:crypto";
 import * as env from "../env";
 
 /**
- * Custom metric collectors (exec.formula.collector, MILAB-6912) against a live backend: one
- * collector run writes several metrics, the job's RAM / CPU formulas read them, and the backend
- * grants what they compute. The job echoes the granted quota; see exec.metrics.custom_metric.
+ * Custom metrics (exec.formula.customMetric, MILAB-6912) against a live backend: a template
+ * computes the metrics, two metrics of one template share its run, the job's RAM / CPU formulas
+ * read them, and the backend grants what they compute. The job echoes the granted quota; see
+ * exec.metrics.custom_metric.
  */
 const MIB = 1024 * 1024;
 
@@ -36,21 +37,28 @@ const json = (tx: { createValue: (t: typeof Pl.JsonObject, v: string) => unknown
 const cases = [
   {
     mode: "tag",
-    desc: "the collector reads the job's own tagged file",
+    desc: "two metrics of one template read the job's own tagged file",
     ram: 512 * MIB + FIXTURE_NEWLINES * MIB,
     cpu: 1, // 327 bytes, not above 400
     plans: ["root"],
   },
   {
     mode: "explicit",
-    desc: "the collector reads files it was given, the job stages none",
+    desc: "the metrics read files they were given, the job stages none",
     ram: 512 * MIB + 2 * FIXTURE_NEWLINES * MIB,
     cpu: 2, // 654 bytes
     plans: ["root"],
   },
   {
+    mode: "single",
+    desc: "one metric whose template writes a bare integer",
+    ram: 512 * MIB + FIXTURE_NEWLINES * MIB,
+    cpu: 1,
+    plans: ["root"],
+  },
+  {
     mode: "fallback",
-    desc: "a fallback plan's formula reads a collector",
+    desc: "a fallback plan's formula reads custom metrics",
     ram: 512 * MIB + FIXTURE_NEWLINES * MIB,
     cpu: 1,
     plans: ["root", "sized"],
@@ -94,7 +102,7 @@ for (const tc of cases) {
 }
 
 tplTest.concurrent(
-  "custom metric (invalid): a collector that writes a float fails the job, naming the collector",
+  "custom metric (invalid): a template that writes a float fails the job, naming the metric",
   async ({ helper, expect, driverKit }) => {
     const handle = await fixtureHandle(driverKit);
     await expect(async () => {
@@ -109,7 +117,7 @@ tplTest.concurrent(
         }),
       );
       await result.computeOutput("limits", (a) => a?.getDataAsString()).awaitStableValue();
-    }).rejects.toThrow(/collector "stats" wrote 1\.5 for metric "lines"/);
+    }).rejects.toThrow(/custom metric "lines": the template wrote 1\.5/);
   },
   180_000,
 );
