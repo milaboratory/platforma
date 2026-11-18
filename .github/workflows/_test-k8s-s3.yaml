@@ -146,7 +146,8 @@ jobs:
             --filter=@platforma-sdk/workflow-tengo-tests \
             --filter=@milaboratories/pl-client \
             --filter=@milaboratories/pl-tree \
-            --filter=@milaboratories/drivers-ml-blocks-integration \
+            --filter=@milaboratories/ml-blocks-integration \
+            --filter=@milaboratories/drivers-blocks-integration \
             --filter=@platforma-sdk/test
 
       - name: Collect diagnostics

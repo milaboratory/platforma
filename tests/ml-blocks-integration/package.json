@@ -1,0 +1,41 @@
+{
+  "name": "@milaboratories/ml-blocks-integration",
+  "version": "1.0.263",
+  "private": true,
+  "description": "Middle layer tests that run the test blocks against a live backend",
+  "scripts": {
+    "check": "ts-builder check --target node",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target node",
+    "test": "vitest run --coverage --no-file-parallelism --sequence.concurrent=false",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@milaboratories/computable": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers": "workspace:*",
+    "@milaboratories/milaboratories.test-enter-numbers.model": "workspace:*",
+    "@milaboratories/milaboratories.test-sum-numbers": "workspace:*",
+    "@milaboratories/milaboratories.test-sum-numbers.model": "workspace:*",
+    "@milaboratories/milaboratories.ui-examples": "workspace:*",
+    "@milaboratories/pl-client": "workspace:*",
+    "@milaboratories/pl-middle-layer": "workspace:*",
+    "@milaboratories/pl-model-backend": "workspace:*",
+    "@milaboratories/pl-model-common": "workspace:*",
+    "@milaboratories/pl-tree": "workspace:*",
+    "@milaboratories/ts-helpers": "workspace:*",
+    "@platforma-sdk/model": "workspace:*",
+    "quickjs-emscripten": "catalog:",
+    "undici": "catalog:"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "zod": "catalog:"
+  }
+}

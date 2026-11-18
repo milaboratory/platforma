@@ -24,7 +24,7 @@ import { ensureTemplateListRid } from "./template_list";
  * Every test here stores its template directly through the mutator rather than by saving a
  * project, so the document under test is the one the test wrote — a `file:` entry, an entry
  * nothing can resolve — none of which a real project would produce. What a real project
- * produces is covered by the round trip in `drivers-ml-blocks-integration`, which has block
+ * produces is covered by the round trip in `ml-blocks-integration`, which has block
  * packs on disk to build one from.
  *
  * The test server has one user, so every share here goes to everyone and is checked through

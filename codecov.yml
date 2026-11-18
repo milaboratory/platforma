@@ -51,7 +51,8 @@ component_management:
         - sdk/model/**/*
         - sdk/test/**/*
         - tests/block-repo/**/*
-        - tests/drivers-ml-blocks-integration/**/*
+        - tests/ml-blocks-integration/**/*
+        - tests/drivers-blocks-integration/**/*
 
 ignore:
   - "sdk/ui-vue/**/*"
