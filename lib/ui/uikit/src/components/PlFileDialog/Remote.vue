@@ -226,12 +226,10 @@ const folderSummary = computed(() => {
   return { files, counting, empty, failed };
 });
 
+/** Files, selected directly or found in selected folders. */
 const selectedLabel = computed(() => {
-  const files = selectedFiles.value.length;
-  if (selectedFolders.value.length === 0) return `Selected: ${files}`;
   const { files: inFolders, counting } = folderSummary.value;
-  const total = files + inFolders;
-  return `Selected: ${total} file${total === 1 ? "" : "s"}${counting ? " (counting…)" : ""}`;
+  return `Selected: ${selectedFiles.value.length + inFolders}${counting ? "…" : ""}`;
 });
 
 /** Why the selected folders cannot be imported as they are; empty when they can. */
