@@ -28,123 +28,45 @@ import { ResourceType } from "./base_types";
 import { Tx } from "./api_types";
 import { Status } from "../../../../googleapis/googleapis/google/rpc/status";
 /**
- * Platform transactions at the API level are implemented as bidirectional
- * streams that exist in parallel with transactions.
- * One stream = one transaction at all times.
+ * Errors and resource signatures
  *
- * Long story short from the client side:
- *   - client initializes stream and immediately gets transaction info
- *     message from server;
- *   - client calls server methods by sending messages to the server,
- *     each message has its own request ID starting from 1, request ID number
- *     grows as new messages are sent to the server;
- *   - client reads server responses for each message sent. Client can batch
- *     writes and reads: e.g. send 3 messages, read 2 responses, send one
- *     more, read 2;
- *   - to finish communication, the client sends a 'commit' or 'discard' message and reads last
- *     response;
- *   - to make the server interrupt communication, the client sends a 'stream_close' message and reads up to the last
- *     server response. This allows graceful stream close, waiting for all queued server responses
- *     to be sent before closing the stream.
+ * Any error other than NOT_FOUND discards the transaction and ends the stream; NOT_FOUND fails only
+ * the request it answers. A resource signature proves a color: the access context it was issued
+ * under, a root resource and the permissions granted on it. A request whose resource signature or
+ * color proof does not verify - signed in another session, for another resource, or damaged - fails
+ * with PERMISSION_DENIED, reason SIGNATURE_INVALID and the message "invalid resource signature", the
+ * same for every cause. A request naming a reference that is not available fails with NOT_FOUND (see
+ * "Resource availability"). An unavailable reference does not stop the checks of the request's later
+ * references: one that fails otherwise - a signature that does not verify, say - decides the error,
+ * which discards the transaction. A request whose only refusals are unavailable references fails with
+ * the NOT_FOUND of an unavailable reference.
  *
- * Detailed description of the process.
+ * Resource availability
  *
- * The Platform transaction over gRPC has 3 stages:
+ * Inside a transaction, a reference is available when its resource is present in the transaction's
+ * current state and, for a caller whose grants are checked, a grant still covers the color its
+ * signature proves - the grant on the color's root was not revoked, nor narrowed below the color's
+ * permissions, before the transaction opened or earlier in it. A soft-deleted resource is not present
+ * unless the request sets show_soft_deletes. A resource the transaction created and a request names
+ * by its local ID is proven by the color it was created with, and must still be present; a local ID
+ * no creation of the transaction bound - never created, or its creation was refused - names nothing.
+ * Availability is checked for every resource a request names: its subject, the resource holding a
+ * field it names, a resource or field it sets as a field's value or error, and the root of a color
+ * proof (the color_proof of SetDefaultColor and of the resource creations). It is not checked for the
+ * local IDs a request creates, a listing's cursor, or subscription and filter IDs.
  *
- * 1. Initialization:
- *
- *   - the client opens a new bidirectional stream by calling 'Tx' gRPC method;
- *   - the client sends a 'tx_open' message with request_id = 0 to open RO or RW
- *     transaction.
- *     Any message from the client other than 'tx_open' during initialization is
- *     treated as a communication error and causes the server to close the stream;
- *   - the server opens a new transaction and sends transaction info to the client
- *     in a 'tx_open' server message;
- *
- * 2. Communication:
- *
- *     Once the transaction gets initialized, all the communication between
- * client and server should be considered a request-response sequence.
- * The only difference from a simple gRPC call is that sending a request does not
- * block the client until the response arrives from the server.
- *
- *     The client can send as many requests to the server as it wants before
- * reading responses. This allows the client to batch method calls, when it is not
- * interested in the result of each action, but needs only the overall summary of
- * transaction commit.
- * For example, the following sequence is totally valid from client side:
- *   1. send reqA.
- *   2. send reqB.
- *   3. get respA.
- *   4. send reqC.
- *   5. get respB.
- *   6. get respC.
- *
- * Here are the detailed rules of client-server communication inside transaction
- * stream:
- *   - if the stream is closed by the client or interrupted by any unrecoverable
- *     communication error, the accompanying transaction is discarded;
- *   - each message in the client stream (from client to server) is considered
- *     a method call.
- *     E.g. 'resource_remove' makes the server actually remove the resource inside
- *     the transaction bound to the current stream;
- *   - each message in the client stream MUST have its own ID (request_id),
- *     generated by the client, UNIQUE for the transaction. Numbering starts from
- *     1 for each new transaction. request_id == 0 is treated as an unrecoverable
- *     communication error by the server and cancels the transaction;
- *   - server expects 'request_id' from the client to grow consecutively by one as
- *     messages come. If message M2 arrives next to M1 and
- *       M2.request_id != (M1.request_id + 1)
- *     server treats it as an unrecoverable communication error and cancels
- *     the transaction;
- *   - all messages in the server stream (from server to client) in the communication
- *     stage have the same 'request_id' as the client messages that triggered
- *     the operation. This allows the client to match server responses to the
- *     requests it sent earlier;
- *   - message order in the server stream matches the order in the client stream: if
- *     the client sent sequence [ReqA, ReqB], the server will always respond with
- *     [RespA, RespB];
- *   - the server can send several responses to a single client request (multi-message
- *     response). In that case, all such responses will have the same 'request_id'
- *     (the one from the client request), but different message IDs. See
- *     'Multi-message responses' section below for more info.
- *   - the client is allowed (but not obligated) to generate local IDs for new
- *     instances and use them in links and other references. These local IDs
- *     are valid only within the current transaction;
- *   - any instance in the server stream always has a _real_ global ID that is valid
- *     at any time in any other request outside the current transaction;
- *
- * 3. Finalization:
- *
- *    - the client finalizes the transaction by sending a 'tx_commit' or 'tx_discard'
- *      message to the server. After that, the client can close the client stream as any
- *      message sent to the server after commit/discard will be ignored anyway;
- *    - the server stops reading the client stream and does the commit/discard action.
- *    - once the transaction is closed, the server sends the result to the client and
- *      closes the server stream.
- *    - the client stream reading may be interrupted by a special 'stream_close' message, which
- *      causes automatic transaction discard and does not produce an additional reply message.
- *      This 'stream_close' message also does not require any 'request_id' value and does not
- *      produce any response from the server side.
- *
- * At this point the transaction over gRPC is considered finalized, all
- * local IDs generated within the transaction are no longer valid.
- *
- * Multi-message responses
- *
- * Some transaction methods produce several messages by design, causing
- * a single call to result in multiple responses. Listings are a clear
- * example of that.
- * All responses from the server have a special field (multi_message) with all meta
- * info on multi-message responses:
- *  - for single-message responses, multi_message is always empty;
- *  - for multi-message responses, multi_message.id is always > 0;
- *  - all messages in a multi-message response have request_id equal to request_id from
- *    the original client's request message;
- *  - the last message in a multi-message response always has multi_message.is_last = true;
- *  - an empty multi-message response always has:
- *      multi_message.is_last = true;
- *      multi_message.is_empty = true.
+ * An unavailable reference is answered the same way whatever made it unavailable - an absent
+ * resource and a withdrawn grant cannot be told apart - with the same code, message, ErrorInfo and
+ * effect on the transaction, and nothing written:
+ *   - ResourceExists answers exists: false.
+ *   - A Tree request leaves the entry point out (see ResourceAPI.Tree.Request.seeds).
+ *   - Every other request fails with NOT_FOUND, the message "resource not found" and reason
+ *     RESOURCE_NOT_FOUND, and the transaction goes on.
+ * Availability concerns resources only: a missing field or key-value key keeps its own answer. A
+ * caller whose signatures are not checked (admin, controller) is not checked for availability, apart
+ * from unbound local IDs; for a workflow caller, whose grants are not checked, only presence is, and
+ * not for the root of its color proofs. A refused SetDefaultColor changes nothing: the default color set before it
+ * stays. The transaction's default color is not checked again when a creation uses it.
  *
  *
  * @generated from protobuf message MiLaboratories.PL.API.TxAPI
@@ -546,6 +468,12 @@ export interface TxAPI_ClientMessage {
          */
         listGrants: AuthAPI_ListGrants_Request; // list grants on a resource within transaction
     } | {
+        oneofKind: "listUserResources";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.ListUserResources.TxRequest list_user_resources = 413
+         */
+        listUserResources: AuthAPI_ListUserResources_TxRequest; // list resources granted to the caller within transaction
+    } | {
         oneofKind: undefined;
     };
 }
@@ -941,6 +869,12 @@ export interface TxAPI_ServerMessage {
          */
         listGrants: AuthAPI_ListGrants_TxResponse;
     } | {
+        oneofKind: "listUserResources";
+        /**
+         * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.ListUserResources.TxResponse list_user_resources = 413
+         */
+        listUserResources: AuthAPI_ListUserResources_TxResponse;
+    } | {
         oneofKind: undefined;
     };
     /**
@@ -1032,8 +966,10 @@ export interface TxAPI_Open_Response {
      * then sits above it while one that had is visible to this transaction's
      * reads. One token per transaction, however many tree reads it issues.
      *
-     * Absent on a WRITABLE open, which is issued no token: the walk would see
-     * that transaction's own uncommitted writes (see changed_since_token).
+     * Absent on a WRITABLE open, which is issued no token. Writable
+     * transactions may present an earlier read-only token on servers advertising
+     * "writeTxChangedSince:v1", but their responses must never enter a client
+     * cache or mirror because they can contain uncommitted writes.
      *
      * Also accepted by ResourceAPI.Get and ResourceKVAPI.List, which apply the
      * same per-resource emission rule.
@@ -1470,6 +1406,9 @@ export interface ResourceAPI_Exists_Request {
  */
 export interface ResourceAPI_Exists_Response {
     /**
+     * False for a resource that is not available to the caller (see "Resource availability"):
+     * absent, soft-deleted, or no longer covered by the caller's grants alike.
+     *
      * @generated from protobuf field: bool exists = 1
      */
     exists: boolean;
@@ -1536,19 +1475,23 @@ export interface ResourceAPI_Get_Request {
     /**
      * Same token and same emission rule as ResourceAPI.Tree's
      * changed_since_token: the response carries a resource only when its own
-     * change token is newer than the point this one denotes, and otherwise
-     * comes back with resource unset. Empty or absent (the default) always
-     * returns the body.
+     * change token is newer than the point this one denotes or this transaction
+     * changed it, and otherwise comes back with resource unset. Empty or absent
+     * (the default) always returns the body.
      *
      * A client on a per-resource read path takes this so it answers the same
      * way the tree does; one that wants a body regardless simply omits it.
      * There is no unconditional_depth here - nothing traverses, so there is no
      * depth to bound.
      *
-     * Ignored on a WRITABLE transaction, for the reason given on
-     * ResourceAPI.Tree.Request.changed_since_token. Gated by the same
-     * "treeChangedSince:v1" capability, whose name is narrower than what it
-     * covers.
+     * Supported in read-only transactions by "treeChangedSince:v2" and in
+     * writable transactions by "writeTxChangedSince:v1". A writable transaction
+     * honours an earlier read-only token, but a resource it changed receives
+     * the same answer as without a token, including deletion visibility and
+     * errors. Metadata writes always count, even when undone; a state or field
+     * value restored exactly may stop counting. See ResourceAPI.Tree's token comment
+     * for the conservative open-watermark fallback and client cache restrictions.
+     * Older servers ignore this token in writable transactions.
      *
      * @generated from protobuf field: bytes changed_since_token = 5
      */
@@ -1601,9 +1544,10 @@ export interface ResourceAPI_List_ByType_Request {
      */
     after: bigint;
     /**
-     * True value makes the API return original resources instead of duplicates.
+     * The server ignores this field: it never returns an original in place of a duplicate.
      *
-     * @generated from protobuf field: bool resolve_duplicates = 4
+     * @deprecated
+     * @generated from protobuf field: bool resolve_duplicates = 4 [deprecated = true]
      */
     resolveDuplicates: boolean;
     /**
@@ -1809,8 +1753,11 @@ export interface ResourceAPI_Tree_Request {
     resourceSignature: Uint8Array;
     /**
      * Limit the maximum depth the tree is traversed.
-     * The resource <resource_id> is considered at depth = 0, the values of its fields
-     * are on depth = 1 and so on.
+     * The resource <resource_id>, or every seed, is considered at depth = 0, the values of
+     * its fields are on depth = 1 and so on. A resource's depth is its shortest distance
+     * from any seed of the color it is reached under, through the resources the walk
+     * descends: reached by two paths, it is measured along the shorter one. A resource
+     * reached under two colors has a depth under each (see seeds).
      * The maximum uint32 value disables the limit entirely.
      * A 0 value makes the API return only a single resource <resource_id> and is actually
      * equal to Get.Request
@@ -1868,10 +1815,49 @@ export interface ResourceAPI_Tree_Request {
     traverseStopRules?: ResourceAPI_Tree_Filter;
     /**
      * Optional alternative entry points for multi-root traversal.
-     * When non-empty, the traversal starts from each listed seed instead
-     * of resource_id. Servers advertise support via "treeSeeds:v1" in
-     * MaintenanceAPI.Ping.Response.capabilities; old servers ignore this
-     * field. resource_id is used as the sole root when seeds is empty.
+     * When non-empty, the traversal starts from the listed seeds instead
+     * of resource_id. resource_id is used as the sole root when seeds is
+     * empty; a request with neither seeds nor resource_id walks nothing and
+     * is answered empty.
+     *
+     * An entry point that is not available (see "Resource availability") -
+     * its resource absent, soft-deleted without show_soft_deletes, or no
+     * longer covered by the caller's grants - is left out: it yields no frame
+     * and no error, and the walk starts from the other entry points; with none
+     * left, the answer is empty. resource_id next to seeds is checked the same
+     * way but never walked. A seed's resource always gets a frame when the walk
+     * reaches it and unconditional_depth is at least 0, so under such a walk a
+     * seed without a frame is a gone entry point, unless another entry point
+     * reaches the same resource; a delta walk otherwise sends no frame for an
+     * unchanged resource.
+     *
+     * Every seed is at depth 0, and the walk is one breadth-first front across
+     * all of them: frames are in nondecreasing depth from the seeds, every
+     * non-seed frame follows a frame that references it, and a resource
+     * reachable from several seeds, or by several paths, is emitted at most
+     * once per color. Order within one depth is unspecified, and a resource's
+     * subtree need not arrive contiguously.
+     *
+     * A color is the access context a signature proves. Each seed is walked
+     * under its own color - the one the caller's verifier resolves for it (its
+     * signature's color, for a role that must present valid signatures), or,
+     * for a resource this transaction created and the seed names by its local
+     * ID, the color it was created with - and every resource reached from it
+     * carries that color. For a role whose responses are signed, a frame's
+     * resource, its original-resource reference and its fields' value and error
+     * references are signed with it; a controller's responses carry no
+     * signatures. A resource reached under two colors - two seeds naming it
+     * under different colors, or seeds of different colors whose trees meet
+     * below them - is two nodes,
+     * each visited and sent on its own, at most once per color: max_depth,
+     * unconditional_depth, changed_since_token and the filters apply under each
+     * color separately. So a reference a body carries names its target under
+     * exactly the signature the target's own frame carries, when the walk sends
+     * one. No color an earlier request proved or an earlier response carried
+     * applies to a later request, apart from the creation colors of local IDs
+     * and the transaction's default color (SetDefaultColor).
+     * Servers advertise this contract via "colorPerReference:v1" in
+     * MaintenanceAPI.Ping.Response.capabilities.
      *
      * @generated from protobuf field: repeated MiLaboratories.PL.API.ResourceAPI.Tree.SeedResource seeds = 8
      */
@@ -1886,14 +1872,15 @@ export interface ResourceAPI_Tree_Request {
     showSoftDeletes: boolean;
     /**
      * An opaque continuation token, taken verbatim from the next_since_token an
-     * earlier transaction's Open response carried. The server returns bodies
-     * only for resources that changed after the point this token denotes; every
+     * earlier read-only transaction's Open response carried. The server returns
+     * bodies for resources changed after that point or in this transaction; every
      * other visited resource is passed over in silence, producing no frame at
      * all. Empty or absent (the default) requests the full tree.
      *
-     * A response therefore contains exactly the resources whose own change
-     * token is newer than the point this one denotes, and nothing else. Two
-     * obligations follow, both of them the client's:
+     * A response therefore contains resources changed in this transaction or
+     * whose own change token is newer than this point, reached through resources
+     * the response carries - plus, under unconditional_depth, what
+     * that field adds. Two obligations follow, both of them the client's:
      *
      *   - Absence is not removal. A resource missing from a delta response is
      *     either unchanged or gone, and the two are indistinguishable. Detect
@@ -1938,12 +1925,31 @@ export interface ResourceAPI_Tree_Request {
      * unconditional_depth under the same token are NOT a shape change: what
      * they return is dated the same as the poll they came with.
      *
-     * Ignored on a WRITABLE transaction, which also receives no
-     * next_since_token: the walk sees that transaction's uncommitted writes, so
-     * delta skipping there could pin a body describing state that never
-     * committed. Poll from a read-only transaction.
+     * On servers advertising "writeTxChangedSince:v1", writable transactions
+     * honour an earlier read-only token. A resource changed in this transaction
+     * receives the same answer as without a token: a full body, or no frame for
+     * a hidden deletion. Metadata writes always count, even when undone; a state
+     * or field value restored exactly may stop counting.
      *
-     * Servers advertise support via "treeChangedSince:v1" in
+     * This guarantee covers VISITED resources only. An unchanged resource ends
+     * its branch; descendants are neither visited nor conflict-tracked by this
+     * walk. Writable clients must seed every resource they hold whose body, or
+     * (with include_kv) whose KV, can still change.
+     * References through changed fields are walked because their owner is sent
+     * in full, subject to the normal depth, field filter and visibility limits.
+     * Skipped visited resources remain conflict-tracked.
+     *
+     * Open watermark fallback: a writable transaction's open watermark is its
+     * NextSinceToken, sampled before its snapshot opens. A token strictly above
+     * it requests a full read. Every writer with an ID at or below the
+     * watermark had finished, including discarded ones; later writers may
+     * also have finished. It is not a snapshot timestamp. Correctness for
+     * later-snapshot tokens rests on conflict
+     * checks. Writable opens issue no token, and writable responses must never
+     * enter a client cache or mirror.
+     * Older servers ignore the token in writable transactions and answer in full.
+     *
+     * Servers advertise support via "treeChangedSince:v2" in
      * MaintenanceAPI.Ping.Response.capabilities; old servers ignore this field
      * and always send the full tree.
      *
@@ -1951,18 +1957,26 @@ export interface ResourceAPI_Tree_Request {
      */
     changedSinceToken: Uint8Array;
     /**
-     * Depths at or below this one are emitted whatever changed_since_token
-     * says, the seed being depth 0. Explicitly optional: absent means no
+     * Resources at or below this depth are emitted whatever changed_since_token
+     * says, the seeds being depth 0: every resource within this depth of a seed
+     * is emitted under that seed's color (see seeds), as long as it exists, is
+     * visible, and is reached
+     * along fields the field filter and the caller's schema access keep (an
+     * error trace is a leaf). Depth is measured as for max_depth, by the
+     * shortest path, and max_depth still bounds it. It does not bound the walk:
+     * beyond it the token decides, so a changed resource that a sent body
+     * references is still emitted. Explicitly optional: absent means no
      * unconditional depth, which differs from 0. Ignored without
      * changed_since_token, which already sends everything.
      *
      * This is how a client reads what a delta response referenced but did not
      * carry. One Tree request naming the unknown IDs in seeds, under the same
-     * token, returns them here while everything the client already holds below
-     * the frontier stays skipped. The depth is the lever: 0 takes the seeds
-     * alone, 1 takes a level per round trip, a depth past the subtree takes it
-     * whole. Without it such a request comes back empty, and empty is
-     * indistinguishable from not-found.
+     * token, returns every one of them that exists and is visible, with what
+     * lies within this depth below them; beyond it, only what changed after the
+     * token is sent. The depth is the lever: 0 bypasses the token for the seeds
+     * alone, 1 for a level more per round trip, a depth past the subtree for
+     * all of it. Without it such a request comes back empty for resources
+     * older than the token, and empty is indistinguishable from not-found.
      *
      * @generated from protobuf field: optional uint32 unconditional_depth = 11
      */
@@ -2488,6 +2502,24 @@ export interface NotificationAPI_Get_Request {
      * @generated from protobuf field: uint32 max_notifications = 2
      */
     maxNotifications: number;
+    /**
+     * seen_token is the seen_token of the previous response for this subscription. Empty reads the
+     * queue from its start. Pass it back unchanged, so the read does not step over acknowledged
+     * notifications.
+     *
+     * @generated from protobuf field: bytes seen_token = 3
+     */
+    seenToken: Uint8Array;
+    /**
+     * skip_delivered makes each read return only the notifications after the last read, also the ones
+     * that are not acknowledged yet, so a client can keep a notification and read the next batch. Without
+     * it, each read returns every notification that is not acknowledged again. A restart of the client
+     * or of the backend reads from the start of the queue in both modes. A seen_token of the other mode
+     * reads from the start of the queue.
+     *
+     * @generated from protobuf field: bool skip_delivered = 4
+     */
+    skipDelivered: boolean;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.NotificationAPI.Get.Response
@@ -2497,6 +2529,12 @@ export interface NotificationAPI_Get_Response {
      * @generated from protobuf field: repeated MiLaboratories.PL.API.Notification notifications = 1
      */
     notifications: Notification[];
+    /**
+     * seen_token is the read position to pass to the next read of this subscription. It is opaque.
+     *
+     * @generated from protobuf field: bytes seen_token = 2
+     */
+    seenToken: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.NotificationAPI.Ack
@@ -2902,6 +2940,13 @@ export interface ControllerAPI_GetNotifications_Request {
      * @generated from protobuf field: uint32 max_notifications = 2
      */
     maxNotifications: number;
+    /**
+     * seen_token is the seen_token of the previous response for this controller. Empty reads the
+     * queue from its start.
+     *
+     * @generated from protobuf field: bytes seen_token = 3
+     */
+    seenToken: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ControllerAPI.GetNotifications.Response
@@ -2911,6 +2956,12 @@ export interface ControllerAPI_GetNotifications_Response {
      * @generated from protobuf field: repeated MiLaboratories.PL.API.Notification notifications = 1
      */
     notifications: Notification[];
+    /**
+     * seen_token is the read position to pass to the next read of this controller. It is opaque.
+     *
+     * @generated from protobuf field: bytes seen_token = 2
+     */
+    seenToken: Uint8Array;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ControllerAPI.WriteAliasesAndUrls
@@ -3061,18 +3112,24 @@ export interface ResourceKVAPI_List_Request {
     /**
      * Same token and same emission rule as ResourceAPI.Tree's
      * changed_since_token: the listing runs only when the resource's own change
-     * token is newer than the point this one denotes, and otherwise comes back
-     * with no records at all. Empty or absent (the default) always lists.
+     * token is newer than the point this one denotes or this transaction changed
+     * the resource, and otherwise comes back with no records at all. Empty or
+     * absent (the default) always lists.
      *
-     * No records therefore means the metadata is unchanged, empty, or gone,
-     * indistinguishably - which costs nothing, because a client only sends the
-     * token for a resource whose metadata it already holds. One that wants the
-     * listing regardless omits it.
+     * No records means unchanged OR emptied; a delta listing cannot tell them
+     * apart. A client holding records learns they are gone only from a
+     * tokenless listing, or from Tree with include_kv, whose frame carries the
+     * full KV. A reader in a writable transaction should therefore prefer Tree
+     * with include_kv. One that wants the listing regardless omits the token.
      *
-     * Ignored on a WRITABLE transaction, for the reason given on
-     * ResourceAPI.Tree.Request.changed_since_token. Gated by the same
-     * "treeChangedSince:v1" capability, whose name is narrower than what it
-     * covers.
+     * Supported in read-only transactions by "treeChangedSince:v2" and in
+     * writable transactions by "writeTxChangedSince:v1". A writable transaction
+     * honours an earlier read-only token, but a resource it changed receives
+     * the same answer as without a token, including deletion visibility and
+     * errors. Metadata writes always count, even when undone; a state or field
+     * value restored exactly may stop counting. See ResourceAPI.Tree's token comment
+     * for the conservative open-watermark fallback and client cache restrictions.
+     * Older servers ignore this token in writable transactions.
      *
      * @generated from protobuf field: bytes changed_since_token = 5
      */
@@ -3138,6 +3195,14 @@ export interface ResourceKVAPI_Set_Request {
      * @generated from protobuf field: bytes value = 3
      */
     value: Uint8Array;
+    /**
+     * Set the key asynchronously: the system applies the change after the commit, by priority, and
+     * reads in this transaction do not show it (docs/kv-async-write-contract.md). Gated by the
+     * "kvAsync:v1" capability: an older backend ignores the field and sets the key synchronously.
+     *
+     * @generated from protobuf field: bool async = 5
+     */
+    async: boolean;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceKVAPI.Set.Response
@@ -3231,6 +3296,12 @@ export interface ResourceKVAPI_Delete_Request {
      * @generated from protobuf field: string key = 2
      */
     key: string;
+    /**
+     * Delete the key asynchronously, as ResourceKVAPI.Set.Request.async sets it.
+     *
+     * @generated from protobuf field: bool async = 4
+     */
+    async: boolean;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceKVAPI.Delete.Response
@@ -4091,6 +4162,15 @@ export interface AuthAPI_GetSessionInfo_Response {
      * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.Role role = 2
      */
     role: AuthAPI_Role;
+    /**
+     * can_list_users tells if the caller can call ListUsers. The server configuration
+     * (--show-user-list-to) and the caller's role give the value. Servers that advertise
+     * the 'userListing:v2' capability set this field. Older servers do not know the field,
+     * so it is always false there.
+     *
+     * @generated from protobuf field: bool can_list_users = 3
+     */
+    canListUsers: boolean;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.GrantAccess
@@ -4352,6 +4432,15 @@ export interface AuthAPI_ListUserResources_Request {
      * @generated from protobuf field: uint32 limit = 3
      */
     limit: number;
+    /**
+     * types keeps only the shared resources of these types; empty lists every type. A resource
+     * is kept when its type name equals an entry's name and that entry's version is empty or
+     * equal to the resource type's version. The filter never applies to the user root. A
+     * resource the filter drops does not count towards limit.
+     *
+     * @generated from protobuf field: repeated MiLaboratories.PL.Base.ResourceType types = 4
+     */
+    types: ResourceType[];
 }
 /**
  * Multi-message: first message contains UserRoot (only when start_from == 0),
@@ -4365,6 +4454,8 @@ export interface AuthAPI_ListUserResources_Response {
     entry: {
         oneofKind: "userRoot";
         /**
+         * Deprecated: get the user root with GetUserRoot. It is still sent, on the first page.
+         *
          * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.UserRoot user_root = 1
          */
         userRoot: AuthAPI_UserRoot;
@@ -4405,6 +4496,80 @@ export interface AuthAPI_ListUserResources_SharedResource {
      * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.Grant.Permissions permissions = 4
      */
     permissions?: AuthAPI_Grant_Permissions;
+}
+/**
+ * TxRequest lists the resources shared with the caller - granted to them, or to everyone -
+ * inside a transaction, in resource-ID order. The caller's user root is never listed: get it
+ * with GetUserRoot. The listing reads the transaction's snapshot, which other transactions'
+ * changes do not reach: each signature it hands out passes the signature and grant checks of
+ * later requests in the same transaction, within the permissions it carries, and a grant another
+ * transaction revokes after this one opened is still listed and its signature still passes.
+ * Those requests' permission and schema checks still apply.
+ *
+ * In a writable transaction, the listing also sees the transaction's own grant changes: a grant
+ * made earlier in it is listed, one revoked earlier in it is not, one narrowed earlier in it is
+ * listed with its new permissions; a signature issued before a revocation or narrowing then fails
+ * with NOT_FOUND. A signature for a grant made in a transaction that is then discarded names a
+ * grant that never existed, and fails with NOT_FOUND afterwards. Everything the listing reads -
+ * every grant, and the state of every resource it examines, the ones the filter drops included -
+ * joins the transaction's conflict set: a concurrent change to any of them makes the commit fail
+ * with a conflict.
+ *
+ * The response is one entry per message; a listing with no entries is a single empty last
+ * message (multi_message.is_empty). A role refusal arrives as one message without
+ * multi_message. A grant record or a resource that cannot be read ends the response with that
+ * error.
+ *
+ * The caller is the transaction's user; there is no listing for another login.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.TxRequest
+ */
+export interface AuthAPI_ListUserResources_TxRequest {
+    /**
+     * types keeps only the resources of these types; empty lists every type. A resource is kept
+     * when its type name equals an entry's name and that entry's version is empty or equal to the
+     * resource type's version.
+     *
+     * @generated from protobuf field: repeated MiLaboratories.PL.Base.ResourceType types = 1
+     */
+    types: ResourceType[];
+    /**
+     * start_from lists from this resource ID on: pass the previous response's next_resource_id
+     * to continue a listing. Zero starts at the beginning.
+     *
+     * @generated from protobuf field: uint64 start_from = 2
+     */
+    startFrom: bigint;
+    /**
+     * limit caps the number of entries in the response; zero lists them all. A resource the
+     * filter drops does not count.
+     *
+     * @generated from protobuf field: uint32 limit = 3
+     */
+    limit: number;
+}
+/**
+ * TxResponse is one message of the listing: an entry, or, after the last entry when limit cut
+ * the listing short, the ID to continue from. For a caller whose responses are signed, each
+ * entry's resource_signature carries the color of its grant: the resource itself with the
+ * granted permissions. A controller's entries are unsigned, like all its responses. A resource
+ * granted both to the caller and to everyone is listed once, with the caller's own grant.
+ * Resources that are deleted, or marked deleted, are not listed.
+ *
+ * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.TxResponse
+ */
+export interface AuthAPI_ListUserResources_TxResponse {
+    /**
+     * @generated from protobuf field: MiLaboratories.PL.API.AuthAPI.ListUserResources.SharedResource shared_resource = 1
+     */
+    sharedResource?: AuthAPI_ListUserResources_SharedResource;
+    /**
+     * Set only on a message after the last entry, when limit was reached and more resources
+     * remain; it carries no entry. Use it as start_from in the next request.
+     *
+     * @generated from protobuf field: uint64 next_resource_id = 2
+     */
+    nextResourceId: bigint;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.AuthAPI.User
@@ -4646,6 +4811,33 @@ export interface MaintenanceAPI_Ping_Response {
      * @generated from protobuf field: repeated string capabilities = 9
      */
     capabilities: string[];
+    /**
+     * Capabilities that every client must implement to work with this server.
+     * These tokens are a separate set from the 'capabilities' field above:
+     * they name client features, not server features.
+     *
+     * A client must call Ping before any other request and check this list.
+     * If the list has a token that the client does not know, the client is
+     * not compatible with this server: it must stop, tell the user to update
+     * the client, and send no other requests to this server. The server does
+     * not enforce the list: a client that does not check it gets no error
+     * from Ping or from other requests.
+     *
+     * Each entry is an opaque token "<feature>:<version>". Compare tokens as
+     * whole strings: a client that knows "foo:v1" does not know "foo:v2", so a
+     * client lists every version that it implements. Do not parse versions.
+     *
+     * The list applies to all clients: the Desktop App, CLI tools and other
+     * users of the client libraries. A token locks out every client that does
+     * not implement the feature. The server adds a token when it removes
+     * support for such clients. An empty list, or an unset field on old
+     * servers, requires nothing.
+     *
+     * All list see pl/platform/api/plapiserver/server_capabilities.go
+     *
+     * @generated from protobuf field: repeated string required_client_capabilities = 10
+     */
+    requiredClientCapabilities: string[];
 }
 /**
  * @generated from protobuf enum MiLaboratories.PL.API.MaintenanceAPI.Ping.Response.Compression
@@ -4698,6 +4890,351 @@ export interface Util {
  * @generated from protobuf message MiLaboratories.PL.API.Util.Deprecated
  */
 export interface Util_Deprecated {
+}
+/**
+ * Platform transactions at the API level are implemented as bidirectional
+ * streams that exist in parallel with transactions.
+ * One stream = one transaction at all times.
+ *
+ * Long story short from the client side:
+ *   - client initializes stream and immediately gets transaction info
+ *     message from server;
+ *   - client calls server methods by sending messages to the server,
+ *     each message has its own request ID starting from 1, request ID number
+ *     grows as new messages are sent to the server;
+ *   - client reads server responses for each message sent. Client can batch
+ *     writes and reads: e.g. send 3 messages, read 2 responses, send one
+ *     more, read 2;
+ *   - to finish communication, the client sends a 'commit' or 'discard' message and reads last
+ *     response;
+ *   - to make the server interrupt communication, the client sends a 'stream_close' message and reads up to the last
+ *     server response. This allows graceful stream close, waiting for all queued server responses
+ *     to be sent before closing the stream.
+ *
+ * Detailed description of the process.
+ *
+ * The Platform transaction over gRPC has 3 stages:
+ *
+ * 1. Initialization:
+ *
+ *   - the client opens a new bidirectional stream by calling 'Tx' gRPC method;
+ *   - the client sends a 'tx_open' message with request_id = 0 to open RO or RW
+ *     transaction.
+ *     Any message from the client other than 'tx_open' during initialization is
+ *     treated as a communication error and causes the server to close the stream;
+ *   - the server opens a new transaction and sends transaction info to the client
+ *     in a 'tx_open' server message;
+ *
+ * 2. Communication:
+ *
+ *     Once the transaction gets initialized, all the communication between
+ * client and server should be considered a request-response sequence.
+ * The only difference from a simple gRPC call is that sending a request does not
+ * block the client until the response arrives from the server.
+ *
+ *     The client can send as many requests to the server as it wants before
+ * reading responses. This allows the client to batch method calls, when it is not
+ * interested in the result of each action, but needs only the overall summary of
+ * transaction commit.
+ * For example, the following sequence is totally valid from client side:
+ *   1. send reqA.
+ *   2. send reqB.
+ *   3. get respA.
+ *   4. send reqC.
+ *   5. get respB.
+ *   6. get respC.
+ *
+ * Here are the detailed rules of client-server communication inside transaction
+ * stream:
+ *   - if the stream is closed by the client or interrupted by any unrecoverable
+ *     communication error, the accompanying transaction is discarded;
+ *   - each message in the client stream (from client to server) is considered
+ *     a method call.
+ *     E.g. 'resource_remove' makes the server actually remove the resource inside
+ *     the transaction bound to the current stream;
+ *   - each message in the client stream MUST have its own ID (request_id),
+ *     generated by the client, UNIQUE for the transaction. Numbering starts from
+ *     1 for each new transaction. request_id == 0 is treated as an unrecoverable
+ *     communication error by the server and cancels the transaction;
+ *   - server expects 'request_id' from the client to grow consecutively by one as
+ *     messages come. If message M2 arrives next to M1 and
+ *       M2.request_id != (M1.request_id + 1)
+ *     server treats it as an unrecoverable communication error and cancels
+ *     the transaction;
+ *   - all messages in the server stream (from server to client) in the communication
+ *     stage have the same 'request_id' as the client messages that triggered
+ *     the operation. This allows the client to match server responses to the
+ *     requests it sent earlier;
+ *   - message order in the server stream matches the order in the client stream: if
+ *     the client sent sequence [ReqA, ReqB], the server will always respond with
+ *     [RespA, RespB];
+ *   - the server can send several responses to a single client request (multi-message
+ *     response). In that case, all such responses will have the same 'request_id'
+ *     (the one from the client request), but different message IDs. See
+ *     'Multi-message responses' section below for more info.
+ *   - the client is allowed (but not obligated) to generate local IDs for new
+ *     instances and use them in links and other references. These local IDs
+ *     are valid only within the current transaction;
+ *   - any instance in the server stream always has a _real_ global ID that is valid
+ *     at any time in any other request outside the current transaction;
+ *
+ * 3. Finalization:
+ *
+ *    - the client finalizes the transaction by sending a 'tx_commit' or 'tx_discard'
+ *      message to the server. After that, the client can close the client stream as any
+ *      message sent to the server after commit/discard will be ignored anyway;
+ *    - the server stops reading the client stream and does the commit/discard action.
+ *    - once the transaction is closed, the server sends the result to the client and
+ *      closes the server stream.
+ *    - the client stream reading may be interrupted by a special 'stream_close' message, which
+ *      causes automatic transaction discard and does not produce an additional reply message.
+ *      This 'stream_close' message also does not require any 'request_id' value and does not
+ *      produce any response from the server side.
+ *
+ * At this point the transaction over gRPC is considered finalized, all
+ * local IDs generated within the transaction are no longer valid.
+ *
+ * Multi-message responses
+ *
+ * Some transaction methods produce several messages by design, causing
+ * a single call to result in multiple responses. Listings are a clear
+ * example of that.
+ * All responses from the server have a special field (multi_message) with all meta
+ * info on multi-message responses:
+ *  - for single-message responses, multi_message is always empty;
+ *  - for multi-message responses, multi_message.id is always > 0;
+ *  - all messages in a multi-message response have request_id equal to request_id from
+ *    the original client's request message;
+ *  - the last message in a multi-message response always has multi_message.is_last = true;
+ *  - an empty multi-message response always has:
+ *      multi_message.is_last = true;
+ *      multi_message.is_empty = true.
+ *
+ * Error model
+ *
+ * Every error status the Platform API produces carries exactly one google.rpc.ErrorInfo detail with
+ * domain "platforma.bio" and reason set to the name of an ErrorReason value, for example
+ * "RESOURCE_NOT_FOUND". It is carried by a call's status, by the error of a transaction response
+ * (TxAPI.ServerMessage.error), and by the status that ends a transaction stream. ErrorInfo carries no
+ * metadata. The gRPC code states the class of an error, the reason its cause: decide what to do from
+ * the reason, and treat a reason you do not know by its code. The reason survives the message hiding
+ * some roles get. Each value lists the code it comes with. ErrorInfo is defined in
+ * google/rpc/error_details.proto, imported above; in a status's details it has the type URL
+ * "type.googleapis.com/google.rpc.ErrorInfo".
+ *
+ * Statuses produced by the gRPC library itself before a request reaches the server - a message that
+ * cannot be decoded, one over the size limit, a broken connection - carry no ErrorInfo. A WebSocket
+ * transaction gets no status for the end of its stream.
+ *
+ * @generated from protobuf enum MiLaboratories.PL.API.ErrorReason
+ */
+export enum ErrorReason {
+    /**
+     * Never sent.
+     *
+     * @generated from protobuf enum value: ERROR_REASON_UNSPECIFIED = 0;
+     */
+    ERROR_REASON_UNSPECIFIED = 0,
+    /**
+     * UNAUTHENTICATED: the JWT is missing, malformed, signed by another instance, or names an unknown
+     * role. Log in again.
+     *
+     * @generated from protobuf enum value: TOKEN_INVALID = 1;
+     */
+    TOKEN_INVALID = 1,
+    /**
+     * UNAUTHENTICATED: the JWT is valid except that it expired. It can no longer be refreshed; log in
+     * again.
+     *
+     * @generated from protobuf enum value: TOKEN_EXPIRED = 2;
+     */
+    TOKEN_EXPIRED = 2,
+    /**
+     * UNAUTHENTICATED: Login with credentials the login method rejected.
+     *
+     * @generated from protobuf enum value: CREDENTIALS_INVALID = 3;
+     */
+    CREDENTIALS_INVALID = 3,
+    /**
+     * UNAUTHENTICATED: the session behind a valid JWT is gone - revoked, ended at the identity
+     * provider, or its user removed. Log in again.
+     *
+     * @generated from protobuf enum value: SESSION_REVOKED = 4;
+     */
+    SESSION_REVOKED = 4,
+    /**
+     * UNAUTHENTICATED or FAILED_PRECONDITION: the credentials were accepted but the login is refused -
+     * the user is not provisioned, the email is not verified, or the identity is claimed by another
+     * user.
+     *
+     * @generated from protobuf enum value: LOGIN_REFUSED = 5;
+     */
+    LOGIN_REFUSED = 5,
+    /**
+     * NOT_FOUND: the login method the request names does not exist on this server.
+     *
+     * @generated from protobuf enum value: LOGIN_METHOD_NOT_CONFIGURED = 6;
+     */
+    LOGIN_METHOD_NOT_CONFIGURED = 6,
+    /**
+     * UNAVAILABLE: an external identity provider (SSO, LDAP) could not complete the session check or
+     * refresh. The session is not known to be gone; retry later.
+     *
+     * @generated from protobuf enum value: IDENTITY_PROVIDER_UNAVAILABLE = 7;
+     */
+    IDENTITY_PROVIDER_UNAVAILABLE = 7,
+    /**
+     * PERMISSION_DENIED: the caller's role may not call the method, refresh its token, or switch to
+     * the requested role.
+     *
+     * @generated from protobuf enum value: ROLE_DENIED = 10;
+     */
+    ROLE_DENIED = 10,
+    /**
+     * PERMISSION_DENIED: a resource signature or a color proof does not verify - malformed, altered,
+     * for another resource, or issued in another session (for example before a re-login). Every cause
+     * has the same message. Fetch the reference again.
+     *
+     * @generated from protobuf enum value: SIGNATURE_INVALID = 11;
+     */
+    SIGNATURE_INVALID = 11,
+    /**
+     * PERMISSION_DENIED: a read-only reference or color proof was used where write access is required.
+     *
+     * @generated from protobuf enum value: READ_ONLY_REFERENCE = 12;
+     */
+    READ_ONLY_REFERENCE = 12,
+    /**
+     * PERMISSION_DENIED: a writable reference was combined with a read-only reference of another
+     * color.
+     *
+     * @generated from protobuf enum value: COLOR_MISMATCH = 13;
+     */
+    COLOR_MISMATCH = 13,
+    /**
+     * PERMISSION_DENIED: the resource schema forbids the operation for the caller's role.
+     *
+     * @generated from protobuf enum value: SCHEMA_DENIED = 14;
+     */
+    SCHEMA_DENIED = 14,
+    /**
+     * PERMISSION_DENIED: granting or revoking more than the caller's own access.
+     *
+     * @generated from protobuf enum value: PERMISSION_CEILING = 15;
+     */
+    PERMISSION_CEILING = 15,
+    /**
+     * INVALID_ARGUMENT: a creation presented no color proof, and the transaction has no default color.
+     *
+     * @generated from protobuf enum value: COLOR_REQUIRED = 16;
+     */
+    COLOR_REQUIRED = 16,
+    /**
+     * NOT_FOUND: the referenced resource is not available - absent, soft-deleted, or no longer covered
+     * by the caller's grants. Inside a transaction these cannot be told apart; see "Resource
+     * availability".
+     *
+     * @generated from protobuf enum value: RESOURCE_NOT_FOUND = 20;
+     */
+    RESOURCE_NOT_FOUND = 20,
+    /**
+     * NOT_FOUND: the resource is available, but the named field does not exist.
+     *
+     * @generated from protobuf enum value: FIELD_NOT_FOUND = 21;
+     */
+    FIELD_NOT_FOUND = 21,
+    /**
+     * NOT_FOUND: the key-value key does not exist.
+     *
+     * @generated from protobuf enum value: KEY_NOT_FOUND = 22;
+     */
+    KEY_NOT_FOUND = 22,
+    /**
+     * NOT_FOUND: no resource is registered under the name.
+     *
+     * @generated from protobuf enum value: NAME_NOT_FOUND = 23;
+     */
+    NAME_NOT_FOUND = 23,
+    /**
+     * NOT_FOUND: the named user does not exist.
+     *
+     * @generated from protobuf enum value: USER_NOT_FOUND = 24;
+     */
+    USER_NOT_FOUND = 24,
+    /**
+     * NOT_FOUND: the subscription does not exist.
+     *
+     * @generated from protobuf enum value: SUBSCRIPTION_NOT_FOUND = 25;
+     */
+    SUBSCRIPTION_NOT_FOUND = 25,
+    /**
+     * FAILED_PRECONDITION: a grant names a user the server does not know.
+     *
+     * @generated from protobuf enum value: TARGET_USER_UNKNOWN = 26;
+     */
+    TARGET_USER_UNKNOWN = 26,
+    /**
+     * INVALID_ARGUMENT: the request is malformed or its arguments are invalid.
+     *
+     * @generated from protobuf enum value: INVALID_REQUEST = 30;
+     */
+    INVALID_REQUEST = 30,
+    /**
+     * ALREADY_EXISTS: the resource or name already exists, and the request asked to fail in that case.
+     *
+     * @generated from protobuf enum value: ALREADY_EXISTS = 31;
+     */
+    ALREADY_EXISTS = 31,
+    /**
+     * INVALID_ARGUMENT: the transaction already used the local resource ID the request creates.
+     *
+     * @generated from protobuf enum value: LOCAL_ID_IN_USE = 32;
+     */
+    LOCAL_ID_IN_USE = 32,
+    /**
+     * FAILED_PRECONDITION: the lease is held by another holder.
+     *
+     * @generated from protobuf enum value: LEASE_HELD = 33;
+     */
+    LEASE_HELD = 33,
+    /**
+     * UNIMPLEMENTED: the method, or the feature it needs, is not available on this server.
+     *
+     * @generated from protobuf enum value: NOT_SUPPORTED = 34;
+     */
+    NOT_SUPPORTED = 34,
+    /**
+     * UNIMPLEMENTED: the method was removed; it stays in the protocol only for wire compatibility.
+     *
+     * @generated from protobuf enum value: DEPRECATED_API = 35;
+     */
+    DEPRECATED_API = 35,
+    /**
+     * INTERNAL, or UNKNOWN for an error the server could not classify: a server-side failure. The
+     * message may be hidden. It is also the reason of a status of any other code that a server
+     * component produced without naming its cause; decide such a status by its code.
+     *
+     * @generated from protobuf enum value: INTERNAL = 40;
+     */
+    INTERNAL = 40,
+    /**
+     * UNAVAILABLE: the server is stopping; retry on a new connection.
+     *
+     * @generated from protobuf enum value: SERVER_SHUTTING_DOWN = 41;
+     */
+    SERVER_SHUTTING_DOWN = 41,
+    /**
+     * CANCELLED: the call was cancelled.
+     *
+     * @generated from protobuf enum value: CANCELLED = 42;
+     */
+    CANCELLED = 42,
+    /**
+     * DEADLINE_EXCEEDED: the call ran out of time.
+     *
+     * @generated from protobuf enum value: DEADLINE_EXCEEDED = 43;
+     */
+    DEADLINE_EXCEEDED = 43
 }
 // @generated message type with reflection information, may provide speed optimized methods
 class TxAPI$Type extends MessageType<TxAPI> {
@@ -4803,7 +5340,8 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
             { no: 400, name: "set_default_color", kind: "message", oneof: "request", T: () => TxAPI_SetDefaultColor_Request },
             { no: 410, name: "grant_access", kind: "message", oneof: "request", T: () => AuthAPI_GrantAccess_Request },
             { no: 411, name: "revoke_access", kind: "message", oneof: "request", T: () => AuthAPI_RevokeAccess_Request },
-            { no: 412, name: "list_grants", kind: "message", oneof: "request", T: () => AuthAPI_ListGrants_Request }
+            { no: 412, name: "list_grants", kind: "message", oneof: "request", T: () => AuthAPI_ListGrants_Request },
+            { no: 413, name: "list_user_resources", kind: "message", oneof: "request", T: () => AuthAPI_ListUserResources_TxRequest }
         ]);
     }
     create(value?: PartialMessage<TxAPI_ClientMessage>): TxAPI_ClientMessage {
@@ -5194,6 +5732,12 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
                         listGrants: AuthAPI_ListGrants_Request.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).listGrants)
                     };
                     break;
+                case /* MiLaboratories.PL.API.AuthAPI.ListUserResources.TxRequest list_user_resources */ 413:
+                    message.request = {
+                        oneofKind: "listUserResources",
+                        listUserResources: AuthAPI_ListUserResources_TxRequest.internalBinaryRead(reader, reader.uint32(), options, (message.request as any).listUserResources)
+                    };
+                    break;
                 default:
                     let u = options.readUnknownField;
                     if (u === "throw")
@@ -5395,6 +5939,9 @@ class TxAPI_ClientMessage$Type extends MessageType<TxAPI_ClientMessage> {
         /* MiLaboratories.PL.API.AuthAPI.ListGrants.Request list_grants = 412; */
         if (message.request.oneofKind === "listGrants")
             AuthAPI_ListGrants_Request.internalBinaryWrite(message.request.listGrants, writer.tag(412, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.AuthAPI.ListUserResources.TxRequest list_user_resources = 413; */
+        if (message.request.oneofKind === "listUserResources")
+            AuthAPI_ListUserResources_TxRequest.internalBinaryWrite(message.request.listUserResources, writer.tag(413, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -5473,6 +6020,7 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
             { no: 410, name: "grant_access", kind: "message", oneof: "response", T: () => AuthAPI_GrantAccess_Response },
             { no: 411, name: "revoke_access", kind: "message", oneof: "response", T: () => AuthAPI_RevokeAccess_Response },
             { no: 412, name: "list_grants", kind: "message", oneof: "response", T: () => AuthAPI_ListGrants_TxResponse },
+            { no: 413, name: "list_user_resources", kind: "message", oneof: "response", T: () => AuthAPI_ListUserResources_TxResponse },
             { no: 3, name: "error", kind: "message", T: () => Status }
         ]);
     }
@@ -5867,6 +6415,12 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
                         listGrants: AuthAPI_ListGrants_TxResponse.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).listGrants)
                     };
                     break;
+                case /* MiLaboratories.PL.API.AuthAPI.ListUserResources.TxResponse list_user_resources */ 413:
+                    message.response = {
+                        oneofKind: "listUserResources",
+                        listUserResources: AuthAPI_ListUserResources_TxResponse.internalBinaryRead(reader, reader.uint32(), options, (message.response as any).listUserResources)
+                    };
+                    break;
                 case /* google.rpc.Status error */ 3:
                     message.error = Status.internalBinaryRead(reader, reader.uint32(), options, message.error);
                     break;
@@ -6077,6 +6631,9 @@ class TxAPI_ServerMessage$Type extends MessageType<TxAPI_ServerMessage> {
         /* MiLaboratories.PL.API.AuthAPI.ListGrants.TxResponse list_grants = 412; */
         if (message.response.oneofKind === "listGrants")
             AuthAPI_ListGrants_TxResponse.internalBinaryWrite(message.response.listGrants, writer.tag(412, WireType.LengthDelimited).fork(), options).join();
+        /* MiLaboratories.PL.API.AuthAPI.ListUserResources.TxResponse list_user_resources = 413; */
+        if (message.response.oneofKind === "listUserResources")
+            AuthAPI_ListUserResources_TxResponse.internalBinaryWrite(message.response.listUserResources, writer.tag(413, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -8870,7 +9427,7 @@ class ResourceAPI_List_ByType_Request$Type extends MessageType<ResourceAPI_List_
                 case /* uint64 after */ 6:
                     message.after = reader.uint64().toBigInt();
                     break;
-                case /* bool resolve_duplicates */ 4:
+                case /* bool resolve_duplicates = 4 [deprecated = true] */ 4:
                     message.resolveDuplicates = reader.bool();
                     break;
                 case /* bool load_fields */ 5:
@@ -8897,7 +9454,7 @@ class ResourceAPI_List_ByType_Request$Type extends MessageType<ResourceAPI_List_
         /* uint32 limit = 3; */
         if (message.limit !== 0)
             writer.tag(3, WireType.Varint).uint32(message.limit);
-        /* bool resolve_duplicates = 4; */
+        /* bool resolve_duplicates = 4 [deprecated = true]; */
         if (message.resolveDuplicates !== false)
             writer.tag(4, WireType.Varint).bool(message.resolveDuplicates);
         /* bool load_fields = 5; */
@@ -11636,13 +12193,17 @@ class NotificationAPI_Get_Request$Type extends MessageType<NotificationAPI_Get_R
     constructor() {
         super("MiLaboratories.PL.API.NotificationAPI.Get.Request", [
             { no: 1, name: "subscription", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 2, name: "max_notifications", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+            { no: 2, name: "max_notifications", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
+            { no: 3, name: "seen_token", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 4, name: "skip_delivered", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<NotificationAPI_Get_Request>): NotificationAPI_Get_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.subscription = 0n;
         message.maxNotifications = 0;
+        message.seenToken = new Uint8Array(0);
+        message.skipDelivered = false;
         if (value !== undefined)
             reflectionMergePartial<NotificationAPI_Get_Request>(this, message, value);
         return message;
@@ -11657,6 +12218,12 @@ class NotificationAPI_Get_Request$Type extends MessageType<NotificationAPI_Get_R
                     break;
                 case /* uint32 max_notifications */ 2:
                     message.maxNotifications = reader.uint32();
+                    break;
+                case /* bytes seen_token */ 3:
+                    message.seenToken = reader.bytes();
+                    break;
+                case /* bool skip_delivered */ 4:
+                    message.skipDelivered = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -11676,6 +12243,12 @@ class NotificationAPI_Get_Request$Type extends MessageType<NotificationAPI_Get_R
         /* uint32 max_notifications = 2; */
         if (message.maxNotifications !== 0)
             writer.tag(2, WireType.Varint).uint32(message.maxNotifications);
+        /* bytes seen_token = 3; */
+        if (message.seenToken.length)
+            writer.tag(3, WireType.LengthDelimited).bytes(message.seenToken);
+        /* bool skip_delivered = 4; */
+        if (message.skipDelivered !== false)
+            writer.tag(4, WireType.Varint).bool(message.skipDelivered);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -11690,12 +12263,14 @@ export const NotificationAPI_Get_Request = new NotificationAPI_Get_Request$Type(
 class NotificationAPI_Get_Response$Type extends MessageType<NotificationAPI_Get_Response> {
     constructor() {
         super("MiLaboratories.PL.API.NotificationAPI.Get.Response", [
-            { no: 1, name: "notifications", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => Notification }
+            { no: 1, name: "notifications", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => Notification },
+            { no: 2, name: "seen_token", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<NotificationAPI_Get_Response>): NotificationAPI_Get_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.notifications = [];
+        message.seenToken = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<NotificationAPI_Get_Response>(this, message, value);
         return message;
@@ -11707,6 +12282,9 @@ class NotificationAPI_Get_Response$Type extends MessageType<NotificationAPI_Get_
             switch (fieldNo) {
                 case /* repeated MiLaboratories.PL.API.Notification notifications */ 1:
                     message.notifications.push(Notification.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                case /* bytes seen_token */ 2:
+                    message.seenToken = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -11723,6 +12301,9 @@ class NotificationAPI_Get_Response$Type extends MessageType<NotificationAPI_Get_
         /* repeated MiLaboratories.PL.API.Notification notifications = 1; */
         for (let i = 0; i < message.notifications.length; i++)
             Notification.internalBinaryWrite(message.notifications[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        /* bytes seen_token = 2; */
+        if (message.seenToken.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.seenToken);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -13848,13 +14429,15 @@ class ControllerAPI_GetNotifications_Request$Type extends MessageType<Controller
     constructor() {
         super("MiLaboratories.PL.API.ControllerAPI.GetNotifications.Request", [
             { no: 1, name: "controller_type", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 2, name: "max_notifications", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+            { no: 2, name: "max_notifications", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
+            { no: 3, name: "seen_token", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ControllerAPI_GetNotifications_Request>): ControllerAPI_GetNotifications_Request {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.controllerType = "";
         message.maxNotifications = 0;
+        message.seenToken = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ControllerAPI_GetNotifications_Request>(this, message, value);
         return message;
@@ -13869,6 +14452,9 @@ class ControllerAPI_GetNotifications_Request$Type extends MessageType<Controller
                     break;
                 case /* uint32 max_notifications */ 2:
                     message.maxNotifications = reader.uint32();
+                    break;
+                case /* bytes seen_token */ 3:
+                    message.seenToken = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -13888,6 +14474,9 @@ class ControllerAPI_GetNotifications_Request$Type extends MessageType<Controller
         /* uint32 max_notifications = 2; */
         if (message.maxNotifications !== 0)
             writer.tag(2, WireType.Varint).uint32(message.maxNotifications);
+        /* bytes seen_token = 3; */
+        if (message.seenToken.length)
+            writer.tag(3, WireType.LengthDelimited).bytes(message.seenToken);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -13902,12 +14491,14 @@ export const ControllerAPI_GetNotifications_Request = new ControllerAPI_GetNotif
 class ControllerAPI_GetNotifications_Response$Type extends MessageType<ControllerAPI_GetNotifications_Response> {
     constructor() {
         super("MiLaboratories.PL.API.ControllerAPI.GetNotifications.Response", [
-            { no: 1, name: "notifications", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => Notification }
+            { no: 1, name: "notifications", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => Notification },
+            { no: 2, name: "seen_token", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
     create(value?: PartialMessage<ControllerAPI_GetNotifications_Response>): ControllerAPI_GetNotifications_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.notifications = [];
+        message.seenToken = new Uint8Array(0);
         if (value !== undefined)
             reflectionMergePartial<ControllerAPI_GetNotifications_Response>(this, message, value);
         return message;
@@ -13919,6 +14510,9 @@ class ControllerAPI_GetNotifications_Response$Type extends MessageType<Controlle
             switch (fieldNo) {
                 case /* repeated MiLaboratories.PL.API.Notification notifications */ 1:
                     message.notifications.push(Notification.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                case /* bytes seen_token */ 2:
+                    message.seenToken = reader.bytes();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -13935,6 +14529,9 @@ class ControllerAPI_GetNotifications_Response$Type extends MessageType<Controlle
         /* repeated MiLaboratories.PL.API.Notification notifications = 1; */
         for (let i = 0; i < message.notifications.length; i++)
             Notification.internalBinaryWrite(message.notifications[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        /* bytes seen_token = 2; */
+        if (message.seenToken.length)
+            writer.tag(2, WireType.LengthDelimited).bytes(message.seenToken);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -14910,7 +15507,8 @@ class ResourceKVAPI_Set_Request$Type extends MessageType<ResourceKVAPI_Set_Reque
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 4, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
             { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 3, name: "value", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+            { no: 3, name: "value", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
+            { no: 5, name: "async", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceKVAPI_Set_Request>): ResourceKVAPI_Set_Request {
@@ -14919,6 +15517,7 @@ class ResourceKVAPI_Set_Request$Type extends MessageType<ResourceKVAPI_Set_Reque
         message.resourceSignature = new Uint8Array(0);
         message.key = "";
         message.value = new Uint8Array(0);
+        message.async = false;
         if (value !== undefined)
             reflectionMergePartial<ResourceKVAPI_Set_Request>(this, message, value);
         return message;
@@ -14939,6 +15538,9 @@ class ResourceKVAPI_Set_Request$Type extends MessageType<ResourceKVAPI_Set_Reque
                     break;
                 case /* bytes value */ 3:
                     message.value = reader.bytes();
+                    break;
+                case /* bool async */ 5:
+                    message.async = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -14964,6 +15566,9 @@ class ResourceKVAPI_Set_Request$Type extends MessageType<ResourceKVAPI_Set_Reque
         /* bytes resource_signature = 4; */
         if (message.resourceSignature.length)
             writer.tag(4, WireType.LengthDelimited).bytes(message.resourceSignature);
+        /* bool async = 5; */
+        if (message.async !== false)
+            writer.tag(5, WireType.Varint).bool(message.async);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -15360,7 +15965,8 @@ class ResourceKVAPI_Delete_Request$Type extends MessageType<ResourceKVAPI_Delete
         super("MiLaboratories.PL.API.ResourceKVAPI.Delete.Request", [
             { no: 1, name: "resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
             { no: 3, name: "resource_signature", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
-            { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+            { no: 2, name: "key", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 4, name: "async", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<ResourceKVAPI_Delete_Request>): ResourceKVAPI_Delete_Request {
@@ -15368,6 +15974,7 @@ class ResourceKVAPI_Delete_Request$Type extends MessageType<ResourceKVAPI_Delete
         message.resourceId = 0n;
         message.resourceSignature = new Uint8Array(0);
         message.key = "";
+        message.async = false;
         if (value !== undefined)
             reflectionMergePartial<ResourceKVAPI_Delete_Request>(this, message, value);
         return message;
@@ -15385,6 +15992,9 @@ class ResourceKVAPI_Delete_Request$Type extends MessageType<ResourceKVAPI_Delete
                     break;
                 case /* string key */ 2:
                     message.key = reader.string();
+                    break;
+                case /* bool async */ 4:
+                    message.async = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -15407,6 +16017,9 @@ class ResourceKVAPI_Delete_Request$Type extends MessageType<ResourceKVAPI_Delete
         /* bytes resource_signature = 3; */
         if (message.resourceSignature.length)
             writer.tag(3, WireType.LengthDelimited).bytes(message.resourceSignature);
+        /* bool async = 4; */
+        if (message.async !== false)
+            writer.tag(4, WireType.Varint).bool(message.async);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -19011,13 +19624,15 @@ class AuthAPI_GetSessionInfo_Response$Type extends MessageType<AuthAPI_GetSessio
     constructor() {
         super("MiLaboratories.PL.API.AuthAPI.GetSessionInfo.Response", [
             { no: 1, name: "session_id", kind: "scalar", T: 12 /*ScalarType.BYTES*/ },
-            { no: 2, name: "role", kind: "enum", T: () => ["MiLaboratories.PL.API.AuthAPI.Role", AuthAPI_Role, "ROLE_"] }
+            { no: 2, name: "role", kind: "enum", T: () => ["MiLaboratories.PL.API.AuthAPI.Role", AuthAPI_Role, "ROLE_"] },
+            { no: 3, name: "can_list_users", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<AuthAPI_GetSessionInfo_Response>): AuthAPI_GetSessionInfo_Response {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.sessionId = new Uint8Array(0);
         message.role = 0;
+        message.canListUsers = false;
         if (value !== undefined)
             reflectionMergePartial<AuthAPI_GetSessionInfo_Response>(this, message, value);
         return message;
@@ -19032,6 +19647,9 @@ class AuthAPI_GetSessionInfo_Response$Type extends MessageType<AuthAPI_GetSessio
                     break;
                 case /* MiLaboratories.PL.API.AuthAPI.Role role */ 2:
                     message.role = reader.int32();
+                    break;
+                case /* bool can_list_users */ 3:
+                    message.canListUsers = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -19051,6 +19669,9 @@ class AuthAPI_GetSessionInfo_Response$Type extends MessageType<AuthAPI_GetSessio
         /* MiLaboratories.PL.API.AuthAPI.Role role = 2; */
         if (message.role !== 0)
             writer.tag(2, WireType.Varint).int32(message.role);
+        /* bool can_list_users = 3; */
+        if (message.canListUsers !== false)
+            writer.tag(3, WireType.Varint).bool(message.canListUsers);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -20058,7 +20679,8 @@ class AuthAPI_ListUserResources_Request$Type extends MessageType<AuthAPI_ListUse
         super("MiLaboratories.PL.API.AuthAPI.ListUserResources.Request", [
             { no: 1, name: "login", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 2, name: "start_from", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
-            { no: 3, name: "limit", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+            { no: 3, name: "limit", kind: "scalar", T: 13 /*ScalarType.UINT32*/ },
+            { no: 4, name: "types", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ResourceType }
         ]);
     }
     create(value?: PartialMessage<AuthAPI_ListUserResources_Request>): AuthAPI_ListUserResources_Request {
@@ -20066,6 +20688,7 @@ class AuthAPI_ListUserResources_Request$Type extends MessageType<AuthAPI_ListUse
         message.login = "";
         message.startFrom = 0n;
         message.limit = 0;
+        message.types = [];
         if (value !== undefined)
             reflectionMergePartial<AuthAPI_ListUserResources_Request>(this, message, value);
         return message;
@@ -20083,6 +20706,9 @@ class AuthAPI_ListUserResources_Request$Type extends MessageType<AuthAPI_ListUse
                     break;
                 case /* uint32 limit */ 3:
                     message.limit = reader.uint32();
+                    break;
+                case /* repeated MiLaboratories.PL.Base.ResourceType types */ 4:
+                    message.types.push(ResourceType.internalBinaryRead(reader, reader.uint32(), options));
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -20105,6 +20731,9 @@ class AuthAPI_ListUserResources_Request$Type extends MessageType<AuthAPI_ListUse
         /* uint32 limit = 3; */
         if (message.limit !== 0)
             writer.tag(3, WireType.Varint).uint32(message.limit);
+        /* repeated MiLaboratories.PL.Base.ResourceType types = 4; */
+        for (let i = 0; i < message.types.length; i++)
+            ResourceType.internalBinaryWrite(message.types[i], writer.tag(4, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -20252,6 +20881,123 @@ class AuthAPI_ListUserResources_SharedResource$Type extends MessageType<AuthAPI_
  * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.SharedResource
  */
 export const AuthAPI_ListUserResources_SharedResource = new AuthAPI_ListUserResources_SharedResource$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUserResources_TxRequest$Type extends MessageType<AuthAPI_ListUserResources_TxRequest> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUserResources.TxRequest", [
+            { no: 1, name: "types", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => ResourceType },
+            { no: 2, name: "start_from", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ },
+            { no: 3, name: "limit", kind: "scalar", T: 13 /*ScalarType.UINT32*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUserResources_TxRequest>): AuthAPI_ListUserResources_TxRequest {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.types = [];
+        message.startFrom = 0n;
+        message.limit = 0;
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUserResources_TxRequest>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUserResources_TxRequest): AuthAPI_ListUserResources_TxRequest {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* repeated MiLaboratories.PL.Base.ResourceType types */ 1:
+                    message.types.push(ResourceType.internalBinaryRead(reader, reader.uint32(), options));
+                    break;
+                case /* uint64 start_from */ 2:
+                    message.startFrom = reader.uint64().toBigInt();
+                    break;
+                case /* uint32 limit */ 3:
+                    message.limit = reader.uint32();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUserResources_TxRequest, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* repeated MiLaboratories.PL.Base.ResourceType types = 1; */
+        for (let i = 0; i < message.types.length; i++)
+            ResourceType.internalBinaryWrite(message.types[i], writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        /* uint64 start_from = 2; */
+        if (message.startFrom !== 0n)
+            writer.tag(2, WireType.Varint).uint64(message.startFrom);
+        /* uint32 limit = 3; */
+        if (message.limit !== 0)
+            writer.tag(3, WireType.Varint).uint32(message.limit);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.TxRequest
+ */
+export const AuthAPI_ListUserResources_TxRequest = new AuthAPI_ListUserResources_TxRequest$Type();
+// @generated message type with reflection information, may provide speed optimized methods
+class AuthAPI_ListUserResources_TxResponse$Type extends MessageType<AuthAPI_ListUserResources_TxResponse> {
+    constructor() {
+        super("MiLaboratories.PL.API.AuthAPI.ListUserResources.TxResponse", [
+            { no: 1, name: "shared_resource", kind: "message", T: () => AuthAPI_ListUserResources_SharedResource },
+            { no: 2, name: "next_resource_id", kind: "scalar", T: 4 /*ScalarType.UINT64*/, L: 0 /*LongType.BIGINT*/ }
+        ]);
+    }
+    create(value?: PartialMessage<AuthAPI_ListUserResources_TxResponse>): AuthAPI_ListUserResources_TxResponse {
+        const message = globalThis.Object.create((this.messagePrototype!));
+        message.nextResourceId = 0n;
+        if (value !== undefined)
+            reflectionMergePartial<AuthAPI_ListUserResources_TxResponse>(this, message, value);
+        return message;
+    }
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: AuthAPI_ListUserResources_TxResponse): AuthAPI_ListUserResources_TxResponse {
+        let message = target ?? this.create(), end = reader.pos + length;
+        while (reader.pos < end) {
+            let [fieldNo, wireType] = reader.tag();
+            switch (fieldNo) {
+                case /* MiLaboratories.PL.API.AuthAPI.ListUserResources.SharedResource shared_resource */ 1:
+                    message.sharedResource = AuthAPI_ListUserResources_SharedResource.internalBinaryRead(reader, reader.uint32(), options, message.sharedResource);
+                    break;
+                case /* uint64 next_resource_id */ 2:
+                    message.nextResourceId = reader.uint64().toBigInt();
+                    break;
+                default:
+                    let u = options.readUnknownField;
+                    if (u === "throw")
+                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
+                    let d = reader.skip(wireType);
+                    if (u !== false)
+                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
+            }
+        }
+        return message;
+    }
+    internalBinaryWrite(message: AuthAPI_ListUserResources_TxResponse, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* MiLaboratories.PL.API.AuthAPI.ListUserResources.SharedResource shared_resource = 1; */
+        if (message.sharedResource)
+            AuthAPI_ListUserResources_SharedResource.internalBinaryWrite(message.sharedResource, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        /* uint64 next_resource_id = 2; */
+        if (message.nextResourceId !== 0n)
+            writer.tag(2, WireType.Varint).uint64(message.nextResourceId);
+        let u = options.writeUnknownFields;
+        if (u !== false)
+            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
+        return writer;
+    }
+}
+/**
+ * @generated MessageType for protobuf message MiLaboratories.PL.API.AuthAPI.ListUserResources.TxResponse
+ */
+export const AuthAPI_ListUserResources_TxResponse = new AuthAPI_ListUserResources_TxResponse$Type();
 // @generated message type with reflection information, may provide speed optimized methods
 class AuthAPI_User$Type extends MessageType<AuthAPI_User> {
     constructor() {
@@ -20904,7 +21650,8 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
             { no: 6, name: "platform", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 7, name: "os", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
             { no: 8, name: "arch", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
-            { no: 9, name: "capabilities", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
+            { no: 9, name: "capabilities", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ },
+            { no: 10, name: "required_client_capabilities", kind: "scalar", repeat: 2 /*RepeatType.UNPACKED*/, T: 9 /*ScalarType.STRING*/ }
         ]);
     }
     create(value?: PartialMessage<MaintenanceAPI_Ping_Response>): MaintenanceAPI_Ping_Response {
@@ -20917,6 +21664,7 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         message.os = "";
         message.arch = "";
         message.capabilities = [];
+        message.requiredClientCapabilities = [];
         if (value !== undefined)
             reflectionMergePartial<MaintenanceAPI_Ping_Response>(this, message, value);
         return message;
@@ -20949,6 +21697,9 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
                     break;
                 case /* repeated string capabilities */ 9:
                     message.capabilities.push(reader.string());
+                    break;
+                case /* repeated string required_client_capabilities */ 10:
+                    message.requiredClientCapabilities.push(reader.string());
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -20986,6 +21737,9 @@ class MaintenanceAPI_Ping_Response$Type extends MessageType<MaintenanceAPI_Ping_
         /* repeated string capabilities = 9; */
         for (let i = 0; i < message.capabilities.length; i++)
             writer.tag(9, WireType.LengthDelimited).string(message.capabilities[i]);
+        /* repeated string required_client_capabilities = 10; */
+        for (let i = 0; i < message.requiredClientCapabilities.length; i++)
+            writer.tag(10, WireType.LengthDelimited).string(message.requiredClientCapabilities[i]);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

@@ -149,7 +149,7 @@ export class S3Storage implements RegistryStorage {
 
 /**
  * Parses `s3e[s]://[user:password@]<endpoint>/<bucket>/<keyPrefix>?region=<name>`, the same forms
- * pl-bootstrap uses for the backend's storages. s3e talks to the endpoint over http (local S3-compatible storage),
+ * the backend uses for its storages. s3e talks to the endpoint over http (local S3-compatible storage),
  * s3es over https; use s3es whenever credentials leave the machine.
  */
 export function s3eConfigFromUrl(url: URL): {

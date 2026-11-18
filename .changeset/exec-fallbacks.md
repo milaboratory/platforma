@@ -8,13 +8,13 @@ outcome: the outcome router runs the plan the policy names for the failure reaso
 by exit code or log match, OOM, GPUMissed with backendHasGPU / timeout, ...), up to the backend's attempt cap, and raises the
 same error text as before plus the attempt history when nothing applies. A successful attempt is
 saved with WorkdirSave v3, when the backend has it, and restarted from a fresh working directory when that directory was
-lost (a database restored from a snapshot), up to the backend's restart limit. With fallbacks a
-streamed file is a `StreamCollection/1` that follows the running attempt. An exec without
+lost (a database restored from a snapshot), up to the backend's restart limit. With fallbacks the
+stdout / stderr stream is a `StreamCollection/1` that follows the running attempt. An exec without
 fallbacks renders the same `exec.exec` inputs as before. On a backend without RunCommand v3 no
 failure is seen: a GPU plan gives way to its GPUMissed plan, then the OOM plan with the most RAM
 runs in place of the plan reached, or that plan when there is no OOM handler, with a notice.
 
-A RAM or VRAM size string below 16MiB (`.mem("0GiB")`) is now refused at the builder call, as a
+A zero RAM or VRAM size string (`.mem("0GiB")`) is now refused at the builder call, as a zero
 number of bytes already was; before, the backend ran such a request with the queue default.
 
 Every command, RunCommand v3 included, is linked to the block's action context, so its run records

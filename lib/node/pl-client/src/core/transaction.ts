@@ -1116,6 +1116,7 @@ export class PlTransaction {
         ...this.toSignedResourceId(rId),
         key,
         value: toBytes(value),
+        async: false,
       },
     });
   }
@@ -1131,6 +1132,7 @@ export class PlTransaction {
       resourceKeyValueDelete: {
         ...this.toSignedResourceId(rId),
         key,
+        async: false,
       },
     });
   }
@@ -1199,6 +1201,54 @@ export class PlTransaction {
       if (str === undefined) return undefined;
       return JSON.parse(str) as T;
     });
+  }
+
+  //
+  // Controller key-value store
+  //
+
+  /**
+   * Sets a value in the key-value store of a registered controller.
+   * Requires controller or admin credentials.
+   */
+  public setControllerKValue(
+    controllerType: string,
+    key: string,
+    value: Uint8Array | string,
+  ): void {
+    this.sendVoidAsync({
+      oneofKind: "controllerKeyValueSet",
+      controllerKeyValueSet: {
+        controllerType,
+        key,
+        value: toBytes(value),
+      },
+    });
+  }
+
+  /**
+   * Reads a value from the key-value store of a registered controller.
+   * Returns undefined when the key does not exist. Requires controller or admin credentials.
+   */
+  public getControllerKValueIfExists(
+    controllerType: string,
+    key: string,
+  ): Promise<Uint8Array | undefined> {
+    return this.track(async () =>
+      this.sendSingleAndParse(
+        {
+          oneofKind: "controllerKeyValueGetIfExists",
+          controllerKeyValueGetIfExists: {
+            controllerType,
+            key,
+          },
+        },
+        (response) =>
+          response.controllerKeyValueGetIfExists.exists
+            ? response.controllerKeyValueGetIfExists.value
+            : undefined,
+      ),
+    );
   }
 
   //

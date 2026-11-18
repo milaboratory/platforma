@@ -4,6 +4,32 @@
  */
 
 export interface paths {
+  "/v1/auth/delete-user": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * @description DeleteUser removes a user account from the instance: the user record, every login-index
+     *      entry that resolves to it, every grant it holds, and its root resource with everything
+     *      still attached under it. Admin-only and irreversible - re-attach anything worth keeping
+     *      to another user's root before calling (`pl-cli admin delete-user` does both steps).
+     *
+     *      Exists because multi-provider auth can mint a duplicate account for one person: the waste
+     *      record shows up in the sharing UI and its projects keep taking part in deduplication, and
+     *      until now nothing could remove it.
+     */
+    post: operations["Platform_DeleteUser"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/v1/auth/grant-access": {
     parameters: {
       query?: never;
@@ -592,6 +618,32 @@ export interface components {
     AuthAPI_BeginSSOLogin_Response: {
       publicPkce: components["schemas"]["AuthAPI_BeginSSOLogin_PublicPKCE"];
     };
+    AuthAPI_DeleteUser_Request: {
+      /**
+       * @description login of the user to delete. Resolved the way an admin-supplied grant target is:
+       *      a point lookup on the identity index, which carries no provider id - so an account
+       *      left behind by a provider that has since been removed from the configuration is
+       *      reachable too.
+       */
+      login: string;
+    };
+    AuthAPI_DeleteUser_Response: {
+      /** @description root resource the user owned; 0 when the user had none. */
+      userRootId: string;
+      /** @description whether that root resource was deleted. */
+      userRootDeleted: boolean;
+      /**
+       * Format: uint32
+       * @description grants revoked, the user-root self-grant included.
+       */
+      revokedGrants: number;
+      /**
+       * Format: uint32
+       * @description identity-index entries removed: the login, the email and any alternative of either
+       *      that resolved to this account.
+       */
+      removedIdentityIndexEntries: number;
+    };
     AuthAPI_GetJWTToken_Request: {
       expiration: string;
       /** Format: enum */
@@ -613,6 +665,13 @@ export interface components {
       sessionId: string;
       /** Format: enum */
       role: number;
+      /**
+       * @description can_list_users tells if the caller can call ListUsers. The server configuration
+       *      (--show-user-list-to) and the caller's role give the value. Servers that advertise
+       *      the 'userListing:v2' capability set this field. Older servers do not know the field,
+       *      so it is always false there.
+       */
+      canListUsers: boolean;
     };
     AuthAPI_GetUserRoot_Request: {
       login: string;
@@ -642,9 +701,15 @@ export interface components {
        *      instance. Unique across the entire server.
        */
       id: string;
-      /** @description description is the long-form human-readable text a client may render alongside the title, for example in a tooltip or under the button. */
+      /**
+       * @description description is the long-form human-readable text a client may render
+       *      alongside the title, for example in a tooltip or under the button.
+       */
       description: string;
-      /** @description title is the short human-readable label a client renders for this method, for example on the sign-in button. Always set. */
+      /**
+       * @description title is the short human-readable label a client renders for this
+       *      method, for example on the sign-in button. Always set.
+       */
       title: string;
       basic: components["schemas"]["AuthAPI_ListMethods_BasicAuthMethod"];
       token: components["schemas"]["AuthAPI_ListMethods_TokenAuthMethod"];
@@ -784,9 +849,20 @@ export interface components {
       controllerType: string;
       /** Format: uint32 */
       maxNotifications: number;
+      /**
+       * Format: bytes
+       * @description seen_token is the seen_token of the previous response for this controller. Empty reads the
+       *      queue from its start.
+       */
+      seenToken: string;
     };
     ControllerAPI_GetNotifications_Response: {
       notifications: components["schemas"]["Notification"][];
+      /**
+       * Format: bytes
+       * @description seen_token is the read position to pass to the next read of this controller. It is opaque.
+       */
+      seenToken: string;
     };
     ControllerAPI_GetUrl_Request: {
       controllerAlias: string;
@@ -883,6 +959,12 @@ export interface components {
       /** Format: enum */
       type: number;
       name: string;
+      /**
+       * @description The field is optional: resource creation does not create it, a client creates it in the
+       *      creating transaction. Only an INPUT, OUTPUT or SERVICE field can be optional.
+       *      See docs/optional-fields-contract.md.
+       */
+      optional: boolean;
     };
     /** @description Contains an arbitrary serialized message along with a @type that describes the type of the serialized message. */
     GoogleProtobufAny: {
@@ -991,6 +1073,31 @@ export interface components {
        *      All list see pl/platform/api/plapiserver/server_capabilities.go
        */
       capabilities: string[];
+      /**
+       * @description Capabilities that every client must implement to work with this server.
+       *      These tokens are a separate set from the 'capabilities' field above:
+       *      they name client features, not server features.
+       *
+       *      A client must call Ping before any other request and check this list.
+       *      If the list has a token that the client does not know, the client is
+       *      not compatible with this server: it must stop, tell the user to update
+       *      the client, and send no other requests to this server. The server does
+       *      not enforce the list: a client that does not check it gets no error
+       *      from Ping or from other requests.
+       *
+       *      Each entry is an opaque token "<feature>:<version>". Compare tokens as
+       *      whole strings: a client that knows "foo:v1" does not know "foo:v2", so a
+       *      client lists every version that it implements. Do not parse versions.
+       *
+       *      The list applies to all clients: the Desktop App, CLI tools and other
+       *      users of the client libraries. A token locks out every client that does
+       *      not implement the feature. The server adds a token when it removes
+       *      support for such clients. An empty list, or an unset field on old
+       *      servers, requires nothing.
+       *
+       *      All list see pl/platform/api/plapiserver/server_capabilities.go
+       */
+      requiredClientCapabilities: string[];
     };
     MiscAPI_ListResourceTypes_Response: {
       types: components["schemas"]["ResourceType"][];
@@ -1012,9 +1119,29 @@ export interface components {
       subscription: string;
       /** Format: uint32 */
       maxNotifications: number;
+      /**
+       * Format: bytes
+       * @description seen_token is the seen_token of the previous response for this subscription. Empty reads the
+       *      queue from its start. Pass it back unchanged, so the read does not step over acknowledged
+       *      notifications.
+       */
+      seenToken: string;
+      /**
+       * @description skip_delivered makes each read return only the notifications after the last read, also the ones
+       *      that are not acknowledged yet, so a client can keep a notification and read the next batch. Without
+       *      it, each read returns every notification that is not acknowledged again. A restart of the client
+       *      or of the backend reads from the start of the queue in both modes. A seen_token of the other mode
+       *      reads from the start of the queue.
+       */
+      skipDelivered: boolean;
     };
     NotificationAPI_Get_Response: {
       notifications: components["schemas"]["Notification"][];
+      /**
+       * Format: bytes
+       * @description seen_token is the read position to pass to the next read of this subscription. It is opaque.
+       */
+      seenToken: string;
     };
     NotificationFilter: {
       resourceType: components["schemas"]["ResourceType"];
@@ -1076,6 +1203,12 @@ export interface components {
       endpoint: string;
     };
     ResourceSchema: {
+      /**
+       * Format: enum
+       * @description The only kind a resource of this type can be created with; UNSPECIFIED allows any.
+       *      A create request of any other kind fails with INVALID_ARGUMENT.
+       */
+      kind: number;
       type: components["schemas"]["ResourceType"];
       fields: components["schemas"]["FieldSchema"][];
       /** @description Access restriction flags for non-controller roles */
@@ -1160,6 +1293,39 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+  Platform_DeleteUser: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["AuthAPI_DeleteUser_Request"];
+      };
+    };
+    responses: {
+      /** @description OK */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["AuthAPI_DeleteUser_Response"];
+        };
+      };
+      /** @description Default error response */
+      default: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["Status"];
+        };
+      };
+    };
+  };
   Platform_GrantAccess: {
     parameters: {
       query?: never;

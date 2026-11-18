@@ -4,7 +4,7 @@
 // engine in init mode against a NodeFileSystem rooted at the target dir.
 //
 // Replaces the manual `git clone platforma-block-boilerplate` workflow
-// and `pl-dev create-block`. `--platform` is single-valued: a
+// and the retired `pl-dev create-block`. `--platform` is single-valued: a
 // freshly-init'd block has at most one software module.
 
 import { confirm, input, select } from "@inquirer/prompts";

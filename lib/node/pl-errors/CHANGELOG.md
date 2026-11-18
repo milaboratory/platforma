@@ -1,5 +1,40 @@
 # @milaboratories/pl-errors
 
+## 1.4.67
+
+### Patch Changes
+
+- Updated dependencies [c1869c8]
+  - @milaboratories/pl-client@3.26.1
+
+## 1.4.66
+
+### Patch Changes
+
+- Updated dependencies [8cc6580]
+  - @milaboratories/pl-client@3.26.0
+
+## 1.4.65
+
+### Patch Changes
+
+- Updated dependencies [fda52f0]
+  - @milaboratories/pl-client@3.25.0
+
+## 1.4.64
+
+### Patch Changes
+
+- Updated dependencies [41cdddf]
+  - @milaboratories/pl-client@3.24.0
+
+## 1.4.63
+
+### Patch Changes
+
+- Updated dependencies [af78d3a]
+  - @milaboratories/pl-client@3.23.0
+
 ## 1.4.62
 
 ### Patch Changes

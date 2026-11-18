@@ -118,12 +118,13 @@ Test_verify_refusesCyclesAndShapes := func() {
 
 Test_verify_streamsAndProcessors := func() {
 	root := _shell("root")
-	root.fallbacks({ OOM: _shell("h").streamFile("err.log"), SoftwareError: exec.builder().cmd("sh").saveFile("out.tsv") })
+	root.fallbacks({ OOM: _shell("h").saveStderrStream(), SoftwareError: exec.builder().cmd("sh").saveFile("out.tsv") })
 	errors := root._verifyErrors()
 	test.isEqual([
-		"root → OOM[0]: streamFile: not in the root [\"err.log\"]",
+		"root → OOM[0]: saveFile: not in the root [\"stderr.txt\"]",
+		"root → OOM[0]: stream: not in the root [\"stderr.txt\"]",
 		"root → SoftwareError[0]: saveFile: missing [\"stdout.txt\"]",
-		"root → SoftwareError[0]: streamFile: missing [\"stdout.txt\"]"
+		"root → SoftwareError[0]: stream: missing [\"stdout.txt\"]"
 	], errors)
 }
 

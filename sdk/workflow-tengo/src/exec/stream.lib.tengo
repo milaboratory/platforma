@@ -13,7 +13,7 @@ slices := import(":slices")
 _RTYPE_CREATE_STREAM := { Name: "CreateStream", Version: "2" }
 _RTYPE_STREAM_MANAGER := { Name: "StreamManager", Version: "2" }
 
-// One per streamed file of an exec with fallbacks: what getFileStream() returns there. The backend
+// One per streamed file of an exec with fallbacks: what getStdoutStream() / getStderrStream() return there. The backend
 // has no schema or controller for it; the templates write its fields. Deliberately not a std/map:
 // readers treat a ready std/map as final and stop watching it, while a type they do not know is
 // never final, on old desktops too.
@@ -92,9 +92,9 @@ createWithLive := func(workdirBefore, filePath, downloadableRef) {
 }
 
 /**
- * The final content of a stream whose file the attempt never wrote, or wrote but did not save
- * (streamFile() without saveFile()): a JSON value naming the file, never an error. A save of a missing file, or a missing key, would be
- * an error that spreads from the manager to every other output of the exec. A log driver that
+ * The final content of a stream whose file the attempt never wrote (the command never started) or
+ * could not save: a JSON value naming the file, never an error. A save of a missing file, or a
+ * missing key, would be an error that spreads from the manager to every other output of the exec. A log driver that
  * knows it reads it as no log (pl-drivers LogsDriver); an older one reports it as a log it cannot
  * read, as it did with the error before.
  *

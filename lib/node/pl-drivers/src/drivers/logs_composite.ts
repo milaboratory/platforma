@@ -19,7 +19,7 @@ import {
 /** Per-read state: whether any part answered that its handle is outdated. */
 type ReadState = { outdated: boolean };
 
-/** The resource the workflow SDK puts into `fileStreams[name]` of an exec with fallbacks.
+/** The resource the workflow SDK puts into the `stdoutStream` / `stderrStream` output of an exec with fallbacks.
  * Fields: dynamic `attempt<K>` (attempt K's `StreamManager/2`), dynamic `outcome<K>` (attempt K's
  * history entry, written when it ends) and `stream` (a mirror for drivers that predate it). */
 /** A JSON value the workflow SDK sets as a stream's final content when the file was never written,

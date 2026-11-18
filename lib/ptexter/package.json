@@ -1,6 +1,6 @@
 {
   "name": "@platforma-open/milaboratories.software-ptexter",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "description": "Text processing utilities for platforma",
   "scripts": {
     "build": "shx rm -rf ./dist && block-tools software build",
