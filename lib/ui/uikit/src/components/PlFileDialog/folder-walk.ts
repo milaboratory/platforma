@@ -32,9 +32,27 @@ function isDirectoryEntry(entry: EntryLike): entry is DirectoryEntryLike {
   return entry.isDirectory && "createReader" in entry;
 }
 
-/** Hidden files and folders, plus the resource-fork folder macOS adds to zip archives. */
+/**
+ * System entries no one means to import, compared ignoring case (Windows names ignore it):
+ * macOS zip resource forks, the Windows recycle bin and restore points (deleted files keep
+ * their extensions there), the Linux fsck folder (usually unreadable), and thumbnail caches
+ * and folder settings Windows writes next to the data.
+ */
+const junkNames = new Set([
+  "__macosx",
+  "$recycle.bin",
+  "system volume information",
+  "lost+found",
+  "thumbs.db",
+  "desktop.ini",
+]);
+
+/**
+ * Entries skipped below a folder: hidden ones (leading dot), the system entries above,
+ * and Office lock files (`~$report.xlsx`).
+ */
 export function isJunkName(name: string): boolean {
-  return name.startsWith(".") || name === "__MACOSX";
+  return name.startsWith(".") || name.startsWith("~$") || junkNames.has(name.toLowerCase());
 }
 
 /** `extensions` are normalized (leading dot); `undefined` accepts every file. */

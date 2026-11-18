@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   collectDroppedFiles,
+  isJunkName,
   mapWithConcurrency,
   type DirectoryEntryLike,
   type EntryLike,
@@ -137,5 +138,24 @@ describe("mapWithConcurrency", () => {
     });
     expect(result).toEqual([10, 20, 30, 40, 50, 60, 70]);
     expect(peak).toBe(3);
+  });
+
+  test("isJunkName skips system entries of macOS, Windows and Linux, ignoring case", () => {
+    for (const name of [
+      ".DS_Store",
+      "._IGH.ab1",
+      "__MACOSX",
+      "$RECYCLE.BIN",
+      "System Volume Information",
+      "lost+found",
+      "Thumbs.db",
+      "desktop.ini",
+      "~$samples.xlsx",
+    ]) {
+      expect(isJunkName(name), name).toBe(true);
+    }
+    for (const name of ["IGH.ab1", "plate-1", "recycle", "my~$notes.txt", "samples.xlsx~"]) {
+      expect(isJunkName(name), name).toBe(false);
+    }
   });
 });
