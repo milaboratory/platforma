@@ -34,7 +34,7 @@ self.body(func(inputs) {
 	} else if inputs.case == "extraFile" {
 		root.fallbacks({ OOM: base().saveFile("more.tsv") })
 	} else if inputs.case == "extraStream" {
-		root.fallbacks({ OOM: base().streamFile("err.log") })
+		root.fallbacks({ OOM: base().saveStderrStream() })
 	} else if inputs.case == "processor" {
 		root.processWorkdir("p", procTpl, { mode: "a" })
 		root.fallbacks({ OOM: base().processWorkdir("p", procTpl, { mode: "b" }) })

@@ -10,6 +10,7 @@ import { UnknownFieldHandler } from "@protobuf-ts/runtime";
 import type { PartialMessage } from "@protobuf-ts/runtime";
 import { reflectionMergePartial } from "@protobuf-ts/runtime";
 import { MessageType } from "@protobuf-ts/runtime";
+import { ResourceKind } from "./base_types";
 import { NotificationFilter_Payload } from "./resource_types";
 import { FieldType } from "./base_types";
 import { FieldRef } from "./base_types";
@@ -87,11 +88,16 @@ export interface Resource {
      */
     isFinal: boolean;
     /**
+     * original_resource_id is never signed: a duplicate's tree must not grant access to the original's tree.
+     *
      * @generated from protobuf field: uint64 original_resource_id = 10
      */
     originalResourceId: bigint;
     /**
-     * @generated from protobuf field: bytes original_resource_signature = 19
+     * Never set: the original's ID is not a reference the client may follow.
+     *
+     * @deprecated
+     * @generated from protobuf field: bytes original_resource_signature = 19 [deprecated = true]
      */
     originalResourceSignature: Uint8Array;
     /**
@@ -390,6 +396,13 @@ export interface Controller {
  */
 export interface ResourceSchema {
     /**
+     * The only kind a resource of this type can be created with; UNSPECIFIED allows any.
+     * A create request of any other kind fails with INVALID_ARGUMENT.
+     *
+     * @generated from protobuf field: MiLaboratories.PL.Base.ResourceKind kind = 6
+     */
+    kind: ResourceKind;
+    /**
      * @generated from protobuf field: MiLaboratories.PL.Base.ResourceType type = 1
      */
     type?: ResourceType;
@@ -478,6 +491,14 @@ export interface FieldSchema {
      * @generated from protobuf field: string name = 2
      */
     name: string;
+    /**
+     * The field is optional: resource creation does not create it, a client creates it in the
+     * creating transaction. Only an INPUT, OUTPUT or SERVICE field can be optional.
+     * See docs/optional-fields-contract.md.
+     *
+     * @generated from protobuf field: bool optional = 3
+     */
+    optional: boolean;
 }
 /**
  * @generated from protobuf message MiLaboratories.PL.API.ResourceAPIFeature
@@ -646,7 +667,7 @@ class Resource$Type extends MessageType<Resource> {
                 case /* uint64 original_resource_id */ 10:
                     message.originalResourceId = reader.uint64().toBigInt();
                     break;
-                case /* bytes original_resource_signature */ 19:
+                case /* bytes original_resource_signature = 19 [deprecated = true] */ 19:
                     message.originalResourceSignature = reader.bytes();
                     break;
                 case /* uint64 parent_resource_id */ 11:
@@ -721,7 +742,7 @@ class Resource$Type extends MessageType<Resource> {
         /* bytes resource_signature = 18; */
         if (message.resourceSignature.length)
             writer.tag(18, WireType.LengthDelimited).bytes(message.resourceSignature);
-        /* bytes original_resource_signature = 19; */
+        /* bytes original_resource_signature = 19 [deprecated = true]; */
         if (message.originalResourceSignature.length)
             writer.tag(19, WireType.LengthDelimited).bytes(message.originalResourceSignature);
         let u = options.writeUnknownFields;
@@ -1430,6 +1451,7 @@ export const Controller = new Controller$Type();
 class ResourceSchema$Type extends MessageType<ResourceSchema> {
     constructor() {
         super("MiLaboratories.PL.API.ResourceSchema", [
+            { no: 6, name: "kind", kind: "enum", T: () => ["MiLaboratories.PL.Base.ResourceKind", ResourceKind, "RESOURCE_KIND_"] },
             { no: 1, name: "type", kind: "message", T: () => ResourceType },
             { no: 2, name: "fields", kind: "message", repeat: 2 /*RepeatType.UNPACKED*/, T: () => FieldSchema },
             { no: 3, name: "access_flags", kind: "message", T: () => ResourceSchema_AccessFlags },
@@ -1439,6 +1461,7 @@ class ResourceSchema$Type extends MessageType<ResourceSchema> {
     }
     create(value?: PartialMessage<ResourceSchema>): ResourceSchema {
         const message = globalThis.Object.create((this.messagePrototype!));
+        message.kind = 0;
         message.fields = [];
         message.freeInputs = false;
         message.freeOutputs = false;
@@ -1451,6 +1474,9 @@ class ResourceSchema$Type extends MessageType<ResourceSchema> {
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
+                case /* MiLaboratories.PL.Base.ResourceKind kind */ 6:
+                    message.kind = reader.int32();
+                    break;
                 case /* MiLaboratories.PL.Base.ResourceType type */ 1:
                     message.type = ResourceType.internalBinaryRead(reader, reader.uint32(), options, message.type);
                     break;
@@ -1493,6 +1519,9 @@ class ResourceSchema$Type extends MessageType<ResourceSchema> {
         /* bool free_outputs = 5; */
         if (message.freeOutputs !== false)
             writer.tag(5, WireType.Varint).bool(message.freeOutputs);
+        /* MiLaboratories.PL.Base.ResourceKind kind = 6; */
+        if (message.kind !== 0)
+            writer.tag(6, WireType.Varint).int32(message.kind);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -1637,13 +1666,15 @@ class FieldSchema$Type extends MessageType<FieldSchema> {
     constructor() {
         super("MiLaboratories.PL.API.FieldSchema", [
             { no: 1, name: "type", kind: "enum", T: () => ["MiLaboratories.PL.Base.FieldType", FieldType] },
-            { no: 2, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ }
+            { no: 2, name: "name", kind: "scalar", T: 9 /*ScalarType.STRING*/ },
+            { no: 3, name: "optional", kind: "scalar", T: 8 /*ScalarType.BOOL*/ }
         ]);
     }
     create(value?: PartialMessage<FieldSchema>): FieldSchema {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.type = 0;
         message.name = "";
+        message.optional = false;
         if (value !== undefined)
             reflectionMergePartial<FieldSchema>(this, message, value);
         return message;
@@ -1658,6 +1689,9 @@ class FieldSchema$Type extends MessageType<FieldSchema> {
                     break;
                 case /* string name */ 2:
                     message.name = reader.string();
+                    break;
+                case /* bool optional */ 3:
+                    message.optional = reader.bool();
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -1677,6 +1711,9 @@ class FieldSchema$Type extends MessageType<FieldSchema> {
         /* string name = 2; */
         if (message.name !== "")
             writer.tag(2, WireType.LengthDelimited).string(message.name);
+        /* bool optional = 3; */
+        if (message.optional !== false)
+            writer.tag(3, WireType.Varint).bool(message.optional);
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);

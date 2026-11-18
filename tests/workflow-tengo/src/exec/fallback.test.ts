@@ -225,7 +225,7 @@ tplTest.concurrent.for([
   { case: "cycle", expected: "root → OOM[0]: the handler is its own ancestor" },
   { case: "missingFile", expected: 'root → OOM[0]: saveFile: missing ["out.tsv"]' },
   { case: "extraFile", expected: 'root → OOM[0]: saveFile: not in the root ["more.tsv"]' },
-  { case: "extraStream", expected: 'root → OOM[0]: streamFile: not in the root ["err.log"]' },
+  { case: "extraStream", expected: 'root → OOM[0]: stream: not in the root ["stderr.txt"]' },
   { case: "processor", expected: 'root → OOM[0]: processWorkdir: "p" differs from the root' },
 ])(
   "AC2.4 exec fallbacks: verify() refuses an invalid tree ($case)",

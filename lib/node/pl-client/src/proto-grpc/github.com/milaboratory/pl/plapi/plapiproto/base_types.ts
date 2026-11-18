@@ -54,6 +54,55 @@ export interface Color {
     permissions: number;
 }
 /**
+ * Kind of a resource: each kind has its own create request.
+ *
+ * @generated from protobuf enum MiLaboratories.PL.Base.ResourceKind
+ */
+export enum ResourceKind {
+    /**
+     * in a schema: any kind
+     *
+     * @generated from protobuf enum value: RESOURCE_KIND_UNSPECIFIED = 0;
+     */
+    UNSPECIFIED = 0,
+    /**
+     * CreateStruct and CreateChild
+     *
+     * @generated from protobuf enum value: RESOURCE_KIND_STRUCTURAL = 1;
+     */
+    STRUCTURAL = 1,
+    /**
+     * CreateValue
+     *
+     * @generated from protobuf enum value: RESOURCE_KIND_VALUE = 2;
+     */
+    VALUE = 2,
+    /**
+     * CreateRoot
+     *
+     * @generated from protobuf enum value: RESOURCE_KIND_ROOT = 3;
+     */
+    ROOT = 3,
+    /**
+     * CreateEphemeral
+     *
+     * @generated from protobuf enum value: RESOURCE_KIND_EPHEMERAL = 4;
+     */
+    EPHEMERAL = 4,
+    /**
+     * created by core only
+     *
+     * @generated from protobuf enum value: RESOURCE_KIND_SERVICE = 5;
+     */
+    SERVICE = 5,
+    /**
+     * CreateSingleton
+     *
+     * @generated from protobuf enum value: RESOURCE_KIND_SINGLETON = 6;
+     */
+    SINGLETON = 6
+}
+/**
  * @generated from protobuf enum MiLaboratories.PL.Base.FieldType
  */
 export enum FieldType {

@@ -37,6 +37,21 @@ META_INPUT_FORCE_RUN_COMMAND_V2 := "__forceRunCommandV2__"
 // save as on a backend without WorkdirSave v3.
 META_INPUT_FORCE_WORKDIR_SAVE_V1 := "__forceWorkdirSaveV1__"
 
+// Workdir files the command's stdout and stderr are written to. The exec builder
+// saves and streams them under these names; the exec templates expose their
+// streams as dedicated outputs (see STDOUT_STREAM_OUTPUT below).
+STDOUT_FILE := "stdout.txt"
+STDERR_FILE := "stderr.txt"
+
+// Exec template outputs holding the stdout / stderr stream managers directly.
+// A stream only becomes final when the command exits, so a map of streams would
+// need a second, ephemeral getter to read one before that; an ephemeral getter is
+// invisible to deduplication, and the exec could never be recovered on a re-run
+// while a block output referenced its log. One pure getter on these outputs
+// resolves while the command runs and stays recoverable.
+STDOUT_STREAM_OUTPUT := "stdoutStream"
+STDERR_STREAM_OUTPUT := "stderrStream"
+
 export ll.toStrict({
 	ARG_TYPE_STRING: ARG_TYPE_STRING,
 	ARG_TYPE_EXPRESSION: ARG_TYPE_EXPRESSION,
@@ -59,5 +74,10 @@ export ll.toStrict({
 	META_INPUT_SCRATCH_FORMULA: META_INPUT_SCRATCH_FORMULA,
 	REGULAR_INPUT_LINE_COUNT: REGULAR_INPUT_LINE_COUNT,
 	META_INPUT_FORCE_RUN_COMMAND_V2: META_INPUT_FORCE_RUN_COMMAND_V2,
-	META_INPUT_FORCE_WORKDIR_SAVE_V1: META_INPUT_FORCE_WORKDIR_SAVE_V1
+	META_INPUT_FORCE_WORKDIR_SAVE_V1: META_INPUT_FORCE_WORKDIR_SAVE_V1,
+
+	STDOUT_FILE: STDOUT_FILE,
+	STDERR_FILE: STDERR_FILE,
+	STDOUT_STREAM_OUTPUT: STDOUT_STREAM_OUTPUT,
+	STDERR_STREAM_OUTPUT: STDERR_STREAM_OUTPUT
 })

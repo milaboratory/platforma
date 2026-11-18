@@ -1,5 +1,11 @@
 # @platforma-open/milaboratories.software-ptexter
 
+## 1.2.8
+
+### Patch Changes
+
+- c1869c8: Bump runenv-python-3 to 1.16.2.
+
 ## 1.2.7
 
 ### Patch Changes

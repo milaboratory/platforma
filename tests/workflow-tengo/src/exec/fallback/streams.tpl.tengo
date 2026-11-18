@@ -8,14 +8,12 @@
  * inputs.rootExit: string, optional - the root's exit code, 2 by default
  * inputs.forceSaveV1: bool, optional - save as on a backend without WorkdirSave v3
  *
- * inputs.errLog: bool, optional - every plan also streams err.log, which only the root writes
+ * inputs.errLog: bool, optional - every plan also streams stderr, which only the root writes to
  *                 (spec §13.1, second example); true by default
- * inputs.rootBadStream: bool, optional - the root leaves err.log a broken symlink, which its log
- *                 save cannot save
+ * inputs.rootBadStream: bool, optional - the root replaces stderr.txt with a broken symlink, which
+ *                 its log save cannot save
  * inputs.handlerExit: string, optional - the handler's exit code, 0 by default
- * inputs.streamOnly: bool, optional - stream info.log, which every plan writes, without saving it
- * inputs.errLogByHandler: bool, optional - the reverse: only the handler writes err.log, which
- *                 every plan also saves
+ * inputs.errLogByHandler: bool, optional - the reverse: only the handler writes to stderr
  */
 
 self := import("@platforma-sdk/workflow-tengo:tpl")
@@ -23,7 +21,7 @@ exec := import("@platforma-sdk/workflow-tengo:exec")
 assets := import("@platforma-sdk/workflow-tengo:assets")
 fmt := import("fmt")
 
-self.defineOutputs(["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts", "logs"])
+self.defineOutputs(["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"])
 
 shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
@@ -39,13 +37,7 @@ self.body(func(inputs) {
 			saveStdoutContent().
 			saveFileSet("logs", "^stdout\\.txt$")
 		if inputs.errLog != false {
-			b.streamFile("err.log")
-		}
-		if inputs.errLogByHandler == true {
-			b.saveFile("err.log")
-		}
-		if inputs.streamOnly == true {
-			b.streamFile("info.log")
+			b.saveStderrStream()
 		}
 		if inputs.forceV2 == true {
 			b._forceRunCommandV2()
@@ -57,13 +49,13 @@ self.body(func(inputs) {
 	}
 
 	rootExit := is_undefined(inputs.rootExit) ? "2" : inputs.rootExit
-	rootErr := inputs.errLogByHandler == true ? "" : "echo root-err > err.log; "
+	rootErr := inputs.errLogByHandler == true ? "" : "echo root-err >&2; "
 	if inputs.rootBadStream == true {
-		rootErr = "ln -s /nonexistent/err.log err.log; "
+		rootErr = "rm -f stderr.txt; ln -s /nonexistent/stderr.txt stderr.txt; "
 	}
-	handlerErr := inputs.errLogByHandler == true ? "echo handler-err > err.log; " : ""
+	handlerErr := inputs.errLogByHandler == true ? "echo handler-err >&2; " : ""
 	handlerExit := is_undefined(inputs.handlerExit) ? "0" : inputs.handlerExit
-	handler := shell(handlerErr + "echo handler-info > info.log; " +
+	handler := shell(handlerErr +
 		fmt.sprintf("for i in $(seq 1 %d); do echo fallback-$i; sleep 1; done; exit %s", inputs.seconds, handlerExit))
 	root := shell("echo root; " + rootErr + "sleep 5; exit " + rootExit).
 		fallbacks({ SoftwareError: [{ name: "handler", builder: handler }] })
@@ -72,10 +64,9 @@ self.body(func(inputs) {
 
 	return {
 		stdoutStream: res.getStdoutStream(),
-		errStream: inputs.errLog != false ? res.getFileStream("err.log") : "",
+		errStream: inputs.errLog != false ? res.getStderrStream() : "",
 		stdoutContent: res.getStdoutContent(),
 		logs: res.getFileSet("logs"),
-		infoStream: inputs.streamOnly == true ? res.getFileStream("info.log") : "",
 		attempts: res.getAttempts()
 	}
 })

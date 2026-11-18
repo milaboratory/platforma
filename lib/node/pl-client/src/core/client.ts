@@ -87,6 +87,7 @@ export class PlClient {
    *  init via the GetSessionInfo RPC. `null` for an anonymous (no-auth)
    *  connection — mirrors {@link authUser}. Read through {@link currentUserRole}. */
   private _currentUserRole: Role | null = null;
+  private _sessionCanListUsers: boolean = false;
 
   private _txCommittedStat: TxStat = initialTxStat();
   private _txConflictStat: TxStat = initialTxStat();
@@ -291,6 +292,20 @@ export class PlClient {
     return this._currentUserRole;
   }
 
+  /** Whether the authenticated user can list the users of the server ({@link listUsers}), resolved
+   *  once during init. Use it to select the recipient picker UI before a call to listUsers.
+   *    - `userListing:v2` backend: the session's `can_list_users` (the server decides per role).
+   *    - `userListing:v1` only (older backend): `true` — all roles can list users there.
+   *    - no capability, anonymous connection, or REST wire protocol (ListUsers is gRPC-only): `false`.
+   *  Not a security boundary: listUsers still gets PERMISSION_DENIED if the server says no. */
+  public get canListUsers(): boolean {
+    this.checkInitialized();
+    if (this.userResources.authUser === null) return false;
+    if (this._ll!.wireProtocol !== "grpc") return false;
+    if (this._ll!.hasCapability("userListing:v2")) return this._sessionCanListUsers;
+    return this._ll!.hasCapability("userListing:v1");
+  }
+
   /** Login of the authenticated user, or `null` for an anonymous connection. */
   public get authUser(): string | null {
     this.checkInitialized();
@@ -353,11 +368,17 @@ export class PlClient {
       userRoot = impersonatedRoot;
     }
 
-    // Resolve the caller's role once; only the publicGrants-gated share-with-everybody check uses it,
-    // so skip it for anonymous connections or when publicGrants:v1 is absent. Use _ll.hasCapability,
-    // not this.hasCapability: we are mid-init, so this.checkInitialized() would throw.
-    if (this.userResources.authUser !== null && this._ll.hasCapability("publicGrants:v1")) {
-      this._currentUserRole = (await this._ll.getSessionInfo()).role;
+    // Resolve the caller's session info once. The publicGrants-gated share-with-everybody check uses
+    // the role; the userListing:v2 recipient picker uses can_list_users. Skip it for anonymous
+    // connections or when neither capability is present. Use _ll.hasCapability, not
+    // this.hasCapability: we are mid-init, so this.checkInitialized() would throw.
+    if (
+      this.userResources.authUser !== null &&
+      (this._ll.hasCapability("publicGrants:v1") || this._ll.hasCapability("userListing:v2"))
+    ) {
+      const sessionInfo = await this._ll.getSessionInfo();
+      this._currentUserRole = sessionInfo.role;
+      this._sessionCanListUsers = sessionInfo.canListUsers;
     }
 
     if (this.conf.alternativeRoot === undefined) {

@@ -3,7 +3,7 @@
  * The old log driver is pinned here, not taken from the middle layer: it is the
  * LogsDriver.getLogHandle / getLastLogs of before exec fallbacks in two steps, written out so a
  * driver that learns about StreamCollection/1 cannot change what this test checks:
- *   1. resolve the `stream` field of what getFileStream returns (logs.ts, streamManagerGetStream),
+ *   1. resolve the `stream` field of what getStdoutStream returns (logs.ts, streamManagerGetStream),
  *      here a StreamCollection whose `stream` the templates rewrite, not a StreamManager;
  *   2. a StreamWorkdir target is read live through the streaming logs API, which is what
  *      LogsStreamDriver does (logs_stream.ts, LogGetter.update); anything else is a blob.
@@ -82,7 +82,7 @@ tplTest.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts", "logs"],
+      ["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(10)),
@@ -131,7 +131,7 @@ tplTest.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
     const delimiter = "--- attempt 0 (root) failed: SoftwareError, exit code 2 ---\n";
     expect(composites.some((t) => t.startsWith(`root\n${delimiter}fallback-1\n`))).toBe(true);
     expect(composites.some((t) => t.includes("root") && !t.includes("fallback-"))).toBe(true);
-    // the variant: err.log, which the handler never writes, ends with the delimiter
+    // the variant: stderr, which the handler leaves empty, ends with the delimiter
     expect(errComposites.some((t) => t === `root-err\n${delimiter}`)).toBe(true);
 
     const attempts = await result
@@ -142,8 +142,8 @@ tplTest.for([{ forceSaveV1: false }, { forceSaveV1: true }])(
       { attempt: 1, plan: "handler", result: "success", exitCode: 0 },
     ]);
 
-    // the handler never writes err.log: its stream ends on an empty live stream, and nothing
-    // else of the job reads as an error (spec §13.1)
+    // the handler writes nothing to stderr: its stream ends on an empty file, and nothing else of
+    // the job reads as an error (spec §13.1)
     const logs = await result
       .computeOutput("logs", (a) => ({
         fields: a?.listInputFields(),
@@ -214,13 +214,12 @@ tplTest(
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts", "logs"],
+      ["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
         rootExit: tx.createValue(Pl.JsonObject, JSON.stringify("0")),
         forceV2: tx.createValue(Pl.JsonObject, JSON.stringify(true)),
-        // a streamed file never saved never resolves on the v2 path, as before fallbacks
         errLog: tx.createValue(Pl.JsonObject, JSON.stringify(false)),
       }),
     );
@@ -241,15 +240,15 @@ tplTest(
   120_000,
 );
 
-// Review 2, m7: the reverse of the err.log variant: the root never wrote the file, the handler
+// Review 2, m7: the reverse of the stderr variant: the root wrote nothing to stderr, the handler
 // did; the composite handle still ends ready, not live forever
 tplTest(
-  "exec fallbacks: an attempt that never wrote a streamed file does not keep the log live",
+  "exec fallbacks: an attempt that wrote nothing to a stream does not keep the log live",
   async ({ helper, driverKit, expect }) => {
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts", "logs"],
+      ["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
@@ -287,7 +286,7 @@ tplTest(
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts", "logs"],
+      ["stdoutStream", "errStream", "stdoutContent", "attempts", "logs"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
@@ -306,39 +305,10 @@ tplTest(
   120_000,
 );
 
-// Review 3, m1: streamFile without saveFile. Before fallbacks the stream stayed live forever; a
-// manager may not reference a live stream as its final content, so it ends on the stand-in for a
-// file without a final content, which the current log driver reads as no log
-tplTest(
-  "exec fallbacks: a streamed file that is not saved ends on the stand-in after success",
-  async ({ helper, expect }) => {
-    const result = await helper.renderTemplate(
-      false,
-      "exec.fallback.streams",
-      ["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts"],
-      (tx) => ({
-        nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
-        seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
-        errLog: tx.createValue(Pl.JsonObject, JSON.stringify(false)),
-        streamOnly: tx.createValue(Pl.JsonObject, JSON.stringify(true)),
-      }),
-    );
-    await result.computeOutput("stdoutContent", (a) => a?.getDataAsString()).awaitStableValue();
-    const deadline = Date.now() + 60_000;
-    let state: ReturnType<typeof streamState> | undefined;
-    while (Date.now() < deadline) {
-      state = await result.computeOutput("infoStream", (a) => streamState(a)).getValue();
-      if (state?.attempt1Stream.type?.startsWith("json")) break;
-      await sleep(250);
-    }
-    expect(state?.attempt1Stream.json).toEqual({ streamFileNotWritten: "info.log" });
-  },
-  120_000,
-);
-
-// Review 4 m3, review 5 m2/T1: a failed attempt's streamed file that cannot be saved (a broken
-// symlink) loses that attempt's log only, on a backend with WorkdirSave v3; the successful
-// fallback's outputs resolve, and every stream ends on the winner's final content
+// Review 4 m3, review 5 m2/T1: a failed attempt's streamed file that cannot be saved (the root
+// replaces stderr.txt with a broken symlink) loses that attempt's log only, on a backend with
+// WorkdirSave v3; the successful fallback's outputs resolve, and every stream ends on the winner's
+// final content
 tplTest(
   "exec fallbacks: a failed attempt's unsaveable stream does not fail the fallback",
   async ({ helper, driverKit, expect, skip }) => {
@@ -357,7 +327,7 @@ tplTest(
     const result = await helper.renderTemplate(
       false,
       "exec.fallback.streams",
-      ["stdoutStream", "errStream", "infoStream", "stdoutContent", "attempts"],
+      ["stdoutStream", "errStream", "stdoutContent", "attempts"],
       (tx) => ({
         nonce: tx.createValue(Pl.JsonObject, JSON.stringify(randomUUID())),
         seconds: tx.createValue(Pl.JsonObject, JSON.stringify(1)),
@@ -373,9 +343,9 @@ tplTest(
       .awaitStableValue();
     expect(attempts?.map((a) => a.plan)).toEqual(["root", "handler"]);
 
-    // err.log: the root's could not be saved, the handler never wrote one. The collection's
-    // `stream` ends on the winner's final content, the stand-in, not on a live tail; the composite
-    // log is the delimiter only, and ready
+    // stderr: the root's could not be saved, the handler's is empty. The collection's `stream`
+    // ends on the winner's file, not on a live tail; the composite log is the delimiter only, and
+    // ready
     const deadline = Date.now() + 60_000;
     let state: ReturnType<typeof streamState> | undefined;
     let composite: { handle: string; text: string } | undefined;
@@ -392,12 +362,11 @@ tplTest(
         if (!resp.shouldUpdateHandle)
           composite = { handle, text: new TextDecoder().decode(resp.data) };
       }
-      if (state?.stream.type?.startsWith("json") && composite?.handle.startsWith("log+ready://"))
-        break;
+      if (state?.stream.hash && composite?.handle.startsWith("log+ready://")) break;
       await sleep(250);
     }
-    expect(state?.stream.json).toEqual({ streamFileNotWritten: "err.log" });
-    expect(state?.attempt0Stream.json).toEqual({ streamFileNotWritten: "err.log" });
+    expect(state?.stream.hash).toBe(createHash("sha256").update("").digest("hex"));
+    expect(state?.attempt0Stream.json).toEqual({ streamFileNotWritten: "stderr.txt" });
     expect(composite?.handle.startsWith("log+ready://")).toBe(true);
     expect(composite?.text).toBe("--- attempt 0 (root) failed: SoftwareError, exit code 2 ---\n");
   },

@@ -1,5 +1,12 @@
 # @milaboratories/pf-spec-driver
 
+## 1.6.1
+
+### Patch Changes
+
+- Updated dependencies [c1869c8]
+  - @milaboratories/pf-spec@1.1.1
+
 ## 1.6.0
 
 ### Minor Changes

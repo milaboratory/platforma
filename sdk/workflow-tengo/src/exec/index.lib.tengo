@@ -52,12 +52,12 @@ _assertValidCpuRequest := func(amount, ctx) {
 	validation.assertType(amount, "number", ctx + ": amount of cores must be a number")
 	ll.assert(amount > 0, ctx + ": amount of cores should be greater than 0")
 }
-// A size string is held to the same floor when it parses: "0GiB" would otherwise reach the backend,
-// which replaces a zero request with the queue default.
+// A size string must not be zero: "0GiB" would otherwise reach the backend, which replaces a zero
+// request with the queue default.
 _assertValidMemRequest := func(amount, ctx) {
 	validation.assertType(amount, ["or", "number", "string"], ctx + ": RAM amount should be a number or string")
-	bytes := fallback.ramBytes(amount)
-	ll.assert(is_undefined(bytes) || bytes >= 16 * units.MiB, ctx + ": RAM amount should be at least 16MiB, got %v", amount)
+	ll.assert(is_string(amount) || amount >= 16 * units.MiB, ctx + ": amount in bytes should be at least 16MiB")
+	ll.assert(!is_string(amount) || fallback.ramBytes(amount) != 0, ctx + ": RAM amount should be greater than 0, got %q", amount)
 }
 // A VRAM request is a size string ("16GiB") or a number of bytes. The static
 // .gpuMemory() takes a string; a formula .staticFallback() may resolve to a
@@ -65,8 +65,8 @@ _assertValidMemRequest := func(amount, ctx) {
 // including the 16MiB floor that catches a bytes-where-GiB-was-meant mistake.
 _assertValidGpuRequest := func(amount, ctx) {
 	validation.assertType(amount, ["or", "number", "string"], ctx + ": VRAM amount must be a number of bytes or a size string like '16GiB'")
-	bytes := fallback.ramBytes(amount)
-	ll.assert(is_undefined(bytes) || bytes >= 16 * units.MiB, ctx + ": VRAM amount should be at least 16MiB (did you pass bytes instead of GiB?), got %v", amount)
+	ll.assert(is_string(amount) || amount >= 16 * units.MiB, ctx + ": VRAM amount in bytes should be at least 16MiB (did you pass bytes instead of GiB?)")
+	ll.assert(!is_string(amount) || fallback.ramBytes(amount) != 0, ctx + ": VRAM amount should be greater than 0, got %q", amount)
 }
 // A scratch request is a size string ("500GiB") or a number of bytes, with the same 16MiB floor
 // that catches a bytes-where-GiB-was-meant mistake.
@@ -165,8 +165,8 @@ _newState := func() {
 
 		mnz: monetization.init(),
 
-		stdout: "stdout.txt",
-		stderr: "stderr.txt",
+		stdout: execConstants.STDOUT_FILE,
+		stderr: execConstants.STDERR_FILE,
 		stderrToStdout: false,
 		stdoutFile: false,
 		stderrFile: false,
@@ -611,7 +611,7 @@ _outputShapeOf := func(st) {
 		saveFileSet: s.fileSetsToSave,
 		saveFileSetContent: s.fileSetsContentToSave,
 		processWorkdir: procs,
-		streamFile: maps.getKeys(s.filesToStream)
+		stream: maps.getKeys(s.filesToStream)
 	}
 }
 
@@ -620,7 +620,7 @@ _outputShapeOf := func(st) {
  */
 _shapeDiff := func(root, handler) {
 	diffs := []
-	for kind in ["saveFile", "saveFileContent", "streamFile"] {
+	for kind in ["saveFile", "saveFileContent", "stream"] {
 		r := sets.fromSlice(root[kind])
 		h := sets.fromSlice(handler[kind])
 		missing := []
@@ -1775,18 +1775,6 @@ _makeBuilder := func(st) {
 		},
 
 		/**
-		 * A command to stream a file by a given file name.
-		 *
-		 * @param fileName: string - the name of the file to stream.
-		 */
-		streamFile: func(fileName) {
-			fileName = path.canonize(fileName)
-			sets.add(st.filesToStream, fileName)
-
-			return self
-		},
-
-		/**
 		 * Set stdout file name
 		 */
 		stdoutFileName: func(fileName) {
@@ -2187,18 +2175,6 @@ _makeBuilder := func(st) {
 				},
 
 				/**
-				 * Retrieves a file stream.
-				 *
-				 * @param fileName: string
-				 * @return field - a reference to the file stream resource.
-				 */
-				getFileStream: func(fileName) {
-					ll.assert(sets.hasElement(fin.filesToStream, fileName),
-						"file '%s' stream was not saved, add streamFile() call to the exec builder", fileName)
-					return tpl.output("fileStreams", fin.cache).getFutureInputField(fileName, true)
-				},
-
-				/**
 				 * Retrieves a file set resource.
 				 *
 				 * @param fileSetName: string - name of a file set
@@ -2244,12 +2220,25 @@ _makeBuilder := func(st) {
 				},
 
 				/**
+				 * Reads the stdout or stderr stream from its dedicated exec output: one
+				 * pure getter, so the exec stays recoverable on a re-run while a block
+				 * output references the stream (see execConstants.STDOUT_STREAM_OUTPUT).
+				 * With stderrToStdout both names point at stdout's file and stream.
+				 */
+				_getStdStream: func(fileName) {
+					if fileName == execConstants.STDOUT_FILE {
+						return tpl.output(execConstants.STDOUT_STREAM_OUTPUT, fin.cache)
+					}
+					return tpl.output(execConstants.STDERR_STREAM_OUTPUT, fin.cache)
+				},
+
+				/**
 				 * Retrieves the stdout stream.
 				 */
 				getStdoutStream: func() {
 					ll.assert(fin.stdoutStream,
 						"stdout stream was not saved, add saveStdoutStream() call to the exec builder")
-					return res.getFileStream(fin.stdout)
+					return res._getStdStream(fin.stdout)
 				},
 
 				/**
@@ -2258,7 +2247,7 @@ _makeBuilder := func(st) {
 				getStderrStream: func() {
 					ll.assert(fin.stderrStream,
 						"stderr stream was not saved, add saveStderrStream() call to the exec builder")
-					return res.getFileStream(fin.stderr)
+					return res._getStdStream(fin.stderr)
 				},
 
 				/**

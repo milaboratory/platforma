@@ -1,5 +1,118 @@
 # @milaboratories/pl-middle-layer
 
+## 2.7.2
+
+### Patch Changes
+
+- Updated dependencies [3a7d90c]
+  - @platforma-sdk/workflow-tengo@6.22.5
+
+## 2.7.1
+
+### Patch Changes
+
+- c1869c8: Update undici to 7.30.2, which fixes six security advisories in the cache and redirect interceptors and in Subresource Integrity checks. The `undici` dependency range is now `~7.30.2`.
+- c1869c8: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.3.1. pframes-rs-node and polars-pf get fixes for security advisories in the Rust crates arrow, parquet, rustix and zstd. pframes-rs-wasip2 has no functional change. polars-pf also gets the spec engine changes of pframes-rs 1.3.0 (reverse linker traversal, an axis mapping underflow fix), which pframes-rs-wasip2 already has. Bump runenv-python-3 to 1.16.2, which bundles polars-pf 1.3.1 for ptabler.
+- Updated dependencies [c1869c8]
+- Updated dependencies [c1869c8]
+  - @milaboratories/pl-client@3.26.1
+  - @milaboratories/pl-drivers@2.0.7
+  - @milaboratories/pl-http@1.2.7
+  - @platforma-sdk/block-tools@2.20.3
+  - @milaboratories/pf-driver@1.9.19
+  - @platforma-sdk/workflow-tengo@6.22.4
+  - @milaboratories/pl-model-backend@1.4.52
+  - @milaboratories/pl-errors@1.4.67
+  - @milaboratories/pl-tree@1.18.6
+  - @milaboratories/pf-spec-driver@1.6.1
+  - @platforma-sdk/model@1.90.2
+
+## 2.7.0
+
+### Minor Changes
+
+- 8cc6580: Support user listing that the server controls per client role (`userListing:v2`).
+
+  - pl-client: `PlClient.canListUsers` tells if the authenticated user can list users. On a `userListing:v2` backend it reads `GetSessionInfo.can_list_users`; on a `userListing:v1` backend it is true. `GetSessionInfo` responses carry `canListUsers`.
+  - pl-client: the protocol definitions are synced with the backend. `MaintenanceAPI_Ping_Response.requiredCapabilities` is renamed to `requiredClientCapabilities`, as in the backend proto.
+  - pl-middle-layer: `MiddleLayer.userListingAvailable` selects the recipient picker or paste-a-login UI.
+  - pl-cli: `admin user-list` tells clearly when the server does not let the user list users.
+
+### Patch Changes
+
+- Updated dependencies [8cc6580]
+  - @milaboratories/pl-client@3.26.0
+  - @milaboratories/pl-model-backend@1.4.51
+  - @milaboratories/pl-drivers@2.0.6
+  - @milaboratories/pl-errors@1.4.66
+  - @milaboratories/pl-tree@1.18.5
+  - @platforma-sdk/block-tools@2.20.2
+  - @platforma-sdk/workflow-tengo@6.22.3
+
+## 2.6.4
+
+### Patch Changes
+
+- Updated dependencies [fda52f0]
+  - @milaboratories/pl-client@3.25.0
+  - @milaboratories/pl-model-backend@1.4.50
+  - @milaboratories/pl-drivers@2.0.5
+  - @milaboratories/pl-errors@1.4.65
+  - @milaboratories/pl-tree@1.18.4
+  - @platforma-sdk/block-tools@2.20.1
+  - @platforma-sdk/workflow-tengo@6.22.3
+
+## 2.6.3
+
+### Patch Changes
+
+- Updated dependencies [7ff7219]
+  - @platforma-sdk/block-tools@2.20.0
+
+## 2.6.2
+
+### Patch Changes
+
+- Updated dependencies [41cdddf]
+  - @milaboratories/pl-client@3.24.0
+  - @milaboratories/pl-model-backend@1.4.49
+  - @milaboratories/pl-drivers@2.0.4
+  - @milaboratories/pl-errors@1.4.64
+  - @milaboratories/pl-tree@1.18.3
+  - @platforma-sdk/block-tools@2.19.4
+  - @platforma-sdk/workflow-tengo@6.22.3
+
+## 2.6.1
+
+### Patch Changes
+
+- Updated dependencies [fd21724]
+  - @platforma-sdk/model@1.90.2
+
+## 2.6.0
+
+### Minor Changes
+
+- af78d3a: Fix a memory leak on the gRPC wire: every transaction and request that got a long-lived `abortSignal` stayed in memory until that signal aborted. The project refresh loop and the tree synchronization pass such a signal since pl-client 3.21.1, so an idle middle layer grew by about 14 kB of heap plus the size of the response per transaction.
+
+  - `PlClient` transactions listen to `ops.abortSignal` themselves and stop listening when the transaction ends. An abort still ends a running transaction at once.
+  - `listUserResources`, `ClientLogs.lastLines`, `ClientLogs.readText`, `ClientProgress.getStatus`, and the download URL request detach from the caller's signal when the request ends.
+  - The download URL request honors its abort signal on the REST wire too.
+  - `LLPlClient.createTx` throws the abort reason when `ops.abortSignal` is already aborted.
+  - **BREAKING:** pl-client now needs Node 24 at runtime, as its `engines` field already says: `withCallAbortSignal` uses `DisposableStack`. On Node 22 the wrapped requests throw `ReferenceError: DisposableStack is not defined`. A block whose CI runs Node 22 or older must move to Node 24 before it takes this version of `@platforma-sdk/test`.
+  - **BREAKING:** `callAbortSignal` is removed: the signal it returned stayed in memory in the same way. Use the new `withCallAbortSignal`. pl-middle-layer re-exports pl-client, and `@platforma-sdk/test` re-exports pl-middle-layer as `ML`, so the same applies to both.
+
+### Patch Changes
+
+- Updated dependencies [af78d3a]
+  - @milaboratories/pl-client@3.23.0
+  - @milaboratories/pl-drivers@2.0.3
+  - @milaboratories/pl-tree@1.18.2
+  - @milaboratories/pl-model-backend@1.4.48
+  - @milaboratories/pl-errors@1.4.63
+  - @platforma-sdk/block-tools@2.19.3
+  - @platforma-sdk/workflow-tengo@6.22.3
+
 ## 2.5.0
 
 ### Minor Changes

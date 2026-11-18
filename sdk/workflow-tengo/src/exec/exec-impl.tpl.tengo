@@ -36,12 +36,20 @@ self.defineOutputs(
 	"fileSets",
 	"fileSetsContent",
 	"progress",
-	"fileStreams",
+	"stdoutStream",
+	"stderrStream",
 	"wdProcessors",
 	"attempts",
 	// RunCommand v3 only: the attempt's final streamed files (the outcome router's streamOwn)
 	"streamOwn"
 )
+
+// The stdout / stderr stream of an attempt, each on its own output; see
+// execConstants.STDOUT_STREAM_OUTPUT for why. Not streamed -> null resource.
+_streamOrNull := func(byFile, fName) {
+	s := byFile[fName]
+	return is_undefined(s) ? smart.createNullResource() : s
+}
 
 EXTENDED_PLAN_OPTIONS_SCHEMA := maps.merge(runcmd.RUN_CMD_PLAN_OPTIONS_SCHEMA, {
 	"__options__,closed": true,
@@ -194,11 +202,11 @@ _runV2 := func(inputs, mainRunBuilder, wdBefore) {
 	// resulting wd
 	wdResult := wdSaver.build()
 
-	// create streams for all requested file streams.
-	streams := smart.mapBuilder()
+	// create streams for the requested stdout / stderr.
+	streamsByFile := {}
 	if !is_undefined(settings.filesToStream) {
 		for fName in settings.filesToStream {
-			streams.add(fName, stream.create(wdBefore, wdResult, fName))
+			streamsByFile[fName] = stream.create(wdBefore, wdResult, fName)
 		}
 	}
 
@@ -207,7 +215,8 @@ _runV2 := func(inputs, mainRunBuilder, wdBefore) {
 		filesContent: wdResult.filesContent,
 		fileSets: wdResult.fileSets,
 		fileSetsContent: wdResult.fileSetsContent,
-		fileStreams: streams.build(),
+		stdoutStream: _streamOrNull(streamsByFile, execConstants.STDOUT_FILE),
+		stderrStream: _streamOrNull(streamsByFile, execConstants.STDERR_FILE),
 		wdProcessors: wdProcessorsResults,
 		progress: wdResult.progress,
 		attempts: render.createEphemeral(v2AttemptsTpl, maps.clone({ workdir: wdResult.workdir, plan: inputs.runPlan }, { removeUndefs: true })).output("attempts")
@@ -414,12 +423,12 @@ self.body(func(inputs) {
 
 	// one manager per streamed file, live on this attempt's workdir, ending on this attempt's own
 	// file, which the router saves on success and on a failure alike
-	managers := smart.mapBuilder()
+	managers := {}
 	streams := {}
 	if !is_undefined(settings.filesToStream) {
 		for fName in settings.filesToStream {
 			streams[fName] = stream.createWithLive(wdBefore, fName, router.output("streamOwn").getFutureInputField(fName))
-			managers.addRef(fName, streams[fName].manager)
+			managers[fName] = streams[fName].manager
 		}
 	}
 	if !is_undefined(inputs.streamCollections) {
@@ -432,7 +441,8 @@ self.body(func(inputs) {
 		filesContent: router.output("filesContent"),
 		fileSets: router.output("fileSets"),
 		fileSetsContent: router.output("fileSetsContent"),
-		fileStreams: managers.build(),
+		stdoutStream: _streamOrNull(managers, execConstants.STDOUT_FILE),
+		stderrStream: _streamOrNull(managers, execConstants.STDERR_FILE),
 		wdProcessors: router.output("wdProcessors"),
 		progress: router.output("progress"),
 		attempts: router.output("attempts"),

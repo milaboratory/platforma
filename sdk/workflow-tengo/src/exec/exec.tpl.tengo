@@ -1,4 +1,5 @@
 //tengo:hash_override 6FB763E3-AB0C-4676-8F74-C7E23069DCCF
+// We need hash override to prevent block recalculation. Changing it will force all block recalculation.
 
 /**
  * Creates and fill a workdir, runs a command on it
@@ -28,7 +29,8 @@ self.defineOutputs(
 	"fileSets",
 	"fileSetsContent",
 	"progress",
-	"fileStreams",
+	"stdoutStream",
+	"stderrStream",
 	"wdProcessors",
 	"attempts"
 )
@@ -117,15 +119,15 @@ self.body(func(inputs) {
 	// (spec §13); the attempts write its fields. Without them the streams are the attempt's own
 	// StreamManager/2s, as before.
 	collections := undefined
+	byName := {}
 	if !is_undefined(inputs.fallbackPlans) && !is_undefined(inputs.filesToStream) && len(inputs.filesToStream) > 0 {
 		// TODO: the CID of this render once Tengo can read it; the inputs map is deduplicated
 		// exactly as the render is, so it stands in for the identity
 		identity := self.renderer().get(tplutil.INPUTS_MAP_FIELD)
-		c := {}
 		for name in inputs.filesToStream {
-			c[name] = stream.createCollection(identity, name)
+			byName[name] = stream.createCollection(identity, name)
 		}
-		collections = smart.createMapResource(c)
+		collections = smart.createMapResource(byName)
 		impl.pure.streamCollections = collections
 	}
 
@@ -135,12 +137,24 @@ self.body(func(inputs) {
 
 	execImpl := render.createEphemeral(execImplTpl, impl.pure, { metaInputs: impl.meta })
 
+	// the stdout / stderr stream: its collection with fallbacks, else exec-impl's manager; a stream
+	// that is not saved is a null resource, as exec-impl has it
+	stdStream := func(fileName) {
+		output := fileName == execConstants.STDOUT_FILE ? execConstants.STDOUT_STREAM_OUTPUT : execConstants.STDERR_STREAM_OUTPUT
+		if is_undefined(collections) {
+			return execImpl.output(output)
+		}
+		c := byName[fileName]
+		return is_undefined(c) ? smart.createNullResource() : c
+	}
+
 	return {
 		files: execImpl.output("files"),
 		filesContent: execImpl.output("filesContent"),
 		fileSets: execImpl.output("fileSets"),
 		fileSetsContent: execImpl.output("fileSetsContent"),
-		fileStreams: is_undefined(collections) ? execImpl.output("fileStreams") : collections,
+		stdoutStream: stdStream(execConstants.STDOUT_FILE),
+		stderrStream: stdStream(execConstants.STDERR_FILE),
 		wdProcessors: execImpl.output("wdProcessors"),
 		progress: execImpl.output("progress"),
 		attempts: execImpl.output("attempts")

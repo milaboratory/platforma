@@ -15,6 +15,7 @@ import * as util from "./util";
 import * as archive from "./archive";
 import * as storage from "./storage";
 import * as docker from "./docker";
+import * as dockerRelayer from "./docker-relayer";
 import * as dockerCoverage from "./docker-coverage";
 import { tmpSpecFile } from "./docker-conda";
 
@@ -520,7 +521,9 @@ export class Core {
     const name = this.pkgInfo.artifactName(artifact);
 
     docker.build(context, dockerfile, localTag, name, this.pkgInfo.version);
-    docker.checkLayerSizes(localTag, (message) => this.logger.warn(message));
+    docker.checkLayerSizes(localTag, (message) => this.logger.warn(message), {
+      advisory: dockerRelayer.isEnabled(),
+    });
 
     const imageHash = docker.getImageHash(localTag);
     const dstTag = docker.generateRemoteTagName(name, imageHash, registry);
@@ -894,7 +897,9 @@ export class Core {
       this.logger.info(`Publishing docker image '${tag}' with tag '${pushTag}'`);
     }
 
-    docker.push(pushTag);
+    if (!dockerRelayer.isEnabled() || !dockerRelayer.relayerAndPush(tag, pushTag, this.logger)) {
+      docker.push(pushTag);
+    }
   }
 
   private get renderer(): SwJsonRenderer {
