@@ -41,6 +41,8 @@ lineCounterSoft := assets.importSoftware("@platforma-open/milaboratories.softwar
 // identifiers lexically — a closure cannot see a name declared textually after
 // the enclosing function).
 _lineCountResource := undefined
+// Forward declaration, as _lineCountResource: runs a custom metric collector (exec.formula.collector).
+_collectorResource := undefined
 
 // _assertValidCpuRequest / _assertValidMemRequest / _assertValidGpuRequest hold
 // the single definition of a valid CPU / RAM / VRAM request, so the static
@@ -124,6 +126,9 @@ _newState := func() {
 		gpuFormulaFallback: undefined,
 		scratchFormulaAst: undefined,
 		scratchFormulaFallback: undefined,
+		// dimension (ram / cpu / vram / scratch) -> the collectors its formula's custom metrics
+		// read, { <name>: <collector> } (exec.formula.collector)
+		formulaCollectors: {},
 		fileTags: {},   // fileName -> tag (for f.size("tag") / f.lineCount("tag") aggregation)
 
 		commandName: "",
@@ -374,6 +379,7 @@ _planOf := func(st) {
 	resolvedGpu := undefined
 	resolvedScratch := undefined
 	lineCountMapResource := undefined
+	customMetricsMapResource := undefined
 
 	if hasFormula {
 		// Live evaluation needs getBlobSize: the pure exec.tpl reads input-file
@@ -417,25 +423,48 @@ _planOf := func(st) {
 			allFiles := maps.getKeys(st.filesToAdd)
 
 			neededLineCount := {}
-			if !is_undefined(st.memFormulaAst) {
-				resolvedMem = execFormula.resolveAst(st.memFormulaAst, tagMap, allFiles)
-				refs := execFormula.referencedMetricFiles(resolvedMem)
+			// collector name -> the files it runs over, across every dimension
+			neededCollectors := {}
+			// collector name -> collector, across every dimension
+			collectors := {}
+			resolveDim := func(ast, dim) {
+				resolved := execFormula.resolveAst(ast, tagMap, allFiles)
+				refs := execFormula.referencedMetricFiles(resolved)
 				if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
+				dimCollectors := is_undefined(st.formulaCollectors[dim]) ? {} : st.formulaCollectors[dim]
+				for name, files in execFormula.referencedCollectors(resolved) {
+					c := dimCollectors[name]
+					ll.assert(!is_undefined(c), "exec.builder: the %s formula reads collector %q, but the formula was built without it", dim, name)
+					ll.assert(is_undefined(collectors[name]) || collectors[name].id == c.id,
+						"exec.builder: two different collectors are named %q; a collector name must be unique within an exec", name)
+					ll.assert(is_undefined(neededCollectors[name]) || neededCollectors[name] == files,
+						"exec.builder: collector %q reads different files in two formulas of one exec", name)
+					collectors[name] = c
+					neededCollectors[name] = files
+				}
+				return resolved
 			}
-			if !is_undefined(st.cpuFormulaAst) {
-				resolvedCpu = execFormula.resolveAst(st.cpuFormulaAst, tagMap, allFiles)
-				refs := execFormula.referencedMetricFiles(resolvedCpu)
-				if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
-			}
-			if !is_undefined(st.gpuFormulaAst) {
-				resolvedGpu = execFormula.resolveAst(st.gpuFormulaAst, tagMap, allFiles)
-				refs := execFormula.referencedMetricFiles(resolvedGpu)
-				if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
-			}
-			if !is_undefined(st.scratchFormulaAst) {
-				resolvedScratch = execFormula.resolveAst(st.scratchFormulaAst, tagMap, allFiles)
-				refs := execFormula.referencedMetricFiles(resolvedScratch)
-				if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
+			if !is_undefined(st.memFormulaAst) { resolvedMem = resolveDim(st.memFormulaAst, "ram") }
+			if !is_undefined(st.cpuFormulaAst) { resolvedCpu = resolveDim(st.cpuFormulaAst, "cpu") }
+			if !is_undefined(st.gpuFormulaAst) { resolvedGpu = resolveDim(st.gpuFormulaAst, "vram") }
+			if !is_undefined(st.scratchFormulaAst) { resolvedScratch = resolveDim(st.scratchFormulaAst, "scratch") }
+			ll.assert(len(collectors) <= execFormula.MAX_COLLECTORS,
+				"exec.builder: the resource formulas read %d collectors (%s), at most %d are allowed per exec",
+				len(collectors), text.join(slices.quickSort(maps.getKeys(collectors)), ", "), execFormula.MAX_COLLECTORS)
+
+			if len(neededCollectors) > 0 {
+				outputs := {}
+				for name, files in neededCollectors {
+					c := collectors[name]
+					refs := {}
+					for fn in files {
+						ref := is_undefined(c.files) ? st.filesToAdd[fn] : c.files[fn]
+						ll.assert(!is_undefined(ref), "exec.builder: collector %q reads file %q, which it has no resource for", name, fn)
+						refs[fn] = ref
+					}
+					outputs[name] = _collectorResource(c, files, refs)
+				}
+				customMetricsMapResource = smart.createMapResource(outputs)
 			}
 
 			if len(neededLineCount) > 0 {
@@ -509,6 +538,9 @@ _planOf := func(st) {
 	if !is_undefined(resolvedGpu) { metaExecInputs[execConstants.META_INPUT_GPU_FORMULA] = smart.createJsonResource(resolvedGpu) }
 	if !is_undefined(resolvedScratch) { metaExecInputs[execConstants.META_INPUT_SCRATCH_FORMULA] = smart.createJsonResource(resolvedScratch) }
 	if !is_undefined(lineCountMapResource) { pureExecInputs[execConstants.REGULAR_INPUT_LINE_COUNT] = lineCountMapResource }
+	// The collector outputs (__metric_custom__) ride the regular rail for the same reason: they
+	// are computed and must be final before the formula reads them.
+	if !is_undefined(customMetricsMapResource) { pureExecInputs[execConstants.REGULAR_INPUT_CUSTOM_METRICS] = customMetricsMapResource }
 
 	// We add monetization only if it's enabled
 	// to not break a deduplication of exec's
@@ -1101,6 +1133,7 @@ _makeBuilder := func(st) {
 			setCpu := func(v, ctx) {
 				if execFormula.isFormula(v) {
 					st.cpuFormulaAst = execFormula.astOf(v)
+					st.formulaCollectors["cpu"] = execFormula.collectorsOf(v)
 					st.cpuFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
 					if !is_undefined(fb) { _assertValidCpuRequest(fb, ctx + " cpu fallback"); st.cpuFormulaFallback = fb }
@@ -1109,12 +1142,14 @@ _makeBuilder := func(st) {
 					_assertValidCpuRequest(v, ctx + " cpu")
 					st.cpuRequest = v
 					st.cpuFormulaAst = undefined
+					delete(st.formulaCollectors, "cpu")
 					st.cpuFormulaFallback = undefined
 				}
 			}
 			setRam := func(v, ctx) {
 				if execFormula.isFormula(v) {
 					st.memFormulaAst = execFormula.astOf(v)
+					st.formulaCollectors["ram"] = execFormula.collectorsOf(v)
 					st.memFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
 					if !is_undefined(fb) { _assertValidMemRequest(fb, ctx + " ram fallback"); st.memFormulaFallback = fb }
@@ -1123,12 +1158,14 @@ _makeBuilder := func(st) {
 					_assertValidMemRequest(v, ctx + " ram")
 					st.ramRequest = v
 					st.memFormulaAst = undefined
+					delete(st.formulaCollectors, "ram")
 					st.memFormulaFallback = undefined
 				}
 			}
 			setScratch := func(v, ctx) {
 				if execFormula.isFormula(v) {
 					st.scratchFormulaAst = execFormula.astOf(v)
+					st.formulaCollectors["scratch"] = execFormula.collectorsOf(v)
 					st.scratchFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
 					if !is_undefined(fb) { _assertValidScratchRequest(fb, ctx + " scratchFreeSpace fallback"); st.scratchFormulaFallback = fb }
@@ -1137,12 +1174,14 @@ _makeBuilder := func(st) {
 					_assertValidScratchRequest(v, ctx + " scratchFreeSpace")
 					st.scratchFreeSpace = v
 					st.scratchFormulaAst = undefined
+					delete(st.formulaCollectors, "scratch")
 					st.scratchFormulaFallback = undefined
 				}
 			}
 			setVram := func(v, ctx) {
 				if execFormula.isFormula(v) {
 					st.gpuFormulaAst = execFormula.astOf(v)
+					st.formulaCollectors["vram"] = execFormula.collectorsOf(v)
 					st.gpuFormulaFallback = undefined
 					fb := execFormula.fallbackOf(v)
 					if !is_undefined(fb) { _assertValidGpuRequest(fb, ctx + " vram fallback"); st.gpuFormulaFallback = fb }
@@ -1151,6 +1190,7 @@ _makeBuilder := func(st) {
 					_assertValidGpuRequest(v, ctx + " vram")
 					st.gpuMemory = v
 					st.gpuFormulaAst = undefined
+					delete(st.formulaCollectors, "vram")
 					st.gpuFormulaFallback = undefined
 				}
 			}
@@ -2272,6 +2312,21 @@ _lineCountResource = func(fileName, fileRef) {
 		cpu(1).
 		run()
 	return res.getFileContent(countOut)
+}
+
+// _collectorResource runs a custom metric collector over its files and returns the content
+// resource of the JSON object it writes. The author's builder function sets the software,
+// arguments and resources; the files and the saved output are added here, so the collector
+// cannot read anything it was not given.
+_collectorResource = func(c, files, refs) {
+	b := c.builder(copy(files))
+	ll.assert(ll.isStrict(b) && ll.methodExists(b, "_execBuilderId"),
+		"exec.formula.collector(%q): builder must return an exec.builder(), got %v", c.name, b)
+	for fn in files {
+		b.addFile(fn, refs[fn])
+	}
+	b.saveFileContent(c.output)
+	return b.run().getFileContent(c.output)
 }
 
 export ll.toStrict({

@@ -52,6 +52,7 @@ maps := import(":maps")
 sets := import(":sets")
 units := import(":units")
 fmt := import("fmt")
+json := import("json")
 
 // ---- AST node shapes -------------------------------------------------------
 // const:      { op: "const", value: <int> }
@@ -63,6 +64,9 @@ fmt := import("fmt")
 // cond:       { op: "when", cond, then, else }
 // metric:     { op: "metric", metric: "size"|"lineCount", "tag,?": <string>, "default,?": <int> }
 //             (the builder later resolves "metric" -> "metricSum" with concrete files)
+// custom:     { op: "metric", metric: "custom", collector: <name>, name: <metric>, declared: [<metric>...],
+//               "tag,?": <string>, "files,?": [<file name>...], "default,?": <int> }
+//             (resolved to { op: "custom", collector, name, declared, files }; see collector() below)
 // The op strings mirror the fluent chain method names (.plus/.dividedBy/.between/
 // .when/...), so a raw AST dump reads like the source formula.
 // Note: when.cond and not.a may be const-wrapped if given a bare int; the
@@ -72,7 +76,7 @@ fmt := import("fmt")
 // (resolveAst rewrites "metric" -> "metricSum" with concrete files); the DSL
 // never emits it directly.
 _KNOWN_OPS := sets.fromSlice([
-	"const", "metric", "metricSum",
+	"const", "metric", "metricSum", "custom",
 	"plus", "minus", "times", "dividedBy", "dividedByFloor",
 	"atLeast", "atMost", "between",
 	"gt", "gte", "lt", "lte", "and", "or", "not",
@@ -142,6 +146,10 @@ evaluate = func(node, resolver) {
 		fn := resolver[node.metric]
 		ll.assert(!is_undefined(fn), "exec.formula.evaluate: no resolver for metric %q", node.metric)
 		return fn(node.files)
+	}
+	if op == "custom" {
+		ll.assert(!is_undefined(resolver.custom), "exec.formula.evaluate: no resolver for custom metrics (collector %q)", node.collector)
+		return resolver.custom(node)
 	}
 
 	if op == "plus"  { return evaluate(node.a, resolver) + evaluate(node.b, resolver) }
@@ -270,6 +278,20 @@ resolveAst := undefined
 resolveAst = func(node, tagMap, allFiles) {
 	node = _unwrap(node)
 	op := node.op
+	if op == "metric" && node.metric == "custom" {
+		// A collector reads either files it was given itself or the exec's own files (all of
+		// them, or those under its tag), and runs once over the whole set.
+		files := node.files
+		if is_undefined(files) {
+			files = is_undefined(node.tag) ? allFiles : (is_undefined(tagMap[node.tag]) ? [] : tagMap[node.tag])
+		}
+		if len(files) == 0 {
+			ll.assert(!is_undefined(node.default),
+				"exec.formula: collector %q has no files to read for metric %q, and no { default: ... } was given", node.collector, node.name)
+			return { op: "const", value: node.default }
+		}
+		return { op: "custom", collector: node.collector, name: node.name, declared: node.declared, files: slices.quickSort(files) }
+	}
 	if op == "metric" {
 		files := is_undefined(node.tag) ? allFiles : (is_undefined(tagMap[node.tag]) ? [] : tagMap[node.tag])
 		if len(files) == 0 {
@@ -319,6 +341,53 @@ referencedMetricFiles := func(resolvedNode) {
 	}
 	walk(resolvedNode)
 	return acc
+}
+
+// referencedCollectors lists the collectors a resolved formula reads, with the files each one
+// runs over: { <collector name>: [<file name>...] }. A collector has one set of files per exec,
+// so two of its metrics never ask for two runs.
+referencedCollectors := func(resolvedNode) {
+	resolvedNode = _unwrap(resolvedNode)
+	acc := {}
+	walk := undefined
+	walk = func(n) {
+		if n.op == "custom" {
+			ll.assert(is_undefined(acc[n.collector]) || acc[n.collector] == n.files,
+				"exec.formula: collector %q reads different files in one exec", n.collector)
+			acc[n.collector] = n.files
+			return
+		}
+		for k, v in n {
+			if is_map(v) && !is_undefined(v.op) { walk(v) }
+		}
+	}
+	walk(resolvedNode)
+	return acc
+}
+
+// parseCollectorOutput reads what a collector wrote: a JSON object with one non-negative integer
+// per declared metric and nothing else. Returns { values } or { err } with a message naming the
+// collector. `declared` is the list of metric names the collector was declared with.
+parseCollectorOutput := func(collectorName, declared, data) {
+	v := json.decode(data)
+	if is_error(v) || !is_map(v) {
+		return { err: fmt.sprintf("exec.formula: collector %q must write a JSON object of metric -> integer, got %q", collectorName, string(data)) }
+	}
+	known := sets.fromSlice(declared)
+	for k, x in v {
+		if !sets.hasElement(known, k) {
+			return { err: fmt.sprintf("exec.formula: collector %q wrote metric %q, which it does not declare (declared: %s)", collectorName, k, text.join(declared, ", ")) }
+		}
+		if !is_int(x) || x < 0 {
+			return { err: fmt.sprintf("exec.formula: collector %q wrote %v for metric %q; a metric is one non-negative integer", collectorName, x, k) }
+		}
+	}
+	for k in declared {
+		if is_undefined(v[k]) {
+			return { err: fmt.sprintf("exec.formula: collector %q did not write metric %q", collectorName, k) }
+		}
+	}
+	return { values: v }
 }
 
 // applyFormulaFallback resolves the static ram/cpu/gpu/scratch to use when the backend
@@ -374,9 +443,40 @@ applyFormulaFallback := func(dims) {
 	return res
 }
 
+// ---- collectors carried by wrappers -----------------------------------------
+// A custom metric's AST names its collector; the collector itself (its builder function and
+// files) cannot live in the AST, which is serialized. So every wrapper also carries the
+// collectors its AST names, { <name>: <collector> }, merged from both operands by every chain
+// method. The exec builder reads them back with collectorsOf().
+
+// At most this many collectors per exec. Each is a job of its own, with a queue slot, an
+// allocation and a cache entry, run before the sized job: a cost guard, not a privacy one.
+MAX_COLLECTORS := 3
+
+_BUILT_IN_METRICS := sets.fromSlice(["size", "lineCount"])
+
+_collectorsOf := func(x) {
+	return is_map(x) && !is_undefined(x.__isFormula__) && !is_undefined(x.__collectors__) ? x.__collectors__ : {}
+}
+
+_mergeCollectors := func(...parts) {
+	res := {}
+	for part in parts {
+		for name, c in _collectorsOf(part) {
+			ll.assert(is_undefined(res[name]) || res[name].id == c.id,
+				"exec.formula: two different collectors are named %q; a collector name must be unique", name)
+			res[name] = c
+		}
+	}
+	ll.assert(len(res) <= MAX_COLLECTORS,
+		"exec.formula: a formula reads %d collectors (%s), at most %d are allowed per exec",
+		len(res), text.join(slices.quickSort(maps.getKeys(res)), ", "), MAX_COLLECTORS)
+	return res
+}
+
 // ---- fluent wrapper factory ------------------------------------------------
 // _node wraps a plain AST in a chainable object. Every chain method returns a
-// NEW wrapper (immutable), carrying the accumulated { fallback } forward and
+// NEW wrapper (immutable), carrying the accumulated { fallback } and collectors forward and
 // reading left-to-right — `f.size("x").times(12).plus(f.gib(8))` composes
 // times(size, 12) then plus(that, gib(8)). Arithmetic: .plus/.minus/.times;
 // .dividedBy -> ceiling division, .dividedByFloor -> integer (truncating)
@@ -385,28 +485,32 @@ applyFormulaFallback := func(dims) {
 // inside a f.when(...) branch. Each method's op string equals its name.
 // .staticFallback pins the value used on backends that can't evaluate the formula.
 _node := undefined
-_node = func(ast, fallback) {
+_node = func(ast, fallback, collectors) {
 	self := {
-		__isFormula__: true,
-		__ast__:       ast,
-		__fallback__:  fallback
+		__isFormula__:   true,
+		__ast__:         ast,
+		__fallback__:    fallback,
+		__collectors__:  collectors
 	}
-	self.plus      = func(x) { return _node(_bin("plus", ast, x), fallback) }
-	self.minus     = func(x) { return _node(_bin("minus", ast, x), fallback) }
-	self.times     = func(x) { return _node(_bin("times", ast, x), fallback) }
-	self.dividedBy      = func(x) { return _node(_bin("dividedBy", ast, x), fallback) }
-	self.dividedByFloor = func(x) { return _node(_bin("dividedByFloor", ast, x), fallback) }
-	self.atLeast   = func(x) { return _node(_bin("atLeast", ast, x), fallback) }
-	self.atMost    = func(x) { return _node(_bin("atMost", ast, x), fallback) }
-	self.between   = func(lo, hi) { return _node({ op: "between", value: _wrap(ast), lo: _wrap(lo), hi: _wrap(hi) }, fallback) }
-	self.gt        = func(x) { return _node(_bin("gt", ast, x), fallback) }
-	self.gte       = func(x) { return _node(_bin("gte", ast, x), fallback) }
-	self.lt        = func(x) { return _node(_bin("lt", ast, x), fallback) }
-	self.lte       = func(x) { return _node(_bin("lte", ast, x), fallback) }
-	self.and       = func(x) { return _node(_bin("and", ast, x), fallback) }
-	self.or        = func(x) { return _node(_bin("or", ast, x), fallback) }
-	self.not       = func() { return _node({ op: "not", a: _wrap(ast) }, fallback) }
-	self.staticFallback = func(v) { return _node(ast, _staticValue(v)) }
+	bin := func(op, x) { return _node(_bin(op, ast, x), fallback, _mergeCollectors(self, x)) }
+	self.plus      = func(x) { return bin("plus", x) }
+	self.minus     = func(x) { return bin("minus", x) }
+	self.times     = func(x) { return bin("times", x) }
+	self.dividedBy      = func(x) { return bin("dividedBy", x) }
+	self.dividedByFloor = func(x) { return bin("dividedByFloor", x) }
+	self.atLeast   = func(x) { return bin("atLeast", x) }
+	self.atMost    = func(x) { return bin("atMost", x) }
+	self.between   = func(lo, hi) {
+		return _node({ op: "between", value: _wrap(ast), lo: _wrap(lo), hi: _wrap(hi) }, fallback, _mergeCollectors(self, lo, hi))
+	}
+	self.gt        = func(x) { return bin("gt", x) }
+	self.gte       = func(x) { return bin("gte", x) }
+	self.lt        = func(x) { return bin("lt", x) }
+	self.lte       = func(x) { return bin("lte", x) }
+	self.and       = func(x) { return bin("and", x) }
+	self.or        = func(x) { return bin("or", x) }
+	self.not       = func() { return _node({ op: "not", a: _wrap(ast) }, fallback, collectors) }
+	self.staticFallback = func(v) { return _node(ast, _staticValue(v), collectors) }
 	return self
 }
 
@@ -415,7 +519,7 @@ _node = func(ast, fallback) {
 // conditional must be finished with .otherwise (there is no way to leak a
 // dangling boolean into a quota).
 _condBuilder := undefined
-_condBuilder = func(branches) {
+_condBuilder = func(branches, collectors) {
 	self := {}
 	self.when = func(cond, value) {
 		// Copy `branches` before appending so sibling chains off the same builder
@@ -423,7 +527,7 @@ _condBuilder = func(branches) {
 		next := []
 		for br in branches { next = append(next, br) }
 		next = append(next, { cond: _wrap(cond), value: _wrap(value) })
-		return _condBuilder(next)
+		return _condBuilder(next, _mergeCollectors({ __isFormula__: true, __collectors__: collectors }, cond, value))
 	}
 	self.otherwise = func(dflt) {
 		node := _wrap(dflt)
@@ -433,12 +537,82 @@ _condBuilder = func(branches) {
 			node = { op: "when", cond: b.cond, then: b.value, "else": node }
 			i = i - 1
 		}
-		return _node(node, undefined)
+		return _node(node, undefined, _mergeCollectors({ __isFormula__: true, __collectors__: collectors }, dflt))
 	}
 	return self
 }
 
-_const := func(n) { ll.assert(is_int(n), "exec.formula: unit amount must be an integer"); return _node({ op: "const", value: n }, undefined) }
+_const := func(n) { ll.assert(is_int(n), "exec.formula: unit amount must be an integer"); return _node({ op: "const", value: n }, undefined, {}) }
+
+_NAME_RE := "^[A-Za-z][A-Za-z0-9_]*$"
+
+// Tells two collectors apart: Tengo never finds two functions equal, so a collector cannot be
+// compared by its builder.
+_collectorSeq := 0
+
+/**
+ * collector declares a custom metric source: software the block author supplies, run once over
+ * a set of input files before the job it sizes, writing several metrics at once.
+ *
+ * @param name: string - unique among the collectors of one exec; not a built-in metric name
+ * @param def: map -
+ *   metrics: string[]     - the metric names the collector writes (at least one, unique)
+ *   builder: func(files)  - gets the sorted file names and returns an exec.builder() with the
+ *                           software, arguments and resources (its cost bound) set. The SDK adds
+ *                           the files under those names and saves `output`; do not run() it.
+ *   output: string        - optional, default "metrics.json": the file the software writes, a
+ *                           JSON object with one non-negative integer per declared metric and
+ *                           no other key, e.g. {"reads": 1200000, "longestRead": 301}
+ *   tag: string           - optional: read the exec's files under this addFile tag
+ *   files: map            - optional: { <file name>: <file resource> } the collector reads,
+ *                           for a job that does not stage the files itself. Exclusive with tag.
+ *                           With neither, the collector reads every file the exec adds.
+ * @return { name, metric: func(metricName, ...opts) } - metric() is a formula leaf; opts may be
+ *         { default: <int> }, the value when the collector has no files to read.
+ */
+collector := func(name, def) {
+	ll.assert(is_string(name) && text.re_match(_NAME_RE, name), "exec.formula.collector: name must be an identifier, got %v", name)
+	ll.assert(!sets.hasElement(_BUILT_IN_METRICS, name), "exec.formula.collector: %q is a built-in metric name", name)
+	ll.assert(is_map(def), "exec.formula.collector(%q): expected a definition map", name)
+	allowed := { metrics: true, builder: true, output: true, tag: true, files: true }
+	for k, _ in def {
+		ll.assert(!is_undefined(allowed[k]), "exec.formula.collector(%q): unknown key %q (allowed: metrics, builder, output, tag, files)", name, k)
+	}
+	ll.assert(is_array(def.metrics) && len(def.metrics) > 0, "exec.formula.collector(%q): metrics must be a non-empty list of names", name)
+	seen := {}
+	for m in def.metrics {
+		ll.assert(is_string(m) && text.re_match(_NAME_RE, m), "exec.formula.collector(%q): metric name must be an identifier, got %v", name, m)
+		ll.assert(is_undefined(seen[m]), "exec.formula.collector(%q): metric %q is declared twice", name, m)
+		seen[m] = true
+	}
+	ll.assert(is_callable(def.builder), "exec.formula.collector(%q): builder must be a function of the file names", name)
+	output := is_undefined(def.output) ? "metrics.json" : def.output
+	ll.assert(is_string(output) && output != "", "exec.formula.collector(%q): output must be a file name", name)
+	ll.assert(is_undefined(def.tag) || is_undefined(def.files), "exec.formula.collector(%q): give tag or files, not both", name)
+	ll.assert(is_undefined(def.tag) || is_string(def.tag), "exec.formula.collector(%q): tag must be a string", name)
+	ll.assert(is_undefined(def.files) || is_map(def.files), "exec.formula.collector(%q): files must be a map of file name -> resource", name)
+
+	declared := copy(def.metrics)
+	_collectorSeq += 1
+	c := { id: _collectorSeq, name: name, metrics: declared, builder: def.builder, output: output, files: def.files }
+	collectors := {}
+	collectors[name] = c
+
+	return {
+		name: name,
+		metric: func(metricName, ...opts) {
+			ll.assert(!is_undefined(seen[metricName]), "exec.formula.collector(%q): metric %q is not declared (declared: %s)", name, metricName, text.join(declared, ", "))
+			node := { op: "metric", metric: "custom", collector: name, name: metricName, declared: declared }
+			if !is_undefined(def.tag) { node.tag = def.tag }
+			if !is_undefined(def.files) { node.files = maps.getKeys(def.files) }
+			for opt in opts {
+				ll.assert(is_map(opt) && is_int(opt.default) && opt.default >= 0, "exec.formula.collector(%q).metric(%q): expected { default: <non-negative int> }, got %v", name, metricName, opt)
+				node.default = opt.default
+			}
+			return _node(node, undefined, collectors)
+		}
+	}
+}
 
 export {
 	// size: total blob bytes of the input files the metric reads (no pre-exec).
@@ -452,8 +626,14 @@ export {
 	//   with N newlines reports N, so a final line without a trailing newline is
 	//   NOT counted. Requires a pre-exec line-counter pass, so it is supported
 	//   only for line-oriented text formats (see _LINECOUNT_OK above).
-	size:      func(...args) { return _node(_metric("size", args), undefined) },
-	lineCount: func(...args) { return _node(_metric("lineCount", args), undefined) },
+	size:      func(...args) { return _node(_metric("size", args), undefined, {}) },
+	lineCount: func(...args) { return _node(_metric("lineCount", args), undefined, {}) },
+
+	// collector: a custom metric source, see collector() above. Its .metric(name) is a leaf
+	//   like size/lineCount. Evaluated only where the backend evaluates formulas; elsewhere the
+	//   dimension takes its .staticFallback(), as any formula does.
+	collector: collector,
+	MAX_COLLECTORS: MAX_COLLECTORS,
 
 	gib: func(n) { return _const(n * units.GiB) },
 	mib: func(n) { return _const(n * units.MiB) },
@@ -470,7 +650,7 @@ export {
 	// branches (evaluated in order), then finish with .otherwise(default). Compiles
 	// to a nested `when` — the first branch whose condition is truthy wins. Conditions
 	// come from the comparison/logic chain, e.g. f.size("input").gt(f.gib(1)).
-	when: func(cond, value) { return _condBuilder([]).when(cond, value) },
+	when: func(cond, value) { return _condBuilder([], {}).when(cond, value) },
 
 	// ---- wrapper introspection (used by the exec builder) ------------------
 	// astOf: the plain AST behind a value (a wrapper -> its __ast__; a plain AST
@@ -480,11 +660,15 @@ export {
 	astOf:      func(x) { return _unwrap(x) },
 	fallbackOf: func(x) { return is_map(x) && !is_undefined(x.__isFormula__) ? x.__fallback__ : undefined },
 	isFormula:  func(x) { return is_map(x) && (!is_undefined(x.__isFormula__) || !is_undefined(x.op)) },
+	// collectorsOf: the collectors a wrapper's custom metrics read, { <name>: <collector> }.
+	collectorsOf: _collectorsOf,
 
 	evaluateResource:      evaluateResource,
 	evaluateScratch:       evaluateScratch,
 	resolveAst:            resolveAst,
 	referencedMetricFiles: referencedMetricFiles,
+	referencedCollectors:  referencedCollectors,
+	parseCollectorOutput:  parseCollectorOutput,
 	applyFormulaFallback:  applyFormulaFallback,
 
 	// _internal: SDK-internal entry points, NOT part of the block-author API.

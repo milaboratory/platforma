@@ -48,6 +48,8 @@ implInputs := func(inputs, raw, ...fail) {
 		!is_undefined(gpuFormula) || !is_undefined(scratchFormula) {
 		fileRefs := inputs.filesToAdd
 		lineCountMap := inputs[execConstants.REGULAR_INPUT_LINE_COUNT]
+		customMetricsMap := inputs[execConstants.REGULAR_INPUT_CUSTOM_METRICS]
+		collected := {}
 		resolver := {
 			// size: sum of blob sizes (bytes) of the referenced input files.
 			size: func(files) {
@@ -73,6 +75,24 @@ implInputs := func(inputs, raw, ...fail) {
 					total += n
 				}
 				return total
+			},
+			// custom: a metric a collector wrote (exec.formula.collector). Each collector's
+			// output is a deep-waited content resource holding a JSON object; it is parsed once
+			// and checked strictly, so a malformed output fails the run with the collector's name.
+			custom: func(node) {
+				if is_undefined(collected[node.collector]) {
+					ll.assert(!is_undefined(customMetricsMap) && !is_undefined(customMetricsMap[node.collector]),
+						"exec.tpl: a formula reads collector %q, but its output is missing from the %s input", node.collector, execConstants.REGULAR_INPUT_CUSTOM_METRICS)
+					parsed := execFormula.parseCollectorOutput(node.collector, node.declared, customMetricsMap[node.collector].getData())
+					if !is_undefined(parsed.err) {
+						if !is_undefined(onFail) {
+							onFail(parsed.err)
+						}
+						ll.panic("%s", parsed.err)
+					}
+					collected[node.collector] = parsed.values
+				}
+				return collected[node.collector][node.name]
 			}
 		}
 		if !is_undefined(memFormula) {

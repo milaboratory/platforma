@@ -1,6 +1,8 @@
 test := import(":test")
 f := import(":exec.formula")
 text := import("text")
+slices := import(":slices")
+maps := import(":maps")
 
 // The DSL is fluent-only: every formula is built by chaining off a leaf
 // constructor (size/lineCount, gib/..., const). f.astOf(...) unwraps a chain
@@ -390,3 +392,92 @@ TestFallbackNoFormulasIsPassthrough := func() {
 // comparison reaching a quota, _wrap on a non-node) all go through ll.assert /
 // ll.panic, which are terminal in Tengo (no recover) — they cannot be exercised
 // from a unit test and are verified by reading + the e2e formula_reject tpl.
+
+// ---- custom metric collectors ------------------------------------------------
+
+_statsCollector := func(def) {
+	d := { metrics: ["reads", "longestRead"], builder: func(files) { return undefined } }
+	for k, v in def { d[k] = v }
+	return f.collector("readStats", d)
+}
+
+TestCollectorMetricAst := func() {
+	stats := _statsCollector({ tag: "reads" })
+	test.isEqual({ op: "metric", metric: "custom", collector: "readStats", name: "reads",
+		declared: ["reads", "longestRead"], tag: "reads" }, f.astOf(stats.metric("reads")))
+	test.isEqual(7, f.astOf(stats.metric("reads", { default: 7 })).default)
+}
+
+TestCollectorsCarriedThroughChain := func() {
+	stats := _statsCollector({})
+	other := f.collector("gc", { metrics: ["percent"], builder: func(files) { return undefined } })
+	formula := f.when(stats.metric("longestRead").gt(300), f.gib(8)).
+		otherwise(stats.metric("reads").times(2).plus(other.metric("percent")).between(f.gib(1), f.gib(4))).
+		staticFallback(f.gib(2))
+	test.isEqual(["gc", "readStats"], slices.quickSort(maps.getKeys(f.collectorsOf(formula))))
+	test.isEqual(["reads", "longestRead"], f.collectorsOf(formula).readStats.metrics)
+	test.isEqual({}, f.collectorsOf(f.size("x").plus(1)))
+	test.isEqual({}, f.collectorsOf(f.gib(1)))
+}
+
+TestCollectorResolvesFilesByTagAllAndExplicit := func() {
+	tagMap := { "reads": ["r2.fq", "r1.fq"] }
+	allFiles := ["r1.fq", "r2.fq", "preset.json"]
+
+	byTag := f.resolveAst(_statsCollector({ tag: "reads" }).metric("reads"), tagMap, allFiles)
+	test.isEqual({ op: "custom", collector: "readStats", name: "reads", declared: ["reads", "longestRead"],
+		files: ["r1.fq", "r2.fq"] }, byTag)
+
+	all := f.resolveAst(_statsCollector({}).metric("reads"), tagMap, allFiles)
+	test.isEqual(["preset.json", "r1.fq", "r2.fq"], all.files)
+
+	// explicit files need not be among the exec's own
+	explicit := f.resolveAst(_statsCollector({ files: { "s_R1.fq": "ref1", "s_R2.fq": "ref2" } }).metric("reads"), tagMap, allFiles)
+	test.isEqual(["s_R1.fq", "s_R2.fq"], explicit.files)
+
+	// no files: the default stands in, as for a built-in metric
+	none := f.resolveAst(_statsCollector({ tag: "missing" }).metric("reads", { default: 5 }), tagMap, allFiles)
+	test.isEqual({ op: "const", value: 5 }, none)
+}
+
+TestReferencedCollectors := func() {
+	stats := _statsCollector({ tag: "reads" })
+	formula := stats.metric("reads").times(4).atLeast(stats.metric("longestRead")).plus(f.size("reads"))
+	resolved := f.resolveAst(formula, { "reads": ["b", "a"] }, ["a", "b"])
+	test.isEqual({ readStats: ["a", "b"] }, f.referencedCollectors(resolved))
+	test.isEqual({}, f.referencedCollectors(f.resolveAst(f.size("reads"), { "reads": ["a"] }, ["a"])))
+}
+
+TestEvaluateCustomMetric := func() {
+	stats := _statsCollector({ tag: "reads" })
+	values := { reads: 1000000, longestRead: 301 }
+	resolver := {
+		size: func(files) { return 0 },
+		lineCount: func(files) { return 0 },
+		custom: func(node) { return values[node.name] }
+	}
+	// the mixcr scratch shape: max(4 x bases, 11 x reads x longest^2) in whole units
+	formula := stats.metric("reads").times(4).atLeast(stats.metric("reads").dividedBy(1000).times(11).times(stats.metric("longestRead")).times(stats.metric("longestRead")).dividedBy(1000000000))
+	resolved := f.resolveAst(formula, { "reads": ["a"] }, ["a"])
+	test.isEqual(4000000, f.evaluateResource(resolved, resolver, "scratch"))
+}
+
+TestParseCollectorOutput := func() {
+	declared := ["reads", "longestRead"]
+	test.isEqual({ values: { reads: 12, longestRead: 0 } },
+		f.parseCollectorOutput("readStats", declared, bytes("{\"reads\": 12, \"longestRead\": 0}\n")))
+
+	bad := func(data) {
+		res := f.parseCollectorOutput("readStats", declared, bytes(data))
+		test.isTrue(!is_undefined(res.err), "expected an error for " + data)
+		test.isTrue(text.contains(res.err, "readStats"), "the error names the collector: " + res.err)
+		return res.err
+	}
+	test.isTrue(text.contains(bad("12"), "JSON object"))
+	test.isTrue(text.contains(bad(""), "JSON object"))
+	test.isTrue(text.contains(bad("{\"reads\": 12}"), "did not write metric \"longestRead\""))
+	test.isTrue(text.contains(bad("{\"reads\": 12, \"longestRead\": 1, \"extra\": 3}"), "does not declare"))
+	test.isTrue(text.contains(bad("{\"reads\": 1.5, \"longestRead\": 1}"), "non-negative integer"))
+	test.isTrue(text.contains(bad("{\"reads\": -1, \"longestRead\": 1}"), "non-negative integer"))
+	test.isTrue(text.contains(bad("{\"reads\": \"12\", \"longestRead\": 1}"), "non-negative integer"))
+}
