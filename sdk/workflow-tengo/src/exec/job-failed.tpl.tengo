@@ -1,0 +1,17 @@
+/**
+ * The end of a job with fallbacks that no plan can continue (exec fallbacks): fails with the
+ * composed message, and every output of the job takes the error from it.
+ *
+ * The outcome router renders it instead of failing itself. A template that fails keeps nothing it
+ * wrote, so a failing router could not switch the stream collections from the failed attempt's live
+ * stream to its saved files: the collections would show a dead attempt as running for good.
+ *
+ * inputs.message: string - the job's error text: the last attempt's message and the history
+ */
+
+self := import(":tpl.light")
+ll := import(":ll")
+
+self.body(func(inputs) {
+	ll.panic("%s", inputs.message)
+})

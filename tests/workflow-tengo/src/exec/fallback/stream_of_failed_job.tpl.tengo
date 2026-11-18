@@ -1,0 +1,34 @@
+/**
+ * The stdout stream of a job with fallbacks that fails as a whole: the root exits 2, its handler
+ * prints a line and exits 3. `attempts`, an error like every other output of the job, keeps the
+ * job referenced: nothing would run it otherwise.
+ *
+ * inputs.nonce: string
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["stdoutStream", "attempts"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	shell := func(script) {
+		return exec.builder().
+			cpu(1).ram("50Mi").
+			software(shellSw).
+			arg("-c").
+			arg(script + " # " + inputs.nonce).
+			inLightQueue().
+			saveStdoutStream()
+	}
+
+	handler := shell("echo fallback-1; exit 3")
+	root := shell("echo root; exit 2").
+		fallbacks({ SoftwareError: [{ name: "handler", builder: handler }] })
+
+	res := root.run()
+	return { stdoutStream: res.getStdoutStream(), attempts: res.getAttempts() }
+})

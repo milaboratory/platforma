@@ -283,6 +283,16 @@ pick := func(policy, failDetails, lastLogLines) {
 }
 
 /**
+ * @param oc: map - the outcome JSON of a failed attempt
+ * @return bool - whether its process never started (GPUMissed): such an attempt cost nothing and
+ *         does not count against the attempt cap
+ */
+neverStarted := func(oc) {
+	return !is_undefined(oc.failDetails) && !is_undefined(oc.failDetails.reason) &&
+		!is_undefined(_NEVER_STARTED[oc.failDetails.reason])
+}
+
+/**
  * Composes the error text of a failed attempt from its outcome: the backend's meta lines, the
  * exit code, the command and the log tail, as the runner wrote it into the error before
  * RunCommand v3.
@@ -416,6 +426,7 @@ export ll.toStrict({
 	planKey: planKey,
 	flatten: flatten,
 	pick: pick,
+	neverStarted: neverStarted,
 	ramBytes: ramBytes,
 	biggestOomPlan: biggestOomPlan,
 	composeMessage: composeMessage,

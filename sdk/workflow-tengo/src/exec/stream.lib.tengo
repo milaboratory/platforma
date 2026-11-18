@@ -92,6 +92,29 @@ createWithLive := func(workdirBefore, filePath, downloadableRef) {
 }
 
 /**
+ * Creates the live stream of a file of a working directory alone, for a manager made later with
+ * managerOf.
+ *
+ * @param workdirBefore: reference - the workdir the command runs in.
+ * @param filePath: string - the path of the file in the workdir.
+ * @return field - the CreateStream output
+ */
+createLive := func(workdirBefore, filePath) {
+	return _create(workdirBefore, filePath).output
+}
+
+/**
+ * A manager of a live stream (createLive) whose final content is given.
+ *
+ * @param live: field - the live stream
+ * @param downloadableRef: reference - the blob, or the stand-in, the manager switches to
+ * @return reference - the manager
+ */
+managerOf := func(live, downloadableRef) {
+	return _manager({ output: live }, downloadableRef)
+}
+
+/**
  * The final content of a stream whose file the attempt never wrote (the command never started) or
  * could not save: a JSON value naming the file, never an error. A save of a missing file, or a
  * missing key, would be an error that spreads from the manager to every other output of the exec. A log driver that
@@ -220,6 +243,35 @@ attemptStarted := func(collections, attempt, streams, jobStart) {
 }
 
 /**
+ * A failed attempt ended: its history entry goes into `outcome<K>`, and `attempt<K>` becomes a
+ * manager whose final content is the attempt's own file, given directly. The manager the attempt
+ * started with reads that file through the outcome router's outputs, which the job's error reaches
+ * once a later attempt fails too, and then it is an error for good. When the job ends with this
+ * attempt, `stream` switches to its files as well, instead of staying on its dead live stream.
+ *
+ * @param collections: map - file name -> StreamCollection
+ * @param attempt: int - the attempt index K
+ * @param entry: map - the attempt's history entry
+ * @param live: map - file name -> the attempt's live stream (createLive)
+ * @param files: map - file name -> the attempt's own final content
+ * @param jobEnds: bool - no attempt follows
+ */
+attemptFailed := func(collections, attempt, entry, live, files, jobEnds) {
+	for name, coll in collections {
+		_setDynamic(coll, "outcome" + string(attempt), entry)
+		if is_undefined(files[name]) {
+			continue
+		}
+		if !is_undefined(live[name]) {
+			_setDynamic(coll, "attempt" + string(attempt), managerOf(live[name], files[name]))
+		}
+		if jobEnds {
+			_setDynamic(coll, "stream", files[name])
+		}
+	}
+}
+
+/**
  * An attempt ended: its history entry goes into `outcome<K>`; when it is the winner, `stream`
  * switches to its files.
  *
@@ -241,9 +293,12 @@ export ll.toStrict({
 	RTYPE_STREAM_COLLECTION: RTYPE_STREAM_COLLECTION,
 	create: create,
 	createWithLive: createWithLive,
+	createLive: createLive,
+	managerOf: managerOf,
 	notWritten: notWritten,
 	attemptFiles: attemptFiles,
 	createCollection: createCollection,
 	attemptStarted: attemptStarted,
-	attemptEnded: attemptEnded
+	attemptEnded: attemptEnded,
+	attemptFailed: attemptFailed
 })
