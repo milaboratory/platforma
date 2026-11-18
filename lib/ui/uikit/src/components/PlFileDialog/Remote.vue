@@ -17,6 +17,7 @@ import style from "./pl-file-dialog.module.scss";
 import { defaultData, useVisibleItems, vTextOverflown } from "./remote-helpers";
 import { getFilePathBreadcrumbs, normalizeExtensions, type FileDialogItem } from "./utils";
 import { createLimiter, expandRemoteFolders } from "./remote-folder-walk";
+import { isJunkName } from "./folder-walk";
 
 // note that on a Mac, a click combined with the control key is intercepted by the operating system and used to open a context menu, so ctrlKey is not detectable on click events.
 const isCtrlOrMeta = (ev: KeyboardEvent | MouseEvent) => ev.ctrlKey || ev.metaKey;
@@ -100,6 +101,14 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
           return a.name.localeCompare(b.name);
         })
         .map((it, id) => ({ id, ...it }));
+
+      // An opened folder that was selected stays selected as its contents.
+      if (openedSelected === dirPath) {
+        openedSelected = undefined;
+        for (const item of data.items) {
+          if (item.canBeSelected && !isJunkName(item.name)) item.selected = true;
+        }
+      }
 
       data.lastSelected = undefined;
     })
@@ -311,8 +320,33 @@ onBeforeUnmount(() => {
   resetFolderCounts();
 });
 
+/** The folder being opened while selected; its contents load selected. */
+let openedSelected: string | undefined;
+
 const setDirPath = (dirPath: string) => {
+  openedSelected = undefined;
   data.dirPath = dirPath;
+};
+
+const openFolder = (folder: FileDialogItem, wasSelected = folder.selected) => {
+  setDirPath(folder.path);
+  if (wasSelected) openedSelected = folder.path;
+};
+
+/** A folder row's selection before the click that may start a double-click. */
+let lastFolderClick: { path: string; wasSelected: boolean } | undefined;
+
+const clickFolder = (ev: MouseEvent, folder: FileDialogItem) => {
+  // The second click of a double-click opens the folder; it does not toggle it again.
+  if (ev.detail > 1) return;
+  lastFolderClick = { path: folder.path, wasSelected: folder.selected };
+  selectFile(ev, folder);
+};
+
+/** Opens the folder as it was before the double-click's first click changed it. */
+const dblclickFolder = (folder: FileDialogItem) => {
+  const before = lastFolderClick?.path === folder.path ? lastFolderClick.wasSelected : undefined;
+  openFolder(folder, before ?? folder.selected);
 };
 
 const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
@@ -549,21 +583,21 @@ const lsContainerRef = ref<HTMLElement | undefined>();
             v-if="file.isDir && multi"
             :class="{ [style.canBeSelected]: true, [style.selected]: file.selected }"
             data-testid="pl-file-dialog-dir"
-            @click.stop="(ev) => selectFile(ev, file)"
-            @dblclick.stop="setDirPath(file.path)"
+            @click.stop="(ev) => clickFolder(ev, file)"
+            @dblclick.stop="dblclickFolder(file)"
           >
             <PlIcon16
               name="chevron-right"
               :class="$style.opener"
               data-testid="pl-file-dialog-dir-open"
-              @click.stop="setDirPath(file.path)"
+              @click.stop="openFolder(file)"
             />
             <span
               v-text-overflown
               :class="$style.opener"
               :title="file.name"
               data-testid="pl-file-dialog-dir-name"
-              @click.stop="setDirPath(file.path)"
+              @click.stop="openFolder(file)"
               >{{ file.name }}</span
             >
           </div>
