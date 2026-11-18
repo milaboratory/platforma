@@ -462,7 +462,7 @@ _planOf := func(st) {
 						ll.assert(!is_undefined(ref), "exec.builder: collector %q reads file %q, which it has no resource for", name, fn)
 						refs[fn] = ref
 					}
-					outputs[name] = _collectorResource(c, files, refs)
+					outputs[name] = _collectorResource(c, refs)
 				}
 				customMetricsMapResource = smart.createMapResource(outputs)
 			}
@@ -2315,18 +2315,16 @@ _lineCountResource = func(fileName, fileRef) {
 }
 
 // _collectorResource runs a custom metric collector over its files and returns the content
-// resource of the JSON object it writes. The author's builder function sets the software,
-// arguments and resources; the files and the saved output are added here, so the collector
-// cannot read anything it was not given.
-_collectorResource = func(c, files, refs) {
-	b := c.builder(copy(files))
+// resource of the JSON object it writes. The author's builder function gets the files and sets
+// the software, arguments, files and resources; the output is saved here.
+_collectorResource = func(c, refs) {
+	b := c.builder(copy(refs))
 	ll.assert(ll.isStrict(b) && ll.methodExists(b, "_execBuilderId"),
 		"exec.formula.collector(%q): builder must return an exec.builder(), got %v", c.name, b)
-	for fn in files {
-		b.addFile(fn, refs[fn])
+	if c.output == "stdout" {
+		return b.saveStdoutContent().run().getStdoutContent()
 	}
-	b.saveFileContent(c.output)
-	return b.run().getFileContent(c.output)
+	return b.saveFileContent(c.output).run().getFileContent(c.output)
 }
 
 export ll.toStrict({

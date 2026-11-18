@@ -21,6 +21,8 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 file := import("@platforma-sdk/workflow-tengo:file")
 ll := import("@platforma-sdk/workflow-tengo:ll")
 text := import("text")
+slices := import("@platforma-sdk/workflow-tengo:slices")
+maps := import("@platforma-sdk/workflow-tengo:maps")
 
 f := exec.formula
 
@@ -45,13 +47,19 @@ self.body(func(inputs) {
 	collectorDef := {
 		metrics: ["lines", "bytes"],
 		builder: func(files) {
-			list := text.join(files, " ")
-			script := "printf '{\"lines\": %d, \"bytes\": %d}' $(cat " + list + " | wc -l) $(cat " + list + " | wc -c) > metrics.json"
+			names := slices.quickSort(maps.getKeys(files))
+			list := text.join(names, " ")
+			script := "printf '{\"lines\": %d, \"bytes\": %d}' $(cat " + list + " | wc -l) $(cat " + list + " | wc -c)"
 			if mode == "invalid" {
-				script = "printf '{\"lines\": 1.5, \"bytes\": 3}' > metrics.json"
+				script = "printf '{\"lines\": 1.5, \"bytes\": 3}'"
 			}
-			return shell(script).cpu(1).mem("64MiB")
-		}
+			b := shell(script).cpu(1).mem("64MiB")
+			for name in names {
+				b.addFile(name, files[name])
+			}
+			return b
+		},
+		output: "stdout"
 	}
 	if mode == "explicit" {
 		collectorDef.files = { "a.txt": inputFile, "b.txt": inputFile }

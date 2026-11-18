@@ -557,12 +557,15 @@ _collectorSeq := 0
  * @param name: string - unique among the collectors of one exec; not a built-in metric name
  * @param def: map -
  *   metrics: string[]     - the metric names the collector writes (at least one, unique)
- *   builder: func(files)  - gets the sorted file names and returns an exec.builder() with the
- *                           software, arguments and resources (its cost bound) set. The SDK adds
- *                           the files under those names and saves `output`; do not run() it.
- *   output: string        - optional, default "metrics.json": the file the software writes, a
- *                           JSON object with one non-negative integer per declared metric and
- *                           no other key, e.g. {"reads": 1200000, "longestRead": 301}
+ *   builder: func(files)  - gets the files to read, { <file name>: <file resource> }, and returns
+ *                           an exec.builder() that writes `output`, with the software, arguments,
+ *                           files and resources (its cost bound) set; do not run() it. It may run
+ *                           commands of its own first and stage their results, so a tool's report
+ *                           can be turned into the metrics by a second command.
+ *   output: string        - optional, default "metrics.json": the file the command writes, or
+ *                           "stdout" for its standard output. A JSON object with one non-negative
+ *                           integer per declared metric and no other key, e.g.
+ *                           {"reads": 1200000, "longestRead": 301}
  *   tag: string           - optional: read the exec's files under this addFile tag
  *   files: map            - optional: { <file name>: <file resource> } the collector reads,
  *                           for a job that does not stage the files itself. Exclusive with tag.
@@ -585,7 +588,7 @@ collector := func(name, def) {
 		ll.assert(is_undefined(seen[m]), "exec.formula.collector(%q): metric %q is declared twice", name, m)
 		seen[m] = true
 	}
-	ll.assert(is_callable(def.builder), "exec.formula.collector(%q): builder must be a function of the file names", name)
+	ll.assert(is_callable(def.builder), "exec.formula.collector(%q): builder must be a function of the files", name)
 	output := is_undefined(def.output) ? "metrics.json" : def.output
 	ll.assert(is_string(output) && output != "", "exec.formula.collector(%q): output must be a file name", name)
 	ll.assert(is_undefined(def.tag) || is_undefined(def.files), "exec.formula.collector(%q): give tag or files, not both", name)
