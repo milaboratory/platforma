@@ -105,9 +105,13 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
       // An opened folder that was selected stays selected as its contents.
       if (openedSelected === dirPath) {
         openedSelected = undefined;
+        const inherited = new Set<string>();
         for (const item of data.items) {
-          if (item.canBeSelected && !isJunkName(item.name)) item.selected = true;
+          if (!item.canBeSelected || isJunkName(item.name)) continue;
+          item.selected = true;
+          if (item.isDir) inherited.add(item.path);
         }
+        inheritedFolders.value = inherited;
       }
 
       data.lastSelected = undefined;
@@ -233,10 +237,25 @@ const resetFolderCounts = () => {
 
 watch(() => selectedFolders.value.map((f) => f.path).join("\n"), syncFolderCounts);
 
+/**
+ * Subfolders selected because their selected parent was opened. Like the parent's own
+ * count, they may hold nothing to import without blocking the rest; selecting one by hand
+ * makes it an ordinary selection again.
+ */
+const inheritedFolders = shallowRef<ReadonlySet<string>>(new Set());
+
+const makeExplicit = (paths: string[]) => {
+  if (!paths.some((p) => inheritedFolders.value.has(p))) return;
+  const next = new Set(inheritedFolders.value);
+  for (const p of paths) next.delete(p);
+  inheritedFolders.value = next;
+};
+
 const folderSummary = computed(() => {
   let files = 0;
   let counting = false;
   const empty: string[] = [];
+  const emptyInherited: string[] = [];
   const failed: string[] = [];
   for (const folder of selectedFolders.value) {
     const count = folderCounts.value.get(folder.path);
@@ -245,11 +264,15 @@ const folderSummary = computed(() => {
       files += count?.filesFound ?? 0;
     } else if (count.state === "done") {
       files += count.handles.length;
-      if (count.handles.length === 0) empty.push(folder.name);
+      if (count.handles.length > 0) continue;
+      if (inheritedFolders.value.has(folder.path)) emptyInherited.push(folder.name);
+      else empty.push(folder.name);
     } else {
       failed.push(`${folder.name}${count.message}`);
     }
   }
+  // Still nothing at all to import once everything is counted: name them after all.
+  if (!counting && files + selectedFiles.value.length === 0) empty.push(...emptyInherited);
   return { files, counting, empty, failed };
 });
 
@@ -309,6 +332,7 @@ const getFilesToImport = async (): Promise<ImportedFiles | undefined> => {
   const files = selectedFiles.value.flatMap((f) => (f.handle ? [f.handle] : []));
   const folders = selectedFolders.value.map((f) => f.path);
   if (folders.length === 0) return { storageHandle, files };
+  const selectionBefore = selectionKey.value;
 
   const controller = new AbortController();
   importing.value = controller;
@@ -319,11 +343,11 @@ const getFilesToImport = async (): Promise<ImportedFiles | undefined> => {
   } finally {
     importing.value = undefined;
   }
-  if (folderError.value) return undefined;
+  // The selection changed while Import waited: import nothing rather than a stale list.
+  if (selectionKey.value !== selectionBefore || folderError.value) return undefined;
   const inFolders: ImportFileHandle[] = [];
   for (const path of folders) {
     const count = folderCounts.value.get(path);
-    // Deselected while waiting: the selection changed under Import, so do nothing.
     if (count?.state !== "done") return undefined;
     inFolders.push(...count.handles);
   }
@@ -332,6 +356,13 @@ const getFilesToImport = async (): Promise<ImportedFiles | undefined> => {
 
 /** Stops waiting; the counts go on while their folders stay selected. */
 const cancelImport = () => importing.value?.abort();
+
+/** What Import would take; any change while Import waits cancels it. */
+const selectionKey = computed(() =>
+  [...selectedFiles.value, ...selectedFolders.value].map((f) => f.path).join("\n"),
+);
+
+watch(selectionKey, () => cancelImport());
 
 onBeforeUnmount(() => {
   cancelImport();
@@ -384,6 +415,7 @@ const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
     }
 
     file.selected = !file.selected;
+    makeExplicit([file.path]);
 
     if (!props.multi) {
       return;
@@ -398,11 +430,9 @@ const selectFile = (ev: MouseEvent, file: FileDialogItem) => {
     }
 
     if (shiftKey && lastSelected !== undefined) {
-      items.forEach((f) => {
-        if (f.canBeSelected && between(f.id, lastSelected, file.id)) {
-          f.selected = true;
-        }
-      });
+      const range = items.filter((f) => f.canBeSelected && between(f.id, lastSelected, file.id));
+      range.forEach((f) => (f.selected = true));
+      makeExplicit(range.map((f) => f.path));
     }
 
     if (file.selected) {
@@ -416,11 +446,9 @@ const changeAll = (selected: boolean) => {
     return;
   }
 
-  visibleItems.value
-    .filter((f) => f.canBeSelected)
-    .forEach((file) => {
-      file.selected = selected;
-    });
+  const items = visibleItems.value.filter((f) => f.canBeSelected);
+  items.forEach((file) => (file.selected = selected));
+  if (selected) makeExplicit(items.map((f) => f.path));
 };
 
 const selectAll = () => changeAll(true);

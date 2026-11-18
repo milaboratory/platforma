@@ -152,4 +152,23 @@ describe("expandRemoteFolders", () => {
     await expect(run).rejects.toBeInstanceOf(FolderListError);
     await expect(run).rejects.toMatchObject({ path: "data/plate-1/A02" });
   });
+
+  test("an aborted walk sends no calls still queued behind other walks", async () => {
+    const storageFake = fakeStorage(plates);
+    const limit = createLimiter(1);
+    const controller = new AbortController();
+    const other = expandRemoteFolders(storageFake.listFiles, storage, ["data/plate-3"], {
+      extensions: undefined,
+      limit,
+    });
+    const aborted = expandRemoteFolders(storageFake.listFiles, storage, ["data/plate-1"], {
+      extensions: undefined,
+      limit,
+      signal: controller.signal,
+    });
+    controller.abort();
+    await expect(aborted).rejects.toThrow();
+    await other;
+    expect(storageFake.calls.some((c) => c.startsWith("data/plate-1"))).toBe(false);
+  });
 });

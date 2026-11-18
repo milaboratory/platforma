@@ -75,7 +75,11 @@ export async function expandRemoteFolders(
     signal?.throwIfAborted();
     let listing: ListFilesResult;
     try {
-      listing = await limited(() => listFiles(storage, dir));
+      // A call queued behind other walks may start after this walk was aborted.
+      listing = await limited(() => {
+        signal?.throwIfAborted();
+        return listFiles(storage, dir);
+      });
     } catch (err) {
       signal?.throwIfAborted();
       throw new FolderListError(dir, err);
