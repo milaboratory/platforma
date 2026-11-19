@@ -8,7 +8,7 @@ self.body(func(inputs){
 
 	tsv := inputs.inputTsv
 
-	wf := pt.workflow()
+	wf := pt.workflow().name("pt-simple-test")
 
 	df := wf.frame(tsv, {
 		xsvType: "tsv"
