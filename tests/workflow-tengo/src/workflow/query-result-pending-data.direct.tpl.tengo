@@ -1,0 +1,15 @@
+// Reads the items of the multi-result query passed as the input "q".
+// The body runs when the specs of the query are ready: its data map can be pending.
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+self.awaitState("q", "spec", "ResourceReady")
+
+self.body(func(inputs) {
+	items := inputs.q
+	return {
+		count: smart.createJsonResource(len(items)),
+		name: smart.createJsonResource(items[0].spec.name),
+		data: items[0].data
+	}
+})
