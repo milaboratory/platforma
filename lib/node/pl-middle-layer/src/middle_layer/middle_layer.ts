@@ -168,6 +168,8 @@ import { V2RegistryProvider } from "../block_registry";
 import type { Dispatcher } from "undici";
 import { RetryAgent } from "undici";
 import { getDebugFlags } from "../debug";
+import type { ExecCountersSnapshot } from "../debug/exec_counters";
+import { execCountersDelta, formatExecCountersDelta, JsExecCounters } from "../debug/exec_counters";
 import { ProjectHelper } from "../model/project_helper";
 import type { TreeSnapshotStat } from "./tree_snapshot_store";
 import { TreeSnapshotStore } from "./tree_snapshot_store";
@@ -194,6 +196,8 @@ export interface MiddleLayerEnvironment {
   readonly driverKit: MiddleLayerDriverKit;
   readonly serviceRegistry: ModelServiceRegistry;
   readonly projectHelper: ProjectHelper;
+  /** Model code executions of this middle layer, shared by every VM it starts. */
+  readonly jsExecCounters: JsExecCounters;
   /** Persisted project tree mirrors. Undefined when snapshots are switched off, or when the
    *  client is impersonating another user, in which case nothing is read or written. */
   readonly treeSnapshots?: TreeSnapshotStore;
@@ -250,6 +254,7 @@ export class MiddleLayer {
   ) {
     this.pl = this.env.pl;
     this.startEnvelopeCleanup();
+    if (getDebugFlags().logExecCounters) this.startExecCountersLog();
   }
 
   /**
@@ -1851,6 +1856,33 @@ export class MiddleLayer {
     return this.env.treeSnapshots?.getStats();
   }
 
+  /** Model bundle evaluations and callbacks by lambda, and transactions by name, since start.
+   *  Two readings taken around a scenario and passed to `execCountersDelta` give what the
+   *  scenario cost. Transactions include those made on the same client outside the middle layer. */
+  public get execCounters(): ExecCountersSnapshot {
+    return { ...this.env.jsExecCounters.snapshot(), transactions: this.pl.txCountsByName };
+  }
+
+  private static readonly ExecCountersLogIntervalMs = 10_000;
+  private execCountersLogTimer: ReturnType<typeof setInterval> | undefined;
+
+  /** Every 10 s, logs one line with the transactions and model VMs run since the previous tick;
+   *  a tick with no work logs nothing. */
+  private startExecCountersLog(): void {
+    let previous = this.execCounters;
+    this.execCountersLogTimer = setInterval(() => {
+      const current = this.execCounters;
+      const line = formatExecCountersDelta(
+        execCountersDelta(previous, current),
+        MiddleLayer.ExecCountersLogIntervalMs,
+      );
+      previous = current;
+      if (line !== undefined) this.env.logger.info(line);
+    }, MiddleLayer.ExecCountersLogIntervalMs);
+    // Don't keep the process alive solely for logging.
+    this.execCountersLogTimer.unref?.();
+  }
+
   /**
    * Deallocates all runtime resources consumed by this object and awaits
    * actual termination of event loops and other processes associated with
@@ -1871,6 +1903,7 @@ export class MiddleLayer {
 
   public async close() {
     if (this.envelopeCleanupTimer !== undefined) clearInterval(this.envelopeCleanupTimer);
+    if (this.execCountersLogTimer !== undefined) clearInterval(this.execCountersLogTimer);
     await this.instanceStatsWatch?.terminate();
     await Promise.all([...this.openedProjects.values()].map((prj) => prj.destroy()));
     // this.env.quickJs;
@@ -1996,6 +2029,7 @@ export class MiddleLayer {
     );
 
     const quickJs = await getQuickJS();
+    const jsExecCounters = new JsExecCounters();
 
     const runtimeCapabilities = new RuntimeCapabilities();
     // add runtime capabilities of model here
@@ -2049,7 +2083,8 @@ export class MiddleLayer {
       runtimeCapabilities,
       serviceRegistry,
       quickJs,
-      projectHelper: new ProjectHelper(quickJs, logger),
+      projectHelper: new ProjectHelper(quickJs, logger, jsExecCounters),
+      jsExecCounters,
       treeSnapshots,
       dispose: async () => {
         await serviceRegistry.dispose();

@@ -9,6 +9,7 @@ import type { DeadlineSettings } from "./context";
 import { JsExecutionContext } from "./context";
 import type { BlockContextAny } from "../middle_layer/block_ctx";
 import { getDebugFlags } from "../debug";
+import type { JsExecCounters } from "../debug/exec_counters";
 import { recordModelRenderSync } from "@milaboratories/pl-crash-recorder";
 
 /** Memory ceiling applied to every QuickJS runtime that evaluates model code. */
@@ -149,7 +150,9 @@ export function computableFromRF(
       };
 
       return recordModelRenderSync(crashRecorder, renderInfo, () => {
+        env.jsExecCounters.countBundleEvaluation(fh.handle);
         rCtx.evaluateBundle(code.content);
+        env.jsExecCounters.countCallback(fh.handle);
         const result = rCtx.runCallback(fh.handle);
 
         rCtx.resetComputableCtx();
@@ -188,8 +191,10 @@ export function computableFromRF(
               { ...renderInfo, recalculation: recalculationCounter },
               () => {
                 // resolving futures
-                for (const [handle, value] of Object.entries(resolved))
+                for (const [handle, value] of Object.entries(resolved)) {
+                  env.jsExecCounters.countCallback(fh.handle);
                   rCtx.runCallback(handle, value);
+                }
 
                 // rendering result
                 const renderedResult = rCtx.importObjectUniversal(result);
@@ -224,6 +229,7 @@ export function computableFromRF(
 
 export function executeSingleLambda(
   quickJs: QuickJSWASMModule,
+  counters: JsExecCounters,
   fh: ConfigRenderLambda,
   codeWithInfo: BlockCodeWithInfo,
   ...args: unknown[]
@@ -252,9 +258,11 @@ export function executeSingleLambda(
     );
 
     // Initializing the model
+    counters.countBundleEvaluation(fh.handle);
     rCtx.evaluateBundle(code.content);
 
     // Running the lambda with arguments (e.g., state for args(), args for enrichmentTargets())
+    counters.countCallback(fh.handle);
     const importedResult = rCtx.importObjectUniversal(rCtx.runCallback(fh.handle, ...args));
     if (getDebugFlags().logJsExecStat)
       console.log(`[jsExec] ${fh.handle}: ${JSON.stringify(rCtx.stats)}`);
