@@ -65,7 +65,7 @@ ts-builder --target browser --serve-config custom.serve.js serve
 TypeScript type checking.
 
 ```bash
-# Check with default tsconfig.json
+# Check with the production tsconfig: tsconfig.build.json if present, else tsconfig.json
 ts-builder --target node types
 
 # Using custom tsconfig
@@ -112,7 +112,11 @@ ts-builder --target browser init-tsconfig
 - `build -w, --watch` - Watch mode for automatic rebuilding
 - `serve -p, --port <port>` - Port for dev server (default: 3000)
 - `serve --host <host>` - Host for dev server (default: localhost)
-- `types -p, --project <path>` - Path to tsconfig.json
+- `types -p, --project <path>` - Path to tsconfig (default: `tsconfig.build.json` if present, else `tsconfig.json`)
+
+### `tsconfig.build.json`
+
+When a package has `tsconfig.build.json`, declaration output (`build`) and `type-check` / `check` read it instead of `tsconfig.json`. This lets `tsconfig.json`, the only name editors and language servers discover, cover tests as well as production sources, while test files stay out of `dist`.
 
 ## Block Development Examples
 

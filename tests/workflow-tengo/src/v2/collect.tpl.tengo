@@ -1,0 +1,7 @@
+// A sub-template that builds a collection from a value it receives resolved: {spec, data}.
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+
+self.body(func(inputs) {
+	return { pf: ex.collection({ v: { spec: inputs.spec, data: inputs.data } }) }
+})

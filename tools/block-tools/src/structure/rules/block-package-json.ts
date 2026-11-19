@@ -110,6 +110,11 @@ const FACADE_EXPORTS = {
   },
 };
 
+/** `block.meta.changelog`: the facade's own `CHANGELOG.md`, the only changelog
+ *  changesets writes for the published package. Not author-owned — any other
+ *  path shows release notes that never change. */
+const BLOCK_CHANGELOG = "file:CHANGELOG.md";
+
 /** Fail loudly if any required `block.*` field is empty — a missing
  *  title / description / logo / organization or empty components map would
  *  otherwise produce an init block that `block-tools pack` rejects only
@@ -167,6 +172,7 @@ export function blockPackageJsonInitial(ctx: RunContext): Record<string, unknown
       title: v.shortName,
       description: `${v.shortName} block`,
       logo: "file:logos/block-logo.png",
+      changelog: BLOCK_CHANGELOG,
       organization: {
         name: v.orgScope,
         url: "https://example.com",
@@ -244,10 +250,11 @@ export function blockPackageJsonRules(ctx: RunContext): void {
   ensureDevDep("typescript", "catalog:");
 
   // `block.components` is fully determined by the discovered modules — keep it
-  // in sync on refresh. `block.meta` is deliberately NOT touched: it is an
-  // author-owned seed (set once in the init package.json), so refresh must
-  // never overwrite the author's title / description / logo.
+  // in sync on refresh. The rest of `block.meta` is deliberately NOT touched:
+  // it is an author-owned seed (set once in the init package.json), so refresh
+  // must never overwrite the author's title / description / logo.
   ensureField("block.components", blockComponents(ctx));
+  ensureField("block.meta.changelog", BLOCK_CHANGELOG);
 
   // The author owns `name` and `version`; `version` MUST be present (the
   // facade publishes).

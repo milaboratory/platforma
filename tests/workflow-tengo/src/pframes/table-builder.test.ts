@@ -541,7 +541,7 @@ async function runQuerySpecConsumer(
     { csv: multiMatchCsv, spec: multiMatchSpec },
     { blockId: producerBlockId },
   );
-  const ctx = await awaitStableState(producer.context());
+  const ctx = await awaitStableState(producer.context(), Timeout);
 
   const consumer = await helper.renderWorkflow(
     "pframes.table-builder-multi-consumer",
@@ -648,5 +648,29 @@ tplTest.concurrent(
     // Only the primary survives; the multi-match query yielded zero columns.
     expect(lines[0]).toBe("ID\tPrimary");
     expect(lines.length).toBe(4); // header + 3 data rows
+  },
+);
+
+tplTest.concurrent(
+  "tableBuilder: an enrichment column given by a serialized value id resolves by its address",
+  async ({ helper, expect, driverKit }) => {
+    const content = await runQuerySpecConsumer(
+      helper,
+      driverKit,
+      "producer-serialized",
+      "consumer-serialized",
+      {
+        addColumn: [
+          {
+            query: {
+              __isEnrichment: "v1",
+              hit: JSON.stringify({ __isRef: true, blockId: "producer-serialized", name: "score" }),
+              path: [],
+            },
+          },
+        ],
+      },
+    );
+    expect(content.trim().split("\n")[0].split("\t")).toContain("Score");
   },
 );

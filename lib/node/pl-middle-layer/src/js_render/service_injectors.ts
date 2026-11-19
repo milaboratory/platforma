@@ -3,6 +3,7 @@ import type {
   CollectionHandle,
   ColumnsCollectionDriverHost,
   DiscoverColumnsOptions,
+  DiscoverRootsOptions,
   InferServiceModel,
   PoolEntry,
   SerializedColumnsSource,
@@ -18,6 +19,7 @@ import type {
   PColumnSpec,
   PColumnValues,
   PObjectId,
+  PObjectSpec,
   PTableColumnId,
   PTableColumnSpec,
   PTableRecordFilter,
@@ -25,6 +27,7 @@ import type {
   BuildQueryInput,
   DeleteColumnRequest,
   DiscoverColumnsRequest,
+  DiscoverRootsRequest,
   PFrameDef,
   SpecQuery,
   PTableDef,
@@ -93,6 +96,14 @@ export function getServiceInjectors(): ServiceInjectorMap {
             driver.discoverColumns(
               vm.vm.getString(handle) as SpecFrameHandle,
               vm.importObjectViaJson(request) as DiscoverColumnsRequest,
+            ),
+          ),
+
+        discoverRoots: (handle: QuickJSHandle, request: QuickJSHandle) =>
+          vm.exportObjectViaJson(
+            driver.discoverRoots(
+              vm.vm.getString(handle) as SpecFrameHandle,
+              vm.importObjectViaJson(request) as DiscoverRootsRequest,
             ),
           ),
 
@@ -208,7 +219,7 @@ export function getServiceInjectors(): ServiceInjectorMap {
             assertFieldType: "Input",
             ignoreError: true,
           });
-          return specNode?.getDataAsJson<PColumnSpec>();
+          return specNode?.getDataAsJson<PObjectSpec>();
         },
       };
 
@@ -227,7 +238,9 @@ export function getServiceInjectors(): ServiceInjectorMap {
           ),
 
         isEmpty: (handle: QuickJSHandle) =>
-          vm.exportSingleValue(driver.isEmpty(vm.vm.getString(handle) as CollectionHandle)),
+          vm.exportSingleValue(
+            driver.isEmpty(vm.vm.getString(handle) as CollectionHandle, bindings),
+          ),
 
         isFinal: (handle: QuickJSHandle) =>
           vm.exportSingleValue(driver.isFinal(vm.vm.getString(handle) as CollectionHandle)),
@@ -267,6 +280,15 @@ export function getServiceInjectors(): ServiceInjectorMap {
                 vm.importObjectViaJson(opts) as DiscoverColumnsOptions,
                 bindings,
               ),
+            ),
+          ),
+
+        discoverRoots: (handle: QuickJSHandle, opts: QuickJSHandle) =>
+          vm.exportObjectViaJson(
+            driver.discoverRoots(
+              vm.vm.getString(handle) as CollectionHandle,
+              vm.importObjectViaJson(opts) as DiscoverRootsOptions,
+              bindings,
             ),
           ),
       };

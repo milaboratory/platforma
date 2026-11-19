@@ -1,7 +1,9 @@
+export { withCallAbortSignal } from "./core/abort_signal";
 export * from "./core/types";
 export * as Pl from "./helpers/pl";
 export * from "./core/config";
 export * from "./core/client";
+export * from "./core/license";
 export * from "./core/driver";
 export * from "./core/transaction";
 export * from "./core/errors";
@@ -13,6 +15,7 @@ export * from "./core/final";
 export * from "./core/finality";
 export * from "./core/tree_filter";
 export * from "./core/user_resources";
+export * from "./core/controllers";
 export * from "./core/wire";
 export * from "./helpers/tx_helpers";
 export * from "./helpers/poll";

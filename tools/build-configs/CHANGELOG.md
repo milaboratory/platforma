@@ -1,5 +1,11 @@
 # @milaboratories/build-configs
 
+## 2.0.3
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+
 ## 2.0.2
 
 ### Patch Changes

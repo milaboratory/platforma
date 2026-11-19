@@ -212,46 +212,69 @@ every := func(slice, fn) {
 //   - with user-provided ordering
 //   - and with native sorting
 //
+// Hoare partition around the middle element: sorted input and runs of equal elements both
+// split evenly. Only the smaller part is sorted recursively and the larger one in the loop,
+// so the recursion depth stays at most log2(n) for any input. The tengo VM stack has 2048
+// slots and each level takes about 7 of them.
+//
 
 _quickSortFn := func(arr, left, right, less) {
-	if is_undefined(arr) || len(arr) <= 1 || left < 0 || left >= len(arr) || right < 0 || right >= len(arr) || left >= right {
+	if is_undefined(arr) || len(arr) <= 1 || left < 0 || left >= len(arr) || right < 0 || right >= len(arr) {
 		return arr
 	}
-	idx := left
-	for i := left; i < right; i++ {
-		if less(arr[i], arr[right]) {
-			temp := arr[i]
-			arr[i] = arr[idx]
-			arr[idx] = temp
-			idx++
+	for left < right {
+		pivot := arr[left + (right - left) / 2]
+		i := left
+		j := right
+		for i <= j {
+			for less(arr[i], pivot) { i++ }
+			for less(pivot, arr[j]) { j-- }
+			if i <= j {
+				temp := arr[i]
+				arr[i] = arr[j]
+				arr[j] = temp
+				i++
+				j--
+			}
+		}
+		if j - left < right - i {
+			_quickSortFn(arr, left, j, less)
+			left = i
+		} else {
+			_quickSortFn(arr, i, right, less)
+			right = j
 		}
 	}
-	temp := arr[right]
-	arr[right] = arr[idx]
-	arr[idx] = temp
-	_quickSortFn(arr, left, idx-1, less)
-	_quickSortFn(arr, idx+1, right, less)
 	return arr
 }
 
 _quickSort := func(arr, left, right) {
-	if is_undefined(arr) || len(arr) <= 1 || left < 0 || left >= len(arr) || right < 0 || right >= len(arr) || left >= right {
+	if is_undefined(arr) || len(arr) <= 1 || left < 0 || left >= len(arr) || right < 0 || right >= len(arr) {
 		return arr
 	}
-	idx := left
-	for i := left; i < right; i++ {
-		if arr[i] < arr[right] {
-			temp := arr[i]
-			arr[i] = arr[idx]
-			arr[idx] = temp
-			idx++
+	for left < right {
+		pivot := arr[left + (right - left) / 2]
+		i := left
+		j := right
+		for i <= j {
+			for arr[i] < pivot { i++ }
+			for pivot < arr[j] { j-- }
+			if i <= j {
+				temp := arr[i]
+				arr[i] = arr[j]
+				arr[j] = temp
+				i++
+				j--
+			}
+		}
+		if j - left < right - i {
+			_quickSort(arr, left, j)
+			left = i
+		} else {
+			_quickSort(arr, i, right)
+			right = j
 		}
 	}
-	temp := arr[right]
-	arr[right] = arr[idx]
-	arr[idx] = temp
-	_quickSort(arr, left, idx-1)
-	_quickSort(arr, idx+1, right)
 	return arr
 }
 

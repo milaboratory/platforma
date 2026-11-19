@@ -1,5 +1,11 @@
 # @milaboratories/sequences
 
+## 1.1.10
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+
 ## 1.1.9
 
 ### Patch Changes

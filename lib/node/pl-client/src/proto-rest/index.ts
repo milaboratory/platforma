@@ -34,7 +34,7 @@ export function createClient<Paths extends {}>(opts: RestClientConfig): Client<P
         credentials: request.credentials,
         dispatcher: opts.dispatcher,
         duplex: request.duplex,
-        headers: request.headers,
+        headers: [...request.headers],
         integrity: request.integrity,
         keepalive: request.keepalive,
         method: request.method,

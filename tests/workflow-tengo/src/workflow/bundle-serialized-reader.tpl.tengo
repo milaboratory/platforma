@@ -1,0 +1,10 @@
+// Reads the spec kind and the data of the bundle column stored under inputs.key.
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+self.awaitState("bundle", "PColumnBundle")
+
+self.body(func(inputs) {
+	column := inputs.bundle.getColumn(inputs.key)
+	return { kind: smart.createJsonResource(column.spec.kind), data: column.data }
+})

@@ -40,6 +40,60 @@ TestSortStructure := func() {
 		"incorrect resorting")
 }
 
+TestSortLargeInputs := func() {
+	n := 5000
+	ascending := []
+	descending := []
+	equal := []
+	for i := 0; i < n; i++ {
+		ascending = append(ascending, i)
+		descending = append(descending, n - 1 - i)
+		equal = append(equal, 7)
+	}
+	less := func(a, b) { return a < b }
+
+	test.isEqual(slices.quickSort(ascending), ascending, "incorrect sorting of large sorted slice")
+	test.isEqual(slices.quickSort(descending), ascending, "incorrect sorting of large reversed slice")
+	test.isEqual(slices.quickSort(equal), equal, "incorrect sorting of large equal slice")
+	test.isEqual(slices.quickSortFn(ascending, less), ascending, "incorrect sorting of large sorted slice")
+	test.isEqual(slices.quickSortFn(descending, less), ascending, "incorrect sorting of large reversed slice")
+	test.isEqual(slices.quickSortFn(equal, less), equal, "incorrect sorting of large equal slice")
+}
+
+TestSortMixed := func() {
+	input := [5, 3, 9, 3, 1, 8, 2, 7, 7, 0, 6, 4, 5, 9, 1]
+	expected := [0, 1, 1, 2, 3, 3, 4, 5, 5, 6, 7, 7, 8, 9, 9]
+	test.isEqual(slices.quickSort(input), expected, "incorrect sorting with duplicates")
+	test.isEqual(slices.quickSortFn(input, func(a, b) { return a < b }), expected, "incorrect sorting with duplicates")
+	test.isEqual(slices.quickSort([]), [], "incorrect sorting of empty slice")
+	test.isEqual(slices.quickSort([1]), [1], "incorrect sorting of one element")
+	test.isEqual(slices.quickSort([2, 1]), [1, 2], "incorrect sorting of two elements")
+}
+
+TestSortPseudoRandom := func() {
+	input := []
+	counts := {}
+	x := 12345
+	for i := 0; i < 2000; i++ {
+		x = (x * 1103515245 + 12345) % 2147483648
+		v := x % 50
+		input = append(input, v)
+		counts[string(v)] = is_undefined(counts[string(v)]) ? 1 : counts[string(v)] + 1
+	}
+
+	for sorted in [slices.quickSort(input), slices.quickSortFn(input, func(a, b) { return a < b })] {
+		test.isEqual(len(sorted), len(input), "sorting changed the length")
+		for i := 1; i < len(sorted); i++ {
+			test.isTrue(sorted[i - 1] <= sorted[i], "slice is not sorted")
+		}
+		sortedCounts := {}
+		for v in sorted {
+			sortedCounts[string(v)] = is_undefined(sortedCounts[string(v)]) ? 1 : sortedCounts[string(v)] + 1
+		}
+		test.isEqual(sortedCounts, counts, "sorting changed the elements")
+	}
+}
+
 Test_slices_every := func() {
 	test.isTrue(slices.every([2, 2, 2], func(elem) { return elem == 2 }))
 	test.isTrue(slices.every([], func(elem) { return elem == 2 }))

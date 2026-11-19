@@ -15,3 +15,10 @@ export type {
   TemplateId,
   TemplateListEntry,
 } from "./template_list";
+export type {
+  BlockActionReading,
+  BlockActionContextMode,
+  BlockActionContextNode,
+  BlockActionTransition,
+} from "./block_action_context";
+export { InstanceStatsContextTypeName, parseInstanceStats } from "./instance_stats";

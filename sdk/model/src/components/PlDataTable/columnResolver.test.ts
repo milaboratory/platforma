@@ -118,3 +118,13 @@ describe("createColumnResolver", () => {
     expect(out).toEqual({ type: "column", id: wrappedA });
   });
 });
+
+describe("createColumnResolver with stored ids", () => {
+  test("an id that cannot be parsed resolves to nothing instead of throwing", () => {
+    const id = createLocalPObjectId(["main", "out"], "col-1");
+    const r = createColumnResolver([lazyOf(id)]);
+    // A discovered id saved before the column-access rework: no `__isDiscovered` marker.
+    const legacy = JSON.stringify({ column: id }) as SUniversalPColumnId;
+    expect(r({ type: "column", id: legacy })).toBeUndefined();
+  });
+});

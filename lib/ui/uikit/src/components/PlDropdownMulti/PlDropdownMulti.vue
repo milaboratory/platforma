@@ -19,6 +19,8 @@ import {
   watchPostEffect,
 } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
+import { missingValueText, missingValueTooltip, pickedValueText } from "../../helpers/columnValue";
+import type { MissingValueLabel, MissingValueTooltip } from "../../helpers/columnValue";
 import { getErrorMessage } from "../../helpers/error.ts";
 import { deepEqual, deepIncludes } from "../../helpers/objects";
 import { normalizeListOptions } from "../../helpers/utils";
@@ -69,9 +71,16 @@ const props = withDefaults(
     placeholder?: string;
     /**
      * Text shown in a chip when a `modelValue` entry is missing from `options` —
-     * e.g. its upstream source was deleted. Rendered italic in error color.
+     * e.g. its upstream source was deleted. Rendered italic in error color. One text for every
+     * such value, or a function giving it per value. By default, the value a column value id
+     * picks, marked as not available, or "Value not available".
      */
-    missingValueLabel?: string;
+    missingValueLabel?: MissingValueLabel;
+    /**
+     * Explains a selected value missing from the options in a tooltip over it: one text for every
+     * such value, or a function giving the content per value.
+     */
+    missingValueTooltip?: MissingValueTooltip;
     /**
      * If `true`, the dropdown component is marked as required.
      */
@@ -100,7 +109,8 @@ const props = withDefaults(
     helper: undefined,
     error: undefined,
     placeholder: "...",
-    missingValueLabel: "Value not available",
+    missingValueLabel: undefined,
+    missingValueTooltip: undefined,
     required: false,
     disabled: false,
     options: undefined,
@@ -134,7 +144,8 @@ const normalizedOptionsRef = computed(() => normalizeListOptions(props.options ?
 
 const selectedOptionsRef = computed(() => {
   // While options load (`options === undefined`), hide chips for unresolved values
-  // to avoid a "missing" flash that resolves once options arrive.
+  // to avoid a "missing" flash that resolves once options arrive. A picked column value
+  // is shown by its own label meanwhile.
   const optionsLoaded = props.options !== undefined;
   return selectedValuesRef.value
     .map((v) => {
@@ -143,16 +154,20 @@ const selectedOptionsRef = computed(() => {
         // Found: render the option's own (normalized) label verbatim — matches
         // PlDropdown. `opt.label` is always a string (possibly ""), never an object,
         // so there is no raw-value leak to guard against.
-        return { ...opt, isMissing: false };
+        return { ...opt, isMissing: false, hint: undefined };
       }
       if (!optionsLoaded) {
-        return undefined;
+        const label = pickedValueText(v);
+        return label === undefined
+          ? undefined
+          : { value: v, label, isMissing: false, hint: undefined };
       }
       // Honor empty `missingValueLabel` verbatim — caller's explicit "render nothing".
       return {
         value: v,
-        label: props.missingValueLabel,
+        label: missingValueText(v, props.missingValueLabel),
         isMissing: true,
+        hint: missingValueTooltip(v, props.missingValueTooltip),
       };
     })
     .filter((v): v is NonNullable<typeof v> => v !== undefined);
@@ -327,7 +342,20 @@ watchPostEffect(() => {
               @click.stop="data.open = true"
               @close="unselectOption(opt.value)"
             >
-              {{ opt.label }}
+              <!-- The hover stops here: the tooltip of the chip itself would close this one. -->
+              <PlTooltip
+                v-if="opt.hint !== undefined"
+                element="span"
+                position="top"
+                data-testid="pl-dropdown-multi-chip-hint"
+                @mouseover.stop
+              >
+                <span>{{ opt.label }}</span>
+                <template #tooltip>
+                  <component :is="opt.hint" />
+                </template>
+              </PlTooltip>
+              <template v-else>{{ opt.label }}</template>
             </PlChip>
           </div>
 
@@ -384,7 +412,20 @@ watchPostEffect(() => {
               small
               @close="unselectOption(opt.value)"
             >
-              {{ opt.label }}
+              <!-- The hover stops here: the tooltip of the chip itself would close this one. -->
+              <PlTooltip
+                v-if="opt.hint !== undefined"
+                element="span"
+                position="top"
+                data-testid="pl-dropdown-multi-chip-hint"
+                @mouseover.stop
+              >
+                <span>{{ opt.label }}</span>
+                <template #tooltip>
+                  <component :is="opt.hint" />
+                </template>
+              </PlTooltip>
+              <template v-else>{{ opt.label }}</template>
             </PlChip>
           </div>
           <DropdownListItem

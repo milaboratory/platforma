@@ -1,0 +1,296 @@
+/**
+ * Block action context.
+ *
+ * The caller creates or passes on the action context of what it creates; the callee reports.
+ *
+ * Every render can have an action context: an ActionContext resource that its "actionContext" field points
+ * to. The field is an optional service field of the render schema: the creator sets it once, and
+ * nothing can change it later.
+ * The middle layer creates the context of the root render of a block. render() creates the context
+ * of every render that template code creates: the baggage is a copy of the baggage of the current
+ * renderer's context with its own "name", and the parent context links it in a "child/..." field,
+ * so the contexts form a tree.
+ *
+ * An "actionContext" field can also point to a sinkhole (ActionSinkhole): reports on that resource are
+ * dropped, but the baggage passes down: a sinkhole holds the baggage like a context does, and every render
+ * it creates gets a sinkhole with a copy of it. render(tpl, inputs, { actionContext: false }) puts a rendered
+ * template and everything below it into the sinkhole.
+ * A render without an "actionContext" field reports nowhere, and its children get no field.
+ *
+ * Reports (record, setReading) are asynchronous key-value sets on the context of the resource
+ * (tx.resourceKeyValueSetAsync): transition/<namespace>/<resource>/<ns> and reading/<namespace>/<resource>/<key>,
+ * where <resource> is the decimal resource ID. They are no-ops when the backend lacks the primitives
+ * (feats.kvAsync, feats.optionalFieldsInSchemas), or when the resource has no action context, so templates
+ * can report unconditionally.
+ *
+ * Namespaces "core", "render", "workdir" and "exec" are reserved for the platform.
+ * Namespaces and reading keys must not contain "/".
+ */
+
+ll := import(":ll")
+maps := import(":maps")
+feats := import(":feats")
+constants := import(":constants")
+json := import("json")
+slices := import(":slices")
+text := import("text")
+times := import("times")
+tx := import("tx")
+
+LINK_FIELD := "actionContext"
+STATES := ["WaitingForInputs", "Running", "WaitingWorkdirGate", "WaitingSubmissionGate", "PopulatingWorkdir",
+	"CollectingOutputs", "WaitingForScheduler", "WaitingForMachine", "Terminated", "Completed"]
+CHILD_FIELD_PREFIX := "child/"
+CONTEXT_TYPE := { Name: "ActionContext", Version: "1" }
+SINKHOLE_TYPE := { Name: "ActionSinkhole", Version: "1" }
+
+// The action context of the current renderer, its context baggage and a counter for child field names. Every import of this module is a new instance, so the state is kept in the
+// execution context.
+_vars := func() {
+	return ll.moduleVars("action-context")
+}
+
+/**
+ * @param rid: resource id
+ * @return what the "actionContext" field of the resource points to:
+ *         { kind: "none" } without the field, { kind: "context", id } for an action context,
+ *         { kind: "sinkhole", id } for anything else.
+ */
+linkOf := func(rid) {
+	fields := tx.getResource(rid).ServiceFields
+	if !maps.containsKey(fields, LINK_FIELD) || fields[LINK_FIELD].Value == 0 {
+		return { kind: "none" }
+	}
+	target := fields[LINK_FIELD].Value
+	if tx.getResource(target).Type.Name == CONTEXT_TYPE.Name {
+		return { kind: "context", id: target }
+	}
+	return { kind: "sinkhole", id: target }
+}
+
+/**
+ * @param rid: resource id
+ * @return id of the action context of the resource, or undefined.
+ */
+contextOf := func(rid) {
+	link := linkOf(rid)
+	return link.kind == "context" ? link.id : undefined
+}
+
+_own := func() {
+	vars := _vars()
+	own := vars.get("own")
+	if is_undefined(own) {
+		own = linkOf(ll.getCurrentTemplateRenderer().ID)
+		vars.set("own", own)
+	}
+	return own
+}
+
+_ownBaggage := func() {
+	vars := _vars()
+	baggage := vars.get("ownBaggage")
+	if is_undefined(baggage) {
+		baggage = {}
+		raw := tx.getResource(_own().id).Data
+		if !is_undefined(raw) && len(raw) > 0 {
+			baggage = json.decode(raw)
+		}
+		vars.set("ownBaggage", baggage)
+	}
+	return copy(baggage)
+}
+
+_childFieldName := func() {
+	vars := _vars()
+	counter := vars.get("childCounter")
+	counter = is_undefined(counter) ? 0 : counter + 1
+	vars.set("childCounter", counter)
+	return CHILD_FIELD_PREFIX + string(times.time_unix_nano(times.now())) + "-" + string(counter)
+}
+
+// _enabled is true when the backend has the primitives of block action context: optional service
+// fields for the link and asynchronous key-value sets for the reports.
+_enabled := func() {
+	return feats.kvAsync && feats.optionalFieldsInSchemas
+}
+
+_link := func(rid, target) {
+	if !_enabled() {
+		return
+	}
+	field := ll.fieldId(rid, LINK_FIELD)
+	tx.createField(field, constants.FTYPE_SERVICE)
+	tx.setFieldToResource(field, target)
+}
+
+_validateKeyPart := func(name, part) {
+	ll.assert(is_string(part) && len(part) > 0, "action context: %s must be a non-empty string", name)
+	ll.assert(!text.contains(part, "/"), "action context: %s %q contains \"/\"", name, part)
+}
+
+_createLinked := func(rid, type, baggage) {
+	id := tx.createEphemeral(type.Name, type.Version, json.encode(baggage))
+	_link(rid, id)
+	return id
+}
+
+// _childBaggage is a copy of the baggage of the current renderer, with the name when it is given.
+_childBaggage := func(name) {
+	baggage := _own().kind == "none" ? {} : _ownBaggage()
+	if !is_undefined(name) {
+		baggage.name = name
+	}
+	return baggage
+}
+
+/**
+ * Points the "actionContext" field of a resource the current template created to a new sinkhole: reports on it
+ * are dropped, and the renders it creates get a sinkhole too. The sinkhole holds a copy of the baggage of
+ * the current renderer, so everything below still knows its block and run. Call it in the transaction
+ * that created the resource.
+ *
+ * @param rid: resource id
+ * @param name: (optional) display name of the resource in the baggage
+ */
+sinkhole := func(rid, ...name) {
+	if _enabled() {
+		_createLinked(rid, SINKHOLE_TYPE, _childBaggage(len(name) > 0 ? name[0] : undefined))
+	}
+}
+
+/**
+ * Points the "actionContext" field of a resource the current template created to the action context of the current
+ * renderer: its context, or the sinkhole. Nothing when the renderer has no action context. Use it for the
+ * resources a controller processes and reports on, e.g. a RunCommand: their reports land in the
+ * context of the template that created them. Call it in the transaction that created the resource.
+ *
+ * @param rid: resource id
+ */
+inherit := func(rid) {
+	own := _own()
+	if own.kind != "none" {
+		_link(rid, own.id)
+	}
+}
+
+/**
+ * Points the "actionContext" field of a resource the current template created to a new action context
+ * with the baggage: the root of a new action context tree. Call it in the transaction that created the
+ * resource, before its inputs are locked. For templates rendered outside a block, e.g. tests and tools.
+ *
+ * @param rid: resource id
+ * @param baggage: map of context baggage
+ * @return id of the new context, or undefined when the backend lacks the primitives
+ */
+createContext := func(rid, baggage) {
+	return _enabled() ? _createLinked(rid, CONTEXT_TYPE, copy(baggage)) : undefined
+}
+
+/**
+ * Sets the action context of a render that the current template created, from the action context of the current
+ * renderer: a new context under the renderer's context, the sinkhole when the renderer is in the
+ * sinkhole, nothing when the renderer has no action context.
+ *
+ * @param rid: id of the new render, in the transaction that created it
+ * @param name: (optional) display name of the render, e.g. the template name
+ * @return id of the new context, or undefined
+ */
+createChild := func(rid, name) {
+	if !_enabled() {
+		return undefined
+	}
+	own := _own()
+	if own.kind == "none" {
+		return undefined
+	}
+	if own.kind == "sinkhole" {
+		sinkhole(rid, name)
+		return undefined
+	}
+
+	contextId := _createLinked(rid, CONTEXT_TYPE, _childBaggage(name))
+
+	childField := ll.fieldId(own.id, _childFieldName())
+	tx.createField(childField, constants.FTYPE_DYNAMIC)
+	tx.setFieldToResource(childField, contextId)
+
+	return contextId
+}
+
+/**
+ * Returns the action context handle of a resource.
+ *
+ * @param rid: resource id
+ * @return handle with:
+ *   - setReading(namespace, key, value): sets an reading of the resource; the value is a string or bytes
+ *   - record(namespace, state, ...detail): records a transition of the resource, state is a state name,
+ *                                      e.g. "Running"; detail is an optional string for the user
+ */
+of := func(rid) {
+	contextId := func() {
+		return _enabled() ? contextOf(rid) : undefined
+	}
+
+	return ll.toStrict({
+		setReading: func(namespace, key, value) {
+			_validateKeyPart("namespace", namespace)
+			_validateKeyPart("reading key", key)
+			ctx := contextId()
+			if !is_undefined(ctx) {
+				tx.resourceKeyValueSetAsync(ctx, "reading/" + namespace + "/" + string(rid) + "/" + key, value)
+			}
+		},
+
+		record: func(namespace, state, ...detail) {
+			_validateKeyPart("namespace", namespace)
+			ll.assert(slices.hasElement(STATES, state), "action context: unknown state %q", state)
+			ctx := contextId()
+			if !is_undefined(ctx) {
+				key := "transition/" + namespace + "/" + string(rid) + "/" + string(times.time_unix_nano(times.now()))
+				value := json.encode({ state: state, detail: len(detail) > 0 ? detail[0] : "", reason: "" })
+				tx.resourceKeyValueSetAsync(ctx, key, value)
+			}
+		}
+	})
+}
+
+/**
+ * Returns the action context handle of the current renderer: the handle of `of`, plus
+ *   - baggage(): returns a copy of the baggage of the current renderer's action context or sinkhole, e.g.
+ *             "run-id", "block-id", "block-pack" and "name"; undefined without either.
+ *   - id(): returns the id of the current renderer's action context; undefined without one.
+ *
+ * The creator of a render links its action context, in the transaction that creates the render: the
+ * middle layer for the root render of a block, render() for the others. A template cannot link its own.
+ */
+self := func() {
+	renderer := ll.getCurrentTemplateRenderer().ID
+	handle := of(renderer)
+	return ll.toStrict({
+		setReading: handle.setReading,
+		record: handle.record,
+
+		baggage: func() {
+			return _own().kind == "none" ? undefined : _ownBaggage()
+		},
+
+		id: func() {
+			return _own().kind == "context" ? _own().id : undefined
+		}
+	})
+}
+
+export ll.toStrict({
+	LINK_FIELD: LINK_FIELD,
+	CHILD_FIELD_PREFIX: CHILD_FIELD_PREFIX,
+
+	linkOf: linkOf,
+	contextOf: contextOf,
+	createChild: createChild,
+	createContext: createContext,
+	inherit: inherit,
+	sinkhole: sinkhole,
+	of: of,
+	self: self
+})

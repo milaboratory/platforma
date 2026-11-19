@@ -18,6 +18,7 @@ from .concatenate import Concatenate
 from .sort import Sort
 from .write_frame import WriteFrame
 from .read_frame import ReadFrame
+from .import_parquet_frame import ImportParquetFrame
 
 from typing import Union
 
@@ -42,6 +43,7 @@ type AnyPStep = Union[
     Sort,
     WriteFrame,
     ReadFrame,
+    ImportParquetFrame,
 ]
 
 __all__ = [
@@ -66,6 +68,7 @@ __all__ = [
     "Sort",
     "WriteFrame",
     "ReadFrame",
+    "ImportParquetFrame",
     "PStep",
     "GlobalSettings",
     "TableSpace",

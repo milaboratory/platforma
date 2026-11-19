@@ -5,6 +5,7 @@ import path from "node:path";
 import pathPosix from "node:path/posix";
 import fsp from "node:fs/promises";
 import { defaultHttpDispatcher } from "@milaboratories/pl-http";
+import { util } from "@platforma-sdk/package-builder-lib";
 
 export type ReadFileOptions = { signal?: AbortSignal };
 
@@ -27,6 +28,11 @@ class HttpFolderReader implements FolderReader {
       dispatcher: this.httpDispatcher,
       signal: options?.signal,
     });
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      // Release the connection; the error body (S3/GCS XML, an HTML page) is not registry content.
+      await response.body.dump();
+      throw new Error(`Failed to read ${util.redactUrl(targetUrl)}: HTTP ${response.statusCode}`);
+    }
     return Buffer.from(await response.body.arrayBuffer());
   }
 

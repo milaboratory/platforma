@@ -1,0 +1,49 @@
+// Both resolver families in one template, interleaved: family 1 over request.ctx1 (a BContext/1
+// chain), family 2 over ctx2 (a BContext/2 chain). Each family resolves a ref and runs a query on
+// its own chain; the results are decoded in v2.decode.
+// Family 1 also resolves request.ref1 with an options map, and outputs that map after the call as
+// opts1After; and resolves request.missing1, an address nothing exports, when given. With request.unknownFamily set, asks for a family that does not exist instead.
+self := import("@platforma-sdk/workflow-tengo:tpl")
+bquery := import("@platforma-sdk/workflow-tengo:workflow.bquery")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+decodeTpl := assets.importTemplate(":v2.decode")
+
+self.defineOutputs("result")
+
+self.body(func(inputs) {
+	request := inputs.request
+	if request.unknownFamily == true {
+		bquery.forFamily(3)
+	}
+
+	ctx1 := self.rawInputs().ctx1.getValue()
+	ctx2 := self.rawInputs().ctx2.getValue()
+
+	family2 := bquery.forFamily(2)
+	family1 := bquery.forFamily(1)
+
+	items := {}
+	choices := {}
+	items.resolve2 = family2.resolve(request.ref2, ctx2)
+	items.resolve1 = family1.resolve(request.ref1, ctx1)
+	choices.query2 = family2.create(request.query2, ctx2)
+	choices.query1 = family1.create(request.query1, ctx1)
+	if !is_undefined(request.missing1) {
+		items.missing1 = family1.resolve(request.missing1, ctx1)
+	}
+	opts1 := { spec: true, data: true }
+	withOpts1 := family1.resolve(request.ref1, ctx1, opts1)
+
+	decoded := render.createEphemeral(decodeTpl, { items: items, choices: choices })
+
+	b := smart.mapBuilder()
+	b.add("resolve1Data", items.resolve1.getFutureInputField("data"))
+	b.add("resolve2Data", items.resolve2.getFutureInputField("data"))
+	b.add("decoded", decoded.output("out"))
+	b.add("resolve1WithOptsData", withOpts1.getFutureInputField("data"))
+	b.add("opts1After", smart.createJsonResource(opts1))
+	return { result: b.build() }
+})

@@ -11,10 +11,8 @@ import type { DownloadAPI_GetDownloadURL_Response } from "../proto-grpc/github.c
 const SAFETY_MARGIN_MS = 30_000;
 
 /**
- * TTL applied to download URLs that carry no expiry in their query string -
- * notably local `storage://` URLs, which are deterministic for a given resource
- * and effectively never expire. Bounded so a changed storage projection is
- * eventually re-resolved.
+ * TTL applied to download URLs that carry no expiry in their query string.
+ * Bounded so such a URL is eventually requested from pl-core again.
  */
 const NO_EXPIRY_DEFAULT_TTL_MS = 60 * 60 * 1000; // 1h
 

@@ -26,10 +26,6 @@ describe("extractUrlExpiryMs", () => {
     expect(extractUrlExpiryMs(url)).toBe(Date.UTC(2026, 0, 1, 0, 0, 0) + 1000);
   });
 
-  test("local storage:// URL has no encoded expiry", () => {
-    expect(extractUrlExpiryMs("storage://main/some/relative/path.json")).toBeUndefined();
-  });
-
   test("plain URL without presign params has no expiry", () => {
     expect(extractUrlExpiryMs("https://example.com/file?foo=bar")).toBeUndefined();
   });
@@ -63,6 +59,6 @@ describe("downloadUrlCacheTtlMs", () => {
   });
 
   test("falls back to a positive default TTL for URLs without encoded expiry", () => {
-    expect(downloadUrlCacheTtlMs("storage://main/path")).toBeGreaterThan(0);
+    expect(downloadUrlCacheTtlMs("https://example.com/file?foo=bar")).toBeGreaterThan(0);
   });
 });

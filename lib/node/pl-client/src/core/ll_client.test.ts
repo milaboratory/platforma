@@ -13,9 +13,28 @@ import {
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import { request } from "undici";
 import * as tp from "node:timers/promises";
-import { test, expect } from "vitest";
+import { test, expect, vi } from "vitest";
+import type { PlConnectionStatus } from "./config";
+import { startTcpProxy } from "../test/tcp-proxy";
 
 import { isUnimplementedError, UnauthenticatedError } from "./errors";
+
+function restRespond(client: LLPlClient, status: number) {
+  return client["createRestErrorMiddleware"]().onResponse?.({
+    request: new Request("http://127.0.0.1/v1/ping"),
+    response: new Response(status === 503 ? "unavailable" : "{}", { status }),
+    schemaPath: "/v1/ping",
+    params: {},
+    id: "test",
+    options: {
+      baseUrl: "http://127.0.0.1",
+      parseAs: "json",
+      querySerializer: () => "",
+      bodySerializer: (body) => JSON.stringify(body),
+      fetch: globalThis.fetch,
+    },
+  });
+}
 
 test("wire protocol detection", async () => {
   const { conf, auth } = await getTestClientConf();
@@ -57,8 +76,8 @@ test("unauthenticated status change", async () => {
   const unauthenticated = new Promise<void>((resolve) => (onUnauthenticated = resolve));
 
   const client = await LLPlClient.build(plAddressToTestConfig(cfg.address), {
-    statusListener: (s) => {
-      if (s === "Unauthenticated") onUnauthenticated();
+    statusListener: (status) => {
+      if (status === "Unauthenticated") onUnauthenticated();
     },
   });
   expect(client.status).toBe("OK");
@@ -90,6 +109,11 @@ test("unauthenticated status change", async () => {
       .then(() => Promise.reject(new Error("status never became Unauthenticated"))),
   ]);
 
+  expect(client.status).toEqual("Unauthenticated");
+
+  await client.ping();
+  await restRespond(client, 503);
+  await tp.setTimeout(10);
   expect(client.status).toEqual("Unauthenticated");
 });
 
@@ -190,3 +214,107 @@ test("list user resources returns user root", async () => {
     expect(last.nextResourceId).not.toBe(0n);
   }
 });
+
+const testUrl = URL.parse(getTestConfig().address);
+const isLocalHttp =
+  testUrl?.protocol === "http:" && ["127.0.0.1", "localhost"].includes(testUrl.hostname);
+
+test.skipIf(!isLocalHttp)(
+  "gRPC status returns to OK after a connection loss",
+  async () => {
+    const targetPort = Number(testUrl?.port || 80);
+    const { conf, auth } = await getTestClientConf();
+    const proxy = await startTcpProxy({ targetPort, latency: 0 });
+    const port = proxy.port;
+    const statuses: PlConnectionStatus[] = [];
+    const client = await LLPlClient.build(
+      { ...conf, hostAndPort: `127.0.0.1:${port}`, wireProtocol: "grpc" },
+      { auth, statusListener: (status) => statuses.push(status) },
+    );
+    let restarted: Awaited<ReturnType<typeof startTcpProxy>> | undefined;
+    try {
+      const closed = proxy.close();
+      await proxy.disconnectAll();
+      await closed;
+
+      await expect(client.ping()).rejects.toThrow();
+      await vi.waitFor(() => expect(client.status).toBe("Disconnected"));
+      // Keep calls failing, so the reconnect backoff of the subchannel grows.
+      for (let attempt = 0; attempt < 20; attempt++) {
+        await expect(client.ping()).rejects.toThrow();
+        await tp.setTimeout(300);
+      }
+
+      restarted = await startTcpProxy({ port, targetPort, latency: 0 });
+      const startedAt = performance.now();
+      const second = await LLPlClient.build(
+        { ...conf, hostAndPort: `127.0.0.1:${port}`, wireProtocol: "grpc" },
+        { auth },
+      );
+      expect(performance.now() - startedAt).toBeLessThan(3_000);
+      await second.close();
+
+      await vi.waitFor(() => client.ping(), { timeout: 20_000, interval: 500 });
+      await vi.waitFor(() => expect(client.status).toBe("OK"));
+      expect(statuses).toEqual(["OK", "Disconnected", "OK"]);
+    } finally {
+      await client.close();
+      await restarted?.close();
+    }
+  },
+  40_000,
+);
+
+test("REST status returns to OK on a 2xx or 3xx response", async () => {
+  const { conf, auth } = await getTestClientConf();
+  const statuses: PlConnectionStatus[] = [];
+  const client = await LLPlClient.build(conf, {
+    auth,
+    statusListener: (status) => statuses.push(status),
+  });
+  const respond = (status: number) => restRespond(client, status);
+  try {
+    await respond(503);
+    await vi.waitFor(() => expect(client.status).toBe("Disconnected"));
+    await respond(503);
+    await respond(404);
+    await tp.setTimeout(10);
+    expect(client.status).toBe("Disconnected");
+    await respond(200);
+    await vi.waitFor(() => expect(client.status).toBe("OK"));
+    await respond(200);
+    await tp.setTimeout(10);
+    expect(statuses).toEqual(["OK", "Disconnected", "OK"]);
+
+    // A success in the same tick as a failure must still win.
+    await Promise.all([respond(503), respond(200)]);
+    await tp.setTimeout(10);
+    expect(client.status).toBe("OK");
+    expect(statuses).toEqual(["OK", "Disconnected", "OK", "Disconnected", "OK"]);
+  } finally {
+    await client.close();
+  }
+});
+
+test.skipIf(getTestConfig().test_password === undefined)(
+  "auth error fires for an expired session after a connection loss",
+  async () => {
+    let onAuthError!: () => void;
+    const authError = new Promise<void>((resolve) => (onAuthError = resolve));
+    const client = await LLPlClient.build(plAddressToTestConfig(getTestConfig().address), {
+      auth: { authInformation: {}, onAuthError },
+    });
+    try {
+      await restRespond(client, 503);
+      await vi.waitFor(() => expect(client.status).toBe("Disconnected"));
+      await expect(client.getSessionInfo()).rejects.toThrow();
+      await Promise.race([
+        authError,
+        tp.setTimeout(5000).then(() => Promise.reject(new Error("onAuthError never fired"))),
+      ]);
+      expect(client.status).toBe("Unauthenticated");
+    } finally {
+      await client.close();
+    }
+  },
+);

@@ -1,4 +1,5 @@
 import { globSync } from "node:fs";
+import { buildTsconfig } from "./buildTsconfig";
 import type { ConfigEnv, UserConfig } from "vite";
 import { mergeConfig } from "vite";
 import dts from "vite-plugin-dts";
@@ -25,6 +26,7 @@ export function createViteLibConfig(configEnv: ConfigEnv): UserConfig {
             // live deeper (src/components/**), so the detector misses them, falls back to
             // the plain TS processor and silently emits no *.vue.d.ts — while lib.d.ts
             // still re-exports those .vue specifiers. Decide it ourselves.
+            tsconfigPath: buildTsconfig(),
             processor: globSync("src/**/*.vue").length > 0 ? "vue" : "ts",
             compilerOptions: {
               declaration: true,

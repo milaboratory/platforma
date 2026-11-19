@@ -64,7 +64,6 @@ async function withScenario(body: (scenario: Scenario) => Promise<void>): Promis
       devBlockUpdateRecheckInterval: 300,
       projectRefreshInterval: 250,
       localSecret: MiddleLayer.generateLocalSecret(),
-      localProjections: [],
       openFileDialogCallback: () => {
         throw new Error("Not implemented.");
       },

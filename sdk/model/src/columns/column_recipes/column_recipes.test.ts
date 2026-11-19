@@ -24,7 +24,6 @@ import { ColumnDiscoveredRecipe } from "./column_discovered_recipe";
 import { ColumnOverriddenRecipe } from "./column_overrided_recipe";
 import { ColumnFilteredRecipe } from "./column_filtered_recipe";
 import { ColumnRecipe } from "./index";
-import { ColumnAbsentError } from "../data_column";
 import type { ColumnFieldStatus } from "./types";
 import { installStubRegistry } from "../__test_helpers__/stub_registry";
 import { throwError } from "@milaboratories/helpers";
@@ -403,11 +402,9 @@ describe("ColumnDiscoveredRecipe", () => {
     ).toThrow(/Unsupported ColumnRecipe id variant/);
   });
 
-  test("fromKey propagates ColumnAbsentError from a referenced absent column", () => {
-    // Default ctx mock has no providers → empty registry → leaf id is provably
-    // absent. The leaf-level throw inside `Column(uniId, opts)` propagates
-    // unchanged through `fromKey`.
-    expect(() => ColumnDiscoveredRecipe.fromKey(trivialKey)).toThrow(ColumnAbsentError);
+  test("fromKey returns undefined when a referenced column is absent", () => {
+    // Default ctx mock has no providers → empty registry → leaf id is absent.
+    expect(ColumnDiscoveredRecipe.fromKey(trivialKey)).toBeUndefined();
   });
 
   test("id is the canonical stringify(ColumnDiscoveredKey)", () => {
@@ -611,10 +608,9 @@ describe("ColumnRecipe.getStatus (top-level dispatcher)", () => {
   });
 });
 
-describe("ColumnRecipe(id) throw propagation on absent leaves", () => {
-  test("filtered id over an absent source throws ColumnAbsentError", () => {
-    // Empty registry with isFinal=true → leaf is provably absent → throw
-    // propagates through the Filtered dispatch branch.
+describe("ColumnRecipe(id) over absent leaves", () => {
+  test("filtered id over an absent source returns undefined", () => {
+    // Empty registry with isFinal=true → leaf is absent.
     const ctx = makeCtx();
     (globalThis as { cfgRenderCtx?: unknown }).cfgRenderCtx = ctx;
     installStubRegistry(ctx, {}, { isFinal: true });
@@ -622,10 +618,10 @@ describe("ColumnRecipe(id) throw propagation on absent leaves", () => {
       source: baseLeaf,
       axisFilters: [],
     });
-    expect(() => ColumnRecipe(id)).toThrow(ColumnAbsentError);
+    expect(ColumnRecipe(id)).toBeUndefined();
   });
 
-  test("overrided id over an absent source throws ColumnAbsentError", () => {
+  test("overrided id over an absent source returns undefined", () => {
     const ctx = makeCtx();
     (globalThis as { cfgRenderCtx?: unknown }).cfgRenderCtx = ctx;
     installStubRegistry(ctx, {}, { isFinal: true });
@@ -633,15 +629,15 @@ describe("ColumnRecipe(id) throw propagation on absent leaves", () => {
       source: baseLeaf,
       specOverrides: overrides({}),
     });
-    expect(() => ColumnRecipe(id)).toThrow(ColumnAbsentError);
+    expect(ColumnRecipe(id)).toBeUndefined();
   });
 
-  test("discovered id over an absent hit throws ColumnAbsentError", () => {
+  test("discovered id over an absent hit returns undefined", () => {
     const ctx = makeCtx();
     (globalThis as { cfgRenderCtx?: unknown }).cfgRenderCtx = ctx;
     installStubRegistry(ctx, {}, { isFinal: true });
     const id = stringifyColumnDiscoveredId({ column: baseLeaf });
-    expect(() => ColumnRecipe(id)).toThrow(ColumnAbsentError);
+    expect(ColumnRecipe(id)).toBeUndefined();
   });
 });
 

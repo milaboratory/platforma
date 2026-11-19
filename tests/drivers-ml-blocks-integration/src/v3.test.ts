@@ -232,6 +232,8 @@ test("v3: project watcher test", { timeout: 20_000 }, async ({ expect }) => {
       expect(sumNumbersBlock?.canRun).toBe(false);
       expect(enterNumberBlock?.currentBlockPack).toBeDefined();
       expect(sumNumbersBlock?.currentBlockPack).toBeDefined();
+      // The subtitle names the chosen source by its label from the result pool.
+      expect(sumNumbersBlock?.subtitle).toBe("Numbers");
     });
 
     await prj.mutateBlockStorage(enterNumberId, {

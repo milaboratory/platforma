@@ -276,22 +276,10 @@ export async function initNetworkCheck(
   // FIXME: do we need to get an actual secret?
   const signer = new HmacSha256Signer("localSecret");
 
-  // We could initialize middle-layer here, but for now it seems like an overkill.
-  // Here's the code to do it:
-  //
-  // const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'platforma-network-check-'));
-  // const ml = await MiddleLayer.init(client, tmpDir, {
-  //   logger,
-  //   localSecret: '',
-  //   localProjections: [],
-  //   openFileDialogCallback: () => Promise.resolve([]),
-  //   preferredUpdateChannel: 'stable',
-  // });
-
-  const downloadClient = createDownloadClient(logger, client, []);
+  const downloadClient = createDownloadClient(logger, client);
   const uploadBlobClient = createUploadBlobClient(client, logger);
 
-  const lsDriver = await LsDriver.init(logger, client, signer, [], () => Promise.resolve([]), []);
+  const lsDriver = await LsDriver.init(logger, client, signer, () => Promise.resolve([]), []);
 
   const terminate = async () => {
     downloadClient.close();

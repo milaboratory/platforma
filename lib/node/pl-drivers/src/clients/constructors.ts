@@ -6,17 +6,12 @@ import { ClientLogs } from "./logs";
 import { ClientProgress } from "./progress";
 import { ClientUpload } from "./upload";
 import { ClientLs } from "./ls_api";
-import type { LocalStorageProjection } from "../drivers/types";
 
-export function createDownloadClient(
-  logger: MiLogger,
-  client: PlClient,
-  localProjections: LocalStorageProjection[],
-) {
+export function createDownloadClient(logger: MiLogger, client: PlClient) {
   return client.getDriver({
     name: "DownloadBlob",
     init: (_: PlClient, wireClientFactory: WireClientProviderFactory, httpDispatcher: Dispatcher) =>
-      new ClientDownload(wireClientFactory, httpDispatcher, logger, localProjections),
+      new ClientDownload(wireClientFactory, httpDispatcher, logger),
   });
 }
 

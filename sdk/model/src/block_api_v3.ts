@@ -43,6 +43,16 @@ export interface BlockApiV3<
   setNavigationState(state: NavigationState<Href>): Promise<ResultOrError<void>>;
 
   /**
+   * Opens another block of the same project in the app, as selecting it in the project does.
+   * Resolves once the app has accepted the request, which may hide this block's UI; an error
+   * result when the project has no block with this id.
+   *
+   * Absent in app versions that cannot open blocks on a block's request: check for it before
+   * offering the user to open a block.
+   * */
+  openBlock?(blockId: string): Promise<ResultOrError<void>>;
+
+  /**
    * Disposes the block API.
    * */
   dispose(): Promise<ResultOrError<void>>;

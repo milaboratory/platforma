@@ -215,6 +215,46 @@ describe("Docker Python Functions", () => {
       expect(dockerfileContent).toContain('CMD ["bash"]');
     });
 
+    it("should split installed dependencies into one COPY layer per bin", () => {
+      const result = prepareDockerOptions(
+        mockLogger,
+        testPackageRoot,
+        "test-package",
+        "artifact-id",
+        mockPythonPackage,
+      );
+      const content = fs.readFileSync(result.dockerfile, "utf-8");
+
+      expect(content).toContain("FROM python:3.12-slim AS deps");
+      expect(content).toContain(
+        `RUN pip install --no-compile --no-cache-dir -r requirements.txt \\\n` +
+          `    && python3 -c 'import compileall, py_compile, sys, sysconfig; \\\n` +
+          `kw = {"invalidation_mode": py_compile.PycInvalidationMode.UNCHECKED_HASH} if sys.version_info >= (3, 7) else {}; \\\n` +
+          `[compileall.compile_dir(d, quiet=1, force=True, workers=0, **kw) for d in sorted({sysconfig.get_paths()["purelib"], sysconfig.get_paths()["platlib"]})]' \\\n` +
+          `    && python3 - /usr/local /layers 8 ${2 * 1024 ** 3} <<'LAYER_SPLIT_EOF'`,
+      );
+      // the split script is inlined between the heredoc markers
+      expect(content).toMatch(
+        /<<'LAYER_SPLIT_EOF'\n# Split an installed tree[\s\S]*\nmain\(\)\nLAYER_SPLIT_EOF\n/,
+      );
+
+      const copies = content.match(/^COPY --from=deps \/layers\/\d+\/ \/$/gm) ?? [];
+      expect(copies).toEqual(
+        Array.from({ length: 8 }, (_, i) => `COPY --from=deps /layers/${i}/ /`),
+      );
+
+      // dependency layers come after the site-packages reset and before the package source
+      const reset = content.indexOf('RUN purelib="$(python3 -c');
+      expect(reset).toBeGreaterThan(content.indexOf("FROM python:3.12-slim\n"));
+      expect(reset).toBeLessThan(content.indexOf("COPY --from=deps /layers/0/ /"));
+      expect(content.indexOf("COPY --from=deps /layers/7/ /")).toBeLessThan(
+        content.indexOf("COPY . /app"),
+      );
+
+      // every placeholder is filled
+      expect(content).not.toMatch(/\$\{[A-Z_]+\}/);
+    });
+
     it("should handle missing requirements.txt gracefully", () => {
       // Remove requirements.txt
       fs.unlinkSync(path.join(testPackageRoot, "requirements.txt"));
@@ -229,7 +269,9 @@ describe("Docker Python Functions", () => {
 
       const dockerfileContent = fs.readFileSync(result.dockerfile, "utf-8");
       expect(dockerfileContent).toContain("COPY");
-      expect(dockerfileContent).toContain("RUN pip install --no-cache-dir -r requirements.txt");
+      expect(dockerfileContent).toContain(
+        "RUN pip install --no-compile --no-cache-dir -r requirements.txt",
+      );
 
       // Check that empty requirements.txt was created in context directory (src)
       const emptyRequirementsPath = path.join(testPackageRoot, "src", "requirements.txt");

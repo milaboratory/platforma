@@ -19,7 +19,6 @@ import type {
 } from "./types";
 
 export type { ColumnFieldStatus, ColumnRecipeId, ColumnResolutionStatus, SpecQuery } from "./types";
-export { ColumnAbsentError } from "../data_column";
 export { ColumnDiscoveredRecipe } from "./column_discovered_recipe";
 export { ColumnFilteredRecipe } from "./column_filtered_recipe";
 export { ColumnOverriddenRecipe } from "./column_overrided_recipe";
@@ -90,8 +89,8 @@ function ColumnRecipeBuild(
  * Resolution status counterpart to {@link ColumnRecipeBuild}. Dispatches on
  * the parsed id shape to the matching `getStatusBy*` static — never
  * constructs the recipe. Use this at boundaries (resolver, filter/sort
- * targets) to throw early on `absent` instead of silently producing an empty
- * recipe via {@link ColumnRecipeBuild}.
+ * targets) to tell an `absent` column from a `resolving` one: the recipe
+ * factory returns `undefined` for both.
  */
 function ColumnRecipeGetStatus(
   id: ColumnUniversalId,

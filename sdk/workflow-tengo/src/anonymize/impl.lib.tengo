@@ -1,6 +1,7 @@
 smart := import(":smart")
 ll := import(":ll")
 maps := import(":maps")
+canonicalIds := import(":ll.canonical-id")
 
 /**
  * Low-level function that implements the anonymization algorithm for resource field names.
@@ -109,7 +110,11 @@ anonymizeFields := func(targets, ...opts) {
 
 			groupId := groupBy(fieldName)
 			value := field.getValue()
-			cid := value.info().CanonicalID
+			// Older backends (before v4.3.1) do have various flaws in regard of CIDs:
+			//  - before 4.2.0 they were not exposed at all;
+		    //  - before 4.3.1 they were not exposed for value resources because of a bug;
+			// calculate it on the template level in that case.
+			cid := canonicalIds.get(value)
 
 			if is_undefined(groupCIDs[groupId]) {
 				groupCIDs[groupId] = bytes(0)

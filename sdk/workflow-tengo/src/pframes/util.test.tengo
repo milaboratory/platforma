@@ -1,5 +1,6 @@
 test := import(":test")
 pUtil := import(":pframes.util")
+json := import("json")
 
 TestDecomposePfconvCfg := func() {
 	result := pUtil.decomposePfconvImportCfg({
@@ -75,4 +76,34 @@ TestCalculateGroupAxesIndices := func() {
 		pUtil.calculateGroupAxesIndices(3, [2, 1]),
 		[0]
 	)
+}
+
+TestEncodeJsonColumnData := func() {
+	data := { "[9]": 1, "[10]": 2.5, "[2]": "x" }
+	encoded := pUtil.encodeJsonColumnData(data)
+	test.isEqual(encoded, `{"[2]":"x","[9]":1,"[10]":2.5}`)
+	test.isEqual(json.decode(encoded), data)
+
+	test.isEqual(pUtil.encodeJsonColumnData({
+		"[\"b\",1]": 1,
+		"[\"a\",10]": 2,
+		"[\"a\",9]": 3,
+		"[\"B\",100]": 4
+	}), `{"[\"B\",100]":4,"[\"a\",9]":3,"[\"a\",10]":2,"[\"b\",1]":1}`)
+
+	test.isEqual(pUtil.encodeJsonColumnData({ "[1.5]": 1, "[10]": 2, "[2]": 3, "[-0.5]": 4 }),
+		`{"[-0.5]":4,"[1.5]":1,"[2]":3,"[10]":2}`)
+
+	test.isEqual(pUtil.encodeJsonColumnData({
+		"[-9007199254740992]": 1,
+		"[-9007199254740993]": 2
+	}), `{"[-9007199254740993]":2,"[-9007199254740992]":1}`)
+
+	test.isEqual(pUtil.encodeJsonColumnData({ "[-1]": 1, "[-10]": 2, "[-2]": 3 }),
+		`{"[-10]":2,"[-2]":3,"[-1]":1}`)
+
+	test.isEqual(pUtil.encodeJsonColumnData({ "[\"a!\"]": 1, "[\"a\"]": 2, "[\"é\"]": 3, "[\"z\"]": 4 }),
+		`{"[\"a\"]":2,"[\"a!\"]":1,"[\"z\"]":4,"[\"é\"]":3}`)
+
+	test.isEqual(pUtil.encodeJsonColumnData({}), "{}")
 }

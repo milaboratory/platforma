@@ -1,5 +1,6 @@
 import type {
   AxisValueType,
+  ColumnUniversalId,
   ColumnValueType,
   DiscoverColumnsStepInfo,
   PColumnIdAndSpec,
@@ -108,4 +109,44 @@ export interface DiscoverColumnsResponseHit {
 export interface DiscoverColumnsResponse {
   /** Columns that could be integrated and possible ways to integrate them */
   hits: DiscoverColumnsResponseHit[];
+}
+
+/**
+ * Request for discovering roots: the columns that, used as anchors, would
+ * reach the given ones. Where {@link DiscoverColumnsRequestV2} starts from
+ * anchors, this starts from columns already in the frame (the leaves).
+ */
+export interface DiscoverRootsRequest {
+  /** Leaves: ids of frame columns to discover roots for (at least one) */
+  columns: ColumnUniversalId[];
+  /** Roots must match these selectors (OR-ed); empty or omitted matches all columns */
+  includeColumns?: MultiColumnSelector[];
+  /** Roots matching these selectors (OR-ed) are dropped; applied after include filter */
+  excludeColumns?: MultiColumnSelector[];
+  /** Maximum number of linker hops between a root and a leaf (0 = direct only) */
+  maxHops?: number;
+  /** Matching constraints, with the root as the source and the leaf as the hit */
+  constraints: DiscoverColumnsConstraints;
+}
+
+/**
+ * A root found for one leaf. `path` and `mappingVariants` are exactly what
+ * discover columns anchored on `root` reports for `leaf`: the path runs from
+ * the root to the leaf, `forQueries` qualifies the root and `forHit` the leaf.
+ */
+export interface DiscoverRootsResponseHit {
+  /** The discovered root column */
+  root: PColumnIdAndSpec;
+  /** The requested column this root reaches */
+  leaf: ColumnUniversalId;
+  /** Possible ways to join the leaf onto the root */
+  mappingVariants: DiscoverColumnsMappingVariant[];
+  /** Linker steps from the root to the leaf; empty when they join directly */
+  path: DiscoverColumnsStepInfo[];
+}
+
+/** Response from discover roots. */
+export interface DiscoverRootsResponse {
+  /** One entry per (root, leaf, path) */
+  hits: DiscoverRootsResponseHit[];
 }
