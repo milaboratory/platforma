@@ -1,0 +1,17 @@
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+self.defineOutputs(["first", "second"])
+
+self.awaitState("columns", "PColumnBundle")
+
+self.body(func(inputs) {
+	cols := inputs.columns.getColumns("multi")
+	// a column without data has `data` undefined
+	data := func(col) {
+		return is_undefined(col.data) ? { noData: true } : col.data
+	}
+	return {
+		first: data(cols[0]),
+		second: data(cols[1])
+	}
+})
