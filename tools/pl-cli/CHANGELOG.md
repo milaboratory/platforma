@@ -1,5 +1,12 @@
 # @platforma-sdk/pl-cli
 
+## 0.12.9
+
+### Patch Changes
+
+- Updated dependencies [70671c3]
+  - @milaboratories/pl-middle-layer@2.7.6
+
 ## 0.12.8
 
 ### Patch Changes
