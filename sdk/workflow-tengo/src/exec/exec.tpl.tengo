@@ -99,6 +99,7 @@ inputSchema[execConstants.META_INPUT_CPU_FORMULA + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_GPU_FORMULA + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_SCRATCH_FORMULA + ",?"] = "any"
 inputSchema[execConstants.REGULAR_INPUT_LINE_COUNT + ",?"] = "any"
+inputSchema[execConstants.REGULAR_INPUT_CUSTOM_METRICS + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_FORCE_RUN_COMMAND_V2 + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_FORCE_WORKDIR_SAVE_V1 + ",?"] = "any"
 

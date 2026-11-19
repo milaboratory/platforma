@@ -1,0 +1,94 @@
+/**
+ * Custom metrics end to end (exec.formula.customMetric, MILAB-6912).
+ *
+ * A template computes the newline count and the byte count of the files it reads, and the
+ * job's RAM and CPU are formulas over both; the two metrics share one run of the template. The
+ * job echoes the quota the backend actually granted ({system.ram.bytes},{system.cpu}), so the
+ * test compares it with what the formula should give.
+ *
+ * inputs.file: the library fixture (42 newlines, 327 bytes)
+ * inputs.mode: string -
+ *   "tag"      - the metrics read the job's own files under tag "reads" (one fixture)
+ *   "explicit" - the metrics read files they were given (the fixture twice), the job stages none
+ *   "single"   - one metric whose template writes a bare integer
+ *   "invalid"  - the template writes a float; the run fails naming the metric
+ *   "fallback" - the root exits 2; its SoftwareError plan is the one sized by the metrics
+ * inputs.nonce: string - keeps the renders from deduplicating against earlier runs
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+file := import("@platforma-sdk/workflow-tengo:file")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+
+f := exec.formula
+
+self.defineOutputs(["limits", "attempts"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+statsMetricTpl := assets.importTemplate(":exec.metrics.custom_metric_stats")
+linesTpl := assets.importTemplate(":exec.metrics.custom_metric_lines")
+invalidTpl := assets.importTemplate(":exec.metrics.custom_metric_invalid")
+
+self.body(func(inputs) {
+	inputFile := file.importFile(inputs.file).file
+	mode := inputs.mode
+	nonce := inputs.nonce
+
+	shell := func(script) {
+		return exec.builder().
+			inLightQueue().
+			software(shellSw).
+			arg("-c").
+			arg(script + " # " + nonce)
+	}
+
+	input := mode == "explicit" ? { "a.txt": inputFile, "b.txt": inputFile } : "reads"
+	statsTpl := mode == "invalid" ? invalidTpl : statsMetricTpl
+
+	resources := undefined
+	if mode == "single" {
+		lines := f.customMetric("lines", input, linesTpl)
+		resources = { onCPU: { ram: lines.times(f.mib(1)).plus(f.mib(512)), cpu: 1 } }
+	} else {
+		lines := f.customMetric("lines", input, statsTpl)
+		byteCount := f.customMetric("bytes", input, statsTpl)
+		// 512 MiB + 1 MiB per line; 2 cores above 400 bytes, else 1
+		resources = { onCPU: {
+			ram: lines.times(f.mib(1)).plus(f.mib(512)),
+			cpu: f.when(byteCount.gt(400), 2).otherwise(1)
+		} }
+	}
+
+	echo := func() {
+		b := shell("printf '%s,%s' \"$RAM\" \"$CPU\" > limits.txt").
+			envWithVar("RAM", "{system.ram.bytes}").
+			envWithVar("CPU", "{system.cpu}").
+			saveFileContent("limits.txt")
+		if mode != "explicit" {
+			b.addFile("input.txt", inputFile, { tag: "reads" })
+		}
+		return b
+	}
+
+	job := undefined
+	if mode == "fallback" {
+		sized := echo().resources(resources)
+		job = shell("echo root > limits.txt; exit 2").
+			cpu(1).mem("64MiB").
+			addFile("input.txt", inputFile, { tag: "reads" }).
+			saveFileContent("limits.txt").
+			fallbacks({ SoftwareError: [{ exitCode: 2, name: "sized", builder: sized }] })
+	} else if mode == "tag" || mode == "explicit" || mode == "single" || mode == "invalid" {
+		job = echo().resources(resources)
+	} else {
+		ll.panic("custom_metric: unknown mode %v", mode)
+	}
+
+	res := job.run()
+	return {
+		limits: res.getFileContent("limits.txt"),
+		attempts: res.getAttempts()
+	}
+})

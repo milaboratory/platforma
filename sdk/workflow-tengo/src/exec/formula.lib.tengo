@@ -52,6 +52,7 @@ maps := import(":maps")
 sets := import(":sets")
 units := import(":units")
 fmt := import("fmt")
+json := import("json")
 
 // ---- AST node shapes -------------------------------------------------------
 // const:      { op: "const", value: <int> }
@@ -63,6 +64,9 @@ fmt := import("fmt")
 // cond:       { op: "when", cond, then, else }
 // metric:     { op: "metric", metric: "size"|"lineCount", "tag,?": <string>, "default,?": <int> }
 //             (the builder later resolves "metric" -> "metricSum" with concrete files)
+// custom:     { op: "metric", metric: "custom", source: <key>, name: <metric>,
+//               "tag,?": <string>, "files,?": [<file name>...], "default,?": <int> }
+//             (resolved to { op: "custom", source, name, files }; see customMetric() below)
 // The op strings mirror the fluent chain method names (.plus/.dividedBy/.between/
 // .when/...), so a raw AST dump reads like the source formula.
 // Note: when.cond and not.a may be const-wrapped if given a bare int; the
@@ -72,7 +76,7 @@ fmt := import("fmt")
 // (resolveAst rewrites "metric" -> "metricSum" with concrete files); the DSL
 // never emits it directly.
 _KNOWN_OPS := sets.fromSlice([
-	"const", "metric", "metricSum",
+	"const", "metric", "metricSum", "custom",
 	"plus", "minus", "times", "dividedBy", "dividedByFloor",
 	"atLeast", "atMost", "between",
 	"gt", "gte", "lt", "lte", "and", "or", "not",
@@ -142,6 +146,10 @@ evaluate = func(node, resolver) {
 		fn := resolver[node.metric]
 		ll.assert(!is_undefined(fn), "exec.formula.evaluate: no resolver for metric %q", node.metric)
 		return fn(node.files)
+	}
+	if op == "custom" {
+		ll.assert(!is_undefined(resolver.custom), "exec.formula.evaluate: no resolver for custom metric %q", node.name)
+		return resolver.custom(node)
 	}
 
 	if op == "plus"  { return evaluate(node.a, resolver) + evaluate(node.b, resolver) }
@@ -275,6 +283,20 @@ resolveAst := undefined
 resolveAst = func(node, tagMap, allFiles) {
 	node = _unwrap(node)
 	op := node.op
+	if op == "metric" && node.metric == "custom" {
+		// A custom metric reads either files it was given itself or the exec's own files (all
+		// of them, or those under its tag); its template runs once over the whole set.
+		files := node.files
+		if is_undefined(files) {
+			files = is_undefined(node.tag) ? allFiles : (is_undefined(tagMap[node.tag]) ? [] : tagMap[node.tag])
+		}
+		if len(files) == 0 {
+			ll.assert(!is_undefined(node.default),
+				"exec.formula: custom metric %q has no files to read, and no { default: ... } was given", node.name)
+			return { op: "const", value: node.default }
+		}
+		return { op: "custom", source: node.source, name: node.name, files: slices.quickSort(files) }
+	}
 	if op == "metric" {
 		files := is_undefined(node.tag) ? allFiles : (is_undefined(tagMap[node.tag]) ? [] : tagMap[node.tag])
 		if len(files) == 0 {
@@ -324,6 +346,61 @@ referencedMetricFiles := func(resolvedNode) {
 	}
 	walk(resolvedNode)
 	return acc
+}
+
+// referencedSources lists the custom metric jobs a resolved formula reads:
+// { <source key>: { files: [<file name>...], names: [<metric>...] } }. Metrics of one source
+// share one job, so they read one set of files.
+referencedSources := func(resolvedNode) {
+	resolvedNode = _unwrap(resolvedNode)
+	acc := {}
+	walk := undefined
+	walk = func(n) {
+		if n.op == "custom" {
+			if is_undefined(acc[n.source]) {
+				acc[n.source] = { files: n.files, names: [] }
+			}
+			ll.assert(acc[n.source].files == n.files,
+				"exec.formula: custom metric %q reads different files than the metrics it shares a job with", n.name)
+			acc[n.source].names = slices.unique(append(acc[n.source].names, n.name))
+			return
+		}
+		for k, v in n {
+			if is_map(v) && !is_undefined(v.op) { walk(v) }
+		}
+	}
+	walk(resolvedNode)
+	return acc
+}
+
+// parseMetricOutput reads what a custom metric template wrote, for the metrics `names` that
+// read it: a JSON object with a non-negative integer under each of those names (other keys are
+// allowed: a template may compute more than one formula uses), or, when one metric reads it, a
+// bare non-negative integer. Returns { values: { <name>: <int> } } or { err } naming the metric.
+parseMetricOutput := func(names, data) {
+	label := len(names) == 1 ? fmt.sprintf("custom metric %q", names[0]) : fmt.sprintf("custom metrics %s", text.join(names, ", "))
+	v := json.decode(data)
+	if is_int(v) && len(names) == 1 {
+		single := {}
+		single[names[0]] = v
+		v = single
+	}
+	if is_error(v) || !is_map(v) {
+		return { err: fmt.sprintf("exec.formula: %s: the template must write a JSON object of metric -> integer%s, got %q",
+			label, len(names) == 1 ? " or one integer" : "", string(data)) }
+	}
+	values := {}
+	for k in names {
+		x := v[k]
+		if is_undefined(x) {
+			return { err: fmt.sprintf("exec.formula: custom metric %q: the template did not write it (wrote: %s)", k, text.join(slices.quickSort(maps.getKeys(v)), ", ")) }
+		}
+		if !is_int(x) || x < 0 {
+			return { err: fmt.sprintf("exec.formula: custom metric %q: the template wrote %v; a metric is one non-negative integer", k, x) }
+		}
+		values[k] = x
+	}
+	return { values: values }
 }
 
 // applyFormulaFallback resolves the static ram/cpu/gpu/scratch to use when the backend
@@ -379,9 +456,37 @@ applyFormulaFallback := func(dims) {
 	return res
 }
 
+// ---- custom metric sources carried by wrappers -----------------------------
+// A custom metric's AST names its source, the job that computes it; the source itself (its
+// template and files) cannot live in the AST, which is serialized. So every wrapper also
+// carries the sources its AST names, { <key>: <source> }, merged from both operands by every
+// chain method. The exec builder reads them back with sourcesOf().
+
+_BUILT_IN_METRICS := sets.fromSlice(["size", "lineCount"])
+
+_sourcesOf := func(x) {
+	return is_map(x) && !is_undefined(x.__isFormula__) && !is_undefined(x.__sources__) ? x.__sources__ : {}
+}
+
+_mergeSources := func(...parts) {
+	res := {}
+	for part in parts {
+		for key, src in _sourcesOf(part) {
+			if is_undefined(res[key]) {
+				res[key] = src
+			} else {
+				merged := copy(res[key])
+				merged.names = slices.unique(append(copy(merged.names), src.names...))
+				res[key] = merged
+			}
+		}
+	}
+	return res
+}
+
 // ---- fluent wrapper factory ------------------------------------------------
 // _node wraps a plain AST in a chainable object. Every chain method returns a
-// NEW wrapper (immutable), carrying the accumulated { fallback } forward and
+// NEW wrapper (immutable), carrying the accumulated { fallback } and custom metric sources forward and
 // reading left-to-right — `f.size("x").times(12).plus(f.gib(8))` composes
 // times(size, 12) then plus(that, gib(8)). Arithmetic: .plus/.minus/.times;
 // .dividedBy -> ceiling division, .dividedByFloor -> integer (truncating)
@@ -390,28 +495,32 @@ applyFormulaFallback := func(dims) {
 // inside a f.when(...) branch. Each method's op string equals its name.
 // .staticFallback pins the value used on backends that can't evaluate the formula.
 _node := undefined
-_node = func(ast, fallback) {
+_node = func(ast, fallback, sources) {
 	self := {
-		__isFormula__: true,
-		__ast__:       ast,
-		__fallback__:  fallback
+		__isFormula__:   true,
+		__ast__:         ast,
+		__fallback__:    fallback,
+		__sources__:     sources
 	}
-	self.plus      = func(x) { return _node(_bin("plus", ast, x), fallback) }
-	self.minus     = func(x) { return _node(_bin("minus", ast, x), fallback) }
-	self.times     = func(x) { return _node(_bin("times", ast, x), fallback) }
-	self.dividedBy      = func(x) { return _node(_bin("dividedBy", ast, x), fallback) }
-	self.dividedByFloor = func(x) { return _node(_bin("dividedByFloor", ast, x), fallback) }
-	self.atLeast   = func(x) { return _node(_bin("atLeast", ast, x), fallback) }
-	self.atMost    = func(x) { return _node(_bin("atMost", ast, x), fallback) }
-	self.between   = func(lo, hi) { return _node({ op: "between", value: _wrap(ast), lo: _wrap(lo), hi: _wrap(hi) }, fallback) }
-	self.gt        = func(x) { return _node(_bin("gt", ast, x), fallback) }
-	self.gte       = func(x) { return _node(_bin("gte", ast, x), fallback) }
-	self.lt        = func(x) { return _node(_bin("lt", ast, x), fallback) }
-	self.lte       = func(x) { return _node(_bin("lte", ast, x), fallback) }
-	self.and       = func(x) { return _node(_bin("and", ast, x), fallback) }
-	self.or        = func(x) { return _node(_bin("or", ast, x), fallback) }
-	self.not       = func() { return _node({ op: "not", a: _wrap(ast) }, fallback) }
-	self.staticFallback = func(v) { return _node(ast, _staticValue(v)) }
+	bin := func(op, x) { return _node(_bin(op, ast, x), fallback, _mergeSources(self, x)) }
+	self.plus      = func(x) { return bin("plus", x) }
+	self.minus     = func(x) { return bin("minus", x) }
+	self.times     = func(x) { return bin("times", x) }
+	self.dividedBy      = func(x) { return bin("dividedBy", x) }
+	self.dividedByFloor = func(x) { return bin("dividedByFloor", x) }
+	self.atLeast   = func(x) { return bin("atLeast", x) }
+	self.atMost    = func(x) { return bin("atMost", x) }
+	self.between   = func(lo, hi) {
+		return _node({ op: "between", value: _wrap(ast), lo: _wrap(lo), hi: _wrap(hi) }, fallback, _mergeSources(self, lo, hi))
+	}
+	self.gt        = func(x) { return bin("gt", x) }
+	self.gte       = func(x) { return bin("gte", x) }
+	self.lt        = func(x) { return bin("lt", x) }
+	self.lte       = func(x) { return bin("lte", x) }
+	self.and       = func(x) { return bin("and", x) }
+	self.or        = func(x) { return bin("or", x) }
+	self.not       = func() { return _node({ op: "not", a: _wrap(ast) }, fallback, sources) }
+	self.staticFallback = func(v) { return _node(ast, _staticValue(v), sources) }
 	return self
 }
 
@@ -420,7 +529,7 @@ _node = func(ast, fallback) {
 // conditional must be finished with .otherwise (there is no way to leak a
 // dangling boolean into a quota).
 _condBuilder := undefined
-_condBuilder = func(branches) {
+_condBuilder = func(branches, sources) {
 	self := {}
 	self.when = func(cond, value) {
 		// Copy `branches` before appending so sibling chains off the same builder
@@ -428,7 +537,7 @@ _condBuilder = func(branches) {
 		next := []
 		for br in branches { next = append(next, br) }
 		next = append(next, { cond: _wrap(cond), value: _wrap(value) })
-		return _condBuilder(next)
+		return _condBuilder(next, _mergeSources({ __isFormula__: true, __sources__: sources }, cond, value))
 	}
 	self.otherwise = func(dflt) {
 		node := _wrap(dflt)
@@ -438,12 +547,72 @@ _condBuilder = func(branches) {
 			node = { op: "when", cond: b.cond, then: b.value, "else": node }
 			i = i - 1
 		}
-		return _node(node, undefined)
+		return _node(node, undefined, _mergeSources({ __isFormula__: true, __sources__: sources }, dflt))
 	}
 	return self
 }
 
-_const := func(n) { ll.assert(is_int(n), "exec.formula: unit amount must be an integer"); return _node({ op: "const", value: n }, undefined) }
+_const := func(n) { ll.assert(is_int(n), "exec.formula: unit amount must be an integer"); return _node({ op: "const", value: n }, undefined, {}) }
+
+_NAME_RE := "^[A-Za-z][A-Za-z0-9_]*$"
+
+// _sourceKey identifies the job a custom metric needs: its template and the files it reads.
+// Two metrics with the same key are computed by one run of the template.
+// The template is keyed by its resource id. assets.importTemplate returns a smart resource, a
+// strict map (is_map is false for it), and string() of a map is not stable, so a map is only
+// ever keyed by its id.
+_sourceKey := func(tpl, input) {
+	tplId := ll.isMap(tpl) && maps.containsKey(tpl, "id") ? tpl.id : tpl
+	ll.assert(!ll.isMap(tplId), "exec.formula.customMetric: the template must be assets.importTemplate(...), got %v", tpl)
+	tplKey := string(tplId)
+	if is_undefined(input) { return tplKey + "|all" }
+	if is_string(input) { return tplKey + "|tag:" + input }
+	return tplKey + "|files:" + text.join(slices.quickSort(maps.getKeys(input)), ",")
+}
+
+/**
+ * customMetric declares a metric computed by the block author's own template over input files,
+ * before the job it sizes, and returns it as a formula leaf like size / lineCount.
+ *
+ *   reads   := f.customMetric("reads", "input", statsTpl)
+ *   longest := f.customMetric("longestRead", "input", statsTpl)   // same template and files: one job
+ *   b.resources({ onCPU: { scratchFreeSpace: reads.times(longest).dividedBy(1000).atLeast(f.gib(1)) } })
+ *
+ * The template (assets.importTemplate) gets one input, `files`: { <file name>: <file> }, and
+ * returns one output, `output`: a content resource holding a JSON object with a non-negative
+ * integer per metric, e.g. {"reads": 1200000, "longestRead": 301}, or just the integer when a
+ * single metric reads it. It runs its commands with exec.builder(), with the resources (its cost
+ * bound) it needs. A malformed output fails the sized job with the metric's name.
+ *
+ * Metrics computed by one template over the same files share one run of it.
+ *
+ * @param name: string - the metric, and its key in the template's JSON; not a built-in name
+ * @param input: string | map | undefined - the files to read: the exec's files under this
+ *               addFile tag (string), the given { <file name>: <file> } (map), or every file the
+ *               exec adds (undefined)
+ * @param tpl: template - assets.importTemplate(...) of the template computing the metric
+ * @param opts: optional { default: <int> } - the value when there are no files to read
+ */
+customMetric := func(name, input, tpl, ...opts) {
+	ll.assert(is_string(name) && text.re_match(_NAME_RE, name), "exec.formula.customMetric: name must be an identifier, got %v", name)
+	ll.assert(!sets.hasElement(_BUILT_IN_METRICS, name), "exec.formula.customMetric: %q is a built-in metric name", name)
+	ll.assert(is_undefined(input) || is_string(input) || is_map(input),
+		"exec.formula.customMetric(%q): input must be a tag, a map of file name -> file, or undefined, got %v", name, input)
+	ll.assert(!is_undefined(tpl), "exec.formula.customMetric(%q): a template is required", name)
+
+	key := _sourceKey(tpl, input)
+	node := { op: "metric", metric: "custom", source: key, name: name }
+	if is_string(input) { node.tag = input }
+	if is_map(input) { node.files = maps.getKeys(input) }
+	for opt in opts {
+		ll.assert(is_map(opt) && is_int(opt.default) && opt.default >= 0,
+			"exec.formula.customMetric(%q): expected { default: <non-negative int> }, got %v", name, opt)
+		node.default = opt.default
+	}
+	sources := {}
+	sources[key] = { key: key, tpl: tpl, files: is_map(input) ? input : undefined, names: [name] }
+	return _node(node, undefined, sources)
+}
 
 export {
 	// size: total blob bytes of the input files the metric reads (no pre-exec).
@@ -457,8 +626,13 @@ export {
 	//   with N newlines reports N, so a final line without a trailing newline is
 	//   NOT counted. Requires a pre-exec line-counter pass, so it is supported
 	//   only for line-oriented text formats (see _LINECOUNT_OK above).
-	size:      func(...args) { return _node(_metric("size", args), undefined) },
-	lineCount: func(...args) { return _node(_metric("lineCount", args), undefined) },
+	size:      func(...args) { return _node(_metric("size", args), undefined, {}) },
+	lineCount: func(...args) { return _node(_metric("lineCount", args), undefined, {}) },
+
+	// customMetric: a metric the block author's template computes, see customMetric() above.
+	//   Evaluated only where the backend evaluates formulas; elsewhere the dimension takes its
+	//   .staticFallback(), as any formula does.
+	customMetric: customMetric,
 
 	gib: func(n) { return _const(n * units.GiB) },
 	mib: func(n) { return _const(n * units.MiB) },
@@ -475,7 +649,7 @@ export {
 	// branches (evaluated in order), then finish with .otherwise(default). Compiles
 	// to a nested `when` — the first branch whose condition is truthy wins. Conditions
 	// come from the comparison/logic chain, e.g. f.size("input").gt(f.gib(1)).
-	when: func(cond, value) { return _condBuilder([]).when(cond, value) },
+	when: func(cond, value) { return _condBuilder([], {}).when(cond, value) },
 
 	// ---- wrapper introspection (used by the exec builder) ------------------
 	// astOf: the plain AST behind a value (a wrapper -> its __ast__; a plain AST
@@ -485,11 +659,15 @@ export {
 	astOf:      func(x) { return _unwrap(x) },
 	fallbackOf: func(x) { return is_map(x) && !is_undefined(x.__isFormula__) ? x.__fallback__ : undefined },
 	isFormula:  func(x) { return is_map(x) && (!is_undefined(x.__isFormula__) || !is_undefined(x.op)) },
+	// sourcesOf: the jobs a wrapper's custom metrics need, { <key>: { key, tpl, files, names } }.
+	sourcesOf: _sourcesOf,
 
 	evaluateResource:      evaluateResource,
 	evaluateScratch:       evaluateScratch,
 	resolveAst:            resolveAst,
 	referencedMetricFiles: referencedMetricFiles,
+	referencedSources:     referencedSources,
+	parseMetricOutput:     parseMetricOutput,
 	applyFormulaFallback:  applyFormulaFallback,
 
 	// _internal: SDK-internal entry points, NOT part of the block-author API.

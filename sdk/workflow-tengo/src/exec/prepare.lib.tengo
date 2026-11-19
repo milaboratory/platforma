@@ -48,6 +48,8 @@ implInputs := func(inputs, raw, ...fail) {
 		!is_undefined(gpuFormula) || !is_undefined(scratchFormula) {
 		fileRefs := inputs.filesToAdd
 		lineCountMap := inputs[execConstants.REGULAR_INPUT_LINE_COUNT]
+		customMetricsMap := inputs[execConstants.REGULAR_INPUT_CUSTOM_METRICS]
+		collected := {}
 		resolver := {
 			// size: sum of blob sizes (bytes) of the referenced input files.
 			size: func(files) {
@@ -73,6 +75,25 @@ implInputs := func(inputs, raw, ...fail) {
 					total += n
 				}
 				return total
+			},
+			// custom: a metric a customMetric template wrote. Each template's output is a
+			// deep-waited content resource holding a JSON object (or one integer); a malformed
+			// output fails the run with the metric's name.
+			custom: func(node) {
+				key := node.source + "/" + node.name
+				if is_undefined(collected[key]) {
+					ll.assert(!is_undefined(customMetricsMap) && !is_undefined(customMetricsMap[node.source]),
+						"exec.tpl: a formula reads custom metric %q, but its template output is missing from the %s input", node.name, execConstants.REGULAR_INPUT_CUSTOM_METRICS)
+					parsed := execFormula.parseMetricOutput([node.name], customMetricsMap[node.source].getData())
+					if !is_undefined(parsed.err) {
+						if !is_undefined(onFail) {
+							onFail(parsed.err)
+						}
+						ll.panic("%s", parsed.err)
+					}
+					collected[key] = parsed.values[node.name]
+				}
+				return collected[key]
 			}
 		}
 		if !is_undefined(memFormula) {
