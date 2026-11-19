@@ -457,11 +457,6 @@ applyFormulaFallback := func(dims) {
 // carries the sources its AST names, { <key>: <source> }, merged from both operands by every
 // chain method. The exec builder reads them back with sourcesOf().
 
-// At most this many custom metric jobs per exec. Each is a job of its own, with a queue slot,
-// an allocation and a cache entry, run before the sized job: a cost guard, not a privacy one.
-// Metrics computed by one template over the same files share a job and count once.
-MAX_CUSTOM_METRIC_JOBS := 3
-
 _BUILT_IN_METRICS := sets.fromSlice(["size", "lineCount"])
 
 _sourcesOf := func(x) {
@@ -481,9 +476,6 @@ _mergeSources := func(...parts) {
 			}
 		}
 	}
-	ll.assert(len(res) <= MAX_CUSTOM_METRIC_JOBS,
-		"exec.formula: a formula reads custom metrics from %d jobs, at most %d are allowed per exec (metrics of one template over the same files share a job)",
-		len(res), MAX_CUSTOM_METRIC_JOBS)
 	return res
 }
 
@@ -561,8 +553,13 @@ _NAME_RE := "^[A-Za-z][A-Za-z0-9_]*$"
 
 // _sourceKey identifies the job a custom metric needs: its template and the files it reads.
 // Two metrics with the same key are computed by one run of the template.
+// The template is keyed by its resource id. assets.importTemplate returns a smart resource, a
+// strict map (is_map is false for it), and string() of a map is not stable, so a map is only
+// ever keyed by its id.
 _sourceKey := func(tpl, input) {
-	tplKey := is_map(tpl) && !is_undefined(tpl.id) ? string(tpl.id) : string(tpl)
+	tplId := ll.isMap(tpl) && maps.containsKey(tpl, "id") ? tpl.id : tpl
+	ll.assert(!ll.isMap(tplId), "exec.formula.customMetric: the template must be assets.importTemplate(...), got %v", tpl)
+	tplKey := string(tplId)
 	if is_undefined(input) { return tplKey + "|all" }
 	if is_string(input) { return tplKey + "|tag:" + input }
 	return tplKey + "|files:" + text.join(slices.quickSort(maps.getKeys(input)), ",")
@@ -582,8 +579,7 @@ _sourceKey := func(tpl, input) {
  * single metric reads it. It runs its commands with exec.builder(), with the resources (its cost
  * bound) it needs. A malformed output fails the sized job with the metric's name.
  *
- * Metrics computed by one template over the same files share one run of it. At most
- * MAX_CUSTOM_METRIC_JOBS such runs per exec.
+ * Metrics computed by one template over the same files share one run of it.
  *
  * @param name: string - the metric, and its key in the template's JSON; not a built-in name
  * @param input: string | map | undefined - the files to read: the exec's files under this
@@ -632,7 +628,6 @@ export {
 	//   Evaluated only where the backend evaluates formulas; elsewhere the dimension takes its
 	//   .staticFallback(), as any formula does.
 	customMetric: customMetric,
-	MAX_CUSTOM_METRIC_JOBS: MAX_CUSTOM_METRIC_JOBS,
 
 	gib: func(n) { return _const(n * units.GiB) },
 	mib: func(n) { return _const(n * units.MiB) },

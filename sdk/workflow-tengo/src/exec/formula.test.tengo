@@ -1,5 +1,6 @@
 test := import(":test")
 f := import(":exec.formula")
+ll := import(":ll")
 text := import("text")
 slices := import(":slices")
 maps := import(":maps")
@@ -425,11 +426,22 @@ TestCustomMetricsShareAJobPerTemplateAndFiles := func() {
 	test.isEqual({}, f.sourcesOf(f.gib(1)))
 }
 
-TestCustomMetricJobLimit := func() {
-	m := f.customMetric("a", "t1", _statsTpl).plus(f.customMetric("b", "t2", _statsTpl)).plus(f.customMetric("c", "t3", _statsTpl))
-	test.isEqual(3, len(f.sourcesOf(m)))
-	// metrics of a job already counted do not count again
-	test.isEqual(3, len(f.sourcesOf(m.plus(f.customMetric("d", "t1", _statsTpl)))))
+TestCustomMetricJobsAreNotLimited := func() {
+	m := f.customMetric("a", "t1", _statsTpl)
+	for tag in ["t2", "t3", "t4", "t5"] {
+		m = m.plus(f.customMetric("a", tag, _statsTpl))
+	}
+	test.isEqual(5, len(f.sourcesOf(m)))
+}
+
+TestCustomMetricKeysAStrictMapTemplateByItsId := func() {
+	// assets.importTemplate returns a smart resource, a strict map: is_map is false for it
+	tpl := ll.toStrict({ _type: "resource", id: 103 })
+	reads := "reads"
+	formula := f.customMetric("reads", reads, tpl).plus(f.customMetric("basesR1", reads, tpl)).
+		plus(f.customMetric("basesR2", reads, tpl)).plus(f.customMetric("longestRead", reads, tpl))
+	test.isEqual(["103|tag:reads"], maps.getKeys(f.sourcesOf(formula)))
+	test.isEqual(["basesR1", "basesR2", "longestRead", "reads"], slices.quickSort(f.sourcesOf(formula)["103|tag:reads"].names))
 }
 
 TestCustomMetricResolvesFilesByTagAllAndExplicit := func() {

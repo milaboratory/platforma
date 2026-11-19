@@ -448,9 +448,6 @@ _planOf := func(st) {
 			if !is_undefined(st.cpuFormulaAst) { resolvedCpu = resolveDim(st.cpuFormulaAst, "cpu") }
 			if !is_undefined(st.gpuFormulaAst) { resolvedGpu = resolveDim(st.gpuFormulaAst, "vram") }
 			if !is_undefined(st.scratchFormulaAst) { resolvedScratch = resolveDim(st.scratchFormulaAst, "scratch") }
-			ll.assert(len(neededSources) <= execFormula.MAX_CUSTOM_METRIC_JOBS,
-				"exec.builder: the resource formulas read custom metrics from %d jobs, at most %d are allowed per exec",
-				len(neededSources), execFormula.MAX_CUSTOM_METRIC_JOBS)
 
 			if len(neededSources) > 0 {
 				outputs := {}
