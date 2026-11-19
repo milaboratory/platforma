@@ -155,7 +155,10 @@ self.body(func(inputs) {
             for ref in matchingRefs {
                 dataMap.add(ref, datas.getField(ref).getValue())
             }
-            rb.createInputField("data").set(dataMap.build())
+            // the same layout as a multi result of bquery: the data map under `data` and `dataMap`
+            filteredDatas := dataMap.build()
+            rb.createInputField("data").set(filteredDatas)
+            rb.createInputField("dataMap").set(filteredDatas)
         }
     }
 
