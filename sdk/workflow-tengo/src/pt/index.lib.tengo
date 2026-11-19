@@ -1071,11 +1071,12 @@ workflow := func() {
 
 		/**
 		 * Sets the slope of the auto-sized RAM request (see `.mem()`), in GiB of RAM per
-		 * GiB of input. Default 10. The slope must be an integer of at least 0. Slope 0
-		 * gives a flat request of max(intercept, floor), for small inputs. If a caller
-		 * also sets `.mem()`, `.mem()` wins.
+		 * GiB of input. Default 10. The slope is a number of at least 0. A fraction keeps
+		 * three decimals and is rounded up: 0.0301 acts as 0.031. Slope 0 gives a flat
+		 * request of max(intercept, floor), for small inputs. If a caller also sets
+		 * `.mem()`, `.mem()` wins.
 		 *
-		 * @param slope: int - at least 0, e.g. `6`
+		 * @param slope: number - at least 0, e.g. `6` or `0.03`
 		 * @return builder
 		 */
 		memSlope: func(slope) {
