@@ -1,5 +1,11 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.24.1
+
+### Patch Changes
+
+- 02dc91f: Fix `smart.field.getValue: field "data" is not set` when a template that awaits only the specs of a multi-result query (for example the `PColumnBundle` state over a bundle with `addMulti`) runs before the data map of the query is set. The items of such a result now carry a future of their data.
+
 ## 6.24.0
 
 ### Minor Changes
