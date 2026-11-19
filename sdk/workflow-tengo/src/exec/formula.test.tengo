@@ -512,3 +512,77 @@ TestParseMetricOutput := func() {
 	test.isTrue(text.contains(bad(["reads"], "-1"), "non-negative integer"))
 	test.isTrue(text.contains(bad(["reads"], "{\"reads\": \"12\"}"), "non-negative integer"))
 }
+
+// ---- output metrics and metricInputs ------------------------------------------
+
+// A saved content field, as exec results return it.
+_content := func(resourceId, name) { return { id: { ResourceID: resourceId, Name: name } } }
+
+TestOutputMetricAst := func() {
+	m := f.outputMetric("clones", "align.json", _content(7, "align.json"), { key: "estimatedInitialClones", default: 0 })
+	test.isEqual({ op: "metric", metric: "output", source: "output:align.json", name: "clones", key: "estimatedInitialClones", "default": 0 }, f.astOf(m))
+	test.isEqual(["output:align.json"], maps.getKeys(f.sourcesOf(m)))
+	// the key defaults to the name
+	test.isEqual("aligned", f.astOf(f.outputMetric("aligned", "align.json", _content(7, "align.json"))).key)
+}
+
+TestOutputMetricsOfOneOutputShareAnInput := func() {
+	c := _content(7, "align.json")
+	clones := f.outputMetric("clones", "align.json", c, { key: "estimatedInitialClones" })
+	aligned := f.outputMetric("aligned", "align.json", c)
+	sources := f.sourcesOf(clones.plus(aligned))
+	test.isEqual(1, len(sources))
+	test.isEqual(["clones", "aligned"], sources["output:align.json"].names)
+}
+
+TestOutputMetricResolvesWithoutFiles := func() {
+	m := f.outputMetric("clones", "align.json", _content(7, "align.json"), { key: "estimatedInitialClones", default: 3 })
+	resolved := f.resolveAst(m, { input: ["a.fq"] }, ["a.fq"])
+	test.isEqual({ op: "custom", output: true, source: "output:align.json", name: "clones", key: "estimatedInitialClones", files: [], "default": 3 }, resolved)
+	test.isEqual({ "output:align.json": { files: [], names: ["clones"] } }, f.referencedSources(resolved))
+}
+
+TestParseOutputMetric := func() {
+	node := { name: "clones", key: "estimatedInitialClones" }
+	test.isEqual(2227494, f.parseOutputMetric(node, `{"type":"align","estimatedInitialClones":2227494,"ratio":0.4}`).value)
+	// a float rounds down
+	test.isEqual(12, f.parseOutputMetric(node, `{"estimatedInitialClones":12.7}`).value)
+	// absent or null takes the default
+	withDefault := { name: "clones", key: "estimatedInitialClones", "default": 0 }
+	test.isEqual(0, f.parseOutputMetric(withDefault, `{"aligned":100}`).value)
+	test.isEqual(0, f.parseOutputMetric(withDefault, `{"estimatedInitialClones":null}`).value)
+	// errors name the metric and the key
+	for data in [`{"aligned":100}`, `{"estimatedInitialClones":-1}`, `{"estimatedInitialClones":"many"}`, `not json`, `[1]`] {
+		err := f.parseOutputMetric(node, data).err
+		test.isFalse(is_undefined(err), data)
+		test.isTrue(text.contains(err, "estimatedInitialClones"), err)
+	}
+}
+
+TestPlanMetricsAttachesDeclaredMetricsTheFormulaDoesNotRead := func() {
+	c := _content(7, "align.json")
+	clones := f.outputMetric("clones", "align.json", c, { key: "estimatedInitialClones", default: 0 })
+	reads := f.customMetric("reads", "input", _statsTpl)
+	byReport := clones.times(16).plus(f.gib(1))
+	fixed := f.gib(100).staticFallback(f.gib(100))
+
+	plan := func(ram) {
+		return f.planMetrics({ ram: { ast: f.astOf(ram), sources: f.sourcesOf(ram) } }, [clones, reads], { input: ["a.fq"] }, ["a.fq"])
+	}
+	a := plan(byReport)
+	b := plan(fixed)
+	// The metric inputs do not follow the formula the block picked.
+	test.isEqual(slices.quickSort(maps.getKeys(a.jobs)), slices.quickSort(maps.getKeys(b.jobs)))
+	test.isEqual(2, len(a.jobs))
+	test.isEqual(["a.fq"], a.jobs[maps.getKeys(f.sourcesOf(reads))[0]].files)
+	// Only the formula's own dimension is resolved; the declared metrics add inputs, not formulas.
+	test.isEqual(["ram"], maps.getKeys(b.resolved))
+}
+
+TestPlanMetricsWithoutDeclaredMetricsFollowsTheFormula := func() {
+	clones := f.outputMetric("clones", "align.json", _content(7, "align.json"))
+	ram := clones.times(16).plus(f.gib(1))
+	plan := f.planMetrics({ ram: { ast: f.astOf(ram), sources: f.sourcesOf(ram) }, cpu: { ast: undefined } }, [], {}, [])
+	test.isEqual(["output:align.json"], maps.getKeys(plan.jobs))
+	test.isEqual(0, len(f.planMetrics({ ram: { ast: f.astOf(f.gib(4)), sources: {} } }, [], {}, []).jobs))
+}

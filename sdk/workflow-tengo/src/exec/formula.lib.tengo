@@ -67,6 +67,10 @@ json := import("json")
 // custom:     { op: "metric", metric: "custom", source: <key>, name: <metric>,
 //               "tag,?": <string>, "files,?": [<file name>...], "default,?": <int> }
 //             (resolved to { op: "custom", source, name, files }; see customMetric() below)
+// output:     { op: "metric", metric: "output", source: <key>, name: <metric>, key: <json key>,
+//               "default,?": <int> }
+//             (resolved to { op: "custom", output: true, source, name, key, files: [] };
+//             see outputMetric() below)
 // The op strings mirror the fluent chain method names (.plus/.dividedBy/.between/
 // .when/...), so a raw AST dump reads like the source formula.
 // Note: when.cond and not.a may be const-wrapped if given a bare int; the
@@ -278,6 +282,12 @@ resolveAst := undefined
 resolveAst = func(node, tagMap, allFiles) {
 	node = _unwrap(node)
 	op := node.op
+	if op == "metric" && node.metric == "output" {
+		// An output metric reads a JSON output of an exec that has already run; it has no files.
+		res := { op: "custom", output: true, source: node.source, name: node.name, key: node.key, files: [] }
+		if !is_undefined(node.default) { res["default"] = node.default }
+		return res
+	}
 	if op == "metric" && node.metric == "custom" {
 		// A custom metric reads either files it was given itself or the exec's own files (all
 		// of them, or those under its tag); its template runs once over the whole set.
@@ -398,6 +408,31 @@ parseMetricOutput := func(names, data) {
 	return { values: values }
 }
 
+// parseOutputMetric reads the value of an output metric (outputMetric) from the JSON object the
+// exec wrote: the number under node.key, rounded down, or node.default when the key is absent
+// or null. Returns { value } or { err }.
+parseOutputMetric := func(node, data) {
+	label := fmt.sprintf("output metric %q (key %q)", node.name, node.key)
+	v := json.decode(data)
+	if is_error(v) || !is_map(v) {
+		return { err: fmt.sprintf("exec.formula: %s: the output is not a JSON object: %q", label, string(data)) }
+	}
+	x := v[node.key]
+	if is_undefined(x) {
+		if !is_undefined(node["default"]) {
+			return { value: node["default"] }
+		}
+		return { err: fmt.sprintf("exec.formula: %s: the output has no such key, and no { default: ... } was given", label) }
+	}
+	if is_float(x) && x >= 0 {
+		x = int(x)
+	}
+	if !is_int(x) || x < 0 {
+		return { err: fmt.sprintf("exec.formula: %s: the output holds %v; a metric is a non-negative number", label, x) }
+	}
+	return { value: x }
+}
+
 // applyFormulaFallback resolves the static ram/cpu/gpu/scratch to use when the backend
 // cannot evaluate resource formulas at run time (no getBlobSize). `dims` is keyed
 // by dimension — { ram: { ast, fallback, static }, cpu: {...}, gpu?: {...} } —
@@ -463,6 +498,20 @@ _sourcesOf := func(x) {
 	return is_map(x) && !is_undefined(x.__isFormula__) && !is_undefined(x.__sources__) ? x.__sources__ : {}
 }
 
+// _sameContent: true when two output contents are one field (or neither is an output).
+_sameContent := func(a, b) {
+	if is_undefined(a) || is_undefined(b) {
+		return is_undefined(a) && is_undefined(b)
+	}
+	idOf := func(x) { return ll.isMap(x) && maps.containsKey(x, "id") ? x.id : x }
+	ia := idOf(a)
+	ib := idOf(b)
+	if ll.isMap(ia) && ll.isMap(ib) {
+		return ia.ResourceID == ib.ResourceID && ia.Name == ib.Name
+	}
+	return ia == ib
+}
+
 _mergeSources := func(...parts) {
 	res := {}
 	for part in parts {
@@ -470,6 +519,8 @@ _mergeSources := func(...parts) {
 			if is_undefined(res[key]) {
 				res[key] = src
 			} else {
+				ll.assert(_sameContent(src.content, res[key].content),
+					"exec.formula: output metrics read two different outputs under one name %q", key)
 				merged := copy(res[key])
 				merged.names = slices.unique(append(copy(merged.names), src.names...))
 				res[key] = merged
@@ -477,6 +528,44 @@ _mergeSources := func(...parts) {
 		}
 	}
 	return res
+}
+
+// planMetrics resolves the formulas of one exec and lists the metric jobs it needs.
+//
+//   dims:     { <dimension>: { ast, sources } } - the resource formulas and the sources they carry
+//   declared: [<formula>...] - formulas given to exec.builder().metricInputs(); their metrics are
+//             attached whether or not a resource formula reads them
+//   tagMap, allFiles: as resolveAst
+//
+// Returns { resolved: { <dimension>: <resolved ast> }, jobs: { <source key>: { source, files,
+// names } } }. Each job is one input of the exec, the same whichever formulas read it.
+planMetrics := func(dims, declared, tagMap, allFiles) {
+	jobs := {}
+	add := func(ast, sources, what) {
+		resolved := resolveAst(ast, tagMap, allFiles)
+		for key, used in referencedSources(resolved) {
+			src := sources[key]
+			ll.assert(!is_undefined(src), "exec.builder: the %s reads custom metrics %s, but was built without their source", what, text.join(used.names, ", "))
+			if is_undefined(jobs[key]) {
+				jobs[key] = { source: src, files: used.files, names: used.names }
+			} else {
+				ll.assert(jobs[key].files == used.files,
+					"exec.builder: custom metrics %s read different files in two formulas of one exec", text.join(used.names, ", "))
+				jobs[key].names = slices.unique(append(copy(jobs[key].names), used.names...))
+			}
+		}
+		return resolved
+	}
+	resolved := {}
+	for dim, d in dims {
+		if !is_undefined(d.ast) {
+			resolved[dim] = add(d.ast, is_undefined(d.sources) ? {} : d.sources, dim + " formula")
+		}
+	}
+	for x in declared {
+		add(_unwrap(x), _sourcesOf(x), "metricInputs() formula")
+	}
+	return { resolved: resolved, jobs: jobs }
 }
 
 // ---- fluent wrapper factory ------------------------------------------------
@@ -609,6 +698,48 @@ customMetric := func(name, input, tpl, ...opts) {
 	return _node(node, undefined, sources)
 }
 
+/**
+ * outputMetric reads a metric from the saved JSON output of an exec that has already run, for
+ * the resources of a later one: no template and no extra job. Blocks reach it through the exec
+ * result, `run.metric(name, fileName, opts)`, which passes the saved content.
+ *
+ *   clones := alignRun.metric("clones", "align.json", { key: "estimatedInitialClones", default: 0 })
+ *   b.resources({ onCPU: { ram: clones.times(16).dividedBy(1000000).plus(10).times(f.gib(1)) } })
+ *
+ * The value is the number under `key` in the JSON object, rounded down. An absent or null key
+ * gives `default`, or fails the sized job when no default is given; a negative number or a
+ * non-number fails it.
+ *
+ * @param name: string - the metric
+ * @param label: string - names the output; one label reads one output across a formula
+ * @param content: field - the saved content resource (exec result getFileContent())
+ * @param opts: optional { key: <string>, default: <non-negative int> } - key defaults to name
+ */
+outputMetric := func(name, label, content, ...opts) {
+	ll.assert(is_string(name) && text.re_match(_NAME_RE, name), "exec.formula.outputMetric: name must be an identifier, got %v", name)
+	ll.assert(is_string(label) && label != "", "exec.formula.outputMetric(%q): label must be a non-empty string", name)
+	ll.assert(!is_undefined(content), "exec.formula.outputMetric(%q): the output content is required", name)
+	key := "output:" + label
+	node := { op: "metric", metric: "output", source: key, name: name, key: name }
+	for opt in opts {
+		ll.assert(is_map(opt), "exec.formula.outputMetric(%q): expected { key?, default? }, got %v", name, opt)
+		for k, _ in opt {
+			ll.assert(k == "key" || k == "default", "exec.formula.outputMetric(%q): unknown option %q", name, k)
+		}
+		if !is_undefined(opt.key) {
+			ll.assert(is_string(opt.key) && opt.key != "", "exec.formula.outputMetric(%q): key must be a non-empty string", name)
+			node.key = opt.key
+		}
+		if !is_undefined(opt["default"]) {
+			ll.assert(is_int(opt["default"]) && opt["default"] >= 0, "exec.formula.outputMetric(%q): default must be a non-negative integer", name)
+			node["default"] = opt["default"]
+		}
+	}
+	sources := {}
+	sources[key] = { key: key, content: content, names: [name] }
+	return _node(node, undefined, sources)
+}
+
 export {
 	// size: total blob bytes of the input files the metric reads (no pre-exec).
 	//   f.size() with no tag reads every file added with addFile(). f.size("tag")
@@ -628,6 +759,7 @@ export {
 	//   Evaluated only where the backend evaluates formulas; elsewhere the dimension takes its
 	//   .staticFallback(), as any formula does.
 	customMetric: customMetric,
+	outputMetric: outputMetric,
 
 	gib: func(n) { return _const(n * units.GiB) },
 	mib: func(n) { return _const(n * units.MiB) },
@@ -663,6 +795,8 @@ export {
 	referencedMetricFiles: referencedMetricFiles,
 	referencedSources:     referencedSources,
 	parseMetricOutput:     parseMetricOutput,
+	parseOutputMetric:     parseOutputMetric,
+	planMetrics:           planMetrics,
 	applyFormulaFallback:  applyFormulaFallback,
 
 	// _internal: SDK-internal entry points, NOT part of the block-author API.
