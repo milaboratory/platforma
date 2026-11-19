@@ -129,7 +129,8 @@ assertRamSlope := func(slope) {
 
 /**
  * Converts a RAM slope to thousandths of a GiB per GiB, rounded up: 0.0301 gives 31.
- * The small tolerance stops 0.03 * 1000 = 30.000000000000004 from giving 31.
+ * The small tolerance stops 0.03 * 1000 = 30.000000000000004 from giving 31. A positive
+ * slope never gives 0.
  *
  * @param slope: number - at least 0
  * @return int
@@ -138,7 +139,7 @@ ramSlopeThousandths := func(slope) {
 	assertRamSlope(slope)
 	scaled := float(slope) * RAM_SLOPE_SCALE
 	t := int(scaled)
-	if float(t) + 0.000001 < scaled {
+	if float(t) + 0.000001 < scaled || (t == 0 && scaled > 0) {
 		t += 1
 	}
 	return t

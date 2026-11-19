@@ -158,6 +158,8 @@ TestZeroFloatSlopeIsFlat := func() {
 
 TestTinySlopeRoundsUpToOneThousandth := func() {
 	test.isEqual(4 * GiB + 512 * units.MiB, _ram(500 * GiB, { slope: 0.0001 }))  //  acts as 0.001
+	// Below the rounding tolerance, a positive slope still acts as 0.001.
+	test.isEqual(4 * GiB + 512 * units.MiB, _ram(500 * GiB, { slope: 0.0000000005 }))
 }
 
 // ---- ram: static fallback -------------------------------------------------
