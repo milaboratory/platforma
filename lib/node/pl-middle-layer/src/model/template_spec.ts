@@ -17,6 +17,17 @@ export interface PreparedTemplate {
   data: TemplateData | CompiledTemplateV3;
 }
 
+/**
+ * A block registry pack the client has not downloaded: the backend installs it from `url`, or the
+ * client downloads it when the backend cannot.
+ */
+export interface RegistryPackTemplate {
+  readonly type: "registry-pack";
+  url: string;
+  /** Lowercase hex sha256 of the gzipped pack, from the registry manifest. */
+  sha256: string;
+}
+
 export interface CachedTemplate {
   readonly type: "cached";
   readonly resourceId: SignedResourceId;

@@ -31,7 +31,6 @@ import type {
   TemplateWasmDataV3,
 } from "@milaboratories/pl-model-backend";
 import { notEmpty } from "@milaboratories/ts-helpers";
-import type { BlockPackSpecPrepared } from "../../model";
 import type { TemplateSpecPrepared } from "../../model/template_spec";
 import { getDebugFlags } from "../../debug";
 
@@ -774,23 +773,4 @@ export async function loadTemplateCached(
       console.log(`[templateCache] ${JSON.stringify(stat)}`);
     }
   }
-}
-
-/**
- * Pre-materialize a block pack's template via cache.
- * Returns a copy of the spec with the template replaced by a cached reference.
- * If the template is already cached, returns the spec unchanged.
- */
-export async function cacheBlockPackTemplate(
-  pl: PlClient,
-  spec: BlockPackSpecPrepared,
-  options?: { cacheResourceId?: SignedResourceId },
-): Promise<BlockPackSpecPrepared> {
-  if (spec.template.type === "cached") return spec;
-
-  const resourceId = await loadTemplateCached(pl, spec.template, options);
-  return {
-    ...spec,
-    template: { type: "cached", resourceId },
-  };
 }

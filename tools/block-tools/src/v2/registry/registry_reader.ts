@@ -247,7 +247,11 @@ export class RegistryV2Reader {
     }, Retry2TimesWithDelay);
   }
 
-  private readonly componentsCache = new LRUCache<string, BlockComponentsAbsoluteUrl, BlockPackId>({
+  private readonly manifestCache = new LRUCache<
+    string,
+    { manifest: BlockPackManifest; components: BlockComponentsAbsoluteUrl },
+    BlockPackId
+  >({
     max: 500,
     fetchMethod: async (_key, _staleValue, { context: id }) =>
       await retry(async () => {
@@ -257,15 +261,21 @@ export class RegistryV2Reader {
         const manifest = BlockPackManifest.parse(
           JSON.parse(Buffer.from(await packageFolderReader.readFile(ManifestFileName)).toString()),
         );
-        return blockComponentsManifestToAbsoluteUrl(
+        const components = blockComponentsManifestToAbsoluteUrl(
           manifest.description.components,
           packageFolderReader.rootUrl.toString(),
         );
+        return { manifest, components };
       }, Retry2TimesWithDelay),
   });
 
   public async getComponents(id: BlockPackId): Promise<BlockComponentsAbsoluteUrl> {
-    return await this.componentsCache.forceFetch(canonicalize(id)!, { context: id });
+    return (await this.manifestCache.forceFetch(canonicalize(id)!, { context: id })).components;
+  }
+
+  /** The published manifest of a block version: file hashes and the pack-time meta. */
+  public async getManifest(id: BlockPackId): Promise<BlockPackManifest> {
+    return (await this.manifestCache.forceFetch(canonicalize(id)!, { context: id })).manifest;
   }
 
   /**

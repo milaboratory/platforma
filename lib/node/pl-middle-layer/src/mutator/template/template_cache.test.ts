@@ -15,10 +15,10 @@ import {
   ExplicitTemplateSumNumbers,
 } from "../../test/explicit_templates";
 import { loadTemplate } from "./template_loading";
+import { cacheBlockPackTemplate, installTemplateOnBackend } from "./template_install";
 import {
   ACCESS_COUNT_KEY,
   ACCESS_KEY_PREFIX,
-  cacheBlockPackTemplate,
   dropTemplateCache,
   flattenTemplateTree,
   getOrCreateTemplateCache,
@@ -201,6 +201,25 @@ describe("cacheBlockPackTemplate", () => {
       expect(cached.template.type).toBe("cached");
       expect(cached.type).toBe("prepared");
       expect(cached.config).toBe(spec.config);
+    });
+  }, 15000);
+
+  test("drops a failed backend install so the client falls back", async (ctx) => {
+    await TestHelpers.withTempRoot(async (pl) => {
+      if (!pl.hasCapability("templateInstall:v1")) ctx.skip();
+      const testCache = await createTestCacheInTx(pl);
+      const sha256 = "0".repeat(64);
+
+      const installed = await installTemplateOnBackend(pl, testCache, {
+        url: "https://untrusted.invalid/main.plj.gz",
+        sha256,
+      });
+      expect(installed).toBeUndefined();
+
+      const installKept = await pl.withReadTx("check", (tx) =>
+        tx.fieldExists(field(testCache, `install_${sha256}`)),
+      );
+      expect(installKept).toBe(false);
     });
   }, 15000);
 

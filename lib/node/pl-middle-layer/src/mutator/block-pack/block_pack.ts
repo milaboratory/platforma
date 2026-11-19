@@ -6,6 +6,7 @@ import type { Signer } from "@milaboratories/ts-helpers";
 import { assertNever } from "@milaboratories/ts-helpers";
 import type { Branded } from "@milaboratories/pl-model-common";
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { Dispatcher } from "undici";
 import { request } from "undici";
@@ -19,12 +20,13 @@ import {
   RegistryV1,
 } from "@platforma-sdk/block-tools";
 import type { BlockPackInfo } from "../../model/block_pack";
+import type { PreparedTemplate, RegistryPackTemplate } from "../../model/template_spec";
 import { resolveDevPacket } from "../../dev_env";
 import { getDevV2PacketMtime, getFromPackV2Mtime } from "../../block_registry";
 import type { V2RegistryProvider } from "../../block_registry/registry-v2-provider";
 import { LRUCache } from "lru-cache";
 import canonicalize from "canonicalize";
-import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
+import type { BlockPackFromRegistryV2, BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import { WorkerManager } from "../../worker/WorkerManager";
 import { z } from "zod";
 
@@ -156,6 +158,13 @@ export class BlockPackPreparer {
       if (cached) return cached;
     }
 
+    const registryPack =
+      spec.type === "from-registry-v2" ? await this.prepareRegistryPack(spec) : undefined;
+    if (registryPack !== undefined) {
+      if (key) this.preparedCache.set(key, registryPack);
+      return registryPack;
+    }
+
     const explicit = await this.prepareWithoutUnpacking(spec);
 
     await using workerManager = new WorkerManager();
@@ -177,6 +186,54 @@ export class BlockPackPreparer {
     }
 
     return result;
+  }
+
+  /**
+   * Prepares a v2 registry block from its manifest alone, without downloading the workflow.
+   * Undefined when the manifest does not list the workflow pack's sha256.
+   */
+  private async prepareRegistryPack(
+    spec: BlockPackFromRegistryV2,
+  ): Promise<BlockPackSpecPrepared | undefined> {
+    const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
+    const [manifest, components] = await Promise.all([
+      registry.getManifest(spec.id),
+      registry.getComponents(spec.id),
+    ]);
+    const workflowPath = manifest.description.components.workflow.main.path;
+    const workflowFile = manifest.files.find((f) => f.name === workflowPath);
+    if (workflowFile === undefined) return undefined;
+
+    const model = parseBufferConfig(await this.remoteContentCache.forceFetch(components.model.url));
+    return {
+      type: "prepared",
+      template: {
+        type: "registry-pack",
+        url: components.workflow.main.url,
+        sha256: workflowFile.sha256.toLowerCase(),
+      },
+      config: model,
+      frontend: { type: "url", url: components.ui.url },
+      source: spec,
+      requiredCapabilities: manifest.description.meta.requiredCapabilities,
+    };
+  }
+
+  /** Downloads and parses a registry pack the backend could not install. */
+  public async downloadRegistryPack(
+    template: RegistryPackTemplate,
+  ): Promise<{ template: PreparedTemplate; requiredCapabilities?: string[] }> {
+    const content = new Uint8Array(await this.remoteContentCache.forceFetch(template.url));
+    const sha256 = createHash("sha256").update(content).digest("hex");
+    if (sha256 !== template.sha256)
+      throw new Error(`workflow pack ${template.url} has sha256 ${sha256}, expected ${template.sha256}`);
+
+    await using workerManager = new WorkerManager();
+    const parsed = await workerManager.process("parseTemplate", content);
+    return {
+      template: { type: "prepared", data: parsed },
+      requiredCapabilities: requiredCapabilitiesFromTemplate(parsed),
+    };
   }
 
   private async prepareWithoutUnpacking(
@@ -352,6 +409,8 @@ export class BlockPackPreparer {
 function createCustomBlockPack(tx: PlTransaction, spec: BlockPackSpecPrepared): AnyResourceRef {
   const blockPackInfo: BlockPackInfo = { config: spec.config, source: spec.source };
   const bp = tx.createStruct(BlockPackCustomType, JSON.stringify(blockPackInfo));
+  if (spec.template.type === "registry-pack")
+    throw new Error("BUG: a registry pack must be installed by cacheBlockPackTemplate first");
   tx.createField(field(bp, BlockPackTemplateField), "Input", loadTemplate(tx, spec.template));
   tx.createField(field(bp, BlockPackFrontendField), "Input", createFrontend(tx, spec.frontend));
   tx.lock(bp);

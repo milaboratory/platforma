@@ -45,7 +45,10 @@ export type BackendCapability =
   | "optionalFieldsInSchemas:v1"
   // The instance statistics context: one per instance, readable by every user, its readings
   // written by the executor runner (CPU, RAM, GPU, jobs).
-  | "instanceStats:v1";
+  | "instanceStats:v1"
+  // TengoTemplateInstall: the backend materializes a block workflow from an uploaded pack or
+  // downloads it from a trusted block registry.
+  | "templateInstall:v1";
 
 /**
  * Client capability tokens that this client implements. The backend lists the
