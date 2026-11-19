@@ -1,4 +1,9 @@
-import type { CachedTemplate, ExplicitTemplate, PreparedTemplate } from "./template_spec";
+import type {
+  CachedTemplate,
+  ExplicitTemplate,
+  PreparedTemplate,
+  RegistryPackTemplate,
+} from "./template_spec";
 import type { ResourceType } from "@milaboratories/pl-client";
 import type { BlockConfigContainer } from "@platforma-sdk/model";
 import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
@@ -71,13 +76,13 @@ export interface BlockPackExplicit {
 /** Block-pack spec that can be materialized in pl. */
 export type BlockPackSpecPrepared = {
   type: "prepared";
-  template: PreparedTemplate | CachedTemplate;
+  template: PreparedTemplate | CachedTemplate | RegistryPackTemplate;
   config: BlockConfigContainer;
   frontend: FrontendSpec;
   source: BlockPackSpec;
   /** Backend-side runtime capabilities the block requires at install time.
-   * Derived from the parsed workflow template by
-   * `requiredCapabilitiesFromTemplate` during `BlockPackPreparer.prepare`.
+   * Derived from the parsed workflow template by `requiredCapabilitiesFromTemplate` during
+   * `BlockPackPreparer.prepare`, or read from the registry manifest for a `registry-pack`.
    * `Project.addBlock` matches this list against `pl.serverInfo.capabilities`
    * and refuses to install when anything is missing. */
   requiredCapabilities?: string[];
