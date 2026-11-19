@@ -8,6 +8,7 @@ assets := import(":assets")
 render := import(":render")
 validation := import(":validation")
 model := import(":workflow.model")
+ffDefault := import(":ll.get-future-field-default")
 
 queryAnchoredTpl := assets.importTemplate(":workflow.query-anchored")
 
@@ -200,8 +201,9 @@ create := func(spec, ctx, ...options) {
  * Results of family 2 (see `forFamily`) decode differently in two ways:
  *  - an item without data has no `data` key: a BResolveSingle/2 fills `data` with the no-result
  *    marker for it, a BResolveChoice/2 has no data entry for it (or one holding the marker, when a
- *    workflow passed a query result on). A `data` key holding a field
- *    reference still means the data is pending, and no `data` key with `ops.data` false means the
+ *    workflow passed a query result on). A `data` key holding a field reference still means the
+ *    data is pending; when the template runs before the data is set, that field resolves to the
+ *    no-result marker for an item without data. No `data` key with `ops.data` false means the
  *    data was not requested;
  *  - every ref is a family-2 ref `{block, workflow, name}` (see `forFamily`), so a ref a query
  *    returned can be passed to `resolve` again.
@@ -276,7 +278,12 @@ resultUnmarshaller := func() {
 				specs := resource.get("spec").inputs() // map of specs
 				datas := undefined
 				if resource.hasInputField("data") {
-					datas = resource.get("data") // map of datas
+					datas = resource.getFieldOrResource("data") // map of datas
+				}
+
+				noResult := undefined
+				if isFamily2 && smart.isField(datas) {
+					noResult = smart.structBuilder(constants.RTYPE_BRESOLVE_NO_RESULT).lockAndBuild()
 				}
 
 				result := []
@@ -289,7 +296,14 @@ resultUnmarshaller := func() {
 					// only if the data is there; a BResolveChoice/2 writes an address's spec and data
 					// entries together, so a missing data entry means the item has no data
 					if !is_undefined(datas) {
-						if !isFamily2 {
+						if smart.isField(datas) {
+							if !isFamily2 {
+								r.data = datas.getFutureField(ref, "input", true)
+							} else {
+								// whether the item has data is unknown until the map is set
+								r.data = smart.field(ffDefault.getFutureFieldWithDefault(datas.id, ref, "input", true, noResult.id))
+							}
+						} else if !isFamily2 {
 							r.data = getData(datas, ref)
 						} else if datas.hasInputField(ref) && !isNoResultField(datas.getField(ref)) {
 							r.data = getData(datas, ref)
