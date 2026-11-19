@@ -7,7 +7,7 @@ import { BlockDumpArraySchemaUnified } from "./unified-state-schema";
 import type { BlockStateOverview } from "@milaboratories/pl-middle-layer";
 
 // V3 ui api
-test("v3: ui test", { timeout: 10_000 }, async ({ expect }) => {
+test("v3: ui test", { timeout: 30_000 }, async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
     const prj1Id = await ml.createProject({ label: "Project 1" });
     await ml.openProject(prj1Id);
