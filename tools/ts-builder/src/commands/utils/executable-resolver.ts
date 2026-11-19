@@ -58,13 +58,19 @@ export function resolveExecutable(executableName: string, packageName: string): 
 }
 
 /**
- * Resolves the appropriate type checker executable based on target
+ * Resolves the appropriate type checker executable based on target.
+ *
+ * For browser targets (which contain `.vue` SFCs) we type-check with vue-tsc.
+ * TypeScript 7 is the native compiler and exposes no embeddable JS Compiler API,
+ * which Volar/vue-tsc still require, so we run vue-tsc against the classic-API
+ * `@typescript/typescript6` bridge via a small shim. See bin/vue-tsc-ts6.cjs.
  */
 export function resolveTypeChecker(target: TargetType): string {
   const useVueTsc = target === "browser" || target === "browser-lib" || target === "block-ui";
-  const commandName = useVueTsc ? "vue-tsc" : "tsc";
-  const packageName = useVueTsc ? "vue-tsc" : "typescript";
-  return resolveExecutable(commandName, packageName);
+  if (useVueTsc) {
+    return join(rootDir, "bin", "vue-tsc-ts6.cjs");
+  }
+  return resolveExecutable("tsc", "typescript");
 }
 
 /**

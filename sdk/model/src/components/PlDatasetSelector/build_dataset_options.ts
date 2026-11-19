@@ -1,5 +1,5 @@
 import type { MultiColumnSelector, Option, PObjectSpec } from "@milaboratories/pl-model-common";
-import { multiColumnSelectorsToPredicate } from "@milaboratories/pl-model-common";
+import { isPColumnSpec, multiColumnSelectorsToPredicate } from "@milaboratories/pl-model-common";
 import type { DeriveLabelsOptions } from "../../labels/derive_distinct_labels";
 import type { RenderCtxBase } from "../../render";
 import type { DatasetOption } from "./dataset_selection";
@@ -39,6 +39,12 @@ export type BuildDatasetOptions = {
   withEnrichments?: SpecPredicateOption;
   /** Maximum linker hops considered. Only used when `withEnrichments` is set. */
   enrichmentMaxHops?: number;
+  /**
+   * Whether the dataset refs in the returned options carry `requireEnrichments: true`.
+   * A block that stores such a ref depends on every block that enriches the dataset.
+   * Set `false` for a block that only needs the dataset and its filters. Defaults to `true`.
+   */
+  requireEnrichments?: boolean;
 };
 
 /**
@@ -54,7 +60,12 @@ export function buildDatasetOptions(
   const primaryPredicate = toPredicate(opts?.primary);
   const filterPredicate = toPredicate(opts?.filter);
 
-  const options = ctx.resultPool.getOptions(primaryPredicate, { refsWithEnrichments: true });
+  const options = ctx.resultPool.getOptions(
+    (spec) => isPColumnSpec(spec) && primaryPredicate(spec),
+    {
+      refsWithEnrichments: opts?.requireEnrichments ?? true,
+    },
+  );
   if (options.length === 0) return [];
 
   const refMap = buildRefMap(ctx.resultPool.getSpecs().entries);

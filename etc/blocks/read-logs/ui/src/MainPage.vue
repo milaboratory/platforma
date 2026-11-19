@@ -19,13 +19,13 @@ const progress = computed(() => {
 <template>
   <PlBlockPage style="max-width: 100%">
     <PlFileInput
-      v-model="app.model.args.inputHandle"
+      v-model="app.model.data.inputHandle"
       label="Select file to import"
       :progress="progress"
     />
 
     <PlTextField
-      v-model="app.model.args.readFileWithSleepArgs"
+      v-model="app.model.data.readFileWithSleepArgs"
       label="Write arguments splitted by comma (no spaces)"
     />
 
@@ -40,13 +40,13 @@ const progress = computed(() => {
     </PlAlert>
 
     <fieldset>
-      <legend>Args (app.snapshot.args)</legend>
-      {{ app.snapshot.args }}
+      <legend>Block storage (app.snapshot.blockStorage)</legend>
+      {{ app.snapshot.blockStorage }}
     </fieldset>
 
     <fieldset>
-      <legend>Args (app.model.args)</legend>
-      {{ app.model.args }}
+      <legend>Data (app.model.data)</legend>
+      {{ app.model.data }}
     </fieldset>
 
     <PlAlert label="app.model" type="info" monospace max-height="400px">

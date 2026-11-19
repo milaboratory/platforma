@@ -14,11 +14,13 @@ import type {
   BlockPackId,
   BlockPackListing,
   BlockPackOverview,
+  BlockPackFromRegistryV2,
   RegistryEntry,
   RegistryStatus,
   SingleBlockPackOverview,
 } from "@milaboratories/pl-model-middle-layer";
 import { AnyChannel, StableChannel } from "@milaboratories/pl-model-middle-layer";
+import type { BlockKindReference } from "@milaboratories/pl-model-common";
 
 async function getFileContent(path: string) {
   try {
@@ -300,5 +302,25 @@ export class BlockPackRegistry {
       );
     const reg = this.v2Provider.getRegistry(regSpec.url);
     return await reg.getSpecificOverview(blockId, channel);
+  }
+
+  /**
+   * Resolve a block-kind reference (`{name}@{selector}`) against a `remote-v2`
+   * registry to a concrete `from-registry-v2` block spec. Thin facade cloned
+   * from {@link getOverview}: resolve `registryId` → assert `remote-v2` →
+   * delegate to the reader's pure-core-backed `resolveKind`. All version-math
+   * lives in `@platforma-sdk/block-tools` (no backend involvement).
+   */
+  public async resolveKind(
+    registryId: string,
+    ref: BlockKindReference,
+    { allowUnstable }: { allowUnstable: boolean },
+  ): Promise<BlockPackFromRegistryV2> {
+    const regSpec = this.registries.find((reg) => reg.id === registryId)?.spec;
+    if (!regSpec) throw new Error(`Registry with id "${registryId}" not found`);
+    if (regSpec.type !== "remote-v2")
+      throw new Error(`Only "remote-v2" registries support block-kind resolution.`);
+    const reg = this.v2Provider.getRegistry(regSpec.url);
+    return await reg.resolveKind(ref, { allowUnstable });
   }
 }

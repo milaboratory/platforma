@@ -22,8 +22,10 @@ import {
 } from "@milaboratories/pl-client";
 import {
   createRenderHeavyBlock,
+  type BlockActionContextBaggage,
   createBContextFromUpstreams,
   createBContextEnd,
+  recordBlockRunCancelled,
 } from "./template/render_block";
 import type {
   Block,
@@ -63,7 +65,7 @@ import type {
   BlockSettings,
   ProjectMeta,
 } from "@milaboratories/pl-model-middle-layer";
-import { InitialBlockSettings } from "@milaboratories/pl-model-middle-layer";
+import { InitialBlockSettings, normalizeProjectMeta } from "@milaboratories/pl-model-middle-layer";
 import Denque from "denque";
 import { exportContext, getPreparedExportTemplateEnvelope } from "./context_export";
 import { loadTemplate } from "./template/template_loading";
@@ -78,11 +80,23 @@ import {
 import { gzipSync } from "node:zlib";
 import type { ProjectHelper } from "../model/project_helper";
 import {
+  derivedArgsValue,
+  argsErrorsFieldChange,
+  argsErrorsOfBlock,
+  type DerivedArgs,
+  type ArgsErrorsFieldChange,
+} from "../model/args_derivation";
+import type { ArgsIssue } from "@milaboratories/pl-model-common";
+import {
   extractConfig,
   UiError,
   BLOCK_STORAGE_FACADE_VERSION,
   type BlockConfig,
+  type BlockKindReference,
 } from "@platforma-sdk/model";
+import type { ProjectTemplateExportOutcome } from "../model/template_serializer";
+import { exportProjectAsTemplateV1 } from "../model/template_serializer";
+import type { TemplateParamsResult } from "../model/template_export";
 import { getDebugFlags } from "../debug";
 import type { BlockPackInfo } from "../model/block_pack";
 
@@ -103,6 +117,17 @@ interface BlockFieldState {
   ref?: AnyRef;
   status?: FieldStatus;
   value?: Uint8Array;
+  /**
+   * True when the project field's own error slot is filled, i.e. the render failed outright
+   * and left no value resource behind. Distinct from `status === "Error"`, which describes a
+   * value resource that exists but carries an error.
+   */
+  fieldError?: boolean;
+}
+
+/** Either failure shape a production field can be in: no value resource, or an errored one. */
+function hasError(state: BlockFieldState | undefined): boolean {
+  return state?.fieldError === true || state?.status === "Error";
 }
 
 type BlockFieldStates = Partial<Record<ProjectField["fieldName"], BlockFieldState>>;
@@ -112,6 +137,12 @@ interface BlockInfoState {
   readonly id: string;
   readonly fields: BlockFieldStates;
   blockConfig?: BlockConfig;
+  /**
+   * The block's kind reference, kept separately because `blockConfig` cannot carry
+   * it: `extractConfig` normalizes the render envelope and the kind sits at the
+   * container level, one level above. Undefined for a block that declares no kind.
+   */
+  blockKind?: BlockKindReference;
   blockPack?: BlockPackSpec;
 }
 
@@ -141,6 +172,8 @@ class BlockInfo {
     public readonly fields: BlockFieldStates,
     public readonly config: BlockConfig,
     public readonly source: BlockPackSpec,
+    /** See {@link BlockInfoState.blockKind}. */
+    public readonly kind: BlockKindReference | undefined,
     private readonly logger: MiLogger = new ConsoleLoggerAdapter(),
   ) {}
 
@@ -250,6 +283,24 @@ class BlockInfo {
     return this.currentPrerunArgsC();
   }
 
+  private readonly argsErrorsC = cached(
+    () => `${this.fields.inputsValid?.modCount}:${this.fields.currentArgs?.modCount}`,
+    () =>
+      argsErrorsOfBlock({
+        modelAPIVersion: this.config.modelAPIVersion,
+        inputsValid: this.fields.inputsValid,
+        currentArgs: this.currentArgs,
+      }),
+  );
+
+  /**
+   * The errors the block's `argsIssues()` found in its current args. A block whose model API
+   * version has no args issues, or that has no current args, has none.
+   */
+  get argsErrors(): readonly ArgsIssue[] {
+    return this.argsErrorsC();
+  }
+
   get stagingRendered(): boolean {
     return this.fields.stagingCtx !== undefined;
   }
@@ -258,11 +309,19 @@ class BlockInfo {
     return this.fields.prodCtx !== undefined;
   }
 
+  /**
+   * True if the rendered production failed, in either shape {@link hasError} covers.
+   *
+   * Must stay in step with the `outputError` the desktop derives in
+   * `middle_layer/project_overview.ts`, because that flag is what enables the Run button.
+   * Any failure counted there but not here leaves Run enabled yet inert: `renderProduction`
+   * finds nothing to re-render and commits an empty transaction.
+   */
   get productionHasErrors(): boolean {
     return (
-      this.fields.prodUiCtx?.status === "Error" ||
-      this.fields.prodOutput?.status === "Error" ||
-      this.fields.prodCtx?.status === "Error"
+      hasError(this.fields.prodUiCtx) ||
+      hasError(this.fields.prodOutput) ||
+      hasError(this.fields.prodCtx)
     );
   }
 
@@ -303,7 +362,25 @@ class BlockInfo {
  */
 /** Specification for creating a new block. Discriminated union based on `storageMode`. */
 export type NewBlockSpec =
-  | { storageMode: "fromModel"; blockPack: BlockPackSpecPrepared }
+  | {
+      storageMode: "fromModel";
+      blockPack: BlockPackSpecPrepared;
+      /**
+       * Storage to start the block with, instead of the model's own default.
+       *
+       * Only for a caller that produced it through the block's own model, which today
+       * means one seeding a block from a template entry's params: the model's
+       * params-to-storage initializer can reject those params, and it has to do so
+       * before anything in the transaction changes. Computing the storage first turns
+       * that rejection into a value the caller can report, and leaves this method with
+       * no failure path it did not already have.
+       *
+       * The result is the same storage the block would have written itself, so args
+       * derivation below is unchanged — which is why this is the `fromModel` mode with
+       * one input filled in rather than a mode of its own.
+       */
+      initialStorage?: string;
+    }
   | { storageMode: "legacy"; blockPack: BlockPackSpecPrepared; legacyState: string };
 
 const NoNewBlocks = (blockId: string) => {
@@ -516,6 +593,48 @@ export class ProjectMutator {
       };
   }
 
+  //
+  // Template export
+  //
+
+  /**
+   * Render this project as a `template-v1` YAML document, or report every reason it
+   * cannot be.
+   *
+   * Read-only: it derives params in the VM and touches no field, so a `withProject`
+   * wrapper sees `wasModified === false` and skips the commit.
+   *
+   * This is where the three providers the serializer needs come from, and all are
+   * only reachable here. A block's storage lives behind `BlockInfo`, which is
+   * populated by the loader's batched round-trips, and both its kind reference and
+   * its origin spec are read off the block-pack container during that same load —
+   * `config` cannot carry the kind, since `extractConfig` normalizes the render
+   * envelope one level below it, and the spec is not part of the config at all.
+   */
+  public exportAsTemplateV1(): ProjectTemplateExportOutcome {
+    return exportProjectAsTemplateV1(
+      this.struct,
+      (blockId) => this.deriveTemplateParams(blockId),
+      (blockId) => this.blockInfos.get(blockId)?.kind,
+      (blockId) => this.blockInfos.get(blockId)?.source,
+    );
+  }
+
+  private deriveTemplateParams(blockId: string): TemplateParamsResult | undefined {
+    const info = this.blockInfos.get(blockId);
+    // A block in the structure with no loaded info, or with no storage yet, has no
+    // state to project into params. Returning undefined makes the walk report it
+    // rather than quietly leaving the block out of the template.
+    if (info === undefined) return undefined;
+
+    const storageJson = info.blockStorageJson;
+    if (storageJson === undefined) return undefined;
+
+    const derived = this.projectHelper.deriveTemplateParamsFromStorage(info.config, storageJson);
+    if (derived.error !== undefined) return { error: derived.error.message };
+    return { value: derived.value };
+  }
+
   private getPendingProductionGraph(): BlockGraph {
     if (this.pendingProductionGraph === undefined)
       this.pendingProductionGraph = productionGraph(this.struct, (blockId) =>
@@ -615,6 +734,15 @@ export class ProjectMutator {
     return { ref, value: jsonBytes, status: "Ready" };
   }
 
+  /** Baggage of the root action context of a block render. */
+  private blockActionContextBaggage(blockId: string, info: BlockInfo): BlockActionContextBaggage {
+    return {
+      name: this.getBlock(blockId).label,
+      blockPack: JSON.stringify(info.source),
+      blockId,
+    };
+  }
+
   private getBlock(blockId: string): Block {
     for (const block of allBlocks(this.struct)) if (block.id === blockId) return block;
     throw new Error("block not found");
@@ -665,6 +793,32 @@ export class ProjectMutator {
     return deleted;
   }
 
+  /**
+   * Brings the block's `inputsValid` field in line with what its args derivation found: the run
+   * errors of its args, none when it may run with them, and no field when it has no args.
+   */
+  private setArgsErrors(blockId: string, derivedArgs: DerivedArgs): void {
+    this.applyArgsErrorsChange(
+      blockId,
+      argsErrorsFieldChange(this.getBlockInfo(blockId).fields.inputsValid, derivedArgs),
+    );
+  }
+
+  private applyArgsErrorsChange(blockId: string, change: ArgsErrorsFieldChange): void {
+    switch (change.type) {
+      case "keep":
+        return;
+      case "delete":
+        this.deleteBlockFields(blockId, "inputsValid");
+        return;
+      case "write": {
+        const ref = this.tx.createValue(Pl.JsonObject, change.data);
+        this.setBlockField(blockId, "inputsValid", ref, "Ready", change.data);
+        return;
+      }
+    }
+  }
+
   private updateLastModified() {
     this.lastModified = Date.now();
     this.lastModifiedChanged = true;
@@ -691,6 +845,7 @@ export class ProjectMutator {
       this.setBlockFieldObj(blockId, "stagingCtxPrevious", fields.stagingCtx!);
       this.setBlockFieldObj(blockId, "stagingUiCtxPrevious", fields.stagingUiCtx!);
     }
+    this.deleteBlockFields(blockId, "stagingActionContext");
     if (this.deleteBlockFields(blockId, "stagingOutput", "stagingCtx", "stagingUiCtx"))
       this.resetStagingRefreshTimestamp();
   }
@@ -706,7 +861,14 @@ export class ProjectMutator {
       this.setBlockFieldObj(blockId, "prodCtxPrevious", fields.prodCtx!);
       this.setBlockFieldObj(blockId, "prodUiCtxPrevious", fields.prodUiCtx!);
     }
-    this.deleteBlockFields(blockId, "prodOutput", "prodCtx", "prodUiCtx", "prodArgs");
+    this.deleteBlockFields(
+      blockId,
+      "prodOutput",
+      "prodCtx",
+      "prodUiCtx",
+      "prodArgs",
+      "prodActionContext",
+    );
   }
 
   /** Running blocks are reset, settled ones (Ready or finished Error) moved to limbo. Returns if
@@ -735,6 +897,7 @@ export class ProjectMutator {
       return true;
     } else {
       // reset - clean up any partial/inconsistent production stat
+      this.deleteBlockFields(blockId, "prodActionContext");
       return this.deleteBlockFields(
         blockId,
         "prodOutput",
@@ -817,21 +980,16 @@ export class ProjectMutator {
     }
 
     // Derive args from storage - set or clear currentArgs based on derivation result
-    const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
-      blockConfig,
-      initialStorageJson,
-    );
+    const derivedArgs = this.projectHelper.deriveArgsFromStorage(blockConfig, initialStorageJson);
     // args() legitimately returns undefined when inputs are incomplete/invalid;
     // treat that like a derivation failure and clear the field (never JSON-encode undefined).
-    if (!deriveArgsResult.error && deriveArgsResult.value !== undefined) {
-      this.setBlockFieldObj(
-        blockId,
-        "currentArgs",
-        this.createJsonFieldValue(deriveArgsResult.value),
-      );
+    const args = derivedArgsValue(derivedArgs);
+    if (args !== undefined) {
+      this.setBlockFieldObj(blockId, "currentArgs", this.createJsonFieldValue(args));
     } else {
       this.deleteBlockFields(blockId, "currentArgs");
     }
+    this.setArgsErrors(blockId, derivedArgs);
   }
 
   /** Optimally sets inputs for multiple blocks in one go */
@@ -883,11 +1041,12 @@ export class ProjectMutator {
         );
 
         // Derive args from storage (VM extracts data internally)
-        const derivedArgsResult = this.projectHelper.deriveArgsFromStorage(
+        const derivedArgs = this.projectHelper.deriveArgsFromStorage(
           blockConfig,
           updatedStorageJson,
         );
-        args = derivedArgsResult.error ? undefined : derivedArgsResult.value;
+        args = derivedArgsValue(derivedArgs);
+        this.setArgsErrors(req.blockId, derivedArgs);
       } else {
         this.setBlockFieldObj(req.blockId, "blockStorage", this.createGzJsonFieldValue(req.state));
         if (req.state !== null && typeof req.state === "object" && "args" in req.state) {
@@ -1075,12 +1234,17 @@ export class ProjectMutator {
     const tpl = info.getTemplate(this.tx);
 
     // Use currentPrerunArgs for staging rendering
-    const results = createRenderHeavyBlock(this.tx, tpl, {
-      args: prerunArgsRef,
-      blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
-      isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(false)),
-      context: ctx,
-    });
+    const results = createRenderHeavyBlock(
+      this.tx,
+      tpl,
+      {
+        args: prerunArgsRef,
+        blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
+        isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(false)),
+        context: ctx,
+      },
+      this.blockActionContextBaggage(blockId, info),
+    );
 
     // Here we set the staging ctx to the input context of the staging workflow, not the output because exports
     // of one staging context should stay within the same block, and not travel downstream.
@@ -1091,6 +1255,8 @@ export class ProjectMutator {
     // thus creating a certain discrepancy between staging workflow context behavior and desktop's result pool.
     this.setBlockField(blockId, "stagingUiCtx", this.exportCtx(results.context), "NotReady");
     this.setBlockField(blockId, "stagingOutput", results.result, "NotReady");
+    if (results.actionContext !== undefined)
+      this.setBlockField(blockId, "stagingActionContext", results.actionContext, "NotReady");
   }
 
   private renderProductionFor(blockId: string) {
@@ -1103,6 +1269,13 @@ export class ProjectMutator {
       throw new Error(`Can't render production for block ${blockId}: currentArgs not set`);
     }
 
+    // Nor if its argsIssues() found errors in them
+    const argsErrors = info.argsErrors;
+    if (argsErrors.length > 0) {
+      const messages = argsErrors.map(({ message }) => message).join("; ");
+      throw new Error(`Can't render production for block ${blockId}: ${messages}`);
+    }
+
     const ctx = this.createProdCtx(this.getPendingProductionGraph().nodes.get(blockId)!.upstream);
 
     if (this.getBlock(blockId).renderingMode === "Light")
@@ -1110,12 +1283,17 @@ export class ProjectMutator {
 
     const tpl = info.getTemplate(this.tx);
 
-    const results = createRenderHeavyBlock(this.tx, tpl, {
-      args: info.fields.currentArgs.ref!,
-      blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
-      isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(true)),
-      context: ctx,
-    });
+    const results = createRenderHeavyBlock(
+      this.tx,
+      tpl,
+      {
+        args: info.fields.currentArgs.ref!,
+        blockId: this.tx.createValue(Pl.JsonString, JSON.stringify(blockId)),
+        isProduction: this.tx.createValue(Pl.JsonBool, JSON.stringify(true)),
+        context: ctx,
+      },
+      this.blockActionContextBaggage(blockId, info),
+    );
     this.setBlockField(
       blockId,
       "prodCtx",
@@ -1124,6 +1302,8 @@ export class ProjectMutator {
     );
     this.setBlockField(blockId, "prodUiCtx", this.exportCtx(results.context), "NotReady");
     this.setBlockField(blockId, "prodOutput", results.result, "NotReady");
+    if (results.actionContext !== undefined)
+      this.setBlockField(blockId, "prodActionContext", results.actionContext, "NotReady");
 
     // saving inputs for which we rendered the production
     this.setBlockFieldObj(blockId, "prodArgs", info.fields.currentArgs);
@@ -1142,6 +1322,7 @@ export class ProjectMutator {
       {},
       extractConfig(spec.blockPack.config),
       spec.blockPack.source,
+      spec.blockPack.config.kind,
       this.projectHelper.logger,
     );
     this.blockInfos.set(blockId, info);
@@ -1164,18 +1345,19 @@ export class ProjectMutator {
     let storageToWrite: string;
 
     if (spec.storageMode === "fromModel") {
-      // Model API v2+: get initial storage and derive args from it
-      storageToWrite = this.projectHelper.getInitialStorageInVM(blockConfig);
+      // Model API v2+: get initial storage and derive args from it. A caller that
+      // already produced the storage — a template seeding a block from its params —
+      // passes it in, precisely so the VM call that could reject those params happens
+      // before the transaction is touched; see `initialStorage`.
+      storageToWrite = spec.initialStorage ?? this.projectHelper.getInitialStorageInVM(blockConfig);
 
       // Derive prerunArgs first — always derived independently of args validation
       prerunArgs = this.projectHelper.derivePrerunArgsFromStorage(blockConfig, storageToWrite);
 
       // Derive args from storage (VM extracts data internally)
-      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(
-        blockConfig,
-        storageToWrite,
-      );
-      args = deriveArgsResult.error ? undefined : deriveArgsResult.value;
+      const derivedArgs = this.projectHelper.deriveArgsFromStorage(blockConfig, storageToWrite);
+      args = derivedArgsValue(derivedArgs);
+      this.setArgsErrors(blockId, derivedArgs);
     } else if (spec.storageMode === "legacy") {
       // Model API v1: use legacyState from spec
       const parsedState = JSON.parse(spec.legacyState);
@@ -1251,6 +1433,7 @@ export class ProjectMutator {
       {},
       originalBlockInfo.config,
       originalBlockInfo.source,
+      originalBlockInfo.kind,
       this.projectHelper.logger,
     );
 
@@ -1464,18 +1647,16 @@ export class ProjectMutator {
         this.deleteBlockFields(blockId, "currentPrerunArgs");
       }
 
-      const deriveArgsResult = this.projectHelper.deriveArgsFromStorage(newConfig, storageJson);
+      const derivedArgs = this.projectHelper.deriveArgsFromStorage(newConfig, storageJson);
       // args() legitimately returns undefined when inputs are incomplete/invalid;
       // treat that like a derivation failure and clear the field (never JSON-encode undefined).
-      if (!deriveArgsResult.error && deriveArgsResult.value !== undefined) {
-        this.setBlockFieldObj(
-          blockId,
-          "currentArgs",
-          this.createJsonFieldValue(deriveArgsResult.value),
-        );
+      const args = derivedArgsValue(derivedArgs);
+      if (args !== undefined) {
+        this.setBlockFieldObj(blockId, "currentArgs", this.createJsonFieldValue(args));
       } else {
         this.deleteBlockFields(blockId, "currentArgs");
       }
+      this.setArgsErrors(blockId, derivedArgs);
     };
 
     if (newClearState !== undefined) {
@@ -1491,6 +1672,9 @@ export class ProjectMutator {
       } else {
         // V1: Use setStates with legacy state format
         persistBlockPack();
+        // A V1 model tells whether the block may run by itself; args errors of an earlier V2 model
+        // no longer apply.
+        this.deleteBlockFields(blockId, "inputsValid");
         this.setStates([{ modelAPIVersion: 1, blockId, state: newClearState.state }]);
       }
     } else {
@@ -1521,6 +1705,9 @@ export class ProjectMutator {
       } else {
         // Legacy blocks (modelAPIVersion 1): persist block pack, set prerunArgs = currentArgs
         persistBlockPack();
+        // A V1 model tells whether the block may run by itself; args errors of an earlier V2 model
+        // no longer apply.
+        this.deleteBlockFields(blockId, "inputsValid");
         if (info.fields.currentArgs !== undefined) {
           this.setBlockFieldObj(blockId, "currentPrerunArgs", info.fields.currentArgs);
         }
@@ -1645,6 +1832,12 @@ export class ProjectMutator {
         // was actually stopped
         stopped.push(blockId);
 
+        // The run's status tree stays, so the user can see where it stopped; the next run replaces
+        // it. It is marked cancelled, because a destroyed render reports nothing of its own.
+        const actionContext = fields.prodActionContext?.ref;
+        if (actionContext !== undefined && isResource(actionContext))
+          recordBlockRunCancelled(this.tx, actionContext);
+
         // will try to stop all its downstreams
         for (const downstream of activeProdGraph.traverseIdsExcludingRoots("downstream", blockId)) {
           if (queued.has(downstream)) continue;
@@ -1700,9 +1893,20 @@ export class ProjectMutator {
 
   /** Updates project metadata */
   public setMeta(meta: ProjectMeta): void {
-    this.meta = meta;
+    this.meta = normalizeProjectMeta(meta);
     this.metaChanged = true;
     this.updateLastModified();
+  }
+
+  /**
+   * Updates the metadata fields the caller names, leaving the rest as they are.
+   *
+   * The merge happens against the metadata this mutator loaded inside the very transaction it
+   * writes in, so a rename and a description edit racing each other cannot make one of them
+   * revert the other's field.
+   */
+  public updateMeta(patch: Partial<ProjectMeta>): void {
+    this.setMeta({ ...this.meta, ...patch });
   }
 
   //
@@ -1809,9 +2013,12 @@ export class ProjectMutator {
         blockInfoStates.set(projectField.blockId, info);
       }
 
+      // `f.error` is carried separately from `f.value`: a field that errored has no value
+      // resource to read a status off, so this is the only trace the failure leaves here.
+      const fieldError = isNotNullSignedResourceId(f.error);
       info.fields[projectField.fieldName] = isNullSignedResourceId(f.value)
-        ? { modCount: 0 }
-        : { modCount: 0, ref: f.value };
+        ? { modCount: 0, fieldError }
+        : { modCount: 0, ref: f.value, fieldError };
     }
 
     //
@@ -1895,6 +2102,9 @@ export class ProjectMutator {
       const result = await response;
       const bpInfo = cachedDeserialize<BlockPackInfo>(notEmpty(result.data));
       info.blockConfig = extractConfig(bpInfo.config);
+      // Read off the container before `extractConfig`'s result replaces it as the
+      // only thing we keep. Costs no round-trip — `bpInfo` is already in hand.
+      info.blockKind = bpInfo.config.kind;
       info.blockPack = bpInfo.source;
     }
 
@@ -1926,10 +2136,17 @@ export class ProjectMutator {
     const blocksInLimboSet = new Set(blocksInLimbo);
 
     const blockInfos = new Map<string, BlockInfo>();
-    blockInfoStates.forEach(({ id, fields, blockConfig, blockPack }) =>
+    blockInfoStates.forEach(({ id, fields, blockConfig, blockKind, blockPack }) =>
       blockInfos.set(
         id,
-        new BlockInfo(id, fields, notEmpty(blockConfig), notEmpty(blockPack), projectHelper.logger),
+        new BlockInfo(
+          id,
+          fields,
+          notEmpty(blockConfig),
+          notEmpty(blockPack),
+          blockKind,
+          projectHelper.logger,
+        ),
       ),
     );
 

@@ -40,7 +40,12 @@ function normalizeABDOpts(timeoutOrOps?: number | AwaitBlockDoneOps): AwaitBlock
   };
 }
 
-export const DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT = 5000;
+/**
+ * Budget for a whole awaitBlockDone call, not for one change notification: the
+ * signal built from it spans the wait loop. It has to fit a block that is
+ * fetched before it runs.
+ */
+export const DEFAULT_AWAIT_BLOCK_DONE_TIMEOUT = 10_000;
 
 async function awaitBlockDone(
   prj: Project,
@@ -101,7 +106,6 @@ export const blockTest = plTest.extend<{
       defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
       devBlockUpdateRecheckInterval: 300,
       localSecret: MiddleLayer.generateLocalSecret(),
-      localProjections: [], // TODO must be different with local pl
       openFileDialogCallback: () => {
         throw new Error("Not implemented.");
       },

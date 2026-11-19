@@ -37,7 +37,7 @@ import { throwError } from "@milaboratories/helpers";
 export class ColumnDiscoveredRecipe implements ColumnRecipe<ColumnDiscoveredId> {
   /**
    * Validate the key + resolve every referenced column via
-   * {@link ColumnLazy.fromId} (which itself checks the leaf accessor reports
+   * {@link DataColumnRecipe.fromId} (which itself checks the leaf accessor reports
    * `hasData()`). Returns `undefined` if the key is malformed or any
    * referenced column is not yet spec-resolvable.
    *

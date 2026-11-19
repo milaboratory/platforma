@@ -12,7 +12,7 @@ tplTest(
   async ({ helper, expect, driverKit, pl }) => {
     // 1. List the data library via LsDriver and find a known test file.
     const storages = await driverKit.lsDriver.getStorageList();
-    const library = storages.find((s) => s.name == env.libraryStorage);
+    const library = env.findLibraryStorage(storages);
     if (library === undefined) {
       throw new Error(`Library '${env.libraryStorage}' not found`);
     }

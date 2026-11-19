@@ -2,10 +2,13 @@ import type { Branded } from "../../branding";
 import type { PoolEntry } from "../../pool_entry";
 import type { AccessorHandle, AccessorLike, UpstreamBlockCtx } from "../../columns/types";
 import type { ColumnUniversalId } from "../pframe/spec/ids";
-import type { ColumnsDiscoverOptions, ColumnsFilterOptions } from "./discover_columns_options";
+import type {
+  ColumnsDiscoverOptions,
+  ColumnsFilterOptions,
+  DiscoverRootsOptions,
+} from "./discover_columns_options";
 import type { PFrameSpecDriver } from "../pframe/spec_driver";
-import type { PColumnSpec } from "../pframe/spec/spec";
-import type { PObjectId } from "../../pool";
+import type { PObjectId, PObjectSpec } from "../../pool";
 
 /**
  * Opaque host-owned handle for a `ColumnsCollection` instance. Issued by
@@ -14,6 +17,18 @@ import type { PObjectId } from "../../pool";
  * sees raw refcounting.
  */
 export type CollectionHandle = Branded<string, "CollectionHandle">;
+
+/**
+ * A root found by `discoverRoots`, as ids. `leaf` is the requested column as
+ * `discover` anchored on `root` would return it — a discovered id carrying the
+ * path and qualifications — so `root` as the anchor plus `leaf` builds the
+ * table. `path` repeats the linkers on the way, root first.
+ */
+export interface DiscoveredRootIds {
+  readonly root: ColumnUniversalId;
+  readonly leaf: ColumnUniversalId;
+  readonly path: ColumnUniversalId[];
+}
 
 /**
  * JSON descriptor crossing the VM bridge in place of a sandbox
@@ -60,13 +75,14 @@ export interface ColumnsCollectionDriverHost<A extends AccessorLike<A> = Accesso
   getSpecDriver(): PFrameSpecDriver;
 
   /**
-   * Resolve the canonical {@link PColumnSpec} for a leaf {@link PObjectId}.
+   * Resolve the {@link PObjectSpec} for a leaf {@link PObjectId}.
    * Returns `undefined` when the id is not present in the active registry
    * (e.g. handed to the driver via a `{kind:"ids"}` source whose underlying
-   * column has since left the visible scope). Override-wrapped ids are
-   * unwrapped by the caller — this method only resolves the underlying leaf.
+   * column has since left the visible scope) or when its spec is not readable
+   * yet. Override-wrapped ids are unwrapped by the caller — this method
+   * only resolves the underlying leaf.
    */
-  resolveSpec(id: PObjectId): PColumnSpec | undefined;
+  resolveSpec(id: PObjectId): PObjectSpec | undefined;
 }
 
 /**
@@ -102,6 +118,9 @@ export interface ColumnsCollectionDriverModel {
 
   /** Selector-only filter (no anchor traversal). Returns a fresh handle. */
   filter(handle: CollectionHandle, options: ColumnsFilterOptions): CollectionHandle;
+
+  /** Roots the given columns hang off, one entry per (root, leaf, path). */
+  discoverRoots(handle: CollectionHandle, options: DiscoverRootsOptions): DiscoveredRootIds[];
 }
 
 /**
@@ -122,7 +141,7 @@ export interface ColumnsCollectionDriver {
     host: ColumnsCollectionDriverHost,
   ): PoolEntry<CollectionHandle>;
 
-  isEmpty(handle: CollectionHandle): boolean;
+  isEmpty(handle: CollectionHandle, host: ColumnsCollectionDriverHost): boolean;
   isFinal(handle: CollectionHandle): boolean;
   getColumns(handle: CollectionHandle, host: ColumnsCollectionDriverHost): ColumnUniversalId[];
 
@@ -143,4 +162,10 @@ export interface ColumnsCollectionDriver {
     options: ColumnsFilterOptions,
     host: ColumnsCollectionDriverHost,
   ): PoolEntry<CollectionHandle>;
+
+  discoverRoots(
+    handle: CollectionHandle,
+    options: DiscoverRootsOptions,
+    host: ColumnsCollectionDriverHost,
+  ): DiscoveredRootIds[];
 }

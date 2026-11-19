@@ -1,5 +1,6 @@
 import type {
   AuthorMarker,
+  BlockColumnLinks,
   BlockOutputsBase,
   BlockState,
   NavigationState,
@@ -24,7 +25,7 @@ export type BlockStateInternalV3<
   /** Raw block storage - UI derives data using sdk/model */
   readonly blockStorage: unknown;
 
-  /** Storage debug view (JSON string) for block debug panel. */
+  /** @deprecated No longer filled by the middle layer. Read `blockStorage` instead. */
   readonly storageDebugView?: StringifiedJson<StorageDebugView>;
 
   /** Outputs rendered with block config */
@@ -34,4 +35,10 @@ export type BlockStateInternalV3<
   readonly navigationState: NavigationState<Href>;
 
   readonly author: AuthorMarker | undefined;
+
+  /**
+   * Column links of the block: outputs of other blocks its args reference, and blocks whose args
+   * reference its outputs. `undefined` while they are not computed for it.
+   */
+  readonly columnLinks: BlockColumnLinks | undefined;
 };

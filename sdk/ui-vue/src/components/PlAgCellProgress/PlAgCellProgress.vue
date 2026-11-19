@@ -7,5 +7,5 @@ const props = defineProps<{ params: ICellRendererParams & PlProgressCellProps }>
 </script>
 
 <template>
-  <PlProgressCell v-bind="props.params" />
+  <PlProgressCell data-testid="pl-ag-cell-progress" v-bind="props.params" />
 </template>

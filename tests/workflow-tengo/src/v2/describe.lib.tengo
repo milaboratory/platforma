@@ -1,0 +1,65 @@
+// Describes decoded query results as JSON, for tests: which keys a decoded item has, its ref, its
+// spec name, and the state of its data ("absent" when there is no data key).
+ll := import("@platforma-sdk/workflow-tengo:ll")
+maps := import("@platforma-sdk/workflow-tengo:maps")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+
+data := func(item) {
+	if !maps.containsKey(item, "data") {
+		return { state: "absent" }
+	}
+	// read by iteration: a strict map panics on a key whose value is undefined
+	d := undefined
+	for k, v in item {
+		if k == "data" {
+			d = v
+		}
+	}
+	if is_undefined(d) {
+		return { state: "undefined" }
+	}
+	if smart.isField(d) {
+		info := d.info()
+		return { state: "field", isSet: info.IsSet }
+	}
+	if smart.isResource(d) {
+		t := d.info().Type
+		return { state: "resource", type: t.Name + "/" + t.Version }
+	}
+	return { state: "value", value: d }
+}
+
+item := func(it) {
+	ll.assert(ll.isMap(it), "expected a decoded item, got %v", it)
+	r := {
+		keys: maps.getKeys(it),
+		data: data(it)
+	}
+	if maps.containsKey(it, "ref") {
+		r.ref = ll.fromStrict(it.ref)
+	}
+	if maps.containsKey(it, "spec") && ll.isMap(it.spec) {
+		r.specName = it.spec.name
+	}
+	return r
+}
+
+value := func(v) {
+	if is_undefined(v) {
+		return "none"
+	}
+	if is_array(v) {
+		res := []
+		for it in v {
+			res = append(res, item(it))
+		}
+		return res
+	}
+	return item(v)
+}
+
+export ll.toStrict({
+	data: data,
+	item: item,
+	value: value
+})

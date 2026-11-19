@@ -1,0 +1,42 @@
+// proc_batch_body_batch_tag_blob_tsv — tsv counterpart of
+// proc_batch_body_batch_tag_blob, for the format="tsv" + passContent=false
+// combination that real blocks use (e.g. sequence-embeddings).
+//
+// Receives __value__ as a Blob tsv batch file and tags every row with its
+// batch's fingerprint — min("key") over a constant window, i.e. the batch's
+// smallest key. Batches are sliced contiguously from a batch-key sort, so that
+// is the batch's first key and a stable per-batch identifier: distinct tags in
+// the merged output equal the number of batches that actually ran.
+//
+// Emits tsv so the output can use storageFormat="Json" and stay readable in
+// tests (xsvType="parquet" would force Parquet storage, which has no reader
+// here).
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+ll := import("@platforma-sdk/workflow-tengo:ll")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+pt := import("@platforma-sdk/workflow-tengo:pt")
+pConstants := import("@platforma-sdk/workflow-tengo:pframes.constants")
+
+self.defineOutputs(
+	"tsv"
+)
+
+self.body(func(inputs) {
+	batchFile := inputs[pConstants.VALUE_FIELD_NAME]
+
+	if !smart.isReference(batchFile) {
+		ll.panic("expected __value__ to be a file reference (passContent=false), got: %v", batchFile)
+	}
+
+	wf := pt.workflow()
+	df := wf.frame(batchFile, { xsvType: "tsv" })
+	df = df.withColumns(pt.lit(1).alias("__all"))
+	df = df.withColumns(pt.col("key").min().over("__all").alias("batchTag"))
+	df.select(pt.col("key"), pt.col("batchTag")).save("out.tsv", { format: "tsv" })
+	res := wf.run()
+
+	return {
+		tsv: res.getFile("out.tsv")
+	}
+})

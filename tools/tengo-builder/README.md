@@ -2,6 +2,36 @@
 
 This repo contains a tool, that facilitates integration of `tengo` libraries and template build and distribution process into npm infrastructure.
 
+# Commands
+
+The package installs one binary, `pl-tengo`.
+
+| Command                                              | What it does                                                               |
+| ---------------------------------------------------- | -------------------------------------------------------------------------- |
+| `pl-tengo build`                                     | Builds the sources in `./src` into a distributable pack in `./dist`.       |
+| `pl-tengo check [paths...]`                          | Checks the sources with the tengo language processor. Defaults to `./src`. |
+| `pl-tengo test [paths...]`                           | Runs the tengo tests. Defaults to `./src`.                                 |
+| `pl-tengo imports [paths...]`                        | Finds the imports the sources do not use. Defaults to `./src`.             |
+| `pl-tengo dump artifacts` / `pl-tengo dump software` | Prints the parsed artifacts or software descriptors.                       |
+
+## `pl-tengo imports`
+
+An import is used when its alias appears with a dot somewhere else in the code:
+`text.split(...)`. Comments do not count as usage, so an alias that is left only
+in a comment is reported.
+
+| Mode      | What it does                                                         |
+| --------- | -------------------------------------------------------------------- |
+| `--check` | Reports the unused imports and exits with an error. Changes no file. |
+| `--fix`   | Removes the unused imports from the sources.                         |
+| no option | `--fix`, or `--check` when the `CI` environment variable is set.     |
+
+The default keeps CI honest: a person who builds gets the sources cleaned, while
+CI reports the problem instead of making a change nobody reviewed.
+
+A source the parser cannot read is reported and kept as it is. The other
+sources are still cleaned, and the command exits with an error.
+
 <!--
 # Example config & file layout
 

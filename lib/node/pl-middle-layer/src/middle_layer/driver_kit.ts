@@ -12,6 +12,7 @@ import {
   LsDriver,
   UploadDriver,
   DownloadUrlDriver,
+  trimCacheDir,
 } from "@milaboratories/pl-drivers";
 import type * as Sdk from "@milaboratories/pl-model-common";
 import type { Signer } from "@milaboratories/ts-helpers";
@@ -19,6 +20,12 @@ import { isAsyncDisposable } from "@milaboratories/helpers";
 import { HmacSha256Signer } from "@milaboratories/ts-helpers";
 import type { InternalPFrameDriver } from "../pool";
 import { createPFrameDriver } from "../pool";
+import type { Recorder } from "@milaboratories/pl-crash-recorder";
+import {
+  openRecordingSession,
+  wrapDataDriver,
+  wrapModelDriver,
+} from "@milaboratories/pl-crash-recorder";
 import type { DriverKitOps, DriverKitOpsConstructor } from "./ops";
 import { DefaultDriverKitOpsPaths, DefaultDriverKitOpsSettings } from "./ops";
 
@@ -47,6 +54,13 @@ export interface MiddleLayerDriverKit extends Sdk.DriverKit, AsyncDisposable {
   readonly frontendDriver: DownloadUrlDriver;
 
   /**
+   * Diagnostics log for the model layer, present only when crash recording is
+   * switched on. Render spans are written through it so that a join recorded by
+   * the instrumented pFrame driver can be attributed to the block that built it.
+   * */
+  readonly crashRecorder?: Recorder;
+
+  /**
    * Signer is initialized from local secret in drivers initialization routine,
    * so constitutes a part of the driver kit
    * */
@@ -73,7 +87,22 @@ export async function initDriverKit(
 
   const signer = new HmacSha256Signer(ops.localSecret);
 
-  const downloadClient = createDownloadClient(ops.logger, pl, ops.localProjections);
+  // These drivers only count files they download in this session; trim leftovers from earlier ones first.
+  await Promise.all([
+    trimCacheDir(ops.logger, ops.blobDownloadPath, ops.blobDriverOps.cacheSoftSizeBytes),
+    trimCacheDir(
+      ops.logger,
+      ops.downloadBlobToURLPath,
+      ops.downloadBlobToURLDriverOps.cacheSoftSizeBytes,
+    ),
+    trimCacheDir(
+      ops.logger,
+      frontendDownloadPath,
+      ops.frontendDownloadDriverOps.cacheSoftSizeBytes,
+    ),
+  ]);
+
+  const downloadClient = createDownloadClient(ops.logger, pl);
   const logsClient = createLogsClient(pl, ops.logger);
   const uploadBlobClient = createUploadBlobClient(pl, ops.logger);
   const uploadProgressClient = createUploadProgressClient(pl, ops.logger);
@@ -109,12 +138,11 @@ export async function initDriverKit(
     ops.logger,
     pl,
     signer,
-    ops.localProjections,
     ops.openFileDialogCallback,
     ops.virtualLocalStoragesOverride,
   );
 
-  const pFrameDriver = await createPFrameDriver({
+  const rawPFrameDriver = await createPFrameDriver({
     blobDriver,
     logger: ops.logger,
     spillPath: ops.pframesSpillPath,
@@ -122,6 +150,19 @@ export async function initDriverKit(
     options: ops.pFrameDriverOps,
     cacheOps: ops.parquetCacheOps,
   });
+
+  // Every join a block model builds and every row it reads back passes through
+  // this one driver, so instrumenting it here covers the whole model layer
+  // without touching the call sites. The session is undefined unless recording
+  // is switched on, in which case the driver is used exactly as before.
+  const recordingSession = openRecordingSession({ role: "middle-layer" });
+  const pFrameDriver: InternalPFrameDriver = recordingSession
+    ? wrapDataDriver(
+        wrapModelDriver(rawPFrameDriver, recordingSession.recorder, recordingSession.registry),
+        recordingSession.recorder,
+        recordingSession.registry,
+      )
+    : rawPFrameDriver;
 
   const frontendDownloadDriver = new DownloadUrlDriver(
     ops.logger,
@@ -140,6 +181,7 @@ export async function initDriverKit(
     uploadDriver,
     pFrameDriver,
     frontendDriver: frontendDownloadDriver,
+    crashRecorder: recordingSession?.recorder,
   };
 
   const dispose = async () => {
@@ -147,6 +189,7 @@ export async function initDriverKit(
       isAsyncDisposable(driver) ? [driver[Symbol.asyncDispose]()] : [],
     );
     await Promise.all(disposePromises);
+    recordingSession?.close("driver-kit-disposed");
   };
 
   return {

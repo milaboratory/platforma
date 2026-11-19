@@ -25,6 +25,7 @@ import {
 } from "../engine/api";
 import { scopeDepMap } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { ensureModuleVersion, INITIAL_MODULE_VERSION } from "./shared/initial-version";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
@@ -32,6 +33,7 @@ export function uiPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
   const v = ctx.blockVars;
   return {
     name: `${v.facadeName}.ui`,
+    version: INITIAL_MODULE_VERSION,
     private: true,
     type: "module",
     scripts: {
@@ -61,7 +63,9 @@ export function uiPackageJsonInitial(ctx: RunContext): Record<string, unknown> {
 
 export function uiPackageJsonRules(): void {
   // Controlled sibling — workspace-only, never published, but kept versioned
-  // (changesets-owned) so the packed template's lib carries a version.
+  // (changesets-owned) so the packed template's lib carries a version —
+  // backfilled when the manifest predates the seeded field.
+  ensureModuleVersion();
   ensureField("private", true);
 
   ensureField("type", "module");

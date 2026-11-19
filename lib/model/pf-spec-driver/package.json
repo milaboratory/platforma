@@ -1,7 +1,7 @@
 {
   "name": "@milaboratories/pf-spec-driver",
-  "version": "1.4.24",
-  "description": "PSpecDriver implementation: spec-only PFrame operations via WASM",
+  "version": "1.6.1",
+  "description": "PSpecDriver implementation: a handle pool and error handling over pf-spec",
   "keywords": [],
   "license": "UNLICENSED",
   "files": [
@@ -15,26 +15,24 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "ts-builder build --target node",
-    "watch": "ts-builder build --target node --watch",
+    "build": "ts-builder build --target node --build-config build.config.js",
+    "watch": "ts-builder build --target node --build-config build.config.js --watch",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
   "dependencies": {
     "@milaboratories/helpers": "workspace:*",
-    "@milaboratories/pframes-rs-wasm": "catalog:",
+    "@milaboratories/pf-spec": "workspace:*",
     "@milaboratories/pl-model-common": "workspace:*",
-    "@milaboratories/pl-model-middle-layer": "workspace:*",
     "@noble/hashes": "catalog:"
   },
   "devDependencies": {
@@ -42,6 +40,7 @@
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",
     "@vitest/coverage-istanbul": "catalog:",
+    "shx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

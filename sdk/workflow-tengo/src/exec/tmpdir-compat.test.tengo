@@ -1,0 +1,287 @@
+test := import("@platforma-sdk/workflow-tengo:test")
+compat := import(":exec.tmpdir-compat")
+text := import("text")
+
+_wrapper := ["sh", "./" + compat.SCRIPT_FILE_NAME]
+
+// TestIsNeededWhenNeitherFlagIsReported covers a backend from before scratch space existed. It
+// neither understands the request nor serves the storage, so the SDK provides the directory
+// whatever size was asked for.
+TestIsNeededWhenNeitherFlagIsReported := func() {
+	feats := {supportsScratchSpaceRequests: false, hasScratchSpace: false}
+
+	test.isTrue(compat.isNeeded(feats, false),
+		"a backend reporting neither flag needs the workaround")
+	test.isTrue(compat.isNeeded(feats, true),
+		"a size changes nothing where the backend serves no scratch storage")
+}
+
+// TestIsNeededNeverWhenTheRequestIsUnderstood checks the flag that settles it alone: such a
+// backend guarantees both variables itself, at any size.
+TestIsNeededNeverWhenTheRequestIsUnderstood := func() {
+	feats := {supportsScratchSpaceRequests: true, hasScratchSpace: false}
+
+	test.isFalse(compat.isNeeded(feats, false),
+		"a backend that understands the request guarantees TMPDIR itself")
+	test.isFalse(compat.isNeeded(feats, true))
+	test.isFalse(compat.isNeeded({supportsScratchSpaceRequests: true, hasScratchSpace: true}, false))
+	test.isFalse(compat.isNeeded({supportsScratchSpaceRequests: true, hasScratchSpace: true}, true))
+}
+
+// TestIsNeededOnlyForASizelessRequestInTheScratchWindow pins the 4.4.0-4.4.3 window, which the two
+// flags identify exactly: scratch storage reported, the request not yet understood. There a sized
+// request already has TMPDIR and a scratch path naming the real device, while a sizeless one has
+// neither - so the size, and only the size, decides.
+TestIsNeededOnlyForASizelessRequestInTheScratchWindow := func() {
+	feats := {supportsScratchSpaceRequests: false, hasScratchSpace: true}
+
+	test.isFalse(compat.isNeeded(feats, true),
+		"a sized request there names the real scratch device and must not be redirected")
+	test.isTrue(compat.isNeeded(feats, false),
+		"a sizeless request there gets no TMPDIR, and a scratch path naming the workdir root")
+}
+
+// TestIsSizedRequestCountsAFormulaAsSized checks the rule the window's decision rests on. The
+// decision is taken before a formula is resolved, so a formula has to count as sized: reading it
+// the other way would redirect a command away from the scratch device it asked for.
+TestIsSizedRequestCountsAFormulaAsSized := func() {
+	test.isFalse(compat.isSizedRequest(undefined, undefined),
+		"no request at all is not a size")
+	test.isFalse(compat.isSizedRequest(0, undefined),
+		"0 asks for the directory alone, which is not a size")
+
+	test.isTrue(compat.isSizedRequest("500GiB", undefined))
+	test.isTrue(compat.isSizedRequest(17179869184, undefined))
+	test.isTrue(compat.isSizedRequest(undefined, {op: "size"}),
+		"a formula counts as sized: its value is not known when this is decided")
+}
+
+// TestScriptMakesTheDirectoryAndExecs pins the three things the script must do. The directory
+// cannot be created any other way on an old backend - workdir fill refuses everything under
+// '.pl' - so the mkdir is the whole reason the script exists.
+TestScriptMakesTheDirectoryAndExecs := func() {
+	script := compat.script()
+
+	test.isTrue(text.contains(script, "mkdir -p"),
+		"the script must create the directory: nothing else can on an old backend")
+	test.isTrue(text.contains(script, compat.WORKDIR_TMP_REL_PATH),
+		"it must be the same directory a current backend points TMPDIR at")
+	test.isTrue(text.contains(script, "export TMPDIR TMP"),
+		"both spellings must be exported, not just TMPDIR")
+	test.isTrue(text.contains(script, `exec "$@"`),
+		"the command must arrive untouched as \"$@\" and replace the shell")
+}
+
+// TestWindowsScriptSetsEveryTemporaryVariable pins the batch wrapper. Windows never reads TMPDIR
+// on its own - GetTempPath, which most native software reaches the temporary directory through,
+// reads TMP then TEMP - so all three have to be set for the same command to behave on both hosts.
+TestWindowsScriptSetsEveryTemporaryVariable := func() {
+	script := compat.scriptWindows()
+
+	test.isTrue(text.contains(script, "set \"TMPDIR=%pl_tmp%\""),
+		"TMPDIR, for the MSYS and Python tooling run environments ship")
+	test.isTrue(text.contains(script, "set \"TMP=%pl_tmp%\""),
+		"TMP, the first thing GetTempPath reads")
+	test.isTrue(text.contains(script, "set \"TEMP=%pl_tmp%\""),
+		"TEMP, which the POSIX wrapper has no reason to set and this one must")
+}
+
+// TestWindowsScriptMakesTheDirectoryAndForwards checks the three things the batch file must do
+// that its POSIX twin gets for free: create the directory, forward the whole command line, and
+// hand back the command's exit code rather than its own.
+TestWindowsScriptMakesTheDirectoryAndForwards := func() {
+	script := compat.scriptWindows()
+
+	test.isTrue(text.contains(script, "md \"%pl_tmp%\""),
+		"the directory cannot be created any other way on an old backend")
+	test.isTrue(text.contains(script, `set "pl_tmp=%CD%\.pl\tmp"`),
+		"and it must be spelled for cmd.exe: 'md .pl/tmp' is read as a switch")
+	test.isTrue(text.contains(script, "%*"),
+		"the whole command line is forwarded: '%1 %2 ...' would drop the tenth argument")
+	test.isTrue(text.contains(script, "exit /b %ERRORLEVEL%"),
+		"there is no 'exec' here - without this the batch file's exit code is what is read")
+	test.isTrue(text.contains(script, "\r\n"),
+		"CRLF: cmd.exe reads a bare-LF batch file wrongly")
+	test.isTrue(!text.contains(script, "\n\n"),
+		"every line ending, not only some: a blank line here would mean a bare LF survived")
+	test.isTrue(!text.contains(script, "\r\r"),
+		"and none doubled: the source is normalised down before up, so a CRLF checkout is safe")
+}
+
+// TestWindowsPathIsNotSubstitutedIntoExpressions guards the trap that keeps the two spellings
+// apart. rewriteScratchExpressions puts the path inside a quoted expr-lang string, where a
+// backslash starts an escape sequence - '.pl\tmp' would reach the command as '.pl<TAB>mp'.
+TestWindowsPathIsNotSubstitutedIntoExpressions := func() {
+	test.isEqual(".pl/tmp", compat.WORKDIR_TMP_REL_PATH,
+		"the rewrite uses the forward-slash form on every host")
+	test.isTrue(!text.contains(compat.rewriteScratchExpressions("{system.scratch.path * 1}"),
+		compat.WORKDIR_TMP_REL_PATH_WINDOWS),
+		"the backslash form must never reach an expression")
+}
+
+// TestUsesDockerDecidesTheWrapper pins the one question both the staging and the patching ask, so
+// they cannot drift apart: staging the batch file while patching the docker entrypoint would leave
+// a container looking for a script nobody wrote.
+TestUsesDockerDecidesTheWrapper := func() {
+	test.isTrue(compat.usesDocker({docker: {cmd: ["/app/tool"]}}, true))
+	test.isFalse(compat.usesDocker({docker: {cmd: ["/app/tool"]}}, false),
+		"docker switched off means the binary section is what runs")
+	test.isFalse(compat.usesDocker({binary: {cmd: ["tool"]}}, true),
+		"a software with no docker shape runs on the host whatever the runner offers")
+}
+
+// TestContainerAlwaysGetsThePosixWrapper checks the rule that outranks the host: a container is
+// Linux whatever the machine underneath it is, so the shell script is what runs inside one.
+TestContainerAlwaysGetsThePosixWrapper := func() {
+	test.isEqual(_wrapper, compat.wrapperPrefix(true))
+
+	staged := compat.filesToStage(true)
+	test.isEqual(compat.script(), staged[compat.SCRIPT_FILE_NAME])
+	test.isTrue(is_undefined(staged[compat.SCRIPT_FILE_NAME_WINDOWS]),
+		"only the wrapper that will run is staged: an unused file changes the exec CID")
+}
+
+// TestDockerPatchGoesThroughEntrypoint checks the container shape. The image's 'cmd' must stay
+// exactly as it was, because that is what reaches the script as "$@".
+TestDockerPatchGoesThroughEntrypoint := func() {
+	descriptor := {docker: {cmd: ["/app/bin/tool", "--flag"], entrypoint: []}}
+
+	patched := compat.patchSoftwareDescriptor(descriptor, true)
+
+	test.isEqual(_wrapper, patched.docker.entrypoint)
+	test.isEqual(["/app/bin/tool", "--flag"], patched.docker.cmd,
+		"the command a block built must not be touched")
+}
+
+// TestDockerPatchKeepsAnExistingEntrypoint checks that replacing the entrypoint never silently
+// drops the image's own: it moves behind the script instead.
+TestDockerPatchKeepsAnExistingEntrypoint := func() {
+	descriptor := {docker: {cmd: ["--flag"], entrypoint: ["/app/entry.sh"]}}
+
+	patched := compat.patchSoftwareDescriptor(descriptor, true)
+
+	test.isEqual(["sh", "./" + compat.SCRIPT_FILE_NAME, "/app/entry.sh"],
+		patched.docker.entrypoint,
+		"an image that declares an entrypoint keeps it, behind the wrapper")
+}
+
+// TestBinaryPatchPrependsToCmd checks the bare-binary shape. All non-docker descriptors carry
+// their command as '[command, args...]', so the wrapper goes in front of it.
+TestBinaryPatchPrependsToCmd := func() {
+	descriptor := {binary: {cmd: ["{pkg}/bin/tool", "--flag"]}}
+
+	patched := compat.patchSoftwareDescriptor(descriptor, false)
+
+	test.isEqual(["sh", "./" + compat.SCRIPT_FILE_NAME, "{pkg}/bin/tool", "--flag"],
+		patched.binary.cmd)
+}
+
+// TestBinaryPatchIgnoredWhenDockerWins checks the ordering that matters: a container is Linux
+// whatever the runner is, so docker is decided first and the binary section is left alone.
+TestBinaryPatchIgnoredWhenDockerWins := func() {
+	descriptor := {
+		docker: {cmd: ["/app/bin/tool"], entrypoint: []},
+		binary: {cmd: ["{pkg}/bin/tool"]}
+	}
+
+	patched := compat.patchSoftwareDescriptor(descriptor, true)
+
+	test.isEqual(_wrapper, patched.docker.entrypoint)
+	test.isEqual(["{pkg}/bin/tool"], patched.binary.cmd,
+		"only the shape that will actually run gets patched")
+}
+
+// TestBinaryPatchFallsBackWhenDockerIsUnavailable checks that a descriptor carrying BOTH shapes
+// still works where docker is switched off: the binary section is what will run, so it is what
+// gets wrapped.
+TestBinaryPatchFallsBackWhenDockerIsUnavailable := func() {
+	descriptor := {
+		docker: {cmd: ["/app/bin/tool"], entrypoint: []},
+		binary: {cmd: ["{pkg}/bin/tool"]}
+	}
+
+	patched := compat.patchSoftwareDescriptor(descriptor, false)
+
+	test.isEqual(["sh", "./" + compat.SCRIPT_FILE_NAME, "{pkg}/bin/tool"], patched.binary.cmd)
+	test.isEqual([], patched.docker.entrypoint, "the shape that will not run stays untouched")
+}
+
+// TestWrapCommandReturnsShellAndPrefix checks the shape for a command a block spelled out itself,
+// with no software behind it.
+TestWrapCommandReturnsShellAndPrefix := func() {
+	wrapped := compat.wrapCommand("mytool")
+
+	test.isEqual("sh", wrapped.cmd)
+	test.isEqual(["./" + compat.SCRIPT_FILE_NAME, "mytool"], wrapped.prependArgs,
+		"the original command becomes the first thing the script execs")
+}
+
+// TestRewriteScratchPathBareForm checks the path rewrite. A backend from before the contract has
+// no 'system.scratch' at all, so the expression fails to evaluate rather than rendering empty -
+// the rewrite is what keeps a block using it alive.
+TestRewriteScratchPathBareForm := func() {
+	test.isEqual(".pl/tmp", compat.rewriteScratchExpressions("{system.scratch.path}"))
+
+	test.isEqual(".pl/tmp/chunk", compat.rewriteScratchExpressions("{system.scratch.path}/chunk"),
+		"a path built on top of the expression must still resolve")
+
+	test.isEqual("--tmp=.pl/tmp --other=.pl/tmp",
+		compat.rewriteScratchExpressions("--tmp={system.scratch.path} --other={system.scratch.path}"),
+		"every occurrence, not just the first")
+}
+
+// TestRewriteScratchSizeBareForm checks every unit the backend answers with. A block asking how
+// much scratch space it got is told 0, which is the truth on such a backend: it has a temporary
+// directory and no device sized behind it.
+TestRewriteScratchSizeBareForm := func() {
+	units := ["bytes", "b", "kb", "mb", "gb", "kib", "mib", "gib"]
+
+	for unit in units {
+		test.isEqual("0", compat.rewriteScratchExpressions("{system.scratch." + unit + "}"),
+			"unit " + unit + " must rewrite to 0")
+	}
+
+	test.isEqual("--spill-at=0",
+		compat.rewriteScratchExpressions("--spill-at={system.scratch.gib}"))
+}
+
+// TestRewriteScratchSizeDoesNotCorruptLongerUnits pins the ordering trap. The substitution is
+// textual, so a shorter unit name that is a prefix of a longer one - 'b' inside 'bytes' - would
+// leave '0ytes' behind if the longer names were not replaced first.
+TestRewriteScratchSizeDoesNotCorruptLongerUnits := func() {
+	test.isEqual("0", compat.rewriteScratchExpressions("{system.scratch.bytes}"),
+		"'bytes' must not be cut short by the rule for 'b'")
+
+	test.isEqual("0 0",
+		compat.rewriteScratchExpressions("{system.scratch.bytes} {system.scratch.b}"),
+		"both must resolve when they appear together")
+
+	test.isEqual("{0 + 0}",
+		compat.rewriteScratchExpressions("{system.scratch.bytes + system.scratch.b}"),
+		"and inside one expression as well")
+}
+
+// TestRewriteScratchInsideLargerExpression checks the shape a bare-form rule cannot reach. The
+// expression still has to evaluate on the backend, so the variable is replaced where it stands
+// rather than the whole expression being swallowed - and the path is quoted, being a string where
+// the units are numbers.
+TestRewriteScratchInsideLargerExpression := func() {
+	test.isEqual("{0 * 2}", compat.rewriteScratchExpressions("{system.scratch.gib * 2}"),
+		"a computed size keeps evaluating, now against 0")
+
+	test.isEqual("{'.pl/tmp' + '/chunk'}",
+		compat.rewriteScratchExpressions("{system.scratch.path + '/chunk'}"),
+		"a computed path needs the replacement quoted as a string")
+}
+
+// TestRewriteLeavesEverythingElseAlone checks that the rewrite is confined to scratch. Every other
+// expression still has to reach the backend, which is the only thing that can render it.
+TestRewriteLeavesEverythingElseAlone := func() {
+	test.isEqual("{system.cpu}", compat.rewriteScratchExpressions("{system.cpu}"),
+		"every other expression is left for the backend to render")
+
+	test.isEqual("{system.ram.gib}", compat.rewriteScratchExpressions("{system.ram.gib}"),
+		"a unit on another variable must not be touched")
+
+	test.isEqual("plain", compat.rewriteScratchExpressions("plain"))
+}

@@ -1,0 +1,43 @@
+{
+  "name": "@milaboratories/milaboratories.transfer-files.kind",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Block kind for the transfer-files block",
+  "files": [
+    "dist/**/*"
+  ],
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "sources": "./src/index.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "ts-builder build --target block-kind && block-tools build-kind-manifest",
+    "check": "ts-builder check --target block-kind",
+    "formatter:check": "ts-builder formatter --check",
+    "linter:check": "ts-builder linter --check",
+    "types:check": "ts-builder type-check --target block-kind",
+    "fmt": "ts-builder format",
+    "watch": "ts-builder build --target block-kind --watch"
+  },
+  "dependencies": {
+    "@platforma-sdk/block-kind": "workspace:*"
+  },
+  "devDependencies": {
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/block-tools": "workspace:*"
+  },
+  "peerDependencies": {
+    "@types/node": "*",
+    "typescript": "*"
+  }
+}

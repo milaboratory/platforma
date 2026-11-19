@@ -22,14 +22,10 @@ createJsonPColumnData := func(data) {
 
 body := func(args, blockId) {
 	numbersMap := {}
-
-	for i, v in args.numbers {
-		numbersMap[string(i)] = v
-	}
-
 	numbers := []
 
 	for i, v in args.numbers {
+		numbersMap[string(i)] = v
 		numbers = append(numbers, v)
 	}
 

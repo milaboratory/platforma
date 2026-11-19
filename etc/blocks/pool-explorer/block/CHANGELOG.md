@@ -1,5 +1,20 @@
 # @milaboratories/milaboratories.pool-explorer
 
+## 1.3.0
+
+### Minor Changes
+
+- a5d3311: Add a Traces page: pick any column of the result pool and read its `pl7.app/trace` as a table of steps (label, type, importance, id) from where the data entered the project to the block that produced the column, with the raw annotation and parse errors shown as they are.
+
+## 1.2.67
+
+### Patch Changes
+
+- 80a9963: Declare a block kind. Each block gains a `kind/` package holding its init-params
+  contract, and its model is built with `new DataModelBuilder({ kind })` /
+  `BlockModelV3.create({ dataModel, kind })` and projects its params back via
+  `templateParams()`.
+
 ## 1.2.66
 
 ### Patch Changes

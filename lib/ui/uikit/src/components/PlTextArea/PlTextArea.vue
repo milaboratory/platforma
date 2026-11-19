@@ -125,12 +125,22 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="ui-text-area__envelope">
-    <div ref="root" class="ui-text-area" :class="{ error: hasErrors, disabled, dashed, nonEmpty }">
-      <label v-if="label" ref="label">
-        <PlSvg v-if="required" :uri="SvgRequired" />
+  <div class="ui-text-area__envelope" data-testid="pl-text-area">
+    <div
+      ref="root"
+      class="ui-text-area"
+      :class="{ error: hasErrors, disabled, dashed, nonEmpty }"
+      data-testid="pl-text-area-control"
+    >
+      <label v-if="label" ref="label" data-testid="pl-text-area-label">
+        <PlSvg v-if="required" :uri="SvgRequired" data-testid="pl-text-area-required" />
         <span>{{ label }}</span>
-        <PlTooltip v-if="slots.tooltip" class="info" position="top">
+        <PlTooltip
+          v-if="slots.tooltip"
+          class="info"
+          position="top"
+          data-testid="pl-text-area-tooltip"
+        >
           <template #tooltip>
             <slot name="tooltip" />
           </template>
@@ -144,16 +154,19 @@ onMounted(() => {
         :disabled="disabled"
         :placeholder="placeholder ?? '...'"
         spellcheck="false"
+        data-testid="pl-text-area-input"
         @input="adjustHeight"
       />
-      <div class="ui-text-area__append">
+      <div class="ui-text-area__append" data-testid="pl-text-area-append">
         <slot name="append" />
       </div>
       <DoubleContour class="ui-text-area__contour" />
     </div>
-    <div v-if="hasErrors" class="ui-text-area__error">
+    <div v-if="hasErrors" class="ui-text-area__error" data-testid="pl-text-area-error">
       {{ displayErrors.join(" ") }}
     </div>
-    <div v-else-if="helper" class="ui-text-area__helper">{{ helper }}</div>
+    <div v-else-if="helper" class="ui-text-area__helper" data-testid="pl-text-area-helper">
+      {{ helper }}
+    </div>
   </div>
 </template>

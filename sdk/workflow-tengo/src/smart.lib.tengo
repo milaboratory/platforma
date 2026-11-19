@@ -12,6 +12,7 @@ json := import("json")
 times := import("times")
 constants := import(":constants")
 ffDefault := import(":ll.get-future-field-default")
+actionContext := import(":action-context")
 
 //////////////// definitions ////////////////
 
@@ -751,6 +752,15 @@ resource = func(r) {
 		 */
 		kvSet: func(key, value) {
 			tx.resourceKeyValueSet(self.id, key, value)
+		},
+
+		/**
+		 * Returns the block action context handle of the resource (see the action context library):
+		 * setReading(namespace, key, value), record(namespace, state, ...detail). All calls are no-ops on backends
+		 * without block action context support, or when the resource has no action context.
+		 */
+		actionContext: func() {
+			return actionContext.of(self.id)
 		},
 
 		/**

@@ -170,7 +170,8 @@ export const treeFilter = {
    * exactly the same nodes where the client BFS would stop, eliminating
    * unnecessary follow-up calls.
    *
-   * Valid only inside `traverseStopRules`.
+   * Valid only inside `traverseStopRules`, which the backend ignores under a
+   * `changedSinceToken` - prune with the token instead where one is available.
    */
   readyOrDuplicateOrError(): Filter {
     return treeFilter.or(

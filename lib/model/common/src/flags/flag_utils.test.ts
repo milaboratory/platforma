@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { RuntimeCapabilities, IncompatibleFlagsError } from "./flag_utils";
-import type { BlockCodeFeatureFlags } from "./block_flags";
+import { AllRequiresFeatureFlags, type BlockCodeFeatureFlags } from "./block_flags";
 
 describe("RuntimeCapabilities", () => {
   describe("addSupportedRequirement", () => {
@@ -179,5 +179,36 @@ describe("RuntimeCapabilities", () => {
         }
       }
     });
+  });
+});
+
+describe("requiresArgsIssues", () => {
+  it("is a known requirement", () => {
+    expect(AllRequiresFeatureFlags).toContain("requiresArgsIssues");
+  });
+
+  it("refuses a block that gates Run with argsIssues in a runtime that does not", () => {
+    const capabilities = new RuntimeCapabilities().addSupportedRequirement(
+      "requiresModelAPIVersion",
+      2,
+    );
+    const blockFlags: BlockCodeFeatureFlags = {
+      requiresModelAPIVersion: 2,
+      requiresArgsIssues: true,
+    };
+
+    expect(capabilities.getIncompatibleFlags(blockFlags)).toEqual(
+      new Map([["requiresArgsIssues", true]]),
+    );
+  });
+
+  it("accepts it in a runtime that gates Run with argsIssues", () => {
+    const capabilities = new RuntimeCapabilities()
+      .addSupportedRequirement("requiresModelAPIVersion", 2)
+      .addSupportedRequirement("requiresArgsIssues");
+
+    expect(
+      capabilities.checkCompatibility({ requiresModelAPIVersion: 2, requiresArgsIssues: true }),
+    ).toBe(true);
   });
 });

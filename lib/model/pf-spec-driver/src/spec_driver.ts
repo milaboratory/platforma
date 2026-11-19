@@ -5,7 +5,7 @@ import {
   findAxis,
   findTableColumn,
   rewriteLegacyFilters,
-} from "@milaboratories/pframes-rs-wasm";
+} from "@milaboratories/pf-spec";
 import type {
   AxesId,
   AxesSpec,
@@ -22,6 +22,8 @@ import type {
   PoolEntry,
   DiscoverColumnsRequest,
   DiscoverColumnsResponse,
+  DiscoverRootsRequest,
+  DiscoverRootsResponse,
   DeleteColumnRequest,
   DeleteColumnResponse,
   EvaluateQueryResponse,
@@ -122,6 +124,24 @@ export class SpecDriver implements PFrameSpecDriver, AsyncDisposable {
       };
     } catch (err: unknown) {
       const error = new PFrameSpecDriverError(`discoverColumns failed`);
+      error.cause = new Error(
+        `handle: ${handle}, ` +
+          `request: ${JSON.stringify(request)}, ` +
+          `error:\n${ensureError(err)}`,
+      );
+      throw error;
+    }
+  }
+
+  discoverRoots(handle: SpecFrameHandle, request: DiscoverRootsRequest): DiscoverRootsResponse {
+    const pframe = this.frames.getByKey(handle);
+    try {
+      if (logPFrames()) {
+        this.logger.info(`discoverRoots: handle = ${handle}, request: ${JSON.stringify(request)}`);
+      }
+      return pframe.discoverRoots(request);
+    } catch (err: unknown) {
+      const error = new PFrameSpecDriverError(`discoverRoots failed`);
       error.cause = new Error(
         `handle: ${handle}, ` +
           `request: ${JSON.stringify(request)}, ` +

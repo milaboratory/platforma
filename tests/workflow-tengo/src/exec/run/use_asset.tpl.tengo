@@ -3,6 +3,7 @@ assets := import("@platforma-sdk/workflow-tengo:assets")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 
 asset := assets.importAsset("@platforma-open/milaboratories.software-test-utils:small-asset")
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
 self.defineOutputs(["main"])
 
@@ -10,9 +11,9 @@ self.body(func(inputs) {
 	run := exec.builder().
 		cpu(1).ram("50Mi").
 		addAsset(asset, ".", ["file2.txt"]).
-		cmd("/usr/bin/env").
-		arg("cat").
-		arg("file2.txt").
+		software(shellSw).
+		arg("-c").
+		arg("cat file2.txt").
 		saveStdoutContent().
 		run()
 

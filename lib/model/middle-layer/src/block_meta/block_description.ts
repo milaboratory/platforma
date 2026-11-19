@@ -4,7 +4,10 @@ import { BlockComponentsDescriptionRaw } from "./block_components";
 import { BlockPackMetaDescriptionRaw } from "./block_meta";
 import { BlockPackId } from "./block_id";
 import { toMerged } from "es-toolkit";
-import type { BlockCodeKnownFeatureFlags } from "@milaboratories/pl-model-common";
+import type {
+  BlockCodeKnownFeatureFlags,
+  BlockKindReference,
+} from "@milaboratories/pl-model-common";
 
 /**
  * Block-pack description: a `BlockPackId`, the typed `components` and `meta`
@@ -17,6 +20,9 @@ export type BlockPackDescription<Components, Meta> = {
   components: Components;
   meta: Meta;
   featureFlags?: BlockCodeKnownFeatureFlags;
+  /** Reference to the block kind this pack implements, in `{name}@{version}`
+   * form. Lifted from the model's container-level `kind` by build_dist. */
+  kind?: BlockKindReference;
 };
 
 /**
@@ -33,6 +39,9 @@ export const FeatureFlags = z
   .record(z.string(), z.union([z.boolean(), z.number()]))
   .transform((flags) => flags as BlockCodeKnownFeatureFlags);
 
+/** Block-kind reference schema — a plain `{name}@{version}` string at rest. */
+export const BlockKindRef = z.string().transform((s) => s as BlockKindReference);
+
 export function CreateBlockPackDescriptionSchema<
   Components extends ZodTypeAny,
   Meta extends ZodTypeAny,
@@ -43,6 +52,7 @@ export function CreateBlockPackDescriptionSchema<
       components,
       meta,
       featureFlags: FeatureFlags.optional(),
+      kind: BlockKindRef.optional(),
     })
     .passthrough();
 }

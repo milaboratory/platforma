@@ -15,8 +15,9 @@ function longNames(cmd: Command): string[] {
 describe("block-tools CLI structure", () => {
   const program = buildProgram();
 
-  it("exposes the full command surface (11 commands + structure topic)", () => {
+  it("exposes the full command surface (12 commands + structure topic)", () => {
     expect(program.commands.map((c) => c.name()).sort()).toEqual([
+      "build-kind-manifest",
       "build-meta",
       "build-model",
       "list-overview-snapshots",

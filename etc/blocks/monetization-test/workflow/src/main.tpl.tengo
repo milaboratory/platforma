@@ -2,11 +2,9 @@
 
 self := import("@platforma-sdk/workflow-tengo:workflow")
 assets := import("@platforma-sdk/workflow-tengo:assets")
-smart := import("@platforma-sdk/workflow-tengo:smart")
 exec := import("@platforma-sdk/workflow-tengo:exec")
 json := import("json")
 ll := import("@platforma-sdk/workflow-tengo:ll")
-text := import("text")
 file := import("@platforma-sdk/workflow-tengo:file")
 
 self.setPreRun(assets.importTemplate(":pre-run"))

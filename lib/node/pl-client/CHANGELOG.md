@@ -1,5 +1,341 @@
 # @milaboratories/pl-client
 
+## 3.26.1
+
+### Patch Changes
+
+- c1869c8: Update undici to 7.30.2, which fixes six security advisories in the cache and redirect interceptors and in Subresource Integrity checks. The `undici` dependency range is now `~7.30.2`.
+- Updated dependencies [c1869c8]
+  - @milaboratories/pl-http@1.2.7
+
+## 3.26.0
+
+### Minor Changes
+
+- 8cc6580: Support user listing that the server controls per client role (`userListing:v2`).
+
+  - pl-client: `PlClient.canListUsers` tells if the authenticated user can list users. On a `userListing:v2` backend it reads `GetSessionInfo.can_list_users`; on a `userListing:v1` backend it is true. `GetSessionInfo` responses carry `canListUsers`.
+  - pl-client: the protocol definitions are synced with the backend. `MaintenanceAPI_Ping_Response.requiredCapabilities` is renamed to `requiredClientCapabilities`, as in the backend proto.
+  - pl-middle-layer: `MiddleLayer.userListingAvailable` selects the recipient picker or paste-a-login UI.
+  - pl-cli: `admin user-list` tells clearly when the server does not let the user list users.
+
+## 3.25.0
+
+### Minor Changes
+
+- fda52f0: Refuse a backend that requires client capabilities this client does not implement. The backend
+  lists them in `MaintenanceAPI.Ping.Response.required_capabilities`; `LLPlClient.build()` checks the
+  list right after the first Ping and throws `ClientUpdateRequiredError` before any other request.
+  The client implements no client capabilities yet (`supportedClientCapabilities()`).
+
+## 3.24.0
+
+### Minor Changes
+
+- 41cdddf: Add the `pl-cli maintenance controller` command group. `list` prints the registered controllers with their IDs and resources fixup levels. `rerun-fixups --controller-name <type> | --controller-id <id>` sets the resources fixup level of the selected controllers to 0, so each of them applies its one-time resources fixups again on the next backend start. Use it after a rollback to a backend version without resources fixups. `pl-client` gets `listRegisteredControllers`, and `PlTransaction` gets `setControllerKValue` and `getControllerKValueIfExists` for the controller key-value store (controller or admin credentials).
+
+## 3.23.0
+
+### Minor Changes
+
+- af78d3a: Fix a memory leak on the gRPC wire: every transaction and request that got a long-lived `abortSignal` stayed in memory until that signal aborted. The project refresh loop and the tree synchronization pass such a signal since pl-client 3.21.1, so an idle middle layer grew by about 14 kB of heap plus the size of the response per transaction.
+
+  - `PlClient` transactions listen to `ops.abortSignal` themselves and stop listening when the transaction ends. An abort still ends a running transaction at once.
+  - `listUserResources`, `ClientLogs.lastLines`, `ClientLogs.readText`, `ClientProgress.getStatus`, and the download URL request detach from the caller's signal when the request ends.
+  - The download URL request honors its abort signal on the REST wire too.
+  - `LLPlClient.createTx` throws the abort reason when `ops.abortSignal` is already aborted.
+  - **BREAKING:** pl-client now needs Node 24 at runtime, as its `engines` field already says: `withCallAbortSignal` uses `DisposableStack`. On Node 22 the wrapped requests throw `ReferenceError: DisposableStack is not defined`. A block whose CI runs Node 22 or older must move to Node 24 before it takes this version of `@platforma-sdk/test`.
+  - **BREAKING:** `callAbortSignal` is removed: the signal it returned stayed in memory in the same way. Use the new `withCallAbortSignal`. pl-middle-layer re-exports pl-client, and `@platforma-sdk/test` re-exports pl-middle-layer as `ML`, so the same applies to both.
+
+## 3.22.2
+
+### Patch Changes
+
+- Updated dependencies [92cf16f]
+  - @milaboratories/pl-model-common@1.56.0
+
+## 3.22.1
+
+### Patch Changes
+
+- 9aea514: `Project.watchBlockStatus()` folds a block's action-context tree into a live `BlockStatusSummary`, with the run's jobs counted per state as the backend reports it, one computable per context so a report re-reads only its own context, and the project tree prunes the action-context fields. `PlTreeNodeAccessor` gains `listKeyValuesAsString(prefix)` and `listFields()`.
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-model-common@1.55.2
+
+## 3.22.0
+
+### Minor Changes
+
+- efac5cc: `MiddleLayer.instanceStats` reads the backend's instance statistics context (allocated CPU, RAM, GPUs and GPU memory out of capacity, running and queued jobs) every 10s, only when the backend advertises `instanceStats:v1`. `PlClient.listSharedResourcesByType` lists the resources of a type shared with the user.
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [b278e85]
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/pl-http@1.2.6
+
+## 3.21.1
+
+### Patch Changes
+
+- 5adb3c8: Close the middle layer and its projects without waiting for request deadlines when the backend stops answering. Before, `MiddleLayer.close()` and `closeProject()` waited for running requests up to their deadlines (60 s for a project write, 300 s for a tree read).
+
+  - `SynchronizedTreeState.terminate()` cancels the running tree read and discovery request.
+  - `Project` close cancels the running project refresh and its wait for the project lock.
+  - The upload driver's `terminate()` cancels the running upload status requests.
+  - `PlClient` transactions stop waiting for their lock when their `abortSignal` fires.
+  - `listUserResources` and `listSharedResourcesByType` take an `abortSignal`.
+  - The upload status request now applies its timeout on the REST wire protocol too.
+  - A cancelled request no longer leaves unhandled promise rejections or an uncaught "cannot resolve rejected" error behind. `PlTransaction` reads return their tracked promise, and the gRPC interceptor drops headers that arrive after a call ended.
+  - A transaction whose open fails with an abort or a deadline no longer logs a warning; the caller still gets the error.
+
+- f08961f: Recover from a connection loss:
+
+  - Use a local gRPC subchannel pool per client. A client created after a connection loss no longer inherits the reconnect backoff of the old client's subchannel, so it connects as soon as the server is reachable.
+  - Cap the gRPC reconnect backoff at 10 s (default 120 s), so a long-lived client reconnects soon after the server is back.
+  - Return the connection status from "Disconnected" to "OK" when a gRPC call completes with OK or a REST request succeeds again. The status listener now reports each change between "OK" and "Disconnected".
+  - Check an UNAUTHENTICATED reply also while the status is "Disconnected", so `onAuthError` fires for a session that expired during an outage. "Unauthenticated" stays final for the client.
+
+- 0692c00: `MiddleLayer.close()` now stops the logs drivers, so they no longer poll the backend after a disconnect.
+
+  - `LogsDriver` is async-disposable, so the driver kit stops it on close.
+  - Disposing `LogsStreamDriver` cancels its running log requests and its polling loop. A cancelled request ends quietly.
+  - `ClientLogs.lastLines` and `readText` honor `options.abort`, on gRPC and REST.
+  - `LogsStreamDriver` takes a `LogsStreamClient`: any object with the `lastLines` and `readText` methods of `ClientLogs`.
+  - pl-client exports `callAbortSignal`, which gives one call an abort signal of its own.
+
+## 3.21.0
+
+### Minor Changes
+
+- f7d4c98: Expose the canonical id of a resource as `BasicResourceData.canonicalId`, and pin with a regression test that a committed pure resource reports a non-empty one.
+
+## 3.20.0
+
+### Minor Changes
+
+- 9089e12: Create the action context of a heavy block render. The middle layer creates an `ActionContext` resource with `name`, `block-pack`, `block-id` and a new random `run-id` in the transaction that creates the render, points the render's optional `actionContext` service field to it, and keeps it in the `prodActionContext`/`stagingActionContext` block fields, because the render is garbage collected once its outputs resolve. It does this only when the backend advertises `optionalFieldsInSchemas:v1`, so older backends are not affected. `PlTransaction.hasCapability` tells which capabilities the backend of a transaction advertises.
+
+## 3.19.4
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+
+## 3.19.3
+
+### Patch Changes
+
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-model-common@1.54.2
+
+## 3.19.2
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [615bd8c]
+  - @milaboratories/pl-http@1.2.5
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/pl-model-common@1.54.1
+
+## 3.19.1
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @milaboratories/pl-model-common@1.54.0
+
+## 3.19.0
+
+### Minor Changes
+
+- 7d9925e: pl-client: add `PlTransaction.listResourcesByType` (admin and controller roles only).
+
+  pl-cli: add the `maintenance` command group to repair server state after storage loss:
+
+  - `maintenance list-resources --type <name:version> [--limit <n>] [--after <resource-id>] [--load-fields] [--load-kv]` lists resources of one type as JSON lines, in ascending order of resource ID.
+  - `maintenance set-resource-error <resource-id...>` puts an error on one or more resources in a single transaction. Resources that already have an error are skipped. With `--skip-missing`, resources that do not exist are skipped too.
+
+## 3.18.2
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+
+## 3.18.1
+
+### Patch Changes
+
+- 41f0c56: A signature refused inside a transaction is now recognized whether the backend answers it with PERMISSION_DENIED or, as older backends do, UNAUTHENTICATED:
+
+  - `isPermissionDenied` matches the status of a failed transaction (`PlError`), as `isUnauthenticated` already did.
+  - A tree of shared roots re-discovers its roots and retries when a poll is refused with either code, for example after a re-login, when every signature from the earlier session stops verifying.
+  - A queued streaming request that a failed transaction closes now fails with the transaction's error instead of an internal placeholder, so a reader can classify why it failed. The tree's re-discovery depended on this and did not always run.
+
+## 3.18.0
+
+### Minor Changes
+
+- f4567dd: Finality is one table built in layers (`FinalityTable`): `StrictFinality` (the base: nothing
+  observable changes after final, except the writes its entries name), `CacheFinality` (adds the
+  types whose only later writes are KV; used by the transaction resource cache) and `TreeFinality`
+  (adds `Blob` and `StreamManager` under the reader assumptions stated at their entries; the
+  default `PlClient.finalPredicate`). A layer only adds to its parent.
+  `DefaultFinalResourceDataPredicate` is deprecated and delegates to `TreeFinality`.
+  Finality rules: `BResolveSingle`, `BResolveChoice` and `BlobCopy/*` are final once ready (or a
+  duplicate, or errored) with outputs locked and every supplied field settled; `LSProvider` is
+  never final; `Frontend/FromLocalTgz`, `json/bool`, `json/null` and `json/errorTrace` are always
+  final. The project tree's stop rules are generated from `TreeFinality`, each entry declaring how
+  it translates. `ResourceTypePrefix.BlobCopy` identifies blob-copy resource types.
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-model-common@1.52.0
+
+## 3.17.7
+
+### Patch Changes
+
+- 90073ff: pl-tree defect fixes: readers are notified when a resource becomes final, when a lock changes,
+  when a required field appears and when a Dynamic or MTW field comes back under another type;
+  any error while applying an update invalidates the mirror and raises `TreeStateUpdateError`, so
+  the synchronization loop rebuilds it, and consecutive rebuilds back off from 100 ms to 5 s; a
+  deleted root leaves the tree (new `rootsNeverFinal` option to existence-check roots the
+  predicate calls final too); a dynamic field removal re-evaluates finality; `listDynamicFields`
+  excludes Service fields (visible to blocks); the backend `final` flag follows updates; common
+  traversal options reach `getField`; data getters and `getKeyValueAsJson` enforce the usage
+  guard. Also: an unresolved or absent field of a final resource reads as stable; invalidation
+  re-runs readers waiting for a resource the tree does not hold; `terminate()` rejects pending
+  `refreshState()` calls; the streaming loader passes the backend `final` flag through as sent,
+  whether or not the traversal stopped at the resource.
+
+  pl-client: for a non-errored StreamManager whose field list lacks `stream` or `downloadable`, or
+  has `stream` still empty, the finality predicate returns false and does not throw.
+
+## 3.17.6
+
+### Patch Changes
+
+- fd9f892: Comment and test skip-message wording for the `treeChangedSince:v2` gate. No behaviour change.
+
+## 3.17.5
+
+### Patch Changes
+
+- 9c97fb0: Gate delta tree sync on `treeChangedSince:v2`. v1 backends emit body-less unchanged frames the client misreads as stop markers, flooding the log; until a backend advertises v2 the tree falls back to backend-streaming.
+
+## 3.17.4
+
+### Patch Changes
+
+- 7b19fcc: Open the signed transaction on the session that minted the root signature. The two active
+  timeout tests sent a signature from one session on a client of another, which the backend
+  rejects with "signature authentication failed: session ID mismatch".
+
+## 3.17.3
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+
+## 3.17.2
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+
+## 3.17.1
+
+### Patch Changes
+
+- a8e1308: Keep the request timeout the test address states.
+
+  `plAddressToTestConfig` overwrote `defaultRequestTimeout` with the 500ms local budget, so `?request-timeout=3000` on `PL_ADDRESS` had no effect. Against the Kubernetes deploy a call that needs more than 500ms hit the deadline and retried until the case ran out of time. The test budget now applies only to an address that states no timeout of its own.
+
+  - @milaboratories/pl-model-common@1.49.0
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.6
+
+## 3.17.0
+
+### Minor Changes
+
+- 13aff26: Sync the plapi protocol with the delta tree contract and add the `treeChangedSince:v1`
+  capability token. `Tree.Request` gains `unconditional_depth`, `traverse_stop_rules` is
+  deprecated in favour of `changed_since_token`, and the retired `resource_unchanged` frame
+  flag is gone.
+- ddc7746: Carry the delta tree change token through `PlTransaction`. `getNextSinceToken()` returns the
+  token the transaction was opened at, and `resourceTree()` accepts `changedSinceToken` plus
+  `unconditionalDepth` to poll with it and to read back what a delta referenced but did not
+  send. `traverseStopRules` is deprecated, and does not apply under a token.
+
+## 3.16.2
+
+### Patch Changes
+
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pl-model-common@1.49.0
+
+## 3.16.1
+
+### Patch Changes
+
+- 0aa8615: Recognise the `scratchSpace:v1` backend capability, advertised only where the deployment
+  actually has scratch storage.
+
+## 3.16.0
+
+### Minor Changes
+
+- 5c588be: Added `loginMethods()`, which returns every login method the backend advertises — of every kind, SSO and basic alike — each keeping its own id, description and kind. `beginSSOLogin`, `loginSSO` and `login` now accept an optional method id to route the login to a specific advertised method; omitting it keeps today's first-match behavior. `ssoConfig()` and `supportedAuthSchemes` are deprecated in favor of `loginMethods()` but remain available with their existing shape.
+
+## 3.15.0
+
+### Minor Changes
+
+- fd0ae2c: pl-cli: add `admin delete-user`, so a duplicate user account can be removed.
+
+  Multi-provider auth can leave one person with two accounts — an identity that could not be matched by email across a cutover, or a duplicate minted before the backend started refusing two records for one identity. The spare account was not inert: it appeared in the sharing user picker, and the projects in its root kept taking part in deduplication. Nothing removed one.
+
+  `admin delete-user <user>` now does, backed by the new `AuthAPI.DeleteUser` RPC. When the account still owns projects it requires an explicit decision rather than picking a default, since both defaults are wrong to assume:
+
+  - `--move-projects-to <user>` re-attaches every project to another user's root and then deletes the account. It is a move, not a copy: the same project resources are re-homed, so nothing is duplicated and nothing needs re-verifying. A name the target already uses is suffixed rather than overwritten, and the target's project list is created if they never had one.
+  - `--delete-projects` deletes the projects along with the account.
+
+  Both prompt with the affected project list first; `--force` skips that for scripted runs. Deleting an account removes its record, its identity-index entries (login, email and any alternative of either), its grants and its root resource, and frees those values — the person's next sign-in lands on a clean account instead of reviving the deleted one. Requires admin/controller credentials, and refuses to target the account those credentials authenticate as.
+
+  `pl-client` gains `PlClient.deleteUser(login)` (gRPC-only, like `listUsers`). `pl-middle-layer` now exports `ProjectsResourceType`, which a caller writing into another user's root needs.
+
+## 3.14.7
+
+### Patch Changes
+
+- Updated dependencies [80a9963]
+  - @milaboratories/pl-model-common@1.48.0
+  - @milaboratories/pl-http@1.2.4
+  - @milaboratories/ts-helpers@1.8.6
+
+## 3.14.6
+
+### Patch Changes
+
+- a666e0d: Derive the unary gRPC deadline from the observed round-trip time instead of a fixed 5s, and give login/refresh their own 120s deadline. On a high-latency link the fixed 5s aborted connect and login outright; the derived deadline is floored by the configured value, so fast links are unaffected.
+- 1a17259: Retry the connect-path ping and `getUserRoot` on transient transport failures (unreachable peer, elapsed deadline), bounded to 4 attempts. A single blip during DNS or load-balancer warm-up previously failed the whole connect. Real server answers such as auth and permission errors are never retried.
+- 00a46f7: Cap a single transaction-retry backoff delay at 5s (`retryMaxDelay`, overridable via the `retry-max-delay` url param). The exponential sequence previously grew unbounded across all 21 attempts, so a conflicting transaction could sleep ~66s in one step and several minutes in total.
+- fa18a18: Scale the tree-sync poll interval to the client's measured RTT instead of polling at a fixed interval regardless of link latency. Also exposes `PlClient.rttEstimateMs`. The configured interval remains the lower bound, so fast links are unaffected, and the derived floor is capped at 30s.
+
 ## 3.14.5
 
 ### Patch Changes

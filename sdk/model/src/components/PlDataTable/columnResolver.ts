@@ -20,10 +20,7 @@ import type { ColumnRecipe } from "../../columns";
  */
 export type ColumnResolver = (ref: PTableColumnId) => PTableColumnId | undefined;
 
-export function createColumnResolver(
-  columns: ColumnRecipe[],
-  deps?: { warn?: (msg: string) => void },
-): ColumnResolver {
+export function createColumnResolver(columns: ColumnRecipe[]): ColumnResolver {
   const axisIds: AxisId[] = [];
   for (const c of columns) {
     for (const ax of c.getSpec().axesSpec) {
@@ -36,22 +33,26 @@ export function createColumnResolver(
   for (const c of columns) {
     byFullId.set(c.id, c);
     const pid = extractPObjectId(c.id);
-    const existing = byPObjectId.get(pid);
-    if (existing === undefined) {
-      byPObjectId.set(pid, c);
-    } else if (existing.id !== c.id) {
-      deps?.warn?.(
-        `Ambiguous PObjectId ${pid}: recipe ids ${existing.id} and ${c.id} both match — keeping first.`,
-      );
-    }
+    if (!byPObjectId.has(pid)) byPObjectId.set(pid, c);
   }
 
   return (ref: PTableColumnId): PTableColumnId | undefined => {
     if (ref.type === "axis") {
       return axisIds.some((a) => matchAxisId(ref.id, a)) ? ref : undefined;
     }
-    const hit = byFullId.get(ref.id) ?? byPObjectId.get(extractPObjectId(ref.id));
+    const pid = tryExtractPObjectId(ref.id);
+    const hit = byFullId.get(ref.id) ?? (pid === undefined ? undefined : byPObjectId.get(pid));
     if (hit === undefined) return undefined;
     return { type: "column", id: hit.id } satisfies PTableColumnIdColumn;
   };
+}
+
+/** {@link extractPObjectId} for a stored reference: an id it cannot parse resolves to
+ *  nothing, so the one entry is dropped instead of failing the whole table. */
+function tryExtractPObjectId(id: ColumnUniversalId): PObjectId | undefined {
+  try {
+    return extractPObjectId(id);
+  } catch {
+    return undefined;
+  }
 }

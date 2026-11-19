@@ -15,9 +15,11 @@ import {
   projectTreeTraverseStopRules,
 } from "./project";
 import { projectsListFieldFilter, ProjectsListTreePruningFunction } from "./project_list";
+import { ProjectStatusFieldNames, ProjectStatusFieldPattern } from "../model/project_model";
 import type { Filter } from "@milaboratories/pl-client";
 import {
   DefaultFinalResourceDataPredicate,
+  TreeFinality,
   FilterOperatorType,
   FilterProperty,
   NullSignedResourceId,
@@ -65,7 +67,7 @@ function makeReadyResource(typeName: string, version = "1"): ExtendedResourceDat
 }
 
 /**
- * Build a resource that satisfies readyAndHasAllOutputsFilled:
+ * Build a resource that satisfies readyAndAllOutputsFilled:
  *   resourceReady=true, outputsLocked=true, one field with valueIsFinal=true.
  */
 function makeAllOutputsFinalResource(typeName: string): ExtendedResourceData {
@@ -205,6 +207,47 @@ const projectPruningCases: Array<{
     expected: ["x"],
   },
   {
+    name: "UserProject — status context fields dropped, others kept",
+    typeName: "UserProject",
+    fields: [
+      "block1-prodActionContext",
+      "block1-stagingActionContext",
+      "block1-prodOutput",
+      "block1-blockPack",
+    ],
+    expected: ["block1-prodOutput", "block1-blockPack"],
+  },
+  {
+    name: "UserProject — a block id containing a dash is still matched by suffix",
+    typeName: "UserProject",
+    fields: ["my-block-prodActionContext", "my-block-prodOutput"],
+    expected: ["my-block-prodOutput"],
+  },
+  {
+    name: "UserProject — a block id that is itself a status name is matched by suffix only",
+    typeName: "UserProject",
+    fields: ["prodActionContext-prodActionContext", "prodActionContext-blockPack"],
+    expected: ["prodActionContext-blockPack"],
+  },
+  {
+    name: "UserProject — a bare status name with no block id is kept, the dash is required",
+    typeName: "UserProject",
+    fields: ["prodActionContext", "stagingActionContext"],
+    expected: ["prodActionContext", "stagingActionContext"],
+  },
+  {
+    name: "UserProject — an empty block id still produces a status field",
+    typeName: "UserProject",
+    fields: ["-prodActionContext", "-prodOutput"],
+    expected: ["-prodOutput"],
+  },
+  {
+    name: "another type — a status-looking field is kept, the rule is UserProject's",
+    typeName: "SomeStructure",
+    fields: ["block1-prodActionContext"],
+    expected: ["block1-prodActionContext"],
+  },
+  {
     name: "Blob — all fields dropped",
     typeName: "Blob",
     fields: ["data"],
@@ -217,6 +260,22 @@ const projectPruningCases: Array<{
     expected: ["a", "b", "c"],
   },
 ];
+
+describe("the status field pattern stays portable", () => {
+  // projectTreeFieldFilter's pattern is evaluated by the BACKEND (Go RE2 via expr-lang), while
+  // projectTreePruning evaluates the JS copy. A construct only one engine knows would pass every
+  // parity case above and then fail compileFieldFilter server-side, which stops the project tree
+  // opening at all. Keep the pattern inside the subset both engines share.
+  it("uses no construct RE2 lacks", () => {
+    expect(ProjectStatusFieldPattern).not.toMatch(/\(\?/); // lookaround, named groups
+    expect(ProjectStatusFieldPattern).not.toMatch(/\\[1-9]/); // backreferences
+  });
+
+  it("is derived from the field names, so the two cannot drift", () => {
+    for (const name of ProjectStatusFieldNames)
+      expect(new RegExp(ProjectStatusFieldPattern).test(`block1-${name}`)).toBe(true);
+  });
+});
 
 describe("§4.1 project tree pruning parity", () => {
   const pruner = projectTreePruning(noopLogger);
@@ -285,6 +344,23 @@ describe("§4.1 projects-list pruning parity", () => {
 
 // ── §4.2 — traverseStopRules coverage ────────────────────────────────────────
 
+describe("the pruning the finality table relies on", () => {
+  for (const e of TreeFinality.entries) {
+    if (e.requiresPruning === undefined) continue;
+    const { type, fields } = e.requiresPruning;
+    it(`${type}: projectTreePruning and projectTreeFieldFilter drop ${fields === "all" ? "every field" : fields.join(", ")}`, () => {
+      const names = fields === "all" ? ["incarnation", "any"] : [...fields];
+      const r = makeResource(type, names);
+      const kept = projectTreePruning(noopLogger)(r).map((f) => f.name);
+      const keptByFilter = evaluateFieldFilter(projectTreeFieldFilter(), r);
+      for (const name of names) {
+        expect(kept).not.toContain(name);
+        expect(keptByFilter).not.toContain(name);
+      }
+    });
+  }
+});
+
 describe("§4.2 projectTreeTraverseStopRules", () => {
   const rule = projectTreeTraverseStopRules();
 
@@ -301,8 +377,11 @@ describe("§4.2 projectTreeTraverseStopRules", () => {
     "BObjectSpec",
     "BContextEnd",
     "Null",
-    "LSProvider",
     "Blob",
+    "Frontend/FromLocalTgz",
+    "json/bool",
+    "json/null",
+    "json/errorTrace",
   ];
   for (const t of alwaysTerminalTypes) {
     it(`always-terminal: ${t}`, () => {
@@ -436,15 +515,14 @@ describe("§4.2 projectTreeTraverseStopRules", () => {
 //   1. DefaultFinalResourceDataPredicate(resource) === expectedPredicate
 //   2. evaluateStopRule(rule, flags) === expectedStop
 //
-// `flags` encodes what the backend would emit for the same resource state:
+// `flags` compress several independent backend properties into two:
 //   - isFinal   = resource is "ready/error/duplicate" (or always-final type)
 //   - allOutputsFinal = outputsLocked && every field value is final
 //
 // The parity contract: when the predicate says "final" AND the type is one the
-// stop rule covers, the stop rule must also fire.  Types that are final only due
-// to runtime state (StdMap, BlockPackCustom, …) are NOT in the stop rules —
-// those are left to the backend's own isFinal flag (`item.final`) and are
-// documented as intentional gaps below.
+// stop rule covers, the stop rule must also fire. Where the backend's filter
+// differs from the predicate, finality_stop_rules.test.ts checks it against the
+// backend's semantics.
 
 describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ projectTreeTraverseStopRules", () => {
   const rule = projectTreeTraverseStopRules();
@@ -463,8 +541,11 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
     { typeName: "BObjectSpec" },
     { typeName: "BContextEnd" },
     { typeName: "Null" },
-    { typeName: "LSProvider" },
     { typeName: "Blob" },
+    { typeName: "Frontend/FromLocalTgz" },
+    { typeName: "json/bool" },
+    { typeName: "json/null" },
+    { typeName: "json/errorTrace" },
     { typeName: "Blob/v2" },
     { typeName: "LS/remote" },
     { typeName: "WorkingDirectory/1" },
@@ -551,7 +632,7 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
     );
   });
 
-  // ── Group C: isFinal+allOutputsFinal-conditional — readyAndHasAllOutputsFilled ──
+  // ── Group C: isFinal+allOutputsFinal-conditional — readyAndAllOutputsFilled ──
 
   it("BlobUpload/v1 — all outputs final: predicate=true, stop fires with isFinal+allOutputsFinal=true", () => {
     const r = makeAllOutputsFinalResource("BlobUpload/v1");
@@ -615,15 +696,14 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
 
   // ── Group E: never-final types — predicate=false, stop rule does not fire ──
   //
-  // Covers the explicit `return false` cases in DefaultFinalResourceDataPredicate
-  // (UserProject, Projects, ClientRoot) and the `default` else-branch for unknown
-  // types.  Both paths agree: not final, traversal continues.
+  // Types declared `never`, and types no entry matches: not final, and no stop clause.
 
   const neverFinalCases: Array<{ typeName: string; label: string }> = [
-    { typeName: "UserProject", label: "explicit false in predicate" },
-    { typeName: "Projects", label: "explicit false in predicate" },
-    { typeName: "ClientRoot", label: "explicit false in predicate" },
-    { typeName: "SomeUnknownType", label: "default branch else → false" },
+    { typeName: "UserProject", label: "declared never" },
+    { typeName: "Projects", label: "declared never" },
+    { typeName: "ClientRoot", label: "declared never" },
+    { typeName: "SomeUnknownType", label: "unmatched type" },
+    { typeName: "StatusContext", label: "declared never" },
   ];
 
   for (const { typeName, label } of neverFinalCases) {
@@ -631,6 +711,28 @@ describe("§4.3 final-predicate parity: DefaultFinalResourceDataPredicate ⇄ pr
       const r = makeResource(typeName, []);
       expect(DefaultFinalResourceDataPredicate(r as any)).toBe(false);
       expect(evaluateStopRule(rule, { resourceType: typeName, isFinal: false })).toBe(false);
+    });
+  }
+
+  it("LSProvider: never final, stop does NOT fire even when ready", () => {
+    expect(DefaultFinalResourceDataPredicate(makeReadyResource("LSProvider"))).toBe(false);
+    expect(
+      evaluateStopRule(rule, { resourceType: "LSProvider", isFinal: true, allOutputsFinal: true }),
+    ).toBe(false);
+  });
+
+  // For these ready fixtures, locked outputs and settled fields satisfy both checks.
+  for (const typeName of ["BResolveSingle", "BResolveChoice", "BlobCopy/aToB"]) {
+    it(`${typeName}: final with outputs locked and settled, stop fires only then`, () => {
+      expect(DefaultFinalResourceDataPredicate(makeAllOutputsFinalResource(typeName))).toBe(true);
+      // a synthetic unlocked snapshot: schema-created resolvers and copies have locked outputs
+      expect(DefaultFinalResourceDataPredicate(makeReadyResource(typeName))).toBe(false);
+      expect(
+        evaluateStopRule(rule, { resourceType: typeName, isFinal: true, allOutputsFinal: true }),
+      ).toBe(true);
+      expect(
+        evaluateStopRule(rule, { resourceType: typeName, isFinal: true, allOutputsFinal: false }),
+      ).toBe(false);
     });
   }
 });

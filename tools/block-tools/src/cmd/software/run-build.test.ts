@@ -22,6 +22,9 @@ function fakeBuilder() {
     publishDockerImages: vi.fn(rec("publishDockerImages")),
     publishPackages: vi.fn(async () => void calls.push("publishPackages")),
     buildSwJsonFiles: vi.fn(rec("buildSwJsonFiles")),
+    // A guard, not a build step: kept out of `calls` so the order assertions stay
+    // about what the pass actually builds and pushes.
+    assertDockerCoverage: vi.fn(),
   };
   return { core: core as unknown as Builder, calls, spies: core };
 }
@@ -125,6 +128,47 @@ describe("runBuild orchestration", () => {
       "publishPackages",
       "buildSwJsonFiles",
     ]);
+  });
+
+  it("checks docker coverage up front, so a doomed build fails before it builds", async () => {
+    const b = await run({ channel: "release", location: "remote" });
+    expect(b.spies.assertDockerCoverage).toHaveBeenCalled();
+    expect(b.spies.assertDockerCoverage.mock.invocationCallOrder[0]).toBeLessThan(
+      b.spies.buildDockerImages.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("skips the coverage check when the scenario describes no software at all", async () => {
+    const b = await run({ variant: "none" });
+    expect(b.spies.assertDockerCoverage).not.toHaveBeenCalled();
+    expect(b.spies.buildSwJsonFiles).toHaveBeenCalledWith(
+      expect.objectContaining({ skipDockerCoverage: true }),
+    );
+  });
+
+  // `build:dev-binary-existing` builds nothing: the descriptor points at an artifact whose
+  // coverage was settled when it was released, so this run answers for none of it.
+  it("skips the coverage check when pointing at an already-published binary", async () => {
+    const b = await run({ usePublished: true });
+    expect(b.spies.assertDockerCoverage).not.toHaveBeenCalled();
+    expect(b.spies.buildSwJsonFiles).toHaveBeenCalledWith(
+      expect.objectContaining({ skipDockerCoverage: true }),
+    );
+  });
+
+  it("keeps the coverage check on the scenarios that do build software", async () => {
+    for (const knobs of [
+      { channel: "release", location: "remote" },
+      { channel: "dev", location: "remote" },
+      { channel: "dev", location: "local" },
+      {},
+    ] as const) {
+      const b = await run(knobs);
+      expect(b.spies.assertDockerCoverage).toHaveBeenCalled();
+      expect(b.spies.buildSwJsonFiles).toHaveBeenCalledWith(
+        expect.objectContaining({ skipDockerCoverage: false }),
+      );
+    }
   });
 
   it("dev docker build targets the built-in dev registry; release the production registry", async () => {

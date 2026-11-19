@@ -5,6 +5,8 @@ from pathlib import Path
 from typing import List, overload, Literal, Union
 
 from ptabler.steps import AnyPStep, GlobalSettings, TableSpace, StepContext
+from ptabler.steps.io import BaseReadLogic, BaseWriteLogic
+from ptabler.steps.util import step_file_identity
 
 
 class PWorkflow(msgspec.Struct):
@@ -18,6 +20,28 @@ class PWorkflow(msgspec.Struct):
     containing an array of step objects.
     """
     workflow: List[AnyPStep]
+
+    def _overwrite_targets(self, root_folder) -> set[str]:
+        """
+        Returns the files this workflow both reads and writes.
+
+        A write to one of these is a rewrite and cannot sink to its own file. The read is
+        lazy and still open when the sink would truncate it. Every other write goes
+        straight to its file.
+
+        The whole workflow is scanned before any step runs, because a write step is
+        allowed to appear ahead of the read it collides with.
+        """
+        read_paths: set[str] = set()
+        write_paths: set[str] = set()
+
+        for step_obj in self.workflow:
+            if isinstance(step_obj, BaseReadLogic):
+                read_paths.add(step_file_identity(root_folder, step_obj.file))
+            elif isinstance(step_obj, BaseWriteLogic):
+                write_paths.add(step_file_identity(root_folder, step_obj.file))
+
+        return read_paths & write_paths
 
     @overload
     def execute(self, global_settings: GlobalSettings, initial_table_space: TableSpace | None = None) -> None:
@@ -78,10 +102,23 @@ class PWorkflow(msgspec.Struct):
             table space, sink operations, and chained tasks.
             If `lazy` is False, executes sink operations and chained tasks,
             then returns `None`.
+
+        A workflow that writes over a file it also reads has partial files to account
+        for. One that does not has none, and the rest of this does not apply to it.
+
+        A rewrite opens its partial file while the step runs, so a lazy call returns with
+        them already on disk, listed in `StepContext.partial_outputs`. They belong to the
+        caller from that point. The caller runs the sinks and the chained tasks to move
+        them onto their targets, then calls `StepContext.cleanup_partial_outputs` for
+        whatever is left. A non-lazy call does both itself.
+
+        A leftover partial file in a block's working directory is collected as part of
+        the block's output.
         """
         spill_dir_created = False
         spill_path = None
-        
+        ctx = None
+
         if global_settings.spill_folder is not None:
             spill_path = Path(global_settings.spill_folder)
             if not spill_path.exists():
@@ -91,7 +128,8 @@ class PWorkflow(msgspec.Struct):
         try:
             ctx = StepContext(
                 settings=global_settings,
-                initial_table_space=initial_table_space
+                initial_table_space=initial_table_space,
+                overwrite_targets=self._overwrite_targets(global_settings.root_folder),
             )
 
             for step_obj in self.workflow:
@@ -118,5 +156,15 @@ class PWorkflow(msgspec.Struct):
                 return None
         
         finally:
+            # A rewrite that raised leaves its partial file behind, and in a block's
+            # working directory that file is not inert — it is collected as part of the
+            # block's output. Whatever reached its target has already been moved off this
+            # list, and a workflow with no rewrite in it recorded nothing at all.
+            #
+            # A lazy run has not written them yet, so they belong to the caller that took
+            # the context; cleanup_partial_outputs is how it hands them back.
+            if ctx is not None and not lazy:
+                ctx.cleanup_partial_outputs()
+
             if spill_dir_created and spill_path is not None and spill_path.exists():
                 shutil.rmtree(spill_path, ignore_errors=True)

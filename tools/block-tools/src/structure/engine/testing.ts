@@ -45,6 +45,9 @@ export type SimulateInitInput = {
    *  Absent → the SDK catalog keeps its seed versions (no bump), matching
    *  an offline scaffold; tests that assert init writes latest pass a mock. */
   registryLookup?: (packageName: string) => string | undefined;
+  /** Sync lookup for the derived catalog pins. Absent → those entries are
+   *  left out of the catalog; the real `init` always passes one. */
+  derivedPinLookup?: (catalogEntry: string) => string | undefined;
 };
 
 export type SimulatedInit = {
@@ -84,6 +87,7 @@ export function simulateInit(input: SimulateInitInput): SimulatedInit {
     templates,
     initMode: true,
     registryLookup: input.registryLookup,
+    derivedPinLookup: input.derivedPinLookup,
   });
 
   // Re-discover from the written FS — the returned ctx is what `check`

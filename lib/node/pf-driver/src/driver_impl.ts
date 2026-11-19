@@ -44,7 +44,7 @@ import {
 } from "@milaboratories/ts-helpers";
 import { isNil, PoolEntryGuard, type PoolEntry } from "@milaboratories/helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
-import { expandAxes, findTableColumn, rewriteLegacyFilters } from "@milaboratories/pframes-rs-wasm";
+import { expandAxes, findTableColumn, rewriteLegacyFilters } from "@milaboratories/pf-spec";
 import { tmpdir } from "node:os";
 import * as fs from "node:fs";
 import { Readable } from "node:stream";
@@ -568,13 +568,11 @@ export class AbstractPFrameDriver<
 
     const axisIds = expandAxes(columnSpec.axesSpec);
     const tableSpec: PTableColumnSpec[] = [
-      ...columnSpec.axesSpec.map(
-        (axisSpec, i): PTableColumnSpec => ({
-          type: "axis",
-          id: axisIds[i],
-          spec: axisSpec,
-        }),
-      ),
+      ...columnSpec.axesSpec.map((axisSpec, i): PTableColumnSpec => ({
+        type: "axis",
+        id: axisIds[i],
+        spec: axisSpec,
+      })),
       { type: "column", id: request.columnId, spec: columnSpec },
     ];
 

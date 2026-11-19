@@ -3,11 +3,16 @@
 // skip this whole scope: the parent monorepo owns root files. Hence the
 // `when(({ ctx }) => !ctx.isSdkInternal, ...)` wrapper.
 
-import { scope, when, fixed, managed, file, generate } from "../engine/api";
+import { scope, when, fixed, managed, seed, file, text, generate } from "../engine/api";
 import { rootPackageJsonInitial, rootPackageJsonRules } from "./root-package-json";
 import { rootTurboJsonInitial, rootTurboJsonRules } from "./root-turbo-json";
 import { rootPnpmWorkspaceInitial, rootPnpmWorkspaceRules } from "./root-pnpm-workspace";
 import { rootGitignoreRules } from "./root-gitignore";
+import {
+  rootChangesetConfigInitial,
+  rootChangesetConfigRules,
+  EMPTY_CHANGESET_SEED,
+} from "./root-changeset-config";
 
 export function rootRules(): void {
   scope("root", () => {
@@ -39,9 +44,20 @@ export function rootRules(): void {
           },
         );
 
-        managed(".gitignore", file("root/.gitignore"), () => {
+        // The template has no dot: `pnpm pack` (pnpm 11+) leaves every
+        // `.gitignore` out of the published package.
+        managed(".gitignore", file("root/gitignore"), () => {
           rootGitignoreRules();
         });
+
+        managed(
+          ".changeset/config.json",
+          generate((ctx) => rootChangesetConfigInitial(ctx)),
+          (ctx) => {
+            rootChangesetConfigRules(ctx);
+          },
+        );
+        seed(".changeset/scaffold.md", text(EMPTY_CHANGESET_SEED));
       },
     );
   });

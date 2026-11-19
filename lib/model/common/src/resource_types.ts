@@ -13,6 +13,7 @@ export const ResourceTypeName = {
   BlobMap: "BlobMap",
   BResolveSingle: "BResolveSingle",
   BResolveSingleNoResult: "BResolveSingleNoResult",
+  BResolveChoice: "BResolveChoice",
   BQueryResult: "BQueryResult",
   TengoTemplate: "TengoTemplate",
   TengoLib: "TengoLib",
@@ -24,9 +25,13 @@ export const ResourceTypeName = {
   JsonString: "json/string",
   JsonArray: "json/array",
   JsonNumber: "json/number",
+  JsonBool: "json/bool",
+  JsonNull: "json/null",
+  JsonErrorTrace: "json/errorTrace",
   BContextEnd: "BContextEnd",
   FrontendFromUrl: "Frontend/FromUrl",
   FrontendFromFolder: "Frontend/FromFolder",
+  FrontendFromLocalTgz: "Frontend/FromLocalTgz",
   BObjectSpec: "BObjectSpec",
   Blob: "Blob",
   Null: "Null",
@@ -39,6 +44,7 @@ export const ResourceTypeName = {
   SharingOutbox: "SharingOutbox",
   SharingState: "SharingState",
   SharedEnvelope: "SharedEnvelope",
+  ActionContext: "ActionContext",
 } as const;
 
 /** Resource type name prefix constants. */
@@ -49,6 +55,7 @@ export const ResourceTypePrefix = {
   StorageSpaceAllocation: "StorageSpaceAllocation/",
   BlobUpload: "BlobUpload/",
   BlobIndex: "BlobIndex/",
+  BlobCopy: "BlobCopy/",
   PColumnData: "PColumnData/",
   StreamWorkdir: "StreamWorkdir/",
 } as const;

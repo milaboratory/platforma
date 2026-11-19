@@ -13,9 +13,11 @@ export function createSvgContainer(el: HTMLElement, options: ChartOptions) {
 
   const svg = select(el) // Append the SVG element to the body
     .append("svg")
+    .attr("data-testid", "pl-chart-histogram-svg")
     .attr("width", width + margin.left + margin.right) // Set the total width
     .attr("height", height + margin.top + margin.bottom) // Set the total height
     .append("g") // Append a group to handle margins
+    .attr("data-testid", "pl-chart-histogram-plot")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
   return svg;

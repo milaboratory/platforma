@@ -36,14 +36,31 @@ watch(
 );
 </script>
 <template>
-  <div class="pl-app-notification-alert">
-    <PlDialogModal v-model="isModalOpen" width="720px" style="max-height: 100vh">
+  <div data-testid="pl-app-error-notification-alert" class="pl-app-notification-alert">
+    <PlDialogModal
+      v-model="isModalOpen"
+      data-testid="pl-app-error-notification-alert-modal"
+      width="720px"
+      style="max-height: 100vh"
+    >
       <template #title> Errors </template>
-      <div class="pl-app-notification-alert__content">
+      <div
+        data-testid="pl-app-error-notification-alert-content"
+        class="pl-app-notification-alert__content"
+      >
         <template v-for="item in existingErrors" :key="item[0]">
-          <div class="pl-app-notification-alert__item">
-            <div class="pl-app-notification-alert__title">Block output: {{ item[0] }}</div>
+          <div
+            data-testid="pl-app-error-notification-alert-item"
+            class="pl-app-notification-alert__item"
+          >
+            <div
+              data-testid="pl-app-error-notification-alert-item-title"
+              class="pl-app-notification-alert__title"
+            >
+              Block output: {{ item[0] }}
+            </div>
             <PlLogView
+              data-testid="pl-app-error-notification-alert-log"
               :value="item[1]?.message"
               :valueToCopy="
                 'fullMessage' in (item[1] ?? {})
@@ -57,10 +74,20 @@ watch(
       </div>
     </PlDialogModal>
 
-    <PlNotificationAlert v-model="isAlertOpen" type="error" closable>
+    <PlNotificationAlert
+      v-model="isAlertOpen"
+      data-testid="pl-app-error-notification-alert-message"
+      type="error"
+      closable
+    >
       Some outputs have errors.
       <template #actions>
-        <PlBtnPrimary icon="arrow-right" @click="showErrors">See errors</PlBtnPrimary>
+        <PlBtnPrimary
+          data-testid="pl-app-error-notification-alert-show-errors"
+          icon="arrow-right"
+          @click="showErrors"
+          >See errors</PlBtnPrimary
+        >
         <PlSpacer />
       </template>
     </PlNotificationAlert>

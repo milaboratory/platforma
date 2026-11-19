@@ -24,6 +24,7 @@ the canonical JSON envelope directly to `<column>.datainfo`.
 """
 from typing import Dict, List, Optional
 import os
+import shutil
 
 import duckdb
 import polars as pl
@@ -32,6 +33,7 @@ from polars_pf import AxisMapping, ColumnMapping, ConversionParams, convert
 from polars_pf.json.spec import AxisType, ColumnType
 
 from .base import PStep, StepContext
+from .memory import set_duckdb_memory_limit
 from ..common import toPolarsType
 
 __all__ = [
@@ -93,6 +95,23 @@ class DataInfo(Struct, tag="ParquetPartitioned", rename="camel"):
 # Row-group size shared by the DuckDB sort output and convert's read batch size
 ROW_GROUP_SIZE = 122_880
 
+# Parquet stores a row group's ordinal as an i16, so a file holds at most 32767 of
+# them. At the default size that caps one part at ~4.03e9 rows, which a long-format
+# column reaches (MILAB-7195). Keep a margin and grow the group instead.
+MAX_ROW_GROUPS = 32_000
+
+
+def row_group_size_for(rows: int | None) -> int:
+    """Row group size that keeps `rows` under the per-file row group limit.
+
+    Returns the default for anything that fits, so ordinary frames are untouched; only
+    a frame too large for the default gets larger groups. `rows` may overestimate (the
+    filters below drop rows), which only makes the groups slightly bigger than needed.
+    """
+    if rows is None or rows <= ROW_GROUP_SIZE * MAX_ROW_GROUPS:
+        return ROW_GROUP_SIZE
+    return -(-rows // MAX_ROW_GROUPS)
+
 
 def _escape(name: str) -> str:
     """Quote a SQL identifier, doubling any embedded double-quotes."""
@@ -130,15 +149,22 @@ class WriteFrame(PStep, tag="write_frame"):
                 pl.all_horizontal([pl.col(a.column).is_not_null() for a in self.axes])
             )
 
-        unsorted_parquet = os.path.join(frame_dir, "unsorted.parquet")
+        if ctx.settings.spill_folder is None:
+            spill_dir = frame_dir
+            temp_dir = frame_dir
+        else:
+            spill_dir = str(ctx.settings.spill_folder)
+            temp_dir = os.path.join(spill_dir, f"write_frame-{self.frame_name}")
+            os.makedirs(temp_dir, exist_ok=True)
+
+        unsorted_parquet = os.path.join(temp_dir, "unsorted.parquet")
         lf = lf.sink_parquet(path=unsorted_parquet, lazy=True)
         ctx.add_sink(lf)
-        
-        intermediate_parquet = os.path.join(frame_dir, "intermediate.parquet")
-        spill_dir = str(ctx.settings.spill_folder or frame_dir)
+
+        intermediate_parquet = os.path.join(temp_dir, "intermediate.parquet")
         ctx.chain_task(
             lambda: self._sort_and_convert(
-                unsorted_parquet, intermediate_parquet, frame_dir, spill_dir
+                unsorted_parquet, intermediate_parquet, frame_dir, spill_dir, temp_dir
             )
         )
 
@@ -174,11 +200,27 @@ class WriteFrame(PStep, tag="write_frame"):
         intermediate_parquet: str,
         frame_dir: str,
         spill_dir: str,
+        temp_dir: str,
     ) -> None:
+        try:
+            self._sort(unsorted_parquet, intermediate_parquet, spill_dir)
+            self._convert(intermediate_parquet, frame_dir)
+        finally:
+            if temp_dir != frame_dir:
+                shutil.rmtree(temp_dir, ignore_errors=True)
+
+    def _sort(self, unsorted_parquet: str, intermediate_parquet: str, spill_dir: str) -> None:
         order_by = ", ".join(f"{_escape(a.column)} ASC NULLS FIRST" for a in self.axes)
         conn = duckdb.connect(database=":memory:")
         try:
             conn.execute("SET temp_directory TO ?;", [spill_dir])
+            memory_log = set_duckdb_memory_limit(conn)
+            if memory_log is not None:
+                print(f"write_frame: {memory_log}", flush=True)
+            # Deliberately not tune_duckdb_for_sort(): this sort has the same per-thread
+            # exposure as the one in import_parquet_frame, but only at a row count no
+            # caller has reached, and capping threads here would slow every PFrame the
+            # platform writes. Revisit if a write_frame sort is ever seen to die.
             conn.execute(
                 f"""
                 COPY (SELECT * FROM read_parquet(?) ORDER BY {order_by})
@@ -196,8 +238,6 @@ class WriteFrame(PStep, tag="write_frame"):
             conn.close()
             if os.path.exists(unsorted_parquet):
                 os.remove(unsorted_parquet)
-
-        self._convert(intermediate_parquet, frame_dir)
 
     def _convert(self, intermediate_parquet: str, frame_dir: str) -> None:
         params = ConversionParams(

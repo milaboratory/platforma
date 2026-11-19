@@ -4,7 +4,6 @@ import {
   type ListOptionBase,
   type PlDataTableModel,
   type PlDataTableSheet,
-  type PlDataTableSheetState,
   type PTableKey,
   type PTableValue,
   type OutputWithStatus,
@@ -25,6 +24,8 @@ export type PlDataTableSettingsV2Base =
       sheets: PlDataTableSheet[];
       /** Result of `createPlDataTableV2` */
       model: PlDataTableModel | undefined;
+      /** The model is still computing its outputs */
+      pending: boolean;
     };
 
 /** Data table V2 settings */
@@ -78,6 +79,7 @@ export function usePlDataTableSettingsV2<T>(
                 sourceId: canonicalize(sourceIdValue)!,
                 sheets: sheetsValue,
                 model: model.value,
+                pending: !model.stable,
               }
             : { sourceId: null, pending: !model.stable, error: null };
       } else {
@@ -86,6 +88,7 @@ export function usePlDataTableSettingsV2<T>(
               sourceId: canonicalize(sourceIdValue)!,
               sheets: [],
               model: model.value,
+              pending: !model.stable,
             }
           : { sourceId: null, pending: !model.stable, error: null };
       }
@@ -97,6 +100,7 @@ export function usePlDataTableSettingsV2<T>(
               sourceId: canonicalize("static")!,
               sheets: sheetsValue,
               model: model.value,
+              pending: !model.stable,
             }
           : { sourceId: null, pending: !model.stable, error: null };
       } else {
@@ -105,6 +109,7 @@ export function usePlDataTableSettingsV2<T>(
               sourceId: canonicalize("static")!,
               sheets: [],
               model: model.value,
+              pending: !model.stable,
             }
           : { sourceId: null, pending: !model.stable, error: null };
       }
@@ -187,13 +192,6 @@ export type PlAgOverlayNoRowsParams = {
   text?: string;
 };
 
-export type PlDataTableSheetsSettings = {
-  /** User-provided sheets for the sourceId */
-  sheets: PlDataTableSheet[];
-  /** Persisted selection for the sourceId */
-  cachedState: PlDataTableSheetState[];
-};
-
 export type PlDataTableSheetNormalized = {
   /** id of the axis */
   axisId: AxisId;
@@ -201,6 +199,4 @@ export type PlDataTableSheetNormalized = {
   prefix: string;
   /** options to show in the filter dropdown */
   options: ListOptionBase<string | number>[];
-  /** default (selected) value */
-  defaultValue: string | number;
 };

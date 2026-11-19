@@ -1,5 +1,11 @@
 # @milaboratories/pl-error-like
 
+## 1.12.11
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+
 ## 1.12.10
 
 ### Patch Changes

@@ -17,7 +17,10 @@ import { deepFreeze } from "@milaboratories/ts-helpers";
 import { extractCodeWithInfo } from "@platforma-sdk/model";
 import { getDebugFlags } from "../debug";
 
-export type BlockParameters = Omit<BlockStateInternalV3, "outputs" | "navigationState">;
+export type BlockParameters = Omit<
+  BlockStateInternalV3,
+  "outputs" | "navigationState" | "columnLinks"
+>;
 
 export function getBlockParameters(
   projectEntry: PlTreeEntry,
@@ -67,7 +70,7 @@ export function blockOutputs(
       const prj = c.accessor(projectEntry).node();
       const ctx = constructBlockContext(projectEntry, blockId);
 
-      return ifNotUndef(getBlockPackInfo(prj, blockId), ({ cfg, bpId }) => {
+      return ifNotUndef(getBlockPackInfo(prj, blockId), ({ cfg, bpId, info }) => {
         const outputs: Record<string, Computable<any>> = {};
         for (const [cellId, cellCfg] of Object.entries(cfg.outputs)) {
           const computableOutput = computableFromCfgOrRF(
@@ -76,6 +79,8 @@ export function blockOutputs(
             cellCfg,
             extractCodeWithInfo(cfg),
             bpId,
+            {},
+            info.source,
           );
           outputs[cellId] = Computable.wrapError(computableOutput, 1);
         }

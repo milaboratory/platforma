@@ -19,6 +19,8 @@ import {
   watchPostEffect,
 } from "vue";
 import SvgRequired from "../../assets/images/required.svg?raw";
+import { missingValueText, missingValueTooltip, pickedValueText } from "../../helpers/columnValue";
+import type { MissingValueLabel, MissingValueTooltip } from "../../helpers/columnValue";
 import { getErrorMessage } from "../../helpers/error.ts";
 import { deepEqual, deepIncludes } from "../../helpers/objects";
 import { normalizeListOptions } from "../../helpers/utils";
@@ -69,9 +71,16 @@ const props = withDefaults(
     placeholder?: string;
     /**
      * Text shown in a chip when a `modelValue` entry is missing from `options` —
-     * e.g. its upstream source was deleted. Rendered italic in error color.
+     * e.g. its upstream source was deleted. Rendered italic in error color. One text for every
+     * such value, or a function giving it per value. By default, the value a column value id
+     * picks, marked as not available, or "Value not available".
      */
-    missingValueLabel?: string;
+    missingValueLabel?: MissingValueLabel;
+    /**
+     * Explains a selected value missing from the options in a tooltip over it: one text for every
+     * such value, or a function giving the content per value.
+     */
+    missingValueTooltip?: MissingValueTooltip;
     /**
      * If `true`, the dropdown component is marked as required.
      */
@@ -100,7 +109,8 @@ const props = withDefaults(
     helper: undefined,
     error: undefined,
     placeholder: "...",
-    missingValueLabel: "Value not available",
+    missingValueLabel: undefined,
+    missingValueTooltip: undefined,
     required: false,
     disabled: false,
     options: undefined,
@@ -134,7 +144,8 @@ const normalizedOptionsRef = computed(() => normalizeListOptions(props.options ?
 
 const selectedOptionsRef = computed(() => {
   // While options load (`options === undefined`), hide chips for unresolved values
-  // to avoid a "missing" flash that resolves once options arrive.
+  // to avoid a "missing" flash that resolves once options arrive. A picked column value
+  // is shown by its own label meanwhile.
   const optionsLoaded = props.options !== undefined;
   return selectedValuesRef.value
     .map((v) => {
@@ -143,16 +154,20 @@ const selectedOptionsRef = computed(() => {
         // Found: render the option's own (normalized) label verbatim — matches
         // PlDropdown. `opt.label` is always a string (possibly ""), never an object,
         // so there is no raw-value leak to guard against.
-        return { ...opt, isMissing: false };
+        return { ...opt, isMissing: false, hint: undefined };
       }
       if (!optionsLoaded) {
-        return undefined;
+        const label = pickedValueText(v);
+        return label === undefined
+          ? undefined
+          : { value: v, label, isMissing: false, hint: undefined };
       }
       // Honor empty `missingValueLabel` verbatim — caller's explicit "render nothing".
       return {
         value: v,
-        label: props.missingValueLabel,
+        label: missingValueText(v, props.missingValueLabel),
         isMissing: true,
+        hint: missingValueTooltip(v, props.missingValueTooltip),
       };
     })
     .filter((v): v is NonNullable<typeof v> => v !== undefined);
@@ -292,11 +307,12 @@ watchPostEffect(() => {
 </script>
 
 <template>
-  <div class="pl-dropdown-multi__envelope" @click="setFocusOnInput">
+  <div class="pl-dropdown-multi__envelope" @click="setFocusOnInput" data-testid="pl-dropdown-multi">
     <div
       ref="rootRef"
       :tabindex="tabindex"
       class="pl-dropdown-multi"
+      data-testid="pl-dropdown-multi-control"
       :class="{ open: data.open, error, disabled: isDisabled }"
       @keydown="handleKeydown"
       @focusout="onFocusOut"
@@ -312,34 +328,62 @@ watchPostEffect(() => {
             :placeholder="placeholderRef"
             spellcheck="false"
             autocomplete="chrome-off"
+            data-testid="pl-dropdown-multi-input"
             @focus="data.open = true"
           />
-          <div v-if="!data.open" class="chips-container">
+          <div v-if="!data.open" class="chips-container" data-testid="pl-dropdown-multi-chips">
             <PlChip
               v-for="(opt, i) in selectedOptionsRef"
               :key="i"
               :class="{ 'pl-dropdown-multi__chip--missing': opt.isMissing }"
               closeable
+              data-testid="pl-dropdown-multi-chip"
               small
               @click.stop="data.open = true"
               @close="unselectOption(opt.value)"
             >
-              {{ opt.label }}
+              <!-- The hover stops here: the tooltip of the chip itself would close this one. -->
+              <PlTooltip
+                v-if="opt.hint !== undefined"
+                element="span"
+                position="top"
+                data-testid="pl-dropdown-multi-chip-hint"
+                @mouseover.stop
+              >
+                <span>{{ opt.label }}</span>
+                <template #tooltip>
+                  <component :is="opt.hint" />
+                </template>
+              </PlTooltip>
+              <template v-else>{{ opt.label }}</template>
             </PlChip>
           </div>
 
           <div class="pl-dropdown-multi__controls">
-            <PlIcon24 v-if="showLoadingSpinner" name="loading" />
+            <PlIcon24
+              v-if="showLoadingSpinner"
+              name="loading"
+              data-testid="pl-dropdown-multi-loading"
+            />
             <slot name="append" />
-            <div class="pl-dropdown-multi__arrow-wrapper" @click.stop="toggleModel">
+            <div
+              class="pl-dropdown-multi__arrow-wrapper"
+              data-testid="pl-dropdown-multi-arrow"
+              @click.stop="toggleModel"
+            >
               <div class="arrow-icon arrow-icon-default" />
             </div>
           </div>
         </div>
-        <label v-if="label">
-          <PlSvg v-if="required" :uri="SvgRequired" />
+        <label v-if="label" data-testid="pl-dropdown-multi-label">
+          <PlSvg v-if="required" :uri="SvgRequired" data-testid="pl-dropdown-multi-required" />
           <span>{{ label }}</span>
-          <PlTooltip v-if="slots.tooltip" class="info" position="top">
+          <PlTooltip
+            v-if="slots.tooltip"
+            class="info"
+            position="top"
+            data-testid="pl-dropdown-multi-tooltip"
+          >
             <template #tooltip>
               <slot name="tooltip" />
             </template>
@@ -350,20 +394,38 @@ watchPostEffect(() => {
           ref="overlay"
           :root="rootRef"
           class="pl-dropdown-multi__options"
+          data-testid="pl-dropdown-multi-options"
           :gap="5"
           tabindex="-1"
           @focusout="onFocusOut"
         >
-          <div class="pl-dropdown-multi__open-chips-container">
+          <div
+            class="pl-dropdown-multi__open-chips-container"
+            data-testid="pl-dropdown-multi-chips"
+          >
             <PlChip
               v-for="(opt, i) in selectedOptionsRef"
               :key="i"
               :class="{ 'pl-dropdown-multi__chip--missing': opt.isMissing }"
               closeable
+              data-testid="pl-dropdown-multi-chip"
               small
               @close="unselectOption(opt.value)"
             >
-              {{ opt.label }}
+              <!-- The hover stops here: the tooltip of the chip itself would close this one. -->
+              <PlTooltip
+                v-if="opt.hint !== undefined"
+                element="span"
+                position="top"
+                data-testid="pl-dropdown-multi-chip-hint"
+                @mouseover.stop
+              >
+                <span>{{ opt.label }}</span>
+                <template #tooltip>
+                  <component :is="opt.hint" />
+                </template>
+              </PlTooltip>
+              <template v-else>{{ opt.label }}</template>
             </PlChip>
           </div>
           <DropdownListItem
@@ -375,14 +437,29 @@ watchPostEffect(() => {
             :is-hovered="data.activeOption == index"
             size="medium"
             use-checkbox
+            data-testid="pl-dropdown-multi-option"
             @click.stop="selectOption(item.value)"
           />
-          <div v-if="!filteredOptionsRef.length" class="nothing-found">Nothing found</div>
+          <div
+            v-if="!filteredOptionsRef.length"
+            class="nothing-found"
+            data-testid="pl-dropdown-multi-options-empty"
+          >
+            Nothing found
+          </div>
         </DropdownOverlay>
         <DoubleContour class="pl-dropdown-multi__contour" :group-position="groupPosition" />
       </div>
     </div>
-    <div v-if="error" class="pl-dropdown-multi__error">{{ getErrorMessage(error) }}</div>
-    <div v-else-if="helper" class="pl-dropdown-multi__helper">{{ helper }}</div>
+    <div v-if="error" class="pl-dropdown-multi__error" data-testid="pl-dropdown-multi-error">
+      {{ getErrorMessage(error) }}
+    </div>
+    <div
+      v-else-if="helper"
+      class="pl-dropdown-multi__helper"
+      data-testid="pl-dropdown-multi-helper"
+    >
+      {{ helper }}
+    </div>
   </div>
 </template>

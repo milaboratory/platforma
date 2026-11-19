@@ -10,7 +10,7 @@
 
 import type { ContentForm, ManagedBody, RunMode, Structure, TriggerFn } from "./ir";
 
-export type Scope = "root" | "block" | "model" | "ui" | "workflow" | "test" | "software";
+export type Scope = "root" | "block" | "model" | "ui" | "workflow" | "test" | "software" | "kind";
 
 /** Variables describing a block — populated by `init` or parsed by
  *  `check`/`refresh` from the block's package.json `name`. */
@@ -92,6 +92,7 @@ export {
   ensureField,
   removeField,
   requireField,
+  forbidField,
   ensureFieldEntries,
   ensureScript,
   removeScript,
@@ -120,6 +121,9 @@ export {
   pinCatalogToDependencyOf,
   ensureCatalogLatest,
   ensureCatalogAbsent,
+  ensureCatalogAtLeast,
+  ensureWorkspaceMapEntries,
+  ensureWorkspaceListItems,
   // Lines managed builders
   ensureGitignoreEntries,
   removeGitignoreEntries,

@@ -1,7 +1,7 @@
 // `pascalCase(shortName)` → the block-named alias prefix the facade entry
 // template emits (`<PascalName>BlockContract`, …). Splits on any run of
 // non-alphanumeric characters and capitalises each segment's first char:
-//   test-sum-numbers-v3  → TestSumNumbersV3
+//   test-sum-numbers  → TestSumNumbersV3
 //   mixcr-clonotyping-2  → MixcrClonotyping2
 //   samples-and-data     → SamplesAndData
 export function pascalCase(s: string): string {

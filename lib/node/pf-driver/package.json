@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/pf-driver",
-  "version": "1.8.5",
+  "version": "1.9.19",
   "description": "PFrameDriver implementation abstracted from Middle Layer",
   "keywords": [],
   "license": "UNLICENSED",
@@ -15,25 +15,24 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "ts-builder build --target node",
-    "watch": "ts-builder build --target node --watch",
+    "build": "ts-builder build --target node --build-config build.config.js",
+    "watch": "ts-builder build --target node --build-config build.config.js --watch",
     "check": "ts-builder check --target node",
     "formatter:check": "ts-builder formatter --check",
     "linter:check": "ts-builder linter --check",
     "types:check": "ts-builder type-check --target node",
     "test": "vitest run --coverage",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz",
     "fmt": "ts-builder format"
   },
   "dependencies": {
     "@milaboratories/helpers": "workspace:*",
+    "@milaboratories/pf-spec": "workspace:*",
     "@milaboratories/pframes-rs-node": "catalog:",
-    "@milaboratories/pframes-rs-wasm": "catalog:",
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/pl-model-middle-layer": "workspace:*",
     "@milaboratories/ts-helpers": "workspace:*",
@@ -47,10 +46,11 @@
     "@types/node": "catalog:",
     "@vitest/coverage-istanbul": "catalog:",
     "fast-csv": "catalog:",
+    "shx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=22.19.0"
+    "node": ">=24"
   }
 }

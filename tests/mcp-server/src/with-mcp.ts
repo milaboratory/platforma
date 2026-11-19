@@ -22,7 +22,6 @@ export async function withMcpServer(cb: (ctx: McpTestContext) => Promise<void>):
       defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
       devBlockUpdateRecheckInterval: 300,
       localSecret: MiddleLayer.generateLocalSecret(),
-      localProjections: [],
       openFileDialogCallback: () => {
         throw new Error("Not implemented.");
       },

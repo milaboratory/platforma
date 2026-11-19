@@ -268,7 +268,7 @@ export class PlTreeNodeAccessor {
             }
           : { ...commonOptions, ..._step };
 
-      const next = current.getField(_step);
+      const next = current.getField(step);
 
       if (next === undefined) return undefined;
 
@@ -296,8 +296,9 @@ export class PlTreeNodeAccessor {
               `field have no assigned value ${step.field} of ${resourceIdToString(current.id)}`,
             ),
           };
-        // existing but unpopulated field is unstable because it must be resolved at some point
-        this.onUnstableLambda("unpopulated_field:" + step.field);
+        // existing but unpopulated field is unstable because it must be resolved at some point,
+        // unless its resource is final and so never will be
+        if (!current.resource.finalState) this.onUnstableLambda("unpopulated_field:" + step.field);
         return undefined;
       }
 
@@ -368,14 +369,17 @@ export class PlTreeNodeAccessor {
   }
 
   public getData(): Uint8Array | undefined {
+    this.instanceData.guard();
     return this.resource.data;
   }
 
   public getDataAsString(): string | undefined {
+    this.instanceData.guard();
     return this.resource.getDataAsString();
   }
 
   public getDataAsJson<T = unknown>(): T | undefined {
+    this.instanceData.guard();
     return this.resource.getDataAsJson<T>();
   }
 
@@ -394,6 +398,20 @@ export class PlTreeNodeAccessor {
   public listDynamicFields(): string[] {
     this.instanceData.guard();
     return this.resource.listDynamicFields(this.instanceData.ctx.watcher);
+  }
+
+  /**
+   * Every field of the resource, whatever its type, for a reader that does not know which type the
+   * backend gave them. Watches the field list of all three types.
+   *
+   * Marks the computable unstable while the lists can still grow, as {@link listInputFields} and
+   * {@link listOutputFields} do, so `awaitStableValue` does not settle on a partial list.
+   */
+  public listFields(): string[] {
+    this.instanceData.guard();
+    this.getInputsLocked(); // will set unstable if not locked
+    this.getOutputsLocked(); // will set unstable if not locked
+    return this.resource.listFields(this.instanceData.ctx.watcher);
   }
 
   public getKeyValue(key: string, unstableIfNotFound: boolean = false): Uint8Array | undefined {
@@ -417,10 +435,22 @@ export class PlTreeNodeAccessor {
     return result;
   }
 
+  /**
+   * Every KV entry whose key starts with `prefix`, values as UTF-8 text. Watches the key set under
+   * `prefix` and every entry returned, so an entry under the prefix appearing, disappearing or
+   * changing value re-runs the reader, and one outside it does not. See
+   * {@link PlTreeResource.listKeyValues} on ordering and on stability.
+   */
+  public listKeyValuesAsString(prefix: string = ""): { key: string; value: string }[] {
+    this.instanceData.guard();
+    return this.resource.listKeyValuesString(this.instanceData.ctx.watcher, prefix);
+  }
+
   public getKeyValueAsJson<T = unknown>(
     key: string,
     unstableIfNotFound: boolean = false,
   ): T | undefined {
+    this.instanceData.guard();
     const result = this.resource.getKeyValueAsJson<T>(this.instanceData.ctx.watcher, key);
     if (result === undefined) {
       if (unstableIfNotFound) this.instanceData.ctx.markUnstable("key_not_found_j:" + key);

@@ -1,5 +1,33 @@
 # @platforma-open/milaboratories.software-ptexter
 
+## 1.2.8
+
+### Patch Changes
+
+- c1869c8: Bump runenv-python-3 to 1.16.2.
+
+## 1.2.7
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+
+## 1.2.6
+
+### Patch Changes
+
+- 7b5f8f1: Let the docker build flags reach the build.
+
+  Both packages define their own `turbo.json`, and a task's `passThroughEnv` replaces the root list rather than extending it. Theirs named only `AWS_*` and `PL_AWS_*`, so `PL_DOCKER_NO_BUILD` and its siblings were stripped before the build ran and the CI defaults applied instead: build the image and push it.
+
+## 1.2.5
+
+### Patch Changes
+
+- e4f6443: Let the docker build flags reach the build.
+
+  Both packages define their own `turbo.json`, and a task's `passThroughEnv` replaces the root list rather than extending it. Theirs named only `AWS_*` and `PL_AWS_*`, so `PL_DOCKER_NO_BUILD` and its siblings were stripped before the build ran and the CI defaults applied instead: build the image and push it.
+
 ## 1.2.4
 
 ### Patch Changes

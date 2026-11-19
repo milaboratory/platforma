@@ -1,14 +1,13 @@
 import { platforma } from "@milaboratories/milaboratories.test-enter-numbers.model";
 import MainPage from "./MainPage.vue";
-import { defineApp } from "@platforma-sdk/ui-vue";
+import { defineAppV3, ensureError } from "@platforma-sdk/ui-vue";
 import type { Component } from "vue";
 import { computed, reactive, ref } from "vue";
 import type { Equal, Expect } from "@milaboratories/helpers";
-import { ensureError } from "@platforma-sdk/ui-vue";
 
-export const sdkPlugin = defineApp(
+export const sdkPlugin = defineAppV3(
   platforma,
-  (base) => {
+  () => {
     // Additional data
     const data = reactive({
       counter: 0,
@@ -20,14 +19,18 @@ export const sdkPlugin = defineApp(
       data.counter++;
     }
 
-    const argsAsJson = computed(() => JSON.stringify(base.snapshot.args));
+    const stateAsJson = computed(() => "not implemented");
 
     return {
       data,
+      error,
       incrementCounter,
-      argsAsJson,
+      stateAsJson,
       setError(e: unknown) {
         error.value = ensureError(e).message;
+      },
+      revert() {
+        alert("revert: not implemented");
       },
       routes: {
         "/": () => MainPage,
@@ -44,7 +47,7 @@ type App = ReturnType<typeof sdkPlugin.useApp>;
 type __cases = [
   Expect<Equal<App["incrementCounter"], () => void>>,
   Expect<Equal<App["data"], { counter: number }>>,
-  Expect<Equal<App["argsAsJson"], string>>,
+  Expect<Equal<App["stateAsJson"], string>>,
   Expect<Equal<App["getRoute"], (href: "/") => Component | undefined>>,
 ];
 

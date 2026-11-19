@@ -5,9 +5,9 @@ const slots = defineSlots<{
 </script>
 
 <template>
-  <div :class="$style.root">
+  <div data-testid="pl-sidebar-group" :class="$style.root">
     <template v-for="name in Object.keys(slots) as `item-${number}`[]" :key="name">
-      <div :class="$style.item">
+      <div data-testid="pl-sidebar-group-item" :class="$style.item">
         <slot :name="name" />
       </div>
     </template>

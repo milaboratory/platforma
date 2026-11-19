@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.test-enter-numbers.ui",
-  "version": "1.0.239",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,7 +19,6 @@
     "vue": "catalog:"
   },
   "devDependencies": {
-    "@faker-js/faker": "catalog:",
     "@milaboratories/helpers": "workspace:*",
     "@milaboratories/ts-builder": "workspace:*",
     "@milaboratories/ts-configs": "workspace:*",

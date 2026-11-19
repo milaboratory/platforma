@@ -1,0 +1,11 @@
+// Imports each source in args.sources and uses none of the files, so `result` does not depend on
+// the imports.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+
+wf.body(func(args, effect) {
+	for source in args.sources {
+		effect.importFile(source)
+	}
+	return { outputs: { ran: true }, exports: ex.collection({}) }
+})

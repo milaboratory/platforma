@@ -104,14 +104,14 @@ const onDemandRangeContent1 = computedAsync(async () => {
 <template>
   <PlBlockPage style="max-width: 100%">
     <PlFileInput
-      v-model="app.model.args.inputHandle"
+      v-model="app.model.data.inputHandle"
       label="Select file to import"
       :progress="progress"
     />
 
     <PlAlert type="success">
-      File content:
-      {{ app.model.outputs.content }}
+      File content as base64:
+      {{ app.model.outputs.contentAsBase64 }}
     </PlAlert>
 
     <PlAlert type="success">
@@ -163,12 +163,12 @@ const onDemandRangeContent1 = computedAsync(async () => {
       {{ app.error }}
     </PlAlert>
     <fieldset>
-      <legend>Args (app.snapshot.args)</legend>
-      {{ app.snapshot.args }}
+      <legend>Block storage (app.snapshot.blockStorage)</legend>
+      {{ app.snapshot.blockStorage }}
     </fieldset>
     <fieldset>
-      <legend>Args (app.model.args)</legend>
-      {{ app.model.args }}
+      <legend>Data (app.model.data)</legend>
+      {{ app.model.data }}
     </fieldset>
     <h3>app.model</h3>
     <code>{{ app.model }}</code>

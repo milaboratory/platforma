@@ -15,6 +15,7 @@ import {
   ensureDep,
   ensureDevDep,
   ensureDevDeps,
+  ensureWorkspaceScopeDeps,
   removeDep,
   removeScript,
   removeField,
@@ -25,7 +26,9 @@ import {
   whenFilesExist,
   type RunContext,
 } from "../engine/api";
+import { scopeDepMaps } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { ensureModuleVersion, INITIAL_MODULE_VERSION } from "./shared/initial-version";
 import { COLOCATED_TEST_GLOB } from "./shared/colocated-tests";
 import { removeRetiredToolchainDeps } from "./shared/retired-deps";
 
@@ -33,6 +36,7 @@ export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown
   const v = ctx.blockVars;
   return {
     name: `${v.facadeName}.model`,
+    version: INITIAL_MODULE_VERSION,
     private: true,
     type: "module",
     // The block-model build emits both index.cjs and index.js. `main` is
@@ -56,6 +60,9 @@ export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown
     },
     dependencies: {
       "@platforma-sdk/model": "sdk:",
+      // The model imports its block's kind (to bake the kind reference into
+      // model.json), so it depends on the sibling kind package directly.
+      ...scopeDepMaps(ctx, "kind"),
     },
     devDependencies: {
       "@milaboratories/ts-builder": "sdk:",
@@ -72,7 +79,9 @@ export function modelPackageJsonInitial(ctx: RunContext): Record<string, unknown
 export function modelPackageJsonRules(): void {
   // Controlled sibling — workspace-only, never published. `private: true` makes
   // npm refuse to publish it; the `version` is kept (changesets-owned) so the
-  // packed template's lib carries a version.
+  // packed template's lib carries a version, and backfilled when the manifest
+  // predates the seeded field.
+  ensureModuleVersion();
   ensureField("private", true);
 
   ensureField("type", "module");
@@ -95,6 +104,9 @@ export function modelPackageJsonRules(): void {
   ensureScript("check", "ts-builder check --target block-model");
 
   ensureDep("@platforma-sdk/model", "sdk:");
+  // The model imports its block's kind to bake the kind reference — direct
+  // dependency on the sibling kind package.
+  ensureWorkspaceScopeDeps("kind");
 
   ensureDevDeps({
     "@milaboratories/ts-builder": "sdk:",

@@ -11,13 +11,13 @@ import {
   ensureDevDep,
   ensureWorkspaceScopeDevDeps,
   requireField,
-  removeScript,
   enforceAlphabeticalOrder,
   enforceFieldOrder,
   type RunContext,
 } from "../engine/api";
 import { findModules, scopeDepMaps } from "../engine/ctx";
 import { canonicalPackageJsonOrder } from "./shared/key-order";
+import { INITIAL_MODULE_VERSION } from "./shared/initial-version";
 
 /** Per-org publish coordinates: the S3 upload bucket and the public registry
  *  serve URL the facade's `prepublishOnly` script passes to `block-tools
@@ -110,6 +110,11 @@ const FACADE_EXPORTS = {
   },
 };
 
+/** `block.meta.changelog`: the facade's own `CHANGELOG.md`, the only changelog
+ *  changesets writes for the published package. Not author-owned — any other
+ *  path shows release notes that never change. */
+const BLOCK_CHANGELOG = "file:CHANGELOG.md";
+
 /** Fail loudly if any required `block.*` field is empty — a missing
  *  title / description / logo / organization or empty components map would
  *  otherwise produce an init block that `block-tools pack` rejects only
@@ -153,6 +158,11 @@ export function blockPackageJsonInitial(ctx: RunContext): Record<string, unknown
     ...scopeDepMaps(ctx, "model"),
     ...scopeDepMaps(ctx, "ui"),
     ...scopeDepMaps(ctx, "workflow"),
+    // The kind is a fourth block component the facade depends on directly (the
+    // tetrad); like its siblings it is a build-time workspace devDep, never a
+    // runtime dependency, and it is NOT a bundled `block.component` (its content
+    // publishes to the `kinds/` registry tree, not into block-pack).
+    ...scopeDepMaps(ctx, "kind"),
   };
   // `block-tools pack` requires both `block.components` and `block.meta`. The
   // author edits the placeholder meta before publishing.
@@ -162,6 +172,7 @@ export function blockPackageJsonInitial(ctx: RunContext): Record<string, unknown
       title: v.shortName,
       description: `${v.shortName} block`,
       logo: "file:logos/block-logo.png",
+      changelog: BLOCK_CHANGELOG,
       organization: {
         name: v.orgScope,
         url: "https://example.com",
@@ -172,7 +183,7 @@ export function blockPackageJsonInitial(ctx: RunContext): Record<string, unknown
   assertBlockFieldsFilled(block);
   return {
     name: `${v.facadeName}.block`,
-    version: "1.0.0",
+    version: INITIAL_MODULE_VERSION,
     // Facade is ESM: rolldown-plugin-dts requires it, and the BlockPointer's
     // `import.meta.url` path math needs it.
     type: "module",
@@ -194,6 +205,21 @@ export function blockPackageJsonInitial(ctx: RunContext): Record<string, unknown
 export function blockPackageJsonRules(ctx: RunContext): void {
   const v = ctx.blockVars;
 
+  // The kind is a MANDATORY block component: every block must declare exactly
+  // one sibling `kind/` package. DISCOVERY synthesises the module when the
+  // package is absent, so `refresh` bootstraps it instead of failing here and
+  // the zero branch is an invariant guard rather than the migration signal it
+  // once was. Two or more kinds stay a hard error — nothing can pick between
+  // them.
+  const kindModules = findModules(ctx, "kind");
+  if (kindModules.length !== 1) {
+    throw new Error(
+      kindModules.length === 0
+        ? `block '${v.facadeName}' declares no kind — every block must have a sibling kind/ package`
+        : `block '${v.facadeName}' declares ${kindModules.length} kinds; exactly one is required`,
+    );
+  }
+
   ensureField("type", "module");
   ensureField("files", ["dist", "block-pack"]);
   ensureField("main", "./dist/index.js");
@@ -203,7 +229,10 @@ export function blockPackageJsonRules(ctx: RunContext): void {
 
   const scripts = blockScripts(v.npmOrg, ctx.isSdkInternal);
   for (const [name, command] of Object.entries(scripts)) ensureScript(name, command);
-  removeScript("mark-stable");
+  // Scripts beyond the canonical set are block-author territory — left as-is.
+  // `mark-stable` in particular is invoked by the engine-generated
+  // `.github/workflows/mark-stable.yaml` (which does `cd block && pnpm run
+  // mark-stable`), so stripping it broke that workflow.
 
   // Slim invariant: the facade carries ZERO runtime dependencies. The siblings
   // and the SDK build/publish deps are all devDeps, so `dependencies` ends
@@ -212,6 +241,7 @@ export function blockPackageJsonRules(ctx: RunContext): void {
   ensureWorkspaceScopeDevDeps("model");
   ensureWorkspaceScopeDevDeps("ui");
   ensureWorkspaceScopeDevDeps("workflow");
+  ensureWorkspaceScopeDevDeps("kind");
   ensureDevDep("@milaboratories/ts-builder", "sdk:");
   ensureDevDep("@milaboratories/ts-configs", "sdk:");
   ensureDevDep("@platforma-sdk/block-tools", "sdk:");
@@ -220,10 +250,11 @@ export function blockPackageJsonRules(ctx: RunContext): void {
   ensureDevDep("typescript", "catalog:");
 
   // `block.components` is fully determined by the discovered modules — keep it
-  // in sync on refresh. `block.meta` is deliberately NOT touched: it is an
-  // author-owned seed (set once in the init package.json), so refresh must
-  // never overwrite the author's title / description / logo.
+  // in sync on refresh. The rest of `block.meta` is deliberately NOT touched:
+  // it is an author-owned seed (set once in the init package.json), so refresh
+  // must never overwrite the author's title / description / logo.
   ensureField("block.components", blockComponents(ctx));
+  ensureField("block.meta.changelog", BLOCK_CHANGELOG);
 
   // The author owns `name` and `version`; `version` MUST be present (the
   // facade publishes).

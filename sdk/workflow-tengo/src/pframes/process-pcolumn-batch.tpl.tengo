@@ -150,15 +150,33 @@ self.body(func(inputs) {
 	// maxBatches — inflating batch size can't help when each scope has ≤1
 	// batch. Otherwise estimate total batch count from per-scope upper-bound
 	// record counts (inner: min across primaries; full: sum across primaries)
-	// and inflate batch size deterministically when the estimate exceeds
-	// maxBatches. Same upper-bound convention as the per-scope loop below, so
-	// the limit consistently bounds the resulting batch count.
+	// and inflate batch size when the estimate exceeds maxBatches.
+	//
+	// This estimate is only a FLOOR on the batch size, never the enforcement
+	// point: the upper bound counts partitions rather than rows for every
+	// partitioned input type (see recordsInGroup), so for such columns it
+	// undercounts drastically and this step does nothing at all. The cap is
+	// actually applied per scope inside :pframes.process-pcolumn-batch-split,
+	// which has the true row count. `scopeMaxBatches` below is that scope's
+	// share of the global budget.
 	isolationScopeCount := len(allIsolationKeys)
 	ll.assert(isolationScopeCount <= maxBatches,
 		"batch mode: isolation scope count (%v) exceeds batch.maxBatches (%v). "+
 			"A high-diversity axis is being treated as an isolation axis. "+
 			"Move it into batch.keyColumns, or raise batch.maxBatches if the high count is intentional.",
 		isolationScopeCount, maxBatches)
+
+	// Per-scope share of the global cap, handed to each split render. Split
+	// evenly: the true per-scope row counts are unknown here (that is the whole
+	// problem), so a proportional split is not available. The assert above
+	// guarantees this floors to ≥1, and scopeCount * (maxBatches / scopeCount)
+	// <= maxBatches keeps the global bound. Tradeoff: with very unevenly sized
+	// scopes a large scope is held to an equal share, so its batches come out
+	// coarser than a global optimum would allow.
+	scopeMaxBatches := maxBatches / isolationScopeCount
+	if scopeMaxBatches < 1 {
+		scopeMaxBatches = 1
+	}
 
 	_scopeUpperBound := func(sIsolationKey) {
 		if primaryJoin == "inner" {
@@ -346,6 +364,7 @@ self.body(func(inputs) {
 			params: smart.createJsonResource({
 				batchCount: batchCount,
 				batchSize: effectiveBatchSize,
+				scopeMaxBatches: scopeMaxBatches,
 				passContent: passContent,
 				formatExt: formatExt,
 				eph: eph,

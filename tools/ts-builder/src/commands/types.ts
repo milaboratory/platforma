@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { buildTsconfig } from "../configs/utils/buildTsconfig";
 import { existsSync } from "node:fs";
 import { executeCommand, getGlobalOptions, requireTarget, resolveTypeChecker } from "./utils/index";
 import type { GlobalOptions } from "./utils/index";
@@ -18,7 +19,11 @@ export async function runTypeCheck(globalOpts: GlobalOptions, project: string): 
     "--project",
     tsconfigPath,
     "--customConditions",
-    globalOpts.useSources ? "sources" : ",",
+    // Non-sources mode resolves workspace deps via their built `dist` (types/import
+    // conditions). We must still override the base tsconfig's `customConditions:
+    // ["sources"]`, so we pass a benign non-"sources" condition. TypeScript 7's CLI
+    // parses a bare "," as a source-file positional (TS5042), so use "default" instead.
+    globalOpts.useSources ? "sources" : "default",
   ];
 
   await executeCommand(commandPath, args);
@@ -26,7 +31,10 @@ export async function runTypeCheck(globalOpts: GlobalOptions, project: string): 
 
 export const typesCommand = new Command("type-check")
   .description("Type check the project")
-  .option("-p, --project <path>", "Path to tsconfig.json", "./tsconfig.json")
+  .option(
+    "-p, --project <path>",
+    "Path to tsconfig (default: tsconfig.build.json if present, else tsconfig.json)",
+  )
   .action(async (options, command) => {
-    await runTypeCheck(getGlobalOptions(command), options.project);
+    await runTypeCheck(getGlobalOptions(command), options.project ?? buildTsconfig());
   });

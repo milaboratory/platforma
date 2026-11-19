@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import {
   createLocalPObjectId,
   createColumnOverriddenId,
@@ -9,7 +9,7 @@ import {
   type PTableColumnId,
   type SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
-import { ColumnLazyImpl } from "../../columns";
+import { DataColumnImpl } from "../../columns";
 import type { ColumnRecipe } from "../../columns";
 import { createColumnResolver } from "./columnResolver";
 
@@ -20,7 +20,7 @@ function wrap(id: PObjectId | SUniversalPColumnId, tag: string): SUniversalPColu
   });
 }
 
-// ColumnLazy constructor pulls `getCfgRenderCtx()` from globalThis on some
+// DataColumnRecipe constructor pulls `getCfgRenderCtx()` from globalThis on some
 // paths — keep a minimal mock the same way p_column_lazy.test.ts does.
 const mockCtx = {
   getAccessorHandleByName: () => undefined,
@@ -36,7 +36,7 @@ afterEach(() => {
 
 function lazyOf(id: PObjectId, axes: AxisSpec[] = []) {
   const spec = { kind: "PColumn", name: "stub", axesSpec: axes } as unknown as PColumnSpec;
-  return ColumnLazyImpl.fromColumn({
+  return DataColumnImpl.fromColumn({
     id,
     spec,
     data: undefined,
@@ -97,7 +97,7 @@ describe("createColumnResolver", () => {
     expect(r({ type: "column", id: other })).toBeUndefined();
   });
 
-  test("collision warns once and keeps first", () => {
+  test("collision keeps first", () => {
     const pid = createLocalPObjectId(["main", "out"], "col-1");
     const wrappedA = wrap(pid, "A");
     const wrappedB = wrap(pid, "B");
@@ -113,10 +113,18 @@ describe("createColumnResolver", () => {
       return r;
     };
 
-    const warn = vi.fn();
-    const r = createColumnResolver([makeFake(wrappedA), makeFake(wrappedB)], { warn });
-    expect(warn).toHaveBeenCalledTimes(1);
+    const r = createColumnResolver([makeFake(wrappedA), makeFake(wrappedB)]);
     const out = r({ type: "column", id: pid });
     expect(out).toEqual({ type: "column", id: wrappedA });
+  });
+});
+
+describe("createColumnResolver with stored ids", () => {
+  test("an id that cannot be parsed resolves to nothing instead of throwing", () => {
+    const id = createLocalPObjectId(["main", "out"], "col-1");
+    const r = createColumnResolver([lazyOf(id)]);
+    // A discovered id saved before the column-access rework: no `__isDiscovered` marker.
+    const legacy = JSON.stringify({ column: id }) as SUniversalPColumnId;
+    expect(r({ type: "column", id: legacy })).toBeUndefined();
   });
 });

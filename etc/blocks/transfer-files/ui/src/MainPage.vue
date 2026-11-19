@@ -34,21 +34,21 @@ const fileExports = computed(() => {
 });
 
 const onImport = (imported: ImportedFiles) => {
-  app.model.args.inputHandles = imported.files;
+  app.model.data.inputHandles = imported.files;
 };
 
 // const extensions = ['.png', '.jpg', '.fastq.gz', '.fastq.gz'];
 
 const updateHandle = (v: ImportFileHandle | undefined, i: number) => {
   if (v) {
-    app.model.args.inputHandles[i] = v;
+    app.model.data.inputHandles[i] = v;
   } else {
-    app.model.args.inputHandles.splice(i, 1);
+    app.model.data.inputHandles.splice(i, 1);
   }
 };
 
 const handlesAndProgress = computed(() => {
-  return app.model.args.inputHandles.map((h) => ({
+  return app.model.data.inputHandles.map((h) => ({
     handle: h,
     progress: app.model.outputs.fileImports?.[h],
   }));
@@ -80,7 +80,7 @@ const handlesAndProgress = computed(() => {
     <PlRow v-if="false">
       <PlAlert type="success">
         Input file handles:
-        {{ app.model.args.inputHandles }}
+        {{ app.model.data.inputHandles }}
       </PlAlert>
     </PlRow>
     <PlRow>

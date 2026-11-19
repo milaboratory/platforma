@@ -1,5 +1,727 @@
 # @platforma-sdk/pl-cli
 
+## 0.12.6
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.3
+
+## 0.12.5
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.2
+
+## 0.12.4
+
+### Patch Changes
+
+- Updated dependencies [c1869c8]
+- Updated dependencies [c1869c8]
+  - @milaboratories/pl-client@3.26.1
+  - @milaboratories/pl-middle-layer@2.7.1
+
+## 0.12.3
+
+### Patch Changes
+
+- 8cc6580: Support user listing that the server controls per client role (`userListing:v2`).
+
+  - pl-client: `PlClient.canListUsers` tells if the authenticated user can list users. On a `userListing:v2` backend it reads `GetSessionInfo.can_list_users`; on a `userListing:v1` backend it is true. `GetSessionInfo` responses carry `canListUsers`.
+  - pl-client: the protocol definitions are synced with the backend. `MaintenanceAPI_Ping_Response.requiredCapabilities` is renamed to `requiredClientCapabilities`, as in the backend proto.
+  - pl-middle-layer: `MiddleLayer.userListingAvailable` selects the recipient picker or paste-a-login UI.
+  - pl-cli: `admin user-list` tells clearly when the server does not let the user list users.
+
+- Updated dependencies [8cc6580]
+  - @milaboratories/pl-client@3.26.0
+  - @milaboratories/pl-middle-layer@2.7.0
+
+## 0.12.2
+
+### Patch Changes
+
+- Updated dependencies [fda52f0]
+  - @milaboratories/pl-client@3.25.0
+  - @milaboratories/pl-middle-layer@2.6.4
+
+## 0.12.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.6.3
+
+## 0.12.0
+
+### Minor Changes
+
+- 41cdddf: Add the `pl-cli maintenance controller` command group. `list` prints the registered controllers with their IDs and resources fixup levels. `rerun-fixups --controller-name <type> | --controller-id <id>` sets the resources fixup level of the selected controllers to 0, so each of them applies its one-time resources fixups again on the next backend start. Use it after a rollback to a backend version without resources fixups. `pl-client` gets `listRegisteredControllers`, and `PlTransaction` gets `setControllerKValue` and `getControllerKValueIfExists` for the controller key-value store (controller or admin credentials).
+
+### Patch Changes
+
+- Updated dependencies [41cdddf]
+  - @milaboratories/pl-client@3.24.0
+  - @milaboratories/pl-middle-layer@2.6.2
+
+## 0.11.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.6.1
+
+## 0.11.3
+
+### Patch Changes
+
+- Updated dependencies [af78d3a]
+  - @milaboratories/pl-client@3.23.0
+  - @milaboratories/pl-middle-layer@2.6.0
+
+## 0.11.2
+
+### Patch Changes
+
+- Updated dependencies [92cf16f]
+  - @milaboratories/pl-middle-layer@2.5.0
+  - @milaboratories/pl-client@3.22.2
+
+## 0.11.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.4.2
+
+## 0.11.0
+
+### Minor Changes
+
+- 64402da: Add `pl-cli admin instance-stats`.
+
+## 0.10.28
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.4.1
+
+## 0.10.27
+
+### Patch Changes
+
+- Updated dependencies [1bea6a2]
+  - @milaboratories/pl-middle-layer@2.4.0
+
+## 0.10.26
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-client@3.22.1
+  - @milaboratories/pl-middle-layer@2.3.0
+
+## 0.10.25
+
+### Patch Changes
+
+- Updated dependencies [82dd041]
+  - @milaboratories/pl-middle-layer@2.2.0
+
+## 0.10.24
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.1.2
+
+## 0.10.23
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.1.1
+
+## 0.10.22
+
+### Patch Changes
+
+- Updated dependencies [d3a7b19]
+  - @milaboratories/pl-middle-layer@2.1.0
+
+## 0.10.21
+
+### Patch Changes
+
+- Updated dependencies [e40ccc1]
+  - @milaboratories/pl-middle-layer@2.0.0
+
+## 0.10.20
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-client@3.22.0
+  - @milaboratories/pl-middle-layer@1.77.0
+
+## 0.10.19
+
+### Patch Changes
+
+- Updated dependencies [5adb3c8]
+- Updated dependencies [f08961f]
+- Updated dependencies [0692c00]
+  - @milaboratories/pl-client@3.21.1
+  - @milaboratories/pl-middle-layer@1.76.5
+
+## 0.10.18
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.4
+
+## 0.10.17
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.3
+
+## 0.10.16
+
+### Patch Changes
+
+- Updated dependencies [f7d4c98]
+  - @milaboratories/pl-client@3.21.0
+  - @milaboratories/pl-middle-layer@1.76.2
+
+## 0.10.15
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.76.1
+
+## 0.10.14
+
+### Patch Changes
+
+- Updated dependencies [f7a9989]
+- Updated dependencies [9089e12]
+  - @milaboratories/pl-middle-layer@1.76.0
+  - @milaboratories/pl-client@3.20.0
+
+## 0.10.13
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-middle-layer@1.75.0
+  - @milaboratories/pl-client@3.19.4
+
+## 0.10.12
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.19
+
+## 0.10.11
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.18
+
+## 0.10.10
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.17
+
+## 0.10.9
+
+### Patch Changes
+
+- Updated dependencies [c8a246e]
+  - @milaboratories/pl-middle-layer@1.74.16
+
+## 0.10.8
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.15
+
+## 0.10.7
+
+### Patch Changes
+
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-middle-layer@1.74.14
+  - @milaboratories/pl-client@3.19.3
+
+## 0.10.6
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.13
+
+## 0.10.5
+
+### Patch Changes
+
+- Updated dependencies [91af6ad]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [79f8dbc]
+- Updated dependencies [615bd8c]
+  - @milaboratories/pl-client@3.19.2
+  - @milaboratories/pl-middle-layer@1.74.12
+
+## 0.10.4
+
+### Patch Changes
+
+- Updated dependencies [1472a5b]
+  - @milaboratories/pl-middle-layer@1.74.11
+
+## 0.10.3
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.10
+
+## 0.10.2
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.19.1
+- @milaboratories/pl-middle-layer@1.74.9
+
+## 0.10.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.8
+
+## 0.10.0
+
+### Minor Changes
+
+- 7d9925e: pl-client: add `PlTransaction.listResourcesByType` (admin and controller roles only).
+
+  pl-cli: add the `maintenance` command group to repair server state after storage loss:
+
+  - `maintenance list-resources --type <name:version> [--limit <n>] [--after <resource-id>] [--load-fields] [--load-kv]` lists resources of one type as JSON lines, in ascending order of resource ID.
+  - `maintenance set-resource-error <resource-id...>` puts an error on one or more resources in a single transaction. Resources that already have an error are skipped. With `--skip-missing`, resources that do not exist are skipped too.
+
+### Patch Changes
+
+- Updated dependencies [7d9925e]
+  - @milaboratories/pl-client@3.19.0
+  - @milaboratories/pl-middle-layer@1.74.7
+
+## 0.9.42
+
+### Patch Changes
+
+- Updated dependencies [5d27046]
+  - @milaboratories/pl-middle-layer@1.74.6
+
+## 0.9.41
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.5
+
+## 0.9.40
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.4
+
+## 0.9.39
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.3
+
+## 0.9.38
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.2
+
+## 0.9.37
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.74.1
+
+## 0.9.36
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-middle-layer@1.74.0
+  - @milaboratories/pl-client@3.18.2
+
+## 0.9.35
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.73.10
+
+## 0.9.34
+
+### Patch Changes
+
+- Updated dependencies [41f0c56]
+  - @milaboratories/pl-client@3.18.1
+  - @milaboratories/pl-middle-layer@1.73.9
+
+## 0.9.33
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.73.8
+
+## 0.9.32
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.73.7
+
+## 0.9.31
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.73.6
+
+## 0.9.30
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-client@3.18.0
+  - @milaboratories/pl-middle-layer@1.73.5
+
+## 0.9.29
+
+### Patch Changes
+
+- Updated dependencies [90073ff]
+  - @milaboratories/pl-client@3.17.7
+  - @milaboratories/pl-middle-layer@1.73.4
+
+## 0.9.28
+
+### Patch Changes
+
+- Updated dependencies [fd9f892]
+  - @milaboratories/pl-client@3.17.6
+  - @milaboratories/pl-middle-layer@1.73.3
+
+## 0.9.27
+
+### Patch Changes
+
+- Updated dependencies [9c97fb0]
+  - @milaboratories/pl-client@3.17.5
+  - @milaboratories/pl-middle-layer@1.73.2
+
+## 0.9.26
+
+### Patch Changes
+
+- Updated dependencies [7b19fcc]
+  - @milaboratories/pl-client@3.17.4
+  - @milaboratories/pl-middle-layer@1.73.1
+
+## 0.9.25
+
+### Patch Changes
+
+- Updated dependencies [61aefa1]
+  - @milaboratories/pl-middle-layer@1.73.0
+
+## 0.9.24
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+- Updated dependencies [cadf144]
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-middle-layer@1.72.0
+  - @milaboratories/pl-client@3.17.3
+
+## 0.9.23
+
+### Patch Changes
+
+- @milaboratories/pl-client@3.17.2
+- @milaboratories/pl-middle-layer@1.71.16
+
+## 0.9.22
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.71.15
+
+## 0.9.21
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.71.14
+
+## 0.9.20
+
+### Patch Changes
+
+- Updated dependencies [a8e1308]
+  - @milaboratories/pl-client@3.17.1
+  - @milaboratories/pl-middle-layer@1.71.13
+
+## 0.9.19
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.71.12
+
+## 0.9.18
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.71.11
+
+## 0.9.17
+
+### Patch Changes
+
+- Updated dependencies [4068d5c]
+- Updated dependencies [13aff26]
+- Updated dependencies [ddc7746]
+  - @milaboratories/pl-middle-layer@1.71.10
+  - @milaboratories/pl-client@3.17.0
+
+## 0.9.16
+
+### Patch Changes
+
+- Updated dependencies [31a3f60]
+  - @milaboratories/pl-middle-layer@1.71.9
+
+## 0.9.15
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.71.8
+
+## 0.9.14
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.71.7
+
+## 0.9.13
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.71.6
+
+## 0.9.12
+
+### Patch Changes
+
+- Updated dependencies [f2ed96c]
+  - @milaboratories/pl-middle-layer@1.71.5
+  - @milaboratories/pl-client@3.16.2
+
+## 0.9.11
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.71.4
+
+## 0.9.10
+
+### Patch Changes
+
+- Updated dependencies [0aa8615]
+  - @milaboratories/pl-client@3.16.1
+  - @milaboratories/pl-middle-layer@1.71.3
+
+## 0.9.9
+
+### Patch Changes
+
+- Updated dependencies [f532ce7]
+  - @milaboratories/pl-middle-layer@1.71.2
+
+## 0.9.8
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.71.1
+
+## 0.9.7
+
+### Patch Changes
+
+- Updated dependencies [9a6d54d]
+  - @milaboratories/pl-middle-layer@1.71.0
+
+## 0.9.6
+
+### Patch Changes
+
+- Updated dependencies [d8b9666]
+  - @milaboratories/pl-middle-layer@1.70.0
+
+## 0.9.5
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.69.2
+
+## 0.9.4
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.69.1
+
+## 0.9.3
+
+### Patch Changes
+
+- Updated dependencies [4ea0a55]
+  - @milaboratories/pl-middle-layer@1.69.0
+
+## 0.9.2
+
+### Patch Changes
+
+- Updated dependencies [5c588be]
+  - @milaboratories/pl-client@3.16.0
+  - @milaboratories/pl-middle-layer@1.68.3
+
+## 0.9.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.68.2
+
+## 0.9.0
+
+### Minor Changes
+
+- fd0ae2c: pl-cli: add `admin delete-user`, so a duplicate user account can be removed.
+
+  Multi-provider auth can leave one person with two accounts — an identity that could not be matched by email across a cutover, or a duplicate minted before the backend started refusing two records for one identity. The spare account was not inert: it appeared in the sharing user picker, and the projects in its root kept taking part in deduplication. Nothing removed one.
+
+  `admin delete-user <user>` now does, backed by the new `AuthAPI.DeleteUser` RPC. When the account still owns projects it requires an explicit decision rather than picking a default, since both defaults are wrong to assume:
+
+  - `--move-projects-to <user>` re-attaches every project to another user's root and then deletes the account. It is a move, not a copy: the same project resources are re-homed, so nothing is duplicated and nothing needs re-verifying. A name the target already uses is suffixed rather than overwritten, and the target's project list is created if they never had one.
+  - `--delete-projects` deletes the projects along with the account.
+
+  Both prompt with the affected project list first; `--force` skips that for scripted runs. Deleting an account removes its record, its identity-index entries (login, email and any alternative of either), its grants and its root resource, and frees those values — the person's next sign-in lands on a clean account instead of reviving the deleted one. Requires admin/controller credentials, and refuses to target the account those credentials authenticate as.
+
+  `pl-client` gains `PlClient.deleteUser(login)` (gRPC-only, like `listUsers`). `pl-middle-layer` now exports `ProjectsResourceType`, which a caller writing into another user's root needs.
+
+### Patch Changes
+
+- Updated dependencies [fd0ae2c]
+  - @milaboratories/pl-client@3.15.0
+  - @milaboratories/pl-middle-layer@1.68.1
+
+## 0.8.29
+
+### Patch Changes
+
+- Updated dependencies [68f19fa]
+  - @milaboratories/pl-middle-layer@1.68.0
+
+## 0.8.28
+
+### Patch Changes
+
+- Updated dependencies [cbe94c7]
+  - @milaboratories/pl-middle-layer@1.67.6
+  - @milaboratories/pl-client@3.14.7
+
+## 0.8.27
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.67.5
+
+## 0.8.26
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.67.4
+
+## 0.8.25
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.67.3
+
+## 0.8.24
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.67.2
+
+## 0.8.23
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.67.1
+
+## 0.8.22
+
+### Patch Changes
+
+- Updated dependencies [80a9963]
+  - @milaboratories/pl-middle-layer@1.67.0
+  - @milaboratories/pl-client@3.14.7
+
+## 0.8.21
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.66.19
+
+## 0.8.20
+
+### Patch Changes
+
+- Updated dependencies [a666e0d]
+- Updated dependencies [1a17259]
+- Updated dependencies [00a46f7]
+- Updated dependencies [fa18a18]
+  - @milaboratories/pl-client@3.14.6
+  - @milaboratories/pl-middle-layer@1.66.18
+
+## 0.8.19
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.66.17
+
+## 0.8.18
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.66.16
+
+## 0.8.17
+
+### Patch Changes
+
+- Updated dependencies [da11734]
+  - @milaboratories/pl-middle-layer@1.66.15
+  - @milaboratories/pl-client@3.14.5
+
+## 0.8.16
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@1.66.14
+
 ## 0.8.15
 
 ### Patch Changes

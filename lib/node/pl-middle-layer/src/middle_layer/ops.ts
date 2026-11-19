@@ -10,7 +10,6 @@ import type { UploadDriverOps } from "@milaboratories/pl-drivers";
 import type { LogsStreamDriverOps } from "@milaboratories/pl-drivers";
 import type { MiLogger } from "@milaboratories/ts-helpers";
 import { ConsoleLoggerAdapter } from "@milaboratories/ts-helpers";
-import type { LocalStorageProjection } from "@milaboratories/pl-drivers";
 import path from "node:path";
 import { PFrameDriverOpsDefaults, type PFrameDriverOps, type ParquetCacheOps } from "../pool";
 
@@ -24,20 +23,6 @@ export type DriverKitOpsPaths = {
 
   /** Common root where to put downloaded blobs with */
   readonly downloadBlobToURLPath: string;
-
-  /**
-   * List of pl storages that have projections in local file system.
-   *
-   * This option affect two drivers:
-   *
-   *   (1) LS driver generates "index" handles instead of "upload" for paths inside those locations
-   *
-   *   (2) Download driver directly serves content retrieval requests for blobs from listed storages,
-   *       and don't apply any caching for such blobs (i.e. preventing duplication of files for Downloaded
-   *       type handles, making OnDemand and Downloaded handles equivalent)
-   *
-   * */
-  readonly localProjections: LocalStorageProjection[];
 
   /**
    * List of virtual storages that will allow homogeneous access to local FSs through LS API.
@@ -222,6 +207,40 @@ export type DriverKitOpsConstructor = Omit<
 export type MiddleLayerOpsPaths = DriverKitOpsPaths & {
   /** Common root where to put frontend code. */
   readonly frontendDownloadPath: string;
+
+  /**
+   * Directory holding persisted project tree mirrors, one file per project. Like
+   * {@link DriverKitOpsPaths.parquetCachePath} and unlike the spill directories, it is NOT
+   * emptied on startup: surviving a restart is the entire point. It is pruned instead, see
+   * {@link TreeSnapshotOps.maxSizeBytes}.
+   */
+  readonly treeSnapshotPath: string;
+};
+
+/** Tuning for the persisted project tree mirrors. Their directory is
+ *  {@link MiddleLayerOpsPaths.treeSnapshotPath}; this carries the behaviour knobs. */
+export type TreeSnapshotOps = {
+  /**
+   * Whether project tree mirrors are persisted and restored at all.
+   *
+   * On by default. This is an operational kill switch, for a deployment where the cache
+   * directory turns out to be unwritable or otherwise troublesome, not a rollout gate: the
+   * floor of the feature is current behaviour, since a cache that never hits is a cold open.
+   */
+  readonly enabled: boolean;
+
+  /**
+   * Minimum wall-clock gap between periodic writes for one project.
+   *
+   * Can be generous, because a stale snapshot is less complete rather than wrong: final
+   * resources never change and are never refetched, so this only bounds how much recent work
+   * comes back from the non-final frontier on restore.
+   */
+  readonly writeInterval: number;
+
+  /** Total bytes the snapshot directory may occupy after startup eviction. Needed because a
+   *  heavy project runs to roughly ten megabytes. */
+  readonly maxSizeBytes: number;
 };
 
 /** Debug options for middle layer. */
@@ -253,6 +272,10 @@ export type MiddleLayerOpsSettings = DriverKitOpsSettings & {
    * `sharedAt + envelopeTtlMs`. Share-with-everybody envelopes never expire
    * (`expiresAt: null`) and ignore this. */
   readonly envelopeTtlMs: number;
+
+  /** Settings for persisting project tree mirrors to disk, so reopening a project transfers
+   * what changed rather than the tree again. */
+  readonly treeSnapshotOps: TreeSnapshotOps;
 };
 
 export type MiddleLayerOps = MiddleLayerOpsSettings & MiddleLayerOpsPaths;
@@ -266,6 +289,7 @@ export const DefaultMiddleLayerOpsSettings: Pick<
   | "devBlockUpdateRecheckInterval"
   | "debugOps"
   | "envelopeTtlMs"
+  | "treeSnapshotOps"
 > = {
   ...DefaultDriverKitOpsSettings,
   defaultTreeOptions: {
@@ -279,17 +303,23 @@ export const DefaultMiddleLayerOpsSettings: Pick<
   devBlockUpdateRecheckInterval: 1000,
   projectRefreshInterval: 2000,
   envelopeTtlMs: 14 * 24 * 3600 * 1000, // 14 days
+  treeSnapshotOps: {
+    enabled: true,
+    writeInterval: 5 * 60 * 1000, // 5 minutes
+    maxSizeBytes: 256 * 1024 * 1024, // 256 MB, roughly 25 heavy projects
+  },
 };
 
 export function DefaultMiddleLayerOpsPaths(
   workDir: string,
 ): Pick<
   MiddleLayerOpsPaths,
-  keyof ReturnType<typeof DefaultDriverKitOpsPaths> | "frontendDownloadPath"
+  keyof ReturnType<typeof DefaultDriverKitOpsPaths> | "frontendDownloadPath" | "treeSnapshotPath"
 > {
   return {
     ...DefaultDriverKitOpsPaths(workDir),
     frontendDownloadPath: path.join(workDir, "frontend"),
+    treeSnapshotPath: path.join(workDir, "treeSnapshots"),
   };
 }
 

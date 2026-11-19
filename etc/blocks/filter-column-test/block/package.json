@@ -25,6 +25,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.test-filter-column.kind": "workspace:*",
     "@milaboratories/milaboratories.test-filter-column.model": "workspace:*",
     "@milaboratories/milaboratories.test-filter-column.ui": "workspace:*",
     "@milaboratories/milaboratories.test-filter-column.workflow": "workspace:*",
@@ -49,7 +50,8 @@
         "name": "MiLaboratories Inc",
         "url": "https://milaboratories.com/",
         "logo": "file:logos/organization-logo.png"
-      }
+      },
+      "changelog": "file:CHANGELOG.md"
     }
   }
 }

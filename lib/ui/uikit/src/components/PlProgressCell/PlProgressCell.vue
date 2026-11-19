@@ -30,6 +30,7 @@ const canShowInfinityLoader = computed(
 
 <template>
   <div
+    data-testid="pl-progress-cell"
     :class="{
       'progress-cell': true,
       'progress-cell__white-bg': canShowWhiteBg,
@@ -37,20 +38,28 @@ const canShowInfinityLoader = computed(
       'not-started': props.stage === 'not_started',
     }"
   >
-    <div v-if="canShowInfinityLoader" class="progress-cell__infinity-loader">
+    <div
+      v-if="canShowInfinityLoader"
+      data-testid="pl-progress-cell-infinity-loader"
+      class="progress-cell__infinity-loader"
+    >
       <div class="progress-cell__infinity-gradient" />
     </div>
     <div
       v-if="!canShowInfinityLoader && !error"
+      data-testid="pl-progress-cell-indicator"
       class="progress-cell__indicator"
       :style="{ width: currentProgress + '%' }"
     />
     <div class="progress-cell__body">
-      <div class="progress-cell__stage text-s">
+      <div data-testid="pl-progress-cell-stage" class="progress-cell__stage text-s">
         {{ error ? getErrorMessage(error) : step }}
       </div>
-      <div class="progress-cell__percentage text-s d-flex align-center justify-end">
-        <PlMaskIcon24 v-if="error" name="error" />
+      <div
+        data-testid="pl-progress-cell-percentage"
+        class="progress-cell__percentage text-s d-flex align-center justify-end"
+      >
+        <PlMaskIcon24 v-if="error" data-testid="pl-progress-cell-error-icon" name="error" />
         <template v-if="!error">
           {{ progressString }}
         </template>

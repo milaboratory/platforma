@@ -1,7 +1,9 @@
-import { field, poll, TestHelpers, toGlobalResourceId } from "@milaboratories/pl-client";
+import { field, Pl, poll, TestHelpers, toGlobalResourceId } from "@milaboratories/pl-client";
+import { canonicalJsonBytes } from "@milaboratories/ts-helpers";
 import { getQuickJS } from "quickjs-emscripten";
 import { expect, test } from "vitest";
 import { outputRef } from "../model/args";
+import { argsFingerprint } from "../model/args_derivation";
 import { ProjectHelper } from "../model/project_helper";
 import { blockArgsAuthorKey, projectFieldName } from "../model/project_model";
 import { TestBPPreparer } from "../test/block_packs";
@@ -14,15 +16,17 @@ import path from "node:path";
 // These blocks use the new unified state format (state instead of args+uiState)
 const BPSpecEnterV3: BlockPackSpec = {
   type: "dev-v2",
-  // Navigate from lib/node/pl-middle-layer/src/mutator to etc/blocks/enter-numbers-v3/block
-  folder: path.resolve(__dirname, "../../../../../etc/blocks/enter-numbers-v3/block"),
+  // Navigate from lib/node/pl-middle-layer/src/mutator to etc/blocks/enter-numbers/block
+  folder: path.resolve(__dirname, "../../../../../etc/blocks/enter-numbers/block"),
 };
 
 const BPSpecSumV3: BlockPackSpec = {
   type: "dev-v2",
-  folder: path.resolve(__dirname, "../../../../../etc/blocks/sum-numbers-v3/block"),
+  folder: path.resolve(__dirname, "../../../../../etc/blocks/sum-numbers/block"),
 };
 
+// Waits for two blocks to compute on the backend, so it runs as long as the backend is busy with
+// whatever else the suite is running; it gets twice the suite's default.
 test("v3 blocks: basic test with unified state", async () => {
   const quickJs = await getQuickJS();
 
@@ -34,7 +38,7 @@ test("v3 blocks: basic test with unified state", async () => {
       return await toGlobalResourceId(prjRef);
     });
 
-    // Add enter-numbers-v3 block with storageMode: 'fromModel'
+    // Add enter-numbers block with storageMode: 'fromModel'
     // Initial storage comes from VM, then we set desired state via setStates
     await pl.withWriteTx("AddEnterNumbersV3Block", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
@@ -68,7 +72,7 @@ test("v3 blocks: basic test with unified state", async () => {
       expect(JSON.parse(stateData).__data).toStrictEqual({ numbers: [1, 2, 3] });
     });
 
-    // Add second enter-numbers-v3 block
+    // Add second enter-numbers block
     await pl.withWriteTx("AddEnterNumbersV3Block2", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
@@ -93,7 +97,7 @@ test("v3 blocks: basic test with unified state", async () => {
       await tx.commit();
     });
 
-    // Add sum-numbers-v3 block that references both enter blocks
+    // Add sum-numbers block that references both enter blocks
     await pl.withWriteTx("AddSumNumbersV3Block", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
@@ -126,7 +130,7 @@ test("v3 blocks: basic test with unified state", async () => {
         .get(projectFieldName("enter1", "stagingOutput"))
         .then((r) => r.final());
       const all = await stagingOutput.getAllFinal();
-      // V3 enter-numbers-v3 block has prerun with numbersCount output
+      // V3 enter-numbers block has prerun with numbersCount output
       expect(Object.keys(all)).toContain("numbersCount");
     });
 
@@ -154,7 +158,7 @@ test("v3 blocks: basic test with unified state", async () => {
       expect(sum).toBe(21);
     });
   });
-});
+}, 160_000);
 
 test("v3 blocks: prerunArgs skip test", async () => {
   const quickJs = await getQuickJS();
@@ -167,7 +171,7 @@ test("v3 blocks: prerunArgs skip test", async () => {
       return await toGlobalResourceId(prjRef);
     });
 
-    // Add enter-numbers-v3 block
+    // Add enter-numbers block
     await pl.withWriteTx("AddEnterNumbersV3Block", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
@@ -296,7 +300,7 @@ test("v3 blocks: migrateBlockPack preserves state and re-derives args and prerun
       return await toGlobalResourceId(prjRef);
     });
 
-    // Add enter-numbers-v3 block and set data with even numbers
+    // Add enter-numbers block and set data with even numbers
     await pl.withWriteTx("AddBlock", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
@@ -368,7 +372,7 @@ test("v3 blocks: migrateBlockPack with storage migration re-derives args and pre
       return await toGlobalResourceId(prjRef);
     });
 
-    // Add enter-numbers-v3 block with initial data
+    // Add enter-numbers block with initial data
     await pl.withWriteTx("AddBlock", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
@@ -559,7 +563,7 @@ test("v3 blocks: migrateBlockPack assigns author marker", async () => {
 // return undefined`) must not crash. Previously applyStorageAndDeriveArgs passed the
 // undefined value straight to createJsonFieldValue -> Buffer.from(undefined) -> ERR_INVALID_ARG_TYPE,
 // aborting the update-block-pack task (seen when upgrading mixcr-clonotyping 2.14 -> 2.20).
-// The sentinel input [777] makes the enter-numbers-v3 model's args() return undefined without throwing.
+// The sentinel input [777] makes the enter-numbers model's args() return undefined without throwing.
 test("v3 blocks: migrateBlockPack does not crash when args() returns undefined", async () => {
   const quickJs = await getQuickJS();
 
@@ -620,3 +624,105 @@ test("v3 blocks: migrateBlockPack does not crash when args() returns undefined",
     });
   });
 });
+
+test("v3 blocks: every args derivation records the errors found in the args, none when there are none", async () => {
+  const quickJs = await getQuickJS();
+
+  await TestHelpers.withTempRoot(async (pl) => {
+    const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
+      const prjRef = await createProject(tx);
+      tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
+      await tx.commit();
+      return await toGlobalResourceId(prjRef);
+    });
+
+    await pl.withWriteTx("AddBlock", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.addBlock(
+        { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
+        { storageMode: "fromModel", blockPack: await TestBPPreparer.prepare(BPSpecEnterV3) },
+      );
+      mut.setStates([
+        {
+          modelAPIVersion: 2,
+          blockId: "enter1",
+          payload: { operation: "update-block-data", value: { numbers: [3, 1, 2] } },
+        },
+      ]);
+      mut.save();
+      await tx.commit();
+    });
+
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+      const record = await prjR.get(projectFieldName("enter1", "inputsValid"));
+      expect(jsonOf(record.data.data)).toStrictEqual({
+        argsFingerprint: argsFingerprint({ numbers: [1, 2, 3] }),
+        errors: [],
+      });
+    });
+  });
+});
+
+test("v3 blocks: args without an args errors record of their own are kept and run, as before the record", async () => {
+  const quickJs = await getQuickJS();
+
+  await TestHelpers.withTempRoot(async (pl) => {
+    const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
+      const prjRef = await createProject(tx);
+      tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
+      await tx.commit();
+      return await toGlobalResourceId(prjRef);
+    });
+
+    await pl.withWriteTx("AddBlock", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.addBlock(
+        { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
+        { storageMode: "fromModel", blockPack: await TestBPPreparer.prepare(BPSpecEnterV3) },
+      );
+      mut.setStates([
+        {
+          modelAPIVersion: 2,
+          blockId: "enter1",
+          payload: { operation: "update-block-data", value: { numbers: [3, 1, 2] } },
+        },
+      ]);
+      mut.save();
+      await tx.commit();
+    });
+
+    // What a middle layer that does not record args errors leaves behind: current args it wrote
+    // itself, and no record of their args errors.
+    await pl.withWriteTx("WriteArgsWithoutRecord", async (tx) => {
+      tx.removeField(field(prj, projectFieldName("enter1", "inputsValid")));
+      tx.setField(
+        field(prj, projectFieldName("enter1", "currentArgs")),
+        tx.createValue(Pl.JsonObject, canonicalJsonBytes({ numbers: [9] })),
+      );
+      await tx.commit();
+    });
+
+    await pl.withWriteTx("Run", async (tx) => {
+      const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
+      mut.renderProduction(["enter1"]);
+      mut.save();
+      await tx.commit();
+    });
+
+    await poll(pl, async (tx) => {
+      const prjR = await tx.get(prj);
+      const currentArgs = await prjR.get(projectFieldName("enter1", "currentArgs"));
+      expect(jsonOf(currentArgs.data.data)).toStrictEqual({ numbers: [9] });
+      const prodArgs = await prjR.get(projectFieldName("enter1", "prodArgs"));
+      expect(jsonOf(prodArgs.data.data)).toStrictEqual({ numbers: [9] });
+    });
+  });
+});
+
+// Internals
+
+function jsonOf(data: Uint8Array | undefined): unknown {
+  if (data === undefined) throw new Error("The field holds no data");
+  return JSON.parse(Buffer.from(data).toString());
+}

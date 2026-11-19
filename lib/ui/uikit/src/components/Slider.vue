@@ -146,26 +146,43 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
 </script>
 
 <template>
-  <div :class="props.disabled ? 'ui-slider__disabled' : undefined" class="ui-slider__envelope">
+  <div
+    data-testid="pl-slider"
+    :class="props.disabled ? 'ui-slider__disabled' : undefined"
+    class="ui-slider__envelope"
+  >
     <div :class="`ui-slider__mode-${props.mode}`" class="ui-slider">
       <div class="ui-slider__wrapper">
         <div class="ui-slider__label-section">
-          <label v-if="label" class="text-s">
+          <label v-if="label" data-testid="pl-slider-label" class="text-s">
             <span>{{ label }}</span>
-            <PlTooltip v-if="slots.tooltip" class="info" position="top">
+            <PlTooltip
+              v-if="slots.tooltip"
+              data-testid="pl-slider-tooltip"
+              class="info"
+              position="top"
+            >
               <template #tooltip>
                 <slot name="tooltip" />
               </template>
             </PlTooltip>
           </label>
-          <div v-if="props.mode === 'text'" class="ui-slider__value-static text-s">
+          <div
+            v-if="props.mode === 'text'"
+            data-testid="pl-slider-value"
+            class="ui-slider__value-static text-s"
+          >
             {{ realtimeVal }}{{ measure }}
           </div>
         </div>
         <div class="ui-slider__base">
           <div class="ui-slider__container">
-            <div ref="barRef" class="ui-slider__bar">
-              <div class="ui-slider__progress" :style="progressStyle" />
+            <div ref="barRef" data-testid="pl-slider-bar" class="ui-slider__bar">
+              <div
+                data-testid="pl-slider-progress"
+                class="ui-slider__progress"
+                :style="progressStyle"
+              />
             </div>
           </div>
           <div class="ui-slider__container ui-slider__container-thumb">
@@ -173,12 +190,14 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
               <div
                 v-for="(item, index) in breakpointsRef"
                 :key="index"
+                data-testid="pl-slider-step"
                 :style="{ right: `${item}%` }"
                 class="ui-slider__thumb-step"
               />
             </template>
             <div
               ref="thumbRef"
+              data-testid="pl-slider-thumb"
               tabindex="0"
               class="ui-slider__thumb ui-slider__thumb-active"
               :style="thumbStyle"
@@ -193,6 +212,7 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
       <div class="ui-slider__input-wrapper d-flex">
         <input
           v-if="props.mode === 'input'"
+          data-testid="pl-slider-input"
           :value="realtimeVal"
           class="ui-slider__value text-s"
           @change="updateModelValue($event)"
@@ -202,7 +222,7 @@ function handleKeyPress(e: { code: string; preventDefault(): void }) {
     <!-- <div v-if="props.helper" class="ui-slider__helper">
       {{ props.helper }}
     </div> -->
-    <div v-if="error" class="ui-slider__error">
+    <div v-if="error" data-testid="pl-slider-error" class="ui-slider__error">
       {{ error }}
     </div>
   </div>

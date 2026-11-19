@@ -6,7 +6,9 @@ import { test, expect } from "vitest";
 import { isTimeoutOrCancelError } from "./errors";
 import { Aborted } from "@milaboratories/ts-helpers";
 
-/** Cached root signature — fetched once, shared across tests. */
+/** Cached root signature — fetched once, shared across tests. The signature is bound to the
+ * session that minted it, so a test that sends it must open its transaction on a client of
+ * this same session; another one is rejected with "signature authentication failed". */
 let cachedRootSig: Uint8Array | undefined;
 
 async function getRootSignature(): Promise<Uint8Array> {
@@ -158,6 +160,9 @@ test("check timeout error type (active)", async () => {
             resourceId: id,
             loadFields: false,
             resourceSignature,
+            showSoftDeletes: false,
+            // Required bytes field: undefined fails serialization and kills the tx stream.
+            changedSinceToken: new Uint8Array(0),
           },
         },
         false,
@@ -232,6 +237,9 @@ test("check is abort error (active)", async () => {
             resourceId: id,
             loadFields: false,
             resourceSignature,
+            showSoftDeletes: false,
+            // Required bytes field: undefined fails serialization and kills the tx stream.
+            changedSinceToken: new Uint8Array(0),
           },
         },
         false,

@@ -3,14 +3,16 @@
 self := import("@platforma-sdk/workflow-tengo:tpl")
 smart := import("@platforma-sdk/workflow-tengo:smart")
 exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
 
 self.defineOutputs(["main"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
 
 self.body(func(inputs) {
 	run := exec.builder().
 		cpu(1).ram("50Mi").
-		cmd("/usr/bin/env").
-		arg("bash").
+		software(shellSw).
 		arg("-c").
 		arg("echo Hello from bash").
 		saveStdoutStream().

@@ -22,7 +22,6 @@ export {
   getPluginData,
 } from "./block_storage";
 export * from "./block_storage_facade";
-export * from "./block_model_legacy";
 export { BlockModelV3 } from "./block_model";
 export type { PluginRecord, ParamsInput } from "./block_model";
 export { DataModel, DataModelBuilder } from "./block_migrations";
@@ -47,7 +46,6 @@ export * from "./pframe";
 export * from "./labels";
 export * from "./columns";
 export * from "./platforma";
-export * from "./ref_util";
 export * from "./render";
 export * from "./version";
 export * from "./raw_globals";

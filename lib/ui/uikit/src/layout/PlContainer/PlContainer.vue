@@ -35,6 +35,7 @@ const style = computed(() => ({
     :loading="loading"
     :loading-text="loadingText"
     class="pl-container pl-layout-component"
+    data-testid="pl-container"
     :style="style"
   >
     <slot />

@@ -8,7 +8,7 @@ import {
   isColumnFilteredKey,
 } from "@milaboratories/pl-model-common";
 import type { GlobalCfgRenderCtx } from "../../render/internal";
-import { ColumnLazyImpl } from "../column_lazy";
+import { DataColumn } from "../data_column";
 import { ColumnDiscoveredRecipe } from "./column_discovered_recipe";
 import { ColumnFilteredRecipe } from "./column_filtered_recipe";
 import { ColumnOverriddenRecipe } from "./column_overrided_recipe";
@@ -19,7 +19,6 @@ import type {
 } from "./types";
 
 export type { ColumnFieldStatus, ColumnRecipeId, ColumnResolutionStatus, SpecQuery } from "./types";
-export { ColumnAbsentError } from "../column_lazy";
 export { ColumnDiscoveredRecipe } from "./column_discovered_recipe";
 export { ColumnFilteredRecipe } from "./column_filtered_recipe";
 export { ColumnOverriddenRecipe } from "./column_overrided_recipe";
@@ -38,7 +37,7 @@ export interface ColumnRecipe<
  * concrete recipe variant based on the id's encoding and recurses on
  * wrappers' inner `source`:
  *
- *   - bare {@link PObjectId} (non-JSON)               → `ColumnLazy.fromId`
+ *   - bare {@link PObjectId} (non-JSON)               → `DataColumnRecipe.fromId`
  *   - `ColumnDiscoveredKey`                          → {@link ColumnDiscoveredRecipe}
  *   - `ColumnOverriddenKey { source, specOverrides }` → recurse on `source`,
  *                                                       then {@link ColumnOverriddenRecipe.wrap}
@@ -56,7 +55,7 @@ function ColumnRecipeBuild(
   const parsed = parseColumnIdSafely(id);
 
   if (isPObjectKey(parsed)) {
-    return ColumnLazyImpl.fromId(id as PObjectId, opts);
+    return DataColumn.fromId(id as PObjectId, opts);
   }
 
   if (isColumnDiscoveredKey(parsed)) {
@@ -90,15 +89,15 @@ function ColumnRecipeBuild(
  * Resolution status counterpart to {@link ColumnRecipeBuild}. Dispatches on
  * the parsed id shape to the matching `getStatusBy*` static — never
  * constructs the recipe. Use this at boundaries (resolver, filter/sort
- * targets) to throw early on `absent` instead of silently producing an empty
- * recipe via {@link ColumnRecipeBuild}.
+ * targets) to tell an `absent` column from a `resolving` one: the recipe
+ * factory returns `undefined` for both.
  */
 function ColumnRecipeGetStatus(
   id: ColumnUniversalId,
   opts: { ctx?: GlobalCfgRenderCtx } = {},
 ): ColumnResolutionStatus {
   const parsed = parseColumnIdSafely(id);
-  if (isPObjectKey(parsed)) return ColumnLazyImpl.getStatusById(id as PObjectId, opts);
+  if (isPObjectKey(parsed)) return DataColumn.getStatusById(id as PObjectId, opts);
   if (isColumnDiscoveredKey(parsed)) return ColumnDiscoveredRecipe.getStatusByKey(parsed, opts);
   if (isColumnOverriddenKey(parsed)) return ColumnOverriddenRecipe.getStatusByKey(parsed, opts);
   if (isColumnFilteredKey(parsed)) return ColumnFilteredRecipe.getStatusByKey(parsed, opts);
@@ -110,18 +109,3 @@ export const ColumnRecipe: typeof ColumnRecipeBuild & {
 } = Object.assign(ColumnRecipeBuild, {
   getStatus: ColumnRecipeGetStatus,
 });
-
-/**
- * Type-guard for any recipe class — leaf {@link ColumnLazyImpl} or any of the
- * wrapper recipes ({@link ColumnDiscoveredRecipe}, {@link ColumnFilteredRecipe},
- * {@link ColumnOverriddenRecipe}). Use when a value may be a raw id, a `PColumn`,
- * or a recipe and you want to branch on the recipe case.
- */
-export function isColumnRecipe(value: unknown): value is ColumnRecipe {
-  return (
-    value instanceof ColumnLazyImpl ||
-    value instanceof ColumnDiscoveredRecipe ||
-    value instanceof ColumnFilteredRecipe ||
-    value instanceof ColumnOverriddenRecipe
-  );
-}

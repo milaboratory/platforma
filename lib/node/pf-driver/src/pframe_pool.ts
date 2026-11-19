@@ -16,7 +16,7 @@ import {
 import { hashJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
 import { RefCountPoolBase, type PoolEntry } from "@milaboratories/helpers";
 import { PFrameFactory } from "@milaboratories/pframes-rs-node";
-import { createPFrame as createPFrameSpec } from "@milaboratories/pframes-rs-wasm";
+import { createPFrame as createPFrameSpec, type PFrame } from "@milaboratories/pf-spec";
 import { mapValues } from "es-toolkit";
 import { logPFrames } from "./logging";
 
@@ -37,7 +37,7 @@ export class PFrameHolder<TreeEntry extends JsonSerializable> implements Disposa
    * for spec-side operations: column discovery, selector resolution,
    * legacy-query lowering.
    */
-  public readonly pFrameSpec: PFrameInternal.PFrameWasmV3;
+  public readonly pFrameSpec: PFrame;
   public readonly columnSpecs: Readonly<Record<PObjectId, PColumnSpec>>;
   private readonly abortController = new AbortController();
 

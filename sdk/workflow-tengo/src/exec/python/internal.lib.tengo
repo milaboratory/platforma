@@ -5,6 +5,11 @@ desc := import(":exec.descriptor")
 pythonVenvInputSchema := {
 	"toolset": "string",
 	"dependencies": {"any": validation.reference},
+
+	// Name each dependency carries as a file in the software package, keyed the same way as
+	// 'dependencies'. The venv saves the spec files under these names, so the names their authors
+	// gave them survive into the environment.
+	"dependencyFileNames": {"any": "string"},
 	// software: validation.reference,
 
 	"pythonDescriptor": desc.runEnvScheme,

@@ -179,6 +179,23 @@ describe("PlDatasetSelector", () => {
     wrapper.unmount();
   });
 
+  it("shows a stored selection whose requireEnrichments flag differs from the options'", async () => {
+    // Options carry the flag (datasetA); the stored ref was saved without it.
+    const storedWithoutFlag = createPlRef("1", "out-a");
+    const wrapper = mount(PlDatasetSelector, {
+      props: {
+        modelValue: selection(storedWithoutFlag, filterA1),
+        options: optionsWithFilters,
+      },
+      attachTo: document.body,
+    });
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Top 1000");
+    expect(wrapper.emitted("update:modelValue")).toBeUndefined();
+    wrapper.unmount();
+  });
+
   it("does not emit on mount when a value is provided", async () => {
     const wrapper = mount(PlDatasetSelector, {
       props: {

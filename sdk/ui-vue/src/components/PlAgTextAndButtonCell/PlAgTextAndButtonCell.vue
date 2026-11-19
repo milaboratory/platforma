@@ -54,11 +54,12 @@ function triggerRowDoubleClick() {
 }
 </script>
 <template>
-  <div class="pl-ag-grid-open-cell d-flex">
-    <div class="pl-ag-grid-open-cell__value">
+  <div data-testid="pl-ag-text-and-button-cell" class="pl-ag-grid-open-cell d-flex">
+    <div data-testid="pl-ag-text-and-button-cell-value" class="pl-ag-grid-open-cell__value">
       {{ params.value }}
     </div>
     <div
+      data-testid="pl-ag-text-and-button-cell-button"
       class="pl-ag-grid-open-cell__activator text-caps11 align-center"
       @click.stop="triggerRowDoubleClick"
     >

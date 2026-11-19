@@ -1,5 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, test } from "vitest";
 import canonicalize from "canonicalize";
+import type { ColumnUniversalId } from "@milaboratories/pl-model-common";
+import {
+  canonicalizeJson,
+  createColumnDiscoveredId,
+  createColumnValueId,
+  createGlobalPObjectId,
+} from "@milaboratories/pl-model-common";
 import { inferAllReferencedBlocks, outputRef } from "./args";
 
 describe("inferAllReferencedBlocks", () => {
@@ -131,5 +138,61 @@ describe("inferAllReferencedBlocks", () => {
     });
 
     expect(result.upstreams.size).toBe(0);
+  });
+});
+
+test("a block id in a map KEY is an upstream too", () => {
+  // A discovered column's `queriesQualifications` is `Record<PObjectId, …>`, so the id sits in
+  // the key. Walking values only lost that edge: the block depended on an upstream the graph
+  // never knew about, and the loss was invisible because the rest of the id parsed fine.
+  const qual = [{ axis: { name: "sampleId" }, contextDomain: {} }];
+  const discovered = createColumnDiscoveredId({
+    column: canonicalizeJson(outputRef("A", "clonotypes")) as ColumnUniversalId,
+    path: [
+      {
+        type: "linker",
+        column: canonicalizeJson(outputRef("B", "cell-to-clone")) as ColumnUniversalId,
+      },
+    ],
+    queriesQualifications: {
+      [canonicalizeJson(outputRef("D", "anchor")) as ColumnUniversalId]: qual,
+    },
+  });
+
+  const result = inferAllReferencedBlocks({ anchor: discovered });
+
+  expect([...result.upstreams].sort()).toEqual(["A", "B", "D"]);
+});
+
+describe("a column value id names its producer as an upstream", () => {
+  const value = createColumnValueId({
+    column: createGlobalPObjectId("samples", "metadata.condition"),
+    value: "treated",
+  });
+
+  test("as a value", () => {
+    const result = inferAllReferencedBlocks({ target: value });
+
+    expect(result.upstreams).toEqual(new Set(["samples"]));
+    expect(result.missingReferences).toBe(false);
+  });
+
+  test("as a map key", () => {
+    const result = inferAllReferencedBlocks({ ranks: { [value]: 1 } });
+
+    expect(result.upstreams).toEqual(new Set(["samples"]));
+  });
+
+  test("under one extra stringify pass", () => {
+    const result = inferAllReferencedBlocks({ blob: JSON.stringify(value) });
+
+    expect(result.upstreams).toEqual(new Set(["samples"]));
+  });
+
+  test("outside the allowed set it is a missing reference", () => {
+    const result = inferAllReferencedBlocks({ target: value }, new Set(["other"]));
+
+    expect(result.upstreams.size).toBe(0);
+    expect(result.missingReferences).toBe(true);
   });
 });

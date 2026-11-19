@@ -1,4 +1,5 @@
 //tengo:hash_override 6FB763E3-AB0C-4676-8F74-C7E23069DCCF
+// We need hash override to prevent block recalculation. Changing it will force all block recalculation.
 
 /**
  * Creates and fill a workdir, runs a command on it
@@ -32,7 +33,8 @@ self.defineOutputs(
 	"fileSets",
 	"fileSetsContent",
 	"progress",
-	"fileStreams",
+	"stdoutStream",
+	"stderrStream",
 	"wdProcessors"
 )
 
@@ -81,7 +83,8 @@ inputSchema := {
 		queue: "string",
 		"cpu,?": "number",
 		"ram,?": ["or", "number", "string"],
-		"gpuMemory,?": "string"
+		"gpuMemory,?": "string",
+		"scratchFreeSpace,?": ["or", "number", "string"]
 	}
 }
 
@@ -97,6 +100,7 @@ inputSchema := {
 inputSchema[execConstants.META_INPUT_MEM_FORMULA + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_CPU_FORMULA + ",?"] = "any"
 inputSchema[execConstants.META_INPUT_GPU_FORMULA + ",?"] = "any"
+inputSchema[execConstants.META_INPUT_SCRATCH_FORMULA + ",?"] = "any"
 inputSchema[execConstants.REGULAR_INPUT_LINE_COUNT + ",?"] = "any"
 self.validateInputs(inputSchema)
 
@@ -120,7 +124,9 @@ self.body(func(inputs) {
 	memFormula := inputs[execConstants.META_INPUT_MEM_FORMULA]
 	cpuFormula := inputs[execConstants.META_INPUT_CPU_FORMULA]
 	gpuFormula := inputs[execConstants.META_INPUT_GPU_FORMULA]
-	if !is_undefined(memFormula) || !is_undefined(cpuFormula) || !is_undefined(gpuFormula) {
+	scratchFormula := inputs[execConstants.META_INPUT_SCRATCH_FORMULA]
+	if !is_undefined(memFormula) || !is_undefined(cpuFormula) ||
+		!is_undefined(gpuFormula) || !is_undefined(scratchFormula) {
 		fileRefs := inputs.filesToAdd
 		lineCountMap := inputs[execConstants.REGULAR_INPUT_LINE_COUNT]
 		resolver := {
@@ -160,6 +166,9 @@ self.body(func(inputs) {
 			// VRAM bytes -> SizeUnit string (the quota's gpuMemory is a size string,
 			// parsed identically to ram). A positive integer is asserted, same as ram.
 			quota.gpuMemory = string(execFormula.evaluateResource(gpuFormula, resolver, "gpuMemory")) + "b"
+		}
+		if !is_undefined(scratchFormula) {
+			quota.scratchFreeSpace = string(execFormula.evaluateScratch(scratchFormula, resolver)) + "b"
 		}
 	}
 
@@ -209,7 +218,8 @@ self.body(func(inputs) {
 		filesContent: execImpl.output("filesContent"),
 		fileSets: execImpl.output("fileSets"),
 		fileSetsContent: execImpl.output("fileSetsContent"),
-		fileStreams: execImpl.output("fileStreams"),
+		stdoutStream: execImpl.output("stdoutStream"),
+		stderrStream: execImpl.output("stderrStream"),
 		wdProcessors: execImpl.output("wdProcessors"),
 		progress: execImpl.output("progress")
 	}

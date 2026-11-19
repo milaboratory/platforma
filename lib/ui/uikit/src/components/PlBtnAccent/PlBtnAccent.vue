@@ -41,7 +41,7 @@ const props = defineProps<{
 </script>
 
 <template>
-  <BtnBase class="pl-btn-accent" v-bind="props">
+  <BtnBase data-testid="pl-btn-accent" class="pl-btn-accent" v-bind="props">
     <slot />
   </BtnBase>
 </template>

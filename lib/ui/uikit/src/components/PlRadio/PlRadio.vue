@@ -25,9 +25,16 @@ const model = inject<typeof standaloneModel>(radioGroupModelKey, standaloneModel
 </script>
 
 <template>
-  <label :class="$style.container">
-    <input v-model="model" :class="$style.input" type="radio" :name v-bind="props" />
-    <span :class="$style.label"><slot /></span>
+  <label :class="$style.container" data-testid="pl-radio">
+    <input
+      v-model="model"
+      :class="$style.input"
+      type="radio"
+      :name
+      data-testid="pl-radio-input"
+      v-bind="props"
+    />
+    <span :class="$style.label" data-testid="pl-radio-label"><slot /></span>
   </label>
 </template>
 

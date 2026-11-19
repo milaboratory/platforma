@@ -34,6 +34,8 @@ export function isPermissionDenied(err: unknown, nested: boolean = false): boole
   if ((err as any).name == "RpcError" && (err as any).code == "PERMISSION_DENIED") return true;
   if ((err as any).name == "RESTError" && (err as any).status.code == Code.PERMISSION_DENIED)
     return true;
+  // PlError (e.g. UnrecoverablePlError from a failed streaming tx) carries the status code numerically.
+  if (err instanceof PlError && err.status?.code === Code.PERMISSION_DENIED) return true;
   if ((err as any).cause !== undefined && !nested)
     return isPermissionDenied((err as any).cause, true);
   return false;
@@ -80,6 +82,13 @@ export function isTimeoutOrCancelError(err: unknown, nested: boolean = false): b
   if ((err as any).cause !== undefined && !nested)
     return isTimeoutOrCancelError((err as any).cause, true);
   return false;
+}
+
+/** Failures worth another attempt on an idempotent call: the peer was unreachable, or the
+ * deadline elapsed. Everything else (auth, permission, not-found, unimplemented) is a real
+ * answer from the server, and retrying it only wastes the caller's time. */
+export function isTransientCallFailure(err: unknown): boolean {
+  return isConnectionProblem(err) || isTimeoutError(err);
 }
 
 export function isUnimplementedError(err: unknown, nested: boolean = false): boolean {
@@ -145,6 +154,24 @@ export class PermissionDeniedError extends Error {
   name = "PermissionDeniedError";
   constructor(message: string) {
     super("PermissionDenied: " + message);
+  }
+}
+
+/**
+ * The backend requires client capabilities this client does not implement
+ * (`MaintenanceAPI.Ping.Response.required_capabilities`). The client is too old
+ * for this backend: the user must update it. Retrying does not help.
+ */
+export class ClientUpdateRequiredError extends Error {
+  name = "ClientUpdateRequiredError";
+  constructor(
+    public readonly missingCapabilities: readonly string[],
+    public readonly serverVersion: string,
+  ) {
+    super(
+      `ClientUpdateRequired: backend ${serverVersion} requires client capabilities ` +
+        `this client does not implement: ${missingCapabilities.join(", ")}. Update the client.`,
+    );
   }
 }
 

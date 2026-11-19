@@ -7,7 +7,7 @@ import {
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { deriveAllLabels, evaluateRules, type LabelableColumn } from "./utils";
 import type { ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
-import { ColumnLazy } from "../../../columns";
+import { DataColumn, type DataColumnRecipe } from "../../../columns";
 import {
   createTestCollectionDriver,
   type TestCollectionDriverHandle,
@@ -156,11 +156,11 @@ function gid(name: string): PObjectId {
   return createGlobalPObjectId("test-block", name);
 }
 
-function makeLazyColumn(name: string, spec: Partial<PColumnSpec> = {}): ColumnLazy {
+function makeLazyColumn(name: string, spec: Partial<PColumnSpec> = {}): DataColumnRecipe {
   const s = makeSpec({ axesSpec: [{ name: "id", type: "String" }], ...spec });
   const id = gid(name);
   driverHandle.register([{ id, spec: s }]);
-  return ColumnLazy.fromColumn({ id, spec: s, data: undefined as never });
+  return DataColumn.fromColumn({ id, spec: s, data: undefined as never });
 }
 
 describe("evaluateRules", () => {
@@ -205,6 +205,37 @@ describe("evaluateRules", () => {
 
     expect(result.get(gid("a"))?.priority).toBe(100);
     expect(result.get(gid("b"))?.priority).toBe(50);
+  });
+
+  test("a rule matching zero columns does not suppress the other rules", () => {
+    const rules: ColumnOrderRule[] = [
+      { match: { name: "^nothing-matches-this$" }, priority: 999 },
+      { match: { name: "^alpha$" }, priority: 100 },
+      { match: { name: "^beta$" }, priority: 50 },
+    ];
+    const columns = [makeLazyColumn("a", { name: "alpha" }), makeLazyColumn("b", { name: "beta" })];
+
+    const result = evaluateRules(rules, columns);
+
+    expect(result.get(gid("a"))?.priority).toBe(100);
+    expect(result.get(gid("b"))?.priority).toBe(50);
+    expect(result.size).toBe(2);
+  });
+
+  test("rules matching zero columns are skipped regardless of their position", () => {
+    const rules: ColumnVisibilityRule[] = [
+      { match: { name: "^ghost-a$" }, visibility: "hidden" },
+      { match: { name: "^note$" }, visibility: "hidden" },
+      { match: { name: "^ghost-b$" }, visibility: "hidden" },
+      { match: { name: "^score$" }, visibility: "optional" },
+      { match: { name: "^ghost-c$" }, visibility: "hidden" },
+    ];
+    const columns = [makeLazyColumn("n", { name: "note" }), makeLazyColumn("s", { name: "score" })];
+
+    const result = evaluateRules(rules, columns);
+
+    expect(result.get(gid("n"))?.visibility).toBe("hidden");
+    expect(result.get(gid("s"))?.visibility).toBe("optional");
   });
 
   test("dedupes columns by id before building spec frame (no duplicate-key crash)", () => {

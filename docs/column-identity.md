@@ -5,6 +5,10 @@ and the host (`pl-middle-layer`). Two distinct identities are involved in a
 table-rendering pipeline; mixing them up causes engine-level "column not
 found" errors and silent variant deduplication.
 
+For the consumer-facing surface built on these ids — `ColumnsCollection`,
+the recipe factories, the predicates — see
+[`column-access-api.md`](./column-access-api.md).
+
 ## The two identities
 
 ### Physical identity — `PObjectId`
@@ -50,6 +54,38 @@ Use it (and only it) everywhere else:
 - `derivedLabels` / `hiddenColumnIds` keys: variants of the same physical
   column have independent labels and independent hide/show state.
 
+#### One value of a column — `ColumnValueId`
+
+`ColumnValueId` is the canonical JSON of
+`{__isColumnValue: true, column, value}`: one value of one column, picked
+by a block — a sample group, a condition level, an antigen. `column` is a
+`ColumnUniversalId` exactly as the block picked it (leaf, filtered,
+discovered or overridden); `value` is always a string — a value of a
+number column is its decimal string (`String(cell)`), so the same value
+picked from a number cell and from a text cell is the same id.
+
+It wraps a logical id but is not one: it is not a `ColumnUniversalId`
+form, and nothing that resolves columns accepts it.
+
+- Build it with `createColumnValueId({ column, value })` (or
+  `createColumnValueIds` for several values of one column); read it back
+  with `parseColumnValueId`; test a string with `isColumnValueId`.
+  Canonical form makes two ids of the same value equal strings, so ids
+  compare with `===` and work as map keys. Never assemble or compare the
+  string by hand.
+- The producer of a value is the leaf of `column` — none of the wrapper
+  forms change cell values. `columnProducer(id)` returns that leaf.
+- `collectColumnReferences(args)` counts a value id string as a reference
+  to its column carrying one picked value. Only the string form counts: an
+  object shaped like the key is ordinary data.
+- Template relocation (`remapColumnIdBlockIds`) rewrites the block ids
+  inside `column`; the value stays as it is.
+
+Definitions: `lib/model/common/src/drivers/pframe/spec/column_value.ts`,
+`lib/model/common/src/drivers/pframe/spec/column_references.ts`. Value
+pickers (`createColumnValueOptions`, `PlColumnValueDropdown`) are in
+[`column-access-api.md`](./column-access-api.md#value-pickers-createcolumnvalueoptions-plcolumnvaluedropdown).
+
 ### Crossing the boundary: `extractPObjectId`
 
 `extractPObjectId(id: ColumnUniversalId): PObjectId`
@@ -70,7 +106,7 @@ Every concrete `ColumnRecipe` must satisfy:
 2. `recipe.getQuery()` returns a `SpecQuery` whose terminal column leaf
    carries `recipe.id` — not the inner recipe's id, not the bare id.
 
-For leaf recipes (`ColumnLazyImpl`) this is trivial: `id` is the bare
+For leaf recipes (`DataColumnImpl`) this is trivial: `id` is the bare
 `PObjectId` and the query is `{type: "column", column: id}`.
 
 For wrapper recipes (Overridden / Filtered / Discovered) the inner recipe
@@ -126,8 +162,14 @@ the leaves is what makes that lookup succeed.
 - Type definitions: `lib/model/common/src/drivers/pframe/spec/ids.ts`,
   `lib/model/common/src/drivers/pframe/query/query_spec.ts`,
   `lib/model/common/src/drivers/pframe/table_common.ts`.
+- Column value ids: `lib/model/common/src/drivers/pframe/spec/column_value.ts`,
+  references in args: `lib/model/common/src/drivers/pframe/spec/column_references.ts`,
+  value pickers: `sdk/model/src/columns/column_values.ts`,
+  `sdk/model/src/pframe_utils/column_value_options.ts`,
+  `sdk/ui-vue/src/components/PlColumnValueDropdown/`,
+  workflow-side reader: `sdk/workflow-tengo/src/workflow/column-value.lib.tengo`.
 - Recipe implementations:
-  `sdk/model/src/columns/column_lazy.ts`,
+  `sdk/model/src/columns/data_column.ts`,
   `sdk/model/src/columns/column_recipes/column_overrided_recipe.ts`,
   `sdk/model/src/columns/column_recipes/column_filtered_recipe.ts`,
   `sdk/model/src/columns/column_recipes/column_discovered_recipe.ts`,

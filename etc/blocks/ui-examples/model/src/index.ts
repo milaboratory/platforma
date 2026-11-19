@@ -18,6 +18,7 @@ import {
   stringifyJson,
   ValueType,
 } from "@platforma-sdk/model";
+import { kind } from "@milaboratories/milaboratories.ui-examples.kind";
 
 /** Args that drive computation (workflow). Derived from the block data model. */
 export type BlockArgs = {
@@ -46,7 +47,11 @@ export type BlockData = BlockArgs & {
   }[];
 };
 
-const dataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
+// This block takes no init params (its kind declares `Record<string, never>`):
+// every `BlockData` field is either gesture-driven demo state or a
+// desktop-signed `ImportFileHandle` no template can pre-wire. So `init` ignores
+// params and returns the showcase defaults.
+const dataModel = new DataModelBuilder({ kind }).from<BlockData>("v1").init(() => ({
   numbers: [1, 2, 3, 4],
   handles: [],
   dataTableV2: {
@@ -58,7 +63,7 @@ const dataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
   datasets: [],
 }));
 
-export const platforma = BlockModelV3.create(dataModel)
+export const platforma = BlockModelV3.create({ dataModel, kind })
 
   .args<BlockArgs>((data) => {
     if (data.numbers.length === 5) {
@@ -70,6 +75,11 @@ export const platforma = BlockModelV3.create(dataModel)
 
     return { numbers: data.numbers, handles: data.handles };
   })
+
+  // Nothing to project: the kind takes no params. Every field of this showcase's data
+  // is either demo state a page mutates by gesture or a signed, session-local handle,
+  // and `numbers` is a fixture for the arg/error-state demos rather than configuration.
+  .templateParams(() => ({}))
 
   .output("numbers", (ctx) => ctx.outputs?.resolve("numbers")?.getDataAsJson<number[]>())
 

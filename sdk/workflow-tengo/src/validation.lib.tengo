@@ -2,11 +2,9 @@ ll := import(":ll")
 fmt := import("fmt")
 text := import("text")
 maps := import(":maps")
-enum := import("enum")
 smart := import(":smart")
 regexp := import(":regexp")
 
-json := import("json")
 
 //
 // Tools for implementing your own checks:
@@ -144,7 +142,8 @@ _parseTags := func(rule) {
 		if len(kAndV) == 1 {
 			tags[k] = true
 		} else {
-			tags[k] = kAndV[1]
+			// a value may itself contain "=", as a regex can
+			tags[k] = text.join(kAndV[1:], "=")
 		}
 	}
 

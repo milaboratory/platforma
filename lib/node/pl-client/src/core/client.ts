@@ -26,13 +26,14 @@ import type { Dispatcher } from "undici";
 import { LRUCache } from "lru-cache";
 import type { ResourceDataCacheRecord } from "./cache";
 import type { FinalResourceDataPredicate } from "./final";
-import { DefaultFinalResourceDataPredicate } from "./final";
+import { CacheFinality, TreeFinality } from "./final";
 import type { AllTxStat, TxStat } from "./stat";
 import { addStat, initialTxStat } from "./stat";
 import type { WireConnection } from "./wire";
 import { advisoryLock } from "./advisory_locks";
 import { plAddressToConfig } from "./config";
 import { UserResources } from "./user_resources";
+import type { UserDeletionReport } from "./user_resources";
 import type { BackendCapability } from "./capabilities";
 
 export type TxOps = PlCallOps & {
@@ -86,6 +87,7 @@ export class PlClient {
    *  init via the GetSessionInfo RPC. `null` for an anonymous (no-auth)
    *  connection — mirrors {@link authUser}. Read through {@link currentUserRole}. */
   private _currentUserRole: Role | null = null;
+  private _sessionCanListUsers: boolean = false;
 
   private _txCommittedStat: TxStat = initialTxStat();
   private _txConflictStat: TxStat = initialTxStat();
@@ -95,7 +97,9 @@ export class PlClient {
   // Caching
   //
 
-  /** This function determines whether resource data can be cached */
+  /** The default finality predicate of trees built on this client ({@link TreeFinality} unless
+   * given); a tree may override it, or keep its explicit roots non-final with
+   * `rootsNeverFinal`. The transaction resource cache always uses {@link CacheFinality}. */
   public readonly finalPredicate: FinalResourceDataPredicate;
 
   /** Resource data cache, to minimize redundant data rereading from remote db */
@@ -132,7 +136,7 @@ export class PlClient {
 
     this.txDelay = conf.txDelay;
     this.forceSync = conf.forceSync;
-    this.finalPredicate = ops.finalPredicate ?? DefaultFinalResourceDataPredicate;
+    this.finalPredicate = ops.finalPredicate ?? TreeFinality.predicate();
     this.resourceDataCache = new LRUCache({
       maxSize: conf.maxCacheBytes,
       sizeCalculation: (v) => (v.basicData.data?.length ?? 0) + 64,
@@ -145,6 +149,7 @@ export class PlClient {
           maxAttempts: conf.retryMaxAttempts,
           backoffMultiplier: conf.retryExponentialBackoffMultiplier,
           jitter: conf.retryJitter,
+          maxDelay: conf.retryMaxDelay,
         };
         break;
       case "linear":
@@ -154,6 +159,7 @@ export class PlClient {
           maxAttempts: conf.retryMaxAttempts,
           backoffStep: conf.retryLinearBackoffStep,
           jitter: conf.retryJitter,
+          maxDelay: conf.retryMaxDelay,
         };
         break;
       default:
@@ -185,6 +191,13 @@ export class PlClient {
     };
   }
 
+  /** Smoothed round-trip estimate in ms from ping timings, or undefined before the first
+   * ping. Exposed so latency-sensitive consumers (e.g. the tree-sync poll cadence) can scale
+   * their timing to the link instead of assuming a local server. */
+  public get rttEstimateMs(): number | undefined {
+    return this.ll.rttEstimateMs;
+  }
+
   public async ping(): Promise<MaintenanceAPI_Ping_Response> {
     return await this.ll.ping();
   }
@@ -196,6 +209,14 @@ export class PlClient {
   /** Lists the users known to the server (login only on the wire). See {@link LLPlClient.listUsers}. */
   public async listUsers(): Promise<AuthAPI_User[]> {
     return await this.ll.listUsers();
+  }
+
+  /**
+   * Deletes a user account and its root resource — with the root, everything still attached
+   * under it. Destructive and irreversible; see {@link UserResources.deleteUser}.
+   */
+  public async deleteUser(login: string): Promise<UserDeletionReport> {
+    return await this.userResources.deleteUser(login);
   }
 
   /**
@@ -216,6 +237,15 @@ export class PlClient {
     opts: { login?: string; createIfNotExists?: boolean } = {},
   ): Promise<SignedResourceId | undefined> {
     return this.userResources.getUserRoot(opts);
+  }
+
+  /**
+   * The resources of a type that are shared with the authenticated user, as signed ids. Matched by
+   * type name only, so a newer version of the type is still found.
+   * @throws if the backend does not implement ListUserResources, or on a REST connection.
+   */
+  public async listSharedResourcesByType(resourceTypeName: string): Promise<SignedResourceId[]> {
+    return await this.userResources.listSharedResourcesByType(resourceTypeName);
   }
 
   public get conf(): PlClientConfig {
@@ -260,6 +290,20 @@ export class PlClient {
   public get currentUserRole(): Role | null {
     this.checkInitialized();
     return this._currentUserRole;
+  }
+
+  /** Whether the authenticated user can list the users of the server ({@link listUsers}), resolved
+   *  once during init. Use it to select the recipient picker UI before a call to listUsers.
+   *    - `userListing:v2` backend: the session's `can_list_users` (the server decides per role).
+   *    - `userListing:v1` only (older backend): `true` — all roles can list users there.
+   *    - no capability, anonymous connection, or REST wire protocol (ListUsers is gRPC-only): `false`.
+   *  Not a security boundary: listUsers still gets PERMISSION_DENIED if the server says no. */
+  public get canListUsers(): boolean {
+    this.checkInitialized();
+    if (this.userResources.authUser === null) return false;
+    if (this._ll!.wireProtocol !== "grpc") return false;
+    if (this._ll!.hasCapability("userListing:v2")) return this._sessionCanListUsers;
+    return this._ll!.hasCapability("userListing:v1");
   }
 
   /** Login of the authenticated user, or `null` for an anonymous connection. */
@@ -324,11 +368,17 @@ export class PlClient {
       userRoot = impersonatedRoot;
     }
 
-    // Resolve the caller's role once; only the publicGrants-gated share-with-everybody check uses it,
-    // so skip it for anonymous connections or when publicGrants:v1 is absent. Use _ll.hasCapability,
-    // not this.hasCapability: we are mid-init, so this.checkInitialized() would throw.
-    if (this.userResources.authUser !== null && this._ll.hasCapability("publicGrants:v1")) {
-      this._currentUserRole = (await this._ll.getSessionInfo()).role;
+    // Resolve the caller's session info once. The publicGrants-gated share-with-everybody check uses
+    // the role; the userListing:v2 recipient picker uses can_list_users. Skip it for anonymous
+    // connections or when neither capability is present. Use _ll.hasCapability, not
+    // this.hasCapability: we are mid-init, so this.checkInitialized() would throw.
+    if (
+      this.userResources.authUser !== null &&
+      (this._ll.hasCapability("publicGrants:v1") || this._ll.hasCapability("userListing:v2"))
+    ) {
+      const sessionInfo = await this._ll.getSessionInfo();
+      this._currentUserRole = sessionInfo.role;
+      this._sessionCanListUsers = sessionInfo.canListUsers;
     }
 
     if (this.conf.alternativeRoot === undefined) {
@@ -379,7 +429,7 @@ export class PlClient {
     let retryState = createRetryState(ops?.retryOptions ?? this.defaultRetryOptions);
 
     while (true) {
-      const release = ops?.lockId ? await advisoryLock(ops.lockId) : () => {};
+      const release = ops?.lockId ? await advisoryLock(ops.lockId, ops.abortSignal) : () => {};
 
       try {
         // opening low-level tx
@@ -390,8 +440,10 @@ export class PlClient {
           name,
           writable,
           clientRoot,
-          this.finalPredicate,
+          CacheFinality.predicate(),
           this.resourceDataCache,
+          false,
+          (capability) => this.ll.hasCapability(capability),
         );
 
         // Auto-set default color proof from the client root's signature.
@@ -413,16 +465,16 @@ export class PlClient {
           // collecting stat
           this._txCommittedStat = addStat(this._txCommittedStat, tx.stat);
           ok = true;
-        } catch (e: unknown) {
+        } catch (error: unknown) {
           // the only recoverable
-          if (e instanceof TxCommitConflict) {
+          if (error instanceof TxCommitConflict) {
             // ignoring
             // collecting stat
             this._txConflictStat = addStat(this._txConflictStat, tx.stat);
           } else {
             // collecting stat
             this._txErrorStat = addStat(this._txErrorStat, tx.stat);
-            throw e;
+            throw error;
           }
         } finally {
           // close underlying grpc stream, if not yet done

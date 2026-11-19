@@ -9,3 +9,6 @@
 
 /** Glob (module-relative) for co-located unit tests in a scope's `src/`. */
 export const COLOCATED_TEST_GLOB = "src/**/*.test.ts";
+
+/** Glob (module-relative) for Tengo unit tests, run by `pl-tengo test`. */
+export const TENGO_TEST_GLOB = "src/**/*.test.tengo";

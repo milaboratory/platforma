@@ -6,13 +6,14 @@ import {
   PlDataTableFilters,
   createPlDataTableStateV2,
   createPlDataTableV3,
-  deriveAxisValuesLabels,
-  expandByPartition,
-  isColumnLazy,
+  splitByAxes,
+  hasSingleDataColumn,
+  hasReachableData,
   type InferHrefType,
   type InferOutputsType,
   type PlDataTableStateV2,
 } from "@platforma-sdk/model";
+import { kind } from "@milaboratories/milaboratories.test-block-table.kind";
 
 export type BlockData = {
   label: string;
@@ -20,16 +21,20 @@ export type BlockData = {
   tableSplitState: PlDataTableStateV2;
 };
 
-const blockDataModel = new DataModelBuilder().from<BlockData>("v1").init(() => ({
-  label: "Table Test",
+// `params` is optional — a block may be created without a template supplying
+// them — so every kind-declared field keeps a fallback default.
+const blockDataModel = new DataModelBuilder({ kind }).from<BlockData>("v1").init(({ params }) => ({
+  label: params?.label ?? "Table Test",
   tableState: createPlDataTableStateV2(),
   tableSplitState: createPlDataTableStateV2(),
 }));
 
 export type BlockArgs = BlockData;
 
-export const platforma = BlockModelV3.create(blockDataModel)
+export const platforma = BlockModelV3.create({ dataModel: blockDataModel, kind })
   .args<BlockArgs>((data) => data)
+
+  .templateParams((data) => ({ label: data.label }))
 
   .sections(() => {
     return [
@@ -129,7 +134,7 @@ export const platforma = BlockModelV3.create(blockDataModel)
   .outputWithStatus("tableSplitV3", (ctx) => {
     const valueAnchor = { name: "value", axes: [{ name: "name" }] };
 
-    // Use only leaf (ColumnLazy) hits as primary. `discover` with anchors can
+    // Use only self-contained hits as primary. `discover` with anchors can
     // also surface multi-axis Discovered variants (e.g. count [group, name]
     // reached via linker_name_group_alt); those belong in secondary, not in
     // the join's primary side — mirrors what `discoverTableColumns` does
@@ -137,17 +142,15 @@ export const platforma = BlockModelV3.create(blockDataModel)
     const primary = ColumnsCollection()
       .discover({ anchors: { main: valueAnchor }, mode: "exact" })
       .getColumns()
-      .filter(isColumnLazy);
+      .filter(hasSingleDataColumn);
     if (primary.length === 0) return undefined;
 
     const countLeaves = ColumnsCollection()
       .filter({ include: { name: [{ type: "exact", value: "count" }] } })
       .getColumns()
-      .filter(isColumnLazy);
+      .filter(hasReachableData);
 
-    const splitRecipes = expandByPartition(countLeaves, [{ idx: 0 }], {
-      axisValuesLabels: deriveAxisValuesLabels(),
-    });
+    const splitRecipes = splitByAxes(countLeaves, [{ idx: 0 }]);
     if (splitRecipes === undefined) return undefined;
 
     const primaryIds = new Set<ColumnUniversalId>(primary.map((c) => c.id));

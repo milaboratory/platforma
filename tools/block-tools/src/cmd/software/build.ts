@@ -1,5 +1,10 @@
 import { Command, Option } from "commander";
-import { util, envs, createBuilder } from "@platforma-sdk/package-builder-lib";
+import {
+  util,
+  envs,
+  createBuilder,
+  assertDockerPushIntent,
+} from "@platforma-sdk/package-builder-lib";
 import { parseScenario, channels, variants, locations } from "./knobs";
 import { runBuild } from "./run-build";
 import {
@@ -143,6 +148,17 @@ export function softwareBuildCommand(): Command {
           enable: o.dockerAutopush,
           disable: o.dockerNoAutopush,
         });
+
+      // Only the bare (pl-pkg-parity) scenario derives its push from isPrivate; the
+      // target scenarios push on location=remote and never consult it.
+      if (scenario.kind === "bare") {
+        assertDockerPushIntent({
+          buildDocker,
+          pushDocker,
+          pushDisabledExplicitly: Boolean(o.dockerNoAutopush),
+          dockerPackageCount: core.selectedDockerPackages(o.packageId).length,
+        });
+      }
 
       await runBuild({
         core,

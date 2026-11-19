@@ -17,6 +17,7 @@ const data = reactive<{ typeToText: Record<PlStatusTagType, string> }>({
 <template>
   <div
     v-if="type"
+    data-testid="pl-status-tag"
     v-bind="$attrs"
     :class="{ [type.toLocaleLowerCase()]: true }"
     class="pl-status-tag text-caps11 d-flex align-center"

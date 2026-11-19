@@ -1,3 +1,5 @@
+import { globSync } from "node:fs";
+import { buildTsconfig } from "./buildTsconfig";
 import type { ConfigEnv, UserConfig } from "vite";
 import { mergeConfig } from "vite";
 import dts from "vite-plugin-dts";
@@ -7,7 +9,6 @@ import { createViteDevConfig } from "./createViteDevConfig";
 import { sanitizeVueOutputPlugin } from "./sanitizeVueOutputPlugin";
 
 // typescript ModuleResolutionKind constants (avoid importing typescript at runtime)
-const ModuleResolutionKind_NodeJs = 2;
 const ModuleResolutionKind_Bundler = 100;
 
 export function createViteLibConfig(configEnv: ConfigEnv): UserConfig {
@@ -20,12 +21,17 @@ export function createViteLibConfig(configEnv: ConfigEnv): UserConfig {
       : [
           libInjectCss(),
           dts({
+            // vite-plugin-dts >= 5 picks its program processor automatically, but its
+            // detector only scans two directory levels below the package root. Our SFCs
+            // live deeper (src/components/**), so the detector misses them, falls back to
+            // the plain TS processor and silently emits no *.vue.d.ts — while lib.d.ts
+            // still re-exports those .vue specifiers. Decide it ourselves.
+            tsconfigPath: buildTsconfig(),
+            processor: globSync("src/**/*.vue").length > 0 ? "vue" : "ts",
             compilerOptions: {
               declaration: true,
               declarationMap: true,
-              moduleResolution: useSources
-                ? ModuleResolutionKind_Bundler
-                : ModuleResolutionKind_NodeJs,
+              moduleResolution: ModuleResolutionKind_Bundler,
               customConditions: useSources ? ["sources"] : [],
             },
           }),

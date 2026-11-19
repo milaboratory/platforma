@@ -41,8 +41,8 @@ provide(radioGroupModelKey, model);
 </script>
 
 <template>
-  <fieldset :class="$style.container">
-    <legend :class="$style.label">
+  <fieldset :class="$style.container" data-testid="pl-radio-group">
+    <legend :class="$style.label" data-testid="pl-radio-group-label">
       <slot name="label" />
     </legend>
     <PlRadio
@@ -50,6 +50,7 @@ provide(radioGroupModelKey, model);
       :key="keyExtractor(option.value, i)"
       :value="option.value"
       :disabled="option.disabled"
+      data-testid="pl-radio-group-option"
     >
       {{ option.label }}
     </PlRadio>

@@ -1,0 +1,28 @@
+schema: template-v1
+blocks:
+  - id: eeeeeeee-0000-4000-8000-000000000005
+    kind: "@platforma-open/milaboratories.enter-numbers.kind@1.0.0"
+    params:
+      looksBoolean: "yes"
+      looksBooleanNo: "no"
+      looksBooleanOn: "on"
+      looksBooleanOff: "off"
+      looksBooleanY: "y"
+      looksBooleanN: "n"
+      looksSexagesimal: "1:30"
+      looksBooleanToo: "true"
+      looksNumeric: "1.0"
+      looksOctal: "0755"
+      looksNull: "null"
+      looksEmpty: ""
+      hasColon: "label: value"
+      startsWithAsterisk: "*anchor"
+      startsWithHash: "#not-a-comment"
+      startsWithDash: -dash
+      multiline: |-
+        first
+        second
+      unicode: 受容体 — αβ
+      long: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy
+      actuallyBoolean: true
+      actuallyNumeric: 1

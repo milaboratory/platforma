@@ -9,6 +9,7 @@ export function drawThreshold(svg: SVG, scales: Scales, options: ChartOptions) {
 
   svg
     .append("line")
+    .attr("data-testid", "pl-chart-histogram-threshold")
     .attr("x1", scales.x(threshold))
     .attr("x2", scales.x(threshold))
     .attr("y1", 0)

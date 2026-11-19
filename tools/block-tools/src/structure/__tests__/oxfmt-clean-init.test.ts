@@ -13,15 +13,16 @@ import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { simulateInit } from "../engine/testing";
+import { resolveToolBin } from "./tool-bin";
 import type { BlockVars } from "../engine/api";
 
-function oxfmtAvailable(): boolean {
-  const r = spawnSync("oxfmt", ["--help"], { encoding: "utf-8" });
-  return !r.error;
-}
-
 describe("oxfmt-clean init output (model + ui)", () => {
-  const available = oxfmtAvailable();
+  // Resolved from block-tools, which declares oxfmt as a dependency. See
+  // tool-bin.ts for why this does not go through PATH or node_modules/.bin —
+  // a bare `spawnSync("oxfmt")` probe reports it unavailable on Windows and
+  // silently skips this guard.
+  const oxfmt = resolveToolBin(import.meta.url, "oxfmt");
+  const available = oxfmt !== undefined;
 
   // Both files `ts-builder check` runs oxfmt on, per scope: package.json AND
   // tsconfig.json. tsconfig is the regression that motivated the
@@ -47,7 +48,7 @@ describe("oxfmt-clean init output (model + ui)", () => {
       for (const fileName of FILES) {
         const content = fs.read(`${scope}/${fileName}`);
         writeFileSync(path.join(root, scope, fileName), content);
-        const r = spawnSync("oxfmt", ["--check", path.join(scope, fileName)], {
+        const r = spawnSync(process.execPath, [oxfmt!, "--check", path.join(scope, fileName)], {
           cwd: root,
           encoding: "utf-8",
         });

@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/milaboratories.monetization-test",
-  "version": "1.4.66",
+  "version": "1.4.67",
   "files": [
     "dist",
     "block-pack"
@@ -24,6 +24,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.monetization-test.kind": "workspace:*",
     "@milaboratories/milaboratories.monetization-test.model": "workspace:*",
     "@milaboratories/milaboratories.monetization-test.ui": "workspace:*",
     "@milaboratories/milaboratories.monetization-test.workflow": "workspace:*",

@@ -4,7 +4,6 @@ render := import(":render")
 file := import(":file")
 ll := import(":ll")
 assets := import(":assets")
-json := import("json")
 
 // reference to the template doing nested super-partitioned export
 nestedTpl := assets.importTemplate(":pframes.export-single-pcolumn")

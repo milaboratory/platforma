@@ -11,28 +11,50 @@ import {
   ensureSignedResourceIdNotNull,
   field,
   isNotFoundError,
+  isPermissionDenied,
   isTimeoutOrCancelError,
+  isUnauthenticated,
+  parseSignedResourceId,
   Pl,
   resourceIdToString,
-  ResourceTypeName,
-  ResourceTypePrefix,
   treeFilter,
+  TreeFinality,
 } from "@milaboratories/pl-client";
+import { finalityStopRules } from "./finality_stop_rules";
 import type { ComputableStableDefined, ComputableValueOrErrors } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
 import { projectOverview } from "./project_overview";
+import { blockDependencies, blockDependents, labelBlockColumnLinks } from "./column_links";
 import type { BlockPackSpecAny } from "../model";
 import { randomUUID } from "node:crypto";
 import { withProject, withProjectAuthored } from "../mutator/project";
-import type { ExtendedResourceData, PruningFunction } from "@milaboratories/pl-tree";
-import { SynchronizedTreeState, treeDumpStats } from "@milaboratories/pl-tree";
+import type {
+  ExtendedResourceData,
+  PlTreeNodeAccessor,
+  PruningFunction,
+} from "@milaboratories/pl-tree";
+import {
+  SynchronizedTreeState,
+  treeDumpStats,
+  TreeStateUpdateError,
+} from "@milaboratories/pl-tree";
+import type { TreeSnapshotStore } from "./tree_snapshot_store";
 import { setTimeout } from "node:timers/promises";
 import { frontendData } from "./frontend_path";
 import type { NavigationState } from "@milaboratories/pl-model-common";
 import { getBlockParameters, blockOutputs } from "./block";
+import type { BlockActionContextMode, BlockActionContextNode } from "./block_action_context";
+import { readBlockActionContextTree } from "./block_action_context";
+import { getBlockPackInfo } from "./util";
+import { BlockStatusWatch } from "./block_status_tree";
+import type { BlockStatusSummary, BlockStatusTree } from "@milaboratories/pl-model-middle-layer";
 import type { FrontendData } from "../model/frontend";
 import type { ProjectId, ProjectStructure } from "../model/project_model";
-import { projectFieldName } from "../model/project_model";
+import {
+  projectFieldName,
+  ProjectStatusFieldPattern,
+  projectStatusFieldRegex,
+} from "../model/project_model";
 import {
   cachedDeserialize,
   notEmpty,
@@ -48,9 +70,10 @@ import type {
   BlockSettings,
   BlockStateInternalV3,
 } from "@milaboratories/pl-model-middle-layer";
+import type { ColumnLink } from "@milaboratories/pl-model-common";
 import { activeConfigs } from "./active_cfg";
 import { NavigationStates } from "./navigation_states";
-import { extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
+import { checkBlockFlag, extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
 import fs from "node:fs/promises";
 import canonicalize from "canonicalize";
 import type { ProjectOverviewLight } from "./project_overview_light";
@@ -60,6 +83,9 @@ import { cacheBlockPackTemplate } from "../mutator/template/template_cache";
 
 type BlockStateComputables = {
   readonly fullState: Computable<BlockStateInternalV3>;
+  /** Column links of the block, nested into its full state. */
+  readonly dependencies: Computable<ColumnLink[] | undefined>;
+  readonly dependents: Computable<ColumnLink[] | undefined>;
 };
 
 function stringifyForDump(object: unknown): string {
@@ -86,6 +112,13 @@ function stringifyForDump(object: unknown): string {
   });
 }
 
+/** Releases what the computables of a block hold. */
+function resetBlockState(computables: BlockStateComputables): void {
+  computables.fullState.resetState();
+  computables.dependencies.resetState();
+  computables.dependents.resetState();
+}
+
 /** Data access object, to manipulate and read single opened (!) project data. */
 export class Project {
   /** Data for the left panel, contain basic information about block status. */
@@ -97,10 +130,29 @@ export class Project {
   private readonly blockComputables = new Map<string, BlockStateComputables | null>();
 
   private readonly blockFrontends = new Map<string, ComputableStableDefined<FrontendData>>();
+
+  /** Live status watches, keyed by {@link blockStatusKey}. One per block whose status is shown;
+   * each owns a synchronized tree, so they are started and terminated explicitly. */
+  private readonly blockStatusWatches = new Map<string, Promise<BlockStatusWatch>>();
   private readonly activeConfigs: Computable<unknown[]>;
   private readonly refreshLoopResult: Promise<void>;
 
   private readonly abortController = new AbortController();
+
+  /** Tree change generation as of the snapshot currently on disk, or -1 when this session has
+   * not written one. Compared against the tree's current generation to skip writing a mirror
+   * that has not moved, which is what makes a project left open and idle go quiet. */
+  private snapshotGeneration: number;
+
+  /** When a snapshot was last attempted, for the periodic write's wall-clock gate.
+   *
+   * Zero, not the construction time, so the first write lands on the first maintenance pass
+   * after the tree has settled rather than a full interval later. Sessions shorter than one
+   * interval are the common case for a desktop app that is quit with a project still open, and
+   * seeding this to now would leave every one of them with nothing on disk. Set on every
+   * attempt, successful or not, so a persistently failing write retries at the interval rather
+   * than on every pass of the loop. */
+  private lastSnapshotAt = 0;
 
   private get destroyed() {
     return this.abortController.signal.aborted;
@@ -111,7 +163,11 @@ export class Project {
     public readonly id: ProjectId /* Project ID, exposed to outer consumers, who work with ML */,
     readonly rid: SignedResourceId /* Contains signature, not exposed outside middle layer. */,
     private readonly projectTree: SynchronizedTreeState,
+    /** Whether this tree was seeded from a snapshot. When it was, the file on disk already
+     * holds generation 0, so an idle warm reopen writes nothing at all. */
+    restoredFromSnapshot: boolean = false,
   ) {
+    this.snapshotGeneration = restoredFromSnapshot ? 0 : -1;
     this.overview = projectOverview(
       projectTree.entry(),
       this.navigationStates,
@@ -129,6 +185,116 @@ export class Project {
     return "project:" + this.id.toString();
   }
 
+  /**
+   * Periodic snapshot write, carried on the maintenance loop rather than a timer of its own.
+   *
+   * Gated on the tree having changed since the last snapshot, so a project left open and idle
+   * writes once and then goes quiet, and on wall clock, so a project changing continuously
+   * writes at most once per interval.
+   */
+  private async maybeWriteSnapshot(): Promise<void> {
+    const store = this.env.treeSnapshots;
+    if (store === undefined) return;
+
+    const generation = this.projectTree.changeGeneration;
+    if (generation === this.snapshotGeneration) return;
+    if (Date.now() - this.lastSnapshotAt < this.env.ops.treeSnapshotOps.writeInterval) return;
+
+    await this.writeSnapshot(store, generation);
+  }
+
+  /**
+   * Starts the close-boundary snapshot and returns without waiting for the write.
+   *
+   * On top of the periodic write, since closing is a natural point to persist. Change-gated but
+   * not interval-gated: rewriting a mirror that has not moved is pure waste, but a mirror that
+   * has moved is worth keeping however recently the last write happened.
+   *
+   * The **capture is synchronous and happens here**, before the caller destroys the tree,
+   * because destroying it invalidates it and a later capture would be refused. Only the encode
+   * and the write are deferred: they are up to ten megabytes of work, and project switching
+   * should not wait for them. Deferring is safe only because a capture is a copy rather than a
+   * view of the tree.
+   *
+   * The returned promise never rejects. The caller is expected to keep it so it can be drained
+   * at shutdown, not to await it here.
+   */
+  public snapshotOnClose(): Promise<void> {
+    const store = this.env.treeSnapshots;
+    if (store === undefined) return Promise.resolve();
+
+    const generation = this.projectTree.changeGeneration;
+    if (generation === this.snapshotGeneration) return Promise.resolve();
+
+    let snapshot;
+    try {
+      snapshot = this.projectTree.capture(parseSignedResourceId(this.rid).signature);
+    } catch (e: unknown) {
+      this.env.logger.warn(
+        new Error(`failed to capture tree snapshot for project ${this.id} on close`, { cause: e }),
+      );
+      return Promise.resolve();
+    }
+
+    this.lastSnapshotAt = Date.now();
+
+    // Queued behind any in-flight periodic write rather than racing it. Both would land
+    // atomically, but the loser would be a wasted encode of the same mirror.
+    const previous = this.snapshotInFlight ?? Promise.resolve();
+    const write = previous.then(async () => {
+      if (this.snapshotGeneration >= generation) return; // the in-flight write covered it
+      if (await store.write(this.rid, snapshot)) this.snapshotGeneration = generation;
+    });
+
+    this.snapshotInFlight = write.finally(() => {
+      this.snapshotInFlight = undefined;
+    });
+    return this.snapshotInFlight;
+  }
+
+  /** In-flight snapshot write, if any. Both triggers can fire close together (the close write
+   *  lands while the loop is mid-write), and encoding ten megabytes twice for the same mirror
+   *  is worth avoiding. */
+  private snapshotInFlight: Promise<void> | undefined;
+
+  /** Serializes writes, and skips one that the in-flight write has already made redundant. */
+  private async writeSnapshot(store: TreeSnapshotStore, generation: number): Promise<void> {
+    // A loop, not a single check: with three or more callers, re-checking only once would let
+    // a waiter install its own promise over another's and clear the field while that write is
+    // still running. Two callers is the most that can happen today, so this is a guard against
+    // the next caller rather than a live fix.
+    while (this.snapshotInFlight !== undefined) {
+      await this.snapshotInFlight;
+      if (this.snapshotGeneration >= generation) return;
+    }
+
+    this.snapshotInFlight = this.captureAndWrite(store, generation).finally(() => {
+      this.snapshotInFlight = undefined;
+    });
+    await this.snapshotInFlight;
+  }
+
+  /** Captures and writes, never throwing: a snapshot is an optimisation and must not fail
+   *  whatever triggered it. */
+  private async captureAndWrite(store: TreeSnapshotStore, generation: number): Promise<void> {
+    // Recorded before the attempt and regardless of its outcome, so a failing disk is retried
+    // once per interval instead of on every pass of the maintenance loop.
+    this.lastSnapshotAt = Date.now();
+    try {
+      // The root's signature is the session witness a later open compares against.
+      const snapshot = this.projectTree.capture(parseSignedResourceId(this.rid).signature);
+
+      // Only a real write advances the change gate. Marking the generation persisted after a
+      // failed write would tell both triggers the tree is already on disk, so one transient
+      // I/O error would cost the rest of the session, close write included.
+      if (await store.write(this.rid, snapshot)) this.snapshotGeneration = generation;
+    } catch (e: unknown) {
+      this.env.logger.warn(
+        new Error(`failed to capture tree snapshot for project ${this.id}`, { cause: e }),
+      );
+    }
+  }
+
   private async refreshLoop(): Promise<void> {
     let retryState: InfiniteRetryState | undefined;
     while (!this.destroyed) {
@@ -140,12 +306,18 @@ export class Project {
           (prj) => {
             prj.doRefresh();
           },
-          { name: "doRefresh", lockId: this.projectLockId },
+          {
+            name: "doRefresh",
+            lockId: this.projectLockId,
+            abortSignal: this.abortController.signal,
+          },
         );
         await this.activeConfigs.getValue();
         await setTimeout(this.env.ops.projectRefreshInterval, undefined, {
           signal: this.abortController.signal,
         });
+
+        await this.maybeWriteSnapshot();
 
         // Block computables housekeeping
         const overviewLight = await this.overviewLight.getValue();
@@ -153,22 +325,22 @@ export class Project {
         // Doing cleanup for deleted blocks
         for (const blockId of this.blockComputables.keys()) {
           if (!existingBlocks.has(blockId)) {
-            const computable = this.blockComputables.get(blockId);
-            if (computable !== undefined && computable !== null) computable.fullState.resetState();
+            const computables = this.blockComputables.get(blockId);
+            if (computables !== undefined && computables !== null) resetBlockState(computables);
             this.blockComputables.set(blockId, null);
           }
         }
         retryState = undefined;
-      } catch (e: unknown) {
+      } catch (error: unknown) {
         // If we're destroyed, exit gracefully regardless of error type
         if (this.destroyed) break;
 
-        if (isNotFoundError(e)) {
+        if (isNotFoundError(error)) {
           this.env.logger.warn(
             "project refresh routine terminated, because project was externally deleted",
           );
           break;
-        } else if (isTimeoutOrCancelError(e)) {
+        } else if (isTimeoutOrCancelError(error)) {
           // Timeout during normal operation, continue the loop
         } else {
           retryState = retryState
@@ -182,7 +354,7 @@ export class Project {
               });
           this.env.logger.error(
             new Error(`[refreshLoop] unexpected exception, retrying in ${retryState.nextDelay}ms`, {
-              cause: e,
+              cause: error,
             }),
           );
           try {
@@ -610,20 +782,25 @@ export class Project {
     if (cached === undefined) {
       // state consists of inputs (args + ui state) and outputs
       const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
+      const dependencies = blockDependencies(this.projectTree.entry(), blockId, this.env);
+      const dependents = blockDependents(this.projectTree.entry(), blockId, this.env);
       const fullState = Computable.make(
         (ctx) => {
+          // Links are computed only for a block whose UI reads them.
+          const linked = readsColumnLinks(ctx.accessor(this.projectTree.entry()).node(), blockId);
           return {
             parameters: getBlockParameters(this.projectTree.entry(), blockId, ctx),
             outputs,
             navigationState: this.navigationStates.getState(blockId),
             overview: this.overview,
+            dependencies: linked ? dependencies : undefined,
+            dependents: linked ? dependents : undefined,
           };
         },
         {
           postprocessValue: (v) => {
             const blockOverview = v.overview?.blocks?.find((b) => b.id == blockId);
             const sdkVersion = blockOverview?.sdkVersion;
-            const storageDebugView = blockOverview?.storageDebugView;
             const toString = sdkVersion && shouldStillUseStringErrors(sdkVersion);
             const newOutputs =
               toString && v.outputs !== undefined ? convertErrorsToStrings(v.outputs) : v.outputs;
@@ -632,7 +809,9 @@ export class Project {
               ...v.parameters,
               outputs: newOutputs,
               navigationState: v.navigationState,
-              storageDebugView,
+              // The block state already nests the overview, so labelling by its titles adds
+              // nothing to watch.
+              columnLinks: labelBlockColumnLinks({ ...v, blockId }, v.overview?.blocks ?? []),
             } as BlockStateInternalV3;
           },
         },
@@ -640,6 +819,8 @@ export class Project {
 
       const computables: BlockStateComputables = {
         fullState: fullState.withPreCalculatedValueTree(),
+        dependencies,
+        dependents,
       };
 
       this.blockComputables.set(blockId, computables);
@@ -653,6 +834,134 @@ export class Project {
    * Returns a computable, that can be used to retrieve and watch full block state,
    * including outputs, arguments, ui state.
    * */
+  /**
+   * Reads the block action context tree of a block render (see readBlockActionContextTree): current state, not
+   * watched. Undefined when the block has no action context.
+   */
+  public async getBlockActionContext(
+    blockId: string,
+    mode: BlockActionContextMode = "prod",
+  ): Promise<BlockActionContextNode | undefined> {
+    return await readBlockActionContextTree(this.env.pl, this.rid, blockId, mode);
+  }
+
+  /**
+   * Starts watching the live status of a block render, and returns the folded summary.
+   *
+   * One watch per block and mode: calling it again while a watch is open returns the same
+   * computable. The watch owns a synchronized tree, so the caller must call
+   * {@link unwatchBlockStatus} once it stops showing the status; {@link destroy} terminates
+   * whatever is left.
+   *
+   * The summary survives a re-run of the block: a new render gets a new status context, and the
+   * watch re-seeds itself onto it.
+   */
+  public async watchBlockStatus(
+    blockId: string,
+    mode: BlockActionContextMode = "prod",
+  ): Promise<Computable<BlockStatusSummary>> {
+    return (await this.retainBlockStatusWatch(blockId, mode)).summary;
+  }
+
+  /**
+   * Starts watching the action-context tree of a block render, context by context. Takes the same
+   * hold as {@link watchBlockStatus}, released by {@link unwatchBlockStatus}, and shares its
+   * synchronized tree.
+   */
+  public async watchBlockStatusTree(
+    blockId: string,
+    mode: BlockActionContextMode = "prod",
+  ): Promise<Computable<BlockStatusTree>> {
+    return (await this.retainBlockStatusWatch(blockId, mode)).tree;
+  }
+
+  /**
+   * Sets which contexts of {@link watchBlockStatusTree} show their children. A no-op while nobody
+   * watches the block: the expansion lives with the watch.
+   */
+  public async setBlockStatusTreeExpanded(
+    blockId: string,
+    contextIds: readonly string[],
+    mode: BlockActionContextMode = "prod",
+  ): Promise<void> {
+    const pending = this.blockStatusWatches.get(blockStatusKey(blockId, mode));
+    if (pending === undefined) return;
+    (await pending).setExpanded(contextIds);
+  }
+
+  private async retainBlockStatusWatch(
+    blockId: string,
+    mode: BlockActionContextMode,
+  ): Promise<BlockStatusWatch> {
+    if (this.destroyed)
+      throw new Error(`cannot watch the status of ${blockId}: the project is closed`);
+
+    const key = blockStatusKey(blockId, mode);
+    const existing = this.blockStatusWatches.get(key);
+    if (existing !== undefined) {
+      const watch = await existing;
+      watch.retain();
+      return watch;
+    }
+
+    const started = BlockStatusWatch.start({
+      env: this.env,
+      projectRid: this.rid,
+      blockId,
+      mode,
+      projectGeneration: () => (this.destroyed ? -1 : this.projectTree.changeGeneration),
+    });
+    this.blockStatusWatches.set(key, started);
+    // A failed start must not leave a rejected promise in the map for every later caller. Only
+    // this start's own entry is dropped: by the time a late rejection lands, the key may already
+    // hold a newer, live watch.
+    started.catch(() => {
+      if (this.blockStatusWatches.get(key) === started) this.blockStatusWatches.delete(key);
+    });
+    return await started;
+  }
+
+  /**
+   * Releases one hold taken by {@link watchBlockStatus}. The tree is terminated when the last
+   * holder lets go, so two callers watching one block do not cut each other off.
+   */
+  public async unwatchBlockStatus(
+    blockId: string,
+    mode: BlockActionContextMode = "prod",
+  ): Promise<void> {
+    const key = blockStatusKey(blockId, mode);
+    const pending = this.blockStatusWatches.get(key);
+    if (pending === undefined) return;
+
+    let watch: BlockStatusWatch;
+    try {
+      watch = await pending;
+    } catch {
+      // The start failed; its own catch handler drops the entry. Nothing to release, and a
+      // caller letting go must not see that failure again.
+      return;
+    }
+
+    if (await watch.release()) {
+      if (this.blockStatusWatches.get(key) === pending) this.blockStatusWatches.delete(key);
+    }
+  }
+
+  private async terminateBlockStatusWatches(): Promise<void> {
+    const watches = [...this.blockStatusWatches.values()];
+    this.blockStatusWatches.clear();
+    await Promise.all(
+      watches.map(async (watch) => {
+        try {
+          await (await watch).terminate();
+        } catch (e: unknown) {
+          // A watch whose start rejected has nothing to terminate; anything else is logged.
+          this.env.logger.warn(new Error("block status watch termination failed", { cause: e }));
+        }
+      }),
+    );
+  }
+
   public getBlockState(blockId: string): Computable<BlockStateInternalV3> {
     return this.getBlockComputables(blockId).fullState;
   }
@@ -688,6 +997,9 @@ export class Project {
       );
     }
 
+    // terminating the status trees before the project tree: they are seeded from it
+    await this.terminateBlockStatusWatches();
+
     // terminating the synchronized project tree
     try {
       await this.projectTree.terminate();
@@ -702,7 +1014,7 @@ export class Project {
     this.overview.resetState();
     this.blockFrontends.forEach((c) => c.resetState());
     this.blockComputables.forEach((c) => {
-      if (c !== null) c.fullState.resetState();
+      if (c !== null) resetBlockState(c);
     });
     this.activeConfigs.resetState();
   }
@@ -727,18 +1039,8 @@ export class Project {
     // Doing a no-op mutation to apply all migration and schema fixes
     await withProject(env.projectHelper, env.pl, rid, (_) => {}, { name: "init" });
 
-    // Loading project tree
-    const projectTree = await SynchronizedTreeState.init(
-      env.pl,
-      rid,
-      {
-        ...env.ops.defaultTreeOptions,
-        pruning: projectTreePruning(env.logger),
-        fieldFilter: projectTreeFieldFilter(),
-        traverseStopRules: projectTreeTraverseStopRules(),
-      },
-      env.logger,
-    );
+    // Loading project tree, warm from a persisted mirror when one is usable
+    const { tree: projectTree, restored } = await loadProjectTree(env, rid);
 
     if (env.ops.debugOps.dumpInitialTreeState) {
       const state = projectTree.dumpState();
@@ -748,8 +1050,104 @@ export class Project {
       await fs.writeFile(`${resourceIdToString(rid)}.stats.json`, stringifyForDump(stats));
     }
 
-    return new Project(env, id, rid, projectTree);
+    return new Project(env, id, rid, projectTree, restored);
   }
+}
+
+/**
+ * Opens the project tree, seeded from a persisted mirror when there is a usable one.
+ *
+ * Carries the fail-safe: if the restored tree fails its first refresh on authentication,
+ * permission or an inconsistency, the snapshot is deleted and the open is retried cold. Once,
+ * and only for that first refresh, so a genuinely dead session still surfaces as itself rather
+ * than being masked as a slow open.
+ *
+ * The fail-safe is what bounds every case the cache key does not cover: a rotated master
+ * secret, a revoked grant, a snapshot valid in itself but no longer matching what the backend
+ * will serve. Without it, an explicit-root tree propagates the refresh failure rather than
+ * healing, so the project would fail to open on every attempt until someone deleted the cache
+ * directory by hand.
+ */
+async function loadProjectTree(
+  env: MiddleLayerEnvironment,
+  rid: SignedResourceId,
+): Promise<{ tree: SynchronizedTreeState; restored: boolean }> {
+  const treeOps = {
+    ...env.ops.defaultTreeOptions,
+    pruning: projectTreePruning(env.logger),
+    fieldFilter: projectTreeFieldFilter(),
+    traverseStopRules: projectTreeTraverseStopRules(),
+  };
+  const cold = async () => ({
+    tree: await SynchronizedTreeState.init(env.pl, rid, treeOps, env.logger),
+    restored: false,
+  });
+
+  const store = env.treeSnapshots;
+  if (store === undefined) return await cold();
+
+  const snapshot = await store.read(rid);
+  if (!snapshot.ok) {
+    env.logger.info(`project tree opening cold, snapshot miss: ${snapshot.miss}`);
+    return await cold();
+  }
+
+  try {
+    const tree = await SynchronizedTreeState.init(
+      env.pl,
+      rid,
+      { ...treeOps, restoreFrom: snapshot.tree },
+      env.logger,
+    );
+
+    // Read from the tree rather than assumed: a snapshot can be handed over and still be
+    // refused, in which case this open was cold and the file on disk does not describe the
+    // tree we now hold.
+    const restored = tree.wasRestoredFromSnapshot;
+    if (restored) store.noteRestored();
+    else env.logger.info("project tree opening cold: the snapshot was not applied");
+
+    return { tree, restored };
+  } catch (e: unknown) {
+    // Retry cold on ANY failure of the warm open, not only on the classified ones. A cold open
+    // is exactly what this code did before snapshots existed, so the retry cannot regress
+    // anything, whereas rethrowing here leaves a project that fails to open on every attempt
+    // until someone deletes the cache directory by hand: the snapshot stays on disk and the
+    // next open restores it and fails the same way. That is the outcome this fail-safe exists
+    // to prevent, and the error classes that can reach here are not a closed set.
+    env.logger.warn(
+      new Error("restored project tree failed its first refresh, opening cold", { cause: e }),
+    );
+
+    // Deleting is reserved for failures that implicate the snapshot itself. Anything else (a
+    // timeout, a dropped connection) says nothing about the file, and throwing it away would
+    // destroy a mirror that is still good, along with the evidence a later signature refresh
+    // would repair.
+    if (isSnapshotFailsafeError(e)) await store.discard(rid);
+
+    return await cold();
+  }
+}
+
+/** The failures that implicate the snapshot rather than the link or the session: a rotated
+ *  master secret, a revoked grant, or state the tree cannot reconcile. Only these delete the
+ *  file; every other failure still falls back to a cold open, it just keeps the file.
+ *
+ *  The cause chain is walked because a wrapper anywhere between the tree update and here would
+ *  otherwise silently disarm the inconsistency arm. `isUnauthenticated` and `isPermissionDenied`
+ *  do their own one-level unwrapping. */
+export function isSnapshotFailsafeError(e: unknown): boolean {
+  if (isUnauthenticated(e) || isPermissionDenied(e)) return true;
+  for (let cause: unknown = e, depth = 0; cause !== undefined && depth < 8; depth++) {
+    if (cause instanceof TreeStateUpdateError) return true;
+    cause = (cause as { cause?: unknown } | null)?.cause;
+  }
+  return false;
+}
+
+/** Key of a status watch in {@link Project.blockStatusWatches}. */
+function blockStatusKey(blockId: string, mode: BlockActionContextMode): string {
+  return `${mode}:${blockId}`;
 }
 
 export function projectTreePruning(logger: MiLogger): PruningFunction {
@@ -767,7 +1165,9 @@ export function projectTreePruning(logger: MiLogger): PruningFunction {
       case "BlockPackCustom":
         return r.fields.filter((f) => f.name !== "template");
       case "UserProject":
-        return r.fields.filter((f) => !f.name.startsWith("__serviceTemplate"));
+        return r.fields.filter(
+          (f) => !f.name.startsWith("__serviceTemplate") && !projectStatusFieldRegex.test(f.name),
+        );
       case "Blob":
         return [];
       default:
@@ -792,154 +1192,27 @@ export function projectTreeFieldFilter(): Filter {
         treeFilter.resourceTypeEq("UserProject"),
         treeFilter.fieldNameMatch("^__serviceTemplate"),
       ),
+      // UserProject: drop the status-context fields, see ProjectStatusFieldPattern
+      treeFilter.and(
+        treeFilter.resourceTypeEq("UserProject"),
+        treeFilter.fieldNameMatch(ProjectStatusFieldPattern),
+      ),
       // Blob — pruned entirely
       treeFilter.resourceTypeEq("Blob"),
     ),
   );
 }
 
-/**
- * Stop-rules for the ResourceTree backend path.
- *
- * Mirrors every case of DefaultFinalResourceDataPredicate in the same order.
- * The mapping from BFS predicate logic to backend filter conditions:
- *
- *   BFS predicate always true
- *     → no readyOrDuplicateOrError guard; backend stops traversal unconditionally.
- *
- *   BFS predicate: readyOrDuplicateOrError(r)
- *     → readyOrDuplicateOrError(): stops when resource_ready_for_calculation,
- *       is_duplicate, or has_errors is true — exactly mirroring the BFS predicate.
- *
- *   BFS predicate: readyAndHasAllOutputsFilled(r)
- *     → isFinal(true) + allOutputsFinal(true).
- *
- *   BFS predicate always false (UserProject, Projects, ClientRoot)
- *     → no entry here; traversal always continues into them.
- */
+/** Stop rules for the project tree's ResourceTree walks: {@link TreeFinality}'s declared clauses,
+ * which may stop before the predicate calls a resource final where an entry declares so. */
 export function projectTreeTraverseStopRules(): Filter {
-  return treeFilter.or(
-    // BFS: readyOrDuplicateOrError(r) AND (fields===undefined OR error OR stream.value===downloadable.value).
-    // datactl sets stream field to point at the same resource as downloadable once processing
-    // is complete, so stream.value===downloadable.value is the "done" signal.
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.StreamManager),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    // BFS: readyOrDuplicateOrError(r)
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.StdMap),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.StdMapSlash),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.EphStdMap),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.PFrame),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.ParquetChunk),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BContext),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BlockPackCustom),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BinaryMap),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BinaryValue),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BlobMap),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BResolveSingle),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BResolveSingleNoResult),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.BQueryResult),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.TengoTemplate),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.TengoLib),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.SoftwareInfo),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeEq(ResourceTypeName.Dummy),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    // BFS: r.type.version === "1" → always true → no state guard needed
-    treeFilter.resourceTypeEq(ResourceTypeName.JsonResourceError),
-    // BFS: return true (unconditionally) → no readyOrDuplicateOrError guard needed
-    treeFilter.resourceTypeEq(ResourceTypeName.JsonObject),
-    treeFilter.resourceTypeEq(ResourceTypeName.JsonGzObject),
-    treeFilter.resourceTypeEq(ResourceTypeName.JsonString),
-    treeFilter.resourceTypeEq(ResourceTypeName.JsonArray),
-    treeFilter.resourceTypeEq(ResourceTypeName.JsonNumber),
-    treeFilter.resourceTypeEq(ResourceTypeName.BContextEnd),
-    treeFilter.resourceTypeEq(ResourceTypeName.FrontendFromUrl),
-    treeFilter.resourceTypeEq(ResourceTypeName.FrontendFromFolder),
-    treeFilter.resourceTypeEq(ResourceTypeName.BObjectSpec),
-    treeFilter.resourceTypeEq(ResourceTypeName.Blob),
-    treeFilter.resourceTypeEq(ResourceTypeName.Null),
-    treeFilter.resourceTypeEq(ResourceTypeName.Binary),
-    treeFilter.resourceTypeEq(ResourceTypeName.LSProvider),
-    treeFilter.resourceTypeEq(ResourceTypeName.WorkingDirectory),
-    // BFS default branch: startsWith prefix → return true → no guard needed
-    treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.Blob),
-    treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.LS),
-    treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.WorkingDirectory),
-    treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.StorageSpaceAllocation),
-    // BFS default branch: readyAndHasAllOutputsFilled → readyOrDuplicateOrError() + outputsLocked(true) + allOutputsFinal(true)
-    treeFilter.and(
-      treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.BlobUpload),
-      treeFilter.readyOrDuplicateOrError(),
-      treeFilter.outputsLocked(true),
-      treeFilter.allOutputsFinal(true),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.BlobIndex),
-      treeFilter.readyOrDuplicateOrError(),
-      treeFilter.outputsLocked(true),
-      treeFilter.allOutputsFinal(true),
-    ),
-    // BFS default branch: readyOrDuplicateOrError
-    treeFilter.and(
-      treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.PColumnData),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-    treeFilter.and(
-      treeFilter.resourceTypeMatch("^" + ResourceTypePrefix.StreamWorkdir),
-      treeFilter.readyOrDuplicateOrError(),
-    ),
-  );
+  return finalityStopRules(TreeFinality);
+}
+
+/** Whether the block's model declares that its UI reads the column links of the block state. */
+function readsColumnLinks(prj: PlTreeNodeAccessor, blockId: string): boolean {
+  const info = getBlockPackInfo(prj, blockId);
+  return info !== undefined && checkBlockFlag(info.cfg.featureFlags, "supportsColumnLinks");
 }
 
 /** Returns true if sdk version of the block is old and we need to convert
@@ -996,7 +1269,7 @@ function convertErrorsToStrings(
  * the UI (`AddBlockModal`) and direct middle-layer callers (the MCP server's
  * `add_block` tool, programmatic block installs, tests) reject incompatible
  * blocks consistently. */
-function throwIfMissingServerCapabilities(
+export function throwIfMissingServerCapabilities(
   pl: PlClient,
   requiredCapabilities: readonly string[] | undefined,
 ): void {

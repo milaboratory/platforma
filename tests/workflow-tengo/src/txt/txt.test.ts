@@ -62,7 +62,7 @@ const cases: TestInput[] = [
     expectedContent: "1 line\n2 line\n3 line\n",
     handleProvider: async (driverKit) => {
       const storages = await driverKit.lsDriver.getStorageList();
-      const library = storages.find((s) => s.name == env.libraryStorage);
+      const library = env.findLibraryStorage(storages);
       if (library === undefined) throw new Error(`Library '${env.libraryStorage}' not found`);
       const files = await driverKit.lsDriver.listFiles(library!.handle, "");
       const ourFile = files.entries.find(

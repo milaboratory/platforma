@@ -15,6 +15,8 @@ import * as util from "./util";
 import * as archive from "./archive";
 import * as storage from "./storage";
 import * as docker from "./docker";
+import * as dockerRelayer from "./docker-relayer";
+import * as dockerCoverage from "./docker-coverage";
 import { tmpSpecFile } from "./docker-conda";
 
 export class Core {
@@ -148,6 +150,20 @@ export class Core {
     );
   }
 
+  /**
+   * The docker artifacts a build would actually produce for this selection.
+   *
+   * Mirrors the resolution `buildDockerImages` performs, so callers can reason
+   * about a build before running it. Note that `ids` are entrypoint names, not
+   * docker package keys: `getArtifact(id, "docker")` resolves the `:docker`
+   * virtual entrypoint, so a plain set intersection with `dockerPackages`
+   * would be wrong.
+   */
+  public selectedDockerPackages(ids?: string[]): string[] {
+    const selected = ids ?? Array.from(this.dockerPackages.keys());
+    return selected.filter((id) => this.getArtifact(id, "docker") !== undefined);
+  }
+
   public packageHasType(id: string, type: artifacts.artifactType): boolean {
     const pkg = this.packages.get(id);
     if (pkg && pkg.type === type) {
@@ -198,6 +214,31 @@ export class Core {
     }
   }
 
+  /**
+   * Fails a CI build that would describe software no kubernetes installation can run.
+   *
+   * `buildSwJsonFiles` calls this on the selection it is about to write, so no path
+   * can skip it. Callers may also invoke it up front — the answer comes from the
+   * package's declaration alone, so a CI run that is going to fail can fail before
+   * it spends minutes building archives and images.
+   *
+   * Only builds that write a registry descriptor answer for coverage. A dev-local
+   * build (`build:dev-local`, and the `test` script's binary-only build) describes
+   * software by filesystem path: it never reaches a cluster, so a missing image
+   * cannot hurt anyone there, and failing those runs would block a block's tests on
+   * a release rule. Release and dev-remote builds do publish, and are checked.
+   */
+  public assertDockerCoverage(options?: { entrypoints?: Map<string, entrypoint.Entrypoint> }) {
+    if (!util.producesRegistryDescriptor(this.buildMode)) return;
+
+    dockerCoverage.assertDockerCoverage({
+      softwareWithoutDocker: dockerCoverage.softwareEntrypointsWithoutDocker(
+        options?.entrypoints ?? this.entrypoints,
+      ),
+      requirementWaived: !this.pkgInfo.requireDocker,
+    });
+  }
+
   // Get entrypoints defined in package.json, transform them to local or release (depending on `buildMode`)
   // sw.json entrypoint descriptors, and write them to ./dist/tengo/sw.json or as.json next to the package.json.
   public buildSwJsonFiles(options?: {
@@ -206,6 +247,7 @@ export class Core {
     sources?: util.SoftwareSource[];
     requireAllArtifacts?: boolean;
     noSoftware?: boolean;
+    skipDockerCoverage?: boolean;
   }) {
     const index = this.packageEntrypointsIndex;
 
@@ -226,6 +268,16 @@ export class Core {
     let entrypoints = Array.from(this.entrypoints.entries());
     if (entrypointNames.length > 0) {
       entrypoints = entrypoints.filter(([epName, _]) => entrypointNames.includes(epName));
+    }
+
+    // The descriptor is the contract the backend reads, so this is the last point at
+    // which a software entrypoint with no docker image can still be stopped. Judged
+    // over the selection being described, so a targeted build answers only for what
+    // it writes. Skipped where this build produces no software of its own: the
+    // placeholder path describes none, and `skipDockerCoverage` is for a caller
+    // pointing the descriptor at an artifact someone else already released.
+    if (!options?.noSoftware && !options?.skipDockerCoverage) {
+      this.assertDockerCoverage({ entrypoints: new Map(entrypoints) });
     }
 
     const infos = options?.noSoftware
@@ -469,6 +521,9 @@ export class Core {
     const name = this.pkgInfo.artifactName(artifact);
 
     docker.build(context, dockerfile, localTag, name, this.pkgInfo.version);
+    docker.checkLayerSizes(localTag, (message) => this.logger.warn(message), {
+      advisory: dockerRelayer.isEnabled(),
+    });
 
     const imageHash = docker.getImageHash(localTag);
     const dstTag = docker.generateRemoteTagName(name, imageHash, registry);
@@ -719,7 +774,7 @@ export class Core {
     this.logger.info(
       `Publishing package '${artifactName}' for platform '${platform}' into registry '${registry.name}'`,
     );
-    this.logger.debug(`  registry storage URL: '${storageURL}'`);
+    this.logger.debug(`  registry storage URL: '${util.redactUrl(storageURL)}'`);
     this.logger.debug(`  archive to publish: '${archivePath}'`);
     this.logger.debug(`  target package name: '${dstName}'`);
 
@@ -842,7 +897,9 @@ export class Core {
       this.logger.info(`Publishing docker image '${tag}' with tag '${pushTag}'`);
     }
 
-    docker.push(pushTag);
+    if (!dockerRelayer.isEnabled() || !dockerRelayer.relayerAndPush(tag, pushTag, this.logger)) {
+      docker.push(pushTag);
+    }
   }
 
   private get renderer(): SwJsonRenderer {

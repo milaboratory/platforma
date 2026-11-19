@@ -4,27 +4,45 @@ import type {
   InferOutputsType,
   RemoteBlobHandleAndSize,
 } from "@platforma-sdk/model";
-import { BlockModel } from "@platforma-sdk/model";
+import { BlockModelV3, DataModelBuilder } from "@platforma-sdk/model";
+import { kind } from "@milaboratories/milaboratories.transfer-files.kind";
 import { z } from "zod";
 
 export const ImportFileHandleSchema = z
   .string()
-  .optional()
-  .refine<ImportFileHandle | undefined>(
-    ((_a) => true) as (arg: string | undefined) => arg is ImportFileHandle | undefined,
-  );
+  .refine<ImportFileHandle>(((_a) => true) as (arg: string) => arg is ImportFileHandle);
 
-export const BlockArgs = z.object({
+export const BlockData = z.object({
   inputHandles: z.array(ImportFileHandleSchema),
 });
 
-export type BlockArgs = z.infer<typeof BlockArgs>;
+export type BlockData = z.infer<typeof BlockData>;
 
-export const platforma = BlockModel.create("Heavy")
+/** What the workflow consumes — projected from {@link BlockData} by the args lambda. */
+export type BlockArgs = {
+  inputHandles: ImportFileHandle[];
+};
 
-  .withArgs({
-    inputHandles: [] as ImportFileHandle[],
-  })
+// The kind declares no init params — every entry of `inputHandles` is a signed
+// path that can only come from a real desktop file-dialog gesture, so there is
+// nothing a creator or a template could seed them with. `init` always returns
+// the empty list.
+const dataModel = new DataModelBuilder({ kind })
+  .from<BlockData>("v1")
+  .init(() => ({ inputHandles: [] }));
+
+export const platforma = BlockModelV3.create({ dataModel, kind })
+
+  // The one field is workflow input in its entirety: no UI-only state to strip,
+  // and no prerun phase to project into (the workflow declares `wf.body` only).
+  // Handles pass through as-is — the workflow keys its import/export maps by
+  // handle, so it dedups on its own side.
+  .args<BlockArgs>((data) => ({ inputHandles: [...data.inputHandles] }))
+
+  // Nothing to project: the kind takes no params, because every entry of
+  // `inputHandles` is a signed path from an OS file-dialog gesture and would not
+  // resolve in the project a template is applied into.
+  .templateParams(() => ({}))
 
   // fileImports: smart.createMapResource(maps.mapValues(fileImports, func(im) {
   //   return im.handle
@@ -60,7 +78,7 @@ export const platforma = BlockModel.create("Heavy")
     return [{ type: "link", href: "/", label: "Main" }];
   })
 
-  .done(2);
+  .done();
 
 export type BlockOutputs = InferOutputsType<typeof platforma>;
 export type Href = InferHrefType<typeof platforma>;

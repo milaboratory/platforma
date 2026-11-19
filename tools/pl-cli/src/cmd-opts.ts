@@ -9,13 +9,18 @@ export function addOptions(cmd: Command, ...optionGroups: Option[][]): Command {
   return cmd;
 }
 
+/** Server address only (for commands with a fixed output format). */
+export const AddressOptions = (): Option[] => [
+  new Option("-a, --address <url>", "Platforma server address")
+    .env("PL_ADDRESS")
+    .makeOptionMandatory(),
+];
+
 export const GlobalOptions = (
   formatDefault: OutputFormat = "text",
   allowedFormats: OutputFormat[] = ["text", "json"],
 ): Option[] => [
-  new Option("-a, --address <url>", "Platforma server address")
-    .env("PL_ADDRESS")
-    .makeOptionMandatory(),
+  ...AddressOptions(),
   new Option("-f, --format <format>", "Output format")
     .choices(allowedFormats)
     .default(formatDefault),

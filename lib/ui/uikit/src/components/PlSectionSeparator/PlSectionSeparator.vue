@@ -8,8 +8,12 @@ defineProps<{
 </script>
 
 <template>
-  <div class="pl-section-separator" :class="{ [$style.compact]: compact }">
-    <div :class="$style.content"><slot /></div>
+  <div
+    class="pl-section-separator"
+    data-testid="pl-section-separator"
+    :class="{ [$style.compact]: compact }"
+  >
+    <div data-testid="pl-section-separator-content" :class="$style.content"><slot /></div>
   </div>
 </template>
 

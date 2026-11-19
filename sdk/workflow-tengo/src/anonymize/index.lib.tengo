@@ -5,7 +5,6 @@ render := import(":render")
 assets := import(":assets")
 ll := import(":ll")
 smart := import(":smart")
-times := import("times")
 maps := import(":maps")
 
 anonymizeImplTpl := assets.importTemplate(":anonymize.impl")

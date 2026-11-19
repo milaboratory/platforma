@@ -1,5 +1,216 @@
 # @milaboratories/pf-driver
 
+## 1.9.19
+
+### Patch Changes
+
+- c1869c8: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.3.1. pframes-rs-node and polars-pf get fixes for security advisories in the Rust crates arrow, parquet, rustix and zstd. pframes-rs-wasip2 has no functional change. polars-pf also gets the spec engine changes of pframes-rs 1.3.0 (reverse linker traversal, an axis mapping underflow fix), which pframes-rs-wasip2 already has. Bump runenv-python-3 to 1.16.2, which bundles polars-pf 1.3.1 for ptabler.
+- Updated dependencies [c1869c8]
+  - @milaboratories/pf-spec@1.1.1
+
+## 1.9.18
+
+### Patch Changes
+
+- Updated dependencies [e628f46]
+- Updated dependencies [92cf16f]
+  - @milaboratories/pf-spec@1.1.0
+  - @milaboratories/pl-model-common@1.56.0
+  - @milaboratories/pl-model-middle-layer@1.40.0
+
+## 1.9.17
+
+### Patch Changes
+
+- Updated dependencies [1bea6a2]
+  - @milaboratories/pl-model-middle-layer@1.39.0
+  - @milaboratories/pf-spec@1.0.17
+
+## 1.9.16
+
+### Patch Changes
+
+- Updated dependencies [9aea514]
+  - @milaboratories/pl-model-common@1.55.2
+  - @milaboratories/pl-model-middle-layer@1.38.0
+  - @milaboratories/pf-spec@1.0.16
+
+## 1.9.15
+
+### Patch Changes
+
+- Updated dependencies [82dd041]
+  - @milaboratories/pl-model-middle-layer@1.37.0
+  - @milaboratories/pf-spec@1.0.15
+
+## 1.9.14
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+- Updated dependencies [efac5cc]
+- Updated dependencies [b278e85]
+  - @milaboratories/pl-model-middle-layer@1.36.0
+  - @milaboratories/ts-helpers@1.9.1
+  - @milaboratories/pf-spec@1.0.14
+  - @milaboratories/pl-model-common@1.55.1
+  - @milaboratories/helpers@1.14.7
+
+## 1.9.13
+
+### Patch Changes
+
+- Updated dependencies [9901322]
+- Updated dependencies [8d28bcd]
+  - @milaboratories/pl-model-common@1.55.0
+  - @milaboratories/pl-model-middle-layer@1.35.0
+  - @milaboratories/pf-spec@1.0.13
+
+## 1.9.12
+
+### Patch Changes
+
+- Updated dependencies [9cff344]
+  - @milaboratories/pl-model-common@1.54.2
+  - @milaboratories/pl-model-middle-layer@1.34.6
+  - @milaboratories/pf-spec@1.0.12
+
+## 1.9.11
+
+### Patch Changes
+
+- 91af6ad: Update dependencies with security advisories: undici 7.30, @grpc/grpc-js 1.14.6, @modelcontextprotocol/sdk 1.32, AWS SDK 3.1157, tar 7.5, tar-fs 3.1, yaml 2.9, vue 3.5.44, vite 8.3, vitest 4.1.12.
+- 4cc1e4e: Require Node 24 (`engines.node` `>=24`).
+- 79f8dbc: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.2.0. JsonPartitioned parts are sorted by axes on read, so a part written in another key order no longer gives wrong join rows. Same-axes outer joins no longer re-sort. pframes-rs-node requires Node 24. Bump runenv-python-3 to 1.16.1, which bundles polars-pf 1.2.0 for ptabler.
+- Updated dependencies [6a1b104]
+- Updated dependencies [4cc1e4e]
+- Updated dependencies [79f8dbc]
+- Updated dependencies [615bd8c]
+  - @milaboratories/pf-spec@1.0.11
+  - @milaboratories/ts-helpers@1.9.0
+  - @milaboratories/helpers@1.14.6
+  - @milaboratories/pl-model-common@1.54.1
+  - @milaboratories/pl-model-middle-layer@1.34.5
+
+## 1.9.10
+
+### Patch Changes
+
+- Updated dependencies [bb4e8d4]
+  - @milaboratories/pl-model-common@1.54.0
+  - @milaboratories/pl-model-middle-layer@1.34.4
+  - @milaboratories/pf-spec@1.0.10
+
+## 1.9.9
+
+### Patch Changes
+
+- Updated dependencies [5d27046]
+  - @milaboratories/pl-model-middle-layer@1.34.3
+  - @milaboratories/pf-spec@1.0.9
+
+## 1.9.8
+
+### Patch Changes
+
+- Updated dependencies [de59755]
+  - @milaboratories/pl-model-common@1.53.0
+  - @milaboratories/pl-model-middle-layer@1.34.2
+  - @milaboratories/pf-spec@1.0.8
+
+## 1.9.7
+
+### Patch Changes
+
+- Updated dependencies [f4567dd]
+  - @milaboratories/pl-model-common@1.52.0
+  - @milaboratories/pl-model-middle-layer@1.34.1
+  - @milaboratories/pf-spec@1.0.7
+
+## 1.9.6
+
+### Patch Changes
+
+- Updated dependencies [61aefa1]
+  - @milaboratories/pl-model-middle-layer@1.34.0
+  - @milaboratories/pf-spec@1.0.6
+
+## 1.9.5
+
+### Patch Changes
+
+- Updated dependencies [cadf144]
+  - @milaboratories/pl-model-common@1.51.0
+  - @milaboratories/pl-model-middle-layer@1.33.0
+  - @milaboratories/pf-spec@1.0.5
+
+## 1.9.4
+
+### Patch Changes
+
+- Updated dependencies [3716dcb]
+  - @milaboratories/pl-model-common@1.50.0
+  - @milaboratories/pl-model-middle-layer@1.32.2
+  - @milaboratories/pf-spec@1.0.4
+
+## 1.9.3
+
+### Patch Changes
+
+- 31a3f60: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.61. The Linux pframes-rs-node addon no longer ships debug info. Its download shrinks from 208 MB to about 28 MB. Bump runenv-python-3 to 1.13.2, which bundles polars-pf 1.1.61 for ptabler.
+- Updated dependencies [31a3f60]
+  - @milaboratories/pf-spec@1.0.3
+
+## 1.9.2
+
+### Patch Changes
+
+- f2ed96c: Update pframes-rs-node, pframes-rs-wasip2, and polars-pf to 1.1.60. Wide tables with hundreds of same-axis columns no longer overflow the engine thread stack (balanced join fold).
+- Updated dependencies [f2ed96c]
+- Updated dependencies [e8f26d6]
+  - @milaboratories/pf-spec@1.0.2
+  - @milaboratories/pl-model-common@1.49.0
+  - @milaboratories/pl-model-middle-layer@1.32.1
+
+## 1.9.1
+
+### Patch Changes
+
+- Updated dependencies [80a9963]
+  - @milaboratories/pl-model-common@1.48.0
+  - @milaboratories/pl-model-middle-layer@1.32.0
+  - @milaboratories/pf-spec@1.0.1
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/helpers@1.14.5
+
+## 1.9.0
+
+### Minor Changes
+
+- da11734: Drop the `require` export condition, because both packages are ESM-only
+
+  Each package depends on `@milaboratories/pf-spec`. The generated bindings in that
+  package find their core WASM module with `import.meta.url`. They also instantiate the
+  module with a top-level await. CJS has no equivalent for either of these two operations.
+  Therefore the declared `require` entry point could not load these packages, either with
+  the classic CJS resolver or with `require()` of an ESM graph. The manifests now describe
+  what the packages can do.
+
+  `pf-spec-driver` also no longer re-exports the raw spec operations. It also removes its
+  dependency on `@milaboratories/pl-model-middle-layer`. It exports `SpecDriver`, which
+  adds a handle pool and wraps the errors. If you need the raw operations, depend on
+  `@milaboratories/pf-spec` directly. `pf-driver` now does this.
+
+### Patch Changes
+
+- Updated dependencies [da11734]
+- Updated dependencies [da11734]
+  - @milaboratories/pf-spec@1.0.0
+  - @milaboratories/pl-model-middle-layer@1.31.0
+  - @milaboratories/pl-model-common@1.47.3
+  - @milaboratories/ts-helpers@1.8.6
+  - @milaboratories/helpers@1.14.5
+
 ## 1.8.5
 
 ### Patch Changes

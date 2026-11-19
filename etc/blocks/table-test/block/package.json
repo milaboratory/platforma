@@ -25,6 +25,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "@milaboratories/milaboratories.test-block-table.kind": "workspace:*",
     "@milaboratories/milaboratories.test-block-table.model": "workspace:*",
     "@milaboratories/milaboratories.test-block-table.ui": "workspace:*",
     "@milaboratories/milaboratories.test-block-table.workflow": "workspace:*",
@@ -48,7 +49,8 @@
         "name": "MiLaboratories Inc",
         "url": "https://milaboratories.com/"
       },
-      "marketplaceRanking": 10
+      "marketplaceRanking": 10,
+      "changelog": "file:CHANGELOG.md"
     }
   }
 }

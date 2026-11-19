@@ -21,6 +21,10 @@ tplTest.concurrent("run-hello-world-go", async ({ helper, expect }) => {
 /*
  * Checks that default limits are applied per queue when no explicit cpu/ram is set.
  * Actual values are capped by min(queueLimit, queueDefault), so we assert > 0 and <= default.
+ *
+ * On k8s each job waits for Kueue admission; the backend caps its CPU request (3 in CI, so the
+ * heavy one asks for 3, not 16). When several CI runs share one ClusterQueue, that wait alone
+ * exceeds the 15s default timeout.
  */
 tplTest.concurrent.for([
   { queue: "ui-tasks", defaultCpuCores: 1, defaultRamBytes: 100 * 1024 * 1024 },
@@ -29,6 +33,7 @@ tplTest.concurrent.for([
   { queue: "light", defaultCpuCores: 1, defaultRamBytes: 512 * 1024 * 1024 },
 ])(
   "queue-default-limits ($queue)",
+  { timeout: 180_000 },
   async ({ queue, defaultCpuCores, defaultRamBytes }, { helper, expect }) => {
     const result = await helper.renderTemplate(
       false,
@@ -71,6 +76,91 @@ tplTest.concurrent.for([{ gpuMemory: "16GiB" }])(
       .awaitStableValue();
     console.log(`GPU test output: "${gpuOut}"`);
     expect(gpuOut).eq(gpuMemory);
+  },
+);
+
+/**
+ * A command asks for scratch space and prints back what the runner told it: the size it was
+ * given and where to put its temporary data. This is the only check that the request survives
+ * the whole path — builder, quota, compute allocation, driver — rather than being dropped in
+ * the middle.
+ *
+ * Needs a deployment that actually has scratch storage. Since pl #2192 that is opt-in
+ * (`--has-scratch-space`), and without it `{system.scratch.*}` has nothing to resolve to and
+ * the render fails outright, so the test self-skips on a backend that advertises no scratch.
+ */
+// The size is deliberately small: this test is about the request reaching the command, not
+// about how much can be allocated. A deployment with a minimum scratch size gives at least that
+// minimum (PL_TEST_SCRATCH_MIN_GIB). Once the backend plans real storage capacity, a test that
+// asks for hundreds of gigabytes would start failing on whichever runner happens to be smaller.
+tplTest.concurrent.for([{ scratchFreeSpace: "1GiB", expectedGiB: env.expectedScratchGiB(1) }])(
+  "scratch-space (scratchFreeSpace=$scratchFreeSpace)",
+  async ({ scratchFreeSpace, expectedGiB }, { helper, pl, expect, skip }) => {
+    if (!pl.hasCapability("scratchSpace:v1")) {
+      skip("deployment has no scratch storage (pl started without --has-scratch-space)");
+    }
+
+    const result = await helper.renderTemplate(
+      false,
+      "exec.run.scratch_space",
+      ["scratch"],
+      (tx) => ({
+        scratchFreeSpace: tx.createValue(Pl.JsonObject, JSON.stringify(scratchFreeSpace)),
+      }),
+    );
+
+    const scratchOut = await result
+      .computeOutput("scratch", (a) => a?.getDataAsString()?.trim())
+      .awaitStableValue();
+    console.log(`scratch test output: "${scratchOut}"`);
+
+    const [gib, path] = (scratchOut ?? "").split(" ");
+    expect(gib).eq(expectedGiB);
+    expect(path).toBeTruthy();
+    // Local execution points temporary data at the working directory.
+    expect(path?.startsWith("/")).toBe(true);
+  },
+);
+
+/**
+ * A scratch size written as a formula, with and without a .staticFallback(). Both shapes
+ * evaluate to the same 2 GiB: on any backend that honours a scratch request, the formula is
+ * evaluated and the fallback is never consulted.
+ *
+ * A fallback on a SCRATCH formula is therefore useless — not wrong, just inert. Scratch control
+ * arrived after formula support, so a backend that cannot evaluate formulas has no scratch
+ * storage to give either: whatever size the fallback supplies is ignored, and the command gets
+ * its default temporary directory exactly as it would with no request at all. That is why the
+ * builder drops an unresolvable scratch size instead of failing, where a ram or cpu formula —
+ * which older backends do honour — must still produce a number.
+ *
+ * Both cases are kept because the two shapes must not diverge in what they let through: the
+ * exec runs either way, and the size the command sees is the evaluated one.
+ */
+tplTest.concurrent.for([
+  { withFallback: true, expectedGiB: env.expectedScratchGiB(2) },
+  { withFallback: false, expectedGiB: env.expectedScratchGiB(2) },
+])(
+  "scratch-formula (withFallback=$withFallback)",
+  async ({ withFallback, expectedGiB }, { helper, pl, expect, skip }) => {
+    if (!pl.hasCapability("scratchSpace:v1")) {
+      skip("deployment has no scratch storage (pl started without --has-scratch-space)");
+    }
+
+    const result = await helper.renderTemplate(
+      false,
+      "exec.run.scratch_formula",
+      ["scratch"],
+      (tx) => ({
+        withFallback: tx.createValue(Pl.JsonObject, JSON.stringify(withFallback)),
+      }),
+    );
+
+    const scratchOut = await result
+      .computeOutput("scratch", (a) => a?.getDataAsString()?.trim())
+      .awaitStableValue();
+    console.log(`scratch formula output (withFallback=${withFallback}): "${scratchOut}"`);
+    expect(scratchOut).eq(expectedGiB);
   },
 );
 
@@ -240,7 +330,7 @@ tplTest.concurrent(
   "should run bash from the template, cat a file from a directory and returns its content as a value resource",
   async ({ driverKit, helper, expect }) => {
     const storages = await driverKit.lsDriver.getStorageList();
-    const library = storages.find((s) => s.name == env.libraryStorage);
+    const library = env.findLibraryStorage(storages);
     expect(library).toBeDefined();
     const files = await driverKit.lsDriver.listFiles(library!.handle, "");
     const ourFile = files.entries.find((f) => f.name == "answer_to_the_ultimate_question.txt");

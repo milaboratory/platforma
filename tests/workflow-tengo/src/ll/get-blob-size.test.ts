@@ -6,7 +6,7 @@ tplTest.concurrent(
   "should get blob size from file in library storage",
   async ({ driverKit, helper, expect }) => {
     const storages = await driverKit.lsDriver.getStorageList();
-    const library = storages.find((s) => s.name == env.libraryStorage);
+    const library = env.findLibraryStorage(storages);
     expect(library).toBeDefined();
     const files = await driverKit.lsDriver.listFiles(library!.handle, "");
     const ourFile = files.entries.find((f) => f.name == "answer_to_the_ultimate_question.txt");

@@ -9,6 +9,7 @@ import type { BlockVars } from "../engine/api";
 
 const EXPECTED_MODEL_PACKAGE_JSON = `{
   "name": "@platforma-open/test-org.demo.model",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "main": "dist/index.cjs",
@@ -29,6 +30,7 @@ const EXPECTED_MODEL_PACKAGE_JSON = `{
     "check": "ts-builder check --target block-model"
   },
   "dependencies": {
+    "@platforma-open/test-org.demo.kind": "workspace:*",
     "@platforma-sdk/model": "catalog:"
   },
   "devDependencies": {

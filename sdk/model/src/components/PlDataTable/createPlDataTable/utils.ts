@@ -88,7 +88,10 @@ export function evaluateRules<R extends { match: ColumnSelector }>(
     const baseCollection = ColumnsCollection([{ columns: baseColumns, isFinal: true }]);
     for (const rule of selectorRules) {
       const hitIds = baseCollection.filter({ include: rule.match }).getColumnIds();
-      if (hitIds.length === 0) return result;
+      // A rule matching nothing simply contributes no entries — it must not
+      // discard the rules evaluated alongside it. The lookup below is
+      // null-safe, so leaving this rule out of the map is enough.
+      if (hitIds.length === 0) continue;
       selectorHitsByRule.set(rule, new Set(hitIds.map((id) => extractPObjectId(id))));
     }
   }
@@ -147,6 +150,8 @@ export type LabelableColumn = {
   readonly spec: PColumnSpec;
   readonly linkerPath?: ReadonlyArray<{ readonly linker: { readonly spec: PColumnSpec } }>;
   readonly qualifications?: MatchQualifications;
+  /** Columns with different markers are told apart without a "via" postfix. */
+  readonly marker?: string;
 };
 
 /** Derive labels for all table elements: columns via deriveDistinctLabels, axes from label columns. */
@@ -159,6 +164,7 @@ export function deriveAllLabels(options: {
     spec: c.spec,
     linkerPath: c.linkerPath?.map((step) => ({ spec: step.linker.spec })),
     qualifications: c.qualifications,
+    marker: c.marker,
   }));
   const columnLabels = deriveDistinctLabels(entries, deriveLabelsOptions).reduce(
     (acc, label, index) => ((acc[columns[index].id] = label), acc),

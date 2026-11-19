@@ -5,6 +5,7 @@ import { computableFromCfg } from "../cfg_render/executor";
 import type { MiddleLayerEnvironment } from "./middle_layer";
 import { computableFromRF } from "../js_render";
 import type { BlockContextAny } from "./block_ctx";
+import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import { hasActiveCfgComponents } from "../cfg_render/util";
 
 export function isActive(cfg: TypedConfigOrConfigLambda): boolean {
@@ -19,9 +20,10 @@ export function computableFromCfgOrRF(
   codeWithInfo: BlockCodeWithInfo | undefined,
   configKey: string,
   ops: Partial<ComputableRenderingOps> = {},
+  blockPack?: BlockPackSpec,
 ): Computable<unknown> {
   if (isConfigLambda(cfgOrFh)) {
     if (codeWithInfo === undefined) throw new Error("computableFromCfgOrRF: No code bundle.");
-    return computableFromRF(env, ctx, cfgOrFh, codeWithInfo, configKey, ops);
+    return computableFromRF(env, ctx, cfgOrFh, codeWithInfo, configKey, ops, blockPack);
   } else return computableFromCfg(env.driverKit, ctx, cfgOrFh, ops);
 }

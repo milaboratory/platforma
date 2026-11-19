@@ -42,8 +42,10 @@ message Resource {
   bool resource_ready = 14;
   bool is_final = 15;
 
+  // original_resource_id is never signed: a duplicate's tree must not grant access to the original's tree.
   uint64 original_resource_id = 10;
-  bytes original_resource_signature = 19;
+  // Never set: the original's ID is not a reference the client may follow.
+  bytes original_resource_signature = 19 [deprecated = true];
   uint64 parent_resource_id = 11;
 
   google.protobuf.Timestamp created_time = 12;
@@ -150,6 +152,9 @@ message Controller {
 }
 
 message ResourceSchema {
+  // The only kind a resource of this type can be created with; UNSPECIFIED allows any.
+  // A create request of any other kind fails with INVALID_ARGUMENT.
+  Base.ResourceKind kind = 6;
   Base.ResourceType type = 1;
 
   repeated FieldSchema fields = 2;
@@ -182,11 +187,18 @@ message ResourceSchema {
 
   bool free_inputs = 4; // if true, skip automatic input locking on creation
   bool free_outputs = 5; // if true, skip automatic output locking on creation
+
+  // next free: 7
 }
 
 message FieldSchema {
   Base.FieldType type = 1;
   string name = 2;
+
+  // The field is optional: resource creation does not create it, a client creates it in the
+  // creating transaction. Only an INPUT, OUTPUT or SERVICE field can be optional.
+  // See docs/optional-fields-contract.md.
+  bool optional = 3;
 }
 
 message ResourceAPIFeature {

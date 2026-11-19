@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Optional
 import msgspec
@@ -21,16 +22,30 @@ class StepContext:
         self,
         settings: GlobalSettings,
         initial_table_space: TableSpace | None = None,
+        overwrite_targets: set[str] | None = None,
     ):
         self._settings = settings
         self._table_space = initial_table_space if initial_table_space is not None else {}
         self._lazy_frames: list[pl.LazyFrame] = []
         self._chained_tasks: list[callable] = []
+        self._partial_outputs: list[str] = []
+        self._overwrite_targets = overwrite_targets if overwrite_targets is not None else set()
     
     @property
     def settings(self) -> GlobalSettings:
         """Returns the global settings (read-only)."""
         return self._settings
+
+    @property
+    def overwrite_targets(self) -> set[str]:
+        """
+        Returns the file identities this workflow both reads and writes (read-only).
+
+        A write to one of them is a rewrite. It cannot go straight to its own file, and
+        every other write can. The workflow fills this before any step runs, because a
+        write step may appear ahead of the read it collides with.
+        """
+        return self._overwrite_targets
     
     def get_table(self, table_name: str) -> pl.LazyFrame:
         """
@@ -81,6 +96,41 @@ class StepContext:
         self._chained_tasks.append(task)
     
     
+    def add_partial_output(self, path: str):
+        """
+        Records the file a rewrite sinks into before it is moved onto its target.
+
+        Only a rewrite registers anything here. An ordinary workflow leaves it empty.
+
+        A run that fails leaves the partial file behind. In a block's working directory
+        that file is not inert: it is collected as part of the block's output. The
+        workflow removes whatever is still registered here once execution ends.
+
+        Args:
+            path: Absolute path of the partial file
+        """
+        self._partial_outputs.append(path)
+
+    @property
+    def partial_outputs(self) -> list[str]:
+        """Returns the partial files the rewrites recorded so far (read-only)."""
+        return self._partial_outputs
+
+    def cleanup_partial_outputs(self):
+        """
+        Removes every partial file still recorded, and forgets them.
+
+        A partial file that reached its target has already been moved off the disk path
+        this holds. Removing what is left removes only the rewrites that never landed.
+        A workflow with no rewrite in it has nothing recorded. Safe to call twice.
+        """
+        for partial_output in self._partial_outputs:
+            try:
+                os.remove(partial_output)
+            except FileNotFoundError:
+                pass
+        self._partial_outputs = []
+
     def into_parts(self) -> tuple[dict[str, pl.LazyFrame], list[pl.LazyFrame], list[callable]]:
         """
         Destructs the StepContext and returns its internal state.

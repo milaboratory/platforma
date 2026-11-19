@@ -24,7 +24,7 @@ jobs:
     with:
       app-name: '${appName}'
       app-name-slug: '${appNameSlug}'
-      node-version: '20.x'
+      node-version: '${nodeVersion}'
       gha-runner-label: hz-ubuntu-dind
       build-script-name: 'build:dev-local'
       build-before-publish-script-name: 'build:release'
@@ -38,6 +38,11 @@ jobs:
       publish-to-public: 'true'
       package-path: 'block'
       create-tag: 'true'
+
+      # Require the published `block` package to be bumped by a changeset on
+      # PRs (empty changeset or the `skip-changelog` label waives it). Needs
+      # the input to exist on the pinned `@v4` reusable workflow.
+      require-package-path-bump: true
 
       npmrc-config: |
         {

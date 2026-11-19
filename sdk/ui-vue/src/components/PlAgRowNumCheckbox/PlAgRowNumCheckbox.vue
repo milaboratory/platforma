@@ -34,6 +34,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div
+    data-testid="pl-ag-row-num-checkbox"
     :class="[
       $styles.container,
       { [$styles['allowed-selection']]: allowedSelection },
@@ -42,10 +43,13 @@ onBeforeUnmount(() => {
       'align-center',
     ]"
   >
-    <div v-if="!isChecked" :class="[$styles.text]">{{ params.value }}</div>
+    <div v-if="!isChecked" data-testid="pl-ag-row-num-checkbox-value" :class="[$styles.text]">
+      {{ params.value }}
+    </div>
     <PlCheckbox
       v-if="forceShowCheckbox"
       v-model="isChecked"
+      data-testid="pl-ag-row-num-checkbox-checkbox"
       :class="[$styles.checkbox, isChecked && $styles.checked]"
       @update:modelValue="setSelection"
     />

@@ -36,7 +36,6 @@ component_management:
         - lib/ptabler/**/*
         - lib/ptexter/**/*
         - sdk/workflow-tengo/**/*
-        - tests/config-local-ml-integration/**/*
         - tests/helper/**/*
         - tests/package-builder/**/*
         - tests/tengo-builder/**/*

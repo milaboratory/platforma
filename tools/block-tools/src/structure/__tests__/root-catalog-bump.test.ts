@@ -74,7 +74,7 @@ describe("rootCatalogBumpRules mode split", () => {
     expect(fs.exists("MARKER.txt")).toBe(true);
   });
 
-  test("--update-deps-only: SDK catalog bumped, infra floor seeded, default-mode leaf skipped", async () => {
+  test("--update-deps-only: SDK catalog bumped, default-mode leaf skipped", async () => {
     const fs = freshFs();
     engineRun(STRUCTURE, fs, ctx(true), { registryLookup: mockLookup });
 
@@ -83,15 +83,12 @@ describe("rootCatalogBumpRules mode split", () => {
     // Present SDK keys refreshed to latest.
     expect(cat["@platforma-sdk/model"]).toBe("9.9.9");
     expect(cat["@milaboratories/ts-builder"]).toBe("9.9.9");
-    // standard infra-floor keys ABSENT from the on-disk catalog are
-    // SEEDED add-if-absent (no manual seed step needed).
-    expect(cat["shx"]).toBe("~0.4.0");
-    expect(cat["turbo"]).toBe("~2.8.11");
-    expect(cat["vitest"]).toBe("~4.0.18");
     // Non-matching dep left alone.
     expect(cat["lodash"]).toBe("1.0.0");
     // Default-mode leaf was skipped in update-deps-only mode.
     expect(fs.exists("MARKER.txt")).toBe(false);
+    // The infra floor is NOT this rule's job — it is seeded on every refresh
+    // by rootPnpmWorkspaceRules (see root-catalog-floor.test.ts).
   });
 
   test("init: SDK catalog bumped AND default-mode leaf fires", async () => {

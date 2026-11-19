@@ -10,6 +10,7 @@ import type {
 } from "@milaboratories/pl-model-common";
 import { traverseQuerySpec } from "@milaboratories/pl-model-common";
 import { hashJson, PFrameInternal } from "@milaboratories/pl-model-middle-layer";
+import type { LegacyQuery, PFrame } from "@milaboratories/pf-spec";
 
 /**
  * Make every inline column in a `SpecQuery` self-contained by embedding its
@@ -54,10 +55,10 @@ export function stableKeyFromFullPTableDef(data: FullPTableDef): PTableHandle {
  * WASM-spec frame.
  */
 export function lowerLegacyPTableDef(
-  pFrameSpec: PFrameInternal.PFrameWasmV3,
+  pFrameSpec: PFrame,
   legacyDef: PTableDef<PObjectId>,
 ): { tableSpec: PTableColumnSpec[]; dataQuery: DataQuery } {
-  const legacy: PFrameInternal.LegacyQuery = {
+  const legacy: LegacyQuery = {
     src: legacyDef.src,
     filters: [...legacyDef.partitionFilters, ...legacyDef.filters],
     sorting: legacyDef.sorting,
@@ -75,7 +76,7 @@ export function lowerLegacyPTableDef(
 export function buildFullPTableDefFromLegacy(opts: {
   pFrameHandle: PFrameHandle;
   def: PTableDef<PObjectId>;
-  pFrameSpec: PFrameInternal.PFrameWasmV3;
+  pFrameSpec: PFrame;
 }): FullPTableDef {
   return {
     pFrameHandle: opts.pFrameHandle,

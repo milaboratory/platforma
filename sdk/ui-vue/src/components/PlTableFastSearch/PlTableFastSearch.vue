@@ -5,7 +5,12 @@ const model = defineModel<string>({ required: true });
 </script>
 
 <template>
-  <PlSearchField v-model="model" clearable placeholder="Search...">
+  <PlSearchField
+    v-model="model"
+    data-testid="pl-table-fast-search"
+    clearable
+    placeholder="Search..."
+  >
     <template #helper>
       <b>How table search works:</b>
       <br />

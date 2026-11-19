@@ -37,7 +37,12 @@ const handleCancel = () => {
 </script>
 
 <template>
-  <PlDialogModal v-model="props.opened" :closable="false" @click.stop>
+  <PlDialogModal
+    data-testid="pl-confirm-dialog"
+    v-model="props.opened"
+    :closable="false"
+    @click.stop
+  >
     <template #title>
       {{ title }}
     </template>
@@ -45,10 +50,10 @@ const handleCancel = () => {
       {{ message }}
     </template>
     <template #actions>
-      <PlBtnPrimary @click.stop="handleConfirm">
+      <PlBtnPrimary data-testid="pl-confirm-dialog-confirm" @click.stop="handleConfirm">
         {{ props.confirmLabel }}
       </PlBtnPrimary>
-      <PlBtnSecondary @click.stop="handleCancel">
+      <PlBtnSecondary data-testid="pl-confirm-dialog-cancel" @click.stop="handleCancel">
         {{ props.cancelLabel }}
       </PlBtnSecondary>
     </template>

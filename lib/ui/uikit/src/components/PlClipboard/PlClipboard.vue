@@ -36,7 +36,13 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <PlMaskIcon16 :name="iconName" :size="props.size" :class="$style.copy" @click="onCopy" />
+  <PlMaskIcon16
+    data-testid="pl-clipboard"
+    :name="iconName"
+    :size="props.size"
+    :class="$style.copy"
+    @click="onCopy"
+  />
 </template>
 
 <style module>
