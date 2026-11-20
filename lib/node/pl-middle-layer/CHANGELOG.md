@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 2.7.9
+
+### Patch Changes
+
+- 07a5ecd: Take the quickjs-emscripten fork from npm.platforma.bio as `@milaboratories-poc/quickjs-emscripten`, replacing the GitHub release URL that pnpm 12 refuses as a subdependency. Consumers map the `@milaboratories-poc` scope to https://npm.platforma.bio/ in their `.npmrc`.
+
 ## 2.7.8
 
 ### Patch Changes
