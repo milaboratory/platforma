@@ -28,6 +28,7 @@
     "@milaboratories/pl-model-common": "workspace:*",
     "@milaboratories/uikit": "workspace:*",
     "@platforma-sdk/model": "workspace:*",
+    "@standard-schema/spec": "catalog:",
     "@types/d3-format": "catalog:",
     "@types/node": "catalog:",
     "@types/semver": "catalog:",
@@ -60,6 +61,7 @@
     "semver": "catalog:",
     "shx": "catalog:",
     "typescript": "catalog:",
+    "valibot": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   }
