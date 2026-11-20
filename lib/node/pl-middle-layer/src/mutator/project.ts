@@ -19,6 +19,7 @@ import {
   Pl,
   PlClient,
   readyOrDuplicateOrError,
+  resourceIdToString,
 } from "@milaboratories/pl-client";
 import {
   createRenderHeavyBlock,
@@ -740,6 +741,7 @@ export class ProjectMutator {
       name: this.getBlock(blockId).label,
       blockPack: JSON.stringify(info.source),
       blockId,
+      projectId: resourceIdToString(this.rid),
     };
   }
 
