@@ -29,6 +29,15 @@ function humanizeShortName(shortName: string): string {
     .join(" ");
 }
 
+/** Appended after `require-package-path-bump` when `.structure` has
+ *  `ownNpmRegistry: true`: the shared CI then installs and publishes
+ *  `@platforma-open` through npm.platforma.bio. Empty otherwise, so a block
+ *  without the setting gets the same file byte for byte. */
+const OWN_NPM_REGISTRY_INPUT = `
+
+      # .structure "ownNpmRegistry": publish @platforma-open to npm.platforma.bio.
+      npm-own-registry-scopes: '@platforma-open'`;
+
 export function rootCiRules(): void {
   scope("root", () => {
     when(
@@ -42,6 +51,7 @@ export function rootCiRules(): void {
               appName: `Block: ${humanizeShortName(shortName)}`,
               appNameSlug: `block-${shortName}`,
               nodeVersion: NODE_VERSION,
+              ownNpmRegistry: ctx.ownNpmRegistry ? OWN_NPM_REGISTRY_INPUT : "",
             };
           }),
         );
