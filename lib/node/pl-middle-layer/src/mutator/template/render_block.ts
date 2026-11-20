@@ -43,6 +43,8 @@ export type BlockActionContextBaggage = {
   /** JSON of the block pack spec. */
   blockPack: string;
   blockId: string;
+  /** Resource id of the project, as the project overview shows it (`NG:0x…`). */
+  projectId: string;
 };
 
 /** Resource type of a block action context. See ActionContextV1Type in the backend. */
@@ -67,6 +69,7 @@ function createBlockActionContext(
       name: baggage.name,
       "block-pack": baggage.blockPack,
       "block-id": baggage.blockId,
+      "project-id": baggage.projectId,
       "run-id": randomUUID(),
     }),
   );
