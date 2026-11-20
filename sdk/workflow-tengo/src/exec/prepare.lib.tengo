@@ -84,14 +84,15 @@ implInputs := func(inputs, raw, ...fail) {
 				if is_undefined(collected[key]) {
 					ll.assert(!is_undefined(customMetricsMap) && !is_undefined(customMetricsMap[node.source]),
 						"exec.tpl: a formula reads custom metric %q, but its template output is missing from the %s input", node.name, execConstants.REGULAR_INPUT_CUSTOM_METRICS)
-					parsed := execFormula.parseMetricOutput([node.name], customMetricsMap[node.source].getData())
+					data := customMetricsMap[node.source].getData()
+					parsed := node.output ? execFormula.parseOutputMetric(node, data) : execFormula.parseMetricOutput([node.name], data)
 					if !is_undefined(parsed.err) {
 						if !is_undefined(onFail) {
 							onFail(parsed.err)
 						}
 						ll.panic("%s", parsed.err)
 					}
-					collected[key] = parsed.values[node.name]
+					collected[key] = node.output ? parsed.value : parsed.values[node.name]
 				}
 				return collected[key]
 			}

@@ -130,6 +130,9 @@ _newState := func() {
 		// dimension (ram / cpu / vram / scratch) -> the jobs its formula's custom metrics need,
 		// { <source key>: <source> } (exec.formula.customMetric)
 		formulaSources: {},
+		// formulas given to metricInputs(): their metric jobs are inputs of the exec whether or
+		// not a resource formula reads them
+		declaredMetrics: [],
 		fileTags: {},   // fileName -> tag (for f.size("tag") / f.lineCount("tag") aggregation)
 
 		commandName: "",
@@ -374,7 +377,8 @@ _planOf := func(st) {
 	// recursive function call within :exec — no import of :pt or any
 	// metrics module — so there is no import cycle.
 	hasFormula := !is_undefined(st.memFormulaAst) || !is_undefined(st.cpuFormulaAst) ||
-		!is_undefined(st.gpuFormulaAst) || !is_undefined(st.scratchFormulaAst)
+		!is_undefined(st.gpuFormulaAst) || !is_undefined(st.scratchFormulaAst) ||
+		len(st.declaredMetrics) > 0
 	resolvedMem := undefined
 	resolvedCpu := undefined
 	resolvedGpu := undefined
@@ -423,35 +427,35 @@ _planOf := func(st) {
 			}
 			allFiles := maps.getKeys(st.filesToAdd)
 
+			// source key -> { source, files, names }: one metric input per key, across every
+			// dimension and every metricInputs() formula
+			planned := execFormula.planMetrics({
+				ram: { ast: st.memFormulaAst, sources: st.formulaSources.ram },
+				cpu: { ast: st.cpuFormulaAst, sources: st.formulaSources.cpu },
+				vram: { ast: st.gpuFormulaAst, sources: st.formulaSources.vram },
+				scratch: { ast: st.scratchFormulaAst, sources: st.formulaSources.scratch }
+			}, st.declaredMetrics, tagMap, allFiles)
+			ll.assert(is_undefined(planned.err), planned.err)
+			neededSources := planned.jobs
+			resolvedMem = planned.resolved.ram
+			resolvedCpu = planned.resolved.cpu
+			resolvedGpu = planned.resolved.vram
+			resolvedScratch = planned.resolved.scratch
+
 			neededLineCount := {}
-			// source key -> { source, files, names }: one template run per key, across every dimension
-			neededSources := {}
-			resolveDim := func(ast, dim) {
-				resolved := execFormula.resolveAst(ast, tagMap, allFiles)
+			for _, resolved in planned.resolved {
 				refs := execFormula.referencedMetricFiles(resolved)
 				if !is_undefined(refs.lineCount) { sets.add(neededLineCount, refs.lineCount...) }
-				dimSources := is_undefined(st.formulaSources[dim]) ? {} : st.formulaSources[dim]
-				for key, used in execFormula.referencedSources(resolved) {
-					src := dimSources[key]
-					ll.assert(!is_undefined(src), "exec.builder: the %s formula reads custom metrics %s, but the formula was built without their template", dim, text.join(used.names, ", "))
-					if is_undefined(neededSources[key]) {
-						neededSources[key] = { source: src, files: used.files, names: used.names }
-					} else {
-						ll.assert(neededSources[key].files == used.files,
-							"exec.builder: custom metrics %s read different files in two formulas of one exec", text.join(used.names, ", "))
-						neededSources[key].names = slices.unique(append(copy(neededSources[key].names), used.names...))
-					}
-				}
-				return resolved
 			}
-			if !is_undefined(st.memFormulaAst) { resolvedMem = resolveDim(st.memFormulaAst, "ram") }
-			if !is_undefined(st.cpuFormulaAst) { resolvedCpu = resolveDim(st.cpuFormulaAst, "cpu") }
-			if !is_undefined(st.gpuFormulaAst) { resolvedGpu = resolveDim(st.gpuFormulaAst, "vram") }
-			if !is_undefined(st.scratchFormulaAst) { resolvedScratch = resolveDim(st.scratchFormulaAst, "scratch") }
 
 			if len(neededSources) > 0 {
 				outputs := {}
 				for key, need in neededSources {
+					if !is_undefined(need.source.content) {
+						// an output metric reads the saved output of an earlier exec as it is
+						outputs[key] = need.source.content
+						continue
+					}
 					refs := {}
 					for fn in need.files {
 						ref := is_undefined(need.source.files) ? st.filesToAdd[fn] : need.source.files[fn]
@@ -1854,6 +1858,27 @@ _makeBuilder := func(st) {
 		 *
 		 * @return builder
 		 */
+		/**
+		 * Makes the metric jobs of these formulas inputs of the exec whether or not its resource
+		 * formulas read them. A metric job is a regular input, so without this the exec's inputs,
+		 * and whether it runs again, follow which formula the block picks. Declare every metric a
+		 * resource formula of this exec may read, and the choice between formulas (an override,
+		 * a fixed request) stays out of the exec's identity.
+		 *
+		 * Custom and output metrics only; a backend that cannot evaluate formulas attaches none.
+		 *
+		 * @param formulas: exec.formula values whose custom / output metrics to attach
+		 * @return builder
+		 */
+		metricInputs: func(...formulas) {
+			for x in formulas {
+				ll.assert(execFormula.isFormula(x), "exec.builder.metricInputs: expected exec.formula values, got %v", x)
+				st.declaredMetrics = append(st.declaredMetrics,
+					{ __isFormula__: true, __ast__: execFormula.astOf(x), __sources__: execFormula.sourcesOf(x) })
+			}
+			return self
+		},
+
 		copy: func() {
 			c := _cloneState(st)
 			_lastBuilderId += 1
@@ -2163,6 +2188,30 @@ _makeBuilder := func(st) {
 					ll.assert(sets.hasElement(fin.filesContentToSave, fileName),
 						"file '%s' content was not saved, add saveFileContent() call to the exec builder", fileName)
 					return tpl.output("filesContent", fin.cache).getFutureInputField(fileName)
+				},
+
+				/**
+				 * A metric read from a JSON file this exec saved with saveFileContent(), as an
+				 * exec.formula leaf for the resources of a later exec (exec.formula.outputMetric).
+				 *
+				 *   clones := alignRun.metric("clones", "align.json", { key: "estimatedInitialClones", default: 0 })
+				 *
+				 * @param name: string - the metric
+				 * @param fileName: string - a file saved with saveFileContent()
+				 * @param opts: optional { key, default } - the JSON key (default: name) and the value
+				 *              when the key is absent
+				 * @return formula
+				 */
+				metric: func(name, fileName, ...opts) {
+					return execFormula.outputMetric(name, fileName, res.getFileContent(fileName), opts...)
+				},
+
+				/**
+				 * metric() over the stdout saved with saveStdoutContent(): for a command that
+				 * prints its metrics as one JSON object.
+				 */
+				stdoutMetric: func(name, ...opts) {
+					return execFormula.outputMetric(name, "stdout", res.getStdoutContent(), opts...)
 				},
 
 				/**
