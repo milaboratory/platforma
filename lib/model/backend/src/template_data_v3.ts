@@ -68,8 +68,9 @@ export interface TemplateDataV3 {
    * Backend capability tokens this template (and its transitively-imported
    * sub-templates) requires to run. Populated by `tengo-builder` at compile
    * time:
-   *   - `"wasm:v1"` is added when a wasm artifact is embedded (via
-   *     `assets.importWasm`, directly or through a library).
+   *   - `"wasm:v2"` is added when a wasm artifact is embedded (via
+   *     `assets.importWasm`, directly or through a library). Templates
+   *     built by older `tengo-builder` versions carry `"wasm:v1"`.
    *   - Child templates contribute their own `requiredCapabilities` —
    *     unioned transitively, so the top template carries the full set.
    *
