@@ -280,6 +280,8 @@ tplTest.concurrent(
   "a failed import fails the effect: reading its entry under imports gives the import's error",
   async ({ helper, pl, expect, skip }) => {
     if (!hasValuesTree(pl)) skip("the backend has no BContext/2 family");
+    // On k8s the library is in S3, and the effect map gets ready with no import error.
+    if (process.env.PL_TEST_K8S === "1") skip("on k8s the import error does not get to the effect");
 
     const source = missingLibrarySource();
     const render = await renderWorkflowV2(helper, "v2.effect-only", {
