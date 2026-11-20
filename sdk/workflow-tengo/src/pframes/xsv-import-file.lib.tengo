@@ -123,6 +123,10 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 		if ops.cpu != undefined {
 			transposeXsv.cpu(ops.cpu)
 		}
+		// the caller's requests, else the queue's defaults, as before requests became mandatory
+		if ops.cpu == undefined || ops.mem == undefined {
+			transposeXsv._queueDefaultRequests()
+		}
 		if ops.mem != undefined {
 			transposeXsv.mem(ops.mem)
 		}
@@ -194,6 +198,10 @@ importFile := func(xsvFile, xsvType, spec, ...ops) {
 	}
 	if ops.cpu != undefined {
 		pfconv.cpu(ops.cpu)
+	}
+	// the caller's requests, else the queue's defaults, as before requests became mandatory
+	if ops.cpu == undefined || ops.mem == undefined {
+		pfconv._queueDefaultRequests()
 	}
 	if ops.mem != undefined {
 		pfconv.mem(ops.mem)

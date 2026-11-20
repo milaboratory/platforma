@@ -1,0 +1,66 @@
+/**
+ * The final content of a failed attempt's streams on a backend with WorkdirSave v3 (exec fallbacks,
+ * spec §13.3, §14.3): decides on the outcomes of a save of the streamed files the attempt wrote,
+ * then saves again only those that saved, on the first save's post-save working directory. A file
+ * whose first save failed (the directory lost, a path that is not a regular file) ends on the
+ * stand-in, as one never written does: its error stays in that save, which
+ * nothing reads, instead of spreading from the router's outputs to the successful fallback's.
+ *
+ * Why two saves: a template with an error anywhere among its inputs fails as a whole, every
+ * output with it, so the first save's blobs, which may hold the error, cannot be this template's
+ * inputs; the second save's blobs are clean by construction. The outcome map is an input: when it
+ * or one of its entries is an error (the save itself failed, an index failed for an
+ * infrastructure reason), this template still fails, and the job's outputs with it.
+ *
+ * inputs.outcome: the first save's outcome map
+ * inputs.workdir: the first save's post-save working directory (unset when the directory is lost)
+ * inputs.streamed: string[] - every streamed file name
+ * outputs.streamOwn: file name -> the file's blob or the stand-in
+ */
+
+self := import(":tpl.light")
+smart := import(":smart")
+wdSave := import(":workdir.save")
+slices := import(":slices")
+saveChain := import(":exec.save-chain")
+file := import(":file")
+stream := import(":exec.stream")
+
+// read entry by entry
+saveChain.keepOpaque(self, ["outcome"])
+
+self.awaitState("outcome", { wildcard: "*" }, "ResourceReady")
+
+self.body(func(inputs) {
+	saved := []
+	for name, f in inputs.outcome.inputs() {
+		if name == "workdir" || !f.isSet() || f.isErrorSet() {
+			continue
+		}
+		if f.getValue().getDataAsJson().result == "success" {
+			saved = append(saved, name)
+		}
+	}
+
+	// WorkdirSave v3 again: a directory lost since the first save leaves these blobs unset, not
+	// errored
+	files := undefined
+	if len(saved) > 0 {
+		again := wdSave.builder(self.rawInputs().workdir.getValue(), { v3: true })
+		for name in saved {
+			again.saveFile(name)
+		}
+		again.build()
+		files = again.getSavedFiles()
+	}
+
+	own := smart.ephemeralMapBuilder()
+	for name in inputs.streamed {
+		if slices.hasElement(saved, name) {
+			own.addRef(name, file.exportFile(files.getFutureInputField(name)))
+		} else {
+			own.addRef(name, stream.notWritten(name))
+		}
+	}
+	return { streamOwn: own.build() }
+})

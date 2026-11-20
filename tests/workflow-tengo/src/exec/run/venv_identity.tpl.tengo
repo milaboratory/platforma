@@ -13,6 +13,7 @@ swB := assets.importSoftware("@platforma-open/milaboratories.software-venv-ident
 _whereAmI := func(sw) {
 	return exec.builder().
 		software(sw).
+		cpu(1).mem("512MiB").
 		saveStdoutContent().
 		run().
 		getStdoutContent()

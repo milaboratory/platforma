@@ -1,0 +1,55 @@
+/**
+ * Small exec cases (exec fallbacks, review 4):
+ *
+ *   inputs.case == "failedSave": a workdir processor fails, so the save does: getAttempts() must
+ *                                error like the other outputs (inputs.forceSaveV1 for the path
+ *                                without WorkdirSave v3)
+ *   inputs.case == "fileSetContent": saveFileSetContent() of two .txt files
+ *   inputs.case == "formulaHandler": the handler's RAM is a resource formula, evaluated when the
+ *                                    router prepares the handler's plan
+ */
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["out"])
+
+f := exec.formula
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+failProcTpl := assets.importTemplate(":exec.fallback.fail_proc")
+
+self.body(func(inputs) {
+	shell := func(script) {
+		return exec.builder().
+			software(shellSw).
+			arg("-c").arg(script + " # " + inputs.nonce).
+			inLightQueue()
+	}
+
+	if inputs.case == "failedSave" {
+		b := shell("echo a > a.txt").cpu(1).ram("50Mi").saveFile("a.txt").processWorkdir("p", failProcTpl, {})
+		if inputs.forceSaveV1 == true {
+			b._forceWorkdirSaveV1()
+		}
+		return { out: b.run().getAttempts() }
+	}
+
+	if inputs.case == "fileSetContent" {
+		res := shell("echo a > a.txt; echo b > b.txt").cpu(1).ram("50Mi").
+			saveFileSetContent("txt", "^[ab]\\.txt$").
+			run()
+		return { out: res.getFileSetContent("txt") }
+	}
+
+	// formulaHandler
+	handler := exec.builder().
+		software(shellSw).
+		arg("-c").argExpr("echo {system.ram.bytes} > out.txt # " + inputs.nonce).
+		inLightQueue().
+		resources({ onCPU: { cpu: 1, ram: f.mib(64).plus(f.mib(32)) } }).
+		saveFileContent("out.txt")
+	root := shell("echo root > out.txt; exit 2").cpu(1).ram("50Mi").saveFileContent("out.txt").
+		fallbacks({ SoftwareError: [{ name: "formula", builder: handler }] })
+	return { out: root.run().getFileContent("out.txt") }
+})

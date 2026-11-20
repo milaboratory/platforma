@@ -88,6 +88,10 @@ _FIELD_OPTIONS := "options"
 _FIELD_WORKDIR_IN := "workdirIn"
 
 // Outputs
+_FIELD_OUTCOME := "outcome"
+// v3 only, optional: the outcome of the run this command continues; the backend numbers the job's
+// attempts from it
+_FIELD_PREVIOUS_OUTCOME := "previousOutcome"
 _FIELD_WORKDIR_OUT := "workdirOut"
 
 /**
@@ -550,6 +554,10 @@ builder := func(workdir, ...initialState) {
 	ram := undefined
 
 	commandName := ""
+	// RunCommand v3: a software failure is an outcome, not an error (exec fallbacks)
+	useV3 := false
+	previousOutcome := undefined
+	restart := false
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
 	nErrorLines := 200
@@ -565,6 +573,28 @@ builder := func(workdir, ...initialState) {
 			validation.assertType(name, "string", "runcmd.builder.name: name must be a string")
 
 			commandName = name
+			return self
+		},
+
+		/**
+		 * Builds a RunCommand v3: a software failure finishes the command with the post-run
+		 * working directory and an `outcome` output instead of an error. Requires a backend with
+		 * RunCommand v3 (limits.getRunCommandV3Type).
+		 *
+		 * The backend numbers the attempts of a job and counts them against its limits: a command
+		 * that continues a job gives it the outcome of the run it continues.
+		 *
+		 * @param previous: map, optional - { outcome: reference, restart: bool }: the outcome of
+		 *        the run this command continues (a fallback, or with restart: the same plan again
+		 *        after its working directory was lost); none for a job's first command.
+		 */
+		v3: func(...previous) {
+			useV3 = true
+			if len(previous) > 0 && !is_undefined(previous[0]) {
+				ll.assert(!is_undefined(previous[0].outcome), "runcmd.builder.v3: previous.outcome is required")
+				previousOutcome = previous[0].outcome
+				restart = previous[0].restart == true
+			}
 			return self
 		},
 
@@ -715,8 +745,12 @@ builder := func(workdir, ...initialState) {
 
 			ll.assert(!is_undefined(queue), "runcmd.builder.build: queue is required for any command run")
 
-			resourceTypes := limits.getResourceTypes(queue)
-			runRes = smart.ephemeralBuilder(resourceTypes.runCommand)
+			runType := limits.getResourceTypes(queue).runCommand
+			if useV3 {
+				runType = limits.getRunCommandV3Type(queue)
+				ll.assert(!is_undefined(runType), "runcmd.builder.build: the backend has no RunCommand v3")
+			}
+			runRes = smart.ephemeralBuilder(runType)
 
 			runRes.getField(_FIELD_WORKDIR_IN).set(workdir)
 
@@ -770,6 +804,12 @@ builder := func(workdir, ...initialState) {
 				dockerImageTag: options.dockerImageTag,
 				dockerEntrypoint: options.dockerEntrypoint
 			}
+			if useV3 && restart {
+				buildOptions.restart = true
+			}
+			if useV3 && !is_undefined(previousOutcome) {
+				runRes.createInputField(_FIELD_PREVIOUS_OUTCOME).set(previousOutcome)
+			}
 
 			optionsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_OPTIONS, json.encode(buildOptions))
 			runRes.getField(_FIELD_OPTIONS).set(optionsRes)
@@ -777,11 +817,16 @@ builder := func(workdir, ...initialState) {
 			argsRes := smart.createValueResource(_RTYPE_RUN_COMMAND_ARGS, json.encode(options.args))
 			runRes.getField(_FIELD_ARGS).set(argsRes)
 
-			// the runner reports the run of the command into the context of this template; linked before the lock
+			// the runner reports the run of the command into the context of this template, and reads the
+			// block of its run records there; linked before the lock
 			actionContext.inherit(runRes.id)
 
-			res := oop.inherit(runRes.lockAndBuild(), {
-				"workdir": runRes.outputs()[_FIELD_WORKDIR_OUT],
+			built := runRes.lockAndBuild()
+			outputs := runRes.outputs()
+			res := oop.inherit(built, {
+				"workdir": outputs[_FIELD_WORKDIR_OUT],
+				// v3 only: how the run ended (run-command/outcome)
+				"outcome": useV3 ? outputs[_FIELD_OUTCOME] : undefined,
 				"options": buildOptions
 			})
 
