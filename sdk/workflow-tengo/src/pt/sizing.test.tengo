@@ -98,6 +98,70 @@ TestFloorStillAppliesWithCustomParams := func() {
 	test.isEqual(52 * GiB, _ram(8 * GiB, { floor: 12 * GiB, slope: 6, intercept: 4 * GiB }))  //  4 + 6*8
 }
 
+// ---- ram: fractional slope ------------------------------------------------
+// size * thousandths / 1000, ceiling division
+
+TestIntegerSlopeFormulaIsUnchanged := func() {
+	// Existing requests and template hashes depend on this tree.
+	_old := func(slope, intercept, floor) {
+		fallback := intercept > floor ? intercept : floor
+		return f.size({ default: 0 }).times(slope).plus(f.const(intercept)).
+			atLeast(f.const(floor)).
+			staticFallback(fallback)
+	}
+	test.isEqual(f.astOf(_old(10, 4 * GiB, 4 * GiB)), f.astOf(sizing.ramFormula({})))
+	test.isEqual(f.astOf(_old(10, 4 * GiB, 4 * GiB)), f.astOf(sizing.ramFormula({ slope: 10 })))
+	test.isEqual(f.astOf(_old(0, 4 * GiB, 4 * GiB)), f.astOf(sizing.ramFormula({ slope: 0 })))
+	test.isEqual(f.astOf(_old(6, 4 * GiB, 12 * GiB)), f.astOf(sizing.ramFormula({ slope: 6, floor: 12 * GiB })))
+	test.isEqual(f.fallbackOf(_old(6, 8 * GiB, 4 * GiB)), _fallback({ slope: 6, intercept: 8 * GiB }))
+}
+
+TestWholeFloatSlopeUsesTheIntegerFormula := func() {
+	test.isEqual(f.astOf(sizing.ramFormula({ slope: 2 })), f.astOf(sizing.ramFormula({ slope: 2.0 })))
+	test.isEqual(f.astOf(sizing.ramFormula({ slope: 0 })), f.astOf(sizing.ramFormula({ slope: 0.0 })))
+}
+
+TestFractionalSlopeFormula := func() {
+	expected := f.size({ default: 0 }).times(30).dividedBy(1000).plus(f.const(4 * GiB)).
+		atLeast(f.const(4 * GiB)).
+		staticFallback(4 * GiB)
+	test.isEqual(f.astOf(expected), f.astOf(sizing.ramFormula({ slope: 0.03 })))
+	test.isEqual(f.fallbackOf(expected), _fallback({ slope: 0.03 }))
+}
+
+TestFractionalSlopeGoverns := func() {
+	test.isEqual(4 * GiB, _ram(0, { slope: 0.03 }))
+	test.isEqual(7 * GiB, _ram(100 * GiB, { slope: 0.03 }))      //  4 + 0.03*100
+	test.isEqual(34 * GiB, _ram(1000 * GiB, { slope: 0.03 }))    //  4 + 0.03*1000
+	test.isEqual(8 * GiB, _ram(8 * GiB, { slope: 0.5 }))         //  4 + 0.5*8
+	test.isEqual(24 * GiB, _ram(8 * GiB, { slope: 2.5 }))        //  4 + 2.5*8
+}
+
+TestFractionalSlopeRoundsUp := func() {
+	// Ceiling division: a byte of input adds a byte of RAM.
+	test.isEqual(4 * GiB + 1, _ram(1, { slope: 0.03 }))
+	test.isEqual(4 * GiB + 2, _ram(3, { slope: 0.5 }))     //  ceil(1.5)
+	// Past three decimals, the slope is rounded up.
+	test.isEqual(35 * GiB, _ram(1000 * GiB, { slope: 0.0301 }))      //  acts as 0.031
+	test.isEqual(34 * GiB, _ram(1000 * GiB, { slope: 0.0299999 }))   //  acts as 0.03
+}
+
+TestFractionalSlopeKeepsFloorAndIntercept := func() {
+	test.isEqual(12 * GiB, _ram(100 * GiB, { slope: 0.03, floor: 12 * GiB }))
+	test.isEqual(34 * GiB, _ram(1000 * GiB, { slope: 0.03, floor: 12 * GiB }))     //  4 + 30
+	test.isEqual(38 * GiB, _ram(1000 * GiB, { slope: 0.03, intercept: 8 * GiB }))  //  8 + 30
+}
+
+TestZeroFloatSlopeIsFlat := func() {
+	test.isEqual(4 * GiB, _ram(500 * GiB, { slope: 0.0 }))
+}
+
+TestTinySlopeRoundsUpToOneThousandth := func() {
+	test.isEqual(4 * GiB + 512 * units.MiB, _ram(500 * GiB, { slope: 0.0001 }))  //  acts as 0.001
+	// Below the rounding tolerance, a positive slope still acts as 0.001.
+	test.isEqual(4 * GiB + 512 * units.MiB, _ram(500 * GiB, { slope: 0.0000000005 }))
+}
+
 // ---- ram: static fallback -------------------------------------------------
 // A backend that cannot evaluate formulas uses the static fallback, in bytes. It equals
 // the smallest value the formula can give: max(intercept, floor).
@@ -117,8 +181,8 @@ TestFallbackIsAtLeastTheIntercept := func() {
 	test.isEqual(8 * GiB, _fallback({ floor: 2 * GiB, intercept: 8 * GiB }))
 }
 
-// ll.assert rejects a non-integer or non-positive floor, a non-integer slope, a slope
-// below 0, and an intercept below 4 GiB. ll.assert stops the template, and is_error cannot
+// ll.assert rejects a non-integer or non-positive floor, a slope that is not a finite
+// number, a slope below 0, and an intercept below 4 GiB. ll.assert stops the template, and is_error cannot
 // catch that. Thus no test checks it.
 
 // ---- cpu ------------------------------------------------------------------
