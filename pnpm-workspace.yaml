@@ -271,7 +271,7 @@ catalog:
   "@bytecodealliance/jco-transpile": ^0.20.0
   "@bytecodealliance/preview2-shim": ^0.30.0
 
-  "quickjs-emscripten": "https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-0.32.1-bytecode.1.tgz"
+  "quickjs-emscripten": "npm:@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1"
 
   # UI
 
@@ -336,13 +336,11 @@ catalog:
   "@types/mime-types": ^2.1.4
   "@types/tar-fs": ^2.0.4
 
-# The quickjs-emscripten fork (bytecode API) pulls its subpackages from GitHub release URLs.
-blockExoticSubdeps: false
-
 minimumReleaseAgeExclude:
   - "@milaboratories/*"
   - "@platforma-sdk/*"
   - "@platforma-open/*"
+  - "@milaboratories-poc/*"
 
 allowBuilds:
   "@milaboratories/pframes-rs-node": true

@@ -390,8 +390,8 @@ catalogs:
       specifier: 0.75.0
       version: 0.75.0
     quickjs-emscripten:
-      specifier: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-0.32.1-bytecode.1.tgz
-      version: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-0.32.1-bytecode.1.tgz
+      specifier: npm:@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1
+      version: 0.32.1-bytecode.1
     resize-observer-polyfill:
       specifier: ^1.5.1
       version: 1.5.1
@@ -3363,7 +3363,7 @@ importers:
         version: 1.32.2(supports-color@10.2.2)(zod@3.25.76)
       quickjs-emscripten:
         specifier: 'catalog:'
-        version: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-0.32.1-bytecode.1.tgz
+        version: '@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1'
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -3481,7 +3481,7 @@ importers:
         version: 11.5.3
       quickjs-emscripten:
         specifier: 'catalog:'
-        version: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-0.32.1-bytecode.1.tgz
+        version: '@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1'
       semver:
         specifier: 'catalog:'
         version: 7.8.5
@@ -4300,7 +4300,7 @@ importers:
         version: link:../../sdk/test
       quickjs-emscripten:
         specifier: 'catalog:'
-        version: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-0.32.1-bytecode.1.tgz
+        version: '@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1'
       undici:
         specifier: 'catalog:'
         version: 7.30.2
@@ -5586,26 +5586,6 @@ packages:
     resolution: {integrity: sha512-+Sg6GCR/wy1oSmQDFq4LQDAhm3ETKnorxN+y5nbLULOR3P0c14f2Wurzj3/xqPXtasLFfHd5iRFQ7AJt4KH2cw==}
     engines: {node: '>=8'}
 
-  '@jitl/quickjs-ffi-types@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-ffi-types-0.32.1-bytecode.1.tgz':
-    resolution: {integrity: sha512-maDDKVI32fmAu6kM9ixaghBIXZ/zWebzSbtEA+o6YU02yRYnp7fWBzgD15yJJwNHato+Z1sXpg3RUpXr4XcZ4w==, tarball: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-ffi-types-0.32.1-bytecode.1.tgz}
-    version: 0.32.1-bytecode.1
-
-  '@jitl/quickjs-wasmfile-debug-asyncify@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-debug-asyncify-0.32.1-bytecode.1.tgz':
-    resolution: {integrity: sha512-Aulj5JCtv6o13hRjH4YfU1UexiE5aIxcpQLmTv4MbAEeMgJOda9QcxMRC3c247jzJ7yn96A+kWsbU82l/lmT4A==, tarball: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-debug-asyncify-0.32.1-bytecode.1.tgz}
-    version: 0.32.1-bytecode.1
-
-  '@jitl/quickjs-wasmfile-debug-sync@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-debug-sync-0.32.1-bytecode.1.tgz':
-    resolution: {integrity: sha512-f+EG5xnk09hI0KqwwotuPujrx1u4mIHcxJ8JBfctPZiVhxVsryHLeioGdq/j1UEjBxcO8Rim7/SjcCM4kKMmTg==, tarball: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-debug-sync-0.32.1-bytecode.1.tgz}
-    version: 0.32.1-bytecode.1
-
-  '@jitl/quickjs-wasmfile-release-asyncify@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-release-asyncify-0.32.1-bytecode.1.tgz':
-    resolution: {integrity: sha512-aZzboMiVLzT7vBqk9+hadqtMzuusGoVWTbh6b5D2Rl+1wsErLmvIYdgo5x1OXdY0OrJKDwuczVA3+rgUcInIow==, tarball: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-release-asyncify-0.32.1-bytecode.1.tgz}
-    version: 0.32.1-bytecode.1
-
-  '@jitl/quickjs-wasmfile-release-sync@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-release-sync-0.32.1-bytecode.1.tgz':
-    resolution: {integrity: sha512-l7qheqLpuECiGCUptY8tvqdaGtCvFRncD9cbhI9N7BEfkbvShnyFbFVEMzpUXW1Urayow6Dyoel67RHawDwI3A==, tarball: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-release-sync-0.32.1-bytecode.1.tgz}
-    version: 0.32.1-bytecode.1
-
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
 
@@ -5635,6 +5615,28 @@ packages:
     resolution: {integrity: sha512-uwPAhccfFJlsfCxMYTwOdVfOz3xqyj8xYL3zJj8f0pb30tLohnnFPhLuqp4/qoEz8sNxe4SESZedcBojRefIzg==}
     engines: {node: '>=18'}
     hasBin: true
+
+  '@milaboratories-poc/quickjs-emscripten-core@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-rIOtn3dH4YAZ+u4Xv+Bx7DY3f413abVrkUYm7rBOGNZxUe8h80ob7Ih9libh/rnDgzWyFcMacYdCB4ZXt77qJg==}
+
+  '@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-JJt3/3FuhHiLyeMsAupZsoMS9ST78Kv6+OEUvXKbYg/U6C1Stka0mnALZwLfv6WhPpabVPWYGvnOye+j8HfkzA==}
+    engines: {node: '>=16.0.0'}
+
+  '@milaboratories-poc/quickjs-ffi-types@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-qWPi9IKaFFJxRs+r6A377d8eIc75ktt8hb+bL0RR4lt6kZcQFfnHwmqgxvMRN8r/4D3DZgHOebp7iYmWuIHBiQ==}
+
+  '@milaboratories-poc/quickjs-wasmfile-debug-asyncify@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-ZU1f9iJtA+PVV4Cr7XiUOfXIpq0gjV4tRBt5/Fz9ebFKWledduAdQqlwD7edafl4DPsKx/O4SL+iB5WKNlksOQ==}
+
+  '@milaboratories-poc/quickjs-wasmfile-debug-sync@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-MGx1aGvbWrmnSnLI9Fiy45Dtz/jJwwUMCVqYiRaWg/04nQXA9FgqmrOYjaSuEhGa2tHJmGBzDKNcod79/j/uiw==}
+
+  '@milaboratories-poc/quickjs-wasmfile-release-asyncify@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-+irUDGwL6tSlRvPMEaRtGUv8/kTz8S5Yz2fxdJ+xFHUDCFUwRmb2H/MdYWEJq4K3kw44I606g5CZ86y0lECgkg==}
+
+  '@milaboratories-poc/quickjs-wasmfile-release-sync@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-G8pLZF7+lP8GFRKl8TAPSbLA4NCwh3a+W3EH/Y/MSyzg9EvcjZZ1lrymr/0sFPH5mQNFJ4jG4wYvZa9LadGXqA==}
 
   '@milaboratories/helpers@1.14.5':
     resolution: {integrity: sha512-Kiy0g7sEmFQxDwtnmTrdJ8XdUK0IDAB5ZnPCNEbK7lPGHIa+xG3kzfeR4y44QBdrYaK0NwG63D8Fc7dlv9KItg==}
@@ -8825,15 +8827,6 @@ packages:
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
-  quickjs-emscripten-core@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-core-0.32.1-bytecode.1.tgz:
-    resolution: {integrity: sha512-fj34+3aL4NvvqXuU4nHlj2CIQLEHE05TrEiXrdT8vjQSJvyY4cyIrIamM02sr7iFYfNZU7EuXiGQzUqG1K+wXw==, tarball: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-core-0.32.1-bytecode.1.tgz}
-    version: 0.32.1-bytecode.1
-
-  quickjs-emscripten@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-0.32.1-bytecode.1.tgz:
-    resolution: {integrity: sha512-HUCo2eqTeIvfyfWeVlVOEyty97a/8UcQXsB75/SFYN2BOJgdsPNpmJ9UG3gn4wRGKRCcCfEyPfB7946YFIlPOw==, tarball: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-0.32.1-bytecode.1.tgz}
-    version: 0.32.1-bytecode.1
-    engines: {node: '>=16.0.0'}
-
   range-parser@1.3.0:
     resolution: {integrity: sha512-hek2mFQpPuI4E1BBKrSto+BU3e3x4xuarsbiwr3+lf7p44juvFMV0XFWQAP3xUyqXA4RrXLIoaSUGbSt056ZMw==}
     engines: {node: '>= 0.6'}
@@ -10520,24 +10513,6 @@ snapshots:
 
   '@istanbuljs/schema@0.1.6': {}
 
-  '@jitl/quickjs-ffi-types@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-ffi-types-0.32.1-bytecode.1.tgz': {}
-
-  '@jitl/quickjs-wasmfile-debug-asyncify@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-debug-asyncify-0.32.1-bytecode.1.tgz':
-    dependencies:
-      '@jitl/quickjs-ffi-types': https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-ffi-types-0.32.1-bytecode.1.tgz
-
-  '@jitl/quickjs-wasmfile-debug-sync@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-debug-sync-0.32.1-bytecode.1.tgz':
-    dependencies:
-      '@jitl/quickjs-ffi-types': https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-ffi-types-0.32.1-bytecode.1.tgz
-
-  '@jitl/quickjs-wasmfile-release-asyncify@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-release-asyncify-0.32.1-bytecode.1.tgz':
-    dependencies:
-      '@jitl/quickjs-ffi-types': https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-ffi-types-0.32.1-bytecode.1.tgz
-
-  '@jitl/quickjs-wasmfile-release-sync@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-release-sync-0.32.1-bytecode.1.tgz':
-    dependencies:
-      '@jitl/quickjs-ffi-types': https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-ffi-types-0.32.1-bytecode.1.tgz
-
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
@@ -10587,6 +10562,36 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - supports-color
+
+  '@milaboratories-poc/quickjs-emscripten-core@0.32.1-bytecode.1':
+    dependencies:
+      '@milaboratories-poc/quickjs-ffi-types': 0.32.1-bytecode.1
+
+  '@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1':
+    dependencies:
+      '@milaboratories-poc/quickjs-emscripten-core': 0.32.1-bytecode.1
+      '@milaboratories-poc/quickjs-wasmfile-debug-asyncify': 0.32.1-bytecode.1
+      '@milaboratories-poc/quickjs-wasmfile-debug-sync': 0.32.1-bytecode.1
+      '@milaboratories-poc/quickjs-wasmfile-release-asyncify': 0.32.1-bytecode.1
+      '@milaboratories-poc/quickjs-wasmfile-release-sync': 0.32.1-bytecode.1
+
+  '@milaboratories-poc/quickjs-ffi-types@0.32.1-bytecode.1': {}
+
+  '@milaboratories-poc/quickjs-wasmfile-debug-asyncify@0.32.1-bytecode.1':
+    dependencies:
+      '@milaboratories-poc/quickjs-ffi-types': 0.32.1-bytecode.1
+
+  '@milaboratories-poc/quickjs-wasmfile-debug-sync@0.32.1-bytecode.1':
+    dependencies:
+      '@milaboratories-poc/quickjs-ffi-types': 0.32.1-bytecode.1
+
+  '@milaboratories-poc/quickjs-wasmfile-release-asyncify@0.32.1-bytecode.1':
+    dependencies:
+      '@milaboratories-poc/quickjs-ffi-types': 0.32.1-bytecode.1
+
+  '@milaboratories-poc/quickjs-wasmfile-release-sync@0.32.1-bytecode.1':
+    dependencies:
+      '@milaboratories-poc/quickjs-ffi-types': 0.32.1-bytecode.1
 
   '@milaboratories/helpers@1.14.5': {}
 
@@ -13396,18 +13401,6 @@ snapshots:
   quansync@0.2.11: {}
 
   queue-microtask@1.2.3: {}
-
-  quickjs-emscripten-core@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-core-0.32.1-bytecode.1.tgz:
-    dependencies:
-      '@jitl/quickjs-ffi-types': https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-ffi-types-0.32.1-bytecode.1.tgz
-
-  quickjs-emscripten@https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-0.32.1-bytecode.1.tgz:
-    dependencies:
-      '@jitl/quickjs-wasmfile-debug-asyncify': https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-debug-asyncify-0.32.1-bytecode.1.tgz
-      '@jitl/quickjs-wasmfile-debug-sync': https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-debug-sync-0.32.1-bytecode.1.tgz
-      '@jitl/quickjs-wasmfile-release-asyncify': https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-release-asyncify-0.32.1-bytecode.1.tgz
-      '@jitl/quickjs-wasmfile-release-sync': https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/jitl-quickjs-wasmfile-release-sync-0.32.1-bytecode.1.tgz
-      quickjs-emscripten-core: https://github.com/xnacly/quickjs-emscripten/releases/download/v0.32.1-bytecode.1/quickjs-emscripten-core-0.32.1-bytecode.1.tgz
 
   range-parser@1.3.0: {}
 
