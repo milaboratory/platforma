@@ -1,4 +1,10 @@
-import { openRecorder, startSelfSampler, type Recorder } from "./recorder";
+import {
+  newSessionId,
+  openRecorder,
+  setRecorderOwner,
+  startSelfSampler,
+  type Recorder,
+} from "./recorder";
 import { startMemorySampler, type MemorySampler } from "./sampler";
 import { createHandleRegistry, type HandleRegistry } from "./instrument";
 
@@ -45,12 +51,8 @@ export function openRecordingSession(
   const dir = options.dir ?? process.env[CRASH_DIR_ENV];
   if (!dir) return undefined;
 
-  const recorder = openRecorder({
-    dir,
-    role: options.role,
-    meta: options.meta,
-    sessionId: options.sessionId ?? process.env[CRASH_SESSION_ENV] ?? undefined,
-  });
+  const sessionId = options.sessionId ?? process.env[CRASH_SESSION_ENV] ?? newSessionId();
+  const recorder = openRecorder({ dir, role: options.role, meta: options.meta, sessionId });
   const sampler = startMemorySampler({
     dir,
     sessionId: recorder.sessionId,
@@ -58,7 +60,7 @@ export function openRecordingSession(
   });
   const stopSelfSampler = startSelfSampler(recorder, options.selfSamplerIntervalMs);
 
-  return {
+  const session: RecordingSession = {
     recorder,
     sampler,
     registry: createHandleRegistry(),
@@ -68,4 +70,6 @@ export function openRecordingSession(
       recorder.close(reason);
     },
   };
+  setRecorderOwner(recorder, (reason) => session.close(reason));
+  return session;
 }
