@@ -586,3 +586,15 @@ TestPlanMetricsWithoutDeclaredMetricsFollowsTheFormula := func() {
 	test.isEqual(["output:align.json"], maps.getKeys(plan.jobs))
 	test.isEqual(0, len(f.planMetrics({ ram: { ast: f.astOf(f.gib(4)), sources: {} } }, [], {}, []).jobs))
 }
+
+TestTimesTakesADecimalMultiplier := func() {
+	eval := func(node) { return f.evaluateScratch(f.resolveAst(node, {}, []), {}) }
+	test.isEqual(8300, eval(f.const(1000).times(8.3)))
+	// rounded up: 39375951 x 0.32 = 12600304.32
+	test.isEqual(12600305, eval(f.const(39375951).times(0.32)))
+	// a whole float is a plain multiplication
+	test.isEqual({ op: "times", a: { op: "const", value: 7 }, b: { op: "const", value: 25 } }, f.astOf(f.const(7).times(25.0)))
+	test.isEqual(0, eval(f.const(7).times(0.0)))
+	// three places, in lowest terms
+	test.isEqual({ op: "dividedBy", a: { op: "times", a: { op: "const", value: 3 }, b: { op: "const", value: 83 } }, b: { op: "const", value: 10 } }, f.astOf(f.const(3).times(8.3)))
+}

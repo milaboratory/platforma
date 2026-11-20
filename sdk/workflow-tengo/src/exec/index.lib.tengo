@@ -2206,6 +2206,14 @@ _makeBuilder := func(st) {
 				},
 
 				/**
+				 * metric() over the stdout saved with saveStdoutContent(): for a command that
+				 * prints its metrics as one JSON object.
+				 */
+				stdoutMetric: func(name, ...opts) {
+					return execFormula.outputMetric(name, "stdout", res.getStdoutContent(), opts...)
+				},
+
+				/**
 				 * Retrieves a file set resource.
 				 *
 				 * @param fileSetName: string - name of a file set

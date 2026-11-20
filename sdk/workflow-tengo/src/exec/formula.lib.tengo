@@ -578,6 +578,26 @@ planMetrics := func(dims, declared, tagMap, allFiles) {
 // (.gt/.gte/.lt/.lte) and logic (.and/.or/.not) build boolean nodes for use
 // inside a f.when(...) branch. Each method's op string equals its name.
 // .staticFallback pins the value used on backends that can't evaluate the formula.
+// _ratio turns a non-negative decimal multiplier into { num, den } in lowest terms, to 3 places.
+_ratio := func(x) {
+	ll.assert(x >= 0, "exec.formula.times: a decimal multiplier must be non-negative, got %v", x)
+	num := int(x * 1000 + 0.5)
+	ll.assert(x == 0.0 || num > 0, "exec.formula.times: %v is below the 0.001 a decimal multiplier keeps", x)
+	den := 1000
+	a := num
+	b := den
+	for b != 0 {
+		t := a % b
+		a = b
+		b = t
+	}
+	if a > 1 {
+		num = num / a
+		den = den / a
+	}
+	return { num: num, den: den }
+}
+
 _node := undefined
 _node = func(ast, fallback, sources) {
 	self := {
@@ -589,7 +609,14 @@ _node = func(ast, fallback, sources) {
 	bin := func(op, x) { return _node(_bin(op, ast, x), fallback, _mergeSources(self, x)) }
 	self.plus      = func(x) { return bin("plus", x) }
 	self.minus     = func(x) { return bin("minus", x) }
-	self.times     = func(x) { return bin("times", x) }
+	// A decimal multiplier keeps 3 places and rounds the product up: x.times(8.3) is
+	// ceil(x * 83 / 10).
+	self.times     = func(x) {
+		if !is_float(x) { return bin("times", x) }
+		r := _ratio(x)
+		if r.den == 1 { return bin("times", r.num) }
+		return _node({ op: "dividedBy", a: _bin("times", ast, r.num), b: { op: "const", value: r.den } }, fallback, sources)
+	}
 	self.dividedBy      = func(x) { return bin("dividedBy", x) }
 	self.dividedByFloor = func(x) { return bin("dividedByFloor", x) }
 	self.atLeast   = func(x) { return bin("atLeast", x) }
