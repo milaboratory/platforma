@@ -62,6 +62,9 @@ export type RunContext = {
   version: number;
   /** True for `check` mode and the post-run recheck. */
   dryRun: boolean;
+  /** `ownNpmRegistry` from `.structure`: the block publishes `@platforma-open`
+   *  to npm.platforma.bio (shared-CI opt-in). False when absent. */
+  ownNpmRegistry: boolean;
 };
 
 export type { ContentForm, ManagedBody, RunMode, Structure, TriggerFn };
