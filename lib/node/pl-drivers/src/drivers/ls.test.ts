@@ -1,12 +1,14 @@
 import { ConsoleLoggerAdapter, HmacSha256Signer } from "@milaboratories/ts-helpers";
 import { LsDriver, type LsEntryWithFileStats } from "./ls";
 import { TestHelpers } from "@milaboratories/pl-client";
+import * as fsp from "node:fs/promises";
+import * as os from "node:os";
 import * as path from "node:path";
 import { test, expect, describe } from "vitest";
 import type { StorageHandle } from "@milaboratories/pl-model-common";
 import * as env from "../test_env";
 import { parseIndexHandle } from "./helpers/ls_remote_import_handle";
-import { createRemoteStorageHandle } from "./helpers/ls_storage_entry";
+import { createLocalStorageHandle, createRemoteStorageHandle } from "./helpers/ls_storage_entry";
 
 const assetsPath = path.resolve("../../../assets");
 
@@ -241,5 +243,64 @@ describe("LsDriver additionalInfo threading", () => {
 
     const parsed = parseIndexHandle(result.entries[0].handle as any);
     expect(parsed.additionalInfo).toBeUndefined();
+  });
+});
+
+// Unit tests: local folders must never get an import handle (MILAB-7315).
+describe("LsDriver local folders", () => {
+  function makeLocalDriver(): LsDriver {
+    // Bypasses the private constructor; local paths never touch lsClient or userResources.
+    const driver: LsDriver = Reflect.construct(LsDriver, [
+      new ConsoleLoggerAdapter(),
+      undefined,
+      undefined,
+      new HmacSha256Signer("test"),
+      new Map(),
+      () => Promise.resolve(undefined),
+    ]);
+    return driver;
+  }
+
+  async function withTempTree(fn: (root: string) => Promise<void>) {
+    const root = await fsp.mkdtemp(path.join(os.tmpdir(), "ls-driver-"));
+    try {
+      await fsp.mkdir(path.join(root, "plate1"));
+      await fsp.writeFile(path.join(root, "plate1", "A01.ab1"), "x");
+      await fsp.writeFile(path.join(root, "lone.ab1"), "y");
+      await fn(root);
+    } finally {
+      await fsp.rm(root, { recursive: true, force: true });
+    }
+  }
+
+  test("getLocalFileHandle rejects a folder", async () => {
+    await withTempTree(async (root) => {
+      await expect(makeLocalDriver().getLocalFileHandle(path.join(root, "plate1"))).rejects.toThrow(
+        /Not a file/,
+      );
+    });
+  });
+
+  test("getLocalFileHandle accepts a file", async () => {
+    await withTempTree(async (root) => {
+      const handle = await makeLocalDriver().getLocalFileHandle(path.join(root, "lone.ab1"));
+      expect(handle.startsWith("upload://upload/")).toBe(true);
+    });
+  });
+
+  test("listFiles on a local folder with subfolders lists both, handles only for files", async () => {
+    await withTempTree(async (root) => {
+      const storage = createLocalStorageHandle("local", "/");
+      const { entries } = await makeLocalDriver().listFiles(storage, root);
+      const byName = new Map(entries.map((e) => [e.name, e]));
+      expect(byName.get("plate1")).toEqual({
+        type: "dir",
+        name: "plate1",
+        fullPath: path.join(root, "plate1"),
+      });
+      const file = byName.get("lone.ab1");
+      expect(file?.type).toBe("file");
+      expect(file?.type === "file" && file.handle.startsWith("upload://upload/")).toBe(true);
+    });
   });
 });
