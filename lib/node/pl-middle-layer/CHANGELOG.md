@@ -1,5 +1,11 @@
 # @milaboratories/pl-middle-layer
 
+## 2.7.10
+
+### Patch Changes
+
+- 392eabe: The root action context of a block run carries the project resource id (`project-id`) in its baggage, so the backend can tell which project a job belongs to
+
 ## 2.7.9
 
 ### Patch Changes
