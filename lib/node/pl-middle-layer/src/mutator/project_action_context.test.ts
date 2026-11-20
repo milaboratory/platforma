@@ -6,6 +6,7 @@ import {
   isNullSignedResourceId,
   parseSignedResourceId,
   poll,
+  resourceIdToString,
   TestHelpers,
   toGlobalResourceId,
 } from "@milaboratories/pl-client";
@@ -121,8 +122,15 @@ test("block action context outlives its renderer and is replaced on re-render", 
     }
     const first = (await readActionContext(pl, prj, "block1"))!;
     expect(first).toBeDefined();
-    expect(Object.keys(first.baggage).sort()).toEqual(["block-id", "block-pack", "name", "run-id"]);
+    expect(Object.keys(first.baggage).sort()).toEqual([
+      "block-id",
+      "block-pack",
+      "name",
+      "project-id",
+      "run-id",
+    ]);
     expect(first.baggage["block-id"]).toEqual("block1");
+    expect(first.baggage["project-id"]).toEqual(resourceIdToString(prj));
     expect(first.baggage["name"]).toEqual("Block1");
     expect(JSON.parse(first.baggage["block-pack"])).toBeTypeOf("object");
     expect(first.baggage["run-id"]).toMatch(/^[0-9a-f-]{36}$/);
