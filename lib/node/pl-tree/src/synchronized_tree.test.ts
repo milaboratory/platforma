@@ -3,6 +3,7 @@ import {
   DefaultFinalResourceDataPredicate,
   field,
   GrantType,
+  Pl,
   PlClient,
   TestHelpers,
   UnauthenticatedPlClient,
@@ -846,4 +847,79 @@ test("a tree of shared roots survives a re-login: it rediscovers the roots under
       await cleanup.close();
     }
   }
+}, 60_000);
+
+test("an error that reaches an ephemeral map after it is ready gets into the tree", async () => {
+  await TestHelpers.withTempRoot(async (pl) => {
+    const ids = await pl.withWriteTx(
+      "LateMapError",
+      async (tx) => {
+        const importer = tx.createStruct(TestStructuralResourceType1);
+        tx.createField(field(importer, "blob"), "Output");
+        tx.lockInputs(importer);
+
+        const entry = tx.createStruct(TestStructuralResourceType1);
+        tx.createField(field(entry, "file"), "Input", field(importer, "blob"));
+        tx.lockInputs(entry);
+
+        const imports = tx.createEphemeral(Pl.EphStdMap);
+        tx.createField(field(imports, "source"), "Input", entry);
+        tx.lockInputs(imports);
+
+        const effect = tx.createEphemeral(Pl.EphStdMap);
+        tx.createField(field(effect, "imports"), "Input", imports);
+        tx.lockInputs(effect);
+
+        const holder = tx.createEphemeral(Pl.EphStdMap);
+        tx.createField(field(holder, "effect"), "Input", effect);
+        tx.lockInputs(holder);
+
+        const rootField = field(tx.clientRoot, "lateMapError");
+        tx.createField(rootField, "Dynamic");
+        tx.setField(rootField, holder);
+        await tx.commit();
+        return { importer: await importer.globalId, holder: await holder.globalId };
+      },
+      { sync: true },
+    );
+
+    const tree = await SynchronizedTreeState.init(pl, ids.holder, {
+      stopPollingDelay: 60_000,
+      pollingInterval: 10,
+    });
+    try {
+      const readImports = () =>
+        Computable.make((c) => {
+          const effect = c.accessor(tree.entry()).node().traverse("effect");
+          return effect?.getIsReadyOrError() ? effect.traverse("imports")?.id : undefined;
+        });
+      expect(await readImports().getValue()).toBeDefined();
+
+      await pl.withWriteTx(
+        "LateMapErrorSet",
+        async (tx) => {
+          tx.setFieldError(field(ids.importer, "blob"), tx.createError("late map error"));
+          await tx.commit();
+        },
+        { sync: true },
+      );
+
+      await expect
+        .poll(
+          async () => {
+            await tree.refreshState();
+            try {
+              await readImports().getValue();
+              return "no error";
+            } catch (e) {
+              return String(e);
+            }
+          },
+          { timeout: 20_000, interval: 100 },
+        )
+        .toMatch(/\/imports"[\s\S]*late map error/);
+    } finally {
+      await tree.terminate();
+    }
+  });
 }, 60_000);
