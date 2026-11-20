@@ -538,9 +538,12 @@ _mergeSources := func(...parts) {
 //   tagMap, allFiles: as resolveAst
 //
 // Returns { resolved: { <dimension>: <resolved ast> }, jobs: { <source key>: { source, files,
-// names } } }. Each job is one input of the exec, the same whichever formulas read it.
+// names } }, err }. Each job is one input of the exec, the same whichever formulas read it. err is
+// set when two formulas read two different outputs under one label: the exec has one input per
+// label, so one of them would silently read the other's value.
 planMetrics := func(dims, declared, tagMap, allFiles) {
 	jobs := {}
+	err := undefined
 	add := func(ast, sources, what) {
 		resolved := resolveAst(ast, tagMap, allFiles)
 		for key, used in referencedSources(resolved) {
@@ -549,6 +552,10 @@ planMetrics := func(dims, declared, tagMap, allFiles) {
 			if is_undefined(jobs[key]) {
 				jobs[key] = { source: src, files: used.files, names: used.names }
 			} else {
+				if !_sameContent(jobs[key].source.content, src.content) && is_undefined(err) {
+					err = fmt.sprintf("exec.builder: output metrics %s read two different outputs under one label %q; give each output its own file name",
+						text.join(slices.unique(append(copy(jobs[key].names), used.names...)), ", "), key)
+				}
 				ll.assert(jobs[key].files == used.files,
 					"exec.builder: custom metrics %s read different files in two formulas of one exec", text.join(used.names, ", "))
 				jobs[key].names = slices.unique(append(copy(jobs[key].names), used.names...))
@@ -565,7 +572,7 @@ planMetrics := func(dims, declared, tagMap, allFiles) {
 	for x in declared {
 		add(_unwrap(x), _sourcesOf(x), "metricInputs() formula")
 	}
-	return { resolved: resolved, jobs: jobs }
+	return { resolved: resolved, jobs: jobs, err: err }
 }
 
 // ---- fluent wrapper factory ------------------------------------------------

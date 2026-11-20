@@ -598,3 +598,20 @@ TestTimesTakesADecimalMultiplier := func() {
 	// three places, in lowest terms
 	test.isEqual({ op: "dividedBy", a: { op: "times", a: { op: "const", value: 3 }, b: { op: "const", value: 83 } }, b: { op: "const", value: 10 } }, f.astOf(f.const(3).times(8.3)))
 }
+
+TestPlanMetricsRejectsTwoOutputsUnderOneLabel := func() {
+	fromA := f.outputMetric("reads", "stdout", _content(7, "stdout"))
+	fromB := f.outputMetric("reads", "stdout", _content(8, "stdout"))
+	dims := {
+		ram: { ast: f.astOf(fromA.plus(f.gib(1))), sources: f.sourcesOf(fromA) },
+		cpu: { ast: f.astOf(fromB.plus(1)), sources: f.sourcesOf(fromB) }
+	}
+	err := f.planMetrics(dims, [], {}, []).err
+	test.isFalse(is_undefined(err))
+	test.isTrue(text.contains(err, "output:stdout"), err)
+	// the same output read by two formulas is one input
+	same := { ram: dims.ram, cpu: { ast: f.astOf(fromA.plus(1)), sources: f.sourcesOf(fromA) } }
+	test.isTrue(is_undefined(f.planMetrics(same, [], {}, []).err))
+	// and a declared metric is checked too
+	test.isFalse(is_undefined(f.planMetrics({ ram: dims.ram }, [fromB], {}, []).err))
+}

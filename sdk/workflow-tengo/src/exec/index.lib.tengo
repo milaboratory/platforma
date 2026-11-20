@@ -435,6 +435,7 @@ _planOf := func(st) {
 				vram: { ast: st.gpuFormulaAst, sources: st.formulaSources.vram },
 				scratch: { ast: st.scratchFormulaAst, sources: st.formulaSources.scratch }
 			}, st.declaredMetrics, tagMap, allFiles)
+			ll.assert(is_undefined(planned.err), planned.err)
 			neededSources := planned.jobs
 			resolvedMem = planned.resolved.ram
 			resolvedCpu = planned.resolved.cpu
