@@ -18,6 +18,9 @@ export const MINIMUM_RELEASE_AGE_EXCLUDE: readonly string[] = [
   "@milaboratories/*",
   "@platforma-sdk/*",
   "@platforma-open/*",
+  // The quickjs-emscripten fork the SDK depends on (pl-middle-layer); blocks
+  // get it through @platforma-sdk/test.
+  "@milaboratories-poc/*",
 ];
 
 /** pnpm 11+ fails an install on an unlisted install script. This one downloads the native addon. */
