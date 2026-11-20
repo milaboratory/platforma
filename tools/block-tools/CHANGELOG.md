@@ -1,5 +1,11 @@
 # @platforma-sdk/block-tools
 
+## 2.20.5
+
+### Patch Changes
+
+- 6d44297: Block `pnpm-workspace.yaml` excludes `@milaboratories-poc/*` from `minimumReleaseAge`, as the SDK monorepo does: blocks get the quickjs-emscripten fork through `@platforma-sdk/test`.
+
 ## 2.20.4
 
 ### Patch Changes
