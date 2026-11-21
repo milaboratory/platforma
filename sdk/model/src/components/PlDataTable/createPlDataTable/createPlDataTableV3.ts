@@ -29,7 +29,9 @@ import {
   collectSearchColumns,
   createSearchFilter,
   createSheetFilters,
+  isSheetFixedToOneValue,
   joinFilters,
+  joinSorting,
   readPlDataTableUserParams,
 } from "../tableParams";
 import type { MatchingMode } from "@milaboratories/pl-model-common";
@@ -75,7 +77,19 @@ export type createPlDataTableOptionsV3 = (
   tableState?: PlDataTableStateV2;
 
   filters?: PlDataTableFilters;
+  /**
+   * Filters applied on every render on top of everything the user set. They are
+   * not stored, not shown and cannot be removed by the user, so they follow the
+   * block value they are built from.
+   */
+  fixedFilters?: PlDataTableFilters;
   sorting?: PTableSorting[];
+  /**
+   * Sorting applied on every render ahead of the user's sorting, or of the
+   * default one while the user has not sorted, which then orders the rows within
+   * it. Not stored, not shown and cannot be removed by the user.
+   */
+  fixedSorting?: PTableSorting[];
   primaryJoinType?: "inner" | "full";
 
   labelsOptions?: DeriveLabelsOptions;
@@ -170,7 +184,7 @@ export function createPlDataTableV3<A, U>(
       })),
       isAxisHidden: (axis) =>
         !primaryAxisKeys.has(canonicalizeAxisId(axis)) || isColumnHidden(axis),
-      sheetAxes: params.sheetsState.map((sheet) => sheet.axisId),
+      sheetAxes: params.sheetsState.filter(isSheetFixedToOneValue).map((sheet) => sheet.axisId),
       hiddenColIds: params.hiddenColIds,
     }),
   );
@@ -182,12 +196,16 @@ export function createPlDataTableV3<A, U>(
       params.userFilters,
       searchFilter,
       params.defaultFilters ?? remapedDefaultFilters,
+      remapFilterColumnIds(options.fixedFilters, resolver),
     ]),
     resolver,
   );
 
   const sorting = filterSorting(
-    resolveSorting(params.sorting, remapSortingColumnIds(options.sorting, resolver)),
+    joinSorting(
+      remapSortingColumnIds(options.fixedSorting, resolver) ?? [],
+      resolveSorting(params.sorting, remapSortingColumnIds(options.sorting, resolver)),
+    ),
     resolver,
   );
 

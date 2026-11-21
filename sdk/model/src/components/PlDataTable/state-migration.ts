@@ -22,7 +22,6 @@ import type {
   PlDataTableFilters,
   PlDataTableFiltersWithMeta,
   PlDataTableGridStateCore,
-  PlDataTableSheetState,
   PlDataTableStateV2CacheEntry,
   PlDataTableStateV2Normalized,
   PlTableColumnIdJson as PlTableColumnIdJsonV8,
@@ -32,6 +31,7 @@ import type {
   PlDataTableFilters as PlDataTableFiltersV7,
   PlDataTableFiltersWithMeta as PlDataTableFiltersWithMetaV7,
   PlDataTableGridStateCore as PlDataTableGridStateCoreV7,
+  PlDataTableSheetState as PlDataTableSheetStateV7,
   PlDataTableStateV2CacheEntry as PlDataTableStateV2V7CacheEntry,
   PlDataTableStateV2Normalized as PlDataTableStateV2V7,
   PlTableColumnIdJson,
@@ -96,7 +96,7 @@ export type PlDataTableStateV2 =
             hiddenColIds: CanonicalizedJson<PTableColumnSpec>[];
           };
         };
-        sheetsState: PlDataTableSheetState[];
+        sheetsState: PlDataTableSheetStateV7[];
       }[];
       pTableParams: {
         hiddenColIds: PObjectId[] | null;
@@ -122,7 +122,7 @@ export type PlDataTableStateV2 =
             hiddenColIds: CanonicalizedJson<PTableColumnSpec>[];
           };
         };
-        sheetsState: PlDataTableSheetState[];
+        sheetsState: PlDataTableSheetStateV7[];
         filtersState: PlDataTableFilterState[];
       }[];
       pTableParams: PTableParamsV2V7;
@@ -132,7 +132,7 @@ export type PlDataTableStateV2 =
       stateCache: {
         sourceId: string;
         gridState: PlDataTableGridStateV6;
-        sheetsState: PlDataTableSheetState[];
+        sheetsState: PlDataTableSheetStateV7[];
         filtersState: PlDataTableFilterState[];
       }[];
       /** Old format; only fields used in migration are typed */
@@ -148,7 +148,7 @@ export type PlDataTableStateV2 =
       stateCache: {
         sourceId: string;
         gridState: PlDataTableGridStateV5;
-        sheetsState: PlDataTableSheetState[];
+        sheetsState: PlDataTableSheetStateV7[];
         filtersState: null | PlDataTableFiltersWithMetaV7;
         defaultFiltersState: null | PlDataTableFiltersWithMetaV7;
         searchString?: string;
