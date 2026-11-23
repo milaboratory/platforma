@@ -32,7 +32,9 @@ import type {
 } from "@milaboratories/pl-model-backend";
 import { notEmpty } from "@milaboratories/ts-helpers";
 import type { BlockPackSpecPrepared } from "../../model";
-import type { TemplateSpecPrepared } from "../../model/template_spec";
+import type { InstallablePackTemplate, TemplateSpecPrepared } from "../../model/template_spec";
+import type { BlockPackPreparer } from "../block-pack/block_pack";
+import { throwIfMissingServerCapabilities } from "../block-pack/required_capabilities";
 import { getDebugFlags } from "../../debug";
 
 export const TemplateCacheType = resourceType("TemplateCache", "1");
@@ -776,6 +778,12 @@ export async function loadTemplateCached(
   }
 }
 
+type CacheBlockPackOptions = {
+  cacheResourceId?: SignedResourceId;
+  /** Loads registry and local packs. */
+  preparer?: BlockPackPreparer;
+};
+
 /**
  * Pre-materialize a block pack's template via cache.
  * Returns a copy of the spec with the template replaced by a cached reference.
@@ -784,13 +792,28 @@ export async function loadTemplateCached(
 export async function cacheBlockPackTemplate(
   pl: PlClient,
   spec: BlockPackSpecPrepared,
-  options?: { cacheResourceId?: SignedResourceId },
+  options?: CacheBlockPackOptions,
 ): Promise<BlockPackSpecPrepared> {
   if (spec.template.type === "cached") return spec;
 
-  const resourceId = await loadTemplateCached(pl, spec.template, options);
+  const resourceId =
+    spec.template.type === "registry-pack" || spec.template.type === "local-pack"
+      ? await installPackOnClient(pl, spec.template, options)
+      : await loadTemplateCached(pl, spec.template, options);
   return {
     ...spec,
     template: { type: "cached", resourceId },
   };
+}
+
+async function installPackOnClient(
+  pl: PlClient,
+  template: InstallablePackTemplate,
+  options?: CacheBlockPackOptions,
+): Promise<SignedResourceId> {
+  if (options?.preparer === undefined) throw new Error("BUG: a pack needs a preparer to load it");
+  const loaded = await options.preparer.loadPack(template);
+  // The manifest may predate the requiredCapabilities field: check what the pack declares.
+  throwIfMissingServerCapabilities(pl, loaded.requiredCapabilities);
+  return await loadTemplateCached(pl, loaded.template, options);
 }
