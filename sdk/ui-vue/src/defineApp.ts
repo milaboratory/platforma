@@ -12,11 +12,13 @@ import {
 } from "@platforma-sdk/model";
 import type { App as VueApp, Component, Reactive } from "vue";
 import { inject, markRaw, reactive } from "vue";
+import { columnLinksKey } from "./columnLinks";
 import { createAppV3, type BaseAppV3 } from "./internal/createAppV3";
 import type { AppSettings, ExtendSettings, Routes } from "./types";
 
 const pluginKey = Symbol("sdk-vue");
 export const pluginDataKey = Symbol("plugin-data-access");
+export { columnLinksKey };
 
 export function useSdkPlugin(): SdkPlugin {
   return inject(pluginKey)!;
@@ -59,14 +61,11 @@ export function defineAppV3<
     await platforma.loadBlockState().then((stateOrError) => {
       const state = unwrapResult(stateOrError);
       plugin.loaded = true;
-      const { app: baseApp, pluginAccess } = createAppV3<
-        Data,
-        Args,
-        Outputs,
-        Href,
-        Plugins,
-        UiServices
-      >(state, platforma, settings);
+      const {
+        app: baseApp,
+        pluginAccess,
+        columnLinks,
+      } = createAppV3<Data, Args, Outputs, Href, Plugins, UiServices>(state, platforma, settings);
 
       if (!vueAppInstance) {
         throw new Error(
@@ -74,6 +73,7 @@ export function defineAppV3<
         );
       }
       vueAppInstance.provide(pluginDataKey, pluginAccess);
+      vueAppInstance.provide(columnLinksKey, columnLinks);
 
       const localState = extendApp(baseApp);
 

@@ -23,13 +23,14 @@ import {
 } from "./config";
 import type { GrpcOptions } from "@protobuf-ts/grpc-transport";
 import { GrpcTransport } from "@protobuf-ts/grpc-transport";
+import { withCallAbortSignal } from "./abort_signal";
 import { LLPlTransaction } from "./ll_transaction";
 import { setResourceSignaturesRequired } from "./types";
 import { parsePlJwt } from "../util/pl";
 import { type Dispatcher, interceptors } from "undici";
 import type { Middleware } from "openapi-fetch";
 import { inferAuthRefreshTime } from "./auth";
-import { hasCapability, type BackendCapability } from "./capabilities";
+import { hasCapability, missingClientCapabilities, type BackendCapability } from "./capabilities";
 import { defaultHttpDispatcher } from "@milaboratories/pl-http";
 import type { WireClientProvider, WireClientProviderFactory, WireConnection } from "./wire";
 import { parseHttpAuth } from "@milaboratories/pl-model-common";
@@ -49,7 +50,12 @@ import {
   TxAPI_ServerMessage,
 } from "../proto-grpc/github.com/milaboratory/pl/plapi/plapiproto/api";
 import type { MiLogger } from "@milaboratories/ts-helpers";
-import { isAbortedError, isTransientCallFailure, isUnauthenticated } from "./errors";
+import {
+  ClientUpdateRequiredError,
+  isAbortedError,
+  isTransientCallFailure,
+  isUnauthenticated,
+} from "./errors";
 import { Timestamp } from "../proto-grpc/google/protobuf/timestamp";
 
 export interface PlCallOps {
@@ -192,6 +198,14 @@ export class LLPlClient implements WireClientProviderFactory {
     // (Not inside ping() itself: the autodetect path already wraps it in its own retry.)
     if (!pl._serverInfo) await pl.withIdempotentRetry("ping", () => pl.ping());
 
+    // Ping is the first request: refuse a backend that requires client features we lack
+    // before any other request reaches it.
+    const missing = missingClientCapabilities(pl.serverInfo.requiredClientCapabilities);
+    if (missing.length > 0) {
+      await pl.close();
+      throw new ClientUpdateRequiredError(missing, pl.serverInfo.coreVersion);
+    }
+
     // Install the process-global signature-strictness flag based on backend version.
     setResourceSignaturesRequired(pl.supportsResourceSignatures);
 
@@ -296,6 +310,9 @@ export class LLPlClient implements WireClientProviderFactory {
     const clientOptions: ClientOptions = {
       "grpc.keepalive_time_ms": 30_000, // 30 seconds
       "grpc.service_config_disable_resolution": 1, // Disable DNS TXT lookups for service config
+      // A new client must not share a subchannel, and its reconnect backoff, with another client.
+      "grpc.use_local_subchannel_pool": 1,
+      "grpc.max_reconnect_backoff_ms": 10_000,
       // Raises the per-stream and connection-level HTTP/2 windows. Node's 64 KB default
       // caps a big single-stream read (project open) at window/RTT rather than link speed,
       // and a lost WINDOW_UPDATE can deadlock it under packet loss.
@@ -459,7 +476,7 @@ export class LLPlClient implements WireClientProviderFactory {
 
   private updateStatus(newStatus: PlConnectionStatus) {
     process.nextTick(() => {
-      if (this._status !== newStatus) {
+      if (this._status !== newStatus && this._status !== "Unauthenticated") {
         this._status = newStatus;
         if (this.statusListener !== undefined) this.statusListener(this._status);
         if (newStatus === "Unauthenticated" && this.onAuthError !== undefined) this.onAuthError();
@@ -475,12 +492,12 @@ export class LLPlClient implements WireClientProviderFactory {
    * authProbeInFlight so a burst of failures costs one probe.
    */
   private async verifyThenMaybeEscalateUnauthenticated(): Promise<void> {
-    if (this._status !== "OK" || this.authProbeInFlight) return;
+    if (this._status === "Unauthenticated" || this.authProbeInFlight) return;
     this.authProbeInFlight = true;
     try {
       await this.getSessionInfo();
-    } catch (e) {
-      if (isUnauthenticated(e)) this.updateStatus("Unauthenticated");
+    } catch (error) {
+      if (isUnauthenticated(error)) this.updateStatus("Unauthenticated");
     } finally {
       this.authProbeInFlight = false;
     }
@@ -538,6 +555,7 @@ export class LLPlClient implements WireClientProviderFactory {
           this.updateStatus("Disconnected");
           return new Response(body, { ...resOptions, status: response.status });
         }
+        if (response.status < 400) this.updateStatus("OK");
 
         const respErr = await parseResponseError(response);
         if (!respErr.error) {
@@ -565,8 +583,15 @@ export class LLPlClient implements WireClientProviderFactory {
     return (options, nextCall) => {
       return new InterceptingCall(nextCall(options), {
         start: (metadata, listener, next) => {
+          let ended = false;
           next(metadata, {
+            // grpc-js can pass headers after a cancelled call's status, and protobuf-ts throws on them.
+            onReceiveMetadata: (headers, next) => {
+              if (!ended) next(headers);
+            },
             onReceiveStatus: (status, next) => {
+              ended = true;
+              if (status.code == GrpcStatus.OK) this.updateStatus("OK");
               if (status.code == GrpcStatus.UNAUTHENTICATED)
                 // (!!!) don't change to "==="
                 void this.verifyThenMaybeEscalateUnauthenticated();
@@ -825,8 +850,9 @@ export class LLPlClient implements WireClientProviderFactory {
     if (cl instanceof GrpcPlApiClient) {
       resp = (await cl.ping({})).response;
     } else {
-      // The REST ping response predates the `capabilities` field (proto field 9).
-      // Old servers omit it; treat absence as empty capability list.
+      // The REST ping response predates the `capabilities` (proto field 9) and
+      // `required_client_capabilities` (field 10) fields. Old servers omit them; treat absence as
+      // empty. Field 10 was named `required_capabilities` in unreleased servers, so read that too.
       const pingData = notEmpty(
         (await cl.GET("/v1/ping")).data,
         "REST: empty response for ping request",
@@ -834,6 +860,10 @@ export class LLPlClient implements WireClientProviderFactory {
       resp = {
         ...(pingData as unknown as grpcTypes.MaintenanceAPI_Ping_Response),
         capabilities: (pingData as any).capabilities ?? [],
+        requiredClientCapabilities:
+          (pingData as any).requiredClientCapabilities ??
+          (pingData as any).requiredCapabilities ??
+          [],
       };
     }
     this.recordRtt(performance.now() - startedAt);
@@ -1038,7 +1068,7 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   public async listUserResources(
-    opts: { login?: string; startFrom?: bigint; limit?: number } = {},
+    opts: { login?: string; startFrom?: bigint; limit?: number; abortSignal?: AbortSignal } = {},
   ): Promise<grpcTypes.AuthAPI_ListUserResources_Response[]> {
     const cl = this.clientProvider.get();
 
@@ -1046,16 +1076,18 @@ export class LLPlClient implements WireClientProviderFactory {
       throw new Error("ListUserResources requires gRPC wire protocol; REST is not supported");
     }
 
-    const call = cl.listUserResources({
-      login: opts.login ?? "",
-      startFrom: opts.startFrom ?? 0n,
-      limit: opts.limit ?? 0,
+    return await withCallAbortSignal(opts.abortSignal, async (abort) => {
+      const call = cl.listUserResources(
+        {
+          login: opts.login ?? "",
+          startFrom: opts.startFrom ?? 0n,
+          limit: opts.limit ?? 0,
+          types: [],
+        },
+        { abort },
+      );
+      return await Array.fromAsync(call.responses);
     });
-    const responses: grpcTypes.AuthAPI_ListUserResources_Response[] = [];
-    for await (const msg of call.responses) {
-      responses.push(msg);
-    }
-    return responses;
   }
 
   /** Returns the authenticated caller's session id and effective role.
@@ -1072,6 +1104,7 @@ export class LLPlClient implements WireClientProviderFactory {
       return {
         sessionId: Uint8Array.from(Buffer.from(resp.sessionId, "base64")),
         role: resp.role as AuthAPI_Role,
+        canListUsers: resp.canListUsers ?? false,
       };
     }
   }
@@ -1114,9 +1147,9 @@ export class LLPlClient implements WireClientProviderFactory {
   }
 
   createTx(rw: boolean, ops: PlCallOps = {}): LLPlTransaction {
+    ops.abortSignal?.throwIfAborted();
     return new LLPlTransaction((abortSignal) => {
       let totalAbortSignal = abortSignal;
-      if (ops.abortSignal) totalAbortSignal = AbortSignal.any([totalAbortSignal, ops.abortSignal]);
 
       const timeout =
         ops.timeout ??
@@ -1164,7 +1197,7 @@ export class LLPlClient implements WireClientProviderFactory {
       }
 
       throw new Error(`transactions are not supported for wire protocol ${this._wireProto}`);
-    });
+    }, ops.abortSignal);
   }
 
   /** Closes underlying transport */

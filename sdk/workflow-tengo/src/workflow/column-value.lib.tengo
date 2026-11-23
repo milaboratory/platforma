@@ -1,0 +1,118 @@
+/*
+ * Column value references in block args.
+ *
+ * A block that lets the user pick values of another block's column passes each picked
+ * value to its workflow as a ColumnValueId: the canonical JSON string of
+ * `{ __isColumnValue: true, column: <column id>, value: <string> }`.
+ * The id names the column the value came from, so the project knows which block
+ * produced it. The workflow itself needs only the value.
+ *
+ * A ColumnValueId may reach args wrapped in extra layers of JSON string escaping. All
+ * functions here accept every such form.
+ *
+ * The value is always a string: a value picked from a number column is its decimal
+ * string (`"2"`, `"2.5"`).
+ */
+
+ll := import(":ll")
+json := import("json")
+text := import("text")
+
+_parseColumnValueId := undefined // Forward declaration
+
+/**
+ * Whether the given object is a ColumnValueId.
+ *
+ * @param s: any
+ * @return bool: true for a string that decodes, possibly through extra layers of JSON
+ *               string escaping, to a map with `__isColumnValue: true`
+ */
+isColumnValueId := func(s) {
+	return !is_undefined(_parseColumnValueId(s))
+}
+
+/**
+ * Value carried by a ColumnValueId.
+ *
+ * @param x: any
+ * @return value: string | any - the picked value when x is a ColumnValueId; x itself
+ *                otherwise. Fails on an id whose value is not a string.
+ */
+valueOf := func(x) {
+	key := _parseColumnValueId(x)
+	if is_undefined(key) {
+		return x
+	}
+
+	value := key.value
+	ll.assert(is_string(value), "column-value: value of a column value id must be a string, got %v", value)
+	return value
+}
+
+/**
+ * Values carried by an array of ColumnValueIds.
+ *
+ * @param xs: []any
+ * @return values: []any - valueOf applied to every element, order preserved
+ */
+valuesOf := func(xs) {
+	ll.assert(is_array(xs) || is_immutable_array(xs), "column-value.valuesOf: expected an array, got %v", xs)
+
+	result := []
+	for x in xs {
+		result = append(result, valueOf(x))
+	}
+	return result
+}
+
+//
+// Internals
+//
+
+/**
+ * Decodes a ColumnValueId into its key map.
+ *
+ * Only a string that starts with `{` or `"` can be JSON of a map or of an escaped string,
+ * so other strings are rejected without decoding. A decoding pass that yields a string
+ * means one layer of escaping; it is peeled and the result decoded again. Each such pass
+ * makes the string strictly shorter, which bounds the loop.
+ *
+ * @param s: any
+ * @return key: map | undefined - undefined when s is not a ColumnValueId
+ */
+_parseColumnValueId = func(s) {
+	if !is_string(s) {
+		return undefined
+	}
+
+	current := s
+	for {
+		if !text.has_prefix(current, "{") && !text.has_prefix(current, "\"") {
+			return undefined
+		}
+
+		decoded := json.decode(current)
+		if is_error(decoded) {
+			return undefined
+		}
+
+		if is_string(decoded) {
+			if len(decoded) >= len(current) {
+				return undefined
+			}
+			current = decoded
+			continue
+		}
+
+		if !is_map(decoded) || decoded.__isColumnValue != true {
+			return undefined
+		}
+		return decoded
+	}
+}
+
+export ll.toStrict({
+	isColumnValueId: isColumnValueId,
+	valueOf: valueOf,
+	valuesOf: valuesOf
+})

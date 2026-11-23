@@ -147,5 +147,6 @@ export function normalizeListOptions<V = unknown>(
     value: it.value,
     description: it.description,
     group: it.group,
+    linkHint: it.linkHint,
   }));
 }

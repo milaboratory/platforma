@@ -70,6 +70,18 @@ export class PFrame implements Disposable {
     return JSON.parse(this.#frame.discoverColumns(JSON.stringify(request)));
   }
 
+  /**
+   * Discovers the roots the given columns hang off: the columns that, used as
+   * anchors, would reach them. Each hit's `path` runs from the root to the
+   * leaf, so `buildQuery` with the leaf's column id and that `path` builds the
+   * same query as for a hit of {@link discoverColumns} anchored on the root.
+   */
+  discoverRoots(
+    request: PFrameInternal.DiscoverRootsRequest,
+  ): PFrameInternal.DiscoverRootsResponse {
+    return JSON.parse(this.#frame.discoverRoots(JSON.stringify(request)));
+  }
+
   /** Finds the columns in this frame that match the given filter criteria. */
   findColumns(request: PFrameInternal.FindColumnsRequest): PFrameInternal.FindColumnsResponse {
     return JSON.parse(this.#frame.findColumns(JSON.stringify(request)));

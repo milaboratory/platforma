@@ -87,22 +87,26 @@ you cannot import them.
 | `hasColumnData(recipe, opts?)` | boolean                               | Do the underlying data resources actually carry bytes? |
 | `isLeafColumn`                 | deprecated alias                      | Same as `hasSingleDataColumn`.                         |
 
-### Status and Errors
+### Status
 
 | Export                   | Kind  | One-liner                                                                                |
 | ------------------------ | ----- | ---------------------------------------------------------------------------------------- |
 | `ColumnFieldStatus`      | type  | `"present" \| "resolving" \| "absent"` — data-field status, worst across referenced ids. |
 | `ColumnResolutionStatus` | type  | Same value space; folds spec + registry readiness.                                       |
-| `ColumnAbsentError`      | class | Thrown by factories when a column provably will not appear.                              |
 
 ### Utilities
 
-| Export                                       | Kind     | One-liner                                                               |
-| -------------------------------------------- | -------- | ----------------------------------------------------------------------- |
-| `deriveColumnOptions(source, labelOptions?)` | function | `ColumnOption[]` — `{ id, label }` drop-down options over a collection. |
-| `ColumnOption`                               | type     | `{ id: ColumnUniversalId; label: string }`.                             |
-| `splitByAxes(inputs, splitAxes, opts?)`      | function | Fan a column out into one recipe per distinct value of the given axes.  |
-| `SplitAxis`, `SplitByAxesOpts`               | types    | `{ idx }` and `{ axisValuesLabels? }`.                                  |
+| Export                                         | Kind     | One-liner                                                                                   |
+| ---------------------------------------------- | -------- | ------------------------------------------------------------------------------------------- |
+| `deriveColumnOptions(source, labelOptions?)`   | function | `ColumnOption[]` — `{ id, label }` drop-down options over a collection.                     |
+| `ColumnOption`                                 | type     | `{ id: ColumnUniversalId; label: string }`.                                                 |
+| `createColumnValueOptions(columns, deps?)`     | function | `ColumnValueOptionsModel` — a frame of the value column and its labels, for the UI.         |
+| `readColumnValueOptions(model)`                | function | UI side: `Promise<ColumnValueOption[]>` — the column's distinct values as options.          |
+| `deriveColumnValueOptions(column, values)`     | function | `ColumnValueOption[]` — distinct values as `{ value, label }`, natural order.               |
+| `deriveLabelledColumnValueOptions(c, rows)`    | function | `ColumnValueOption[]` — distinct values labelled by their rows' labels.                     |
+| `ColumnValueOptionsModel`, `ColumnValueOption` | types    | `resolving \| absent \| present` with `valueColumn`, and `{ value: ColumnValueId; label }`. |
+| `splitByAxes(inputs, splitAxes, opts?)`        | function | Fan a column out into one recipe per distinct value of the given axes.                      |
+| `SplitAxis`, `SplitByAxesOpts`                 | types    | `{ idx }` and `{ axisValuesLabels? }`.                                                      |
 
 ### Exported but Not Part of the Surface
 
@@ -167,6 +171,8 @@ collection queries against.
 `isFinal` says whether the visible column set can still grow. While upstream
 blocks are running it keeps growing across render passes. Built-in sources
 compute it; you supply it only with the `{ columns, isFinal }` shape.
+`isFinal` covers which exports exist: a column whose spec is not readable yet
+appears on a later pass, even when `isFinal` is true.
 
 **Instance surface.** Every method that returns a collection mints a fresh
 handle on the host; the receiver is unchanged.
@@ -185,13 +191,13 @@ handle on the host; the receiver is unchanged.
 `getColumnIds()` is the fast path when the ids are all you need — and they
 usually are, because the id-accepting consumers take them directly.
 
-`getColumns()` builds a recipe per id. Two consequences worth knowing:
+`getColumns()` builds a recipe per id.
 
-- Ids that are still resolving are **dropped**, so the result can be shorter
-  than `getColumnIds()`.
-- An id whose column is provably absent makes recipe construction throw
-  `ColumnAbsentError`. Catch it at the boundary if partial absence should be
-  surfaced rather than silently yielding an empty table.
+A collection holds columns only: the driver keeps an id only after it has read
+its spec and found a column spec. It drops ids whose spec is not readable in
+this render and exports that are not columns, such as a `kind: "File"` library
+export. So every id from `getColumnIds()` has a readable column spec, and
+`getColumns()` returns one recipe per id.
 
 ```ts
 // only the current block's own outputs/prerun
@@ -401,11 +407,13 @@ DataColumn.fromColumn(pColumn);
 DataColumn.fromAccessor(leafEntry);
 ```
 
-**Return contract.** Every factory returns `undefined` while the column is still
-`resolving` — retry on the next render pass, more accessor inputs may arrive.
-Every factory throws `ColumnAbsentError` when the column is `absent` — every
-relevant accessor reports `inputsLocked` and the column did not appear, so it
-never will in this ctx. Always check for `undefined` before chaining.
+**Return contract.** Every factory returns `undefined` unless the column's spec
+is readable in this ctx: while the column is `resolving`, when it is `absent`,
+and for an export that is not a column (a `kind: "File"` library, for example).
+A missing column is an ordinary state — the upstream block has not run, or a
+reference points at a block that no longer provides it — so no factory throws
+for it. Always check for `undefined` before chaining; ask the status when the
+reason matters.
 
 `ColumnRecipe(id)` additionally throws for an id variant it cannot build (e.g. a
 legacy `AnchoredPColumnId`, which needs an anchor map to resolve).
@@ -420,8 +428,10 @@ DataColumn.getStatusByPlRef(ref, opts?);
 DataColumn.getStatusByAccessor(entry);
 ```
 
-Inside a loop over known ids, one `getStatus` up front beats a try/catch around
-the factory.
+The factory's `undefined` does not say why the column is missing; the status
+does. The status tells whether the spec is readable, not what kind of object it
+describes: an export that is not a column reports `present`, and its factory
+returns `undefined`.
 
 | Type                     | Means                                                                                                                                         |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -509,6 +519,116 @@ const options = deriveColumnOptions(
     mode: "enrichment",
   }),
 );
+```
+
+### Value Pickers: `createColumnValueOptions`, `PlColumnValueDropdown`
+
+```ts
+// model
+createColumnValueOptions(
+  columns: { valueColumn: ColumnValueOptionsColumn; labelColumn?: ColumnValueOptionsColumn },
+  deps?: { ctx?: GlobalCfgRenderCtx },
+): ColumnValueOptionsModel;
+// ColumnValueOptionsColumn = ColumnUniversalId | PColumn | DataColumnRecipe | ColumnRecipe
+// { type: "resolving" | "absent"; valueColumn }
+// | { type: "present"; valueColumn; frame: PFrameHandle; frameColumns: { value; label | null } }
+
+// UI
+readColumnValueOptions(model: PresentColumnValueOptionsModel): Promise<ColumnValueOption[]>;
+usePlColumnValueSettings({ source, valueColumn }): ComputedRef<PlColumnValueSettings>;
+// { type: "none" | "pending" | "absent" } | { type: "present"; model }
+// <PlColumnValueDropdown> / <PlColumnValueDropdownMulti> :settings :exclude v-model
+
+deriveColumnValueOptions(column: ColumnUniversalId, values: readonly string[]): ColumnValueOption[];
+deriveLabelledColumnValueOptions(column, rows: readonly { value: string; label: string }[]): ColumnValueOption[];
+// { value: ColumnValueId; label: string }[]
+```
+
+The value-level sibling of `deriveColumnOptions`: options for picking values
+of one column rather than columns. Like a data table, a picker is made in two
+halves. The model gives `createColumnValueOptions` as an output: a frame
+holding the value column, and the label column when one is given, `resolving`
+while either column is, `absent` once the value column is gone. A label column
+that is gone leaves the values to label themselves. `valueColumn` is the
+column the options are values of, so the UI can tell a model that still
+describes an earlier pick. The values are read in the UI, through the frame, so
+a column of any storage format can be picked from.
+
+`readColumnValueOptions` reads the options. Without a label column it takes
+the column's distinct values with `getUniqueValues`; with one it joins the
+value column with the label column on their keys, and labels each value by the
+label in its first row. Missing values are skipped, a value with no label
+labels itself, and a number value becomes its decimal string. It rejects a
+column with more distinct values, or with a label column more rows, than a
+picker reads.
+
+In Vue the output reaches the dropdown the way a table model reaches a table,
+through settings. `usePlColumnValueSettings` from `@platforma-sdk/ui-vue`
+makes them out of the output and the column picked now: `none` while nothing
+is picked, `pending` until the output is computed for the picked column — so
+the values of an earlier pick are never offered for a new one — `absent` once
+the column is gone, and `present` with the output to read. The settings read
+no values. `PlColumnValueDropdown` and `PlColumnValueDropdownMulti` take them
+as `settings` and are `PlDropdown` and `PlDropdownMulti` over the values: loading
+until the values are read, no options and the reason as the error once the
+column is gone or cannot be read, so its picks stay picked and are shown as not
+available. `exclude` leaves out values, such as those another picker holds.
+Other attributes and the slots go to the dropdown.
+
+The pair has one purpose: a dropdown over the values of a column. A block that
+needs the values for anything else — to order them, check them, or keep them
+in its data — makes its own frame and reads it itself, so that a change to the
+pickers never reaches it.
+
+An autocomplete over a column too large to list fits the same output: the
+model gives the same frame, and only the UI reads it differently. Its reader
+asks the frame for a page of options matching the typed text — a
+`StringIContains` filter on the value column, or on the label column when
+there is one, with `getUniqueValues` or the join — and its component takes the
+same `settings` and `v-model`, so a block switches by the tag alone. It still has to look up the labels of the picked values (an `InSet`
+filter on the value column, the values as numbers for a number column), and
+uikit's `PlAutocomplete` / `PlAutocompleteMulti` still lack the
+`missingValueLabel` and `missingValueTooltip` that show a picked value the column
+no longer holds. A page of the join holds rows, not distinct values, so it may
+offer fewer options than it reads.
+
+`deriveColumnValueOptions` keeps one option per distinct non-empty value,
+each a `ColumnValueId` naming `column` (see
+[`column-identity.md`](./column-identity.md)), labelled by the value itself
+and sorted naturally by label ("R2" before "R10");
+`deriveLabelledColumnValueOptions` does the same with the label of each
+value's first row.
+
+A block arg holding a pick is typed `ColumnValueId` (or `ColumnValueId[]`).
+The id is opaque: compare it with `===` against option values, never build or
+parse the string by hand — `createColumnValueId` / `parseColumnValueId`
+exist for code that must. The workflow reads plain values back with
+`workflow.column-value` (`valueOf`, `valuesOf`).
+
+```ts
+// model
+.output("groupValues", (ctx) =>
+  ctx.data.groupColumn === undefined
+    ? undefined
+    : createColumnValueOptions({ valueColumn: ctx.data.groupColumn }),
+)
+```
+
+```ts
+// UI, setup
+const groupValues = usePlColumnValueSettings({
+  source: () => app.model.outputs.groupValues,
+  valueColumn: () => app.model.data.groupColumn,
+});
+```
+
+```vue
+<!-- UI, template -->
+<PlColumnValueDropdownMulti
+  v-model="app.model.data.groups"
+  :settings="groupValues"
+  label="Groups"
+/>
 ```
 
 ### `splitByAxes`
@@ -659,7 +779,7 @@ What crosses the sandbox bridge, and when.
 | `ColumnsCollection(...)`, `.discover`, `.filter`, `.addSource`    | one host call, returns a handle                  |
 | `.isEmpty()`, `.isFinal()`                                        | one host call, no payload                        |
 | `.getColumnIds()`                                                 | one host call, N id strings                      |
-| `.getColumns()`                                                   | ids + per-id registry resolution (no spec bytes) |
+| `.getColumns()`                                                   | ids + per-id registry resolution and spec read   |
 | `recipe.id`, `.getQuery()`, `.getReferencedIds()`, `.withSpecs()` | none                                             |
 | `recipe.getSpec()`                                                | one round-trip per recipe, memoised per instance |
 | `recipe.getData()`                                                | one round-trip, memoised per instance            |

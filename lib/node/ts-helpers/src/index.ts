@@ -15,6 +15,7 @@ export * from "./obj";
 export * from "./buffer";
 export * from "./exec";
 export * from "./errors";
+export * from "./zip";
 
 export function assertNever(x: never): never {
   throw new Error("Unexpected object: " + x);

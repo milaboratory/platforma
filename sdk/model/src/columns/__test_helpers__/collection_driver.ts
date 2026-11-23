@@ -18,11 +18,11 @@ import type {
   ColumnsCollectionDriverHost,
   ColumnsCollectionDriverModel,
   LeafEntry,
-  PColumnSpec,
   PObjectId,
+  PObjectSpec,
   ServiceName,
 } from "@milaboratories/pl-model-common";
-import { extractPObjectId, Services } from "@milaboratories/pl-model-common";
+import { extractPObjectId, isPColumnSpec, Services } from "@milaboratories/pl-model-common";
 import { ColumnsCollectionDriverImpl } from "@milaboratories/columns-collection-driver";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
 import type { GlobalCfgRenderCtx } from "../../render/internal";
@@ -34,7 +34,7 @@ import { DataColumn, type DataColumnRecipe } from "../data_column";
 export interface TestCollectionDriverHandle {
   readonly driver: ColumnsCollectionDriverModel;
   /** Register `(id → spec)` pairs the driver will see via `resolveSpec`. */
-  register(columns: ReadonlyArray<{ readonly id: PObjectId; readonly spec: PColumnSpec }>): void;
+  register(columns: ReadonlyArray<{ readonly id: PObjectId; readonly spec: PObjectSpec }>): void;
   /**
    * Install a minimal `globalThis.cfgRenderCtx` so `getService("columnsCollection")`
    * resolves to this driver and registered columns are reachable via
@@ -56,12 +56,14 @@ const COLUMNS_COLLECTION_METHODS: ReadonlyArray<string> = [
   "addSource",
   "discover",
   "filter",
+  "discoverRoots",
 ];
 
 const PFRAME_SPEC_METHODS: ReadonlyArray<string> = [
   "createSpecFrame",
   "listColumns",
   "discoverColumns",
+  "discoverRoots",
   "deleteColumn",
   "evaluateQuery",
   "buildQuery",
@@ -72,7 +74,7 @@ const PFRAME_SPEC_METHODS: ReadonlyArray<string> = [
 ];
 
 export function createTestCollectionDriver(): TestCollectionDriverHandle {
-  const specMap = new Map<PObjectId, PColumnSpec>();
+  const specMap = new Map<PObjectId, PObjectSpec>();
   const specDriver = new SpecDriver();
   const impl = new ColumnsCollectionDriverImpl();
 
@@ -87,12 +89,13 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
 
   const driver: ColumnsCollectionDriverModel = {
     create: (sources) => impl.create(sources, bindings).key,
-    isEmpty: (h) => impl.isEmpty(h),
+    isEmpty: (h) => impl.isEmpty(h, bindings),
     isFinal: (h) => impl.isFinal(h),
     getColumns: (h) => impl.getColumns(h, bindings),
     addSource: (h, srcs) => impl.addSource(h, srcs, bindings).key,
     discover: (h, o) => impl.discover(h, o, bindings).key,
     filter: (h, o) => impl.filter(h, o, bindings).key,
+    discoverRoots: (h, o) => impl.discoverRoots(h, o, bindings),
   };
 
   let installedCtx: GlobalCfgRenderCtx | undefined;
@@ -157,7 +160,7 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
  *   - `getInputsLocked()` → `true` (no pending resolution).
  */
 function buildStubProvider(
-  specMap: ReadonlyMap<PObjectId, PColumnSpec>,
+  specMap: ReadonlyMap<PObjectId, PObjectSpec>,
 ): ColumnEntriesProvider<TreeNodeAccessor> & ColumnsProvider {
   const entries = new Map<PObjectId, LeafEntry<TreeNodeAccessor>>();
   for (const [id, spec] of specMap) {
@@ -165,7 +168,9 @@ function buildStubProvider(
   }
   const columns: DataColumnRecipe<PObjectId>[] = [];
   for (const [id, spec] of specMap) {
-    columns.push(DataColumn.fromColumn({ id, spec, data: undefined as never }));
+    if (isPColumnSpec(spec)) {
+      columns.push(DataColumn.fromColumn({ id, spec, data: undefined as never }));
+    }
   }
   return {
     getPObjectEntries: () => entries,
@@ -174,7 +179,7 @@ function buildStubProvider(
   };
 }
 
-function stubAccessorFor(id: PObjectId, spec: PColumnSpec): TreeNodeAccessor {
+function stubAccessorFor(id: PObjectId, spec: PObjectSpec): TreeNodeAccessor {
   const specField = `${id}.spec`;
   const specHolder = {
     getDataAsJson: <T>() => spec as unknown as T,

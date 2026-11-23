@@ -1,3 +1,4 @@
+import { addAbortListener } from "node:events";
 import type {
   TxAPI_ClientMessage,
   TxAPI_ServerMessage,
@@ -198,8 +199,15 @@ export class LLPlTransaction {
 
   private readonly incomingProcessorResult: Promise<(() => never) | null>;
 
-  constructor(streamFactory: (abortSignal: AbortSignal) => TxStream) {
+  private readonly abortSignalLink?: Disposable;
+
+  constructor(streamFactory: (abortSignal: AbortSignal) => TxStream, abortSignal?: AbortSignal) {
     this.stream = streamFactory(this.abortController.signal);
+    if (abortSignal !== undefined) {
+      this.abortSignalLink = addAbortListener(abortSignal, () =>
+        this.abortController.abort(abortSignal.reason),
+      );
+    }
 
     // Starting incoming event processor
     this.incomingProcessorResult = this.incomingEventProcessor();
@@ -385,10 +393,10 @@ export class LLPlTransaction {
           await this.stream.requests.complete();
         }
       }
-    } catch (e: any) {
+    } catch (error: unknown) {
       return this.assignErrorFactoryIfNotSet(
         () => {
-          rethrowMeaningfulError(e, true);
+          rethrowMeaningfulError(error, true);
         },
         currentHandler &&
           (currentHandler.mode === "single" || currentHandler.mode === "multiBuffered")
@@ -396,6 +404,7 @@ export class LLPlTransaction {
           : undefined,
       );
     } finally {
+      this.abortSignalLink?.[Symbol.dispose]();
       await this.close();
     }
     return null;

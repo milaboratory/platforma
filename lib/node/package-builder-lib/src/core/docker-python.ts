@@ -38,21 +38,38 @@ export interface DockerOptions {
 
 export interface PythonDockerOptions extends PythonOptions, DockerOptions {}
 
-function generatePythonDockerfileContent(options: PythonOptions): string {
+export function generatePythonDockerfileContent(options: PythonOptions): string {
   // Read template from assets
   const templatePath = paths.assets("python-dockerfile.template");
   const templateContent = fs.readFileSync(templatePath, "utf-8");
+  const layerSplitScript = fs
+    .readFileSync(paths.assets("python-layer-split.py"), "utf-8")
+    .trimEnd();
 
   const envVars = options.envVars.map((envVar) => `ENV ${envVar}`).join("\n");
+  const layerCopies = Array.from(
+    { length: defaults.PYTHON_DOCKER_DEPS_LAYERS },
+    (_, i) => `COPY --from=deps /layers/${i}/ /`,
+  ).join("\n");
 
-  // Generate Dockerfile with dependencies
+  // Generate Dockerfile with dependencies.
+  // The split script goes in last, so no placeholder replacement can touch its text, and
+  // through a function, so '$' sequences in it are not read as String.replace patterns.
   return templateContent
+    .replace(/\$\{DEPS_LAYER_COPIES\}/g, layerCopies)
+    .replace(/\$\{DEPS_ROOT\}/g, defaults.PYTHON_DOCKER_DEPS_ROOT)
+    .replace(/\$\{DEPS_LAYERS\}/g, String(defaults.PYTHON_DOCKER_DEPS_LAYERS))
+    .replace(
+      /\$\{DEPS_LAYER_TARGET_BYTES\}/g,
+      String(defaults.PYTHON_DOCKER_DEPS_LAYER_TARGET_BYTES),
+    )
     .replace(/\$\{RUNENV_ENVS\}/g, envVars)
     .replace(/\$\{BASE_IMAGE_TAG\}/g, options.baseImageTag)
     .replace(/\$\{REQUIREMENTS_PATH\}/g, options.requirements)
     .replace(/\$\{REQUIREMENTS_FILENAME\}/g, path.basename(options.requirements))
     .replace(/\$\{TOOLSET\}/g, options.toolset)
-    .replace(/\$\{PKG\}/g, options.pkg);
+    .replace(/\$\{PKG\}/g, options.pkg)
+    .replace(/\$\{LAYER_SPLIT_SCRIPT\}/g, () => layerSplitScript);
 }
 
 export function prepareDockerOptions(

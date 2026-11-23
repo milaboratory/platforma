@@ -35,7 +35,6 @@ test("wrong secret returns 404", { timeout: 30_000 }, async () => {
       defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
       devBlockUpdateRecheckInterval: 300,
       localSecret: MiddleLayer.generateLocalSecret(),
-      localProjections: [],
       openFileDialogCallback: () => {
         throw new Error("Not implemented.");
       },
@@ -72,7 +71,6 @@ test("wrong path returns 404", { timeout: 30_000 }, async () => {
       defaultTreeOptions: { pollingInterval: 250, stopPollingDelay: 500 },
       devBlockUpdateRecheckInterval: 300,
       localSecret: MiddleLayer.generateLocalSecret(),
-      localProjections: [],
       openFileDialogCallback: () => {
         throw new Error("Not implemented.");
       },

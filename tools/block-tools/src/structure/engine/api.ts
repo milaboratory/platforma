@@ -92,6 +92,7 @@ export {
   ensureField,
   removeField,
   requireField,
+  forbidField,
   ensureFieldEntries,
   ensureScript,
   removeScript,
@@ -120,6 +121,9 @@ export {
   pinCatalogToDependencyOf,
   ensureCatalogLatest,
   ensureCatalogAbsent,
+  ensureCatalogAtLeast,
+  ensureWorkspaceMapEntries,
+  ensureWorkspaceListItems,
   // Lines managed builders
   ensureGitignoreEntries,
   removeGitignoreEntries,

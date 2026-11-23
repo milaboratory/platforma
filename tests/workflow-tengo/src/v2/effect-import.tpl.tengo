@@ -1,0 +1,13 @@
+// Imports each source in args.sources through the body's effect argument and exports each imported
+// file as the result entry file<i>; the effect lists the imports for the engine.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+file := import("@platforma-sdk/workflow-tengo:file")
+
+wf.body(func(args, effect) {
+	outputs := {}
+	for i, source in args.sources {
+		outputs["file" + i] = file.exportFile(effect.importFile(source))
+	}
+	return { outputs: outputs, exports: ex.collection({}) }
+})

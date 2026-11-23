@@ -63,6 +63,25 @@ export type ColumnsDiscoverOptions = DiscoverColumnsOptions;
  */
 export type ColumnsFilterOptions = Omit<DiscoverColumnsOptions, "mode" | "maxHops">;
 
+/**
+ * Options accepted by `ColumnsCollection.discoverRoots` / driver
+ * `.discoverRoots`: find the roots the given columns hang off — the columns
+ * that, used as `anchors` of {@link DiscoverColumnsOptions}, would reach them.
+ * Pure JSON shape — no class instances, no closures.
+ */
+export interface DiscoverRootsOptions {
+  /** Columns to find roots for. */
+  leaves: AnchorEntry[];
+  /** Roots must match these selectors. If omitted, includes all. */
+  include?: ColumnSelector;
+  /** Roots matching these selectors are dropped. */
+  exclude?: ColumnSelector;
+  /** Axis matching behavior, read with the root as the anchor. Default: 'enrichment'. */
+  mode?: MatchingMode;
+  /** Maximum linker hops between a root and a leaf. Default: 4. */
+  maxHops?: number;
+}
+
 /** Translate a {@link MatchingMode} into the boolean-flag form the spec driver consumes. */
 export function matchingModeToConstraints(mode: MatchingMode): DiscoverColumnsConstraints {
   switch (mode) {

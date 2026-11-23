@@ -1,5 +1,11 @@
 # @milaboratories/node-streams
 
+## 1.0.11
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+
 ## 1.0.10
 
 ### Patch Changes

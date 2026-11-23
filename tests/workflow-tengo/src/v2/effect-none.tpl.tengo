@@ -1,0 +1,7 @@
+// A workflow that imports nothing: its effect lists no imports.
+wf := import("@platforma-sdk/workflow-tengo:v2.workflow")
+ex := import("@platforma-sdk/workflow-tengo:v2.exports")
+
+wf.body(func(args, effect) {
+	return { outputs: { ran: true }, exports: ex.collection({}) }
+})

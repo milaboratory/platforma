@@ -1,6 +1,6 @@
 {
   "name": "@milaboratories/ts-builder",
-  "version": "1.7.2",
+  "version": "1.8.0",
   "description": "TS build tool for the milaboratories packages",
   "bin": {
     "ts-builder": "./bin/ts-builder.js"
@@ -18,7 +18,7 @@
   "scripts": {
     "build": "rolldown -c",
     "watch": "rolldown -c --watch",
-    "do-pack": "rm -f *.tgz && pnpm pack && mv *.tgz package.tgz",
+    "do-pack": "shx rm -f *.tgz && pnpm pack && shx mv *.tgz package.tgz",
     "check": "oxlint && oxfmt --check && tsc --noEmit",
     "fmt": "oxlint --fix && oxfmt"
   },
@@ -28,7 +28,7 @@
     "@vitejs/plugin-vue": "catalog:",
     "commander": "catalog:",
     "jsonc-parser": "catalog:",
-    "oxfmt": "0.35.0",
+    "oxfmt": "catalog:",
     "oxlint": "1.63.0",
     "oxlint-plugin-eslint": "1.63.0",
     "rolldown": "^1.1.2",
@@ -42,5 +42,8 @@
     "vite-plugin-externalize-deps": "catalog:",
     "vite-plugin-lib-inject-css": "catalog:",
     "vue-tsc": "catalog:"
+  },
+  "devDependencies": {
+    "shx": "catalog:"
   }
 }

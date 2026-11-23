@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import type { MissingValueLabel, MissingValueTooltip } from "../../helpers/columnValue";
 import type { ModelRef, RefOption } from "../../types";
 import PlDropdownMulti from "../PlDropdownMulti/PlDropdownMulti.vue";
 import { computed, useSlots } from "vue";
@@ -41,9 +42,14 @@ const props = withDefaults(
     placeholder?: string;
     /**
      * Text shown in a chip when a `modelValue` entry's upstream block no longer
-     * exists. Defaults to "Upstream value removed".
+     * exists: one text, or a function giving it per value. Defaults to "Value not available".
      */
-    missingValueLabel?: string;
+    missingValueLabel?: MissingValueLabel;
+    /**
+     * Explains a selected value missing from the options in a tooltip over it: one text for every
+     * such value, or a function giving the content per value.
+     */
+    missingValueTooltip?: MissingValueTooltip;
     /**
      * If `true`, the dropdown component is marked as required.
      */
@@ -59,7 +65,8 @@ const props = withDefaults(
     helper: undefined,
     error: undefined,
     placeholder: "...",
-    missingValueLabel: "Upstream value removed",
+    missingValueLabel: undefined,
+    missingValueTooltip: undefined,
     required: false,
     disabled: false,
     options: undefined,

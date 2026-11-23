@@ -9,6 +9,7 @@ export default {
 
 <script lang="ts" setup generic="M = ModelRef">
 import { computed, useSlots } from "vue";
+import type { MissingValueLabel, MissingValueTooltip } from "../../helpers/columnValue";
 import type { ListOption, ModelRef, RefOption } from "../../types";
 import { PlDropdown } from "../PlDropdown";
 
@@ -54,9 +55,14 @@ const props = withDefaults(
     placeholder?: string;
     /**
      * Text shown in the field when the referenced upstream block / output no longer
-     * exists. Defaults to "Upstream value removed".
+     * exists: one text, or a function giving it per value. Defaults to "Value not available".
      */
-    missingValueLabel?: string;
+    missingValueLabel?: MissingValueLabel;
+    /**
+     * Explains a selected value missing from the options in a tooltip over it: one text for every
+     * such value, or a function giving the content per value.
+     */
+    missingValueTooltip?: MissingValueTooltip;
     /**
      * Enables a button to clear the selected value (default: false)
      */
@@ -80,7 +86,8 @@ const props = withDefaults(
     loadingOptionsHelper: undefined,
     error: undefined,
     placeholder: "...",
-    missingValueLabel: "Upstream value removed",
+    missingValueLabel: undefined,
+    missingValueTooltip: undefined,
     clearable: false,
     required: false,
     disabled: false,

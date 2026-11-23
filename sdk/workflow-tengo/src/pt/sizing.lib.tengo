@@ -281,6 +281,32 @@ scratchFormula := func(readFrames, writeFrames) {
 	return f.when(estimate.lt(f.gib(SCRATCH_DEVICE_MIN_GIB)), 0).otherwise(estimate)
 }
 
+/**
+ * Counts the steps of a workflow that read and write frames. scratchFormula uses the counts.
+ *
+ * import_parquet_frame reads a frame-sized input and writes a frame, with the same sort
+ * spill between them. Each one counts as one read and one write.
+ *
+ * @param steps: array - the workflow steps, as the ptabler workflow JSON holds them
+ * @return { readFrames: number, writeFrames: number }
+ */
+countFrameSteps := func(steps) {
+	ll.assert(is_array(steps), "pt.sizing: steps must be an array, got %v", steps)
+	readFrames := 0
+	writeFrames := 0
+	for step in steps {
+		if step.type == "read_frame" {
+			readFrames += 1
+		} else if step.type == "write_frame" {
+			writeFrames += 1
+		} else if step.type == "import_parquet_frame" {
+			readFrames += 1
+			writeFrames += 1
+		}
+	}
+	return { readFrames: readFrames, writeFrames: writeFrames }
+}
+
 export {
 	ramFormula: ramFormula,
 	assertRamSlope: assertRamSlope,
@@ -290,6 +316,7 @@ export {
 	assertCpuCores: assertCpuCores,
 	assertCpuSlope: assertCpuSlope,
 	scratchFormula: scratchFormula,
+	countFrameSteps: countFrameSteps,
 	polarsMaxThreadsExpr: polarsMaxThreadsExpr,
 	assertPolarsMaxThreads: assertPolarsMaxThreads,
 

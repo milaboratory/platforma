@@ -209,6 +209,16 @@ TestResolveSortsFilesForStableBytes := func() {
 	test.isEqual(["a.txt", "m.txt", "z.txt"], untagged.files)
 }
 
+TestResolveManyFiles := func() {
+	allFiles := []
+	for i := 0; i < 1000; i++ {
+		allFiles = append(allFiles, text.pad_left(string(i), 4, "0") + ".tsv")
+	}
+
+	resolved := f.resolveAst(f.size(), {}, allFiles)
+	test.isEqual(allFiles, resolved.files)
+}
+
 TestResolveDefaultSubstitution := func() {
 	resolved := f.resolveAst(f.size("missing", { default: 0 }), {}, [])
 	test.isEqual({ op: "const", value: 0 }, resolved)

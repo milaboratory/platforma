@@ -32,9 +32,41 @@ export type BackendCapability =
   | "scratchSpace:v1"
   // Project-sharing capability tokens.
   | "crossTreeRefs:v1" // cross-color field attach (accept a foreign-colored shared envelope)
-  | "userListing:v1" // list users for the recipient picker
+  // All user roles can list users (recipient picker). A v2 backend advertises it only when
+  // its configuration lets all roles list users.
+  | "userListing:v1"
+  // ListUsers controls access per client role: a role that cannot list users gets
+  // PERMISSION_DENIED. GetSessionInfo.can_list_users tells if the caller's role can list users.
+  | "userListing:v2"
   | "publicGrants:v1" // public (everyone) grants allowed for any role
-  | "txListGrants:v1"; // list grants inside a transaction (batched recipient reads)
+  | "txListGrants:v1" // list grants inside a transaction (batched recipient reads)
+  // Optional fields declared in resource schemas, created in the creating transaction before any
+  // explicit input lock.
+  | "optionalFieldsInSchemas:v1"
+  // The instance statistics context: one per instance, readable by every user, its readings
+  // written by the executor runner (CPU, RAM, GPU, jobs).
+  | "instanceStats:v1";
+
+/**
+ * Client capability tokens that this client implements. The backend lists the
+ * tokens it requires in `MaintenanceAPI.Ping.Response.required_capabilities`;
+ * a client that does not know one of them refuses to work with that backend
+ * (see `ClientUpdateRequiredError`).
+ *
+ * These are client features, not backend features: never put a
+ * `BackendCapability` here. Add a token when the client gets the feature the
+ * backend will start to require, in a release before the backend that requires
+ * it. Never remove a token.
+ */
+export function supportedClientCapabilities(): readonly string[] {
+  return [];
+}
+
+/** Returns the tokens of `required` that this client does not implement, in their order. */
+export function missingClientCapabilities(required: readonly string[] | undefined): string[] {
+  const supported = supportedClientCapabilities();
+  return (required ?? []).filter((capability) => !supported.includes(capability));
+}
 
 /** True iff `capabilities` advertises the requested token. */
 export function hasCapability(

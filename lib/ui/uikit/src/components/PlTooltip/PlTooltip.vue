@@ -249,6 +249,7 @@ const anchorName = `--anchor-${uniqueId()}`;
 }
 
 .plTooltipContent {
+  --txt-link: var(--tooltip-link-color);
   display: inline-block;
   padding: 8px 12px 9px 12px;
   background: var(--tooltip-bg);

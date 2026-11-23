@@ -1,0 +1,29 @@
+// exec: rendered by exec-root with an action context; runs a command, and the runner reports into the
+// contexts of the exec templates below it
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["context", "out"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	contextId := self.actionContext().id()
+
+	run := exec.builder().
+		cpu(1).ram("50Mi").
+		software(shellSw).
+		arg("-c").
+		arg("printf ok").
+		inLightQueue().
+		saveStdoutContent().
+		run()
+
+	return {
+		context: smart.resource(contextId),
+		out: run.getStdoutContent()
+	}
+})

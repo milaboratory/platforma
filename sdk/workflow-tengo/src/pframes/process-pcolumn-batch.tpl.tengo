@@ -146,19 +146,15 @@ self.body(func(inputs) {
 		}
 	}
 
-	// Enforce maxBatches. Panic if the isolation scope count alone exceeds
-	// maxBatches — inflating batch size can't help when each scope has ≤1
-	// batch. Otherwise estimate total batch count from per-scope upper-bound
-	// record counts (inner: min across primaries; full: sum across primaries)
-	// and inflate batch size when the estimate exceeds maxBatches.
+	// Guard against too many isolation scopes: if each scope can hold at most
+	// one batch, no batch sizing can bring the total under maxBatches, so panic.
 	//
-	// This estimate is only a FLOOR on the batch size, never the enforcement
-	// point: the upper bound counts partitions rather than rows for every
-	// partitioned input type (see recordsInGroup), so for such columns it
-	// undercounts drastically and this step does nothing at all. The cap is
-	// actually applied per scope inside :pframes.process-pcolumn-batch-split,
-	// which has the true row count. `scopeMaxBatches` below is that scope's
-	// share of the global budget.
+	// The orchestrator does not size batches from a row count — it has none it
+	// can trust. recordsInGroup counts partitions, not rows, for partitioned
+	// inputs, and counts pre-filter rows for a filtered inline column. The cap
+	// is enforced per scope inside :pframes.process-pcolumn-batch-split, which
+	// has the true post-filter count. Here we only split the global budget
+	// evenly across scopes (`scopeMaxBatches`).
 	isolationScopeCount := len(allIsolationKeys)
 	ll.assert(isolationScopeCount <= maxBatches,
 		"batch mode: isolation scope count (%v) exceeds batch.maxBatches (%v). "+
@@ -200,26 +196,6 @@ self.body(func(inputs) {
 			s += batchHelpers.recordsInGroup(pg.groups[sIsolationKey])
 		}
 		return s
-	}
-
-	totalRecords := 0
-	totalBatches := 0
-	for sIsolationKey in maps.getKeys(allIsolationKeys) {
-		recordsInScope := _scopeUpperBound(sIsolationKey)
-		totalRecords += recordsInScope
-		if recordsInScope > 0 {
-			totalBatches += (recordsInScope + batchSize - 1) / batchSize
-		}
-	}
-
-	// Step 4: deterministic batch-size inflation (same input → same effective
-	// size → same batches → cache-safe).
-	effectiveBatchSize := batchSize
-	if totalBatches > maxBatches && totalRecords > 0 {
-		inflated := (totalRecords + maxBatches - 1) / maxBatches
-		if inflated > effectiveBatchSize {
-			effectiveBatchSize = inflated
-		}
 	}
 
 	// Collect extra/meta inputs to forward to body template (via split template).
@@ -323,9 +299,9 @@ self.body(func(inputs) {
 			}
 		}
 
-		// Same upper-bound as used for the maxBatches estimate — ensures every
-		// joined row fits into some slice. Over-counting only yields empty
-		// trailing slices, which the split template tolerates.
+		// Upper-bound record count, used only to skip scopes with no primary
+		// data. Over-counting is harmless: the split template re-derives the
+		// true batch count from the post-filter rows.
 		scopeRecords := _scopeUpperBound(sIsolationKey)
 		if scopeRecords == 0 {
 			continue
@@ -358,12 +334,9 @@ self.body(func(inputs) {
 		}
 		df = df.select(selectExprs...)
 
-		batchCount := (scopeRecords + effectiveBatchSize - 1) / effectiveBatchSize
-
 		splitInputs := {
 			params: smart.createJsonResource({
-				batchCount: batchCount,
-				batchSize: effectiveBatchSize,
+				batchSize: batchSize,
 				scopeMaxBatches: scopeMaxBatches,
 				passContent: passContent,
 				formatExt: formatExt,

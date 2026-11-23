@@ -269,3 +269,147 @@ eTplTest.concurrent(
     expect(batches.get("k08")).toEqual(["k08", "k09", "k10", "k11"]);
   },
 );
+
+eTplTest.concurrent(
+  "batch mode: maxBatches binds on the filtered row count, not the unfiltered input",
+  async ({ helper, expect, stHelper }) => {
+    // The batch count must follow the post-filter rows, not the pre-filter
+    // column. Primary has 24 keys; the filter keeps 12 (k00..k11). With size=1
+    // and maxBatches=6 the 12 survivors must split into 6 batches of 2:
+    // k00-k01 / k02-k03 / ... / k10-k11.
+    //
+    // The orchestrator never sizes batches from the pre-filter count anymore.
+    // If it did, it would see 24 rows, inflate batch size to ceil(24/6)=4, and
+    // the split step — which can only grow batch size, never shrink it — would
+    // collapse the 12 survivors into 3 batches of 4. So 6 batches here, not 3,
+    // is the whole point of the fix.
+    const primary: Record<string, string> = {};
+    for (let i = 0; i < 24; i++) {
+      primary[`["k${i.toString().padStart(2, "0")}"]`] = `SEQ${i}`;
+    }
+    const filter: Record<string, string> = {};
+    for (let i = 0; i < 12; i++) {
+      filter[`["k${i.toString().padStart(2, "0")}"]`] = "keep";
+    }
+
+    const theResult = await runBatch(helper, stHelper, (tx) => ({
+      params: jsonParams(tx, {
+        bodyMode: "batchTag",
+        primaryEntries: [
+          {
+            spec: singleAxisSpec,
+            dataInputName: "primaryData",
+            filterSpec,
+            filterDataInputName: "filterData",
+            header: "heavyChain",
+          },
+        ],
+        primaryJoin: "full",
+        outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettingsBatchTag }],
+        batch: {
+          size: 1,
+          keyColumns: ["key"],
+          format: "tsv",
+          passContent: true,
+          maxBatches: 6,
+        },
+      }),
+      primaryData: createJsonData(tx, 1, primary),
+      filterData: createJsonData(tx, 1, filter),
+    }));
+
+    const tags = readJsonPartition(theResult.inputs["tsv.batchTag.data"]);
+    // Only the 12 filtered keys reach the body; k12..k23 are dropped.
+    expect(Object.keys(tags)).toHaveLength(12);
+
+    const batches = new Map<string, string[]>();
+    for (const [rawKey, tag] of Object.entries(tags)) {
+      const key = (JSON.parse(rawKey) as string[])[0];
+      const members = batches.get(tag as string);
+      if (members) members.push(key);
+      else batches.set(tag as string, [key]);
+    }
+    for (const members of batches.values()) members.sort();
+
+    // Sized from the real 12 rows: 6 batches of 2. The old pre-filter floor
+    // would have given 3 batches of 4.
+    expect(batches.size).toEqual(6);
+    expect([...batches.keys()].sort()).toEqual(["k00", "k02", "k04", "k06", "k08", "k10"]);
+    expect(batches.get("k00")).toEqual(["k00", "k01"]);
+    expect(batches.get("k02")).toEqual(["k02", "k03"]);
+    expect(batches.get("k04")).toEqual(["k04", "k05"]);
+    expect(batches.get("k06")).toEqual(["k06", "k07"]);
+    expect(batches.get("k08")).toEqual(["k08", "k09"]);
+    expect(batches.get("k10")).toEqual(["k10", "k11"]);
+  },
+);
+
+eTplTest.concurrent(
+  "batch mode: maxBatches binds on the filtered row count on the file path (passContent=false)",
+  async ({ helper, expect, stHelper }) => {
+    // Same check as the test above, on the default passContent=false path. That
+    // path is different code: the split template reads the count from
+    // countContent and slices a saved file via pt, instead of counting lines in
+    // memory. A filtered regression there would slip past the passContent=true
+    // test. Primary has 24 keys, the filter keeps 12, so 6 batches of 2 — not 3
+    // batches of 4 sized from the pre-filter 24.
+    const primary: Record<string, string> = {};
+    for (let i = 0; i < 24; i++) {
+      primary[`["k${i.toString().padStart(2, "0")}"]`] = `SEQ${i}`;
+    }
+    const filter: Record<string, string> = {};
+    for (let i = 0; i < 12; i++) {
+      filter[`["k${i.toString().padStart(2, "0")}"]`] = "keep";
+    }
+
+    const theResult = await runBatch(helper, stHelper, (tx) => ({
+      params: jsonParams(tx, {
+        bodyMode: "batchTagBlobTsv",
+        primaryEntries: [
+          {
+            spec: singleAxisSpec,
+            dataInputName: "primaryData",
+            filterSpec,
+            filterDataInputName: "filterData",
+            header: "heavyChain",
+          },
+        ],
+        primaryJoin: "full",
+        outputs: [{ type: "Xsv", name: "tsv", xsvType: "tsv", settings: xsvSettingsBatchTag }],
+        batch: {
+          size: 1,
+          keyColumns: ["key"],
+          format: "tsv",
+          passContent: false,
+          maxBatches: 6,
+        },
+      }),
+      primaryData: createJsonData(tx, 1, primary),
+      filterData: createJsonData(tx, 1, filter),
+    }));
+
+    const tags = readJsonPartition(theResult.inputs["tsv.batchTag.data"]);
+    // Only the 12 filtered keys reach the body; k12..k23 are dropped.
+    expect(Object.keys(tags)).toHaveLength(12);
+
+    const batches = new Map<string, string[]>();
+    for (const [rawKey, tag] of Object.entries(tags)) {
+      const key = (JSON.parse(rawKey) as string[])[0];
+      const members = batches.get(tag as string);
+      if (members) members.push(key);
+      else batches.set(tag as string, [key]);
+    }
+    for (const members of batches.values()) members.sort();
+
+    // Sized from the real 12 rows: 6 batches of 2. The old pre-filter floor
+    // would have given 3 batches of 4.
+    expect(batches.size).toEqual(6);
+    expect([...batches.keys()].sort()).toEqual(["k00", "k02", "k04", "k06", "k08", "k10"]);
+    expect(batches.get("k00")).toEqual(["k00", "k01"]);
+    expect(batches.get("k02")).toEqual(["k02", "k03"]);
+    expect(batches.get("k04")).toEqual(["k04", "k05"]);
+    expect(batches.get("k06")).toEqual(["k06", "k07"]);
+    expect(batches.get("k08")).toEqual(["k08", "k09"]);
+    expect(batches.get("k10")).toEqual(["k10", "k11"]);
+  },
+);

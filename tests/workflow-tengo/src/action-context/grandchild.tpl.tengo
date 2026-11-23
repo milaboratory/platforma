@@ -1,0 +1,10 @@
+// grandchild: reports into the action context its parent created
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+
+self.defineOutputs(["done"])
+
+self.body(func(inputs) {
+	self.actionContext().record("tpl", "Completed")
+	return { done: "ok" }
+})

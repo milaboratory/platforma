@@ -123,6 +123,8 @@ describe("facade: slim `package.json` end-state", () => {
     // Author-owned seed + engine-managed components both present.
     expect(p.block.components).toBeTruthy();
     expect(p.block.meta).toBeTruthy();
+    // The changelog is the facade's own, the file changesets writes.
+    expect(p.block.meta.changelog).toBe("file:CHANGELOG.md");
   });
 });
 

@@ -216,6 +216,7 @@ function resource(name: string, patch: Partial<ResourceData> = {}): ResourceData
     kind: "Structural",
     data: undefined,
     originalResourceId: NullSignedResourceId,
+    canonicalId: new Uint8Array(0),
     error: NullSignedResourceId,
     inputsLocked: true,
     outputsLocked: true,

@@ -1,5 +1,17 @@
 # @platforma-open/milaboratories.software-ptexter
 
+## 1.2.8
+
+### Patch Changes
+
+- c1869c8: Bump runenv-python-3 to 1.16.2.
+
+## 1.2.7
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+
 ## 1.2.6
 
 ### Patch Changes

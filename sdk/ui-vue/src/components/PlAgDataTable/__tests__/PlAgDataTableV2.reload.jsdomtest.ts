@@ -98,6 +98,39 @@ const Host = defineComponent({
   },
 });
 
+/**
+ * Stands in for a block whose model builds the table from the stored state: the
+ * model reports the source the stored state points at, as a real one does.
+ */
+const ModelHost = defineComponent({
+  props: {
+    initial: { type: Object, required: true },
+    sourceId: { type: String, required: true },
+  },
+  setup(props) {
+    const stored = ref(JSON.parse(JSON.stringify(props.initial)) as Any);
+    return () =>
+      h(PlAgDataTableV2 as Any, {
+        modelValue: stored.value,
+        "onUpdate:modelValue": (state: Any) => {
+          const snapshot = JSON.parse(JSON.stringify(state)) as Any;
+          setTimeout(() => (stored.value = snapshot), 50);
+        },
+        settings: {
+          sourceId: props.sourceId,
+          sheets: [],
+          pending: false,
+          model: {
+            sourceId: stored.value.pTableParams.sourceId,
+            fullTableHandle: `full-${stored.value.pTableParams.sourceId}`,
+            visibleTableHandle: `visible-${stored.value.pTableParams.sourceId}`,
+            fullPframeHandle: `pf-${stored.value.pTableParams.sourceId}`,
+          },
+        },
+      });
+  },
+});
+
 beforeAll(() => activateAgGrid());
 
 describe("PlAgDataTableV2", () => {
@@ -154,6 +187,66 @@ describe("PlAgDataTableV2", () => {
     wrapper.unmount();
     document.body.innerHTML = "";
     expect(overlay).toBe(false);
+  });
+
+  it("loads when mounted on a source the stored state does not point at", async () => {
+    // A table inside a modal: the source changed while the modal was closed, so
+    // the stored state still names the previous one and the model built for it.
+    hoisted.driver.getSpec = async () => specs;
+    hoisted.driver.getShape = async () => ({ rows: 0, columns: specs.length });
+    hoisted.driver.getData = async () => [];
+
+    const wrapper = mount(ModelHost, {
+      attachTo: document.body,
+      props: {
+        sourceId: "src-B",
+        initial: {
+          version: 8,
+          stateCache: [
+            {
+              sourceId: "src-A",
+              gridState: {},
+              sheetsState: [],
+              filtersState: null,
+              defaultFiltersState: null,
+            },
+          ],
+          pTableParams: {
+            sourceId: "src-A",
+            hiddenColIds: null,
+            sorting: null,
+            filters: null,
+            defaultFilters: null,
+          },
+        },
+      },
+    });
+
+    await wait(600);
+
+    const text = document.body.textContent || "";
+    wrapper.unmount();
+    document.body.innerHTML = "";
+    expect(text).not.toContain("Data is not computed");
+    expect(text).not.toContain("Loading data...");
+  });
+
+  it("says the table is computing, not that it is not computed, while the model computes it", async () => {
+    const wrapper = mount(Host, {
+      attachTo: document.body,
+      props: {
+        settings: { sourceId: "src-1", sheets: [], model: undefined, pending: true },
+        initial: { version: 8, stateCache: [], pTableParams: { sourceId: null } },
+        echoMs: 0,
+        pushEveryMs: 1000,
+      },
+    });
+    await wait(100);
+
+    const text = document.body.textContent || "";
+    wrapper.unmount();
+    document.body.innerHTML = "";
+    expect(text).not.toContain("Data is not computed");
   });
 
   it("stops recreating the grid once the stored state has been applied", async () => {

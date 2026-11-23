@@ -25,11 +25,21 @@ import type {
 } from "../typesV8";
 import { upgradePlDataTableStateV2 } from "../state-migration";
 import type { PlDataTableStateV2 } from "../state-migration";
+import {
+  collectSearchColumns,
+  createSearchFilter,
+  createSheetFilters,
+  joinFilters,
+  readPlDataTableUserParams,
+} from "../tableParams";
 import type { MatchingMode } from "@milaboratories/pl-model-common";
 import {
   hasSingleDataColumn,
   hitQualifications,
   collectLinkerColumns,
+  describePeerLinks,
+  findPeerLinks,
+  getResultPoolDatasetAxes,
   queriesQualifications,
   type ColumnRecipe,
 } from "../../../columns";
@@ -42,6 +52,7 @@ import {
   isColumnHidden,
   buildDataStatusMap,
   toRuleColumn,
+  type LabelableColumn,
 } from "./utils";
 import { createPTableDefV3 } from "./createPTableDefV3";
 import {
@@ -101,7 +112,7 @@ export function createPlDataTableV3<A, U>(
   ctx: RenderCtxBase<A, U>,
   options: createPlDataTableOptionsV3,
 ): PlDataTableModel | undefined {
-  const state = upgradePlDataTableStateV2(options.tableState);
+  const params = readPlDataTableUserParams(upgradePlDataTableStateV2(options.tableState));
   const primaryJoinType = options.primaryJoinType ?? "full";
 
   const resolved = resolveInputColumns(ctx, options);
@@ -112,10 +123,16 @@ export function createPlDataTableV3<A, U>(
   const { direct, linked } = splitByTopology(secondary);
 
   const allColumns = [...primary, ...secondary];
+  const labelable = allColumns.map(toLabelableColumn);
+  // From all columns: a hidden one still shows when sorted, filtered or made visible by a rule.
+  const linkHints = collectLinkHints(labelable);
   const derivedLabels = deriveAllLabels({
     // Skip hidden columns when deriving labels — they don't appear in the
     // table, so they shouldn't influence label disambiguation (#1623).
-    columns: allColumns.filter((c) => !isColumnHidden(c.getSpec())).map(toLabelableColumn),
+    // The link icon and its hover text tell same-named columns apart, so they get no "via" text.
+    columns: labelable
+      .filter((c) => !isColumnHidden(c.spec))
+      .map((c) => ({ ...c, marker: linkHints.get(c.id) })),
     deriveLabelsOptions: {
       includeNativeLabel: true,
       ...options.labelsOptions,
@@ -138,17 +155,39 @@ export function createPlDataTableV3<A, U>(
     ...linked.flatMap((lc) => [...collectLinkerColumns(lc), lc]),
   ]);
 
+  const tableColumns = [...primary, ...direct, ...linked];
+  // The table shows only the axes of its primary columns.
+  const primaryAxisKeys = new Set(
+    primary.flatMap((c) => c.getSpec().axesSpec.map((a) => canonicalizeAxisId(a))),
+  );
+  const searchFilter = createSearchFilter(
+    params.searchString,
+    collectSearchColumns({
+      columns: tableColumns.map((c) => ({
+        id: c.id,
+        spec: c.getSpec(),
+        visibility: getEffectiveVisibility(toRuleColumn(c), visibilityByColId) ?? "default",
+      })),
+      isAxisHidden: (axis) =>
+        !primaryAxisKeys.has(canonicalizeAxisId(axis)) || isColumnHidden(axis),
+      sheetAxes: params.sheetsState.map((sheet) => sheet.axisId),
+      hiddenColIds: params.hiddenColIds,
+    }),
+  );
+
   const remapedDefaultFilters = remapFilterColumnIds(options.filters, resolver);
   const filters = filterFilters(
-    concatFilters(
-      state.pTableParams.filters,
-      state.pTableParams.defaultFilters ?? remapedDefaultFilters,
-    ),
+    joinFilters([
+      ...createSheetFilters(params.sheetsState),
+      params.userFilters,
+      searchFilter,
+      params.defaultFilters ?? remapedDefaultFilters,
+    ]),
     resolver,
   );
 
   const sorting = filterSorting(
-    resolveSorting(state.pTableParams.sorting, remapSortingColumnIds(options.sorting, resolver)),
+    resolveSorting(params.sorting, remapSortingColumnIds(options.sorting, resolver)),
     resolver,
   );
 
@@ -174,13 +213,12 @@ export function createPlDataTableV3<A, U>(
     ]),
   );
 
-  const hiddenSpecs = state.pTableParams.hiddenColIds;
   const hiddenColumnIds = computeHiddenColumns({
-    columns: [...primary, ...direct, ...linked],
+    columns: tableColumns,
     visibilityByColId,
     sorting,
     filters,
-    hiddenSpecs,
+    hiddenSpecs: params.hiddenColIds,
   });
 
   const visible = {
@@ -205,12 +243,13 @@ export function createPlDataTableV3<A, U>(
     visibleColumns: [...visible.primary, ...visible.direct, ...visible.linked],
     primaryColumns: primary,
     derivedLabels,
+    linkHints,
     visibilityByColId,
     orderByColId,
   });
 
   return {
-    sourceId: state.pTableParams.sourceId,
+    sourceId: params.sourceId,
     fullTableHandle: fullHandle,
     fullPframeHandle: pframeHandle,
     visibleTableHandle: visibleHandle,
@@ -276,7 +315,19 @@ function collectLinkerSnapshots(linked: ColumnRecipe[]): ColumnRecipe[] {
   );
 }
 
-function toLabelableColumn(col: ColumnRecipe) {
+/** Link icon hover text per column, for columns reached through at least one peer link. */
+function collectLinkHints(columns: LabelableColumn[]): Map<ColumnUniversalId, string> {
+  if (!columns.some((c) => c.linkerPath?.length)) return new Map();
+  const datasetAxes = getResultPoolDatasetAxes();
+  return new Map(
+    columns.flatMap((c) => {
+      const links = findPeerLinks(c.linkerPath?.map((step) => step.linker.spec) ?? [], datasetAxes);
+      return links.length > 0 ? [[c.id, describePeerLinks(links)] as const] : [];
+    }),
+  );
+}
+
+function toLabelableColumn(col: ColumnRecipe): LabelableColumn {
   return {
     id: col.id,
     spec: col.getSpec(),
@@ -306,10 +357,11 @@ function buildColumnsMeta(params: {
   /** The primary join columns — their axes are the visible index; all other axes are hidden. */
   primaryColumns: ColumnRecipe[];
   derivedLabels: Record<string, string>;
+  linkHints: Map<ColumnUniversalId, string>;
   visibilityByColId: Map<PObjectId, ColumnVisibilityRule>;
   orderByColId: Map<PObjectId, ColumnOrderRule>;
 }): PlDataTableColumnsMeta {
-  const { fullColumns, visibleColumns, primaryColumns, derivedLabels } = params;
+  const { fullColumns, visibleColumns, primaryColumns, derivedLabels, linkHints } = params;
   const { visibilityByColId, orderByColId } = params;
   // Status only for visible columns — the probe is meaningful only for what the
   // user actually sees; non-visible columns get no `status`.
@@ -322,6 +374,7 @@ function buildColumnsMeta(params: {
       visibility: getEffectiveVisibility(rc, visibilityByColId),
       order: getOrderPriority(rc, orderByColId),
       status: visibleStatus[c.id],
+      linkHint: linkHints.get(c.id),
     };
     return acc;
   }, {});
@@ -385,19 +438,6 @@ function filterFilters(
   };
 
   return prune(filters) as Nil | PlDataTableFilters;
-}
-
-/** Merge two filter trees into one AND-combined tree. Returns the non-nil one if the other is nil.
- *  Exported for unit testing. */
-export function concatFilters(
-  a: Nil | PlDataTableFilters,
-  b: Nil | PlDataTableFilters,
-): Nil | PlDataTableFilters {
-  if (isNil(a)) return b;
-  if (isNil(b)) return a;
-  const operands = (f: PlDataTableFilters): PlDataTableFilterNode[] =>
-    f.type === "and" ? f.filters : [f as PlDataTableFilterNode];
-  return { type: "and", filters: [...operands(a), ...operands(b)] };
 }
 
 /** Pick user sorting from state if set, otherwise fall back to options default.

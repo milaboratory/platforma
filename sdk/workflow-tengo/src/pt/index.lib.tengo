@@ -17,6 +17,8 @@ pframesSpec := import(":pframes.spec")
 render := import(":render")
 maps := import(":maps")
 canonical := import(":canonical")
+constants := import(":constants")
+feats := import(":feats")
 validation := import(":validation")
 
 /**
@@ -422,6 +424,7 @@ workflow := func() {
 	scratchFreeSpace := undefined
 	inputCache := undefined
 	queue := execConstants.MEDIUM_QUEUE
+	runName := undefined
 
 	self := undefined
 
@@ -1049,6 +1052,24 @@ workflow := func() {
 		},
 
 		/**
+		 * Names the ptabler run for telemetry and job listings. The backend shows the name
+		 * as the job name and as the first segment of the exec id, e.g.
+		 * `aggregate-by-clonotype-key/python:<hash>`. Without a name, the exec id is
+		 * `main/python:<hash>`.
+		 *
+		 * The name is a deduplication input of the exec: a run with a new name does not
+		 * reuse the result of a run with a different name or with no name.
+		 *
+		 * @param n: string - the run name, e.g. "aggregate-by-clonotype-key"
+		 * @return builder
+		 */
+		name: func(n) {
+			validation.assertType(n, "string", "pt.workflow.name: name must be a string")
+			runName = n
+			return self
+		},
+
+		/**
 		 * Sets the floor of the auto-sized RAM request (see `.mem()`). Default 4 GiB.
 		 * Above the floor, the request still follows input volume.
 		 *
@@ -1210,7 +1231,6 @@ workflow := func() {
 			})
 
 			runInputs := {
-				workflowJsonStruct: workflowJsonStruct,
 				inFiles: inFilesMap,
 				inFilesContent: inFilesContentMap,
 				inFrames: inFramesDistilled,
@@ -1218,7 +1238,25 @@ workflow := func() {
 				outFilesContent: outContentFiles,
 				outFrames: outFrames
 			}
+			// One resource body must not be larger than the gRPC message limit of the
+			// platform (4 MiB). A workflow with many steps (for example, one frame for
+			// each sample) can be larger. The workflow JSON has much repetition, and gzip
+			// makes it much smaller. Old backends do not have gzipEncode. They get plain JSON.
+			if feats.hasGzip {
+				runInputs.workflowJsonGz = smart.createValueResource(
+					constants.RTYPE_BINARY_VALUE,
+					ll.gzipEncode(canonical.encode(workflowJsonStruct)))
+			} else {
+				runInputs.workflowJsonStruct = workflowJsonStruct
+			}
+
+			// The scratch sizing in :pt.workflow-run needs the frame step counts.
+			// It cannot read them from compressed JSON. We count the steps here.
+			frameSteps := sizing.countFrameSteps(workflowJsonStruct.workflow)
+
+			// render.create drops undefined meta inputs, so an unset setter leaves the run inputs unchanged.
 			runMetaInputs := {
+				name: runName,
 				queue: queue,
 				cpu: cpu,
 				cpuFloor: cpuFloor,
@@ -1231,6 +1269,8 @@ workflow := func() {
 				memIntercept: memIntercept,
 				polarsMaxThreads: polarsMaxThreads,
 				scratchFreeSpace: scratchFreeSpace,
+				readFrames: frameSteps.readFrames,
+				writeFrames: frameSteps.writeFrames,
 				inputCache: inputCache
 			}
 			ptResult := render.create(workflowRunTpl, runInputs, {

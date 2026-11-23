@@ -79,6 +79,23 @@ describe("ColumnsCollection.isEmpty", () => {
     const c = { id: gid("c1"), spec: spec("col1") };
     expect(makeCollection([c]).isEmpty()).toBe(false);
   });
+
+  test("driver: true when the only export is not a column", () => {
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([file]);
+    const collection = handle.driver.create([{ kind: "ids", ids: [file.id], isFinal: true }]);
+    expect(handle.driver.isEmpty(collection)).toBe(true);
+  });
+
+  test("driver: lists an id only once its spec is readable", () => {
+    const late = { id: gid("late"), spec: spec("late") };
+    const collection = handle.driver.create([{ kind: "ids", ids: [late.id], isFinal: true }]);
+    expect(handle.driver.getColumns(collection)).toEqual([]);
+    expect(handle.driver.isEmpty(collection)).toBe(true);
+    handle.register([late]);
+    expect(handle.driver.getColumns(collection)).toEqual([late.id]);
+    expect(handle.driver.isEmpty(collection)).toBe(false);
+  });
 });
 
 describe("ColumnsCollection.isFinal", () => {
@@ -111,6 +128,28 @@ describe("ColumnsCollection.getColumnIds", () => {
       { driver: handle.driver },
     ).getColumnIds();
     expect(ids).toEqual([id]);
+  });
+});
+
+describe("ColumnsCollection driver getColumns", () => {
+  test("drops ids whose spec is not a column", () => {
+    const column = { id: gid("c1"), spec: spec("col1") };
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([column, file]);
+    const collection = handle.driver.create([
+      { kind: "ids", ids: [column.id, file.id], isFinal: true },
+    ]);
+    expect(handle.driver.getColumns(collection)).toEqual([column.id]);
+  });
+
+  test("filter over a collection with a file export returns only columns", () => {
+    const column = { id: gid("c1"), spec: spec("col1") };
+    const file = { id: gid("library"), spec: { kind: "File", name: "library" } };
+    handle.register([column, file]);
+    const collection = handle.driver.create([
+      { kind: "ids", ids: [column.id, file.id], isFinal: true },
+    ]);
+    expect(handle.driver.getColumns(handle.driver.filter(collection, {}))).toEqual([column.id]);
   });
 });
 
@@ -160,5 +199,52 @@ describe("ColumnsCollection.filter", () => {
     const c2 = { id: gid("c2"), spec: spec("col2") };
     const ids = makeCollection([c1, c2]).filter({}).getColumnIds();
     expect(ids).toEqual([c1.id, c2.id]);
+  });
+});
+
+describe("ColumnsCollection.discoverRoots", () => {
+  const cellAxis: AxisSpec = { name: "cell", type: "Int" };
+  const sampleAxis: AxisSpec = { name: "sample", type: "Long" };
+  const linkerSpec: PColumnSpec = {
+    ...spec("cellToSample", [cellAxis, sampleAxis]),
+    annotations: { "pl7.app/isLinkerColumn": "true" },
+  };
+
+  const cellData = { id: gid("cellData"), spec: spec("cellData", [cellAxis]) };
+  const linker = { id: gid("cellToSample"), spec: linkerSpec };
+  const sampleData = { id: gid("sampleData"), spec: spec("sampleData", [sampleAxis]) };
+
+  beforeEach(() => handle.installAmbientCtx());
+  afterEach(() => handle.uninstallAmbientCtx());
+
+  test("finds the column the given one hangs off, with the linker path", () => {
+    const found = makeCollection([cellData, linker, sampleData]).discoverRoots({
+      leaves: [cellData.id],
+      maxHops: 1,
+    });
+
+    expect(found.map((r) => r.root.id)).toEqual([sampleData.id]);
+    expect(found[0]?.path.map((c) => c.id)).toEqual([linker.id]);
+  });
+
+  test("the leaf is what discover anchored on the root returns", () => {
+    const collection = makeCollection([cellData, linker, sampleData]);
+    const [found] = collection.discoverRoots({ leaves: [cellData.id], maxHops: 1 });
+
+    const discovered = collection
+      .discover({ anchors: { r: sampleData.id }, maxHops: 1 })
+      .getColumnIds();
+
+    expect(found).toBeDefined();
+    expect(discovered).toContain(found?.leaf.id);
+  });
+
+  test("a column at the top of the hierarchy has no roots", () => {
+    const found = makeCollection([cellData, linker, sampleData]).discoverRoots({
+      leaves: [sampleData.id],
+      maxHops: 1,
+    });
+
+    expect(found).toEqual([]);
   });
 });

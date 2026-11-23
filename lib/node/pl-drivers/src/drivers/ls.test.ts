@@ -3,7 +3,6 @@ import { LsDriver, type LsEntryWithFileStats } from "./ls";
 import { TestHelpers } from "@milaboratories/pl-client";
 import * as path from "node:path";
 import { test, expect, describe } from "vitest";
-import { isImportFileHandleIndex, isImportFileHandleUpload } from "@milaboratories/pl-model-common";
 import type { StorageHandle } from "@milaboratories/pl-model-common";
 import * as env from "../test_env";
 import { parseIndexHandle } from "./helpers/ls_remote_import_handle";
@@ -15,7 +14,7 @@ test("should ok when get all storages from ls driver", async () => {
   const signer = new HmacSha256Signer("abc");
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
-    const driver = await LsDriver.init(logger, client, signer, [], () => {
+    const driver = await LsDriver.init(logger, client, signer, () => {
       throw Error();
     });
 
@@ -35,7 +34,7 @@ test("should ok when list files from remote storage in ls driver", async () => {
   const signer = new HmacSha256Signer("abc");
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
-    const driver = await LsDriver.init(logger, client, signer, [], () => {
+    const driver = await LsDriver.init(logger, client, signer, () => {
       throw Error();
     });
 
@@ -79,7 +78,7 @@ test("should ok when list files from local storage in ls driver", async () => {
   const signer = new HmacSha256Signer("abc");
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
-    const driver = await LsDriver.init(logger, client, signer, [], () => {
+    const driver = await LsDriver.init(logger, client, signer, () => {
       throw Error();
     });
 
@@ -91,50 +90,11 @@ test("should ok when list files from local storage in ls driver", async () => {
   });
 });
 
-test("should ok when list files from local storage in ls driver and correctly apply local projections", async () => {
-  const signer = new HmacSha256Signer("abc");
-  const logger = new ConsoleLoggerAdapter();
-  await TestHelpers.withTempRoot(async (client) => {
-    let dialogRet = "";
-    const driver = await LsDriver.init(
-      logger,
-      client,
-      signer,
-      [{ storageId: "test_storage", localPath: path.join(assetsPath, "ls_dir_structure_test") }],
-      async () => [dialogRet],
-    );
-
-    {
-      dialogRet = path.join(assetsPath, "ls_dir_structure_test", "abc", "42.txt");
-      const result = await driver.showOpenSingleFileDialog();
-      expect(result.file).toBeDefined();
-
-      expect(isImportFileHandleIndex(result.file!)).toStrictEqual(true);
-      const size = await driver.getLocalFileSize(result.file!);
-      expect(size).toStrictEqual(3);
-      const content = await driver.getLocalFileContent(result.file!);
-      expect(Buffer.from(content).toString()).toStrictEqual("42\n");
-    }
-
-    {
-      dialogRet = path.join(assetsPath, "answer_to_the_ultimate_question.txt");
-      const result = await driver.showOpenSingleFileDialog();
-      expect(result.file).toBeDefined();
-
-      expect(isImportFileHandleUpload(result.file!)).toStrictEqual(true);
-      const size = await driver.getLocalFileSize(result.file!);
-      expect(size).toStrictEqual(3);
-      const content = await driver.getLocalFileContent(result.file!);
-      expect(Buffer.from(content).toString()).toStrictEqual("42\n");
-    }
-  });
-});
-
 test("should ok when get file using local dialog, and read its content", async () => {
   const signer = new HmacSha256Signer("abc");
   const logger = new ConsoleLoggerAdapter();
   await TestHelpers.withTempRoot(async (client) => {
-    const driver = await LsDriver.init(logger, client, signer, [], async () => [
+    const driver = await LsDriver.init(logger, client, signer, async () => [
       path.join(assetsPath, "answer_to_the_ultimate_question.txt"),
     ]);
 

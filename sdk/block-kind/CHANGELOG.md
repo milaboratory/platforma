@@ -1,5 +1,11 @@
 # @platforma-sdk/block-kind
 
+## 1.1.1
+
+### Patch Changes
+
+- b278e85: Build on windows, iter 1. Technical release
+
 ## 1.1.0
 
 ### Minor Changes

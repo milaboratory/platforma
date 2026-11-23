@@ -1,0 +1,41 @@
+test := import(":test")
+rules := import(":v2.node-rules")
+
+TestNameProblemAcceptsPlainNames := func() {
+	test.isTrue(is_undefined(rules.nameProblem("pf")))
+	test.isTrue(is_undefined(rules.nameProblem("centroid-dataset_1")))
+	test.isTrue(is_undefined(rules.nameProblem("recovery")))
+	test.isTrue(is_undefined(rules.nameProblem("ResourceError")))
+}
+
+TestNameProblemRefusesWhatTheBackendForbids := func() {
+	test.isEqual(rules.nameProblem(""), "is empty")
+	test.isEqual(rules.nameProblem("sum.total"), "contains \".\", which joins the names of a path")
+	test.isEqual(rules.nameProblem("resourceError"), "is reserved by the backend")
+	test.isEqual(rules.nameProblem("recovery/x"), "starts with \"recovery/\", which the backend reserves")
+	test.isEqual(rules.nameProblem(7), "is not a string")
+}
+
+TestNodeTypesAreExactNameAndVersion := func() {
+	test.isTrue(rules.isNodeType({ Name: "std/map", Version: "1" }))
+	test.isTrue(rules.isNodeType({ Name: "PFrame", Version: "1" }))
+	test.isFalse(rules.isNodeType({ Name: "std/map", Version: "2" }))
+	test.isFalse(rules.isNodeType({ Name: "PFrame", Version: "2" }))
+	test.isFalse(rules.isNodeType({ Name: "EphStdMap", Version: "1" }))
+	test.isFalse(rules.isNodeType({ Name: "json/object", Version: "1" }))
+}
+
+TestRefusalAcceptsNodesAndPendingFields := func() {
+	test.isTrue(is_undefined(rules.refusal({ kind: "pending" })))
+	test.isTrue(is_undefined(rules.refusal({ kind: "resource", type: { Name: "std/map", Version: "1" } })))
+	test.isTrue(is_undefined(rules.refusal({ kind: "resource", type: { Name: "PFrame", Version: "1" } })))
+}
+
+TestRefusalNamesWhatItGot := func() {
+	test.isEqual(rules.refusal({ kind: "resource", type: { Name: "json/object", Version: "1" } }),
+		"a resource of type json/object/1")
+	test.isEqual(rules.refusal({ kind: "resource", type: { Name: "std/map", Version: "2" } }),
+		"a resource of type std/map/2")
+	test.isEqual(rules.refusal({ kind: "map", keys: ["data", "spec"] }), "a map with keys [data, spec]")
+	test.isEqual(rules.refusal({ kind: "other", typeName: "string" }), "a value of type string")
+}

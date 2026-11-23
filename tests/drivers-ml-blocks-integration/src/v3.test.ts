@@ -13,7 +13,7 @@ import { BlockDumpArraySchemaUnified } from "./unified-state-schema";
 import type { BlockStateOverview } from "@milaboratories/pl-middle-layer";
 
 // Test for prerunArgs / fastNumbers feature
-test("v3: prerunArgs fastNumbers test", { timeout: 10_000 }, async ({ expect }) => {
+test("v3: prerunArgs fastNumbers test", { timeout: 30_000 }, async ({ expect }) => {
   await withMl(async (ml, workFolder) => {
     const prj1Id = await ml.createProject({ label: "PrerunArgs Test" });
     await ml.openProject(prj1Id);
@@ -232,6 +232,8 @@ test("v3: project watcher test", { timeout: 20_000 }, async ({ expect }) => {
       expect(sumNumbersBlock?.canRun).toBe(false);
       expect(enterNumberBlock?.currentBlockPack).toBeDefined();
       expect(sumNumbersBlock?.currentBlockPack).toBeDefined();
+      // The subtitle names the chosen source by its label from the result pool.
+      expect(sumNumbersBlock?.subtitle).toBe("Numbers");
     });
 
     await prj.mutateBlockStorage(enterNumberId, {

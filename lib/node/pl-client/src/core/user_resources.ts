@@ -219,9 +219,9 @@ export class UserResources {
    */
   async listSharedResourcesByType(
     resourceTypeName: string,
-    opts: { login?: string } = {},
+    opts: { login?: string; abortSignal?: AbortSignal } = {},
   ): Promise<SignedResourceId[]> {
-    const responses = await this.ll.listUserResources({ login: opts.login });
+    const responses = await this.ll.listUserResources(opts);
 
     const result: SignedResourceId[] = [];
     for (const msg of responses) {
@@ -264,7 +264,8 @@ export class UserResources {
    * Lists the logins of users known to the server, for the recipient picker. A user becomes
    * known on first login; provisioned users who have never logged in do not appear. gRPC-only
    * (the underlying {@link LLPlClient.listUsers} has no REST binding) — throws on a
-   * REST-connected client, so callers gate on the `userListing:v1` capability.
+   * REST-connected client. The server decides per role: a role that cannot list users gets
+   * PERMISSION_DENIED (check with `isPermissionDenied`). Callers gate on `PlClient.canListUsers`.
    */
   async listUsers(): Promise<UserEntry[]> {
     const users = await this.ll.listUsers();

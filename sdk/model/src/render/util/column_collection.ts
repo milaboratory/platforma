@@ -341,14 +341,21 @@ export class PColumnCollection {
       const selectedColumns: PColumn<PColumnDataUniversal | undefined>[] = [];
       for (const provider of this.providers) {
         const providerColumns = provider.selectColumns(currentSelector);
+        const providerIds = new Set<PObjectId>();
         for (const col of providerColumns) {
           if (excludePredicate(col.spec)) continue;
-          if (selectedIds.has(col.id))
+          if (providerIds.has(col.id))
             throw new Error(
               `Duplicate column id ${col.id} in provider ${provider.constructor.name}`,
             );
+          providerIds.add(col.id);
+          // The same column offered by several providers is taken once, from the first of them.
           const nativeId = deriveNativeId(col.spec);
           if (selectedNativeIds.has(nativeId)) continue;
+          if (selectedIds.has(col.id))
+            throw new Error(
+              `Column id ${col.id} in provider ${provider.constructor.name} is already taken by a different column of another provider`,
+            );
           selectedIds.add(col.id);
           selectedNativeIds.add(nativeId);
           selectedColumns.push(col);

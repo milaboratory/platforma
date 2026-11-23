@@ -1,0 +1,26 @@
+// sinkholed: a template rendered into the sinkhole. It has no context of its own, its reports are dropped,
+// it still sees the baggage, and the template it renders is in the sinkhole too.
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+render := import("@platforma-sdk/workflow-tengo:render")
+actionContext := import("@platforma-sdk/workflow-tengo:action-context")
+
+self.defineOutputs(["info", "done"])
+
+self.body(func(inputs) {
+	self.actionContext().record("tpl", "Running", "dropped")
+	self.actionContext().setReading("exec", "progress", "99")
+
+	grandchild := render.createEphemeral(assets.importTemplate(":action-context.grandchild"), {})
+
+	return {
+		info: {
+			context: !is_undefined(self.actionContext().id()),
+			baggage: self.actionContext().baggage(),
+			own: actionContext.linkOf(self.renderer().id).kind,
+			grandchild: actionContext.linkOf(grandchild.id).kind
+		},
+		done: grandchild.output("done")
+	}
+})

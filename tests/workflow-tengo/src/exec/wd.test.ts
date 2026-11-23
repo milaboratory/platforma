@@ -20,7 +20,7 @@ tplTest.concurrent.for(unarchiveCases)(
   async ({ filesToUnpack, expectedValue }, { helper, expect, driverKit }) => {
     const importHandle = async (driverKit) => {
       const storages = await driverKit.lsDriver.getStorageList();
-      const library = storages.find((s) => s.name == env.libraryStorage);
+      const library = env.findLibraryStorage(storages);
       if (library === undefined) throw new Error(`Library '${env.libraryStorage}' not found`);
       const files = await driverKit.lsDriver.listFiles(library!.handle, "");
       const ourFile = files.entries.find((f) => f.name == "archive.zip");
