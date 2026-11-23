@@ -122,13 +122,16 @@ test("block action context outlives its renderer and is replaced on re-render", 
     }
     const first = (await readActionContext(pl, prj, "block1"))!;
     expect(first).toBeDefined();
-    expect(Object.keys(first.baggage).sort()).toEqual([
+    // The middle layer writes these keys; a newer backend also adds "user-id", the caller's id.
+    const { "user-id": userId, ...middleLayerBaggage } = first.baggage;
+    expect(Object.keys(middleLayerBaggage).sort()).toEqual([
       "block-id",
       "block-pack",
       "name",
       "project-id",
       "run-id",
     ]);
+    if (userId !== undefined) expect(userId).not.toEqual("");
     expect(first.baggage["block-id"]).toEqual("block1");
     expect(first.baggage["project-id"]).toEqual(resourceIdToString(prj));
     expect(first.baggage["name"]).toEqual("Block1");
