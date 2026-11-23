@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { PlDropdownLine, PlDropdownMulti, type ListOption } from "@milaboratories/uikit";
 import type { PlDataTableSheet, PlDataTableSheetState } from "@platforma-sdk/model";
-import { getAxisId } from "@platforma-sdk/model";
+import { Annotation, getAxisId, readAnnotation } from "@platforma-sdk/model";
 import { computed } from "vue";
 import { isJsonEqual } from "@milaboratories/helpers";
 import type { PlDataTableSheetNormalized } from "./types";
@@ -36,7 +36,7 @@ const views = computed<SheetView[]>(() =>
       const axisId = getAxisId(sheet.axis);
       const state = props.state.find((s) => isJsonEqual(s.axisId, axisId));
       if (state === undefined) return [];
-      const label = sheet.axis.annotations?.["pl7.app/label"]?.trim() ?? `Unlabeled axis ${i}`;
+      const label = readAnnotation(sheet.axis, Annotation.Label)?.trim() ?? `Unlabeled axis ${i}`;
       const base: PlDataTableSheetNormalized = {
         axisId,
         prefix: label + ":",

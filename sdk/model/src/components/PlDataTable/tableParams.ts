@@ -103,9 +103,9 @@ export function readPlDataTableUserParams(
 export function createSheetFilters(sheetsState: PlDataTableSheetState[]): PlDataTableFilterNode[] {
   return sheetsState.flatMap((sheet): PlDataTableFilterNode[] => {
     const column: PTableColumnId = { type: "axis", id: sheet.axisId };
-    if ("value" in sheet) return [sheetValueFilter(column, sheet.value)];
+    if ("value" in sheet) return [singleValueFilter(column, sheet.value)];
     if ("allValues" in sheet) return [];
-    return sheetValuesFilter(column, sheet.values);
+    return multiValueFilter(column, sheet.values);
   });
 }
 
@@ -231,13 +231,13 @@ export type PlDataTableFilterNode = FilterSpecNode<PlDataTableFilterSpecLeaf>;
 
 // Internals
 
-function sheetValueFilter(column: PTableColumnId, value: string | number): PlDataTableFilterNode {
+function singleValueFilter(column: PTableColumnId, value: string | number): PlDataTableFilterNode {
   return typeof value === "number"
     ? { type: "equal", column, x: value }
     : { type: "patternEquals", column, value };
 }
 
-function sheetValuesFilter(
+function multiValueFilter(
   column: PTableColumnId,
   values: (string | number)[],
 ): PlDataTableFilterNode[] {
