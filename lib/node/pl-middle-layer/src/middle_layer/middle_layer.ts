@@ -814,6 +814,8 @@ export class MiddleLayer {
 
         const cachedBp = await cacheBlockPackTemplate(this.pl, preparedBp, {
           preparer: this.env.bpPreparer,
+          signer: this.env.signer,
+          logger: this.env.logger,
         });
 
         // Offered to the block's kind while nothing has been created yet. Every entry is

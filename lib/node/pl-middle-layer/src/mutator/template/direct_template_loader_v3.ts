@@ -27,6 +27,7 @@ import { notEmpty } from "@milaboratories/ts-helpers";
  *
  * IMO, it'd be clearer to rewrite it with Visitor pattern, and separate
  * tree traversing and operations on it, but I don't have time to do it now.
+ * @deprecated client-side template path; the backend installs packs via TengoTemplateInstall.
  */
 export function createTemplateV3Tree(tx: PlTransaction, tplData: CompiledTemplateV3): AnyRef {
   const resourceCache = new Map<string, AnyResourceRef>();

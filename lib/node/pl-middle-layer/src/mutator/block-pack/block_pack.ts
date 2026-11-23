@@ -230,7 +230,10 @@ export class BlockPackPreparer {
     };
   }
 
-  /** Downloads or reads a pack, checks its sha256 and parses it. */
+  /**
+   * Downloads or reads, checks and parses a pack the backend could not install.
+   * @deprecated client-side template path; the backend installs packs via TengoTemplateInstall.
+   */
   public async loadPack(template: InstallablePackTemplate): Promise<LoadedPack> {
     let content: Uint8Array | undefined;
     if (template.type === "local-pack") {

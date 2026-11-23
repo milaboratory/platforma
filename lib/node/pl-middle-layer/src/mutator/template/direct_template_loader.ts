@@ -17,6 +17,7 @@ import {
 } from "@milaboratories/pl-model-backend";
 import { createTemplateV3Tree } from "./direct_template_loader_v3";
 
+/** @deprecated client-side template path; the backend installs packs via TengoTemplateInstall. */
 export function loadTemplateFromExplicitDirect(tx: PlTransaction, spec: ExplicitTemplate): AnyRef {
   const templateInfo = parseTemplate(spec.content);
 
@@ -31,6 +32,7 @@ export function loadTemplateFromExplicitDirect(tx: PlTransaction, spec: Explicit
   }
 }
 
+/** @deprecated client-side template path; the backend installs packs via TengoTemplateInstall. */
 export function loadTemplateFromPrepared(tx: PlTransaction, spec: PreparedTemplate): AnyRef {
   const templateData = spec.data;
 

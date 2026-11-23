@@ -1,17 +1,27 @@
 import { createHash } from "node:crypto";
+import fs from "node:fs";
+import { setTimeout } from "node:timers/promises";
 import type {
   AnyResourceRef,
   PlClient,
   PlTransaction,
   SignedResourceId,
   ResourceRef,
+  ResourceType,
 } from "@milaboratories/pl-client";
 import {
+  ContinuePolling,
   ensureSignedResourceIdNotNull,
   field,
+  isNotNullSignedResourceId,
+  isNullSignedResourceId,
+  parseSignedResourceId,
+  poll,
   resourceType,
   toGlobalResourceId,
 } from "@milaboratories/pl-client";
+import type { ImportFileHandleUploadData } from "@milaboratories/pl-drivers";
+import { createUploadBlobClient, uploadBlob } from "@milaboratories/pl-drivers";
 import {
   parseTemplate,
   PlTemplateLibV1,
@@ -31,6 +41,7 @@ import type {
   TemplateWasmDataV3,
 } from "@milaboratories/pl-model-backend";
 import { notEmpty } from "@milaboratories/ts-helpers";
+import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
 import type { BlockPackSpecPrepared } from "../../model";
 import type { InstallablePackTemplate, TemplateSpecPrepared } from "../../model/template_spec";
 import type { BlockPackPreparer } from "../block-pack/block_pack";
@@ -695,6 +706,7 @@ async function materialize(
 /**
  * Materialize a template tree via the cache.
  * Manages its own transactions internally — do NOT call inside an existing tx.
+ * @deprecated client-side template path; the backend installs packs via TengoTemplateInstall.
  *
  * @returns concrete SignedResourceId of the root template
  */
@@ -780,8 +792,11 @@ export async function loadTemplateCached(
 
 type CacheBlockPackOptions = {
   cacheResourceId?: SignedResourceId;
-  /** Loads registry and local packs. */
+  /** Loads the pack on the client when the backend cannot install it. */
   preparer?: BlockPackPreparer;
+  /** Sign and log the upload of a local pack; without them local packs use the client path. */
+  signer?: Signer;
+  logger?: MiLogger;
 };
 
 /**
@@ -798,7 +813,7 @@ export async function cacheBlockPackTemplate(
 
   const resourceId =
     spec.template.type === "registry-pack" || spec.template.type === "local-pack"
-      ? await installPackOnClient(pl, spec.template, options)
+      ? await installPack(pl, spec.template, options)
       : await loadTemplateCached(pl, spec.template, options);
   return {
     ...spec,
@@ -806,14 +821,206 @@ export async function cacheBlockPackTemplate(
   };
 }
 
+/** The backend installs a pack when it can; otherwise, or if that fails, the client does. */
+async function installPack(
+  pl: PlClient,
+  template: InstallablePackTemplate,
+  options?: CacheBlockPackOptions,
+): Promise<SignedResourceId> {
+  const canUpload = options?.signer !== undefined && options.logger !== undefined;
+  if (
+    pl.hasCapability("templateInstall:v1") &&
+    !getDebugFlags().disableTemplateInstall &&
+    (template.type === "registry-pack" || canUpload)
+  ) {
+    const cacheRid = options?.cacheResourceId ?? (await getOrCreateTemplateCache(pl));
+    const resourceId = await installTemplateOnBackend(pl, cacheRid, template, options);
+    if (resourceId !== undefined) return resourceId;
+  }
+  return await installPackOnClient(pl, template, options);
+}
+
+/** @deprecated client-side template path; the backend installs packs via TengoTemplateInstall. */
 async function installPackOnClient(
   pl: PlClient,
   template: InstallablePackTemplate,
   options?: CacheBlockPackOptions,
 ): Promise<SignedResourceId> {
-  if (options?.preparer === undefined) throw new Error("BUG: a pack needs a preparer to load it");
+  if (options?.preparer === undefined)
+    throw new Error("BUG: a pack needs a preparer to fall back to the client");
   const loaded = await options.preparer.loadPack(template);
   // The manifest may predate the requiredCapabilities field: check what the pack declares.
   throwIfMissingServerCapabilities(pl, loaded.requiredCapabilities);
   return await loadTemplateCached(pl, loaded.template, options);
+}
+
+const TemplateInstallType = resourceType("TengoTemplateInstall", "1");
+const BlobImportExternalType = resourceType("BlobImportExternal", "1");
+const BlobUploadType = resourceType("BlobUpload", "1");
+
+const INSTALL_KEY_PREFIX = "install_";
+const INSTALL_TIMEOUT_MS = 60_000;
+const INSTALL_POLL_MS = 200;
+
+/** Resource data of a TengoTemplateInstall. @internal exported for testing */
+export function templateInstallData(sha256: string): string {
+  return JSON.stringify({ sha256 });
+}
+
+/** Resource data of the BlobImportExternal fetching a registry pack. @internal exported for testing */
+export function blobImportExternalData(url: string, sha256: string): string {
+  return JSON.stringify({ dataURL: url, dataVersion: sha256 });
+}
+
+/** Resource data of the BlobUpload carrying a local pack. @internal exported for testing */
+export function blobUploadData(
+  localPath: string,
+  signer: Signer,
+  stat: { size: bigint; mtimeMs: bigint },
+): ImportFileHandleUploadData {
+  return {
+    localPath,
+    pathSignature: signer.sign(localPath),
+    sizeBytes: String(stat.size),
+    modificationTime: String(stat.mtimeMs / 1000n),
+  };
+}
+
+/**
+ * Asks the backend to install the pack, keeping the request in the template cache so concurrent
+ * adds share it. Returns undefined on failure or timeout, after dropping the request.
+ * @internal exported for testing
+ */
+export async function installTemplateOnBackend(
+  pl: PlClient,
+  cacheRid: SignedResourceId,
+  template: InstallablePackTemplate,
+  options?: { signer?: Signer; logger?: MiLogger },
+): Promise<SignedResourceId | undefined> {
+  const key = INSTALL_KEY_PREFIX + template.sha256;
+  // Only a failed, timed out or never uploaded install is dropped; a connection error keeps it for reuse.
+  let drop = false;
+  let installId: SignedResourceId | undefined;
+  try {
+    let uploadData: ImportFileHandleUploadData | undefined;
+    let blob: { type: ResourceType; data: string };
+    if (template.type === "local-pack") {
+      if (options?.signer === undefined) throw new Error("uploading a local pack needs a signer");
+      const stat = await fs.promises.stat(template.path, { bigint: true });
+      uploadData = blobUploadData(template.path, options.signer, stat);
+      blob = { type: BlobUploadType, data: JSON.stringify(uploadData) };
+    } else {
+      blob = {
+        type: BlobImportExternalType,
+        data: blobImportExternalData(template.url, template.sha256),
+      };
+    }
+
+    const request = await pl.withWriteTx("templateInstall:request", async (tx) => {
+      const cacheField = field(cacheRid, key);
+      const [exists, countStr] = await Promise.all([
+        tx.fieldExists(cacheField),
+        tx.getKValueStringIfExists(cacheRid, ACCESS_COUNT_KEY),
+      ]);
+      const accessCount = (countStr ? parseInt(countStr, 10) : 0) + 1;
+      tx.setKValue(cacheRid, ACCESS_COUNT_KEY, accessCount.toString());
+      tx.setKValue(cacheRid, ACCESS_KEY_PREFIX + key, Date.now().toString());
+
+      if (exists) {
+        const fd = await tx.getField(cacheField);
+        await tx.commit();
+        return { installId: ensureSignedResourceIdNotNull(fd.value), accessCount };
+      }
+
+      const install = tx.createStruct(TemplateInstallType, templateInstallData(template.sha256));
+      const blobSource = tx.createStruct(blob.type, blob.data);
+      tx.lock(blobSource);
+      tx.setField(field(install, "source"), field(blobSource, "blob"));
+      tx.lockInputs(install);
+      tx.createField(cacheField, "Dynamic", install);
+      await tx.commit();
+      return {
+        installId: await install.globalId,
+        uploadId: uploadData === undefined ? undefined : await blobSource.globalId,
+        accessCount,
+      };
+    });
+    installId = request.installId;
+    if (request.accessCount >= GC_ACCESS_THRESHOLD)
+      await runGc(pl, cacheRid).catch((e: unknown) =>
+        options?.logger?.warn(`template cache GC failed: ${String(e)}`),
+      );
+
+    if (request.uploadId !== undefined && uploadData !== undefined) {
+      drop = true;
+      await uploadLocalPack(pl, notEmpty(options?.logger), request.uploadId, uploadData);
+      drop = false;
+    }
+
+    // Starts after the upload, so a slow upload does not eat the install time.
+    const deadline = Date.now() + INSTALL_TIMEOUT_MS;
+    while (Date.now() < deadline) {
+      const fd = await pl.withReadTx("templateInstall:poll", (tx) =>
+        tx.getField(field(request.installId, "template")),
+      );
+      if (isNotNullSignedResourceId(fd.value)) return fd.value;
+      if (isNotNullSignedResourceId(fd.error)) {
+        drop = true;
+        const err = await pl.withReadTx("templateInstall:error", (tx) =>
+          tx.getResourceData(ensureSignedResourceIdNotNull(fd.error), false),
+        );
+        throw new Error(`backend install failed: ${Buffer.from(err.data ?? []).toString()}`);
+      }
+      await setTimeout(INSTALL_POLL_MS);
+    }
+    drop = true;
+    throw new Error(`backend install timed out after ${INSTALL_TIMEOUT_MS} ms`);
+  } catch (e: unknown) {
+    options?.logger?.warn(`template ${template.sha256}: ${String(e)}; using the client path`);
+  }
+  if (!drop || installId === undefined) return undefined;
+  const droppedId = parseSignedResourceId(installId).globalId;
+
+  try {
+    await pl.withWriteTx("templateInstall:drop", async (tx) => {
+      // Another client may have replaced the entry with a new install of the same pack.
+      if (!(await tx.fieldExists(field(cacheRid, key)))) return;
+      const fd = await tx.getField(field(cacheRid, key));
+      if (
+        !isNotNullSignedResourceId(fd.value) ||
+        parseSignedResourceId(fd.value).globalId !== droppedId
+      )
+        return;
+      tx.removeField(field(cacheRid, key));
+      tx.deleteKValue(cacheRid, ACCESS_KEY_PREFIX + key);
+      await tx.commit();
+    });
+  } catch {
+    // Another client or the cache GC already dropped it.
+  }
+  return undefined;
+}
+
+/** Uploads a local pack into the BlobUpload's handle resource. */
+async function uploadLocalPack(
+  pl: PlClient,
+  logger: MiLogger,
+  uploadId: SignedResourceId,
+  uploadData: ImportFileHandleUploadData,
+): Promise<void> {
+  const handle = await poll(pl, async (tx) => {
+    const fd = await tx.tx.getField(field(uploadId, "handle"));
+    if (isNotNullSignedResourceId(fd.error))
+      throw new Error(
+        `upload handle failed: ${Buffer.from((await tx.tx.getResourceData(fd.error, false)).data ?? []).toString()}`,
+      );
+    if (isNullSignedResourceId(fd.value)) throw new ContinuePolling();
+    return await tx.tx.getResourceData(fd.value, false);
+  });
+  await uploadBlob(logger, createUploadBlobClient(pl, logger), handle, uploadData, () => false, {
+    nPartsWithThisUploadSpeed: 0,
+    nPartsToIncreaseUpload: 10,
+    currentSpeed: 4,
+    maxSpeed: 16,
+  });
 }

@@ -19,7 +19,7 @@ export interface PreparedTemplate {
   data: TemplateData | CompiledTemplateV3;
 }
 
-/** A registry pack not yet downloaded: it is fetched from `url` when installed. */
+/** A registry pack not yet downloaded: the backend installs it from `url`, or the client does. */
 export interface RegistryPackTemplate {
   readonly type: "registry-pack";
   url: string;
@@ -27,7 +27,7 @@ export interface RegistryPackTemplate {
   sha256: string;
 }
 
-/** A local dev pack: it is read from `path` when installed. */
+/** A local dev pack: the backend installs it from an upload, or the client reads it. */
 export interface LocalPackTemplate {
   readonly type: "local-pack";
   path: string;
@@ -35,7 +35,7 @@ export interface LocalPackTemplate {
   sha256: string;
 }
 
-/** A pack not yet loaded: `cacheBlockPackTemplate` installs it. */
+/** A pack the backend can install with TengoTemplateInstall. */
 export type InstallablePackTemplate = RegistryPackTemplate | LocalPackTemplate;
 
 export interface CachedTemplate {

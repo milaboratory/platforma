@@ -397,6 +397,8 @@ export class Project {
     // Pre-materialize template via cache (separate transaction(s))
     const cachedBp = await cacheBlockPackTemplate(this.env.pl, preparedBp, {
       preparer: this.env.bpPreparer,
+      signer: this.env.signer,
+      logger: this.env.logger,
     });
 
     // Build NewBlockSpec based on model API version
@@ -493,6 +495,8 @@ export class Project {
     // Pre-materialize template via cache (separate transaction(s))
     const cachedBp = await cacheBlockPackTemplate(this.env.pl, preparedBp, {
       preparer: this.env.bpPreparer,
+      signer: this.env.signer,
+      logger: this.env.logger,
     });
 
     // resetState signals to mutator to reset storage
