@@ -17,6 +17,7 @@ import type {
   BlockStatusJobGroup,
   BlockStatusJobs,
   BlockStatusSummary,
+  BlockStatusUsage,
 } from "@milaboratories/pl-model-middle-layer";
 import {
   blockStatusStatesRecord,
@@ -366,6 +367,8 @@ export type SubtreeFold = {
     readonly path: readonly string[];
   };
   readonly jobs: JobTally;
+  /** CPU and RAM of the subtree's commands that report telemetry. */
+  readonly usage: BlockStatusUsage;
   /**
    * Time the subtree's commands spent in `Running`. Commands still running add their time up to a
    * moment the reader picks: `open × now − openSinceSumNs`.
@@ -417,6 +420,54 @@ function mergeGroup(
         };
 }
 
+/** The runner's reading with each command's telemetry record (`events.RunRecord` in pl). */
+const TelemetryKey = "telemetry";
+
+const EmptyUsage: BlockStatusUsage = {
+  jobs: 0,
+  cpu: { used: 0, granted: 0 },
+  ram: { used: 0, granted: 0 },
+};
+
+/** The field of a JSON object, undefined when `value` is not one. */
+function field(value: unknown, key: string): unknown {
+  if (typeof value !== "object" || value === null) return undefined;
+  return Object.entries(value).find(([k]) => k === key)?.[1];
+}
+
+function numberField(value: unknown, key: string): number {
+  const v = field(value, key);
+  return typeof v === "number" && Number.isFinite(v) ? v : 0;
+}
+
+function addUsage(a: BlockStatusUsage, b: BlockStatusUsage): BlockStatusUsage {
+  return {
+    jobs: a.jobs + b.jobs,
+    cpu: { used: a.cpu.used + b.cpu.used, granted: a.cpu.granted + b.cpu.granted },
+    ram: { used: a.ram.used + b.ram.used, granted: a.ram.granted + b.ram.granted },
+  };
+}
+
+/** Each command's peak CPU and RAM and its grant, summed over the telemetry readings of a context. */
+function ownUsage(readings: readonly Reading[]): BlockStatusUsage {
+  let usage = EmptyUsage;
+  for (const r of readings) {
+    if (r.namespace !== ExecNamespace || r.key !== TelemetryKey) continue;
+    const record = parseJsonObject(r.value);
+    if (record === undefined) continue;
+    usage = addUsage(usage, {
+      jobs: 1,
+      // Usage is in millicores, the grant in whole cores.
+      cpu: {
+        used: numberField(record.cpu, "peak"),
+        granted: numberField(record.granted, "cpu") * 1000,
+      },
+      ram: { used: numberField(record.ram, "peak"), granted: numberField(record.granted, "ram") },
+    });
+  }
+  return usage;
+}
+
 /** The job a context is, counted where it is now; empty when it is not one. */
 function ownJobs(own: ContextFold): JobTally {
   if (!own.job) return EmptyJobTally;
@@ -456,6 +507,7 @@ export function mergeSubtree(own: ContextFold, children: readonly SubtreeFold[])
   const self = ownJobs(own);
   let { total, done, failed } = self;
   const groups: Record<string, JobGroupTally> = { ...self.groups };
+  let usage = ownUsage(own.readings);
 
   for (const child of children) {
     contexts += child.contexts;
@@ -474,6 +526,7 @@ export function mergeSubtree(own: ContextFold, children: readonly SubtreeFold[])
     done += child.jobs.done;
     failed += child.jobs.failed;
     for (const [key, group] of Object.entries(child.jobs.groups)) mergeGroup(groups, key, group);
+    usage = addUsage(usage, child.usage);
   }
 
   // A render that failed on its own, e.g. one whose command could not start, is a failed job too;
@@ -492,6 +545,7 @@ export function mergeSubtree(own: ContextFold, children: readonly SubtreeFold[])
     lastNs,
     failure,
     jobs: { total, done, failed, groups },
+    usage,
     compute: { closedNs, open, openSinceSumNs },
   };
 }
@@ -593,6 +647,7 @@ export function summarize(root: SubtreeFold): BlockStatusSummary {
     activeContexts: root.activeContexts,
     totalContexts: root.contexts,
     jobs,
+    usage: root.usage.jobs === 0 ? undefined : root.usage,
     startedAt: root.firstNs === undefined ? undefined : nsToMs(root.firstNs),
   };
 
