@@ -23,6 +23,7 @@ import {
   blockStatusStatesRecord,
   isTerminalBlockStatusState,
 } from "@milaboratories/pl-model-middle-layer";
+import { z } from "zod";
 
 /**
  * A key-value written as a JSON object, with its fields unchecked; undefined for anything else.
@@ -429,16 +430,12 @@ const EmptyUsage: BlockStatusUsage = {
   ram: { used: 0, granted: 0 },
 };
 
-/** The field of a JSON object, undefined when `value` is not one. */
-function field(value: unknown, key: string): unknown {
-  if (typeof value !== "object" || value === null) return undefined;
-  return Object.entries(value).find(([k]) => k === key)?.[1];
-}
-
-function numberField(value: unknown, key: string): number {
-  const v = field(value, key);
-  return typeof v === "number" && Number.isFinite(v) ? v : 0;
-}
+/** The part of a runner telemetry record (`events.RunRecord` in pl) the usage sums. */
+const TelemetryRecord = z.object({
+  cpu: z.object({ peak: z.number() }),
+  ram: z.object({ peak: z.number() }),
+  granted: z.object({ cpu: z.number(), ram: z.number() }),
+});
 
 function addUsage(a: BlockStatusUsage, b: BlockStatusUsage): BlockStatusUsage {
   return {
@@ -453,16 +450,14 @@ function ownUsage(readings: readonly Reading[]): BlockStatusUsage {
   let usage = EmptyUsage;
   for (const r of readings) {
     if (r.namespace !== ExecNamespace || r.key !== TelemetryKey) continue;
-    const record = parseJsonObject(r.value);
-    if (record === undefined) continue;
+    const parsed = TelemetryRecord.safeParse(parseJsonObject(r.value));
+    if (!parsed.success) continue;
+    const { cpu, ram, granted } = parsed.data;
     usage = addUsage(usage, {
       jobs: 1,
       // Usage is in millicores, the grant in whole cores.
-      cpu: {
-        used: numberField(record.cpu, "peak"),
-        granted: numberField(record.granted, "cpu") * 1000,
-      },
-      ram: { used: numberField(record.ram, "peak"), granted: numberField(record.granted, "ram") },
+      cpu: { used: cpu.peak, granted: granted.cpu * 1000 },
+      ram: { used: ram.peak, granted: granted.ram },
     });
   }
   return usage;
