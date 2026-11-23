@@ -157,7 +157,7 @@ const TemplateRenderer: Renderer<TemplateData> = {
     // Override template hash with proxy resource, when hash override is configured for template
     const overrideRef = tx.createStruct(
       PlTemplateOverrideV1.type,
-      JSON.stringify(PlTemplateOverrideV1.fromV2Data(resource)),
+      JSON.stringify(PlTemplateOverrideV1.fromV2Data(resource).data),
     );
     const fld = PlTemplateOverrideV1.tplField(overrideRef);
     tx.createField(fld, "Service");
