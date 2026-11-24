@@ -254,6 +254,8 @@ export class SynchronizedTreeState {
    * it, without diffing state. Read through {@link changeGeneration}. */
   private changeGenerationCounter = 0;
 
+  private readonly changeGenerationListeners = new Set<(generation: number) => void>();
+
   private readonly resourceTypeListeners = new Set<ResourceTypeSubscription>();
 
   /** Whether a snapshot was actually applied. Read through
@@ -326,6 +328,18 @@ export class SynchronizedTreeState {
    * a periodic snapshot write skippable on an idle tree. */
   public get changeGeneration(): number {
     return this.changeGenerationCounter;
+  }
+
+  /** Calls the listener after every refresh cycle that moved {@link changeGeneration}, with the
+   * new generation. Not a reader of the tree: subscribing neither starts nor keeps polling, so
+   * the listener hears only the cycles somebody else causes. Returns the unsubscribe function.
+   *
+   * Listener errors are logged and never reach the polling loop. */
+  public onChangeGeneration(listener: (generation: number) => void): () => void {
+    this.changeGenerationListeners.add(listener);
+    return () => {
+      this.changeGenerationListeners.delete(listener);
+    };
   }
 
   /** Calls the listener with the resources of the mirror whose type name starts with
@@ -677,6 +691,16 @@ export class SynchronizedTreeState {
     }
   }
 
+  private notifyChangeGeneration(): void {
+    for (const listener of this.changeGenerationListeners) {
+      try {
+        listener(this.changeGenerationCounter);
+      } catch (e: unknown) {
+        this.logger?.warn(new Error("change generation listener failed", { cause: e }));
+      }
+    }
+  }
+
   /** If true this tree state is permanently terminaed. */
   private terminated = false;
 
@@ -724,7 +748,10 @@ export class SynchronizedTreeState {
         await this.refresh(stat, { abortSignal: this.abortController.signal });
 
         const changed = countedChanges(stat) > changesBefore;
-        if (changed) this.changeGenerationCounter++;
+        if (changed) {
+          this.changeGenerationCounter++;
+          this.notifyChangeGeneration();
+        }
         this.updatePollingInterval(changed);
 
         // logging stats if we were asked to
@@ -852,6 +879,7 @@ export class SynchronizedTreeState {
   public async terminate(): Promise<void> {
     this.keepRunning = false;
     this.terminated = true;
+    this.changeGenerationListeners.clear();
     this.resourceTypeListeners.clear();
     this.abortController.abort();
 

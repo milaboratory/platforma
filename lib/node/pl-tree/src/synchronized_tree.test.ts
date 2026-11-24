@@ -848,6 +848,58 @@ test("a tree of shared roots survives a re-login: it rediscovers the roots under
   }
 }, 60_000);
 
+test("change generation listeners hear the cycles readers cause, and do not start polling", async () => {
+  await TestHelpers.withTempRoot(async (pl) => {
+    const r1 = await pl.withWriteTx(
+      "CreatingStructure1",
+      async (tx) => {
+        const rr1 = tx.createStruct(TestStructuralResourceType1);
+        const ff1 = field(tx.clientRoot, "f1");
+        tx.createField(ff1, "Dynamic");
+        tx.setField(ff1, rr1);
+        await tx.commit();
+        return await rr1.globalId;
+      },
+      { sync: true },
+    );
+
+    const treeState = await SynchronizedTreeState.init(pl, r1, {
+      stopPollingDelay: 10,
+      pollingInterval: 10,
+    });
+    const heard: number[] = [];
+    const unsubscribe = treeState.onChangeGeneration((g) => heard.push(g));
+
+    const addField = (name: string) =>
+      pl.withWriteTx(
+        "AddingField",
+        async (tx) => {
+          const ff = field(r1, name);
+          tx.createField(ff, "Input");
+          tx.setField(ff, tx.createValue(TestStructuralResourceType1, name));
+          await tx.commit();
+        },
+        { sync: true },
+      );
+
+    // nobody reads the tree: the change is not seen, and the listener does not make it seen
+    await addField("a");
+    await tp.setTimeout(100);
+    expect(heard).toEqual([]);
+
+    // a refresh brings it in
+    await treeState.refreshState();
+    expect(heard).toEqual([treeState.changeGeneration]);
+
+    unsubscribe();
+    await addField("b");
+    await treeState.refreshState();
+    expect(heard).toHaveLength(1);
+
+    await treeState.terminate();
+  });
+});
+
 test("a resource type listener gets the resources already loaded, then new ones, repeats allowed", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
     const valueType = { name: `TestTypedValue${randomUUID().slice(0, 8)}`, version: "1" };
