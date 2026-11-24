@@ -284,6 +284,11 @@ function addChildren(node: unknown, children: Children) {
 
       const kernel = tryExtractComputableKernel(node);
       if (kernel !== undefined) {
+        if (kernel.ops.nesting === "rootOnly")
+          throw new Error(
+            `Computable ${String(kernel.key)} is root-only: it can be read and watched on its own, ` +
+              `but not nested into another computable.`,
+          );
         if (!children.has(kernel.key)) children.set(kernel.key, kernel);
       } else if (Array.isArray(node)) for (const nested of node) addChildren(nested, children);
       else

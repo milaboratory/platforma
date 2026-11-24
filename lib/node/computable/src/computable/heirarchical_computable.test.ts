@@ -359,3 +359,29 @@ test("on destroy test nested with StableOnlyRetentive", async () => {
   await new Promise((r) => setImmediate(r));
   expect([...tracked.keys()].sort()).toEqual([""]);
 });
+
+test("a root-only computable cannot be nested in another", async () => {
+  const tree = new FakeTreeDriver();
+  const root = Computable.make((ctx) => ctx.accessor(tree.accessor).get("a")?.getValue(), {
+    nesting: "rootOnly",
+  });
+
+  const parent = Computable.make(() => ({ nested: root }));
+  await expect(parent.getValue()).rejects.toThrow(/root-only/);
+  expect(() => Computable.make(() => [root]).withPreCalculatedValueTree()).toThrow(/root-only/);
+  expect(() => root.wrap({ recover: () => undefined }).withPreCalculatedValueTree()).toThrow(
+    /root-only/,
+  );
+});
+
+test("a root-only computable can still be read and watched on its own", async () => {
+  const tree = new FakeTreeDriver();
+  const root = Computable.make((ctx) => ctx.accessor(tree.accessor).get("a")?.getValue(), {
+    nesting: "rootOnly",
+  }).withPreCalculatedValueTree();
+
+  expect(await root.getValue()).toBeUndefined();
+  tree.writer.getOrCreateChild("a").setValue("value");
+  expect(root.isChanged()).toBe(true);
+  expect(await root.getValue()).toEqual("value");
+});

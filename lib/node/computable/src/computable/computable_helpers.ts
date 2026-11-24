@@ -19,6 +19,7 @@ const DefaultRenderingOps: CellRenderingOps = {
   mode: "Live",
   resetValueOnError: true,
   postprocessTimeout: 5000,
+  nesting: "allowed",
 };
 
 function noopPostprocessValue<IR>(): (
