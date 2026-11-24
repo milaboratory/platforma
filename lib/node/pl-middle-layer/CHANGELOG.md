@@ -1,5 +1,27 @@
 # @milaboratories/pl-middle-layer
 
+## 2.8.0
+
+### Minor Changes
+
+- 26adc15: `BlockStatusSummary.usage`: the peak CPU and RAM of the block's jobs and what they were granted, summed over the runner's `exec/telemetry` readings. Absent until a job reports; only the k8s runner does.
+
+### Patch Changes
+
+- Updated dependencies [26adc15]
+  - @milaboratories/pl-model-middle-layer@1.41.0
+  - @milaboratories/pf-driver@1.9.20
+  - @platforma-sdk/model@1.90.20
+  - @platforma-sdk/block-tools@2.20.6
+  - @milaboratories/pf-spec-driver@1.6.2
+
+## 2.7.12
+
+### Patch Changes
+
+- Updated dependencies [3c6a385]
+  - @platforma-sdk/workflow-tengo@6.24.3
+
 ## 2.7.11
 
 ### Patch Changes

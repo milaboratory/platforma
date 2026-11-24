@@ -1,5 +1,19 @@
 # @platforma-sdk/test
 
+## 1.90.20
+
+### Patch Changes
+
+- Updated dependencies [26adc15]
+  - @milaboratories/pl-middle-layer@2.8.0
+  - @platforma-sdk/model@1.90.20
+
+## 1.90.19
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.12
+
 ## 1.90.18
 
 ### Patch Changes
