@@ -14,6 +14,7 @@ import type { SignedResourceId } from "@milaboratories/pl-client";
 import { ConsoleLoggerAdapter, type MiLogger } from "@milaboratories/ts-helpers";
 import { getDebugFlags } from "../debug";
 import { parseArgsDeriveResult, type DerivedArgs } from "./args_derivation";
+import { JsExecCounters } from "../debug/exec_counters";
 
 type EnrichmentTargetsRequest = {
   blockConfig: () => BlockConfig;
@@ -77,6 +78,7 @@ export class ProjectHelper {
   constructor(
     private readonly quickJs: QuickJSWASMModule,
     public readonly logger: MiLogger = new ConsoleLoggerAdapter(),
+    private readonly jsExecCounters: JsExecCounters = new JsExecCounters(),
   ) {}
 
   // =============================================================================
@@ -106,6 +108,7 @@ export class ProjectHelper {
       return parseArgsDeriveResult(
         executeSingleLambda(
           this.quickJs,
+          this.jsExecCounters,
           blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.ArgsDerive],
           extractCodeWithInfo(blockConfig),
           storageJson,
@@ -139,6 +142,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
+        this.jsExecCounters,
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.PrerunArgsDerive],
         extractCodeWithInfo(blockConfig),
         storageJson,
@@ -215,6 +219,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
+        this.jsExecCounters,
         callback,
         extractCodeWithInfo(blockConfig),
         storageJson,
@@ -243,6 +248,7 @@ export class ProjectHelper {
     const args = req.args();
     const result = executeSingleLambda(
       this.quickJs,
+      this.jsExecCounters,
       blockConfig.enrichmentTargets,
       extractCodeWithInfo(blockConfig),
       args,
@@ -302,6 +308,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
+        this.jsExecCounters,
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageInitial],
         extractCodeWithInfo(blockConfig),
       ) as string;
@@ -354,6 +361,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
+        this.jsExecCounters,
         callback,
         extractCodeWithInfo(blockConfig),
         JSON.stringify(params ?? {}),
@@ -434,6 +442,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
+        this.jsExecCounters,
         callback,
         extractCodeWithInfo(blockConfig),
         // Params cross the VM boundary as text, like storage does. `undefined` would
@@ -488,6 +497,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
+        this.jsExecCounters,
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageApplyUpdate],
         extractCodeWithInfo(blockConfig),
         currentStorageJson,
@@ -536,6 +546,7 @@ export class ProjectHelper {
     try {
       const result = executeSingleLambda(
         this.quickJs,
+        this.jsExecCounters,
         blockConfig.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageMigrate],
         extractCodeWithInfo(blockConfig),
         currentStorageJson,
