@@ -303,13 +303,10 @@ describe("labelBlockColumnLinks", () => {
     },
   ];
 
-  test("labels the blocks the links name by their titles in the overview", () => {
-    const blocks = [
-      { id: "samples", title: "Samples & data" },
-      { id: "untitled", title: undefined },
-    ];
+  test("labels the blocks the links name by their titles", () => {
+    const titles = { samples: "Samples & data", untitled: undefined, other: "Not linked" };
 
-    expect(labelBlockColumnLinks({ blockId: "x", dependencies, dependents }, blocks)).toEqual({
+    expect(labelBlockColumnLinks({ blockId: "x", dependencies, dependents }, titles)).toEqual({
       blockId: "x",
       dependencies,
       dependents,
@@ -319,10 +316,10 @@ describe("labelBlockColumnLinks", () => {
 
   test("gives no links while a side is not computed", () => {
     expect(
-      labelBlockColumnLinks({ blockId: "x", dependencies, dependents: undefined }, []),
+      labelBlockColumnLinks({ blockId: "x", dependencies, dependents: undefined }, {}),
     ).toBeUndefined();
     expect(
-      labelBlockColumnLinks({ blockId: "x", dependencies: undefined, dependents }, []),
+      labelBlockColumnLinks({ blockId: "x", dependencies: undefined, dependents }, {}),
     ).toBeUndefined();
   });
 });

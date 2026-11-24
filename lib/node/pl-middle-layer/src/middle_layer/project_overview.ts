@@ -24,7 +24,13 @@ import type {
 import { constructBlockContext, constructBlockContextArgsOnly } from "./block_ctx";
 import { ifNotUndef } from "../cfg_render/util";
 import { type BlockSection, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
-import { extractCodeWithInfo, wrapCallback } from "@platforma-sdk/model";
+import type { BlockModel } from "./block_model";
+import {
+  blockModelFeatureFlags,
+  blockModelOf,
+  blockModelSdkVersion,
+  blockTitle,
+} from "./block_model";
 import { computableFromCfgOrRF } from "./render";
 import type { NavigationStates } from "./navigation_states";
 import { getBlockPackInfo } from "./util";
@@ -162,135 +168,14 @@ export function projectOverview(
         }
 
         const bp = getBlockPackInfo(prj, id);
-
-        const {
-          sections,
-          title,
-          subtitle,
-          tags,
-          inputsValid,
-          inputsValidFromArgs,
-          sdkVersion,
-          featureFlags,
-          isIncompatibleWithRuntime,
-        } =
-          ifNotUndef(bp, ({ bpId, cfg, info: blockPackInfo }) => {
-            if (!env.runtimeCapabilities.checkCompatibility(cfg.featureFlags)) {
-              return {
-                isIncompatibleWithRuntime: true,
-                featureFlags: cfg.featureFlags,
-              };
-            }
-            const blockCtx = constructBlockContext(prjEntry, id);
-            const blockCtxArgsOnly = constructBlockContextArgsOnly(prjEntry, id);
-            const codeWithInfoOrError = wrapCallback(() => extractCodeWithInfo(cfg));
-            if (codeWithInfoOrError.error) {
-              return {
-                title: codeWithInfoOrError.error.message,
-                isIncompatibleWithRuntime: true,
-                featureFlags: cfg.featureFlags,
-              };
-            }
-            const codeWithInfo = codeWithInfoOrError.value;
-            return {
-              sections: computableFromCfgOrRF(
-                env,
-                blockCtx,
-                cfg.sections,
-                codeWithInfo,
-                bpId,
-                {},
-                blockPackInfo.source,
-              ).wrap({
-                recover: (cause) => {
-                  env.logger.error(new Error("Error in block model sections", { cause }));
-                  return [];
-                },
-              }) as ComputableStableDefined<BlockSection[]>,
-              title: ifNotUndef(
-                cfg.title,
-                (title) =>
-                  computableFromCfgOrRF(
-                    env,
-                    blockCtxArgsOnly,
-                    title,
-                    codeWithInfo,
-                    bpId,
-                    {},
-                    blockPackInfo.source,
-                  ).wrap({
-                    recover: (cause) => {
-                      env.logger.error(new Error("Error in block model title", { cause }));
-                      return "Invalid title";
-                    },
-                  }) as ComputableStableDefined<string>,
-              ),
-              subtitle: ifNotUndef(
-                cfg.subtitle,
-                // The subtitle names the inputs the block reads, so it renders with the
-                // result pool; the title stays args-only.
-                (subtitle) =>
-                  computableFromCfgOrRF(
-                    env,
-                    blockCtx,
-                    subtitle,
-                    codeWithInfo,
-                    bpId,
-                    {},
-                    blockPackInfo.source,
-                  ).wrap({
-                    recover: (cause) => {
-                      env.logger.error(new Error("Error in block model subtitle", { cause }));
-                      return "Invalid subtitle";
-                    },
-                  }) as ComputableStableDefined<string>,
-              ),
-              tags: ifNotUndef(
-                cfg.tags,
-                (tags) =>
-                  computableFromCfgOrRF(
-                    env,
-                    blockCtx,
-                    tags,
-                    codeWithInfo,
-                    bpId,
-                    {},
-                    blockPackInfo.source,
-                  ).wrap({
-                    recover: (cause) => {
-                      env.logger.error(new Error("Error in block model tags", { cause }));
-                      return [];
-                    },
-                  }) as ComputableStableDefined<string[]>,
-              ),
-              // inputsValid: for modelAPIVersion 2, it's true if currentArgs exists (args derivation succeeded)
-              // and the block's argsIssues() is known to have found no errors in them.
-              // For older blocks, use the inputsValid callback from config
-              inputsValid:
-                cfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION
-                  ? argsAllowRun(prj, id, info.currentArguments)
-                  : cfg.inputsValid
-                    ? (computableFromCfgOrRF(
-                        env,
-                        blockCtxArgsOnly,
-                        cfg.inputsValid,
-                        codeWithInfo,
-                        bpId,
-                      ).wrap({
-                        recover: (cause) => {
-                          env.logger.error(
-                            new Error("Error in block model inputsValid", { cause }),
-                          );
-                          return false;
-                        },
-                      }) as ComputableStableDefined<boolean>)
-                    : undefined,
-              inputsValidFromArgs: cfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION,
-              sdkVersion: codeWithInfo?.sdkVersion,
-              featureFlags: codeWithInfo?.featureFlags ?? {},
-              isIncompatibleWithRuntime: false,
-            };
-          }) || {};
+        const model = blockModelOf(bp, env);
+        const title = blockTitle(env, prjEntry, id, model, defaultLabel);
+        const { sections, subtitle, tags, inputsValid, inputsValidFromArgs } =
+          model.type === "ready" ? readyBlockLambdas(env, prjEntry, prj, id, model, info) : {};
+        const sdkVersion = blockModelSdkVersion(model);
+        const featureFlags = blockModelFeatureFlags(model);
+        const isIncompatibleWithRuntime =
+          model.type === "absent" ? undefined : model.type !== "ready";
 
         const settings = prj
           .traverse({
@@ -307,8 +192,8 @@ export function projectOverview(
         return {
           projectResourceId: resourceIdToString(prjEntry.rid),
           id,
-          label: title ?? defaultLabel,
-          title: title ?? defaultLabel,
+          label: title,
+          title,
           subtitle,
           tags,
           renderingMode,
@@ -351,6 +236,9 @@ export function projectOverview(
           updatedBlockPack: updates?.mainSuggestion,
         })),
       }),
+      // Each computable a project overview is nested into would render its own copy of it: the
+      // model lambdas of every block of the project.
+      nesting: "rootOnly",
       onRecalculation: getDebugFlags().logProjectOverviewStat
         ? (stats) => {
             console.log(`[projectOverview] ${JSON.stringify(stats)}`);
@@ -358,6 +246,97 @@ export function projectOverview(
         : undefined,
     },
   ).withStableType();
+}
+
+/**
+ * The lambdas of a block's runnable model the overview shows besides its title: sections, subtitle
+ * and tags, and whether its inputs are valid.
+ */
+function readyBlockLambdas(
+  env: MiddleLayerEnvironment,
+  prjEntry: PlTreeEntry,
+  prj: PlTreeNodeAccessor,
+  id: string,
+  model: Extract<BlockModel, { type: "ready" }>,
+  info: BlockInfo,
+) {
+  const {
+    pack: { bpId, cfg, info: blockPackInfo },
+    codeWithInfo,
+  } = model;
+  const blockCtx = constructBlockContext(prjEntry, id);
+  const blockCtxArgsOnly = constructBlockContextArgsOnly(prjEntry, id);
+  return {
+    sections: computableFromCfgOrRF(
+      env,
+      blockCtx,
+      cfg.sections,
+      codeWithInfo,
+      bpId,
+      {},
+      blockPackInfo.source,
+    ).wrap({
+      recover: (cause) => {
+        env.logger.error(new Error("Error in block model sections", { cause }));
+        return [];
+      },
+    }) as ComputableStableDefined<BlockSection[]>,
+    subtitle: ifNotUndef(
+      cfg.subtitle,
+      // The subtitle names the inputs the block reads, so it renders with the
+      // result pool; the title stays args-only.
+      (subtitle) =>
+        computableFromCfgOrRF(
+          env,
+          blockCtx,
+          subtitle,
+          codeWithInfo,
+          bpId,
+          {},
+          blockPackInfo.source,
+        ).wrap({
+          recover: (cause) => {
+            env.logger.error(new Error("Error in block model subtitle", { cause }));
+            return "Invalid subtitle";
+          },
+        }) as ComputableStableDefined<string>,
+    ),
+    tags: ifNotUndef(
+      cfg.tags,
+      (tags) =>
+        computableFromCfgOrRF(
+          env,
+          blockCtx,
+          tags,
+          codeWithInfo,
+          bpId,
+          {},
+          blockPackInfo.source,
+        ).wrap({
+          recover: (cause) => {
+            env.logger.error(new Error("Error in block model tags", { cause }));
+            return [];
+          },
+        }) as ComputableStableDefined<string[]>,
+    ),
+    // inputsValid: for modelAPIVersion 2, it's true if currentArgs exists (args derivation succeeded)
+    // and the block's argsIssues() is known to have found no errors in them.
+    // For older blocks, use the inputsValid callback from config
+    inputsValid:
+      cfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION
+        ? argsAllowRun(prj, id, info.currentArguments)
+        : cfg.inputsValid
+          ? (computableFromCfgOrRF(env, blockCtxArgsOnly, cfg.inputsValid, codeWithInfo, bpId).wrap(
+              {
+                recover: (cause) => {
+                  env.logger.error(new Error("Error in block model inputsValid", { cause }));
+                  return false;
+                },
+              },
+            ) as ComputableStableDefined<boolean>)
+          : undefined,
+    inputsValidFromArgs: cfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION,
+  };
 }
 
 /**

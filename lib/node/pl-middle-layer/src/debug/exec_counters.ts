@@ -55,6 +55,14 @@ export class TreePollCounters {
   }
 }
 
+/** Model bundle evaluations by lambda between two readings of the same counters. */
+export function bundleEvaluationsDelta(
+  before: Pick<ExecCountersSnapshot, "bundleEvaluations">,
+  after: Pick<ExecCountersSnapshot, "bundleEvaluations">,
+): Record<string, number> {
+  return countsDelta(before.bundleEvaluations, after.bundleEvaluations);
+}
+
 /** Work done between two snapshots of the same middle layer. Names with no work in between are left out. */
 export function execCountersDelta(
   before: ExecCountersSnapshot,

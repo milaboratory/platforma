@@ -4,17 +4,18 @@ import { notEmpty } from "@milaboratories/ts-helpers";
 import {
   computeDependencies,
   computeDependents,
+  linkedBlockIds,
   type BlockColumnLinks,
   type ArgsKind,
   type ColumnLinksSource,
   type ProducerRun,
   type ColumnLink,
 } from "@milaboratories/pl-model-common";
-import type { BlockStateOverview } from "@milaboratories/pl-model-middle-layer";
 import type { ProjectStructure } from "../model/project_model";
 import { ProjectStructureKey, projectFieldName } from "../model/project_model";
 import { allBlocks } from "../model/project_model_util";
 import type { MiddleLayerEnvironment } from "./middle_layer";
+import { blockTitle, readBlockModel } from "./block_model";
 
 /** What the column links computables read besides the project tree. */
 export type ColumnLinksEnv = Pick<MiddleLayerEnvironment, "projectHelper" | "logger">;
@@ -57,9 +58,44 @@ export function blockDependents(
 }
 
 /**
- * Column links of a block with the blocks they name labelled by their titles in the project
- * overview, the names the project shows; a block the overview has no title for stays unlabelled.
- * `undefined` while either side is not computed.
+ * Titles of the blocks the column links of the block name, by block id, the names the project
+ * shows for them; a block no longer in the project has none. `undefined` when they could not be
+ * computed. Reads the order and the labels of the blocks, the args of the block and of every
+ * block below it, and the model and args of each block it names. Runs no title lambda of a block
+ * the links do not name.
+ */
+export function blockLinkedTitles(
+  prjEntry: PlTreeEntry,
+  blockId: string,
+  env: MiddleLayerEnvironment,
+): Computable<Record<string, string | undefined> | undefined> {
+  return Computable.make(
+    (ctx) => {
+      const prj = ctx.accessor(prjEntry).node();
+      const labels = new Map(
+        [...allBlocks(readStructure(prj))].map(({ id, label }) => [id, label]),
+      );
+      const titles: Record<string, string | Computable<string | undefined>> = {};
+      for (const id of linkedBlockIds(columnLinksSource(prj, env), blockId)) {
+        const label = labels.get(id);
+        if (label !== undefined)
+          titles[id] = blockTitle(env, prjEntry, id, readBlockModel(prj, id, env), label);
+      }
+      return titles;
+    },
+    {
+      recover: (cause): undefined => {
+        env.logger.error(new Error("Error in column links: titles", { cause }));
+        return undefined;
+      },
+    },
+  );
+}
+
+/**
+ * Column links of a block with the blocks they name labelled by their titles, the names the
+ * project shows; a block with no title stays unlabelled. `undefined` while either side is not
+ * computed.
  */
 export function labelBlockColumnLinks(
   links: {
@@ -67,7 +103,7 @@ export function labelBlockColumnLinks(
     dependencies: undefined | ColumnLink[];
     dependents: undefined | ColumnLink[];
   },
-  blocks: readonly Pick<BlockStateOverview, "id" | "title">[],
+  titles: Readonly<Record<string, string | undefined>>,
 ): BlockColumnLinks | undefined {
   const { blockId, dependencies, dependents } = links;
   if (dependencies === undefined || dependents === undefined) return undefined;
@@ -76,8 +112,9 @@ export function labelBlockColumnLinks(
     ...dependents.map((link) => link.holderBlockId),
   ]);
   const labels: Record<string, string> = {};
-  for (const { id, title } of blocks) {
-    if (named.has(id) && title !== undefined) labels[id] = title;
+  for (const id of named) {
+    const title = titles[id];
+    if (title !== undefined) labels[id] = title;
   }
   return { blockId, dependencies, dependents, labels };
 }
@@ -96,9 +133,8 @@ function columnLinksSource(
   prj: PlTreeNodeAccessor,
   env: ColumnLinksEnv,
 ): ColumnLinksSource<PlTreeNodeAccessor> {
-  const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
   return {
-    blockIds: [...allBlocks(structure)].map(({ id }) => id),
+    blockIds: [...allBlocks(readStructure(prj))].map(({ id }) => id),
     referencesOf: (blockId, kind) => {
       const args = readArgs(prj, blockId, kind);
       if (args === undefined) return undefined;
@@ -107,6 +143,10 @@ function columnLinksSource(
     lastRunOf: (blockId) => readLastRun(prj, blockId),
     stagingOf: (blockId) => readStaging(prj, blockId),
   };
+}
+
+function readStructure(prj: PlTreeNodeAccessor): ProjectStructure {
+  return notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
 }
 
 /** The project field holding a block's args of each kind. */

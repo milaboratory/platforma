@@ -8,6 +8,9 @@ export type MlDebugFlags = {
   logOutputStatus?: "any" | "unstable-only";
   logOutputRecalculations?: boolean;
   logProjectOverviewStat: boolean;
+  /** Log how long creating the state of a block took, the model VMs it ran by lambda, and each
+   *  of its later recalculations. */
+  logBlockStateStat: boolean;
   logJsExecStat: boolean;
   /** Log every 10 s the transactions by name and model VMs by lambda run since the previous line. */
   logExecCounters: boolean;
@@ -53,6 +56,7 @@ export function getDebugFlags() {
     logTemplateCacheStat: process.env.MI_LOG_TEMPLATE_CACHE_STAT !== undefined,
     logOutputRecalculations: process.env.MI_LOG_OUTPUT_RECALCULATIONS !== undefined,
     logProjectOverviewStat: process.env.MI_LOG_PROJECT_OVERVIEW_STAT !== undefined,
+    logBlockStateStat: process.env.MI_LOG_BLOCK_STATE_STAT !== undefined,
     logJsExecStat: process.env.MI_LOG_JS_EXEC_STAT !== undefined,
     logExecCounters: process.env.MI_LOG_EXEC_COUNTERS !== undefined,
   };
