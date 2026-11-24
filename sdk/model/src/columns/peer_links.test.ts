@@ -1,4 +1,9 @@
-import { Annotation, type AxisSpec, type PColumnSpec } from "@milaboratories/pl-model-common";
+import {
+  Annotation,
+  type AxisSpec,
+  type PColumnSpec,
+  type PObjectSpec,
+} from "@milaboratories/pl-model-common";
 import { describe, expect, test } from "vitest";
 import { collectDatasetAxes, findPeerLinks, peerLinkedLast } from "./peer_links";
 
@@ -22,6 +27,11 @@ describe("peer links", () => {
 
   test("dataset axes are the main axes of isAnchor columns", () => {
     expect(axes.size).toBe(2);
+  });
+
+  test("objects other than columns are skipped", () => {
+    const file: PObjectSpec = { kind: "File", name: "pl7.app/vdj/library" };
+    expect(collectDatasetAxes([file, ...datasets]).size).toBe(2);
   });
 
   test("a linker between two datasets is a peer link", () => {
