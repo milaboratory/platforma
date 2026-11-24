@@ -10,9 +10,7 @@ import {
   DefaultRetryOptions,
   ensureSignedResourceIdNotNull,
   field,
-  isNotFoundError,
   isPermissionDenied,
-  isTimeoutOrCancelError,
   isUnauthenticated,
   parseSignedResourceId,
   Pl,
@@ -39,7 +37,6 @@ import {
   TreeStateUpdateError,
 } from "@milaboratories/pl-tree";
 import type { TreeSnapshotStore } from "./tree_snapshot_store";
-import { setTimeout } from "node:timers/promises";
 import { frontendData } from "./frontend_path";
 import type { NavigationState } from "@milaboratories/pl-model-common";
 import { getBlockParameters, blockOutputs } from "./block";
@@ -55,14 +52,7 @@ import {
   ProjectStatusFieldPattern,
   projectStatusFieldRegex,
 } from "../model/project_model";
-import {
-  cachedDeserialize,
-  notEmpty,
-  type MiLogger,
-  createInfiniteRetryState,
-  nextInfiniteRetryState,
-  type InfiniteRetryState,
-} from "@milaboratories/ts-helpers";
+import { cachedDeserialize, notEmpty, type MiLogger } from "@milaboratories/ts-helpers";
 import type { BlockPackInfo } from "../model/block_pack";
 import type {
   ProjectOverview,
@@ -76,8 +66,8 @@ import { NavigationStates } from "./navigation_states";
 import { checkBlockFlag, extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
 import fs from "node:fs/promises";
 import canonicalize from "canonicalize";
-import type { ProjectOverviewLight } from "./project_overview_light";
-import { projectOverviewLight } from "./project_overview_light";
+import type { ProjectMaintenanceState } from "./project_maintenance";
+import { projectMaintenanceState, runProjectMaintenance } from "./project_maintenance";
 import { applyProjectMigrations } from "../mutator/migration";
 import { cacheBlockPackTemplate } from "../mutator/template/template_cache";
 
@@ -123,7 +113,7 @@ function resetBlockState(computables: BlockStateComputables): void {
 export class Project {
   /** Data for the left panel, contain basic information about block status. */
   public readonly overview: ComputableStableDefined<ProjectOverview>;
-  private readonly overviewLight: Computable<ProjectOverviewLight>;
+  private readonly maintenanceState: Computable<ProjectMaintenanceState>;
 
   private readonly navigationStates = new NavigationStates();
   // null is set for deleted blocks
@@ -134,7 +124,7 @@ export class Project {
   /** Live status watches, keyed by {@link blockStatusKey}. One per block whose status is shown;
    * each owns a synchronized tree, so they are started and terminated explicitly. */
   private readonly blockStatusWatches = new Map<string, Promise<BlockStatusWatch>>();
-  private readonly refreshLoopResult: Promise<void>;
+  private readonly maintenanceResult: Promise<void>;
   private readonly stopUploadAdoption: () => void;
 
   private readonly abortController = new AbortController();
@@ -146,13 +136,18 @@ export class Project {
 
   /** When a snapshot was last attempted, for the periodic write's wall-clock gate.
    *
-   * Zero, not the construction time, so the first write lands on the first maintenance pass
-   * after the tree has settled rather than a full interval later. Sessions shorter than one
+   * Zero, not the construction time, so the first write lands as soon as the tree has moved
+   * rather than a full interval later. Sessions shorter than one
    * interval are the common case for a desktop app that is quit with a project still open, and
    * seeding this to now would leave every one of them with nothing on disk. Set on every
    * attempt, successful or not, so a persistently failing write retries at the interval rather
-   * than on every pass of the loop. */
+   * than on every change of the tree. */
   private lastSnapshotAt = 0;
+
+  /** The pending periodic snapshot write, see {@link scheduleSnapshot}. */
+  private snapshotTimer: NodeJS.Timeout | undefined;
+
+  private readonly stopSnapshotTrigger: () => void;
 
   private get destroyed() {
     return this.abortController.signal.aborted;
@@ -173,14 +168,24 @@ export class Project {
       this.navigationStates,
       env,
     ).withPreCalculatedValueTree();
-    this.overviewLight = projectOverviewLight(projectTree.entry()).withPreCalculatedValueTree();
-    this.refreshLoopResult = this.refreshLoop();
-    this.refreshLoopResult.catch((err) => {
-      env.logger.warn(new Error("Error during refresh loop", { cause: err })); // TODO (safe voiding for now)
+    this.maintenanceState = projectMaintenanceState(projectTree.entry());
+    this.maintenanceResult = runProjectMaintenance({
+      readState: () => this.maintenanceState.getValuePassively(),
+      awaitStateChange: (signal) => this.maintenanceState.awaitChangePassively({ signal }),
+      runPass: (signal) => this.runMaintenancePass(signal),
+      onBlocksDeleted: (blockIds) => blockIds.forEach((id) => this.releaseBlockComputables(id)),
+      signal: this.abortController.signal,
+      logger: env.logger,
+    });
+    this.maintenanceResult.catch((err) => {
+      env.logger.warn(new Error("Error during project maintenance", { cause: err }));
     });
     this.stopUploadAdoption = projectTree.onResourcesOfType(BlobUploadTypePrefix, (resources) =>
       this.adoptUploads(resources),
     );
+    this.stopSnapshotTrigger = projectTree.onChangeGeneration(() => this.scheduleSnapshot());
+    // the open itself loaded a tree that may not be on disk yet
+    this.scheduleSnapshot();
   }
 
   get projectLockId(): string {
@@ -188,12 +193,27 @@ export class Project {
   }
 
   /**
-   * Periodic snapshot write, carried on the maintenance loop rather than a timer of its own.
-   *
-   * Gated on the tree having changed since the last snapshot, so a project left open and idle
-   * writes once and then goes quiet, and on wall clock, so a project changing continuously
-   * writes at most once per interval.
+   * Arms the periodic snapshot write, if the tree has moved since the snapshot on disk and no
+   * write is armed yet. Called whenever the tree's change generation moves, so a project left
+   * open and idle writes once and then arms nothing; the wall-clock gate makes a project
+   * changing continuously write at most once per interval.
    */
+  private scheduleSnapshot(): void {
+    if (this.env.treeSnapshots === undefined) return;
+    if (this.destroyed || this.snapshotTimer !== undefined) return;
+    if (this.projectTree.changeGeneration === this.snapshotGeneration) return;
+
+    const delay = Math.max(
+      0,
+      this.lastSnapshotAt + this.env.ops.treeSnapshotOps.writeInterval - Date.now(),
+    );
+    this.snapshotTimer = setTimeout(() => {
+      this.snapshotTimer = undefined;
+      void this.maybeWriteSnapshot().finally(() => this.scheduleSnapshot());
+    }, delay);
+  }
+
+  /** Writes the snapshot, if the tree has moved since the last one and the interval has passed. */
   private async maybeWriteSnapshot(): Promise<void> {
     const store = this.env.treeSnapshots;
     if (store === undefined) return;
@@ -297,78 +317,18 @@ export class Project {
     }
   }
 
-  private async refreshLoop(): Promise<void> {
-    let retryState: InfiniteRetryState | undefined;
-    while (!this.destroyed) {
-      try {
-        await withProject(
-          this.env.projectHelper,
-          this.env.pl,
-          this.rid,
-          (prj) => {
-            prj.doRefresh();
-          },
-          {
-            name: "doRefresh",
-            lockId: this.projectLockId,
-            abortSignal: this.abortController.signal,
-          },
-        );
-        await setTimeout(this.env.ops.projectRefreshInterval, undefined, {
-          signal: this.abortController.signal,
-        });
-
-        await this.maybeWriteSnapshot();
-
-        // Block computables housekeeping
-        const overviewLight = await this.overviewLight.getValue();
-        const existingBlocks = new Set(overviewLight.listOfBlocks);
-        // Doing cleanup for deleted blocks
-        for (const blockId of this.blockComputables.keys()) {
-          if (!existingBlocks.has(blockId)) {
-            const computables = this.blockComputables.get(blockId);
-            if (computables !== undefined && computables !== null) resetBlockState(computables);
-            this.blockComputables.set(blockId, null);
-          }
-        }
-        retryState = undefined;
-      } catch (error: unknown) {
-        // If we're destroyed, exit gracefully regardless of error type
-        if (this.destroyed) break;
-
-        if (isNotFoundError(error)) {
-          this.env.logger.warn(
-            "project refresh routine terminated, because project was externally deleted",
-          );
-          break;
-        } else if (isTimeoutOrCancelError(error)) {
-          // Timeout during normal operation, continue the loop
-        } else {
-          retryState = retryState
-            ? nextInfiniteRetryState(retryState)
-            : createInfiniteRetryState({
-                type: "exponentialWithMaxDelayBackoff",
-                initialDelay: 1000,
-                maxDelay: 60_000,
-                backoffMultiplier: 2,
-                jitter: 0,
-              });
-          this.env.logger.error(
-            new Error(`[refreshLoop] unexpected exception, retrying in ${retryState.nextDelay}ms`, {
-              cause: error,
-            }),
-          );
-          try {
-            await setTimeout(retryState.nextDelay, undefined, {
-              signal: this.abortController.signal,
-            });
-          } catch {
-            // Aborted during retry delay, will exit via while condition or destroyed check
-            break;
-          }
-        }
-      }
-    }
+  /** One maintenance transaction, then a tree refresh so its result is visible. */
+  private async runMaintenancePass(signal: AbortSignal): Promise<void> {
+    await withProject(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      (prj) => {
+        prj.doRefresh();
+      },
+      { name: "maintenance", lockId: this.projectLockId, abortSignal: signal },
+    );
+    await this.projectTree.refreshState();
   }
 
   /** Hands the uploads of this project to the upload driver, which carries them on whether or
@@ -388,6 +348,13 @@ export class Project {
         );
       }
     }
+  }
+
+  /** Releases what the computables of a block that left the project hold. */
+  private releaseBlockComputables(blockId: string): void {
+    const computables = this.blockComputables.get(blockId);
+    if (computables !== undefined && computables !== null) resetBlockState(computables);
+    this.blockComputables.set(blockId, null);
   }
 
   /**
@@ -544,6 +511,7 @@ export class Project {
       { name: "deleteBlock", lockId: this.projectLockId },
     );
     this.navigationStates.deleteBlock(blockId);
+    this.releaseBlockComputables(blockId);
     await this.projectTree.refreshState();
   }
 
@@ -1006,16 +974,21 @@ export class Project {
 
   /** Called by middle layer on close */
   public async destroy(): Promise<void> {
-    // terminating the project service loop
+    // terminating the project service loops
     this.abortController.abort();
+    this.stopSnapshotTrigger();
     // closing the project does not release its uploads: they go on until it is deleted
     this.stopUploadAdoption();
+    if (this.snapshotTimer !== undefined) {
+      clearTimeout(this.snapshotTimer);
+      this.snapshotTimer = undefined;
+    }
     try {
-      await this.refreshLoopResult;
+      await this.maintenanceResult;
     } catch (e: unknown) {
       // Error was already logged in the constructor's catch handler, but log again for context
       this.env.logger.warn(
-        new Error("Refresh loop had terminated with error before destroy", { cause: e }),
+        new Error("Project maintenance had terminated with error before destroy", { cause: e }),
       );
     }
 
@@ -1038,6 +1011,7 @@ export class Project {
     this.blockComputables.forEach((c) => {
       if (c !== null) resetBlockState(c);
     });
+    this.maintenanceState.resetState();
   }
 
   /** @deprecated */
