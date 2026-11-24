@@ -194,6 +194,7 @@ export async function createOutgoingShares(
     outboxRid,
     {
       ...env.ops.defaultTreeOptions,
+      onPoll: () => env.treePollCounters.countPoll("sharingOutbox"),
       pruning: SharingOutboxPruningFunction,
       fieldFilter: SharingOutboxFieldFilter,
     },
@@ -222,6 +223,7 @@ export async function createAvailableSharesTree(
     },
     {
       ...env.ops.defaultTreeOptions,
+      onPoll: () => env.treePollCounters.countPoll("availableShares"),
       pruning: SharedEnvelopePruningFunction,
       fieldFilter: AvailableSharesFieldFilter,
     },
@@ -303,6 +305,7 @@ export async function createSharingStateTree(
     stateRid,
     {
       ...env.ops.defaultTreeOptions,
+      onPoll: () => env.treePollCounters.countPoll("sharingState"),
       pruning: SharingStatePruningFunction,
       fieldFilter: SharingStateFieldFilter,
     },

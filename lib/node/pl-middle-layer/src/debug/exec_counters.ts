@@ -11,6 +11,12 @@ export type ExecCountersSnapshot = {
   callbacks: Record<string, number>;
   /** Transaction attempts made through the middle layer's client, by transaction name and outcome. */
   transactions: Record<string, TxOutcomeCounts>;
+  /**
+   * Backend polls of the synchronized trees the middle layer opened, by tree: `project:<id>` for
+   * a project, `status:<project id>/<block id>/<mode>` for the status of a block render, and the role of
+   * every other tree.
+   */
+  treePolls: Record<string, number>;
 };
 
 /** Counts model code executions by lambda handle. */
@@ -35,6 +41,20 @@ export class JsExecCounters {
   }
 }
 
+/** Counts backend polls of synchronized trees by tree. */
+export class TreePollCounters {
+  private readonly polls = new Map<string, number>();
+
+  public countPoll(tree: string): void {
+    increment(this.polls, tree);
+  }
+
+  /** Counts so far; later polls do not change the returned object. */
+  public snapshot(): Record<string, number> {
+    return Object.fromEntries(this.polls);
+  }
+}
+
 /** Work done between two snapshots of the same middle layer. Names with no work in between are left out. */
 export function execCountersDelta(
   before: ExecCountersSnapshot,
@@ -49,13 +69,15 @@ export function execCountersDelta(
     bundleEvaluations: countsDelta(before.bundleEvaluations, after.bundleEvaluations),
     callbacks: countsDelta(before.callbacks, after.callbacks),
     transactions,
+    treePolls: countsDelta(before.treePolls, after.treePolls),
   };
 }
 
 /**
  * One log line for the work in `delta`, done over `periodMs`: each transaction name with its
- * attempts by outcome, then each lambda with the number of VMs started for it. Undefined when the
- * delta holds no work, so an idle period writes nothing.
+ * attempts by outcome, then each lambda with the number of VMs started for it, then each tree
+ * with the number of times it polled the backend. Undefined when the delta holds no work, so an
+ * idle period writes nothing.
  */
 export function formatExecCountersDelta(
   delta: ExecCountersSnapshot,
@@ -68,6 +90,8 @@ export function formatExecCountersDelta(
   );
   const vms = Object.entries(delta.bundleEvaluations).map(([lambda, n]) => `${lambda}=${n}`);
   if (vms.length > 0) parts.push(`vm ${vms.join(" ")}`);
+  const polls = Object.entries(delta.treePolls).map(([tree, n]) => `${tree}=${n}`);
+  if (polls.length > 0) parts.push(`polls ${polls.join(" ")}`);
   if (parts.length === 0) return undefined;
   return `[exec-counters] ${Math.round(periodMs / 1000)}s: ${parts.join("; ")}`;
 }

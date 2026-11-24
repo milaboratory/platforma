@@ -138,6 +138,7 @@ export async function createTemplateList(
     rid,
     {
       ...env.ops.defaultTreeOptions,
+      onPoll: () => env.treePollCounters.countPoll("templateList"),
       pruning: TemplatesListTreePruningFunction,
       fieldFilter: templatesListFieldFilter,
     },
