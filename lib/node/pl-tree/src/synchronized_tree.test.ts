@@ -847,3 +847,43 @@ test("a tree of shared roots survives a re-login: it rediscovers the roots under
     }
   }
 }, 60_000);
+
+test("the poll hook hears every backend poll, the first load included, and nothing while idle", async () => {
+  await TestHelpers.withTempRoot(async (pl) => {
+    const r1 = await pl.withWriteTx(
+      "CreatingStructure1",
+      async (tx) => {
+        const rr1 = tx.createStruct(TestStructuralResourceType1);
+        const ff1 = field(tx.clientRoot, "f1");
+        tx.createField(ff1, "Dynamic");
+        tx.setField(ff1, rr1);
+        await tx.commit();
+        return await rr1.globalId;
+      },
+      { sync: true },
+    );
+
+    let polls = 0;
+    const treeState = await SynchronizedTreeState.init(pl, r1, {
+      stopPollingDelay: 10,
+      pollingInterval: 10,
+      onPoll: () => polls++,
+    });
+    expect(polls).toEqual(1);
+
+    // nobody reads the tree, so it does not poll
+    await tp.setTimeout(100);
+    expect(polls).toEqual(1);
+
+    await treeState.refreshState();
+    expect(polls).toBeGreaterThanOrEqual(2);
+
+    // the poll loop stops once nobody asks for fresh state
+    await tp.setTimeout(100);
+    const settled = polls;
+    await tp.setTimeout(100);
+    expect(polls).toEqual(settled);
+
+    await treeState.terminate();
+  });
+});

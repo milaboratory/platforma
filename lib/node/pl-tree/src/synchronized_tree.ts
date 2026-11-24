@@ -104,6 +104,11 @@ export type SynchronizedTreeOps = {
   /** If one of the values, tree will log stats of each polling request */
   logStat?: StatLoggingMode;
 
+  /** Called once per backend poll of the tree, the first load included, as its read
+   * transaction is opened. A poll that has no root to read does not reach the backend and is
+   * not reported. */
+  onPoll?: () => void;
+
   /** Timeout for initial tree loading. If not specified, will use default for RO tx from pl-client. */
   initialTreeLoadingTimeout?: number;
 
@@ -228,6 +233,7 @@ export class SynchronizedTreeState {
    * one, and again whenever {@link discardDeltaToken} drops it. */
   private deltaToken: Uint8Array | undefined;
   private readonly logStat?: StatLoggingMode;
+  private readonly onPoll?: () => void;
   private readonly hooks: PollingComputableHooks;
   private readonly abortController = new AbortController();
 
@@ -262,6 +268,7 @@ export class SynchronizedTreeState {
       pollingInterval,
       stopPollingDelay,
       logStat,
+      onPoll,
       rootsNeverFinal,
     } = ops;
     this.pruning = pruning;
@@ -286,6 +293,7 @@ export class SynchronizedTreeState {
       ? (r) => !explicitRoots.has(r.id) && basePredicate(r)
       : basePredicate;
     this.logStat = logStat;
+    this.onPoll = onPoll;
 
     this.explicitRoots = seeds
       .filter((s): s is ExplicitRootSeed => s.kind === "resource")
@@ -499,6 +507,7 @@ export class SynchronizedTreeState {
     // never hit this (their root set is non-empty by construction).
     if (request.seedResources.length === 0 && request.finalResources.size === 0) return;
     const checkedRoots = this.state.nonFinalRoots();
+    this.onPoll?.();
     const { data, nextToken, rootsExist } = await this.pl.withReadTx(
       "ReadingTree",
       async (tx) => {
