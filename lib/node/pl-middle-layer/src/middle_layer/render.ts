@@ -6,13 +6,6 @@ import type { MiddleLayerEnvironment } from "./middle_layer";
 import { computableFromRF } from "../js_render";
 import type { BlockContextAny } from "./block_ctx";
 import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
-import { hasActiveCfgComponents } from "../cfg_render/util";
-
-export function isActive(cfg: TypedConfigOrConfigLambda): boolean {
-  if (isConfigLambda(cfg)) return cfg.isActive === true;
-  else return hasActiveCfgComponents(cfg);
-}
-
 export function computableFromCfgOrRF(
   env: MiddleLayerEnvironment,
   ctx: BlockContextAny,
