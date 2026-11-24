@@ -160,6 +160,7 @@ export const DefaultDriverKitOpsSettings: Pick<
   uploadDriverOps: {
     nConcurrentPartUploads: 10,
     nConcurrentGetProgresses: 10,
+    nConcurrentUploads: 2,
     pollingInterval: 1000,
     stopPollingDelay: 1000,
   },

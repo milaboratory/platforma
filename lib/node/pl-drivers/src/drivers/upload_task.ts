@@ -16,12 +16,22 @@ import { ImportFileHandleUploadData } from "./types";
 import assert from "node:assert";
 import { ResourceInfo } from "@milaboratories/pl-tree";
 
+/** The calls of the upload client an upload task makes. */
+export type BlobUploadClient = Pick<ClientUpload, "initUpload" | "partUpload" | "finalize">;
+
+/** The calls of the progress client an upload task makes. */
+export type BlobProgressClient = Pick<ClientProgress, "getStatus">;
+
 /** Holds all info needed to upload a file and a status of uploading
  * and indexing. Also, has a method to update a status of the progress.
- * And holds a change source. */
+ * And holds a change source.
+ *
+ * The upload goes on while the task is held: by an owner, which keeps it whether or not anybody
+ * reads its progress, or by a reader of its progress. */
 export class UploadTask {
   private readonly change: ChangeSource = new ChangeSource();
   private readonly counter: CallersCounter = new CallersCounter();
+  private readonly owners = new Set<string>();
   private nMaxUploads: number;
   private nPartsWithThisUploadSpeed = 0;
   private nPartsToIncreaseUpload = 10; // how many parts we have to wait to increase concurrency, 50 mb, 10 parts by 5 mb each.
@@ -39,11 +49,13 @@ export class UploadTask {
 
   constructor(
     private readonly logger: MiLogger,
-    private readonly clientBlob: ClientUpload,
-    private readonly clientProgress: ClientProgress,
+    private readonly clientBlob: BlobUploadClient,
+    private readonly clientProgress: BlobProgressClient,
     private readonly maxNConcurrentPartsUpload: number,
     signer: Signer,
     public readonly res: ImportResourceSnapshot,
+    /** Aborted when the driver terminates, which stops the upload whoever holds it. */
+    private readonly driverSignal: AbortSignal,
   ) {
     this.nMaxUploads = this.maxNConcurrentPartsUpload;
     const { uploadData, progress } = newProgress(res, signer);
@@ -74,7 +86,7 @@ export class UploadTask {
         this.clientBlob,
         this.res,
         this.uploadData!,
-        this.isComputableDone.bind(this),
+        this.isAbandoned.bind(this),
         {
           nPartsWithThisUploadSpeed: this.nPartsWithThisUploadSpeed,
           nPartsToIncreaseUpload: this.nPartsToIncreaseUpload,
@@ -194,15 +206,41 @@ export class UploadTask {
     return this.counter.dec(callerId);
   }
 
-  private isComputableDone() {
-    return this.counter.isZero();
+  /** Adds an owner; false if it already owned the task. */
+  public addOwner(owner: string): boolean {
+    if (this.owners.has(owner)) return false;
+    this.owners.add(owner);
+    return true;
+  }
+
+  /** Removes an owner; false if it did not own the task. */
+  public removeOwner(owner: string): boolean {
+    return this.owners.delete(owner);
+  }
+
+  /** True while an owner or a reader of the progress holds the task. */
+  public get isHeld(): boolean {
+    return this.owners.size > 0 || !this.counter.isZero();
+  }
+
+  public get isOwned(): boolean {
+    return this.owners.size > 0;
+  }
+
+  /** True once the upload failed in a way a retry will not fix. */
+  public get isFailed(): boolean {
+    return this.failed === true;
+  }
+
+  private isAbandoned() {
+    return this.driverSignal.aborted || !this.isHeld;
   }
 }
 
 /** Uploads a blob if it's not BlobIndex. */
 export async function uploadBlob(
   logger: MiLogger,
-  clientBlob: ClientUpload,
+  clientBlob: BlobUploadClient,
   res: ResourceInfo,
   uploadData: ImportFileHandleUploadData,
   isDoneFn: () => boolean,
@@ -299,10 +337,12 @@ function cloneProgress(progress: sdk.ImportProgress): sdk.ImportProgress {
       bytesTotal: progress.status.bytesTotal,
     };
 
-  return progress;
+  return cloned;
 }
 
-function isImportResourceOutputSet(res: ImportResourceSnapshot) {
+/** True when the import is finished: the blob of an upload, or the incarnation of an index, is
+ * set. */
+export function isImportResourceOutputSet(res: ImportResourceSnapshot) {
   return "blob" in res.fields
     ? res.fields.blob !== undefined
     : res.fields.incarnation !== undefined;
