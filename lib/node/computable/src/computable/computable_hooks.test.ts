@@ -190,3 +190,80 @@ test.skip.each(getTestSetups())(
     expect(synchronized.active).toEqual(false);
   },
 );
+
+test.each(getTestSetups())(
+  "a passive read and a passive wait do not start the source in $context context",
+  async ({ observableSource, synchronized, res2 }) => {
+    expect(await res2.getValuePassively()).toEqual(2);
+    expect(synchronized.active).toEqual(false);
+
+    const abort = new AbortController();
+    const wait = res2.awaitChangePassively({ signal: abort.signal });
+    observableSource.setValue(10);
+    await sleep(20);
+    expect(synchronized.active).toEqual(false);
+
+    abort.abort();
+    await expect(wait).rejects.toThrow();
+    expect(synchronized.active).toEqual(false);
+  },
+);
+
+test.each(getTestSetups())(
+  "a passive wait resolves when an active reader brings a change in $context context",
+  async ({ observableSource, synchronized, res2 }) => {
+    expect(await res2.getValue()).toEqual(2);
+    expect(synchronized.active).toEqual(true);
+
+    // the active read above refreshes the source, which changes the value
+    await res2.awaitChangePassively({ signal: AbortSignal.timeout(1000) });
+    expect(await res2.getValuePassively()).toEqual(4);
+
+    const wait = res2.awaitChangePassively({ signal: AbortSignal.timeout(1000) });
+    observableSource.setValue(10);
+    // keeps the source refreshing, as another listener would
+    expect(await res2.getValue()).toEqual(4);
+    await wait;
+    expect(await res2.getValuePassively()).toEqual(20);
+  },
+);
+
+test.each(getTestSetups())(
+  "a passive reader does not keep a changing source refreshing after the last active reader leaves in $context context",
+  async ({ observableSource, synchronized, res2 }) => {
+    expect(await res2.getValue()).toEqual(2);
+    expect(synchronized.active).toEqual(true);
+
+    const abort = new AbortController();
+    let passiveReads = 0;
+    const reader = (async () => {
+      try {
+        while (true) {
+          await res2.awaitChangePassively({ signal: abort.signal });
+          await res2.getValuePassively();
+          passiveReads++;
+        }
+      } catch {
+        // aborted
+      }
+    })();
+
+    let v = 3;
+    const changer = setInterval(() => observableSource.setValue(v++), 2);
+    try {
+      // stopDebounce is 10 ms
+      await sleep(50);
+      expect(synchronized.active).toEqual(false);
+      expect(passiveReads).toBeGreaterThan(0);
+
+      const readsWhenStopped = passiveReads;
+      await sleep(30);
+      expect(synchronized.active).toEqual(false);
+      expect(passiveReads).toEqual(readsWhenStopped);
+    } finally {
+      clearInterval(changer);
+      abort.abort();
+      await reader;
+    }
+  },
+);
