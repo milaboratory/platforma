@@ -2026,28 +2026,10 @@ _makeBuilder := func(st) {
 				start = entries.GPUMissed[0].builder
 			}
 
-			builders := {}
-			candidates := []
-			walk := undefined
-			walk = func(b) {
-				entries := b._fallbackEntries()
-				if is_undefined(entries) || is_undefined(entries.OOM) {
-					return
-				}
-				for i, e in entries.OOM {
-					key := fallback.planKey("OOM", i, e)
-					builders[key] = e.builder
-					candidates = append(candidates, { key: key, ram: e.builder._ramRequest() })
-					// verify() has refused cycles
-					walk(e.builder)
-				}
-			}
-			walk(start)
-
-			key := fallback.biggestOomPlan(candidates)
-			if !is_undefined(key) {
-				start = builders[key]
-				startKey = key
+			chosen := start._biggestOomFallback()
+			if !is_undefined(chosen) {
+				start = chosen.builder
+				startKey = chosen.plan
 			}
 			if is_undefined(startKey) {
 				ll.print("exec.builder: the backend has no RunCommand v3, fallbacks are ignored; a failure is an error")
@@ -2061,6 +2043,38 @@ _makeBuilder := func(st) {
 
 		_execBuilderId: func() {
 			return string(st.id)
+		},
+
+		/**
+		 * The OOM fallback with the most RAM below this builder, through OOM handlers only (see
+		 * fallback.biggestOomPlan). Plan keys are unique within one policy only, so two branches
+		 * may both have an "OOM[0]": a candidate is told apart by its position in the walk.
+		 *
+		 * @return { plan: string, builder: builder } | undefined - none without OOM handlers
+		 */
+		_biggestOomFallback: func() {
+			candidates := []
+			found := []
+			walk := undefined
+			walk = func(b) {
+				entries := b._fallbackEntries()
+				if is_undefined(entries) || is_undefined(entries.OOM) {
+					return
+				}
+				for i, e in entries.OOM {
+					found = append(found, { plan: fallback.planKey("OOM", i, e), builder: e.builder })
+					candidates = append(candidates, { key: string(len(found) - 1), ram: e.builder._ramRequest() })
+					// verify() has refused cycles
+					walk(e.builder)
+				}
+			}
+			walk(self)
+
+			position := fallback.biggestOomPlan(candidates)
+			if is_undefined(position) {
+				return undefined
+			}
+			return found[int(position)]
 		},
 
 		// the RAM request as given: a static one, or the static fallback of a RAM formula

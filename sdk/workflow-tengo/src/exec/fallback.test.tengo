@@ -199,6 +199,20 @@ Test_infraRestartAllowed := func() {
 	test.isFalse(fallback.infraRestartAllowed(undefined, undefined), "a backend without the counts restarts nothing")
 }
 
+// Plan keys are unique within one policy only: both branches below have an unnamed "OOM[0]".
+// On a backend without RunCommand v3 the plan with the most RAM must run, not the last one the
+// walk saw under that key.
+Test_biggestOomFallback_acrossBranchesWithOneKey := func() {
+	a1 := _shell("a1").mem("64GiB")
+	a := _shell("a").mem("1GiB").fallbacks({ OOM: a1 })
+	b := _shell("b").mem("2GiB").fallbacks({ OOM: _shell("b1").mem("32GiB") })
+	root := _shell("root").fallbacks({ OOM: [{ builder: a }, { builder: b }] })
+
+	chosen := root._biggestOomFallback()
+	test.isEqual(a1._execBuilderId(), chosen.builder._execBuilderId(), "a1 has the most RAM")
+	test.isEqual("OOM[0]", chosen.plan)
+}
+
 Test_ramBytes := func() {
 	test.isEqual(64 * 1073741824, fallback.ramBytes("64GiB"))
 	test.isEqual(64 * 1073741824, fallback.ramBytes("64gi"))

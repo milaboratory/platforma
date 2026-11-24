@@ -542,7 +542,16 @@ describe("composite log handle of a StreamCollection", () => {
       { stream: { kind: "live", text: "next\n" } },
     ]);
     const handle = (await handleOf(env).getValue())!;
-    expect((await readAll(env.logs, handle)).text).toBe(`root\n${rootDelimiter}next\n`);
+    const full = `root\n${rootDelimiter}next\n`;
+    expect((await readAll(env.logs, handle)).text).toBe(full);
+    expect((await readAll(env.logs, handle, 1)).text).toBe(full);
+
+    // the newline before the delimiter ends root's line: it is no line of its own
+    expect(decode(await env.logs.lastLines(handle, 3))).toBe(full);
+    const tail = await env.logs.lastLines(handle, 2);
+    expect(decode(tail)).toBe(`${rootDelimiter}next\n`);
+    if (tail.shouldUpdateHandle) throw new Error("unexpected outdated handle");
+    expect(decode(await env.logs.lastLines(handle, 100, tail.newOffset))).toBe("root\n");
   });
 });
 

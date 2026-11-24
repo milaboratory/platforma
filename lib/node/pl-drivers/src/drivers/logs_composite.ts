@@ -149,7 +149,12 @@ export type SingleLogReader = Pick<sdk.LogsDriver, "lastLines" | "readText">;
 
 type Segment = { size: number } &
   /** last: the running (or final) attempt's part */
-  ({ kind: "part"; handle: sdk.AnyLogHandle; last: boolean } | { kind: "text"; bytes: Uint8Array });
+  (
+    | { kind: "part"; handle: sdk.AnyLogHandle; last: boolean }
+    /** lead: the text starts with a newline that ends the unfinished last line of the log
+     * before it, no line of its own */
+    | { kind: "text"; bytes: Uint8Array; lead: boolean }
+  );
 
 type PartInfo = { size: number; endsWithNewline: boolean };
 
@@ -202,9 +207,12 @@ export class CompositeLogReader {
       if (s.kind === "text") {
         const bytes = s.bytes.subarray(0, localEnd);
         if (!matches(bytes, searchStr)) continue;
-        chunks.unshift(bytes);
-        linesLeft -= countLines(bytes);
-        newOffset = start;
+        linesLeft -= textLines(s, 0, localEnd);
+        // The lines end here: the lead belongs to the log line before, which is not returned. With
+        // a searchStr that skips that line, the lead stays: offsets must stay exact.
+        const from = s.lead && linesLeft <= 0 ? 1 : 0;
+        chunks.unshift(bytes.subarray(from));
+        newOffset = start + from;
         continue;
       }
 
@@ -249,7 +257,7 @@ export class CompositeLogReader {
           const bytes = s.bytes.subarray(local);
           if (matches(bytes, searchStr)) {
             chunks.push(bytes);
-            linesLeft -= countLines(bytes);
+            linesLeft -= textLines(s, local, s.size);
           }
           pos = start + s.size;
         } else {
@@ -301,7 +309,7 @@ export class CompositeLogReader {
         // An attempt's log may end in the middle of a line: the delimiter starts a new one.
         const lead = info !== undefined && !info.endsWithNewline ? "\n" : "";
         const bytes = new TextEncoder().encode(`${lead}${p.delimiter}\n`);
-        segments.push({ kind: "text", bytes, size: bytes.length });
+        segments.push({ kind: "text", bytes, size: bytes.length, lead: lead !== "" });
       }
     });
     return segments;
@@ -348,6 +356,12 @@ export class CompositeLogReader {
       throw e;
     }
   }
+}
+
+/** The lines of a text segment between two of its offsets: a lead newline is no line of its own. */
+function textLines(s: { bytes: Uint8Array; lead: boolean }, from: number, to: number): number {
+  const skip = s.lead && from === 0 ? 1 : 0;
+  return countLines(s.bytes.subarray(from + skip, to));
 }
 
 function countLines(bytes: Uint8Array): number {
