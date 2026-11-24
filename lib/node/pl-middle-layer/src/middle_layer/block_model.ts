@@ -27,6 +27,16 @@ export type BlockModel =
       readonly codeWithInfo: BlockCodeWithInfo;
     };
 
+/** What the desktop needs from the model of a block to load its UI. */
+export type ProjectBlockModelInfo =
+  /** the project has no such block */
+  | { readonly type: "absent" }
+  | {
+      readonly type: "present";
+      readonly featureFlags: BlockCodeFeatureFlags | undefined;
+      readonly sdkVersion: string | undefined;
+    };
+
 /** The model of a block, read from its block pack in the project. */
 export function readBlockModel(
   prj: PlTreeNodeAccessor,
@@ -70,6 +80,16 @@ export function blockModelFeatureFlags(model: BlockModel): BlockCodeFeatureFlags
 /** The SDK version the code of a block's model was built with; undefined for code that is not run. */
 export function blockModelSdkVersion(model: BlockModel): string | undefined {
   return model.type === "ready" ? model.codeWithInfo.sdkVersion : undefined;
+}
+
+/** The model info of a block of the project; `absent` when the project has no such block. */
+export function blockModelInfo(model: BlockModel | undefined): ProjectBlockModelInfo {
+  if (model === undefined) return { type: "absent" };
+  return {
+    type: "present",
+    featureFlags: blockModelFeatureFlags(model),
+    sdkVersion: blockModelSdkVersion(model),
+  };
 }
 
 /**
