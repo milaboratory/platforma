@@ -14,6 +14,7 @@ import { relocateBlockIds } from "../template";
 import {
   computeDependencies,
   computeDependents,
+  linkedBlockIds,
   type ArgsKind,
   type ColumnLinksSource,
 } from "./compute";
@@ -547,6 +548,59 @@ describe("computeDependents", () => {
         values: ["ctrl"],
       },
     ]);
+  });
+});
+
+describe("linkedBlockIds", () => {
+  test("names the producers a block references, wherever they are, and the blocks below that reference it", () => {
+    const { links, source } = run([
+      { id: "samples", args: {}, prodCtx: frame({ condition: column() }) },
+      {
+        id: "x",
+        args: {
+          condition: createPlRef("samples", "condition"),
+          gone: pick("a", gone),
+          later: createPlRef("later", "condition"),
+        },
+      },
+      { id: "later", args: { c: createPlRef("x", "condition") } },
+      { id: "unrelated", args: { c: createPlRef("samples", "condition") } },
+    ]);
+    const named = new Set([
+      ...links.x.dependencies.map((link) => link.producer.blockId),
+      ...links.x.dependents.map((link) => link.holderBlockId),
+    ]);
+
+    expect(linkedBlockIds(source, "x")).toEqual(["samples", "deleted", "later"]);
+    expect(new Set(linkedBlockIds(source, "x"))).toEqual(named);
+  });
+
+  test("reads the args of the block and of the blocks below it, and no run", () => {
+    const { source, reads } = run([
+      { id: "above", args: { c: pick("a") } },
+      { id: "samples", args: {}, prodCtx: frame({ condition: column() }) },
+      { id: "below", lastRunArgs: { c: pick("a") } },
+    ]);
+    reads.length = 0;
+
+    expect(linkedBlockIds(source, "samples")).toEqual(["below"]);
+    expect(reads).toEqual([
+      "samples:references:current",
+      "below:references:current",
+      "below:references:lastRun",
+    ]);
+  });
+
+  test("a block not in the project names only what its args reference", () => {
+    const { source } = run([{ id: "samples", args: {}, prodCtx: frame({ condition: column() }) }]);
+
+    expect(linkedBlockIds(source, "samples")).toEqual([]);
+    expect(
+      linkedBlockIds(
+        { ...source, referencesOf: () => collectColumnReferences({ c: pick("a") }) },
+        "gone",
+      ),
+    ).toEqual(["samples"]);
   });
 });
 

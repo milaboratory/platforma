@@ -22,15 +22,17 @@ import { finalityStopRules } from "./finality_stop_rules";
 import type { ComputableStableDefined, ComputableValueOrErrors } from "@milaboratories/computable";
 import { Computable } from "@milaboratories/computable";
 import { projectOverview } from "./project_overview";
-import { blockDependencies, blockDependents, labelBlockColumnLinks } from "./column_links";
+import {
+  blockDependencies,
+  blockDependents,
+  blockLinkedTitles,
+  labelBlockColumnLinks,
+} from "./column_links";
+import { blockModelOf, blockModelSdkVersion } from "./block_model";
 import type { BlockPackSpecAny } from "../model";
 import { randomUUID } from "node:crypto";
 import { withProject, withProjectAuthored } from "../mutator/project";
-import type {
-  ExtendedResourceData,
-  PlTreeNodeAccessor,
-  PruningFunction,
-} from "@milaboratories/pl-tree";
+import type { ExtendedResourceData, PruningFunction } from "@milaboratories/pl-tree";
 import {
   SynchronizedTreeState,
   treeDumpStats,
@@ -42,7 +44,10 @@ import type { NavigationState } from "@milaboratories/pl-model-common";
 import { getBlockParameters, blockOutputs } from "./block";
 import type { BlockActionContextMode, BlockActionContextNode } from "./block_action_context";
 import { readBlockActionContextTree } from "./block_action_context";
+import type { BlockPackInfoAndId } from "./util";
 import { getBlockPackInfo } from "./util";
+import { getDebugFlags } from "../debug";
+import { bundleEvaluationsDelta } from "../debug/exec_counters";
 import { BlockStatusWatch } from "./block_status_tree";
 import type { BlockStatusSummary, BlockStatusTree } from "@milaboratories/pl-model-middle-layer";
 import type { FrontendData } from "../model/frontend";
@@ -76,6 +81,8 @@ type BlockStateComputables = {
   /** Column links of the block, nested into its full state. */
   readonly dependencies: Computable<ColumnLink[] | undefined>;
   readonly dependents: Computable<ColumnLink[] | undefined>;
+  /** Titles of the blocks the column links name, nested into its full state. */
+  readonly linkedTitles: Computable<Record<string, string | undefined> | undefined>;
 };
 
 function stringifyForDump(object: unknown): string {
@@ -107,6 +114,7 @@ function resetBlockState(computables: BlockStateComputables): void {
   computables.fullState.resetState();
   computables.dependencies.resetState();
   computables.dependents.resetState();
+  computables.linkedTitles.resetState();
 }
 
 /** Data access object, to manipulate and read single opened (!) project data. */
@@ -767,55 +775,76 @@ export class Project {
   private getBlockComputables(blockId: string): BlockStateComputables {
     const cached = this.blockComputables.get(blockId);
     if (cached === null) throw new Error(`Block ${blockId} is deleted`);
-    if (cached === undefined) {
-      // state consists of inputs (args + ui state) and outputs
-      const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
-      const dependencies = blockDependencies(this.projectTree.entry(), blockId, this.env);
-      const dependents = blockDependents(this.projectTree.entry(), blockId, this.env);
-      const fullState = Computable.make(
-        (ctx) => {
-          // Links are computed only for a block whose UI reads them.
-          const linked = readsColumnLinks(ctx.accessor(this.projectTree.entry()).node(), blockId);
+    if (cached !== undefined) return cached;
+
+    const statStart = getDebugFlags().logBlockStateStat
+      ? { at: performance.now(), counters: this.env.jsExecCounters.snapshot() }
+      : undefined;
+    const statName = `${this.id}/${blockId}`;
+
+    // state consists of inputs (args + ui state) and outputs
+    const outputs = blockOutputs(this.projectTree.entry(), blockId, this.env);
+    const dependencies = blockDependencies(this.projectTree.entry(), blockId, this.env);
+    const dependents = blockDependents(this.projectTree.entry(), blockId, this.env);
+    const linkedTitles = blockLinkedTitles(this.projectTree.entry(), blockId, this.env);
+    const fullState = Computable.make(
+      (ctx) => {
+        const pack = getBlockPackInfo(ctx.accessor(this.projectTree.entry()).node(), blockId);
+        // Links are computed only for a block whose UI reads them.
+        const linked = readsColumnLinks(pack);
+        return {
+          parameters: getBlockParameters(this.projectTree.entry(), blockId, ctx),
+          outputs,
+          navigationState: this.navigationStates.getState(blockId),
+          sdkVersion: blockModelSdkVersion(blockModelOf(pack, this.env)),
+          dependencies: linked ? dependencies : undefined,
+          dependents: linked ? dependents : undefined,
+          linkedTitles: linked ? linkedTitles : undefined,
+        };
+      },
+      {
+        postprocessValue: (v) => {
+          const { sdkVersion } = v;
+          const toString =
+            sdkVersion !== undefined && sdkVersion !== "" && shouldStillUseStringErrors(sdkVersion);
+          const newOutputs =
+            toString && v.outputs !== undefined ? convertErrorsToStrings(v.outputs) : v.outputs;
+
           return {
-            parameters: getBlockParameters(this.projectTree.entry(), blockId, ctx),
-            outputs,
-            navigationState: this.navigationStates.getState(blockId),
-            overview: this.overview,
-            dependencies: linked ? dependencies : undefined,
-            dependents: linked ? dependents : undefined,
-          };
+            ...v.parameters,
+            outputs: newOutputs,
+            navigationState: v.navigationState,
+            columnLinks: labelBlockColumnLinks({ ...v, blockId }, v.linkedTitles ?? {}),
+          } as BlockStateInternalV3;
         },
-        {
-          postprocessValue: (v) => {
-            const blockOverview = v.overview?.blocks?.find((b) => b.id == blockId);
-            const sdkVersion = blockOverview?.sdkVersion;
-            const toString = sdkVersion && shouldStillUseStringErrors(sdkVersion);
-            const newOutputs =
-              toString && v.outputs !== undefined ? convertErrorsToStrings(v.outputs) : v.outputs;
+        onRecalculation:
+          statStart === undefined
+            ? undefined
+            : (stats) =>
+                this.env.logger.info(
+                  `[blockState] ${statName} recalculated: ${JSON.stringify(stats)}`,
+                ),
+      },
+    );
 
-            return {
-              ...v.parameters,
-              outputs: newOutputs,
-              navigationState: v.navigationState,
-              // The block state already nests the overview, so labelling by its titles adds
-              // nothing to watch.
-              columnLinks: labelBlockColumnLinks({ ...v, blockId }, v.overview?.blocks ?? []),
-            } as BlockStateInternalV3;
-          },
-        },
+    const computables: BlockStateComputables = {
+      fullState: fullState.withPreCalculatedValueTree(),
+      dependencies,
+      dependents,
+      linkedTitles,
+    };
+
+    if (statStart !== undefined) {
+      const runs = bundleEvaluationsDelta(statStart.counters, this.env.jsExecCounters.snapshot());
+      const listed = Object.entries(runs).map(([lambda, n]) => `${lambda}×${n}`);
+      this.env.logger.info(
+        `[blockState] ${statName} created in ${Math.round(performance.now() - statStart.at)} ms; ` +
+          `model runs: ${listed.length > 0 ? listed.join(" ") : "none"}`,
       );
-
-      const computables: BlockStateComputables = {
-        fullState: fullState.withPreCalculatedValueTree(),
-        dependencies,
-        dependents,
-      };
-
-      this.blockComputables.set(blockId, computables);
-
-      return computables;
     }
-    return cached;
+
+    this.blockComputables.set(blockId, computables);
+    return computables;
   }
 
   /**
@@ -1210,9 +1239,8 @@ export function projectTreeTraverseStopRules(): Filter {
 }
 
 /** Whether the block's model declares that its UI reads the column links of the block state. */
-function readsColumnLinks(prj: PlTreeNodeAccessor, blockId: string): boolean {
-  const info = getBlockPackInfo(prj, blockId);
-  return info !== undefined && checkBlockFlag(info.cfg.featureFlags, "supportsColumnLinks");
+function readsColumnLinks(pack: BlockPackInfoAndId | undefined): boolean {
+  return pack !== undefined && checkBlockFlag(pack.cfg.featureFlags, "supportsColumnLinks");
 }
 
 /** Returns true if sdk version of the block is old and we need to convert

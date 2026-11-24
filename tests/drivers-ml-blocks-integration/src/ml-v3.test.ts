@@ -12,6 +12,7 @@ import { BlockPointer as transferFilesSpec } from "@milaboratories/milaboratorie
 import type { platforma as transferFilesModel } from "@milaboratories/milaboratories.transfer-files.model";
 import { DisconnectedError } from "@milaboratories/pl-client";
 import {
+  execCountersDelta,
   type FolderURL,
   type ImportFileHandle,
   type InferBlockState,
@@ -600,6 +601,45 @@ test(
       expect(block1State.columnLinks?.dependents).toMatchObject([
         { producer: { blockId: block1Id, name: "numbers" }, holderBlockId: block2Id },
       ]);
+    });
+  },
+);
+
+test(
+  "v3: opening a block state runs no model lambda of other blocks",
+  { timeout: 20000 },
+  async ({ expect }) => {
+    await withMl(async (ml) => {
+      const prjId = await ml.createProject({ label: "Project 1" });
+      await ml.openProject(prjId);
+      const prj = ml.getOpenedProject(prjId);
+
+      const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
+      const block2Id = await prj.addBlock("Block 2", enterNumberSpec);
+      const block3Id = await prj.addBlock("Block 3", sumNumbersSpec);
+      await prj.mutateBlockStorage(block1Id, {
+        operation: "update-block-data",
+        value: { numbers: [1, 2, 3] },
+      });
+      await prj.mutateBlockStorage(block3Id, {
+        operation: "update-block-data",
+        value: { sources: [outputRef(block1Id, "numbers")] },
+      });
+      await prj.overview.awaitStableValue();
+
+      const before = ml.execCounters;
+      await prj.getBlockState(block2Id).awaitStableValue();
+      const unlinked = execCountersDelta(before, ml.execCounters).bundleEvaluations;
+      for (const lambda of ["sections", "subtitle", "tags", "title"])
+        expect(unlinked).not.toHaveProperty(lambda);
+
+      // a block with column links runs the title lambda of the blocks they name, and only those
+      const beforeLinked = ml.execCounters;
+      await prj.getBlockState(block3Id).awaitStableValue();
+      const linked = execCountersDelta(beforeLinked, ml.execCounters).bundleEvaluations;
+      for (const lambda of ["sections", "subtitle", "tags"])
+        expect(linked).not.toHaveProperty(lambda);
+      expect(linked.title ?? 0).toBeLessThanOrEqual(1);
     });
   },
 );

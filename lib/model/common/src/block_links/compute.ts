@@ -1,3 +1,4 @@
+import { uniq } from "es-toolkit";
 import type { ColumnReference } from "../drivers";
 import { ExportPool, type ExportNode, type ExportSource } from "./export_pool";
 import { checkExport, collectOutgoingReferences } from "./status";
@@ -60,6 +61,23 @@ export function computeDependents<A extends ExportNode<A>>(
   );
 }
 
+/**
+ * Blocks the column links of `blockId` name: the producers its args reference, whichever their
+ * place, and the blocks below it whose args reference its outputs. The same blocks
+ * {@link computeDependencies} and {@link computeDependents} name, read without any last run:
+ * only the order of the blocks and their args. In order of first mention, each once.
+ */
+export function linkedBlockIds(
+  source: Pick<ColumnLinksSource<never>, "blockIds" | "referencesOf">,
+  blockId: string,
+): string[] {
+  const producers = outgoingReferences(source, blockId).map((ref) => ref.producer.blockId);
+  const holders = blocksAround(source.blockIds, blockId).below.filter((holderBlockId) =>
+    outgoingReferences(source, holderBlockId).some((ref) => ref.producer.blockId === blockId),
+  );
+  return uniq([...producers, ...holders]);
+}
+
 // Internals
 
 /** A reference to a block that is not above the block holding it: it cannot run against it. */
@@ -79,8 +97,8 @@ function blocksAround(
  * Columns of other blocks that the args of `blockId` reference: its current args, else those of
  * its last run. The last run's are read only when the block has no current args.
  */
-function outgoingReferences<A extends ExportNode<A>>(
-  source: ColumnLinksSource<A>,
+function outgoingReferences(
+  source: Pick<ColumnLinksSource<never>, "referencesOf">,
   blockId: string,
 ): OutgoingReference[] {
   return collectOutgoingReferences(

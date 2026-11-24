@@ -106,7 +106,17 @@ export interface CellRenderingOps {
   postprocessTimeout: number;
   /** Fired after each full recalculation (sync + async). Only opt-in — zero overhead for computables without this callback. */
   onRecalculation?: (stats: RecalculationStats) => void;
+  /** See {@link CellNesting}. Default value is 'allowed'. */
+  nesting: CellNesting;
 }
+
+/** Whether a computable may be nested into another one. */
+export type CellNesting =
+  /** may be nested; each parent renders its own state of it */
+  | "allowed"
+  /** may only be read and watched on its own: nesting it into another computable throws, because
+   *  every parent would render a separate copy of all of its work */
+  | "rootOnly";
 
 /** Extended by kernel intermediate returned value, and adds recover method. */
 export interface ComputableRecoverAction<T> {
