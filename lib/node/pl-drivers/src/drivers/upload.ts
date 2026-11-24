@@ -1,13 +1,17 @@
 import { randomUUID } from "node:crypto";
 import type { SignedResourceId, ResourceType } from "@milaboratories/pl-client";
+import { isNotNullSignedResourceId } from "@milaboratories/pl-client";
 import type { Watcher, ComputableCtx } from "@milaboratories/computable";
 import { Computable, PollingComputableHooks } from "@milaboratories/computable";
 import type { MiLogger, Signer } from "@milaboratories/ts-helpers";
 import { asyncPool, TaskProcessor } from "@milaboratories/ts-helpers";
 import type * as sdk from "@milaboratories/pl-model-common";
-import type { ClientProgress } from "../clients/progress";
-import type { ClientUpload } from "../clients/upload";
-import type { PlTreeEntry, PlTreeEntryAccessor, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
+import type {
+  ExtendedResourceData,
+  PlTreeEntry,
+  PlTreeEntryAccessor,
+  PlTreeNodeAccessor,
+} from "@milaboratories/pl-tree";
 import {
   isPlTreeEntry,
   isPlTreeEntryAccessor,
@@ -16,8 +20,14 @@ import {
 import { scheduler } from "node:timers/promises";
 import type { PollingOps } from "./helpers/polling_ops";
 import type { ImportResourceSnapshot } from "./types";
-import { IndexResourceSnapshot, UploadResourceSnapshot } from "./types";
-import { nonRecoverableError, UploadTask } from "./upload_task";
+import { ImportFileHandleUploadData, IndexResourceSnapshot, UploadResourceSnapshot } from "./types";
+import type { BlobUploadClient, BlobProgressClient } from "./upload_task";
+import {
+  isImportResourceOutputSet,
+  isUpload,
+  nonRecoverableError,
+  UploadTask,
+} from "./upload_task";
 import { WrongResourceTypeError } from "./helpers/helpers";
 
 export function makeBlobImportSnapshot(
@@ -35,13 +45,41 @@ export function makeBlobImportSnapshot(
   return makeResourceSnapshot(node, IndexResourceSnapshot);
 }
 
+/** Reads the snapshot {@link UploadDriver.adopt} takes from the body of a BlobUpload resource,
+ * as a tree mirror holds it. Throws if the resource is not a BlobUpload or its data is not an
+ * upload handle. */
+export function uploadSnapshotFromResourceData(res: ExtendedResourceData): UploadResourceSnapshot {
+  if (!isUpload(res)) throw new WrongResourceTypeError(`not a BlobUpload: ${res.type.name}`);
+  const data = ImportFileHandleUploadData.parse(
+    JSON.parse(Buffer.from(res.data ?? new Uint8Array(0)).toString("utf8")),
+  );
+  const blob = res.fields.find((f) => f.name === "blob")?.value;
+  return {
+    id: res.id,
+    type: res.type,
+    data,
+    fields: { blob: blob !== undefined && isNotNullSignedResourceId(blob) ? blob : undefined },
+    kv: undefined,
+  };
+}
+
 export type UploadDriverOps = PollingOps & {
   /** How much parts of a file can be multipart-uploaded to S3 at once. */
   nConcurrentPartUploads: number;
   /** How much upload/indexing statuses of blobs can the driver ask
    * from the platform gRPC at once. */
   nConcurrentGetProgresses: number;
+  /** How many files are uploaded at once; the rest wait in a queue. 2 when not set. */
+  nConcurrentUploads?: number;
 };
+
+/** What {@link UploadDriver.adopt} did with a resource.
+ * - `adopted`: the owner now holds the upload, which is queued or running;
+ * - `alreadyOwned`: the owner already held it;
+ * - `alreadyUploaded`: the blob is set, nothing to upload;
+ * - `notMine`: not an upload this machine signed, so it is uploaded elsewhere;
+ * - `failed`: an earlier attempt failed for good; it is not retried. */
+export type UploadAdoption = "adopted" | "alreadyOwned" | "alreadyUploaded" | "notMine" | "failed";
 
 // TODO: add abort signal to Upload Tasks.
 
@@ -59,16 +97,17 @@ export class UploadDriver {
   constructor(
     private readonly logger: MiLogger,
     private readonly signer: Signer,
-    private readonly clientBlob: ClientUpload,
-    private readonly clientProgress: ClientProgress,
+    private readonly clientBlob: BlobUploadClient,
+    private readonly clientProgress: BlobProgressClient,
     private readonly opts: UploadDriverOps = {
       nConcurrentPartUploads: 10,
       nConcurrentGetProgresses: 10,
+      nConcurrentUploads: 2,
       pollingInterval: 1000,
       stopPollingDelay: 1000,
     },
   ) {
-    this.uploadQueue = new TaskProcessor(this.logger, 1, {
+    this.uploadQueue = new TaskProcessor(this.logger, opts.nConcurrentUploads ?? 2, {
       type: "exponentialWithMaxDelayBackoff",
       initialDelay: 20,
       maxDelay: 15000, // 15 seconds
@@ -125,35 +164,87 @@ export class UploadDriver {
       return task.getProgress(w, callerId);
     }
 
-    const newTask = new UploadTask(
+    const newTask = this.newTask(res);
+
+    this.idToProgress.set(res.id, newTask);
+
+    if (newTask.shouldScheduleUpload()) this.enqueue(newTask);
+
+    newTask.setDoneIfOutputSet(res);
+    return newTask.getProgress(w, callerId);
+  }
+
+  /**
+   * Takes the upload of a BlobUpload resource on behalf of an owner. The upload goes on while
+   * the owner holds it, whether or not anybody reads its progress, until {@link releaseOwner}
+   * or the driver terminates.
+   *
+   * Queues nothing for a finished upload (its blob is set), for an upload signed on another
+   * machine, or for one that already failed for good: the failed task stays registered as the
+   * marker of that failure, so adopting it again does not retry it.
+   */
+  public adopt(res: ImportResourceSnapshot, owner: string): UploadAdoption {
+    if (!isUpload(res)) return "notMine";
+
+    const existing = this.idToProgress.get(res.id);
+    if (isImportResourceOutputSet(res)) {
+      existing?.setDoneIfOutputSet(res);
+      return "alreadyUploaded";
+    }
+
+    if (existing !== undefined) {
+      if (existing.isFailed) return "failed";
+      if (!existing.shouldScheduleUpload()) return "notMine";
+      return existing.addOwner(owner) ? "adopted" : "alreadyOwned";
+    }
+
+    const task = this.newTask(res);
+    if (!task.shouldScheduleUpload()) return "notMine";
+    task.addOwner(owner);
+    this.idToProgress.set(res.id, task);
+    this.enqueue(task);
+    return "adopted";
+  }
+
+  /** Drops the owner from every upload it holds. An upload nobody else holds stops before its
+   * next part. Returns how many uploads the owner held. */
+  public releaseOwner(owner: string): number {
+    let released = 0;
+    for (const [id, task] of this.idToProgress) {
+      if (!task.removeOwner(owner)) continue;
+      released++;
+      if (!task.isHeld) this.idToProgress.delete(id);
+    }
+    if (released > 0) this.logger.info(`uploads released by ${owner}: ${released}`);
+    return released;
+  }
+
+  /** Decrement counters for the file and remove an uploading if nothing holds it any more. */
+  private async release(id: SignedResourceId, callerId: string) {
+    const task = this.idToProgress.get(id);
+    if (task === undefined) return;
+
+    task.decCounter(callerId);
+    if (!task.isHeld) this.idToProgress.delete(id);
+  }
+
+  private newTask(res: ImportResourceSnapshot): UploadTask {
+    return new UploadTask(
       this.logger,
       this.clientBlob,
       this.clientProgress,
       this.opts.nConcurrentPartUploads,
       this.signer,
       res,
+      this.terminating.signal,
     );
-
-    this.idToProgress.set(res.id, newTask);
-
-    if (newTask.shouldScheduleUpload()) {
-      this.uploadQueue.push({
-        fn: () => newTask.uploadBlobTask(),
-        recoverableErrorPredicate: (e) => !nonRecoverableError(e),
-      });
-    }
-
-    newTask.setDoneIfOutputSet(res);
-    return newTask.getProgress(w, callerId);
   }
 
-  /** Decrement counters for the file and remove an uploading if counter == 0. */
-  private async release(id: SignedResourceId, callerId: string) {
-    const task = this.idToProgress.get(id);
-    if (task === undefined) return;
-
-    const deleted = task.decCounter(callerId);
-    if (deleted) this.idToProgress.delete(id);
+  private enqueue(task: UploadTask): void {
+    this.uploadQueue.push({
+      fn: () => task.uploadBlobTask(),
+      recoverableErrorPredicate: (e) => !nonRecoverableError(e),
+    });
   }
 
   /** Must be called when the driver is closing. */
@@ -180,7 +271,7 @@ export class UploadDriver {
 
   private readonly terminating = new AbortController();
 
-  /** Stops polling loop and waits for it to finish */
+  /** Stops polling loop and waits for it to finish. Uploads stop before their next part. */
   public async terminate(): Promise<void> {
     this.stopUpdating();
     this.terminating.abort();
