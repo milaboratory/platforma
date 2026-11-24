@@ -8,7 +8,11 @@ outcome: the outcome router runs the plan the policy names for the failure reaso
 by exit code or log match, OOM, GPUMissed with backendHasGPU / timeout, ...), up to the backend's attempt cap, and raises the
 same error text as before plus the attempt history when nothing applies. A successful attempt is
 saved with WorkdirSave v3, when the backend has it, and restarted from a fresh working directory when that directory was
-lost (a database restored from a snapshot), within the backend's infrastructure attempt budget. With fallbacks the
+lost (a database restored from a snapshot), within the backend's infrastructure attempt budget. An
+attempt the infrastructure failed (`InfraError`: a launch the cluster or the host refused, an image
+that could not be pulled) is restarted the same way, on RunCommand v3: the workflow decides on every
+infrastructure failure, and the backend relaunches nothing itself, an OOM kill included (a block
+without an OOM handler fails on it). Infrastructure failures do not count against the attempt cap. With fallbacks the
 stdout / stderr stream is a `StreamCollection/1` that follows the running attempt. An exec without
 fallbacks renders the same `exec.exec` inputs as before. On a backend without RunCommand v3 no
 failure is seen: a GPU plan gives way to its GPUMissed plan, then the OOM plan with the most RAM
@@ -18,7 +22,7 @@ A job that no plan can continue fails with every attempt's log kept: each attemp
 its own saved file, and so does the stream a viewer follows. The backend numbers the attempts of a job: a
 fallback or a restart links the outcome of the run it continues, and the outcome carries the job's
 counts. An attempt whose GPU was never granted does not count against the attempt cap, and a restart
-after a lost working directory spends the backend's infrastructure attempt budget
+(the RunCommand option `restarted`) spends the backend's infrastructure attempt budget
 (`infraAttemptLimit`). Needs a backend with milaboratory/pl#2502.
 
 Every command, RunCommand v3 included, is linked to the block's action context, so its run records

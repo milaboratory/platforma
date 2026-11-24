@@ -372,8 +372,9 @@ self.body(func(inputs) {
 	mainRunBuilder.stderr(runOptions.stderr)
 	mainRunBuilder.nErrorLines(runOptions.nErrorLines)
 	queue := runOptions.queue
-	// The outcome router serves fallbacks and the restart of a lost working directory. An exec
-	// with neither, on a backend without WorkdirSave v3, keeps the RunCommand v2 path: the router
+	// The outcome router serves fallbacks and restarts after an infrastructure failure (RunCommand
+	// v3 only: on the v2 path an infrastructure failure is the job's error). An exec without
+	// fallbacks, on a backend without WorkdirSave v3, keeps the RunCommand v2 path: the router
 	// would only add renders between the command and its save, and their latency (an existing
 	// exec-heavy pframes test timed out on it in CI).
 	routed := !is_undefined(inputs.fallbackPlans) || !is_undefined(inputs.attemptCtx) ||
@@ -399,7 +400,7 @@ self.body(func(inputs) {
 	} else {
 		mainRunBuilder.v3({
 			outcome: self.rawInputs().previousOutcome.getValue(),
-			restart: !is_undefined(ctx) && ctx.restarted == true
+			restarted: !is_undefined(ctx) && ctx.restarted == true
 		})
 	}
 	run := mainRunBuilder.build()

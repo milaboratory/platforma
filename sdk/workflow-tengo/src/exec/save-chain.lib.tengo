@@ -206,9 +206,31 @@ keepOpaque := func(tpl, names) {
 	})
 }
 
+/**
+ * The exec-impl inputs of a restart: the same plan again, with the inputs the restarted attempt
+ * was rendered with. The caller sets the restart's attemptCtx and previousOutcome.
+ *
+ * @param implInputsRes: resource - the attempt's exec-impl inputs map (its renderer's inputs)
+ * @return { pure: map, meta: map } - the inputs and the meta inputs of the restart's render
+ */
+restartInputs := func(implInputsRes) {
+	pure := {}
+	for name, f in implInputsRes.inputs() {
+		if name != "attemptCtx" {
+			pure[name] = f.getValue()
+		}
+	}
+	meta := {}
+	for name, f in implInputsRes.metaInputs() {
+		meta[name] = f.getValue()
+	}
+	return { pure: pure, meta: meta }
+}
+
 export ll.toStrict({
 	keepOpaque: keepOpaque,
 	hasWorkdirSaveV3: hasWorkdirSaveV3,
 	run: run,
-	lostWorkdir: lostWorkdir
+	lostWorkdir: lostWorkdir,
+	restartInputs: restartInputs
 })

@@ -557,7 +557,7 @@ builder := func(workdir, ...initialState) {
 	// RunCommand v3: a software failure is an outcome, not an error (exec fallbacks)
 	useV3 := false
 	previousOutcome := undefined
-	restart := false
+	restarted := false
 	stdout := "stdout.txt"
 	stderr := "stderr.txt"
 	nErrorLines := 200
@@ -584,16 +584,16 @@ builder := func(workdir, ...initialState) {
 		 * The backend numbers the attempts of a job and counts them against its limits: a command
 		 * that continues a job gives it the outcome of the run it continues.
 		 *
-		 * @param previous: map, optional - { outcome: reference, restart: bool }: the outcome of
-		 *        the run this command continues (a fallback, or with restart: the same plan again
-		 *        after its working directory was lost); none for a job's first command.
+		 * @param previous: map, optional - { outcome: reference, restarted: bool }: the outcome of
+		 *        the run this command continues (a fallback, or with restarted: the same plan
+		 *        again after an infrastructure failure); none for a job's first command.
 		 */
 		v3: func(...previous) {
 			useV3 = true
 			if len(previous) > 0 && !is_undefined(previous[0]) {
 				ll.assert(!is_undefined(previous[0].outcome), "runcmd.builder.v3: previous.outcome is required")
 				previousOutcome = previous[0].outcome
-				restart = previous[0].restart == true
+				restarted = previous[0].restarted == true
 			}
 			return self
 		},
@@ -804,8 +804,8 @@ builder := func(workdir, ...initialState) {
 				dockerImageTag: options.dockerImageTag,
 				dockerEntrypoint: options.dockerEntrypoint
 			}
-			if useV3 && restart {
-				buildOptions.restart = true
+			if useV3 && restarted {
+				buildOptions.restarted = true
 			}
 			if useV3 && !is_undefined(previousOutcome) {
 				runRes.createInputField(_FIELD_PREVIOUS_OUTCOME).set(previousOutcome)

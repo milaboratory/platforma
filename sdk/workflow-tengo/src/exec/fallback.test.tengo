@@ -172,6 +172,33 @@ Test_historyText_noReason := func() {
 		fallback.historyText(hist, 3, "done"))
 }
 
+Test_historyText_infraErrorRestarts := func() {
+	hist := [
+		{ attempt: 0, plan: "root", result: "fail", reason: "InfraError", restart: 0 },
+		{ attempt: 1, plan: "root", result: "success", exitCode: 0 }
+	]
+	test.isEqual("Attempts (2, backend cap 3):\n  #0 root fail InfraError (restart 0) → restart\n  #1 root success (exit 0) → done",
+		fallback.historyText(hist, 3, "done"))
+}
+
+Test_composeMessage_infraErrorNeverStarted := func() {
+	refused := { result: "fail", failDetails: { reason: "InfraError" }, command: "x", meta: [], lastLogLines: [] }
+	test.isEqual("Failed to start: InfraError.\nCommand: x\nNo output was saved to logs", fallback.composeMessage(refused))
+}
+
+Test_infraErrorIsNotABlockReason := func() {
+	// the exec restarts on InfraError itself: no handler of a block may claim it
+	test.isTrue(is_undefined(fallback.REASONS.InfraError))
+}
+
+Test_infraRestartAllowed := func() {
+	test.isTrue(fallback.infraRestartAllowed(0, 3), "the first infrastructure failure of a budget of 3")
+	test.isTrue(fallback.infraRestartAllowed(1, 3), "the second")
+	test.isFalse(fallback.infraRestartAllowed(2, 3), "the third spends the budget")
+	test.isFalse(fallback.infraRestartAllowed(0, 1), "a budget of 1 restarts nothing")
+	test.isFalse(fallback.infraRestartAllowed(undefined, undefined), "a backend without the counts restarts nothing")
+}
+
 Test_ramBytes := func() {
 	test.isEqual(64 * 1073741824, fallback.ramBytes("64GiB"))
 	test.isEqual(64 * 1073741824, fallback.ramBytes("64gi"))

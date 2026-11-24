@@ -113,26 +113,17 @@ self.body(func(inputs) {
 	})
 	// a lost working directory is an infrastructure failure: the restart spends the job's
 	// infrastructure budget, as the backend counts it
-	infraLimit := is_undefined(ctx.infraAttemptLimit) ? 1 : ctx.infraAttemptLimit
-	infraAttempts := is_undefined(ctx.infraAttempts) ? 0 : ctx.infraAttempts
-	if infraAttempts + 1 >= infraLimit {
+	if !fallback.infraRestartAllowed(ctx.infraAttempts, ctx.infraAttemptLimit) {
 		ll.panic("Working directory lost, infrastructure attempt limit (%v) reached: %s\n\n%s",
-			infraLimit, lost, fallback.historyText(hist, ctx.attemptLimit, "infrastructure attempt limit reached"))
+			is_undefined(ctx.infraAttemptLimit) ? 1 : ctx.infraAttemptLimit, lost,
+			fallback.historyText(hist, ctx.attemptLimit, "infrastructure attempt limit reached"))
 	}
 
 	// the same plan again, with the attempt's own exec-impl inputs and the same attempt index; the
 	// restart writes its manager into `attempt<K>` and its live tail into `stream` when it starts
-	impl := raw.implInputs.getValue()
-	pure := {}
-	for name, f in impl.inputs() {
-		if name != "attemptCtx" {
-			pure[name] = f.getValue()
-		}
-	}
-	meta := {}
-	for name, f in impl.metaInputs() {
-		meta[name] = f.getValue()
-	}
+	restartImpl := saveChain.restartInputs(raw.implInputs.getValue())
+	pure := restartImpl.pure
+	meta := restartImpl.meta
 	pure.attemptCtx = {
 		attempt: ctx.attempt,
 		plan: ctx.plan,
