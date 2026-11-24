@@ -578,6 +578,21 @@ export class PlTreeState {
     this.resources.forEach((v) => cb(v));
   }
 
+  /** The resources of the mirror whose type name starts with `typePrefix`, as the mirror holds
+   * them now: all of them, or only those among `among` when it is given. Not reactive. */
+  public resourcesOfType(
+    typePrefix: string,
+    among?: Iterable<SignedResourceId>,
+  ): ExtendedResourceData[] {
+    const result: ExtendedResourceData[] = [];
+    const add = (res: PlTreeResource | undefined) => {
+      if (res !== undefined && res.type.name.startsWith(typePrefix)) result.push(res.extendedState);
+    };
+    if (among === undefined) this.resources.forEach(add);
+    else for (const id of new Set(among)) add(this.resources.get(id));
+    return result;
+  }
+
   /** False once the tree has been invalidated (an inconsistent update, or termination of
    *  its synchronization loop). {@link dumpState} deliberately reads through an invalid
    *  tree, so anything persisting that dump must check this first: the contents of an

@@ -1634,6 +1634,38 @@ blockTest(
 );
 
 blockTest(
+  "v3: upload-file run finishes while nobody reads block state",
+  async ({ rawPrj: project, ml, expect }) => {
+    const blockId = await project.addBlock("UploadFile", uploadFileSpec);
+
+    const inputHandle = await lsDriverGetFileHandleFromAssets(
+      ml,
+      expect,
+      "another_answer_to_the_ultimate_question.txt",
+    );
+
+    await project.mutateBlockStorage(blockId, {
+      operation: "update-block-data",
+      value: { inputHandle },
+    });
+
+    await project.runBlock(blockId);
+
+    // Only the overview is read: no block output asks for the upload progress, so the upload
+    // runs only because the project handed it to the upload driver.
+    const abortSignal = AbortSignal.timeout(25000);
+    while (true) {
+      const overview = await project.overview.getValue();
+      const block = overview?.blocks.find((b) => b.id === blockId);
+      expect(block).toBeDefined();
+      expect(block?.outputErrors).toBeFalsy();
+      if (block?.calculationStatus === "Done") return;
+      await project.overview.awaitChange(abortSignal);
+    }
+  },
+);
+
+blockTest(
   "v3: should create read-logs block, render it and read logs from a file",
   // pl-core downloads a software for this test and then runs it, and on a Kubernetes deploy
   // that run is a pod scheduled and an image pulled. 20s covered neither and the case reported

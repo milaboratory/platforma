@@ -552,7 +552,10 @@ export class MiddleLayer {
     if (outcome.ok) {
       // What the folder held is gone from the lists, so an id cached for it would resolve to a
       // resource nothing holds any more.
-      for (const id of outcome.removal.projects) this.projectIdCache.delete(id);
+      for (const id of outcome.removal.projects) {
+        this.projectIdCache.delete(id);
+        this.env.driverKit.uploadDriver.releaseOwner(id);
+      }
       for (const id of outcome.removal.templates) this.templateIdCache.delete(id);
       await Promise.all([
         this.foldersTree.refreshState(),
@@ -1170,6 +1173,8 @@ export class MiddleLayer {
       await tx.commit();
     });
     this.projectIdCache.delete(id);
+    // the uploads the project owned have nowhere to go
+    this.env.driverKit.uploadDriver.releaseOwner(id);
     await this.projectListTree.refreshState();
   }
 

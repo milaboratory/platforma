@@ -71,7 +71,7 @@ import type {
   BlockStateInternalV3,
 } from "@milaboratories/pl-model-middle-layer";
 import type { ColumnLink } from "@milaboratories/pl-model-common";
-import { activeConfigs } from "./active_cfg";
+import { uploadSnapshotFromResourceData } from "@milaboratories/pl-drivers";
 import { NavigationStates } from "./navigation_states";
 import { checkBlockFlag, extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
 import fs from "node:fs/promises";
@@ -134,8 +134,8 @@ export class Project {
   /** Live status watches, keyed by {@link blockStatusKey}. One per block whose status is shown;
    * each owns a synchronized tree, so they are started and terminated explicitly. */
   private readonly blockStatusWatches = new Map<string, Promise<BlockStatusWatch>>();
-  private readonly activeConfigs: Computable<unknown[]>;
   private readonly refreshLoopResult: Promise<void>;
+  private readonly stopUploadAdoption: () => void;
 
   private readonly abortController = new AbortController();
 
@@ -178,7 +178,9 @@ export class Project {
     this.refreshLoopResult.catch((err) => {
       env.logger.warn(new Error("Error during refresh loop", { cause: err })); // TODO (safe voiding for now)
     });
-    this.activeConfigs = activeConfigs(projectTree.entry(), env);
+    this.stopUploadAdoption = projectTree.onResourcesOfType(BlobUploadTypePrefix, (resources) =>
+      this.adoptUploads(resources),
+    );
   }
 
   get projectLockId(): string {
@@ -312,7 +314,6 @@ export class Project {
             abortSignal: this.abortController.signal,
           },
         );
-        await this.activeConfigs.getValue();
         await setTimeout(this.env.ops.projectRefreshInterval, undefined, {
           signal: this.abortController.signal,
         });
@@ -366,6 +367,25 @@ export class Project {
             break;
           }
         }
+      }
+    }
+  }
+
+  /** Hands the uploads of this project to the upload driver, which carries them on whether or
+   * not a block shows their progress, and after the project is closed. */
+  private adoptUploads(resources: ExtendedResourceData[]): void {
+    const driver = this.env.driverKit.uploadDriver;
+    for (const res of resources) {
+      try {
+        const adoption = driver.adopt(uploadSnapshotFromResourceData(res), this.id);
+        if (adoption === "adopted")
+          this.env.logger.info(
+            `upload adopted: ${resourceIdToString(res.id)} by project ${this.id}`,
+          );
+      } catch (e: unknown) {
+        this.env.logger.warn(
+          new Error(`upload ${resourceIdToString(res.id)} was not adopted`, { cause: e }),
+        );
       }
     }
   }
@@ -988,6 +1008,8 @@ export class Project {
   public async destroy(): Promise<void> {
     // terminating the project service loop
     this.abortController.abort();
+    // closing the project does not release its uploads: they go on until it is deleted
+    this.stopUploadAdoption();
     try {
       await this.refreshLoopResult;
     } catch (e: unknown) {
@@ -1016,7 +1038,6 @@ export class Project {
     this.blockComputables.forEach((c) => {
       if (c !== null) resetBlockState(c);
     });
-    this.activeConfigs.resetState();
   }
 
   /** @deprecated */
@@ -1146,6 +1167,9 @@ export function isSnapshotFailsafeError(e: unknown): boolean {
   }
   return false;
 }
+
+/** Type name prefix of the resources holding a local file upload. */
+const BlobUploadTypePrefix = "BlobUpload/";
 
 /** Key of a status watch in {@link Project.blockStatusWatches}. */
 function blockStatusKey(blockId: string, mode: BlockActionContextMode): string {
