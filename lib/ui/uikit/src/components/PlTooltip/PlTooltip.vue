@@ -189,6 +189,7 @@ const anchorName = `--anchor-${uniqueId()}`;
           ]"
           :style="{
             '--anchorName': anchorName,
+            '--boxAnchorName': `${anchorName}-box`,
             '--gap': gap + 'px',
             '--offsetToTheEdge': offsetToTheEdge + 'px',
             '--plTooltipMaxWidth': maxWidth,
@@ -232,18 +233,8 @@ const anchorName = `--anchor-${uniqueId()}`;
   --plTooltipMaxWidth: 300px;
   --gap: 8px;
   --tailWidth: 8px;
-  --tailHeight: calc(var(--gap) + 2px);
-
-  --tailClipTop: polygon(
-    0 0,
-    100% 0,
-    100% calc(100% - var(--gap)),
-    50% calc(100% - 3px),
-    0 calc(100% - var(--gap))
-  );
-  --tailClipBottom: polygon(0 100%, 100% 100%, 100% var(--gap), 50% 3px, 0 var(--gap));
-  --tailClipLeft: polygon(0 0, 0 100%, 2px 100%, calc(100% - 3px) 50%, 2px 0);
-  --tailClipRight: polygon(100% 0, 100% 100%, calc(100% - 2px) 100%, 3px 50%, calc(100% - 2px) 0);
+  /* how far the beak sticks out of the box; its tip stops 3px short of the target */
+  --tailDepth: calc(var(--gap) - 3px);
 
   z-index: var(--z-tooltip);
 }
@@ -260,9 +251,22 @@ const anchorName = `--anchor-${uniqueId()}`;
   color: #fff;
 }
 
+/*
+ * Flipping: the box picks its side with position-try-fallbacks when the
+ * requested one lacks room. The beak needs no flip of its own — it anchors to
+ * both the target and the box and sits on whichever box edge faces the target:
+ *   edge = min(box far edge, max(box near edge, target edge))
+ * It is a diamond centred on that edge; the half inside the box is covered by
+ * it, so the visible half always points at the target.
+ *
+ * Both elements keep the target as their default anchor (position-anchor):
+ * the browser shifts an anchored element on scroll only for its default
+ * anchor, so this keeps the beak moving together with the box.
+ */
 .plTooltipBox {
   position: absolute;
   position-anchor: var(--anchorName);
+  anchor-name: var(--boxAnchorName);
   z-index: 1;
 }
 
@@ -271,83 +275,77 @@ const anchorName = `--anchor-${uniqueId()}`;
   position-anchor: var(--anchorName);
   z-index: 0;
   background: var(--tooltip-bg);
-  width: var(--tailWidth);
-  height: var(--tailHeight);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
 }
 
-/* top */
+/* top / bottom / top-left: beak on the horizontal box edge */
+.plTooltipContainer.top .plTooltipBeak,
+.plTooltipContainer.bottom .plTooltipBeak,
+.plTooltipContainer.topLeft .plTooltipBeak {
+  width: var(--tailWidth);
+  height: calc(var(--tailDepth) * 2);
+  left: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
+  top: calc(
+    min(
+        anchor(var(--boxAnchorName) bottom),
+        max(anchor(var(--boxAnchorName) top), anchor(var(--anchorName) bottom))
+      ) -
+      var(--tailDepth)
+  );
+}
+
+/* left / right: beak on the vertical box edge */
+.plTooltipContainer.left .plTooltipBeak,
+.plTooltipContainer.right .plTooltipBeak {
+  width: calc(var(--tailDepth) * 2);
+  height: var(--tailWidth);
+  top: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
+  left: calc(
+    min(
+        anchor(var(--boxAnchorName) right),
+        max(anchor(var(--boxAnchorName) left), anchor(var(--anchorName) right))
+      ) -
+      var(--tailDepth)
+  );
+}
+
 .plTooltipContainer.top .plTooltipBox {
   position-area: top;
+  position-try-fallbacks: flip-block;
   bottom: var(--gap);
   left: var(--offsetToTheEdge);
   right: var(--offsetToTheEdge);
 }
-.plTooltipContainer.top .plTooltipBeak {
-  position-area: top;
-  bottom: 0;
-  left: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
-  clip-path: var(--tailClipTop);
-}
 
-/* bottom */
 .plTooltipContainer.bottom .plTooltipBox {
   position-area: bottom;
+  position-try-fallbacks: flip-block;
   top: var(--gap);
   left: var(--offsetToTheEdge);
   right: var(--offsetToTheEdge);
 }
-.plTooltipContainer.bottom .plTooltipBeak {
-  position-area: bottom;
-  top: 0;
-  left: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
-  clip-path: var(--tailClipBottom);
-}
 
-/* left */
 .plTooltipContainer.left .plTooltipBox {
   position-area: left;
+  position-try-fallbacks: flip-inline;
   right: var(--gap);
   top: var(--offsetToTheEdge);
   bottom: var(--offsetToTheEdge);
 }
 
-.plTooltipContainer.left .plTooltipBeak {
-  position-area: left;
-  right: 0;
-  top: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
-  width: var(--tailHeight);
-  height: var(--tailWidth);
-  clip-path: var(--tailClipLeft);
-}
-
-/* right */
 .plTooltipContainer.right .plTooltipBox {
   position-area: right;
+  position-try-fallbacks: flip-inline;
   left: var(--gap);
   top: var(--offsetToTheEdge);
   bottom: var(--offsetToTheEdge);
 }
 
-.plTooltipContainer.right .plTooltipBeak {
-  position-area: right;
-  left: 0;
-  top: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
-  width: var(--tailHeight);
-  height: var(--tailWidth);
-  clip-path: var(--tailClipRight);
-}
-
-/* top left */
 .plTooltipContainer.topLeft .plTooltipBox {
   position-area: top;
+  position-try-fallbacks: flip-block;
   bottom: var(--gap);
   left: anchor(var(--anchorName) left);
-}
-.plTooltipContainer.topLeft .plTooltipBeak {
-  position-area: top;
-  bottom: 0;
-  left: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
-  clip-path: var(--tailClipTop);
 }
 
 :global(.pl-tooltip-fade-leave-active),
