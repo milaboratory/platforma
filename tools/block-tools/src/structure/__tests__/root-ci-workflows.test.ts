@@ -12,6 +12,8 @@ import type { BlockVars, RunContext } from "../engine/api";
 import { STRUCTURE } from "../structure-definition";
 import { run as engineRun } from "../engine/runner";
 import { defaultTemplateProvider, simulateInit } from "../engine/testing";
+import { discoverRunContext } from "../engine/discovery-fs";
+import { readStructureMeta, STRUCTURE_META_FILE } from "../engine/version";
 import { NODE_VERSION } from "../rules/shared/toolchain";
 
 const TEMPLATES = defaultTemplateProvider();
@@ -69,6 +71,55 @@ describe("root CI workflows (fixed, generated)", () => {
     const result = engineRun(STRUCTURE, fs, checkCtx, { templates: TEMPLATES });
     const ciChanges = result.changes.filter((c) => c.path === BUILD || c.path === MARK_STABLE);
     expect(ciChanges).toEqual([]);
+  });
+
+  test("without ownNpmRegistry the workflow has no own-registry input", () => {
+    const { fs, ctx } = simulateInit({ vars: VARS });
+    expect(ctx.ownNpmRegistry).toBe(false);
+    const build = fs.read(BUILD);
+    expect(build).not.toContain("npm-own-registry-scopes");
+    // The placeholder expands to nothing: the next line follows directly.
+    expect(build).toContain("require-package-path-bump: true\n\n      npmrc-config: |");
+    expect(fs.read(STRUCTURE_META_FILE)).not.toContain("ownNpmRegistry");
+  });
+
+  test("ownNpmRegistry in .structure adds the opt-in input, and refresh keeps both", () => {
+    const { fs } = simulateInit({ vars: VARS });
+    const meta = readStructureMeta(fs);
+    fs.write(STRUCTURE_META_FILE, JSON.stringify({ ...meta, ownNpmRegistry: true }));
+
+    const ctx = discoverRunContext({ fs, isSdkInternal: false });
+    expect(ctx.ownNpmRegistry).toBe(true);
+    engineRun(STRUCTURE, fs, ctx, { templates: TEMPLATES });
+
+    const build = fs.read(BUILD);
+    expect(build.match(/npm-own-registry-scopes: '@platforma-open'/g)).toHaveLength(1);
+    // Refresh rewrote .structure and kept the setting.
+    expect(readStructureMeta(fs).ownNpmRegistry).toBe(true);
+
+    // Fixpoint: a check right after changes nothing in the workflow files.
+    const checkCtx: RunContext = {
+      ...discoverRunContext({ fs, isSdkInternal: false }),
+      dryRun: true,
+    };
+    const result = engineRun(STRUCTURE, fs, checkCtx, { templates: TEMPLATES });
+    expect(result.changes.filter((c) => c.path === BUILD || c.path === MARK_STABLE)).toEqual([]);
+  });
+
+  test("removing ownNpmRegistry from .structure removes the input on refresh", () => {
+    const { fs } = simulateInit({ vars: VARS });
+    const meta = readStructureMeta(fs);
+    fs.write(STRUCTURE_META_FILE, JSON.stringify({ ...meta, ownNpmRegistry: true }));
+    engineRun(STRUCTURE, fs, discoverRunContext({ fs, isSdkInternal: false }), {
+      templates: TEMPLATES,
+    });
+    expect(fs.read(BUILD)).toContain("npm-own-registry-scopes");
+
+    fs.write(STRUCTURE_META_FILE, JSON.stringify({ version: meta.version }));
+    engineRun(STRUCTURE, fs, discoverRunContext({ fs, isSdkInternal: false }), {
+      templates: TEMPLATES,
+    });
+    expect(fs.read(BUILD)).not.toContain("npm-own-registry-scopes");
   });
 
   test("sdk-internal blocks get neither workflow file", () => {

@@ -499,7 +499,7 @@ export function run(
 
     if (isRefreshDefault) {
       // version bump
-      writeStructureMeta(fs, { version: STRUCTURE_VERSION });
+      writeStructureMeta(fs, { version: STRUCTURE_VERSION, ownNpmRegistry: ctx.ownNpmRegistry });
 
       // post-run recheck. Fresh discovery → fresh flatten →
       // dry-run. Any change list emits RecheckError on the first item.
@@ -527,7 +527,7 @@ export function run(
     // Init mode: write .structure so the resulting tree carries the
     // current version (matches what `init` ships to disk).
     if (initMode && !ctx.dryRun) {
-      writeStructureMeta(fs, { version: STRUCTURE_VERSION });
+      writeStructureMeta(fs, { version: STRUCTURE_VERSION, ownNpmRegistry: ctx.ownNpmRegistry });
     }
 
     return { changes };
