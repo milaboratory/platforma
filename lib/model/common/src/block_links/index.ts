@@ -2,6 +2,7 @@ export type { BlockColumnLinks, ColumnLink, LinkCheck } from "./types";
 export {
   computeDependencies,
   computeDependents,
+  linkedBlockIds,
   type ArgsKind,
   type ColumnLinksSource,
 } from "./compute";
