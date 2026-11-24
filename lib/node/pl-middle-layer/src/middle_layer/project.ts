@@ -28,7 +28,8 @@ import {
   blockLinkedTitles,
   labelBlockColumnLinks,
 } from "./column_links";
-import { blockModelOf, blockModelSdkVersion } from "./block_model";
+import type { ProjectBlockModelInfo } from "./block_model";
+import { blockModelInfo, blockModelOf, blockModelSdkVersion, readBlockModel } from "./block_model";
 import type { BlockPackSpecAny } from "../model";
 import { randomUUID } from "node:crypto";
 import { withProject, withProjectAuthored } from "../mutator/project";
@@ -48,6 +49,7 @@ import type { BlockPackInfoAndId } from "./util";
 import { getBlockPackInfo } from "./util";
 import { getDebugFlags } from "../debug";
 import { bundleEvaluationsDelta } from "../debug/exec_counters";
+import { allBlocks } from "../model/project_model_util";
 import { BlockStatusWatch } from "./block_status_tree";
 import type { BlockStatusSummary, BlockStatusTree } from "@milaboratories/pl-model-middle-layer";
 import type { FrontendData } from "../model/frontend";
@@ -56,6 +58,7 @@ import {
   projectFieldName,
   ProjectStatusFieldPattern,
   projectStatusFieldRegex,
+  ProjectStructureKey,
 } from "../model/project_model";
 import { cachedDeserialize, notEmpty, type MiLogger } from "@milaboratories/ts-helpers";
 import type { BlockPackInfo } from "../model/block_pack";
@@ -981,6 +984,25 @@ export class Project {
 
   public getBlockState(blockId: string): Computable<BlockStateInternalV3> {
     return this.getBlockComputables(blockId).fullState;
+  }
+
+  /**
+   * The feature flags and SDK version of a block's model, read from the project tree as soon as
+   * the project holds the block's pack, without waiting for the project overview. `absent` for
+   * a block the project does not have.
+   */
+  public async getBlockModelInfo(blockId: string): Promise<ProjectBlockModelInfo> {
+    const info = Computable.make((ctx) => {
+      const prj = ctx.accessor(this.projectTree.entry()).node();
+      const structure = notEmpty(prj.getKeyValueAsJson<ProjectStructure>(ProjectStructureKey));
+      const present = [...allBlocks(structure)].some(({ id }) => id === blockId);
+      return blockModelInfo(present ? readBlockModel(prj, blockId, this.env) : undefined);
+    });
+    try {
+      return await info.awaitStableValue(this.abortController.signal);
+    } finally {
+      info.resetState();
+    }
   }
 
   /**

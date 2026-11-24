@@ -644,6 +644,36 @@ test(
   },
 );
 
+test(
+  "v3: block model info matches the overview and is absent for a deleted block",
+  { timeout: 20000 },
+  async ({ expect }) => {
+    await withMl(async (ml) => {
+      const prjId = await ml.createProject({ label: "Project 1" });
+      await ml.openProject(prjId);
+      const prj = ml.getOpenedProject(prjId);
+
+      const block1Id = await prj.addBlock("Block 1", enterNumberSpec);
+      const block2Id = await prj.addBlock("Block 2", sumNumbersSpec);
+
+      // known at once, before the overview has settled
+      expect(await prj.getBlockModelInfo(block2Id)).toMatchObject({ type: "present" });
+
+      const overview = await prj.overview.awaitStableValue();
+      for (const block of overview.blocks)
+        expect(await prj.getBlockModelInfo(block.id)).toEqual({
+          type: "present",
+          featureFlags: block.featureFlags,
+          sdkVersion: block.sdkVersion,
+        });
+
+      await prj.deleteBlock(block1Id);
+      expect(await prj.getBlockModelInfo(block1Id)).toEqual({ type: "absent" });
+      expect(await prj.getBlockModelInfo("no-such-block")).toEqual({ type: "absent" });
+    });
+  },
+);
+
 test("v3: limbo test", async ({ expect }) => {
   await withMl(async (ml) => {
     const prj1Id = await ml.createProject({ label: "Project 1" });
