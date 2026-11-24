@@ -72,6 +72,22 @@ export type BlockStatusJobs = {
   readonly byState: readonly BlockStatusJobGroup[];
 };
 
+/** One resource of the block's jobs: each job's peak use and its grant, summed over the jobs. */
+export type BlockStatusResource = {
+  readonly used: number;
+  readonly granted: number;
+};
+
+/** CPU and RAM of the jobs whose commands report telemetry (only the k8s runner does). */
+export type BlockStatusUsage = {
+  /** Jobs that reported. */
+  readonly jobs: number;
+  /** Millicores. */
+  readonly cpu: BlockStatusResource;
+  /** Bytes. */
+  readonly ram: BlockStatusResource;
+};
+
 /** Why a summary carries no counters. */
 export type BlockStatusAvailability =
   /** The tree was read and the run has reported what the summary holds. */
@@ -95,6 +111,8 @@ export type BlockStatusSummary = {
   readonly totalContexts: number;
   /** The run's jobs, counted apart from the template renders that only prepare them. */
   readonly jobs: BlockStatusJobs;
+  /** CPU and RAM of the jobs, absent until one of them reports. */
+  readonly usage?: BlockStatusUsage;
   /** The first transition anywhere in the tree, ms since the epoch. */
   readonly startedAt?: number;
   /** The most recent transition anywhere in the tree, ms since the epoch. */
