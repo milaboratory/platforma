@@ -217,38 +217,13 @@ const anchorName = `--anchor-${uniqueId()}`;
 <style module>
 .plTooltipAnchorWrapper {
   display: inline-block;
-}
-/* just to set anchor-name for the anchor */
-.plTooltipAnchorWrapper > :first-child {
-  --anchorName: v-bind("anchorName");
-  anchor-name: var(--anchorName);
-}
 
-.plTooltipAnchorWrapper:global(.info) {
-  --anchorName: v-bind("anchorName");
-  anchor-name: var(--anchorName);
-}
-
-.plTooltipContainer {
-  --plTooltipMaxWidth: 300px;
-  --gap: 8px;
-  --tailWidth: 8px;
-  /* how far the beak sticks out of the box; its tip stops 3px short of the target */
-  --tailDepth: calc(var(--gap) - 3px);
-
-  z-index: var(--z-tooltip);
-}
-
-.plTooltipContent {
-  --txt-link: var(--tooltip-link-color);
-  display: inline-block;
-  padding: 8px 12px 9px 12px;
-  background: var(--tooltip-bg);
-  border-radius: 6px;
-  width: max-content;
-  word-break: normal;
-  max-width: var(--plTooltipMaxWidth);
-  color: #fff;
+  /* just to set anchor-name for the anchor */
+  > :first-child,
+  &:global(.info) {
+    --anchorName: v-bind("anchorName");
+    anchor-name: var(--anchorName);
+  }
 }
 
 /*
@@ -263,6 +238,86 @@ const anchorName = `--anchor-${uniqueId()}`;
  * the browser shifts an anchored element on scroll only for its default
  * anchor, so this keeps the beak moving together with the box.
  */
+.plTooltipContainer {
+  --plTooltipMaxWidth: 300px;
+  --gap: 8px;
+  --tailWidth: 8px;
+  /* how far the beak sticks out of the box; its tip stops 3px short of the target */
+  --tailDepth: calc(var(--gap) - 3px);
+
+  z-index: var(--z-tooltip);
+
+  /* top / bottom / top-left: beak on the horizontal box edge */
+  &.top .plTooltipBeak,
+  &.bottom .plTooltipBeak,
+  &.topLeft .plTooltipBeak {
+    width: var(--tailWidth);
+    height: calc(var(--tailDepth) * 2);
+    left: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
+    top: calc(
+      min(
+          anchor(var(--boxAnchorName) bottom),
+          max(anchor(var(--boxAnchorName) top), anchor(var(--anchorName) bottom))
+        ) -
+        var(--tailDepth)
+    );
+  }
+
+  /* left / right: beak on the vertical box edge */
+  &.left .plTooltipBeak,
+  &.right .plTooltipBeak {
+    width: calc(var(--tailDepth) * 2);
+    height: var(--tailWidth);
+    top: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
+    left: calc(
+      min(
+          anchor(var(--boxAnchorName) right),
+          max(anchor(var(--boxAnchorName) left), anchor(var(--anchorName) right))
+        ) -
+        var(--tailDepth)
+    );
+  }
+
+  &.top .plTooltipBox {
+    position-area: top;
+    position-try-fallbacks: flip-block;
+    bottom: var(--gap);
+    left: var(--offsetToTheEdge);
+    right: var(--offsetToTheEdge);
+  }
+
+  &.bottom .plTooltipBox {
+    position-area: bottom;
+    position-try-fallbacks: flip-block;
+    top: var(--gap);
+    left: var(--offsetToTheEdge);
+    right: var(--offsetToTheEdge);
+  }
+
+  &.left .plTooltipBox {
+    position-area: left;
+    position-try-fallbacks: flip-inline;
+    right: var(--gap);
+    top: var(--offsetToTheEdge);
+    bottom: var(--offsetToTheEdge);
+  }
+
+  &.right .plTooltipBox {
+    position-area: right;
+    position-try-fallbacks: flip-inline;
+    left: var(--gap);
+    top: var(--offsetToTheEdge);
+    bottom: var(--offsetToTheEdge);
+  }
+
+  &.topLeft .plTooltipBox {
+    position-area: top;
+    position-try-fallbacks: flip-block;
+    bottom: var(--gap);
+    left: anchor(var(--anchorName) left);
+  }
+}
+
 .plTooltipBox {
   position: absolute;
   position-anchor: var(--anchorName);
@@ -278,74 +333,34 @@ const anchorName = `--anchor-${uniqueId()}`;
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
 }
 
-/* top / bottom / top-left: beak on the horizontal box edge */
-.plTooltipContainer.top .plTooltipBeak,
-.plTooltipContainer.bottom .plTooltipBeak,
-.plTooltipContainer.topLeft .plTooltipBeak {
-  width: var(--tailWidth);
-  height: calc(var(--tailDepth) * 2);
-  left: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
-  top: calc(
-    min(
-        anchor(var(--boxAnchorName) bottom),
-        max(anchor(var(--boxAnchorName) top), anchor(var(--anchorName) bottom))
-      ) -
-      var(--tailDepth)
-  );
-}
+.plTooltipContent {
+  --txt-link: var(--tooltip-link-color);
+  display: inline-block;
+  padding: 8px 12px 9px 12px;
+  background: var(--tooltip-bg);
+  border-radius: 6px;
+  width: max-content;
+  word-break: normal;
+  max-width: var(--plTooltipMaxWidth);
+  color: #fff;
 
-/* left / right: beak on the vertical box edge */
-.plTooltipContainer.left .plTooltipBeak,
-.plTooltipContainer.right .plTooltipBeak {
-  width: calc(var(--tailDepth) * 2);
-  height: var(--tailWidth);
-  top: calc(anchor(var(--anchorName) center) - var(--tailWidth) / 2);
-  left: calc(
-    min(
-        anchor(var(--boxAnchorName) right),
-        max(anchor(var(--boxAnchorName) left), anchor(var(--anchorName) right))
-      ) -
-      var(--tailDepth)
-  );
-}
+  a {
+    color: var(--tooltip-link-color);
+  }
 
-.plTooltipContainer.top .plTooltipBox {
-  position-area: top;
-  position-try-fallbacks: flip-block;
-  bottom: var(--gap);
-  left: var(--offsetToTheEdge);
-  right: var(--offsetToTheEdge);
-}
+  p {
+    margin-bottom: 8px;
+  }
 
-.plTooltipContainer.bottom .plTooltipBox {
-  position-area: bottom;
-  position-try-fallbacks: flip-block;
-  top: var(--gap);
-  left: var(--offsetToTheEdge);
-  right: var(--offsetToTheEdge);
-}
+  ul,
+  li {
+    margin-left: 6px;
+    padding-left: 6px;
+  }
 
-.plTooltipContainer.left .plTooltipBox {
-  position-area: left;
-  position-try-fallbacks: flip-inline;
-  right: var(--gap);
-  top: var(--offsetToTheEdge);
-  bottom: var(--offsetToTheEdge);
-}
-
-.plTooltipContainer.right .plTooltipBox {
-  position-area: right;
-  position-try-fallbacks: flip-inline;
-  left: var(--gap);
-  top: var(--offsetToTheEdge);
-  bottom: var(--offsetToTheEdge);
-}
-
-.plTooltipContainer.topLeft .plTooltipBox {
-  position-area: top;
-  position-try-fallbacks: flip-block;
-  bottom: var(--gap);
-  left: anchor(var(--anchorName) left);
+  li {
+    margin-bottom: 4px;
+  }
 }
 
 :global(.pl-tooltip-fade-leave-active),
@@ -356,23 +371,5 @@ const anchorName = `--anchor-${uniqueId()}`;
 :global(.pl-tooltip-fade-enter-from),
 :global(.pl-tooltip-fade-leave-to) {
   opacity: 0;
-}
-
-.plTooltipContent a {
-  color: var(--tooltip-link-color);
-}
-
-.plTooltipContent p {
-  margin-bottom: 8px;
-}
-
-.plTooltipContent ul,
-.plTooltipContent li {
-  margin-left: 6px;
-  padding-left: 6px;
-}
-
-.plTooltipContent li {
-  margin-bottom: 4px;
 }
 </style>
