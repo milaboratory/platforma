@@ -1040,7 +1040,7 @@ export class Project {
     await withProject(env.projectHelper, env.pl, rid, (_) => {}, { name: "init" });
 
     // Loading project tree, warm from a persisted mirror when one is usable
-    const { tree: projectTree, restored } = await loadProjectTree(env, rid);
+    const { tree: projectTree, restored } = await loadProjectTree(env, id, rid);
 
     if (env.ops.debugOps.dumpInitialTreeState) {
       const state = projectTree.dumpState();
@@ -1070,10 +1070,12 @@ export class Project {
  */
 async function loadProjectTree(
   env: MiddleLayerEnvironment,
+  id: ProjectId,
   rid: SignedResourceId,
 ): Promise<{ tree: SynchronizedTreeState; restored: boolean }> {
   const treeOps = {
     ...env.ops.defaultTreeOptions,
+    onPoll: () => env.treePollCounters.countPoll(`project:${id}`),
     pruning: projectTreePruning(env.logger),
     fieldFilter: projectTreeFieldFilter(),
     traverseStopRules: projectTreeTraverseStopRules(),

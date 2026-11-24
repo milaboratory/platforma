@@ -68,6 +68,7 @@ export async function createProjectList(
     rid,
     {
       ...env.ops.defaultTreeOptions,
+      onPoll: () => env.treePollCounters.countPoll("projectList"),
       pruning: ProjectsListTreePruningFunction,
       fieldFilter: projectsListFieldFilter,
     },

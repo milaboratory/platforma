@@ -3,7 +3,12 @@ import { getQuickJS, type QuickJSWASMModule } from "quickjs-emscripten";
 import type { BlockCodeWithInfo, ConfigRenderLambda } from "@platforma-sdk/model";
 import { executeSingleLambda } from "../js_render";
 import type { ExecCountersSnapshot } from "./exec_counters";
-import { execCountersDelta, formatExecCountersDelta, JsExecCounters } from "./exec_counters";
+import {
+  execCountersDelta,
+  formatExecCountersDelta,
+  JsExecCounters,
+  TreePollCounters,
+} from "./exec_counters";
 
 const HANDLE = "__pl_test_lambda";
 
@@ -22,13 +27,28 @@ function codeWith(body: string): BlockCodeWithInfo {
 }
 
 function snapshot(patch: Partial<ExecCountersSnapshot>): ExecCountersSnapshot {
-  return { bundleEvaluations: {}, callbacks: {}, transactions: {}, ...patch };
+  return { bundleEvaluations: {}, callbacks: {}, transactions: {}, treePolls: {}, ...patch };
 }
 
 let quickJs: QuickJSWASMModule;
 
 beforeAll(async () => {
   quickJs = await getQuickJS();
+});
+
+describe("TreePollCounters", () => {
+  test("polls are counted per tree, and a snapshot keeps the counts it was taken with", () => {
+    const counters = new TreePollCounters();
+    counters.countPoll("project:p1");
+    counters.countPoll("project:p1");
+    counters.countPoll("projectList");
+    const before = counters.snapshot();
+
+    counters.countPoll("project:p1");
+
+    expect(before).toEqual({ "project:p1": 2, projectList: 1 });
+    expect(counters.snapshot()).toEqual({ "project:p1": 3, projectList: 1 });
+  });
 });
 
 describe("JsExecCounters", () => {
@@ -108,15 +128,19 @@ describe("execCountersDelta", () => {
         "ProjectAction: mutate-block-storage": { committed: 3, closed: 1, conflict: 1, error: 0 },
         MLInitialization: { committed: 1, closed: 0, conflict: 0, error: 0 },
       },
+      treePolls: { "project:p1": 7, projectList: 2, "project:p2": 1 },
     });
 
-    expect(execCountersDelta(before, after)).toEqual({
+    expect(
+      execCountersDelta({ ...before, treePolls: { "project:p1": 4, projectList: 2 } }, after),
+    ).toEqual({
       bundleEvaluations: { "block-output#table": 3, subtitle: 1 },
       callbacks: { subtitle: 1 },
       transactions: {
         "ProjectAction: mutate-block-storage": { committed: 1, closed: 1, conflict: 0, error: 0 },
         MLInitialization: { committed: 1, closed: 0, conflict: 0, error: 0 },
       },
+      treePolls: { "project:p1": 3, "project:p2": 1 },
     });
   });
 
@@ -125,6 +149,7 @@ describe("execCountersDelta", () => {
       bundleEvaluations: { title: 1 },
       callbacks: { title: 1 },
       transactions: { ReadingTree: { committed: 0, closed: 4, conflict: 0, error: 0 } },
+      treePolls: { "project:p1": 4 },
     });
 
     expect(execCountersDelta(reading, reading)).toEqual(snapshot({}));
@@ -149,5 +174,21 @@ describe("formatExecCountersDelta", () => {
         "vm __pl_storage_applyUpdate=2 block-output#table=1",
     );
     expect(formatExecCountersDelta(snapshot({}), 10_000)).toBeUndefined();
+  });
+
+  test("each polling tree is named with its polls, so an idle project that still polls shows up", () => {
+    const delta = snapshot({
+      transactions: { ReadingTree: { committed: 0, closed: 6, conflict: 0, error: 0 } },
+      treePolls: { "project:p1": 5, "status:p1/b1": 1 },
+    });
+
+    expect(formatExecCountersDelta(delta, 10_000)).toBe(
+      "[exec-counters] 10s: " +
+        'tx "ReadingTree" committed=0 closed=6 conflict=0 error=0; ' +
+        "polls project:p1=5 status:p1/b1=1",
+    );
+    expect(formatExecCountersDelta(snapshot({ treePolls: { projectList: 1 } }), 10_000)).toBe(
+      "[exec-counters] 10s: polls projectList=1",
+    );
   });
 });

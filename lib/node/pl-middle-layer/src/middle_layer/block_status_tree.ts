@@ -10,7 +10,12 @@
  */
 
 import type { PlClient, SignedResourceId } from "@milaboratories/pl-client";
-import { isNullSignedResourceId, ResourceTypeName, treeFilter } from "@milaboratories/pl-client";
+import {
+  isNullSignedResourceId,
+  resourceIdToString,
+  ResourceTypeName,
+  treeFilter,
+} from "@milaboratories/pl-client";
 import { Computable, WatchableValue } from "@milaboratories/computable";
 import type { PlTreeEntry, PlTreeNodeAccessor } from "@milaboratories/pl-tree";
 import { SynchronizedTreeState } from "@milaboratories/pl-tree";
@@ -382,6 +387,11 @@ export class BlockStatusWatch {
     }
   }
 
+  /** The name the polls of this watch's tree are counted under. */
+  private get pollCounterName(): string {
+    return `status:${resourceIdToString(this.projectRid)}/${this.blockId}/${this.mode}`;
+  }
+
   /** Points the summary at the current render's context, replacing any earlier one. */
   private async reseed(): Promise<void> {
     const seed = ++this.seedSequence;
@@ -404,6 +414,7 @@ export class BlockStatusWatch {
             root,
             {
               ...this.env.ops.defaultTreeOptions,
+              onPoll: () => this.env.treePollCounters.countPoll(this.pollCounterName),
               pollingInterval: StatusTreePollingIntervalMs,
               initialTreeLoadingTimeout: StatusTreeInitialLoadTimeoutMs,
               fieldFilter: statusTreeFieldFilter,

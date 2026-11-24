@@ -164,6 +164,7 @@ export async function createFolderList(
       rid,
       {
         ...env.ops.defaultTreeOptions,
+        onPoll: () => env.treePollCounters.countPoll("folders"),
         pruning: FoldersTreePruningFunction,
         fieldFilter: foldersFieldFilter,
       },

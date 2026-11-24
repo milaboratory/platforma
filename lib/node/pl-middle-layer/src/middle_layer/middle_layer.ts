@@ -169,7 +169,12 @@ import type { Dispatcher } from "undici";
 import { RetryAgent } from "undici";
 import { getDebugFlags } from "../debug";
 import type { ExecCountersSnapshot } from "../debug/exec_counters";
-import { execCountersDelta, formatExecCountersDelta, JsExecCounters } from "../debug/exec_counters";
+import {
+  execCountersDelta,
+  formatExecCountersDelta,
+  JsExecCounters,
+  TreePollCounters,
+} from "../debug/exec_counters";
 import { ProjectHelper } from "../model/project_helper";
 import type { TreeSnapshotStat } from "./tree_snapshot_store";
 import { TreeSnapshotStore } from "./tree_snapshot_store";
@@ -198,6 +203,8 @@ export interface MiddleLayerEnvironment {
   readonly projectHelper: ProjectHelper;
   /** Model code executions of this middle layer, shared by every VM it starts. */
   readonly jsExecCounters: JsExecCounters;
+  /** Backend polls of the synchronized trees of this middle layer, by tree. */
+  readonly treePollCounters: TreePollCounters;
   /** Persisted project tree mirrors. Undefined when snapshots are switched off, or when the
    *  client is impersonating another user, in which case nothing is read or written. */
   readonly treeSnapshots?: TreeSnapshotStore;
@@ -1856,18 +1863,23 @@ export class MiddleLayer {
     return this.env.treeSnapshots?.getStats();
   }
 
-  /** Model bundle evaluations and callbacks by lambda, and transactions by name, since start.
+  /** Model bundle evaluations and callbacks by lambda, transactions by name, and backend polls
+   *  of the synchronized trees by tree, since start.
    *  Two readings taken around a scenario and passed to `execCountersDelta` give what the
    *  scenario cost. Transactions include those made on the same client outside the middle layer. */
   public get execCounters(): ExecCountersSnapshot {
-    return { ...this.env.jsExecCounters.snapshot(), transactions: this.pl.txCountsByName };
+    return {
+      ...this.env.jsExecCounters.snapshot(),
+      transactions: this.pl.txCountsByName,
+      treePolls: this.env.treePollCounters.snapshot(),
+    };
   }
 
   private static readonly ExecCountersLogIntervalMs = 10_000;
   private execCountersLogTimer: ReturnType<typeof setInterval> | undefined;
 
-  /** Every 10 s, logs one line with the transactions and model VMs run since the previous tick;
-   *  a tick with no work logs nothing. */
+  /** Every 10 s, logs one line with the transactions, model VMs and tree polls since the previous
+   *  tick; a tick with no work logs nothing. */
   private startExecCountersLog(): void {
     let previous = this.execCounters;
     this.execCountersLogTimer = setInterval(() => {
@@ -2085,6 +2097,7 @@ export class MiddleLayer {
       quickJs,
       projectHelper: new ProjectHelper(quickJs, logger, jsExecCounters),
       jsExecCounters,
+      treePollCounters: new TreePollCounters(),
       treeSnapshots,
       dispose: async () => {
         await serviceRegistry.dispose();
