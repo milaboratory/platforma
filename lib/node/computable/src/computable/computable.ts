@@ -137,6 +137,14 @@ const _computableFinalizationRegistry = new FinalizationRegistry<Computable<unkn
 
 export type ComputableStableDefined<T> = Computable<T | undefined, T>;
 
+/** Options of {@link Computable.awaitChangePassively}. */
+export type PassiveWaitOps = {
+  /** Aborts the wait. */
+  readonly signal?: AbortSignal;
+  /** Waits for a change of this specific known value, see {@link Computable.awaitChange}. */
+  readonly uTag?: string;
+};
+
 /**
  * Class representing a reactive value that changes over time and
  * propagates updates to dependents automatically.
@@ -276,6 +284,34 @@ export class Computable<T, StableT extends T = T> {
     }
   }
 
+  /** Passive waits in flight, see {@link awaitChangePassively}. */
+  private passiveListenCounter = 0;
+
+  /**
+   * Waits for the value to be marked as changed after the last value retrieval, like
+   * {@link awaitChange}, but without asking the data sources to keep the underlying state
+   * fresh. It resolves only when something else brings a change in: another listener, an
+   * active value read, or an explicit {@link refreshState}. A source nobody else keeps fresh
+   * stays quiet, and so does this wait.
+   *
+   * Resolves immediately if the value is already changed.
+   */
+  public async awaitChangePassively(ops: PassiveWaitOps = {}): Promise<void> {
+    if (this._changed(ops.uTag)) {
+      await setImmediate(undefined, { signal: ops.signal });
+      return;
+    }
+
+    const state = this.state;
+    if (state === undefined) throw new Error("Computable state is absent while not changed.");
+    this.passiveListenCounter++;
+    try {
+      await state.watcher.awaitChange(ops.signal);
+    } finally {
+      this.passiveListenCounter--;
+    }
+  }
+
   /**
    * Waits for the next stable state and returns the fully stable result.
    * Similar behavior to {@link getFullValue}.
@@ -377,6 +413,27 @@ export class Computable<T, StableT extends T = T> {
    * Error result in {@link ComputableResultErrors} object returned by this method.
    * */
   public async getValueOrError(): Promise<ComputableResult<T>> {
+    return await this.readValueOrError("active");
+  }
+
+  /**
+   * The same as {@link getValueOrError}, but the read does not count as interest in the value:
+   * data sources are not asked to start or keep refreshing their state. The value is computed
+   * from whatever the sources hold at the moment, which may be stale if nobody else keeps them
+   * fresh. Pairs with {@link awaitChangePassively}.
+   */
+  public async getValueOrErrorPassively(): Promise<ComputableResult<T>> {
+    return await this.readValueOrError("passive");
+  }
+
+  /** The same as {@link getValue}, but reads passively, see {@link getValueOrErrorPassively}. */
+  public async getValuePassively(): Promise<T> {
+    const result = await this.getValueOrErrorPassively();
+    if (result.type === "error") throwComputableError(result.errors);
+    return result.value;
+  }
+
+  private async readValueOrError(reading: "active" | "passive"): Promise<ComputableResult<T>> {
     // to check that epoch is still ours when we finish updating the state
     const ourEpoch = this.epoch;
 
@@ -405,7 +462,8 @@ export class Computable<T, StableT extends T = T> {
           }
 
           // important state assertion
-          if (this.listenCounter !== 0) throw new Error("Concurrent listening and state update.");
+          if (this.listenCounter !== 0 || this.passiveListenCounter !== 0)
+            throw new Error("Concurrent listening and state update.");
 
           // updating the state
           this.state = newState;
@@ -429,7 +487,8 @@ export class Computable<T, StableT extends T = T> {
     const state = notEmpty(this.state);
 
     // reporting to observers
-    if (state.hooks !== undefined) for (const hooks of state.hooks) hooks.onGetValue(this);
+    if (reading === "active" && state.hooks !== undefined)
+      for (const hooks of state.hooks) hooks.onGetValue(this);
 
     if (state.allErrors.length === 0)
       return {

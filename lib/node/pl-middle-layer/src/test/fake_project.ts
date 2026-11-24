@@ -32,12 +32,21 @@ export type FrameState = { state: "locked" | "open" | "failed" };
 export type FakeProjectField = Extract<
   ProjectField["fieldName"],
   | "currentArgs"
+  | "currentPrerunArgs"
   | "inputsValid"
   | "prodArgs"
   | "prodCtx"
   | "prodUiCtx"
+  | "prodOutput"
+  | "prodCtxPrevious"
+  | "prodUiCtxPrevious"
+  | "prodOutputPrevious"
   | "stagingCtx"
   | "stagingUiCtx"
+  | "stagingOutput"
+  | "stagingCtxPrevious"
+  | "stagingUiCtxPrevious"
+  | "stagingOutputPrevious"
 >;
 
 /** A project resource tree built in memory: its blocks, in project order, and their fields. */
@@ -72,6 +81,23 @@ export class FakeProject {
       kind: "Value",
       type: { name: type, version: "1" },
       data: Buffer.from(JSON.stringify(json)),
+      fields: [],
+    });
+    return id;
+  }
+
+  /** A value resource that is not ready yet. */
+  notReady(type: string): SignedResourceId {
+    const id = this.newId();
+    this.nodes.push({
+      ...READY,
+      id,
+      kind: "Structural",
+      type: { name: type, version: "1" },
+      inputsLocked: false,
+      outputsLocked: false,
+      resourceReady: false,
+      final: false,
       fields: [],
     });
     return id;
@@ -186,12 +212,21 @@ const READY: Omit<ExtendedResourceData, "id" | "kind" | "type" | "fields"> = {
 
 const PROJECT_FIELDS: readonly FakeProjectField[] = [
   "currentArgs",
+  "currentPrerunArgs",
   "inputsValid",
   "prodArgs",
   "prodCtx",
   "prodUiCtx",
+  "prodOutput",
+  "prodCtxPrevious",
+  "prodUiCtxPrevious",
+  "prodOutputPrevious",
   "stagingCtx",
   "stagingUiCtx",
+  "stagingOutput",
+  "stagingCtxPrevious",
+  "stagingUiCtxPrevious",
+  "stagingOutputPrevious",
 ];
 
 function field(type: FieldType, name: string, value: SignedResourceId): FieldData {

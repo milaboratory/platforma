@@ -29,7 +29,8 @@ test("closeProject and close return soon on a link that stopped answering", asyn
       await ml.openProject(projectId);
       const project = ml.getOpenedProject(projectId);
       await project.overview.getValue();
-      // The refresh loop must be in its pause, so the stuck action below takes the project lock.
+      // Lets the maintenance pass of the open finish, so the stuck action below takes the
+      // project lock.
       await tp.setTimeout(300);
 
       proxy.setLatency(blackhole);

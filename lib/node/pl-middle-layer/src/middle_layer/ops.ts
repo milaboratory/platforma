@@ -259,8 +259,8 @@ export type MiddleLayerOpsSettings = DriverKitOpsSettings & {
    * synchronized with the pl server. */
   readonly defaultTreeOptions: TemporalSynchronizedTreeOps;
 
-  /** Defines interval in milliseconds for running periodic project maintenance job.
-   * Project maintenance includes background staging rendering and cached outputs cleanup. */
+  /** @deprecated Ignored. Project maintenance (background staging rendering and cleanup of
+   * cached outputs) runs when the project tree shows work, not on an interval. */
   readonly projectRefreshInterval: number;
 
   /** How often to check for dev block updates */
