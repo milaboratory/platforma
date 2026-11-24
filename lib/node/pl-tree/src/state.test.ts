@@ -22,6 +22,7 @@ import {
   TestErrorResourceState2,
   TestStructuralResourceState1,
   TestValueResourceState1,
+  TestValueResourceState2,
 } from "./test_utils";
 
 const rid = createSignedResourceId;
@@ -868,4 +869,29 @@ test("dropping a root keeps a child that is another root, and a child shared wit
   expect(t.dropDeletedRoot(C)).toBe(true);
   expect(t.dumpState().map((r) => r.id)).not.toContain(S);
   expect(t.isValid).toBe(true);
+});
+
+test("resources of a type are listed whole, or among the ids a batch carried", () => {
+  const tree = new PlTreeState(TestDynamicRootId1, DefaultFinalResourceDataPredicate);
+  tree.updateFromResourceData([
+    { ...TestDynamicRootState1, fields: [dField("a", rid(1n)), dField("b", rid(2n))] },
+    { ...TestValueResourceState1, id: rid(1n), data: new TextEncoder().encode("one") },
+    { ...TestValueResourceState2, id: rid(2n), data: new TextEncoder().encode("two") },
+  ]);
+
+  expect(tree.resourcesOfType("TestValueResource1").map((r) => r.id)).toEqual([rid(1n)]);
+  expect(tree.resourcesOfType("TestValueResource").map((r) => r.id)).toEqual([rid(1n), rid(2n)]);
+
+  tree.updateFromResourceData([
+    {
+      ...TestDynamicRootState1,
+      fields: [dField("a", rid(1n)), dField("b", rid(2n)), dField("c", rid(3n))],
+    },
+    { ...TestValueResourceState1, id: rid(3n), data: new TextEncoder().encode("three") },
+  ]);
+  const batch = [TestDynamicRootId1, rid(3n)];
+  const listed = tree.resourcesOfType("TestValueResource1", batch);
+  expect(listed.map((r) => r.id)).toEqual([rid(3n)]);
+  expect(new TextDecoder().decode(listed[0]?.data)).toBe("three");
+  expect(tree.resourcesOfType("TestValueResource1", [rid(42n)])).toEqual([]);
 });

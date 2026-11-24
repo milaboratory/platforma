@@ -210,6 +210,11 @@ export function derivePollingInterval(opts: {
   return Math.max(floor, Math.min(MAX_POLLING_INTERVAL_MS, next));
 }
 
+type ResourceTypeSubscription = {
+  readonly typePrefix: string;
+  readonly listener: (resources: ExtendedResourceData[]) => void;
+};
+
 type ScheduledRefresh = {
   resolve: () => void;
   reject: (err: any) => void;
@@ -248,6 +253,8 @@ export class SynchronizedTreeState {
    * or became final. Lets a holder tell whether the tree has moved since it last persisted
    * it, without diffing state. Read through {@link changeGeneration}. */
   private changeGenerationCounter = 0;
+
+  private readonly resourceTypeListeners = new Set<ResourceTypeSubscription>();
 
   /** Whether a snapshot was actually applied. Read through
    * {@link wasRestoredFromSnapshot}. */
@@ -319,6 +326,26 @@ export class SynchronizedTreeState {
    * a periodic snapshot write skippable on an idle tree. */
   public get changeGeneration(): number {
     return this.changeGenerationCounter;
+  }
+
+  /** Calls the listener with the resources of the mirror whose type name starts with
+   * `typePrefix`: at once with those it already holds, then after every refresh with those the
+   * refresh added or changed, read back from the mirror so they are complete. A refresh may
+   * carry a resource that did not change, so the same resource can be reported more than once
+   * and the listener must tolerate repeats. Not a reader of
+   * the tree: subscribing neither starts nor keeps polling. Returns the unsubscribe function.
+   *
+   * Listener errors are logged and never reach the polling loop. */
+  public onResourcesOfType(
+    typePrefix: string,
+    listener: (resources: ExtendedResourceData[]) => void,
+  ): () => void {
+    const subscription = { typePrefix, listener };
+    this.resourceTypeListeners.add(subscription);
+    this.notifyResourcesOfType(subscription, this.state.resourcesOfType(typePrefix));
+    return () => {
+      this.resourceTypeListeners.delete(subscription);
+    };
   }
 
   /** True only if a snapshot was actually applied as this tree's initial state. A snapshot can
@@ -537,6 +564,14 @@ export class SynchronizedTreeState {
       txOps,
     );
     this.state.updateFromResourceData(data, { allowOrphanInputs: true, stat: stats });
+    if (this.resourceTypeListeners.size > 0) {
+      const updated = data.map((r) => r.id);
+      for (const subscription of this.resourceTypeListeners)
+        this.notifyResourcesOfType(
+          subscription,
+          this.state.resourcesOfType(subscription.typePrefix, updated),
+        );
+    }
 
     // Repeated until nothing more drops: a deleted root held by another deleted root is
     // refused (still referenced) until its holder has been dropped.
@@ -626,6 +661,20 @@ export class SynchronizedTreeState {
     // A root arriving brings a subtree the token would skip as unchanged, and one leaving
     // takes its subtree with it. Either way the token no longer describes what we hold.
     if (rootsChanged) this.discardDeltaToken("root set changed");
+  }
+
+  private notifyResourcesOfType(
+    subscription: ResourceTypeSubscription,
+    resources: ExtendedResourceData[],
+  ): void {
+    if (resources.length === 0) return;
+    try {
+      subscription.listener(resources);
+    } catch (e: unknown) {
+      this.logger?.warn(
+        new Error(`listener of ${subscription.typePrefix} resources failed`, { cause: e }),
+      );
+    }
   }
 
   /** If true this tree state is permanently terminaed. */
@@ -803,6 +852,7 @@ export class SynchronizedTreeState {
   public async terminate(): Promise<void> {
     this.keepRunning = false;
     this.terminated = true;
+    this.resourceTypeListeners.clear();
     this.abortController.abort();
 
     // Refreshes still queued would otherwise never settle: the loop takes them only at the top

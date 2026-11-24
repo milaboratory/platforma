@@ -848,6 +848,58 @@ test("a tree of shared roots survives a re-login: it rediscovers the roots under
   }
 }, 60_000);
 
+test("a resource type listener gets the resources already loaded, then new ones, repeats allowed", async () => {
+  await TestHelpers.withTempRoot(async (pl) => {
+    const valueType = { name: `TestTypedValue${randomUUID().slice(0, 8)}`, version: "1" };
+    const r1 = await pl.withWriteTx(
+      "CreatingRoot",
+      async (tx) => {
+        const root = tx.createStruct(TestStructuralResourceType1);
+        const ff = field(tx.clientRoot, "f1");
+        tx.createField(ff, "Dynamic");
+        tx.setField(ff, root);
+        const f = field(root, "existing");
+        tx.createField(f, "Input");
+        tx.setField(f, tx.createValue(valueType, "existing"));
+        await tx.commit();
+        return await root.globalId;
+      },
+      { sync: true },
+    );
+    const addValue = (name: string) =>
+      pl.withWriteTx(
+        "AddingValue",
+        async (tx) => {
+          const f = field(r1, name);
+          tx.createField(f, "Input");
+          tx.setField(f, tx.createValue(valueType, name));
+          await tx.commit();
+        },
+        { sync: true },
+      );
+
+    const treeState = await SynchronizedTreeState.init(pl, r1, {
+      stopPollingDelay: 10,
+      pollingInterval: 10,
+    });
+
+    const seen: string[] = [];
+    const unsubscribe = treeState.onResourcesOfType(valueType.name, (resources) => {
+      for (const r of resources) seen.push(Buffer.from(r.data ?? []).toString());
+    });
+    // replayed synchronously on subscribe
+    expect(seen).toEqual(["existing"]);
+
+    await addValue("added");
+    await treeState.refreshState();
+    expect(seen.slice(1)).toContain("added");
+    expect(new Set(seen)).toEqual(new Set(["existing", "added"]));
+
+    unsubscribe();
+    await treeState.terminate();
+  });
+});
+
 test("the poll hook hears every backend poll, the first load included, and nothing while idle", async () => {
   await TestHelpers.withTempRoot(async (pl) => {
     const r1 = await pl.withWriteTx(
