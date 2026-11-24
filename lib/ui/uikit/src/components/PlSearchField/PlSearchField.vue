@@ -29,7 +29,7 @@ const clear = () => {
 
 <template>
   <div ref="root" :class="$style.component" data-testid="pl-search-field">
-    <PlIcon24 name="search" data-testid="pl-search-field-icon" />
+    <PlIcon24 :class="$style.icon" name="search" data-testid="pl-search-field-icon" />
     <input
       ref="input"
       v-model="model"
@@ -57,7 +57,7 @@ const clear = () => {
   </div>
 </template>
 
-<style lang="scss" module>
+<style module>
 .component {
   --pl-search-field-border-bottom-color: var(--txt-01);
   --pl-search-field-bg: transparent;
@@ -72,35 +72,41 @@ const clear = () => {
   background-color: var(--pl-search-field-bg);
   padding: 0 0 0 0;
   border-bottom: 1px solid var(--pl-search-field-border-bottom-color);
+}
 
-  input {
-    margin-left: 8px;
-    width: 100%;
-    height: 20px;
-    border: none;
-    outline: none;
-    background-color: transparent;
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 20px;
-    caret-color: var(--pl-search-field-caret-color);
-  }
+.component:focus-within {
+  --pl-search-field-border-bottom-color: var(--txt-focus);
+  --pl-search-field-caret-color: var(--border-color-focus);
+  --pl-search-field-clear-display: block;
+}
 
-  &:focus-within {
-    --pl-search-field-border-bottom-color: var(--txt-focus);
-    --pl-search-field-caret-color: var(--border-color-focus);
-    --pl-search-field-clear-display: block;
-  }
+.component:hover {
+  --pl-search-field-clear-display: block;
+}
 
-  &:hover {
-    --pl-search-field-clear-display: block;
-  }
+.component input {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 8px;
+  height: 20px;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  caret-color: var(--pl-search-field-caret-color);
+}
 
-  .clear {
-    --icon-color: var(--ic-02);
-    cursor: pointer;
-    margin-left: auto;
-    display: var(--pl-search-field-clear-display);
-  }
+.component .icon {
+  flex-shrink: 0;
+}
+
+.component .clear {
+  --icon-color: var(--ic-02);
+  flex-shrink: 0;
+  cursor: pointer;
+  margin-left: auto;
+  display: var(--pl-search-field-clear-display);
 }
 </style>
