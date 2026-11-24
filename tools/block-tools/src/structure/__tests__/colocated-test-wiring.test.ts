@@ -4,7 +4,6 @@
 // in tsconfig) and a refresh of a test-less block is a fixpoint.
 
 import { describe, test, expect } from "vitest";
-import { parse as parseYaml } from "yaml";
 import { simulateInit, defaultTemplateProvider } from "../engine/testing";
 import { run as engineRun } from "../engine/runner";
 import { discoverRunContext } from "../engine/discovery-fs";
@@ -100,9 +99,9 @@ describe("co-located test wiring (real STRUCTURE)", () => {
     const workflow = JSON.parse(fs.read("workflow/package.json")) as Pkg;
     expect(workflow.scripts?.test).toBe("vitest run --passWithNoTests");
     // workflow tsconfig stays standalone — no node types added there
-    const wfTs = parseYaml(fs.read("workflow/tsconfig.json")) as { types?: unknown };
-    // (workflow tsconfig is JSON, but parseYaml reads JSON too; types:[] unchanged)
-    expect(wfTs.types).toEqual([]);
+    const wfTs = JSON.parse(fs.read("workflow/tsconfig.json")) as Tsconfig & { types?: unknown };
+    expect(wfTs.compilerOptions?.types).toEqual([]);
+    expect(wfTs.types).toBeUndefined();
   });
 
   test("a workflow Tengo test wires `pl-tengo test` without vitest", async () => {
