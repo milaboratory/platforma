@@ -1,17 +1,7 @@
-import { getQuickJS, type QuickJSRuntime } from "quickjs-emscripten";
+import { getQuickJS, shouldInterruptAfterDeadline } from "quickjs-emscripten";
 
-/** Lazily initialized QuickJS runtime shared across evaluations. */
-let sharedRuntime: QuickJSRuntime | undefined;
-
-async function getRuntime(): Promise<QuickJSRuntime> {
-  if (!sharedRuntime) {
-    const quickjs = await getQuickJS();
-    sharedRuntime = quickjs.newRuntime();
-    sharedRuntime.setMemoryLimit(1024 * 1024 * 16); // 16 MB
-    sharedRuntime.setMaxStackSize(1024 * 320);
-  }
-  return sharedRuntime;
-}
+const MEMORY_LIMIT_BYTES = 1024 * 1024 * 16;
+const MAX_STACK_SIZE_BYTES = 1024 * 320;
 
 /**
  * Evaluate a JS expression in a QuickJS sandbox.
@@ -23,11 +13,12 @@ export async function safeEval(
   context: Record<string, unknown>,
   timeout: number,
 ): Promise<unknown> {
-  const runtime = await getRuntime();
-
-  // Set interrupt handler for timeout
-  const deadline = Date.now() + timeout;
-  runtime.setInterruptHandler(() => Date.now() > deadline);
+  const quickjs = await getQuickJS();
+  const runtime = quickjs.newRuntime({
+    interruptHandler: shouldInterruptAfterDeadline(Date.now() + timeout),
+    memoryLimitBytes: MEMORY_LIMIT_BYTES,
+    maxStackSizeBytes: MAX_STACK_SIZE_BYTES,
+  });
 
   const vm = runtime.newContext();
   try {
@@ -56,7 +47,7 @@ ${Object.keys(context)
     result.value.dispose();
     return JSON.parse(json);
   } finally {
-    runtime.setInterruptHandler(() => false);
     vm.dispose();
+    runtime.dispose();
   }
 }

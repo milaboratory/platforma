@@ -9,7 +9,10 @@ export function registerConnectionTools(server: McpServer, ctx: ToolContext): vo
     { description: "Get current server connection status" },
     async () => {
       if (!ctx.callbacks.getConnectionStatus) {
-        return textResult({ connected: !!ctx.getMl() });
+        return errorResult(
+          "Connection status is not available.",
+          "The desktop app integration may not support this feature.",
+        );
       }
       return textResult(await ctx.callbacks.getConnectionStatus());
     },
