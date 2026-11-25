@@ -70,21 +70,26 @@ export async function expandRemoteFolders(
 ): Promise<ExpandResult> {
   const limited = limit ?? createLimiter(concurrency);
   const progress: ExpandProgress = { foldersListed: 0, filesFound: 0 };
+  // The first failed listing fails the whole walk, so it also stops the other branches.
+  const failure = new AbortController();
+  const stop = signal ? AbortSignal.any([signal, failure.signal]) : failure.signal;
 
   const walk = async (dir: string, found: { path: string; handle: ImportFileHandle }[]) => {
-    signal?.throwIfAborted();
+    stop.throwIfAborted();
     let listing: ListFilesResult;
     try {
-      // A call queued behind other walks may start after this walk was aborted.
+      // A call queued behind other walks may start after this walk was stopped.
       listing = await limited(() => {
-        signal?.throwIfAborted();
+        stop.throwIfAborted();
         return listFiles(storage, dir);
       });
     } catch (err) {
-      signal?.throwIfAborted();
-      throw new FolderListError(dir, err);
+      stop.throwIfAborted();
+      const error = new FolderListError(dir, err);
+      failure.abort(error);
+      throw error;
     }
-    signal?.throwIfAborted();
+    stop.throwIfAborted();
     const { entries } = listing;
 
     const subfolders: string[] = [];

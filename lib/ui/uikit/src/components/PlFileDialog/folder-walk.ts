@@ -136,10 +136,17 @@ export async function mapWithConcurrency<T, R>(
   // Every index below items.length gets written, so the array ends up dense.
   const results: R[] = [];
   let next = 0;
+  // After a failure the result is a rejection, so workers stop taking new items.
+  let failed = false;
   const worker = async () => {
-    while (next < items.length) {
+    while (!failed && next < items.length) {
       const i = next++;
-      results[i] = await fn(items[i]);
+      try {
+        results[i] = await fn(items[i]);
+      } catch (err) {
+        failed = true;
+        throw err;
+      }
     }
   };
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));

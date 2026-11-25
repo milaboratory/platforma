@@ -140,6 +140,20 @@ describe("mapWithConcurrency", () => {
     expect(peak).toBe(3);
   });
 
+  test("stops taking items after a failure", async () => {
+    const items = Array.from({ length: 20 }, (_, i) => i);
+    let calls = 0;
+    const run = mapWithConcurrency(items, 2, async (n) => {
+      calls++;
+      await new Promise((r) => setTimeout(r, 1));
+      if (n === 0) throw new Error("denied");
+      return n;
+    });
+    await expect(run).rejects.toThrow("denied");
+    await new Promise((r) => setTimeout(r, 30));
+    expect(calls).toBeLessThan(5);
+  });
+
   test("isJunkName skips system entries of macOS, Windows and Linux, ignoring case", () => {
     for (const name of [
       ".DS_Store",

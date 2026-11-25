@@ -153,6 +153,23 @@ describe("expandRemoteFolders", () => {
     await expect(run).rejects.toMatchObject({ path: "data/plate-1/A02" });
   });
 
+  test("a listing error stops the other branches of the walk", async () => {
+    const files = Array.from({ length: 20 }, (_, i) => `p/F${i}/forward/IGH.ab1`);
+    const storageFake = fakeStorage(files);
+    const failing: ListFiles = (storageHandle, dir) =>
+      dir === "p/F0"
+        ? Promise.reject(new Error("too big"))
+        : storageFake.listFiles(storageHandle, dir);
+    const run = expandRemoteFolders(failing, storage, ["p"], {
+      extensions: undefined,
+      concurrency: 1,
+    });
+    await expect(run).rejects.toMatchObject({ path: "p/F0" });
+    await new Promise((r) => setTimeout(r, 30));
+    // "p" itself, maybe one call that took the freed slot, never the remaining folders.
+    expect(storageFake.calls.length).toBeLessThan(5);
+  });
+
   test("an aborted walk sends no calls still queued behind other walks", async () => {
     const storageFake = fakeStorage(plates);
     const limit = createLimiter(1);
