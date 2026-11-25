@@ -1,4 +1,4 @@
 ---
 ---
 
-Test-only change: skip two tests that fail on the k8s backend.
+Test-only change: skip the mnz dry-run test, which times out on the k8s backend.
