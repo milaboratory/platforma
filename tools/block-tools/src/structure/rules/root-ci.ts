@@ -29,13 +29,13 @@ function humanizeShortName(shortName: string): string {
     .join(" ");
 }
 
-/** Appended after `require-package-path-bump` when `.structure` has
- *  `ownNpmRegistry: true`: the shared CI then installs and publishes
- *  `@platforma-open` through npm.platforma.bio. Empty otherwise, so a block
- *  without the setting gets the same file byte for byte. */
+/** Appended after `require-package-path-bump` unless `.structure` has
+ *  `ownNpmRegistry: false`: the shared CI then installs and publishes
+ *  `@platforma-open` through npm.platforma.bio. Empty for an opted-out block,
+ *  which keeps publishing to npmjs. */
 const OWN_NPM_REGISTRY_INPUT = `
 
-      # .structure "ownNpmRegistry": publish @platforma-open to npm.platforma.bio.
+      # Publish @platforma-open to npm.platforma.bio (opt out: .structure "ownNpmRegistry": false).
       npm-own-registry-scopes: '@platforma-open'`;
 
 export function rootCiRules(): void {
