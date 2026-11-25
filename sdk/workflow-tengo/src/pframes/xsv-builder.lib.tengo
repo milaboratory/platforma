@@ -26,6 +26,9 @@ xsvFileBuilder := func(xsvType) {
 
     cpu := undefined
     mem := undefined
+    memFloor := undefined
+    memSlope := undefined
+    memIntercept := undefined
     queue := undefined
     inputCache := undefined
 
@@ -476,6 +479,40 @@ xsvFileBuilder := func(xsvType) {
         },
 
         /**
+         * Sets the floor of the auto-sized RAM request. See pt.workflow().memFloor().
+         *
+         * @param amount: int - bytes, greater than 0. Another value fails the import.
+         * @return builder
+         */
+        memFloor: func(amount) {
+            memFloor = amount
+            return self
+        },
+
+        /**
+         * Sets the slope of the auto-sized RAM request. See pt.workflow().memSlope().
+         *
+         * @param slope: int - GiB of RAM per GiB of input, at least 0. A fraction or a
+         *                     negative value fails the import.
+         * @return builder
+         */
+        memSlope: func(slope) {
+            memSlope = slope
+            return self
+        },
+
+        /**
+         * Sets the intercept of the auto-sized RAM request. See pt.workflow().memIntercept().
+         *
+         * @param amount: int - bytes, at least 4 GiB. Another value fails the import.
+         * @return builder
+         */
+        memIntercept: func(amount) {
+            memIntercept = amount
+            return self
+        },
+
+        /**
          * Adds one or more columns to the XSV table being built.
          *
          * This method is highly flexible and accepts columns in several formats:
@@ -712,6 +749,15 @@ xsvFileBuilder := func(xsvType) {
             if !is_undefined(mem) {
                 ops.mem = mem
             }
+            if !is_undefined(memFloor) {
+                ops.memFloor = memFloor
+            }
+            if !is_undefined(memSlope) {
+                ops.memSlope = memSlope
+            }
+            if !is_undefined(memIntercept) {
+                ops.memIntercept = memIntercept
+            }
             if !is_undefined(queue) {
                 ops.queue = queue
             }
@@ -763,6 +809,15 @@ xsvFileBuilder := func(xsvType) {
             }
             if !is_undefined(mem) {
                 ops.mem = mem
+            }
+            if !is_undefined(memFloor) {
+                ops.memFloor = memFloor
+            }
+            if !is_undefined(memSlope) {
+                ops.memSlope = memSlope
+            }
+            if !is_undefined(memIntercept) {
+                ops.memIntercept = memIntercept
             }
             if !is_undefined(queue) {
                 ops.queue = queue

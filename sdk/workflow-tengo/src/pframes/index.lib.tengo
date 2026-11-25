@@ -465,6 +465,11 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                        settings: object,     // Xsv conversion specification
  *                        cpu: number,          // Override CPU for this output
  *                        mem: number | string, // Override MEM for this output
+ *                        memFloor, memSlope, memIntercept: int, // Floor, slope and intercept of
+ *                                              // the RAM formula for this output's import:
+ *                                              // max(intercept + slope * input size, floor).
+ *                                              // They replace the values set in the options
+ *                                              // for all outputs. `mem` wins. Same bounds
  *                        queue: string         // Override queue for this output
  *                      }
  *                    | {
@@ -572,6 +577,14 @@ __primitiveValueTypes := { "Int": true, "Long": true, "Float": true, "Double": t
  *                                              // as pure resource
  *                      cpu: number,            // Global CPU setting for XSV imports
  *                      mem: number | string,   // Global MEM setting for XSV imports
+ *                      memFloor, memSlope, memIntercept: int, // Floor, slope and intercept of
+ *                                              // the RAM formula, for every Xsv output of
+ *                                              // this call: max(intercept + slope * input
+ *                                              // size, floor). Defaults 4 GiB, 10, 4 GiB.
+ *                                              // A fixed `mem` wins. Floor: bytes, greater
+ *                                              // than 0. Slope: GiB of RAM per GiB of input,
+ *                                              // at least 0. Intercept: bytes, at least
+ *                                              // 4 GiB. Other values fail the import
  *                      queue: string           // Global queue setting for XSV imports
  *                    }
  *
@@ -644,6 +657,15 @@ processColumn := func(input, bodyTpl, outputs, ...opts) {
 	}
 	if !is_undefined(opts.mem) {
 		processTemplateParams.mem = opts.mem
+	}
+	if !is_undefined(opts.memFloor) {
+		processTemplateParams.memFloor = opts.memFloor
+	}
+	if !is_undefined(opts.memSlope) {
+		processTemplateParams.memSlope = opts.memSlope
+	}
+	if !is_undefined(opts.memIntercept) {
+		processTemplateParams.memIntercept = opts.memIntercept
 	}
 	if !is_undefined(opts.queue) {
 		processTemplateParams.queue = opts.queue

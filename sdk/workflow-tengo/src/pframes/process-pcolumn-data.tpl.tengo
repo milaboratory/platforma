@@ -447,6 +447,21 @@ self.body(func(inputs) {
 					} else if !is_undefined(params.mem) {
 						importOps.mem = params.mem
 					}
+					if !is_undefined(output.memFloor) {
+						importOps.memFloor = output.memFloor
+					} else if !is_undefined(params.memFloor) {
+						importOps.memFloor = params.memFloor
+					}
+					if !is_undefined(output.memSlope) {
+						importOps.memSlope = output.memSlope
+					} else if !is_undefined(params.memSlope) {
+						importOps.memSlope = params.memSlope
+					}
+					if !is_undefined(output.memIntercept) {
+						importOps.memIntercept = output.memIntercept
+					} else if !is_undefined(params.memIntercept) {
+						importOps.memIntercept = params.memIntercept
+					}
 
 					if !is_undefined(output.queue) {
 						importOps.queue = output.queue
