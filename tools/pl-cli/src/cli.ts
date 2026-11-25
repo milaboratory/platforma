@@ -10,8 +10,6 @@ import adminDeleteUserCommand from "./cmd/admin/delete-user";
 import adminInstanceStatsCommand from "./cmd/admin/instance-stats";
 import maintenanceListResourcesCommand from "./cmd/maintenance/list-resources";
 import maintenanceSetResourceErrorCommand from "./cmd/maintenance/set-resource-error";
-import maintenanceControllerListCommand from "./cmd/maintenance/controller/list";
-import maintenanceControllerRerunFixupsCommand from "./cmd/maintenance/controller/rerun-fixups";
 
 export function buildProgram(): Command {
   const program = new Command();
@@ -39,12 +37,6 @@ export function buildProgram(): Command {
   );
   maintenance.addCommand(maintenanceListResourcesCommand());
   maintenance.addCommand(maintenanceSetResourceErrorCommand());
-  const controller = new Command("controller").description(
-    "Inspect registered controllers and their resources fixups",
-  );
-  controller.addCommand(maintenanceControllerListCommand());
-  controller.addCommand(maintenanceControllerRerunFixupsCommand());
-  maintenance.addCommand(controller);
   program.addCommand(maintenance);
 
   return program;
