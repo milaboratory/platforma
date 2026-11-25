@@ -84,8 +84,9 @@ getColumnSpec := func(axesSpec, col) {
  *                 mem: number | string - (optional) amount of RAM in bytes or string with size suffix
  *                 memFloor: int - (optional) floor of the auto-sized RAM request, in bytes.
  *                                 Greater than 0.
- *                 memSlope: int - (optional) slope of the auto-sized RAM request, in GiB of RAM
- *                                 per GiB of input. At least 0; a fraction is rejected.
+ *                 memSlope: number - (optional) slope of the auto-sized RAM request, in GiB of RAM
+ *                                 per GiB of input, e.g. 0.03. At least 0; three decimals,
+ *                                 rounded up.
  *                 memIntercept: int - (optional) intercept of the auto-sized RAM request, in bytes.
  *                                     At least 4 GiB.
  *                                     A value outside these bounds fails the import.
