@@ -61,19 +61,20 @@ export function matchesExtensions(name: string, extensions: string[] | undefined
 }
 
 /**
- * `readEntries` returns at most 100 entries per call. One call looks right on a
- * 96-well plate and silently loses most of a 384-well plate, so read until empty.
+ * `readEntries` returns at most 100 entries per call, and an empty batch at the end.
+ * One call silently loses the rest of a bigger folder, so read until empty.
  */
 async function readAllEntries(dir: DirectoryEntryLike): Promise<EntryLike[]> {
   const reader = dir.createReader();
+  const readBatch = () =>
+    new Promise<EntryLike[]>((resolve, reject) => reader.readEntries(resolve, reject));
   const all: EntryLike[] = [];
-  for (;;) {
-    const batch = await new Promise<EntryLike[]>((resolve, reject) =>
-      reader.readEntries(resolve, reject),
-    );
-    if (batch.length === 0) return all;
+  let batch = await readBatch();
+  while (batch.length > 0) {
     all.push(...batch);
+    batch = await readBatch();
   }
+  return all;
 }
 
 function readFile(entry: FileEntryLike): Promise<File> {

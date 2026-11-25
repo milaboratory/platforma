@@ -39,18 +39,18 @@ function dirEntry(name: string, children: EntryLike[]): DirectoryEntryLike {
   };
 }
 
-function plate(name: string, wells: number): DirectoryEntryLike {
+function folderOf(name: string, count: number): DirectoryEntryLike {
   return dirEntry(
     name,
-    Array.from({ length: wells }, (_, i) => fileEntry(`W${String(i + 1).padStart(3, "0")}.ab1`)),
+    Array.from({ length: count }, (_, i) => fileEntry(`W${String(i + 1).padStart(3, "0")}.ab1`)),
   );
 }
 
 const names = (files: File[]) => files.map((f) => f.name);
 
 describe("collectDroppedFiles", () => {
-  test("reads a 384-well folder past the 100-entry batch limit", async () => {
-    const { files } = await collectDroppedFiles([plate("plate1", 384)], {
+  test("reads a folder past the 100-entry batch limit", async () => {
+    const { files } = await collectDroppedFiles([folderOf("plate1", 384)], {
       extensions: undefined,
       allowFolders: true,
     });
@@ -60,7 +60,7 @@ describe("collectDroppedFiles", () => {
   test("walks nested folders and keeps top-level files", async () => {
     const drop = [
       fileEntry("lone.ab1"),
-      dirEntry("plates", [plate("plate1", 2), dirEntry("plate2", [plate("sub", 1)])]),
+      dirEntry("plates", [folderOf("plate1", 2), dirEntry("plate2", [folderOf("sub", 1)])]),
     ];
     const { files } = await collectDroppedFiles(drop, {
       extensions: undefined,
@@ -96,7 +96,7 @@ describe("collectDroppedFiles", () => {
   });
 
   test("skips folders when folders are not allowed", async () => {
-    const drop = [fileEntry("A01.ab1"), plate("plate1", 3)];
+    const drop = [fileEntry("A01.ab1"), folderOf("plate1", 3)];
     const result = await collectDroppedFiles(drop, { extensions: undefined, allowFolders: false });
     expect(names(result.files)).toEqual(["A01.ab1"]);
     expect(result.skippedFolders).toBe(1);

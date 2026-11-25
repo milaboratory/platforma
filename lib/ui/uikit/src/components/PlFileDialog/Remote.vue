@@ -55,7 +55,7 @@ const resetData = () => {
 const extensions = computed(() => normalizeExtensions(props.extensions));
 
 /** Folders can be selected, and are imported as the files below them. */
-const foldersEnabled = computed(() => !!props.multi && !!props.allowFolders);
+const foldersEnabled = computed(() => props.multi === true && props.allowFolders === true);
 
 const visibleItems = useVisibleItems(data);
 
@@ -303,12 +303,12 @@ const importing = shallowRef<AbortController>();
 const isReady = computed(
   () =>
     selectedFiles.value.length + selectedFolders.value.length > 0 &&
-    !!data.storageEntry?.handle &&
+    data.storageEntry?.handle !== undefined &&
     !folderError.value &&
     !importing.value,
 );
 
-const isImporting = computed(() => !!importing.value);
+const isImporting = computed(() => importing.value !== undefined);
 
 /** Waits until none of `paths` is still being counted, or the signal aborts. */
 const waitForFolderCounts = async (paths: string[], signal: AbortSignal) => {
@@ -316,14 +316,19 @@ const waitForFolderCounts = async (paths: string[], signal: AbortSignal) => {
     signal.addEventListener("abort", () => reject(signal.reason), { once: true }),
   );
   aborted.catch(() => {});
-  for (;;) {
+  const pendingCounts = () => {
     syncFolderCounts();
-    const pending = paths.flatMap((path) => {
+    return paths.flatMap((path) => {
       const count = folderCounts.value.get(path);
       return count?.state === "counting" ? [count.done] : [];
     });
-    if (pending.length === 0) return;
+  };
+  // A finished count can be replaced by a new one (deselected and selected again), so
+  // check again after each wait.
+  let pending = pendingCounts();
+  while (pending.length > 0) {
     await Promise.race([Promise.all(pending), aborted]);
+    pending = pendingCounts();
   }
 };
 

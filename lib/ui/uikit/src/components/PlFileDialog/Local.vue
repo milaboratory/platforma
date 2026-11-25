@@ -18,9 +18,9 @@ const props = defineProps<{
   extensions?: string[];
 }>();
 
-const foldersEnabled = computed(() => !!props.multi && !!props.allowFolders);
+const foldersEnabled = computed(() => props.multi === true && props.allowFolders === true);
 
-/** Each handle is a round trip to the main process; a 384-well plate is 384 of them. */
+/** Each handle is a round trip to the main process, one per file. */
 const HANDLE_CONCURRENCY = 16;
 
 const data = reactive({

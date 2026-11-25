@@ -92,8 +92,8 @@ describe("expandRemoteFolders", () => {
   });
 
   test("reports progress and keeps calls within the concurrency limit", async () => {
-    const wells = Array.from({ length: 40 }, (_, i) => `p/W${i}/forward/IGH.ab1`);
-    const storageFake = fakeStorage(wells);
+    const files = Array.from({ length: 40 }, (_, i) => `p/W${i}/forward/IGH.ab1`);
+    const storageFake = fakeStorage(files);
     const seen: number[] = [];
     const result = await expandRemoteFolders(storageFake.listFiles, storage, ["p"], {
       extensions: undefined,
@@ -106,8 +106,8 @@ describe("expandRemoteFolders", () => {
   });
 
   test("walks sharing one limiter stay within it together", async () => {
-    const wells = Array.from({ length: 20 }, (_, i) => `p${i % 2}/W${i}/forward/IGH.ab1`);
-    const storageFake = fakeStorage(wells);
+    const files = Array.from({ length: 20 }, (_, i) => `p${i % 2}/W${i}/forward/IGH.ab1`);
+    const storageFake = fakeStorage(files);
     const limit = createLimiter(3);
     const [a, b] = await Promise.all(
       ["p0", "p1"].map((folder) =>
