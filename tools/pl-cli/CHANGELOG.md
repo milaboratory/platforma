@@ -1,5 +1,11 @@
 # @platforma-sdk/pl-cli
 
+## 0.13.0
+
+### Minor Changes
+
+- 31e5ef7: The `pl-cli maintenance controller` commands are removed, because newer backends keep the resources fixup progress in a different place and `rerun-fixups` no longer had any effect.
+
 ## 0.12.17
 
 ### Patch Changes
