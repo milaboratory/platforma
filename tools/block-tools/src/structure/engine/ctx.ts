@@ -92,6 +92,6 @@ export function createRunContext(input: CreateRunContextInput): RunContext {
     blockVars: input.blockVars,
     version: input.version ?? 0,
     dryRun: input.dryRun ?? false,
-    ownNpmRegistry: input.ownNpmRegistry ?? false,
+    ownNpmRegistry: input.ownNpmRegistry ?? true,
   };
 }
