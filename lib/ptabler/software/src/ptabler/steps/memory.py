@@ -18,17 +18,34 @@ def duckdb_memory_limit_bytes(conn: duckdb.DuckDBPyConnection) -> int | None:
     return None if row is None else row[0]
 
 
-def resident_bytes() -> int | None:
+def status_bytes() -> dict[str, int]:
+    """Size fields of /proc/self/status in bytes, keyed by name without the colon."""
     try:
         with open(PROC_STATUS) as f:
             lines = f.read().splitlines()
     except OSError:
-        return None
+        return {}
+    fields = {}
     for line in lines:
         parts = line.split()
-        if len(parts) >= 2 and parts[0] == "VmRSS:" and parts[1].isdigit():
-            return int(parts[1]) * 1024
-    return None
+        if len(parts) >= 2 and parts[0].endswith(":") and parts[1].isdigit():
+            fields[parts[0][:-1]] = int(parts[1]) * 1024
+    return fields
+
+
+def resident_from(fields: dict[str, int]) -> int | None:
+    """Resident memory the kernel cannot reclaim: RssAnon + RssShmem, or VmRSS where those are absent.
+
+    VmRSS also counts RssFile, the page-cache pages of mapped files, which grows with
+    the input file and is reclaimable.
+    """
+    if "RssAnon" in fields and "RssShmem" in fields:
+        return fields["RssAnon"] + fields["RssShmem"]
+    return fields.get("VmRSS")
+
+
+def resident_bytes() -> int | None:
+    return resident_from(status_bytes())
 
 
 def tune_duckdb_for_sort(conn: duckdb.DuckDBPyConnection) -> list[str]:
@@ -65,7 +82,8 @@ def set_duckdb_memory_limit(conn: duckdb.DuckDBPyConnection) -> str | None:
         default = duckdb_memory_limit_bytes(conn)
     except duckdb.Error as error:
         return f"DuckDB memory limit unchanged: {error}"
-    resident = resident_bytes()
+    fields = status_bytes()
+    resident = resident_from(fields)
     if default is None or resident is None:
         return None
     limit = int(default / DUCKDB_DEFAULT_SHARE)
@@ -73,4 +91,5 @@ def set_duckdb_memory_limit(conn: duckdb.DuckDBPyConnection) -> str | None:
     if budget >= default:
         return None
     conn.execute(f"SET memory_limit = '{budget}B';")
-    return f"DuckDB memory limit {budget} bytes (default {default} bytes, resident {resident} bytes)"
+    components = ", ".join(f"{name} {fields[name]}" for name in ("RssAnon", "RssShmem", "RssFile", "VmRSS") if name in fields)
+    return f"DuckDB memory limit {budget} bytes (default {default} bytes, resident {resident} bytes; {components})"

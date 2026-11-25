@@ -1,3 +1,4 @@
+import mmap
 import os
 import sys
 import tempfile
@@ -120,6 +121,59 @@ class MemoryLimitTests(unittest.TestCase):
         assert default is not None
         self.assertLessEqual(default, int(detected * 0.8))
         self.assertGreater(default, int(detected * 0.8 * 0.9))
+
+    def test_resident_size_counts_anonymous_and_shared_memory(self):
+        with open(self.status, "w") as f:
+            f.write(
+                "Name:\tpython\nVmRSS:\t 7340032 kB\nRssAnon:\t 1048576 kB\n"
+                "RssFile:\t 6029312 kB\nRssShmem:\t 262144 kB\n"
+            )
+        self.assertEqual(resident_bytes(), GIB + GIB // 4)
+
+    def test_log_names_the_resident_components(self):
+        with open(self.status, "w") as f:
+            f.write("VmRSS:\t 7340032 kB\nRssAnon:\t 1048576 kB\nRssFile:\t 6029312 kB\nRssShmem:\t 262144 kB\n")
+        self.conn.execute("SET memory_limit = '4GiB';")
+        log = set_duckdb_memory_limit(self.conn)
+        assert log is not None
+        self.assertIn(f"limit {int((5 * GIB - GIB - GIB // 4) * 0.7)} bytes", log)
+        self.assertIn(f"resident {GIB + GIB // 4} bytes;", log)
+        self.assertIn(f"RssFile {6029312 * 1024}", log)
+
+    @unittest.skipUnless(sys.platform.startswith("linux"), "RSS components are read from /proc on Linux")
+    def test_mapped_file_pages_do_not_shrink_the_limit(self):
+        self.patch.stop()
+        self.patch = mock.patch.object(memory, "PROC_STATUS", memory.PROC_STATUS)
+        self.patch.start()
+        size = 512 * 1024 * 1024
+        page = mmap.PAGESIZE
+
+        def budget() -> int:
+            self.conn.execute("SET memory_limit = '64GiB';")
+            log = set_duckdb_memory_limit(self.conn)
+            assert log is not None
+            return int(log.split("limit ")[1].split(" bytes")[0])
+
+        def rss_file() -> int:
+            with open("/proc/self/status") as f:
+                for line in f:
+                    if line.startswith("RssFile:"):
+                        return int(line.split()[1]) * 1024
+            return 0
+
+        path = os.path.join(self.dir.name, "input.bin")
+        with open(path, "wb") as f:
+            chunk = b"\1" * (16 * 1024 * 1024)
+            for _ in range(size // len(chunk)):
+                f.write(chunk)
+        with open(path, "rb") as f, mmap.mmap(f.fileno(), size, access=mmap.ACCESS_READ) as mapped:
+            before_budget, before_file = budget(), rss_file()
+            touched = sum(mapped[offset] for offset in range(0, size, page))
+            after_budget, after_file = budget(), rss_file()
+        self.assertEqual(touched, size // page)
+        if after_file - before_file < size // 2:
+            self.skipTest("mapped pages are not counted as RssFile here (e.g. tmpfs)")
+        self.assertLess(before_budget - after_budget, size // 10)
 
     def test_reads_the_setting_in_bytes(self):
         self.conn.execute("SET memory_limit = '512MiB';")
