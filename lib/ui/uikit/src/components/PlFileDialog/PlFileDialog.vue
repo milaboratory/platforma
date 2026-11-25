@@ -38,6 +38,16 @@ const props = withDefaults(
      */
     multi?: boolean;
     /**
+     * Lets the user import whole folders, together with `multi`: dropped on the
+     * "My Computer" tab, or selected on the "Remote" tab. A folder becomes the files below
+     * it, matching `extensions`; hidden and system entries are skipped.
+     *
+     * Files keep their full paths, so files with the same name from different folders
+     * arrive side by side. Turn it on only where the block can tell them apart.
+     * Default: `false`.
+     */
+    allowFolders?: boolean;
+    /**
      * The custom title of the dialog.
      */
     title?: string;

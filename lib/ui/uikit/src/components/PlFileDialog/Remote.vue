@@ -32,6 +32,7 @@ const props = withDefaults(
     modelValue: boolean;
     extensions?: string[]; // with dot, like ['.fastq.gz', '.fastq']
     multi?: boolean;
+    allowFolders?: boolean;
     title?: string;
     autoSelectStorage?: boolean;
     submit: () => void;
@@ -52,6 +53,9 @@ const resetData = () => {
 };
 
 const extensions = computed(() => normalizeExtensions(props.extensions));
+
+/** Folders can be selected, and are imported as the files below them. */
+const foldersEnabled = computed(() => !!props.multi && !!props.allowFolders);
 
 const visibleItems = useVisibleItems(data);
 
@@ -86,10 +90,10 @@ const query = (storageHandle: StorageHandle, dirPath: string) => {
           path: item.fullPath,
           name: item.name,
           isDir: item.type === "dir",
-          // A folder is imported as the files below it, so only where several files fit.
+          // A folder is imported as the files below it, so only where the block allows it.
           canBeSelected:
             item.type === "dir"
-              ? !!props.multi
+              ? foldersEnabled.value
               : !extensions.value || extensions.value.some((ext) => item.fullPath.endsWith(ext)),
           handle: item.type === "file" ? item.handle : undefined,
           selected: false,
@@ -626,7 +630,7 @@ const lsContainerRef = ref<HTMLElement | undefined>();
         <template v-for="file in visibleItems" :key="file.id">
           <!-- Several files fit: the row selects the folder, its name and chevron open it. -->
           <div
-            v-if="file.isDir && multi"
+            v-if="file.isDir && foldersEnabled"
             :class="{ [style.canBeSelected]: true, [style.selected]: file.selected }"
             data-testid="pl-file-dialog-dir"
             @click.stop="(ev) => clickFolder(ev, file)"

@@ -14,8 +14,11 @@ import { collectDroppedFiles, mapWithConcurrency, type EntryLike } from "./folde
 const props = defineProps<{
   importFiles: (value: ImportedFiles) => void;
   multi?: boolean;
+  allowFolders?: boolean;
   extensions?: string[];
 }>();
+
+const foldersEnabled = computed(() => !!props.multi && !!props.allowFolders);
 
 /** Each handle is a round trip to the main process; a 384-well plate is 384 of them. */
 const HANDLE_CONCURRENCY = 16;
@@ -25,11 +28,12 @@ const data = reactive({
   collecting: false,
 });
 
-const label = computed(() =>
-  props.multi
-    ? "Drag & Drop files or folders here or click to add"
-    : "Drag & Drop file here or click to add",
-);
+const label = computed(() => {
+  if (foldersEnabled.value) return "Drag & Drop files or folders here or click to add";
+  return props.multi
+    ? "Drag & Drop files here or click to add"
+    : "Drag & Drop file here or click to add";
+});
 
 const toHandles = async (files: File[]): Promise<ImportFileHandle[] | undefined> => {
   const fileToImportHandle = getRawPlatformaInstance()?.lsDriver?.fileToImportHandle;
@@ -41,7 +45,8 @@ const toHandles = async (files: File[]): Promise<ImportFileHandle[] | undefined>
 };
 
 const emptyDropMessage = (skippedFolders: number) => {
-  if (skippedFolders > 0) return "Folders cannot be imported here, drop a file";
+  if (skippedFolders > 0)
+    return `Folders cannot be imported here, drop ${props.multi ? "files" : "a file"}`;
   return props.extensions
     ? `No files with supported formats found (${props.extensions.join(", ")})`
     : "No files found";
@@ -58,7 +63,7 @@ const onDrop = async (ev: DragEvent) => {
   try {
     const { files, skippedFolders } = await collectDroppedFiles(entries, {
       extensions: normalizeExtensions(props.extensions),
-      allowFolders: !!props.multi,
+      allowFolders: foldersEnabled.value,
     });
     if (files.length === 0) {
       data.error = emptyDropMessage(skippedFolders);
