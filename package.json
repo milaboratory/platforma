@@ -8,7 +8,7 @@
     "build:dev-no-software": "cross-env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=none pnpm build",
     "build:dev-binary-existing": "cross-env PL_BUILD_CHANNEL=dev PL_BUILD_USE_PUBLISHED=true pnpm build",
     "build:release": "cross-env PL_BUILD_CHANNEL=release PL_BUILD_VARIANT=all PL_BUILD_LOCATION=remote pnpm build",
-    "test": "pnpm test:parallel --concurrency 1",
+    "test": "turbo run test --concurrency 1 --summarize",
     "test:parallel": "turbo run test --summarize",
     "test:no-cache": "pnpm test --force",
     "test:local": "cross-env PL_BUILD_CHANNEL=dev PL_BUILD_VARIANT=binary PL_BUILD_LOCATION=local pnpm test",
