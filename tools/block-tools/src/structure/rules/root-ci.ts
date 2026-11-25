@@ -29,6 +29,15 @@ function humanizeShortName(shortName: string): string {
     .join(" ");
 }
 
+/** Appended after `require-package-path-bump` unless `.structure` has
+ *  `ownNpmRegistry: false`: the shared CI then installs and publishes
+ *  `@platforma-open` through npm.platforma.bio. Empty for an opted-out block,
+ *  which keeps publishing to npmjs. */
+const OWN_NPM_REGISTRY_INPUT = `
+
+      # Publish @platforma-open to npm.platforma.bio (opt out: .structure "ownNpmRegistry": false).
+      npm-own-registry-scopes: '@platforma-open'`;
+
 export function rootCiRules(): void {
   scope("root", () => {
     when(
@@ -42,6 +51,7 @@ export function rootCiRules(): void {
               appName: `Block: ${humanizeShortName(shortName)}`,
               appNameSlug: `block-${shortName}`,
               nodeVersion: NODE_VERSION,
+              ownNpmRegistry: ctx.ownNpmRegistry ? OWN_NPM_REGISTRY_INPUT : "",
             };
           }),
         );

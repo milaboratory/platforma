@@ -149,7 +149,9 @@ export function computableFromRF(
       };
 
       return recordModelRenderSync(crashRecorder, renderInfo, () => {
-        rCtx.evaluateBundle(code.content);
+        // configKey already identifies this block pack's config, and exists to invalidate
+        // rendered outputs when the pack changes, so it keys the compiled bundle too.
+        rCtx.evaluateBundleCached(configKey, code.content);
         const result = rCtx.runCallback(fh.handle);
 
         rCtx.resetComputableCtx();

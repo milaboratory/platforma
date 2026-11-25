@@ -6,6 +6,39 @@ info:
     title: Platform API
     version: 1.0.0
 paths:
+    /v1/auth/delete-user:
+        post:
+            tags:
+                - Platform
+            description: |-
+                DeleteUser removes a user account from the instance: the user record, every login-index
+                 entry that resolves to it, every grant it holds, and its root resource with everything
+                 still attached under it. Admin-only and irreversible - re-attach anything worth keeping
+                 to another user's root before calling (`pl-cli admin delete-user` does both steps).
+
+                 Exists because multi-provider auth can mint a duplicate account for one person: the waste
+                 record shows up in the sharing UI and its projects keep taking part in deduplication, and
+                 until now nothing could remove it.
+            operationId: Platform_DeleteUser
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AuthAPI_DeleteUser_Request'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AuthAPI_DeleteUser_Response'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
     /v1/auth/grant-access:
         post:
             tags:
@@ -870,6 +903,35 @@ components:
             properties:
                 publicPkce:
                     $ref: '#/components/schemas/AuthAPI_BeginSSOLogin_PublicPKCE'
+        AuthAPI_DeleteUser_Request:
+            type: object
+            properties:
+                login:
+                    type: string
+                    description: |-
+                        login of the user to delete. Resolved the way an admin-supplied grant target is:
+                         a point lookup on the identity index, which carries no provider id - so an account
+                         left behind by a provider that has since been removed from the configuration is
+                         reachable too.
+        AuthAPI_DeleteUser_Response:
+            type: object
+            properties:
+                userRootId:
+                    type: string
+                    description: root resource the user owned; 0 when the user had none.
+                userRootDeleted:
+                    type: boolean
+                    description: whether that root resource was deleted.
+                revokedGrants:
+                    type: integer
+                    description: grants revoked, the user-root self-grant included.
+                    format: uint32
+                removedIdentityIndexEntries:
+                    type: integer
+                    description: |-
+                        identity-index entries removed: the login, the email and any alternative of either
+                         that resolved to this account.
+                    format: uint32
         AuthAPI_GetJWTToken_Request:
             type: object
             properties:
@@ -903,6 +965,13 @@ components:
                 role:
                     type: integer
                     format: enum
+                canListUsers:
+                    type: boolean
+                    description: |-
+                        can_list_users tells if the caller can call ListUsers. The server configuration
+                         (--show-user-list-to) and the caller's role give the value. Servers that advertise
+                         the 'userListing:v2' capability set this field. Older servers do not know the field,
+                         so it is always false there.
         AuthAPI_GetUserRoot_Request:
             type: object
             properties:
@@ -1195,6 +1264,12 @@ components:
                 maxNotifications:
                     type: integer
                     format: uint32
+                seenToken:
+                    type: string
+                    description: |-
+                        seen_token is the seen_token of the previous response for this controller. Empty reads the
+                         queue from its start.
+                    format: bytes
         ControllerAPI_GetNotifications_Response:
             type: object
             properties:
@@ -1202,6 +1277,10 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Notification'
+                seenToken:
+                    type: string
+                    description: seen_token is the read position to pass to the next read of this controller. It is opaque.
+                    format: bytes
         ControllerAPI_GetUrl_Request:
             type: object
             properties:
@@ -1350,6 +1429,12 @@ components:
                     format: enum
                 name:
                     type: string
+                optional:
+                    type: boolean
+                    description: |-
+                        The field is optional: resource creation does not create it, a client creates it in the
+                         creating transaction. Only an INPUT, OUTPUT or SERVICE field can be optional.
+                         See docs/optional-fields-contract.md.
         GoogleProtobufAny:
             type: object
             properties:
@@ -1509,7 +1594,7 @@ components:
                          advertised" — fallback for hints, fail-closed for gates.
 
                          All list see pl/platform/api/plapiserver/server_capabilities.go
-                requiredCapabilities:
+                requiredClientCapabilities:
                     type: array
                     items:
                         type: string
@@ -1574,6 +1659,21 @@ components:
                 maxNotifications:
                     type: integer
                     format: uint32
+                seenToken:
+                    type: string
+                    description: |-
+                        seen_token is the seen_token of the previous response for this subscription. Empty reads the
+                         queue from its start. Pass it back unchanged, so the read does not step over acknowledged
+                         notifications.
+                    format: bytes
+                skipDelivered:
+                    type: boolean
+                    description: |-
+                        skip_delivered makes each read return only the notifications after the last read, also the ones
+                         that are not acknowledged yet, so a client can keep a notification and read the next batch. Without
+                         it, each read returns every notification that is not acknowledged again. A restart of the client
+                         or of the backend reads from the start of the queue in both modes. A seen_token of the other mode
+                         reads from the start of the queue.
         NotificationAPI_Get_Response:
             type: object
             properties:
@@ -1581,6 +1681,10 @@ components:
                     type: array
                     items:
                         $ref: '#/components/schemas/Notification'
+                seenToken:
+                    type: string
+                    description: seen_token is the read position to pass to the next read of this subscription. It is opaque.
+                    format: bytes
         NotificationFilter:
             type: object
             properties:
@@ -1694,6 +1798,12 @@ components:
         ResourceSchema:
             type: object
             properties:
+                kind:
+                    type: integer
+                    description: |-
+                        The only kind a resource of this type can be created with; UNSPECIFIED allows any.
+                         A create request of any other kind fails with INVALID_ARGUMENT.
+                    format: enum
                 type:
                     $ref: '#/components/schemas/ResourceType'
                 fields:

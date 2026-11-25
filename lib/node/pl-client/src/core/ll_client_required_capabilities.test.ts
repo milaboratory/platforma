@@ -17,7 +17,7 @@ function pingResponse(requiredCapabilities: string[]): MaintenanceAPI_Ping_Respo
     os: "linux",
     arch: "x64",
     capabilities: [],
-    requiredCapabilities,
+    requiredClientCapabilities: requiredCapabilities,
   };
 }
 
@@ -84,7 +84,7 @@ test("REST ping reads an absent required_capabilities field as an empty list", a
   const resp = await client.ping();
 
   expect(restClient.GET).toHaveBeenCalledWith("/v1/ping");
-  expect(resp.requiredCapabilities).toEqual([]);
+  expect(resp.requiredClientCapabilities).toEqual([]);
   expect(resp.capabilities).toEqual([]);
   await client.close();
 });

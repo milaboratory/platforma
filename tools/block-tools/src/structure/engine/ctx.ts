@@ -81,6 +81,7 @@ export type CreateRunContextInput = {
   blockVars: BlockVars;
   version?: number;
   dryRun?: boolean;
+  ownNpmRegistry?: boolean;
 };
 
 export function createRunContext(input: CreateRunContextInput): RunContext {
@@ -91,5 +92,6 @@ export function createRunContext(input: CreateRunContextInput): RunContext {
     blockVars: input.blockVars,
     version: input.version ?? 0,
     dryRun: input.dryRun ?? false,
+    ownNpmRegistry: input.ownNpmRegistry ?? true,
   };
 }

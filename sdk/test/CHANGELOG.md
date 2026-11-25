@@ -1,5 +1,119 @@
 # @platforma-sdk/test
 
+## 1.90.23
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.8.2
+
+## 1.90.22
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.8.1
+
+## 1.90.20
+
+### Patch Changes
+
+- Updated dependencies [26adc15]
+  - @milaboratories/pl-middle-layer@2.8.0
+  - @platforma-sdk/model@1.90.20
+
+## 1.90.19
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.12
+
+## 1.90.18
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.11
+
+## 1.90.17
+
+### Patch Changes
+
+- Updated dependencies [392eabe]
+  - @milaboratories/pl-middle-layer@2.7.10
+
+## 1.90.16
+
+### Patch Changes
+
+- Updated dependencies [07a5ecd]
+  - @milaboratories/pl-middle-layer@2.7.9
+
+## 1.90.15
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.8
+
+## 1.90.14
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.7
+
+## 1.90.13
+
+### Patch Changes
+
+- Updated dependencies [70671c3]
+  - @milaboratories/pl-middle-layer@2.7.6
+
+## 1.90.12
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.5
+
+## 1.90.11
+
+### Patch Changes
+
+- Updated dependencies [30071dc]
+  - @milaboratories/pl-client@3.27.0
+  - @milaboratories/pl-middle-layer@2.7.4
+  - @milaboratories/pl-tree@1.18.7
+
+## 1.90.10
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.3
+
+## 1.90.9
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.2
+
+## 1.90.8
+
+### Patch Changes
+
+- c1869c8: Update undici to 7.30.2, which fixes six security advisories in the cache and redirect interceptors and in Subresource Integrity checks. The `undici` dependency range is now `~7.30.2`.
+- c1869c8: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.3.1. pframes-rs-node and polars-pf get fixes for security advisories in the Rust crates arrow, parquet, rustix and zstd. pframes-rs-wasip2 has no functional change. polars-pf also gets the spec engine changes of pframes-rs 1.3.0 (reverse linker traversal, an axis mapping underflow fix), which pframes-rs-wasip2 already has. Bump runenv-python-3 to 1.16.2, which bundles polars-pf 1.3.1 for ptabler.
+- Updated dependencies [c1869c8]
+- Updated dependencies [c1869c8]
+  - @milaboratories/pl-client@3.26.1
+  - @milaboratories/pl-middle-layer@2.7.1
+  - @milaboratories/pl-tree@1.18.6
+  - @platforma-sdk/model@1.90.2
+
+## 1.90.7
+
+### Patch Changes
+
+- Updated dependencies [8cc6580]
+  - @milaboratories/pl-client@3.26.0
+  - @milaboratories/pl-middle-layer@2.7.0
+  - @milaboratories/pl-tree@1.18.5
+
 ## 1.90.5
 
 ### Patch Changes

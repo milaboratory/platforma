@@ -217,5 +217,6 @@ export function discoverRunContext(input: DiscoverInput): RunContext {
     blockVars,
     version: meta.version,
     dryRun: input.dryRun ?? false,
+    ownNpmRegistry: meta.ownNpmRegistry !== false,
   });
 }

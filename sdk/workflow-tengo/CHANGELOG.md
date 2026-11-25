@@ -1,5 +1,63 @@
 # @platforma-sdk/workflow-tengo
 
+## 6.24.3
+
+### Patch Changes
+
+- 3c6a385: Fix annotations failing with "tpl.body() callback must return the same list of outputs". The annotations template no longer imports :workflow, whose outputs were added to it now that the backend evaluates each module once per run.
+
+  Subsets exported by annotations now show their rule label in dataset pickers instead of "Unlabeled", once the annotation block is rerun.
+
+## 6.24.2
+
+### Patch Changes
+
+- 8515c5b: A multi-result query result also links its data map as `dataMap`, and the `PColumnBundle` await state waits for it. A template that reads a bundle with `addMulti` no longer runs before the data map of the query reaches the result, for family-2 queries too. `data` is kept for templates that await it; the unmarshaller reads the map from whichever of the two is set.
+
+## 6.24.1
+
+### Patch Changes
+
+- 02dc91f: Fix `smart.field.getValue: field "data" is not set` when a template that awaits only the specs of a multi-result query (for example the `PColumnBundle` state over a bundle with `addMulti`) runs before the data map of the query is set. The items of such a result now carry a future of their data.
+
+## 6.24.0
+
+### Minor Changes
+
+- a992704: pt.workflow().name(...) names the ptabler run in telemetry and job listings
+
+### Patch Changes
+
+- 3bc40f8: pframes.processColumn batch mode: size batches from the real post-filter row count, not the pre-filter input.
+
+  When a filtered column (a subset) was passed to batch mode, the orchestrator estimated the batch count from the unfiltered input and raised the batch size to keep the total under `batch.maxBatches`. The split step re-derives the count from the true post-filter rows, but it can only grow the batch size, never shrink it, so the inflated size was never undone. A small subset of a large inline-JSON column then ran as a few large batches instead of many small parallel ones (same results, lower parallelism).
+
+  The orchestrator no longer sizes batches from any pre-count — it has none it can trust (partition counts for partitioned inputs, pre-filter counts for filtered ones). The cap is enforced per isolation scope in `:pframes.process-pcolumn-batch-split`, which has the true count. Batch boundaries change for filtered inputs, so previously cached per-batch results are invalidated once.
+
+## 6.23.0
+
+### Minor Changes
+
+- 863d3f0: `xsv.importFile` accepts `memFloor`, `memSlope` and `memIntercept`. They set the auto-sized RAM request of the import, the same way the setters of `pt.workflow()` do, and apply to "Parquet" storage. Before, a block could only replace the request with a fixed `mem`, so an import of a large table kept the default slope of 10 and asked for more memory than a node has.
+
+## 6.22.5
+
+### Patch Changes
+
+- 3a7d90c: exec: `getStdoutStream()` / `getStderrStream()` now read the stream from a dedicated exec output with a single pure getter. Before, the stream went through the `fileStreams` map with an ephemeral getter, which deduplication cannot see, so an exec whose log a block output referenced was re-executed on every re-run instead of being recovered.
+
+  exec: remove the unused `streamFile()` builder method, `getFileStream()` and the exec template's `fileStreams` output. A stream of an arbitrary file could only be read through the `fileStreams` map, which becomes final only when the command exits, so it had the same recovery problem and could not be fixed the same way.
+
+## 6.22.4
+
+### Patch Changes
+
+- c1869c8: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.3.1. pframes-rs-node and polars-pf get fixes for security advisories in the Rust crates arrow, parquet, rustix and zstd. pframes-rs-wasip2 has no functional change. polars-pf also gets the spec engine changes of pframes-rs 1.3.0 (reverse linker traversal, an axis mapping underflow fix), which pframes-rs-wasip2 already has. Bump runenv-python-3 to 1.16.2, which bundles polars-pf 1.3.1 for ptabler.
+- Updated dependencies [c1869c8]
+- Updated dependencies [c1869c8]
+  - @platforma-open/milaboratories.software-ptabler@2.3.2
+  - @platforma-open/milaboratories.software-ptexter@1.2.8
+
 ## 6.22.3
 
 ### Patch Changes

@@ -1116,6 +1116,7 @@ export class PlTransaction {
         ...this.toSignedResourceId(rId),
         key,
         value: toBytes(value),
+        async: false,
       },
     });
   }
@@ -1131,6 +1132,7 @@ export class PlTransaction {
       resourceKeyValueDelete: {
         ...this.toSignedResourceId(rId),
         key,
+        async: false,
       },
     });
   }

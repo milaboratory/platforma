@@ -1,5 +1,34 @@
 # @platforma-sdk/ui-vue
 
+## 1.90.21
+
+### Patch Changes
+
+- Updated dependencies [b5bbeaf]
+- Updated dependencies [660fb12]
+  - @milaboratories/uikit@2.17.12
+
+## 1.90.20
+
+### Patch Changes
+
+- @platforma-sdk/model@1.90.20
+- @milaboratories/pf-spec-driver@1.6.2
+- @milaboratories/uikit@2.17.11
+
+## 1.90.8
+
+### Patch Changes
+
+- @milaboratories/pf-spec-driver@1.6.1
+- @platforma-sdk/model@1.90.2
+
+## 1.90.6
+
+### Patch Changes
+
+- 2a61e1a: A block window no longer drops an edit that is not saved yet. Until the first save of a window landed, every update from the server carried the previous author of the block's data, also an update that changed the outputs or the section only. The window took such an update for a change made elsewhere and put the server's data in place of its own, so an edit with its save still on the way was lost, and the next save wrote the block's data without it. The window's data is now replaced only when the stored data itself has changed.
+
 ## 1.90.2
 
 ### Patch Changes

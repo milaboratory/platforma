@@ -1,5 +1,30 @@
 # @milaboratories/pl-client
 
+## 3.27.0
+
+### Minor Changes
+
+- 30071dc: Add `LicensePayload` type and `decodeLicenseToken` helper, describing the decoded body of a Platforma license token next to the Maintenance API `license()` call that returns it. The type includes the optional `le` claim (the license's own expiration, independent of the short-lived token TTL `e`). Includes a test that fetches the license from a live backend and asserts the required payload fields are always present.
+
+## 3.26.1
+
+### Patch Changes
+
+- c1869c8: Update undici to 7.30.2, which fixes six security advisories in the cache and redirect interceptors and in Subresource Integrity checks. The `undici` dependency range is now `~7.30.2`.
+- Updated dependencies [c1869c8]
+  - @milaboratories/pl-http@1.2.7
+
+## 3.26.0
+
+### Minor Changes
+
+- 8cc6580: Support user listing that the server controls per client role (`userListing:v2`).
+
+  - pl-client: `PlClient.canListUsers` tells if the authenticated user can list users. On a `userListing:v2` backend it reads `GetSessionInfo.can_list_users`; on a `userListing:v1` backend it is true. `GetSessionInfo` responses carry `canListUsers`.
+  - pl-client: the protocol definitions are synced with the backend. `MaintenanceAPI_Ping_Response.requiredCapabilities` is renamed to `requiredClientCapabilities`, as in the backend proto.
+  - pl-middle-layer: `MiddleLayer.userListingAvailable` selects the recipient picker or paste-a-login UI.
+  - pl-cli: `admin user-list` tells clearly when the server does not let the user list users.
+
 ## 3.25.0
 
 ### Minor Changes

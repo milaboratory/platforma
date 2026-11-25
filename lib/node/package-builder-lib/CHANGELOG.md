@@ -1,5 +1,11 @@
 # @platforma-sdk/package-builder-lib
 
+## 1.7.1
+
+### Patch Changes
+
+- c1869c8: Update undici to 7.30.2, which fixes six security advisories in the cache and redirect interceptors and in Subresource Integrity checks. The `undici` dependency range is now `~7.30.2`.
+
 ## 1.7.0
 
 ### Minor Changes

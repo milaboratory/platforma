@@ -9,6 +9,17 @@ message ResourceType {
   string version = 2;
 }
 
+// Kind of a resource: each kind has its own create request.
+enum ResourceKind {
+  RESOURCE_KIND_UNSPECIFIED = 0; // in a schema: any kind
+  RESOURCE_KIND_STRUCTURAL = 1;  // CreateStruct and CreateChild
+  RESOURCE_KIND_VALUE = 2;       // CreateValue
+  RESOURCE_KIND_ROOT = 3;        // CreateRoot
+  RESOURCE_KIND_EPHEMERAL = 4;   // CreateEphemeral
+  RESOURCE_KIND_SERVICE = 5;     // created by core only
+  RESOURCE_KIND_SINGLETON = 6;   // CreateSingleton
+}
+
 enum FieldType {
   INVALID = 0;
 

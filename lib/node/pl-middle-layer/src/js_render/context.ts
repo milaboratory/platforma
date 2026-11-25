@@ -11,6 +11,7 @@ import { stringifyWithResourceId } from "@milaboratories/pl-client";
 import { PlQuickJSError } from "@milaboratories/pl-errors";
 import { ComputableContextHelper } from "./computable_context";
 
+import { evaluateBundleCached } from "./bundle_bytecode_cache";
 export type DeadlineSettings = {
   currentExecutionTarget: string;
   deadline: number;
@@ -153,6 +154,29 @@ export class JsExecutionContext {
         deadline: Date.now() + 10000,
       });
       this.vm.unwrapResult(this.vm.evalCode(code, "bundle.js", { type: "global" })).dispose();
+    } catch (err: unknown) {
+      JsExecutionContext.cleanErrorContext(err);
+      throw err;
+    } finally {
+      this.deadlineSetter(undefined);
+      this.stats.bundleEvalMs += performance.now() - t0;
+      this.stats.bundleBytes += code.length;
+    }
+  }
+
+  /**
+   * {@link evaluateBundle}, reusing bytecode compiled for an earlier context with the same
+   * `cacheKey`. Every lambda gets its own context and needs the whole bundle in scope, so
+   * parsing per context was the dominant cost of rendering a block.
+   */
+  public evaluateBundleCached(cacheKey: string, code: string) {
+    const t0 = performance.now();
+    try {
+      this.deadlineSetter({
+        currentExecutionTarget: "evaluateBundle",
+        deadline: Date.now() + 10000,
+      });
+      evaluateBundleCached(this.vm, cacheKey, code);
     } catch (err: unknown) {
       JsExecutionContext.cleanErrorContext(err);
       throw err;

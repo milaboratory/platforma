@@ -32,7 +32,12 @@ export type BackendCapability =
   | "scratchSpace:v1"
   // Project-sharing capability tokens.
   | "crossTreeRefs:v1" // cross-color field attach (accept a foreign-colored shared envelope)
-  | "userListing:v1" // list users for the recipient picker
+  // All user roles can list users (recipient picker). A v2 backend advertises it only when
+  // its configuration lets all roles list users.
+  | "userListing:v1"
+  // ListUsers controls access per client role: a role that cannot list users gets
+  // PERMISSION_DENIED. GetSessionInfo.can_list_users tells if the caller's role can list users.
+  | "userListing:v2"
   | "publicGrants:v1" // public (everyone) grants allowed for any role
   | "txListGrants:v1" // list grants inside a transaction (batched recipient reads)
   // Optional fields declared in resource schemas, created in the creating transaction before any

@@ -1,5 +1,18 @@
 # @milaboratories/uikit
 
+## 2.17.12
+
+### Patch Changes
+
+- b5bbeaf: `PlSearchField`: the search icon no longer shrinks when text is entered in a `clearable` field. The icons keep a fixed size and the input takes the remaining width.
+- 660fb12: `PlTooltip`: flip to the opposite side when the requested `position` has no room (top ↔ bottom, left ↔ right); the beak follows the box. Pure CSS via `position-try-fallbacks`; the beak anchors to both the target and the box, so it needs no flip state.
+
+## 2.17.11
+
+### Patch Changes
+
+- @platforma-sdk/model@1.90.20
+
 ## 2.17.10
 
 ### Patch Changes

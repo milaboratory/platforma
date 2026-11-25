@@ -195,11 +195,11 @@ catalogs:
       specifier: ^7.0.1
       version: 7.10.1
     '@milaboratories/pframes-rs-node':
-      specifier: 1.2.0
-      version: 1.2.0
+      specifier: 1.3.1
+      version: 1.3.1
     '@milaboratories/pframes-rs-wasip2':
-      specifier: 1.3.0
-      version: 1.3.0
+      specifier: 1.3.1
+      version: 1.3.1
     '@milaboratories/software-pframes-conv':
       specifier: 2.2.9
       version: 2.2.9
@@ -213,8 +213,8 @@ catalogs:
       specifier: ^2.0.1
       version: 2.4.0
     '@platforma-open/milaboratories.runenv-python-3':
-      specifier: 1.16.1
-      version: 1.16.1
+      specifier: 1.16.2
+      version: 1.16.2
     '@platforma-open/milaboratories.software-conda-empty':
       specifier: ^1.0.1
       version: 1.0.1
@@ -390,8 +390,8 @@ catalogs:
       specifier: 0.75.0
       version: 0.75.0
     quickjs-emscripten:
-      specifier: 0.32.0
-      version: 0.32.0
+      specifier: npm:@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1
+      version: 0.32.1-bytecode.1
     resize-observer-polyfill:
       specifier: ^1.5.1
       version: 1.5.1
@@ -435,8 +435,8 @@ catalogs:
       specifier: 7.0.2
       version: 7.0.2
     undici:
-      specifier: ~7.30.1
-      version: 7.30.1
+      specifier: ~7.30.2
+      version: 7.30.2
     utility-types:
       specifier: ^3.11.0
       version: 3.11.0
@@ -2819,7 +2819,7 @@ importers:
         version: link:../../../tools/build-configs
       '@milaboratories/pframes-rs-wasip2':
         specifier: 'catalog:'
-        version: 1.3.0
+        version: 1.3.1
       '@milaboratories/ts-builder':
         specifier: workspace:*
         version: link:../../../tools/ts-builder
@@ -2993,7 +2993,7 @@ importers:
         version: 7.0.1
       undici:
         specifier: 'catalog:'
-        version: 7.30.1
+        version: 7.30.2
       winston:
         specifier: 'catalog:'
         version: 3.19.0
@@ -3015,7 +3015,7 @@ importers:
         version: link:../../../tools/ts-configs
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.16.1
+        version: 1.16.2
       '@types/archiver':
         specifier: 'catalog:'
         version: 6.0.4
@@ -3048,7 +3048,7 @@ importers:
         version: link:../../model/pf-spec
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.2.0(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)(supports-color@10.2.2)
+        version: 1.3.1(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)(supports-color@10.2.2)
       '@milaboratories/pl-model-common':
         specifier: workspace:*
         version: link:../../model/common
@@ -3133,7 +3133,7 @@ importers:
         version: 0.15.2
       undici:
         specifier: 'catalog:'
-        version: 7.30.1
+        version: 7.30.2
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
@@ -3249,7 +3249,7 @@ importers:
         version: 3.1.3
       undici:
         specifier: 'catalog:'
-        version: 7.30.1
+        version: 7.30.2
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -3329,7 +3329,7 @@ importers:
     dependencies:
       undici:
         specifier: 'catalog:'
-        version: 7.30.1
+        version: 7.30.2
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -3363,7 +3363,7 @@ importers:
         version: 1.32.2(supports-color@10.2.2)(zod@3.25.76)
       quickjs-emscripten:
         specifier: 'catalog:'
-        version: 0.32.0
+        version: '@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1'
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -3424,7 +3424,7 @@ importers:
         version: link:../../model/pf-spec-driver
       '@milaboratories/pframes-rs-node':
         specifier: 'catalog:'
-        version: 1.2.0(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)(supports-color@10.2.2)
+        version: 1.3.1(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)(supports-color@10.2.2)
       '@milaboratories/pl-client':
         specifier: workspace:*
         version: link:../pl-client
@@ -3481,13 +3481,13 @@ importers:
         version: 11.5.3
       quickjs-emscripten:
         specifier: 'catalog:'
-        version: 0.32.0
+        version: '@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1'
       semver:
         specifier: 'catalog:'
         version: 7.8.5
       undici:
         specifier: 'catalog:'
-        version: 7.30.1
+        version: 7.30.2
       utility-types:
         specifier: 'catalog:'
         version: 3.11.0
@@ -3736,7 +3736,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.16.1
+        version: 1.16.2
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../tools/block-tools
@@ -3748,7 +3748,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.16.1
+        version: 1.16.2
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../tools/block-tools
@@ -4167,7 +4167,7 @@ importers:
     dependencies:
       '@milaboratories/pframes-rs-wasip2':
         specifier: 'catalog:'
-        version: 1.3.0
+        version: 1.3.1
       '@milaboratories/software-pframes-conv':
         specifier: 'catalog:'
         version: 2.2.9
@@ -4300,10 +4300,10 @@ importers:
         version: link:../../sdk/test
       quickjs-emscripten:
         specifier: 'catalog:'
-        version: 0.32.0
+        version: '@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1'
       undici:
         specifier: 'catalog:'
-        version: 7.30.1
+        version: 7.30.2
     devDependencies:
       '@milaboratories/build-configs':
         specifier: workspace:*
@@ -4477,7 +4477,7 @@ importers:
     devDependencies:
       '@platforma-open/milaboratories.runenv-python-3':
         specifier: 'catalog:'
-        version: 1.16.1
+        version: 1.16.2
       '@platforma-sdk/block-tools':
         specifier: workspace:*
         version: link:../../../tools/block-tools
@@ -4654,7 +4654,7 @@ importers:
         version: 7.5.22
       undici:
         specifier: 'catalog:'
-        version: 7.30.1
+        version: 7.30.2
       yaml:
         specifier: 'catalog:'
         version: 2.9.1
@@ -4861,7 +4861,7 @@ importers:
         version: 7.5.22
       undici:
         specifier: 'catalog:'
-        version: 7.30.1
+        version: 7.30.2
       winston:
         specifier: 'catalog:'
         version: 3.19.0
@@ -5434,8 +5434,8 @@ packages:
     engines: {node: '>=6'}
     hasBin: true
 
-  '@hono/node-server@2.1.5':
-    resolution: {integrity: sha512-MgP/I06GdvsilDspMk/qmRzpk8LOUStP6jFAbSRi40W09DhoyUn+Mj7eyKICPqeYKybOjVFLVIAQzvu1bfIa7Q==}
+  '@hono/node-server@2.1.8':
+    resolution: {integrity: sha512-jdf7FHh6A1lzjpHHQUgxsg2GeER2vMetnAOfeActzcoli6jamlK+NAwL6Dsr5Fl3BS3tYUQzCdtZjU8Qxv7bEA==}
     engines: {node: '>=20'}
     peerDependencies:
       hono: ^4 || ^5.0.0-0
@@ -5586,21 +5586,6 @@ packages:
     resolution: {integrity: sha512-+Sg6GCR/wy1oSmQDFq4LQDAhm3ETKnorxN+y5nbLULOR3P0c14f2Wurzj3/xqPXtasLFfHd5iRFQ7AJt4KH2cw==}
     engines: {node: '>=8'}
 
-  '@jitl/quickjs-ffi-types@0.32.0':
-    resolution: {integrity: sha512-v9T+GQpmk43VDJ7d72sf0Nexhk+ArvtUihW27dy7lqAl0zBObFKtSBBIm5RBjwIhE8VwsPPm9PNuvPvNqLWUEg==}
-
-  '@jitl/quickjs-wasmfile-debug-asyncify@0.32.0':
-    resolution: {integrity: sha512-EX8zbXwGqCgAE764M+qvkHtyXDi/FUoMBea0JnES7vCM3P7a2+EOZOjGv85wtZ2sJhI1oJ+nekmqpOODFDY+hw==}
-
-  '@jitl/quickjs-wasmfile-debug-sync@0.32.0':
-    resolution: {integrity: sha512-LeYWrPGC1uNCTBWvibo3ZLJj0CSVNYUXvJpXMCmuQ5Sap2cCACc3uvGvYV4homHHBAzfw5akoTqMMS4YFRtw+Q==}
-
-  '@jitl/quickjs-wasmfile-release-asyncify@0.32.0':
-    resolution: {integrity: sha512-3oSwPfja12ICz4aIblB58cuY8JlEq5Txt8Cut4VLo+LH47QN+mzCnSgnbB03hWzg1LBcc+VyyI9UOag7a1NF+Q==}
-
-  '@jitl/quickjs-wasmfile-release-sync@0.32.0':
-    resolution: {integrity: sha512-BKNDI/TPBfGlLNGYpLrhcDGXmIk4xHm4MRAisOBnOzpXVn9HZWsfmMAc9WMBrAHjvvds6HOikKeaOBKdPdpVrg==}
-
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
 
@@ -5631,27 +5616,49 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
+  '@milaboratories-poc/quickjs-emscripten-core@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-rIOtn3dH4YAZ+u4Xv+Bx7DY3f413abVrkUYm7rBOGNZxUe8h80ob7Ih9libh/rnDgzWyFcMacYdCB4ZXt77qJg==}
+
+  '@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-JJt3/3FuhHiLyeMsAupZsoMS9ST78Kv6+OEUvXKbYg/U6C1Stka0mnALZwLfv6WhPpabVPWYGvnOye+j8HfkzA==}
+    engines: {node: '>=16.0.0'}
+
+  '@milaboratories-poc/quickjs-ffi-types@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-qWPi9IKaFFJxRs+r6A377d8eIc75ktt8hb+bL0RR4lt6kZcQFfnHwmqgxvMRN8r/4D3DZgHOebp7iYmWuIHBiQ==}
+
+  '@milaboratories-poc/quickjs-wasmfile-debug-asyncify@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-ZU1f9iJtA+PVV4Cr7XiUOfXIpq0gjV4tRBt5/Fz9ebFKWledduAdQqlwD7edafl4DPsKx/O4SL+iB5WKNlksOQ==}
+
+  '@milaboratories-poc/quickjs-wasmfile-debug-sync@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-MGx1aGvbWrmnSnLI9Fiy45Dtz/jJwwUMCVqYiRaWg/04nQXA9FgqmrOYjaSuEhGa2tHJmGBzDKNcod79/j/uiw==}
+
+  '@milaboratories-poc/quickjs-wasmfile-release-asyncify@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-+irUDGwL6tSlRvPMEaRtGUv8/kTz8S5Yz2fxdJ+xFHUDCFUwRmb2H/MdYWEJq4K3kw44I606g5CZ86y0lECgkg==}
+
+  '@milaboratories-poc/quickjs-wasmfile-release-sync@0.32.1-bytecode.1':
+    resolution: {integrity: sha512-G8pLZF7+lP8GFRKl8TAPSbLA4NCwh3a+W3EH/Y/MSyzg9EvcjZZ1lrymr/0sFPH5mQNFJ4jG4wYvZa9LadGXqA==}
+
   '@milaboratories/helpers@1.14.5':
     resolution: {integrity: sha512-Kiy0g7sEmFQxDwtnmTrdJ8XdUK0IDAB5ZnPCNEbK7lPGHIa+xG3kzfeR4y44QBdrYaK0NwG63D8Fc7dlv9KItg==}
     engines: {node: '>=22'}
 
-  '@milaboratories/pframes-rs-node@1.2.0':
-    resolution: {integrity: sha512-FqQR0Hw404wbF6c5WJT8IM7lG2ByNadHgmoHJqo6VsvVy3iDZmFsZy4hD2jz/vjUXgTo7ZZXpGC63QND0dzcAw==}
+  '@milaboratories/pframes-rs-node@1.3.1':
+    resolution: {integrity: sha512-kQ1Oy3cQMY8S4cHHhzBDIAMU+2lnrS9Og7jqLbEgWpKwicViS8ebt2n1V3jpgerTp3UmBvkvniucEV2jbCIJUA==}
     engines: {node: '>=24'}
     peerDependencies:
       '@milaboratories/pl-model-common': ^1.51.0
       '@milaboratories/pl-model-middle-layer': ^1.34.0
 
-  '@milaboratories/pframes-rs-serv@1.2.0':
-    resolution: {integrity: sha512-NbrzJdrcoYjU8QduZwxEXuPPZq5VPi+En3lYstHizpc6Xq3i0gZmY+FV347HMkIdtQM2xhfx1XR1/yozUmd3JA==}
+  '@milaboratories/pframes-rs-serv@1.3.1':
+    resolution: {integrity: sha512-cdtuc3balKhhRABSX1/LKoQA7zc/Nl0rphHMveE+yRiQwbbEUTfiRtK7vZw17ReDUn7k/WSiUPisKRvOGA5U7A==}
     engines: {node: '>=24'}
     hasBin: true
     peerDependencies:
       '@milaboratories/pl-model-common': ^1.51.0
       '@milaboratories/pl-model-middle-layer': ^1.34.0
 
-  '@milaboratories/pframes-rs-wasip2@1.3.0':
-    resolution: {integrity: sha512-O5M/yHNZsFpX0sMNMitqFhFypVDyVihe7sB7ZIC/twSu2oYfNQq+AAkPYkekQOtrGiETLotIsujgIU+nsPupLg==}
+  '@milaboratories/pframes-rs-wasip2@1.3.1':
+    resolution: {integrity: sha512-GWS1kYf6LidplEc5I4kb4b86zjHUPi1Vq4LolHM+3tSPj+3Jwk85BUuqjkEeNR7e9dXfs3n9cVYwN5OU9HLoHA==}
 
   '@milaboratories/software-pframes-conv@2.2.9':
     resolution: {integrity: sha512-w+GaazDSqEgqYUJ38I5lgOsggyZJpcBVGvDMHIX1pyTdvPjWAOWu3mLkScaYuWeitFfh8aAedf5vrLqXtnX8bw==}
@@ -6248,11 +6255,11 @@ packages:
   '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda@0.2.0':
     resolution: {integrity: sha512-PRGkgsVY08tQvoucU8fJmeCF+x9XjiHHjNTbxWqddqx2EZpiUvmylkxtU8i8xJW13cesAI+xHv3NsVUXQaRDqA==}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.27':
-    resolution: {integrity: sha512-us8wG4HOYW8VzN1N1ZWXXSz1y5zYuh+Mne9VfGhDOWpmMlFGaPsPbN0J657n5VKGgnnEhc04g1jhtQdSMtjBOA==}
+  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.28':
+    resolution: {integrity: sha512-XKA5K7fIBL8isE71tB3Wca2iZDcYXHRzXmqYRmGAzwY0NvzezgtpZCPp3OYA860ASkvREAljAOLHyJn++sMB5w==}
 
-  '@platforma-open/milaboratories.runenv-python-3@1.16.1':
-    resolution: {integrity: sha512-wnxcd6K6Ebqb2ACaAdOl6moukUjn9rWseNCQI5nWiK+wh3CEo73K6GYnDO1J7l7UY/9k/ovdgjrf5GZNOKgIiw==}
+  '@platforma-open/milaboratories.runenv-python-3@1.16.2':
+    resolution: {integrity: sha512-anh9vvCj41MX6OQQSUtZPdUE5OgOJCuy5N3vHmbyIqj+D0lolA/BV5qhjYo8g4FlzuB7eTCzBdAYAAnUUAc8vg==}
 
   '@platforma-open/milaboratories.software-conda-empty@1.0.1':
     resolution: {integrity: sha512-nftT6/lXdHvDu7Wedc3HCXiLrzHrIl7B4/8jRGgP5EAJy4agIrAk95Ht7/DGBzGIqXUkRdgN2XB46LxMWt1l3g==}
@@ -8036,8 +8043,8 @@ packages:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
 
-  hono@4.13.14:
-    resolution: {integrity: sha512-yhRLQ21U6qa9Hsu2N7Qcbh8tE+WKEcoErjIo56LeSGiGXGp9sA7UpE86Ui9uexb61KakiGwuHMn2QdV7w6i6kQ==}
+  hono@4.13.18:
+    resolution: {integrity: sha512-H9q/E1XizaWstJxUW881dmLxEj+t/TrGGnyxINkm4+sK0qUwsMtFdo2BWI9Vs3cIS19MU6b6iCijoUoEf4f3DA==}
     engines: {node: '>=16.9.0'}
 
   html-encoding-sniffer@6.0.0:
@@ -8820,13 +8827,6 @@ packages:
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
-  quickjs-emscripten-core@0.32.0:
-    resolution: {integrity: sha512-QFnPfjFey8EqknSrSxe1hZrf1/8z7/6s1QzGOmKo6++02r7QRRX7ZoyNaZh7JuVjWsVW87KnQrbZqnHkOAzUyg==}
-
-  quickjs-emscripten@0.32.0:
-    resolution: {integrity: sha512-So0Sqw869y/S2oE3Nuc0uT3Dhqgvsj8FSrwBdsuTosVsG8ME5/OcudU1GxsrIFdFABgy17GHnTVO9TYV/bLQcA==}
-    engines: {node: '>=16.0.0'}
-
   range-parser@1.3.0:
     resolution: {integrity: sha512-hek2mFQpPuI4E1BBKrSto+BU3e3x4xuarsbiwr3+lf7p44juvFMV0XFWQAP3xUyqXA4RrXLIoaSUGbSt056ZMw==}
     engines: {node: '>= 0.6'}
@@ -9309,8 +9309,8 @@ packages:
   undici-types@7.24.6:
     resolution: {integrity: sha512-WRNW+sJgj5OBN4/0JpHFqtqzhpbnV0GuB+OozA9gCL7a993SmU+1JBZCzLNxYsbMfIeDL+lTsphD5jN5N+n0zg==}
 
-  undici@7.30.1:
-    resolution: {integrity: sha512-03KrMbjIFDWQR5RNPrSw3bd1r12JpyFQl9/yxjUbJtqkjmllqC5lFjZh6ujeuJCKr8EOQvRW872Oy/az+nLYxg==}
+  undici@7.30.2:
+    resolution: {integrity: sha512-mLyPQnHwUxaM/rideoK/+KL8DaAJLRl4aBCfmX444aCSLnIaomqPLtNRe2jdCYcsk5wZzXrDIQC8ZeYNRAYyIA==}
     engines: {node: '>=20.18.1'}
 
   universalify@0.1.2:
@@ -10369,9 +10369,9 @@ snapshots:
       protobufjs: 7.6.6
       yargs: 17.7.3
 
-  '@hono/node-server@2.1.5(hono@4.13.14)':
+  '@hono/node-server@2.1.8(hono@4.13.18)':
     dependencies:
-      hono: 4.13.14
+      hono: 4.13.18
 
   '@inquirer/ansi@1.0.2': {}
 
@@ -10513,24 +10513,6 @@ snapshots:
 
   '@istanbuljs/schema@0.1.6': {}
 
-  '@jitl/quickjs-ffi-types@0.32.0': {}
-
-  '@jitl/quickjs-wasmfile-debug-asyncify@0.32.0':
-    dependencies:
-      '@jitl/quickjs-ffi-types': 0.32.0
-
-  '@jitl/quickjs-wasmfile-debug-sync@0.32.0':
-    dependencies:
-      '@jitl/quickjs-ffi-types': 0.32.0
-
-  '@jitl/quickjs-wasmfile-release-asyncify@0.32.0':
-    dependencies:
-      '@jitl/quickjs-ffi-types': 0.32.0
-
-  '@jitl/quickjs-wasmfile-release-sync@0.32.0':
-    dependencies:
-      '@jitl/quickjs-ffi-types': 0.32.0
-
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:
       '@jridgewell/sourcemap-codec': 1.6.0
@@ -10581,13 +10563,43 @@ snapshots:
       - encoding
       - supports-color
 
+  '@milaboratories-poc/quickjs-emscripten-core@0.32.1-bytecode.1':
+    dependencies:
+      '@milaboratories-poc/quickjs-ffi-types': 0.32.1-bytecode.1
+
+  '@milaboratories-poc/quickjs-emscripten@0.32.1-bytecode.1':
+    dependencies:
+      '@milaboratories-poc/quickjs-emscripten-core': 0.32.1-bytecode.1
+      '@milaboratories-poc/quickjs-wasmfile-debug-asyncify': 0.32.1-bytecode.1
+      '@milaboratories-poc/quickjs-wasmfile-debug-sync': 0.32.1-bytecode.1
+      '@milaboratories-poc/quickjs-wasmfile-release-asyncify': 0.32.1-bytecode.1
+      '@milaboratories-poc/quickjs-wasmfile-release-sync': 0.32.1-bytecode.1
+
+  '@milaboratories-poc/quickjs-ffi-types@0.32.1-bytecode.1': {}
+
+  '@milaboratories-poc/quickjs-wasmfile-debug-asyncify@0.32.1-bytecode.1':
+    dependencies:
+      '@milaboratories-poc/quickjs-ffi-types': 0.32.1-bytecode.1
+
+  '@milaboratories-poc/quickjs-wasmfile-debug-sync@0.32.1-bytecode.1':
+    dependencies:
+      '@milaboratories-poc/quickjs-ffi-types': 0.32.1-bytecode.1
+
+  '@milaboratories-poc/quickjs-wasmfile-release-asyncify@0.32.1-bytecode.1':
+    dependencies:
+      '@milaboratories-poc/quickjs-ffi-types': 0.32.1-bytecode.1
+
+  '@milaboratories-poc/quickjs-wasmfile-release-sync@0.32.1-bytecode.1':
+    dependencies:
+      '@milaboratories-poc/quickjs-ffi-types': 0.32.1-bytecode.1
+
   '@milaboratories/helpers@1.14.5': {}
 
-  '@milaboratories/pframes-rs-node@1.2.0(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)(supports-color@10.2.2)':
+  '@milaboratories/pframes-rs-node@1.3.1(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)(supports-color@10.2.2)':
     dependencies:
       '@mapbox/node-pre-gyp': 2.0.3(supports-color@10.2.2)
       '@milaboratories/helpers': 1.14.5
-      '@milaboratories/pframes-rs-serv': 1.2.0(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
+      '@milaboratories/pframes-rs-serv': 1.3.1(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)
       '@milaboratories/pl-model-common': link:lib/model/common
       '@milaboratories/pl-model-middle-layer': link:lib/model/middle-layer
       ulid: 3.0.2
@@ -10595,7 +10607,7 @@ snapshots:
       - encoding
       - supports-color
 
-  '@milaboratories/pframes-rs-serv@1.2.0(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
+  '@milaboratories/pframes-rs-serv@1.3.1(@milaboratories/pl-model-common@lib+model+common)(@milaboratories/pl-model-middle-layer@lib+model+middle-layer)':
     dependencies:
       '@milaboratories/helpers': 1.14.5
       '@milaboratories/pl-model-common': link:lib/model/common
@@ -10603,7 +10615,7 @@ snapshots:
       commander: 15.0.0
       selfsigned: 5.5.0
 
-  '@milaboratories/pframes-rs-wasip2@1.3.0': {}
+  '@milaboratories/pframes-rs-wasip2@1.3.1': {}
 
   '@milaboratories/software-pframes-conv@2.2.9': {}
 
@@ -10611,7 +10623,7 @@ snapshots:
 
   '@modelcontextprotocol/sdk@1.32.2(supports-color@10.2.2)(zod@3.25.76)':
     dependencies:
-      '@hono/node-server': 2.1.5(hono@4.13.14)
+      '@hono/node-server': 2.1.8(hono@4.13.18)
       ajv: 8.20.0
       ajv-formats: 3.0.1
       content-type: 1.0.5
@@ -10621,7 +10633,7 @@ snapshots:
       eventsource-parser: 3.1.1
       express: 5.3.0(supports-color@10.2.2)
       express-rate-limit: 8.7.1(express@5.3.0(supports-color@10.2.2))(supports-color@10.2.2)
-      hono: 4.13.14
+      hono: 4.13.18
       jose: 6.2.13
       json-schema-typed: 8.0.2
       pkce-challenge: 5.0.1
@@ -11009,12 +11021,12 @@ snapshots:
 
   '@platforma-open/milaboratories.runenv-python-3.12.10-torch-cuda@0.2.0': {}
 
-  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.27': {}
+  '@platforma-open/milaboratories.runenv-python-3.12.10@1.3.28': {}
 
-  '@platforma-open/milaboratories.runenv-python-3@1.16.1':
+  '@platforma-open/milaboratories.runenv-python-3@1.16.2':
     dependencies:
       '@platforma-open/milaboratories.runenv-python-3.10.21-clustcr': 0.2.0
-      '@platforma-open/milaboratories.runenv-python-3.12.10': 1.3.27
+      '@platforma-open/milaboratories.runenv-python-3.12.10': 1.3.28
       '@platforma-open/milaboratories.runenv-python-3.12.10-antibody-design': 0.2.0
       '@platforma-open/milaboratories.runenv-python-3.12.10-atls': 1.2.7
       '@platforma-open/milaboratories.runenv-python-3.12.10-clustering': 0.1.1
@@ -12664,7 +12676,7 @@ snapshots:
 
   he@1.2.0: {}
 
-  hono@4.13.14: {}
+  hono@4.13.18: {}
 
   html-encoding-sniffer@6.0.0(@noble/hashes@2.4.0):
     dependencies:
@@ -13390,18 +13402,6 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
-  quickjs-emscripten-core@0.32.0:
-    dependencies:
-      '@jitl/quickjs-ffi-types': 0.32.0
-
-  quickjs-emscripten@0.32.0:
-    dependencies:
-      '@jitl/quickjs-wasmfile-debug-asyncify': 0.32.0
-      '@jitl/quickjs-wasmfile-debug-sync': 0.32.0
-      '@jitl/quickjs-wasmfile-release-asyncify': 0.32.0
-      '@jitl/quickjs-wasmfile-release-sync': 0.32.0
-      quickjs-emscripten-core: 0.32.0
-
   range-parser@1.3.0: {}
 
   raw-body@3.0.2:
@@ -13966,7 +13966,7 @@ snapshots:
 
   undici-types@7.24.6: {}
 
-  undici@7.30.1: {}
+  undici@7.30.2: {}
 
   universalify@0.1.2: {}
 

@@ -1,5 +1,30 @@
 # @milaboratories/pl-drivers
 
+## 2.0.8
+
+### Patch Changes
+
+- Updated dependencies [30071dc]
+  - @milaboratories/pl-client@3.27.0
+  - @milaboratories/pl-tree@1.18.7
+
+## 2.0.7
+
+### Patch Changes
+
+- c1869c8: Update undici to 7.30.2, which fixes six security advisories in the cache and redirect interceptors and in Subresource Integrity checks. The `undici` dependency range is now `~7.30.2`.
+- Updated dependencies [c1869c8]
+  - @milaboratories/pl-client@3.26.1
+  - @milaboratories/pl-tree@1.18.6
+
+## 2.0.6
+
+### Patch Changes
+
+- Updated dependencies [8cc6580]
+  - @milaboratories/pl-client@3.26.0
+  - @milaboratories/pl-tree@1.18.5
+
 ## 2.0.5
 
 ### Patch Changes

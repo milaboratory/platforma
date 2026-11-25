@@ -12,6 +12,8 @@ import type { BlockVars, RunContext } from "../engine/api";
 import { STRUCTURE } from "../structure-definition";
 import { run as engineRun } from "../engine/runner";
 import { defaultTemplateProvider, simulateInit } from "../engine/testing";
+import { discoverRunContext } from "../engine/discovery-fs";
+import { readStructureMeta, STRUCTURE_META_FILE } from "../engine/version";
 import { NODE_VERSION } from "../rules/shared/toolchain";
 
 const TEMPLATES = defaultTemplateProvider();
@@ -69,6 +71,68 @@ describe("root CI workflows (fixed, generated)", () => {
     const result = engineRun(STRUCTURE, fs, checkCtx, { templates: TEMPLATES });
     const ciChanges = result.changes.filter((c) => c.path === BUILD || c.path === MARK_STABLE);
     expect(ciChanges).toEqual([]);
+  });
+
+  test("by default the workflow publishes to the own registry", () => {
+    const { fs, ctx } = simulateInit({ vars: VARS });
+    expect(ctx.ownNpmRegistry).toBe(true);
+    const build = fs.read(BUILD);
+    expect(build.match(/npm-own-registry-scopes: '@platforma-open'/g)).toHaveLength(1);
+    // The default is not written: a block on it keeps {"version":N}.
+    expect(fs.read(STRUCTURE_META_FILE)).not.toContain("ownNpmRegistry");
+    expect(discoverRunContext({ fs, isSdkInternal: false }).ownNpmRegistry).toBe(true);
+  });
+
+  test("ownNpmRegistry: false opts out, and refresh keeps the opt-out", () => {
+    const { fs } = simulateInit({ vars: VARS });
+    const meta = readStructureMeta(fs);
+    fs.write(STRUCTURE_META_FILE, JSON.stringify({ ...meta, ownNpmRegistry: false }));
+
+    const ctx = discoverRunContext({ fs, isSdkInternal: false });
+    expect(ctx.ownNpmRegistry).toBe(false);
+    engineRun(STRUCTURE, fs, ctx, { templates: TEMPLATES });
+
+    const build = fs.read(BUILD);
+    expect(build).not.toContain("npm-own-registry-scopes");
+    // The placeholder expands to nothing: the next line follows directly.
+    expect(build).toContain("require-package-path-bump: true\n\n      npmrc-config: |");
+    // Refresh rewrote .structure and kept the opt-out.
+    expect(readStructureMeta(fs).ownNpmRegistry).toBe(false);
+
+    // Fixpoint: a check right after changes nothing in the workflow files.
+    const checkCtx: RunContext = {
+      ...discoverRunContext({ fs, isSdkInternal: false }),
+      dryRun: true,
+    };
+    const result = engineRun(STRUCTURE, fs, checkCtx, { templates: TEMPLATES });
+    expect(result.changes.filter((c) => c.path === BUILD || c.path === MARK_STABLE)).toEqual([]);
+  });
+
+  test("removing the opt-out brings the input back on refresh", () => {
+    const { fs } = simulateInit({ vars: VARS });
+    const meta = readStructureMeta(fs);
+    fs.write(STRUCTURE_META_FILE, JSON.stringify({ ...meta, ownNpmRegistry: false }));
+    engineRun(STRUCTURE, fs, discoverRunContext({ fs, isSdkInternal: false }), {
+      templates: TEMPLATES,
+    });
+    expect(fs.read(BUILD)).not.toContain("npm-own-registry-scopes");
+
+    fs.write(STRUCTURE_META_FILE, JSON.stringify({ version: meta.version }));
+    engineRun(STRUCTURE, fs, discoverRunContext({ fs, isSdkInternal: false }), {
+      templates: TEMPLATES,
+    });
+    expect(fs.read(BUILD)).toContain("npm-own-registry-scopes");
+  });
+
+  test("an explicit ownNpmRegistry: true (opt-in period) is kept on and dropped from .structure", () => {
+    const { fs } = simulateInit({ vars: VARS });
+    const meta = readStructureMeta(fs);
+    fs.write(STRUCTURE_META_FILE, JSON.stringify({ ...meta, ownNpmRegistry: true }));
+    engineRun(STRUCTURE, fs, discoverRunContext({ fs, isSdkInternal: false }), {
+      templates: TEMPLATES,
+    });
+    expect(fs.read(BUILD).match(/npm-own-registry-scopes: '@platforma-open'/g)).toHaveLength(1);
+    expect(fs.read(STRUCTURE_META_FILE)).toBe(JSON.stringify({ version: meta.version }));
   });
 
   test("sdk-internal blocks get neither workflow file", () => {

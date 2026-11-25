@@ -179,6 +179,14 @@ _create := func(family, spec, ctx, options) {
 	// pass data only if needed, otherwise we are not waiting for data to complete
 	if ops.data {
 		rb.createInputField("data").set(resolve.getFutureOutputField("data"))
+
+		// A multi result also links the data map as `dataMap`, a field only multi results carry, so
+		// the PColumnBundle state can await the map without holding single results until their data
+		// exists. `data` stays for templates that await it. The two links resolve separately; the
+		// unmarshaller reads whichever is set.
+		if !ops.first {
+			rb.createInputField("dataMap").set(resolve.getFutureOutputField("data"))
+		}
 	}
 
 	// the data structure differs in this case; the single ref, data and spec are stored
@@ -274,9 +282,30 @@ resultUnmarshaller := func() {
 				// format list of results
 
 				specs := resource.get("spec").inputs() // map of specs
-				datas := undefined
-				if resource.hasInputField("data") {
-					datas = resource.get("data") // map of datas
+
+				// `spec`, `data` and `dataMap` come to the result through separate future fields,
+				// which resolve one by one. `data` and `dataMap` link the same data map: a template
+				// awaits one of them (PColumnBundle awaits `dataMap`, the other states `data`), so
+				// the map is read from whichever is set. A result made by an older SDK has no
+				// `dataMap`.
+				//
+				// When neither is set (a template that awaits only the specs), the items get a
+				// future of their entry in the data map, as an item of a single result gets the
+				// unset field itself. Family 2 needs the data map itself to tell an item without
+				// data, so it still requires the map to be set.
+				dataField := undefined
+				for name in ["dataMap", "data"] {
+					if resource.hasInputField(name) {
+						f := resource.getField(name)
+						if is_undefined(dataField) || (f.isSet() && !dataField.isSet()) {
+							dataField = f
+						}
+					}
+				}
+
+				datas := undefined // map of datas
+				if !is_undefined(dataField) && (isFamily2 || dataField.isSet()) {
+					datas = dataField.getValue()
 				}
 
 				result := []
@@ -294,6 +323,9 @@ resultUnmarshaller := func() {
 						} else if datas.hasInputField(ref) && !isNoResultField(datas.getField(ref)) {
 							r.data = getData(datas, ref)
 						}
+					} else if !is_undefined(dataField) {
+						// the data map is pending
+						r.data = dataField.getFutureInputField(ref)
 					}
 
 					result = append(result, ll.toStrict(r))

@@ -1,5 +1,157 @@
 # @milaboratories/pl-middle-layer
 
+## 2.8.2
+
+### Patch Changes
+
+- Updated dependencies [ad33d78]
+  - @platforma-sdk/block-tools@2.22.0
+
+## 2.8.1
+
+### Patch Changes
+
+- Updated dependencies [f3ba2b0]
+  - @platforma-sdk/block-tools@2.21.0
+
+## 2.8.0
+
+### Minor Changes
+
+- 26adc15: `BlockStatusSummary.usage`: the peak CPU and RAM of the block's jobs and what they were granted, summed over the runner's `exec/telemetry` readings. Absent until a job reports; only the k8s runner does.
+
+### Patch Changes
+
+- Updated dependencies [26adc15]
+  - @milaboratories/pl-model-middle-layer@1.41.0
+  - @milaboratories/pf-driver@1.9.20
+  - @platforma-sdk/model@1.90.20
+  - @platforma-sdk/block-tools@2.20.6
+  - @milaboratories/pf-spec-driver@1.6.2
+
+## 2.7.12
+
+### Patch Changes
+
+- Updated dependencies [3c6a385]
+  - @platforma-sdk/workflow-tengo@6.24.3
+
+## 2.7.11
+
+### Patch Changes
+
+- Updated dependencies [6d44297]
+  - @platforma-sdk/block-tools@2.20.5
+
+## 2.7.10
+
+### Patch Changes
+
+- 392eabe: The root action context of a block run carries the project resource id (`project-id`) in its baggage, so the backend can tell which project a job belongs to
+
+## 2.7.9
+
+### Patch Changes
+
+- 07a5ecd: Take the quickjs-emscripten fork from npm.platforma.bio as `@milaboratories-poc/quickjs-emscripten`, replacing the GitHub release URL that pnpm 12 refuses as a subdependency. Consumers map the `@milaboratories-poc` scope to https://npm.platforma.bio/ in their `.npmrc`.
+
+## 2.7.8
+
+### Patch Changes
+
+- Updated dependencies [8515c5b]
+  - @platforma-sdk/workflow-tengo@6.24.2
+
+## 2.7.7
+
+### Patch Changes
+
+- Updated dependencies [02dc91f]
+  - @platforma-sdk/workflow-tengo@6.24.1
+
+## 2.7.6
+
+### Patch Changes
+
+- 70671c3: Compile each block's model bundle to QuickJS bytecode once and reuse it across the contexts that render the block's lambdas, instead of parsing the bundle per lambda. Needs the bytecode API added in quickjs-emscripten 0.32.1-bytecode.1.
+
+## 2.7.5
+
+### Patch Changes
+
+- Updated dependencies [3bc40f8]
+- Updated dependencies [a992704]
+  - @platforma-sdk/workflow-tengo@6.24.0
+
+## 2.7.4
+
+### Patch Changes
+
+- Updated dependencies [30071dc]
+  - @milaboratories/pl-client@3.27.0
+  - @milaboratories/pl-model-backend@1.4.53
+  - @milaboratories/pl-drivers@2.0.8
+  - @milaboratories/pl-errors@1.4.68
+  - @milaboratories/pl-tree@1.18.7
+  - @platforma-sdk/block-tools@2.20.4
+  - @platforma-sdk/workflow-tengo@6.23.0
+
+## 2.7.3
+
+### Patch Changes
+
+- Updated dependencies [863d3f0]
+  - @platforma-sdk/workflow-tengo@6.23.0
+
+## 2.7.2
+
+### Patch Changes
+
+- Updated dependencies [3a7d90c]
+  - @platforma-sdk/workflow-tengo@6.22.5
+
+## 2.7.1
+
+### Patch Changes
+
+- c1869c8: Update undici to 7.30.2, which fixes six security advisories in the cache and redirect interceptors and in Subresource Integrity checks. The `undici` dependency range is now `~7.30.2`.
+- c1869c8: Update pframes-rs-node, pframes-rs-wasip2 and polars-pf to 1.3.1. pframes-rs-node and polars-pf get fixes for security advisories in the Rust crates arrow, parquet, rustix and zstd. pframes-rs-wasip2 has no functional change. polars-pf also gets the spec engine changes of pframes-rs 1.3.0 (reverse linker traversal, an axis mapping underflow fix), which pframes-rs-wasip2 already has. Bump runenv-python-3 to 1.16.2, which bundles polars-pf 1.3.1 for ptabler.
+- Updated dependencies [c1869c8]
+- Updated dependencies [c1869c8]
+  - @milaboratories/pl-client@3.26.1
+  - @milaboratories/pl-drivers@2.0.7
+  - @milaboratories/pl-http@1.2.7
+  - @platforma-sdk/block-tools@2.20.3
+  - @milaboratories/pf-driver@1.9.19
+  - @platforma-sdk/workflow-tengo@6.22.4
+  - @milaboratories/pl-model-backend@1.4.52
+  - @milaboratories/pl-errors@1.4.67
+  - @milaboratories/pl-tree@1.18.6
+  - @milaboratories/pf-spec-driver@1.6.1
+  - @platforma-sdk/model@1.90.2
+
+## 2.7.0
+
+### Minor Changes
+
+- 8cc6580: Support user listing that the server controls per client role (`userListing:v2`).
+
+  - pl-client: `PlClient.canListUsers` tells if the authenticated user can list users. On a `userListing:v2` backend it reads `GetSessionInfo.can_list_users`; on a `userListing:v1` backend it is true. `GetSessionInfo` responses carry `canListUsers`.
+  - pl-client: the protocol definitions are synced with the backend. `MaintenanceAPI_Ping_Response.requiredCapabilities` is renamed to `requiredClientCapabilities`, as in the backend proto.
+  - pl-middle-layer: `MiddleLayer.userListingAvailable` selects the recipient picker or paste-a-login UI.
+  - pl-cli: `admin user-list` tells clearly when the server does not let the user list users.
+
+### Patch Changes
+
+- Updated dependencies [8cc6580]
+  - @milaboratories/pl-client@3.26.0
+  - @milaboratories/pl-model-backend@1.4.51
+  - @milaboratories/pl-drivers@2.0.6
+  - @milaboratories/pl-errors@1.4.66
+  - @milaboratories/pl-tree@1.18.5
+  - @platforma-sdk/block-tools@2.20.2
+  - @platforma-sdk/workflow-tengo@6.22.3
+
 ## 2.6.4
 
 ### Patch Changes

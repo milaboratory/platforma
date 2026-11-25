@@ -1,5 +1,125 @@
 # @platforma-sdk/pl-cli
 
+## 0.13.1
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.8.2
+
+## 0.13.0
+
+### Minor Changes
+
+- 31e5ef7: The `pl-cli maintenance controller` commands are removed, because newer backends keep the resources fixup progress in a different place and `rerun-fixups` no longer had any effect.
+
+## 0.12.17
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.8.1
+
+## 0.12.16
+
+### Patch Changes
+
+- Updated dependencies [26adc15]
+  - @milaboratories/pl-middle-layer@2.8.0
+
+## 0.12.15
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.12
+
+## 0.12.14
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.11
+
+## 0.12.13
+
+### Patch Changes
+
+- Updated dependencies [392eabe]
+  - @milaboratories/pl-middle-layer@2.7.10
+
+## 0.12.12
+
+### Patch Changes
+
+- Updated dependencies [07a5ecd]
+  - @milaboratories/pl-middle-layer@2.7.9
+
+## 0.12.11
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.8
+
+## 0.12.10
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.7
+
+## 0.12.9
+
+### Patch Changes
+
+- Updated dependencies [70671c3]
+  - @milaboratories/pl-middle-layer@2.7.6
+
+## 0.12.8
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.5
+
+## 0.12.7
+
+### Patch Changes
+
+- Updated dependencies [30071dc]
+  - @milaboratories/pl-client@3.27.0
+  - @milaboratories/pl-middle-layer@2.7.4
+
+## 0.12.6
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.3
+
+## 0.12.5
+
+### Patch Changes
+
+- @milaboratories/pl-middle-layer@2.7.2
+
+## 0.12.4
+
+### Patch Changes
+
+- Updated dependencies [c1869c8]
+- Updated dependencies [c1869c8]
+  - @milaboratories/pl-client@3.26.1
+  - @milaboratories/pl-middle-layer@2.7.1
+
+## 0.12.3
+
+### Patch Changes
+
+- 8cc6580: Support user listing that the server controls per client role (`userListing:v2`).
+
+  - pl-client: `PlClient.canListUsers` tells if the authenticated user can list users. On a `userListing:v2` backend it reads `GetSessionInfo.can_list_users`; on a `userListing:v1` backend it is true. `GetSessionInfo` responses carry `canListUsers`.
+  - pl-client: the protocol definitions are synced with the backend. `MaintenanceAPI_Ping_Response.requiredCapabilities` is renamed to `requiredClientCapabilities`, as in the backend proto.
+  - pl-middle-layer: `MiddleLayer.userListingAvailable` selects the recipient picker or paste-a-login UI.
+  - pl-cli: `admin user-list` tells clearly when the server does not let the user list users.
+
+- Updated dependencies [8cc6580]
+  - @milaboratories/pl-client@3.26.0
+  - @milaboratories/pl-middle-layer@2.7.0
+
 ## 0.12.2
 
 ### Patch Changes

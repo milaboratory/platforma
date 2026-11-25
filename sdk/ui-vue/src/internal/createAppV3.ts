@@ -1,4 +1,4 @@
-import { deepClone, delay, uniqueId } from "@milaboratories/helpers";
+import { deepClone, delay, isJsonEqual, uniqueId } from "@milaboratories/helpers";
 import type { Mutable } from "@milaboratories/helpers";
 import type {
   NavigationState,
@@ -238,7 +238,13 @@ export function createAppV3<
         if (isAuthorChanged || data.isExternalSnapshot) {
           debug("got external changes, applying them to the snapshot", patches.value);
           ignoreUpdates(() => {
+            const storageBefore = snapshot.value.blockStorage;
             snapshot.value = applyPatch(snapshot.value, patches.value, false, false).newDocument;
+            // The author is the author of the stored data, not of this update. Until the first
+            // save of this window lands, every update carries the previous author, also one that
+            // changes the outputs or the section only. Such an update holds no data to take: the
+            // window's data may already be ahead of it, with a save queued or on its way.
+            if (isJsonEqual(storageBefore, snapshot.value.blockStorage)) return;
             updateAppModel({ data: deriveDataFromStorage<Data>(snapshot.value.blockStorage) });
             // Reconcile plugin data from external source
             for (const [handle, pluginState] of pluginStates) {

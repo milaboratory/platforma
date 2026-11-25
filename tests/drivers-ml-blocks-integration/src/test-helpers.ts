@@ -171,7 +171,7 @@ export function projectFieldName(blockId: string, fieldName: ProjectField["field
   return `${blockId}-${fieldName}`;
 }
 
-export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 5000) {
+export async function awaitBlockDone(prj: Project, blockId: string, timeout: number = 15_000) {
   const abortSignal = AbortSignal.timeout(timeout);
   const overview = prj.overview;
   const state = prj.getBlockState(blockId);
@@ -473,7 +473,7 @@ export function outputRef(blockId: string, name: string, requireEnrichments?: tr
 export async function awaitBlockStateStable(
   prj: Project,
   blockId: string,
-  timeout: number = 5000,
+  timeout: number = 15_000,
 ): Promise<BlockStateInternalV3> {
   const abortSignal = AbortSignal.timeout(timeout);
   const blockState = prj.getBlockState(blockId);

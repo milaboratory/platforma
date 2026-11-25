@@ -1,5 +1,52 @@
 # @platforma-sdk/block-tools
 
+## 2.22.0
+
+### Minor Changes
+
+- ad33d78: Blocks publish `@platforma-open` to npm.platforma.bio by default. A full `structure refresh` now adds `npm-own-registry-scopes: '@platforma-open'` to the generated `.github/workflows/build.yaml` unless the block's `.structure` has `"ownNpmRegistry": false` (opt-out, keeps the block on npmjs). `pnpm update-sdk` (`--update-deps-only`) does not rewrite `build.yaml`, so a block moves only on a full refresh. An explicit `"ownNpmRegistry": true` from the opt-in period is dropped from `.structure` on refresh; the block stays on the own registry. SDK-internal blocks (`etc/blocks`) are not affected.
+
+## 2.21.0
+
+### Minor Changes
+
+- f3ba2b0: Block CI can publish `@platforma-open` to npm.platforma.bio: set `"ownNpmRegistry": true` in the block's `.structure` and run `structure refresh` (`pnpm update-sdk`). The generated `.github/workflows/build.yaml` then passes `npm-own-registry-scopes: '@platforma-open'` to the shared CI. Without the setting the workflow is unchanged, byte for byte.
+
+## 2.20.6
+
+### Patch Changes
+
+- Updated dependencies [26adc15]
+  - @milaboratories/pl-model-middle-layer@1.41.0
+
+## 2.20.5
+
+### Patch Changes
+
+- 6d44297: Block `pnpm-workspace.yaml` excludes `@milaboratories-poc/*` from `minimumReleaseAge`, as the SDK monorepo does: blocks get the quickjs-emscripten fork through `@platforma-sdk/test`.
+
+## 2.20.4
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.53
+
+## 2.20.3
+
+### Patch Changes
+
+- c1869c8: Update undici to 7.30.2, which fixes six security advisories in the cache and redirect interceptors and in Subresource Integrity checks. The `undici` dependency range is now `~7.30.2`.
+- Updated dependencies [c1869c8]
+  - @milaboratories/pl-http@1.2.7
+  - @platforma-sdk/package-builder-lib@1.7.1
+  - @milaboratories/pl-model-backend@1.4.52
+
+## 2.20.2
+
+### Patch Changes
+
+- @milaboratories/pl-model-backend@1.4.51
+
 ## 2.20.1
 
 ### Patch Changes
