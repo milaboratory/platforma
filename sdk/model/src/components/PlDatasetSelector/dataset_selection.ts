@@ -1,10 +1,20 @@
-import type { LabeledEnrichmentRefs, Option, PrimaryRef } from "@milaboratories/pl-model-common";
+import type { ColumnUniversalId, Option, PrimaryRef } from "@milaboratories/pl-model-common";
+
+/**
+ * A column joined to a dataset without being picked by the user, with the header
+ * it is exported under. The id names a block output reached from the dataset
+ * through linker columns, so a workflow can find the column by the id alone.
+ */
+export type DatasetEnrichment = {
+  readonly id: ColumnUniversalId;
+  readonly label: string;
+};
 
 /** Dataset picker entry: user picks {@link primary}, gets {@link enrichments} attached. */
 export type DatasetOption = {
   readonly primary: Option;
   readonly filters?: readonly Option[];
-  readonly enrichments?: LabeledEnrichmentRefs;
+  readonly enrichments?: readonly DatasetEnrichment[];
 };
 
 /**
@@ -14,7 +24,7 @@ export type DatasetOption = {
 export type DatasetSelection = {
   readonly __isDatasetSelection: "v1";
   readonly primary: PrimaryRef;
-  readonly enrichments?: LabeledEnrichmentRefs;
+  readonly enrichments?: readonly DatasetEnrichment[];
 };
 
 export function isDatasetSelection(value: unknown): value is DatasetSelection {
@@ -28,7 +38,7 @@ export function isDatasetSelection(value: unknown): value is DatasetSelection {
 
 export function createDatasetSelection(
   primary: PrimaryRef,
-  enrichments?: LabeledEnrichmentRefs,
+  enrichments?: readonly DatasetEnrichment[],
 ): DatasetSelection {
   if (enrichments !== undefined && enrichments.length > 0) {
     return { __isDatasetSelection: "v1", primary, enrichments };

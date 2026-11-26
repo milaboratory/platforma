@@ -1,15 +1,14 @@
-import { Annotation, createGlobalPObjectId, createPlRef } from "@milaboratories/pl-model-common";
-import type {
-  AxisSpec,
-  PColumn,
-  PColumnSpec,
-  PlRef,
-  PObjectId,
+import {
+  Annotation,
+  createGlobalPObjectId,
+  createLocalPObjectId,
+  createPlRef,
 } from "@milaboratories/pl-model-common";
+import type { AxisSpec, PColumn, PColumnSpec, PObjectId } from "@milaboratories/pl-model-common";
 import canonicalize from "canonicalize";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import type { PColumnDataUniversal } from "../../render/internal";
-import { buildRefMap, filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
+import { filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
 import {
   createTestCollectionDriver,
   type TestCollectionDriverHandle,
@@ -108,32 +107,10 @@ describe("findFilterColumns", () => {
   });
 });
 
-describe("buildRefMap", () => {
-  test("maps canonicalized PlRef to original ref", () => {
-    const ref1 = createPlRef("b1", "out1");
-    const ref2 = createPlRef("b2", "out2", true);
-    const map = buildRefMap([{ ref: ref1 }, { ref: ref2 }]);
-    expect(map.get(canonicalize(ref1)! as PObjectId)).toBe(ref1);
-    expect(map.get(canonicalize(ref2)! as PObjectId)).toBe(ref2);
-    expect(map.size).toBe(2);
-  });
-
-  test("returns empty map for empty entries", () => {
-    expect(buildRefMap([]).size).toBe(0);
-  });
-});
-
 describe("filterMatchesToOptions", () => {
   test("converts filter matches to Option[] with derived labels", () => {
     const filterRef1 = createPlRef("b1", "filter-top1000");
     const filterRef2 = createPlRef("b1", "filter-highconf");
-
-    // Build ref map from entries (simulating result pool)
-    const refMap = buildRefMap([
-      { ref: anchorSnap.id as unknown as PlRef },
-      { ref: filterRef1 },
-      { ref: filterRef2 },
-    ]);
 
     const filterSpec1 = spec("filter1", [axis("sample")], { [Annotation.IsSubset]: "true" });
     const filterSpec2 = spec("filter2", [axis("sample")], { [Annotation.IsSubset]: "true" });
@@ -149,14 +126,10 @@ describe("filterMatchesToOptions", () => {
     });
     expect(matches.length).toBe(2);
 
-    const options = filterMatchesToOptions(matches, {
-      refsByObjectId: refMap,
-      datasetSpec: anchorSpec,
-    });
+    const options = filterMatchesToOptions(matches, { datasetSpec: anchorSpec });
     expect(options).toHaveLength(2);
+    expect(options.map((o) => o.ref)).toEqual(expect.arrayContaining([filterRef1, filterRef2]));
     for (const opt of options) {
-      expect(opt.ref).toBeDefined();
-      expect(opt.label).toBeDefined();
       expect(typeof opt.label).toBe("string");
     }
   });
@@ -176,7 +149,6 @@ describe("filterMatchesToOptions", () => {
     });
 
     const filterRef = createPlRef("b1", "filter");
-    const refMap = buildRefMap([{ ref: filterRef }]);
     const filterSpec = spec("filter", [axis("sample")], {
       [Annotation.IsSubset]: "true",
       [Annotation.Label]: "Selected Leads",
@@ -197,7 +169,7 @@ describe("filterMatchesToOptions", () => {
     });
     expect(matches).toHaveLength(1);
 
-    const options = filterMatchesToOptions(matches, { refsByObjectId: refMap, datasetSpec });
+    const options = filterMatchesToOptions(matches, { datasetSpec });
     expect(options).toHaveLength(1);
     expect(options[0].label).toBe("Bulk / Top 10");
 
@@ -205,7 +177,6 @@ describe("filterMatchesToOptions", () => {
     // suppression — otherwise the algorithm short-circuits on the
     // inherited "Selected Leads" label.
     const withCustomNative = filterMatchesToOptions(matches, {
-      refsByObjectId: refMap,
       datasetSpec,
       labelOptions: { formatters: { native: (l) => `<<${l}>>` } },
     });
@@ -213,7 +184,6 @@ describe("filterMatchesToOptions", () => {
 
     // Non-native label options (here `separator`) flow through.
     const withSeparator = filterMatchesToOptions(matches, {
-      refsByObjectId: refMap,
       datasetSpec,
       labelOptions: { separator: " :: " },
     });
@@ -231,7 +201,6 @@ describe("filterMatchesToOptions", () => {
 
     const ref1 = createPlRef("b1", "f1");
     const ref2 = createPlRef("b2", "f2");
-    const refMap = buildRefMap([{ ref: ref1 }, { ref: ref2 }]);
     const filterSpec1 = spec("filter1", [axis("sample")], {
       [Annotation.IsSubset]: "true",
       [Annotation.Label]: "Selected Leads",
@@ -262,22 +231,20 @@ describe("filterMatchesToOptions", () => {
     });
     expect(matches).toHaveLength(2);
 
-    const options = filterMatchesToOptions(matches, { refsByObjectId: refMap, datasetSpec });
+    const options = filterMatchesToOptions(matches, { datasetSpec });
     expect(options.map((o) => o.label).sort()).toEqual(["Bulk / Top 10", "Bulk / Top 11"]);
   });
 
   test("returns empty array for empty matches", () => {
-    expect(
-      filterMatchesToOptions([], { refsByObjectId: new Map(), datasetSpec: anchorSpec }),
-    ).toEqual([]);
+    expect(filterMatchesToOptions([], { datasetSpec: anchorSpec })).toEqual([]);
   });
 
-  test("skips entries whose id is not in refsByObjectId", () => {
+  test("skips a column that is not a block output", () => {
     const knownRef = createPlRef("b1", "known");
     const knownSpec = spec("known", [axis("sample")], { [Annotation.IsSubset]: "true" });
     const orphanSpec = spec("orphan", [axis("sample")], { [Annotation.IsSubset]: "true" });
     const knownSnap = col(canonicalize(knownRef)! as PObjectId, knownSpec);
-    const orphanSnap = col(gid("orphan"), orphanSpec);
+    const orphanSnap = col(createLocalPObjectId(["main"], "orphan"), orphanSpec);
     registerCols([knownSnap, orphanSnap, anchorSnap]);
 
     const matches = findFilterColumns({
@@ -286,12 +253,8 @@ describe("filterMatchesToOptions", () => {
       driver: driverHandle.driver,
     });
     expect(matches.length).toBe(2);
-    const refMap = buildRefMap([{ ref: knownRef }]);
-    const options = filterMatchesToOptions(matches, {
-      refsByObjectId: refMap,
-      datasetSpec: anchorSpec,
-    });
+    const options = filterMatchesToOptions(matches, { datasetSpec: anchorSpec });
     expect(options).toHaveLength(1);
-    expect(options[0].ref).toBe(knownRef);
+    expect(options[0].ref).toEqual(knownRef);
   });
 });

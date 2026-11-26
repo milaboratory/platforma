@@ -1,5 +1,6 @@
 test := import(":test")
 times := import("times")
+json := import("json")
 tb := import(":pframes.table-builder")
 
 sampleSpec := { kind: "PColumn", name: "test", valueType: "Int", axesSpec: [{ name: "id", type: "String" }] }
@@ -118,49 +119,49 @@ TestMultiplePrimaries := func() {
 	test.isTrue(true, "multiple addPrimary calls accepted")
 }
 
-// EnrichmentRef hops are either a global-form PObjectId string —
-// canonicalize({__isRef: true, blockId, name}) — decoded by the workflow at
-// build() time, or a pre-resolved {spec, data} map (used when the hop is sourced
-// from prerun/outputs and was resolved on the model side).
-sampleHitId := "{\"__isRef\":true,\"blockId\":\"b1\",\"name\":\"hit-1\"}"
+// A column id names a block output — canonicalize({__isRef: true, blockId, name}) —
+// or a discovered column: a block output reached through linker columns.
+sampleColumnId := "{\"__isRef\":true,\"blockId\":\"b1\",\"name\":\"hit-1\"}"
 sampleLinkerId := "{\"__isRef\":true,\"blockId\":\"b1\",\"name\":\"linker-1\"}"
+sampleDiscoveredKey := {
+	__isDiscovered: true,
+	column: sampleColumnId,
+	path: [{ type: "linker", column: sampleLinkerId }]
+}
+sampleDiscoveredId := string(json.encode(sampleDiscoveredKey))
 
-TestAddColumnAcceptsEnrichmentRefWithGlobalIds := func() {
+TestAddColumnAcceptsBlockOutputId := func() {
 	b := tb.tableBuilder("tsv")
 	b.addPrimary("main", sampleRef)
-	b.addColumn({
-		__isEnrichment: "v1",
-		hit: sampleHitId,
-		path: [{ type: "linker", linker: sampleLinkerId }]
-	})
-	test.isTrue(true, "addColumn accepts EnrichmentRef with global-form PObjectId hops")
+	b.addColumn(sampleColumnId)
+	test.isTrue(true, "addColumn accepts the id of a block output")
 }
 
-TestAddColumnAcceptsEnrichmentRefWithResolvedHops := func() {
+TestAddColumnAcceptsDiscoveredId := func() {
+	b := tb.tableBuilder("tsv")
+	b.addPrimary("main", sampleRef)
+	b.addColumn(sampleDiscoveredId)
+	test.isTrue(true, "addColumn accepts the id of a discovered column")
+}
+
+TestAddColumnAcceptsDiscoveredKeyWithResolvedColumns := func() {
 	b := tb.tableBuilder("tsv")
 	b.addPrimary("main", sampleResolved)
 	b.addColumn({
-		__isEnrichment: "v1",
-		hit: sampleResolved,
-		path: [{ type: "linker", linker: sampleResolved }]
+		__isDiscovered: true,
+		column: sampleResolved,
+		path: [{ type: "linker", column: sampleResolved }]
 	})
-	test.isTrue(true, "addColumn accepts EnrichmentRef with pre-resolved {spec, data} hops")
+	test.isTrue(true, "addColumn accepts a discovered column key with resolved {spec, data} columns")
 }
 
-TestAddColumnAcceptsEnrichmentRefWithoutPath := func() {
-	b := tb.tableBuilder("tsv")
-	b.addPrimary("main", sampleRef)
-	b.addColumn({ __isEnrichment: "v1", hit: sampleHitId })
-	test.isTrue(true, "addColumn accepts zero-hop EnrichmentRef (path omitted)")
-}
-
-TestAddColumnsAcceptsArrayWithEnrichmentRef := func() {
+TestAddColumnsAcceptsArrayWithColumnIds := func() {
 	b := tb.tableBuilder("tsv")
 	b.addPrimary("main", sampleRef)
 	b.addColumns(
-		[sampleResolved, { __isEnrichment: "v1", hit: sampleHitId, path: [] }],
+		[sampleResolved, sampleColumnId, { id: sampleDiscoveredId, label: "Linked" }],
 		{ headerPrefix: "x_" })
-	test.isTrue(true, "addColumns accepts array mixing resolved columns and EnrichmentRefs")
+	test.isTrue(true, "addColumns accepts an array mixing resolved columns, column ids and labeled column ids")
 }
 
 TestSetColumnJoinAcceptsAllModes := func() {

@@ -90,7 +90,7 @@ blockTest(
 );
 
 blockTest(
-  "EnrichmentRef from buildDatasetOptions joins via the linker column",
+  "an enrichment from buildDatasetOptions joins via the linker column",
   { timeout: 60000 },
   async ({ rawPrj: project, helpers, expect }) => {
     const { blockId, outputs } = await setupProject(project, helpers);

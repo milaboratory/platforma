@@ -652,7 +652,7 @@ tplTest.concurrent(
 );
 
 tplTest.concurrent(
-  "tableBuilder: an enrichment column given by a serialized value id resolves by its address",
+  "tableBuilder: an enrichment column given by a column id resolves by its address",
   async ({ helper, expect, driverKit }) => {
     const content = await runQuerySpecConsumer(
       helper,
@@ -662,11 +662,11 @@ tplTest.concurrent(
       {
         addColumn: [
           {
-            query: {
-              __isEnrichment: "v1",
-              hit: JSON.stringify({ __isRef: true, blockId: "producer-serialized", name: "score" }),
-              path: [],
-            },
+            query: JSON.stringify({
+              __isRef: true,
+              blockId: "producer-serialized",
+              name: "score",
+            }),
           },
         ],
       },

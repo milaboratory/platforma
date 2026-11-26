@@ -1,23 +1,20 @@
 import {
   Annotation,
-  createEnrichmentRef,
-  extractPObjectId,
+  isColumnDiscoveredId,
   isGlobalPObjectId,
+  parseColumnDiscoveredId,
 } from "@milaboratories/pl-model-common";
 import type {
   ColumnsCollectionDriverModel,
-  EnrichmentStep,
-  LabeledEnrichmentRef,
-  LabeledEnrichmentRefs,
+  ColumnUniversalId,
   MultiColumnSelector,
   PColumnSpec,
   PObjectSpec,
 } from "@milaboratories/pl-model-common";
-import type { ColumnRecipe, ColumnsSource } from "../../columns";
+import type { ColumnRecipe, ColumnsSource, ColumnsSourceShorthand } from "../../columns";
 import {
   hasSingleDataColumn,
   ColumnsCollection,
-  collectLinkerIds,
   hitQualifications,
   collectLinkerColumns,
   queriesQualifications,
@@ -27,9 +24,10 @@ import {
   type DeriveLabelsOptions,
   type Entry,
 } from "../../labels/derive_distinct_labels";
+import type { DatasetEnrichment } from "./dataset_selection";
 
 export interface FindEnrichmentColumnsOptions {
-  sources: ReadonlyArray<ColumnsSource>;
+  sources: ReadonlyArray<ColumnsCollection | ColumnsSource | ColumnsSourceShorthand>;
   anchorSpec: PColumnSpec;
   maxHops?: number;
   include?: MultiColumnSelector | MultiColumnSelector[];
@@ -42,6 +40,9 @@ export interface FindEnrichmentColumnsOptions {
  * Linker-reached hits attached to the anchor primary. Drops zero-hop variants
  * (filters / the primary itself) and structural hits (subset, linker, label
  * columns). Narrow further with `include` selectors or a `predicate`.
+ *
+ * A hit is kept only when a workflow can find it by its id: the hit and every
+ * linker leading to it are block outputs.
  */
 export function findEnrichmentColumns(options: FindEnrichmentColumnsOptions): ColumnRecipe[] {
   const include =
@@ -68,48 +69,38 @@ export function findEnrichmentColumns(options: FindEnrichmentColumnsOptions): Co
   const predicate = options.predicate;
   return columns.filter((v) => {
     if (hasSingleDataColumn(v)) return false;
-    if (predicate !== undefined && !predicate(v.getSpec())) return false;
-    if (!isGlobalPObjectId(extractPObjectId(v.id))) return false;
-    if (collectLinkerIds(v).some((id) => !isGlobalPObjectId(id))) return false;
-    return true;
+    if (!reachesBlockOutputs(v.id)) return false;
+    return predicate === undefined || predicate(v.getSpec());
   });
 }
 
 /**
- * Pair each variant with a path-disambiguated label (so export headers stay
- * unique) and carry hit/linker `PObjectId`s through verbatim. Propagates
- * `qualifications.forHit`; `forQueries` is re-derived by the table builder.
+ * Pairs each column with a label that tells apart the same hit reached through
+ * different linkers, so export headers stay unique.
  */
-export function enrichmentVariantsToRefs(
+export function labelEnrichments(
   variants: ColumnRecipe[],
   labelOptions?: DeriveLabelsOptions,
-): LabeledEnrichmentRefs {
+): DatasetEnrichment[] {
   if (variants.length === 0) return [];
 
-  const linkerIdsByVariant = variants.map((v) => collectLinkerIds(v));
-  const hitQualsByVariant = variants.map((v) => [...hitQualifications(v)]);
-
-  const entries: Entry[] = variants.map((variant, i) => ({
+  const entries: Entry[] = variants.map((variant) => ({
     spec: variant.getSpec(),
     linkerPath: collectLinkerColumns(variant).map((linker) => ({ spec: linker.getSpec() })),
     qualifications: {
-      forHit: hitQualsByVariant[i],
+      forHit: [...hitQualifications(variant)],
       forQueries: queriesQualifications(variant),
     },
   }));
   const labels = deriveDistinctLabels(entries, labelOptions);
 
-  return variants.map((variant, i): LabeledEnrichmentRef => {
-    const path: undefined | EnrichmentStep[] =
-      linkerIdsByVariant[i].length === 0
-        ? undefined
-        : linkerIdsByVariant[i].map((id) => ({ type: "linker", linker: id }));
-    return {
-      ref: createEnrichmentRef(extractPObjectId(variant.id), {
-        path,
-        qualifications: hitQualsByVariant[i],
-      }),
-      label: labels[i],
-    };
-  });
+  return variants.map((variant, i): DatasetEnrichment => ({ id: variant.id, label: labels[i] }));
+}
+
+// Internals
+
+function reachesBlockOutputs(id: ColumnUniversalId): boolean {
+  if (!isColumnDiscoveredId(id)) return false;
+  const key = parseColumnDiscoveredId(id);
+  return [key.column, ...(key.path ?? []).map((step) => step.column)].every(isGlobalPObjectId);
 }

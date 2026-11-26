@@ -828,11 +828,11 @@ const serializedId = JSON.stringify({ __isRef: true, blockId: "nowhere/main", na
 
 tplTest.concurrent.for([
   {
-    kind: "a table enrichment column's hit",
+    kind: "a table enrichment column",
     template: "v2.table",
     args: {
       primary: ref("nowhere", "score"),
-      column: { __isEnrichment: "v1", hit: serializedId, path: [] },
+      column: serializedId,
     },
   },
   { kind: "a bundle's single", template: "v2.bundle", args: { single: serializedId } },

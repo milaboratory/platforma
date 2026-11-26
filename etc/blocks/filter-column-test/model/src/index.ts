@@ -1,6 +1,6 @@
 import type {
+  DatasetEnrichment,
   DatasetSelection,
-  LabeledEnrichmentRefs,
   InferHrefType,
   InferOutputsType,
   PObjectSpec,
@@ -26,7 +26,7 @@ const isPrimaryColumn = (spec: PObjectSpec): boolean =>
 
 export const platforma = BlockModelV3.create({ dataModel, kind })
 
-  .args<{ dataset: PrimaryRef; enrichments: LabeledEnrichmentRefs }>((data) => {
+  .args<{ dataset: PrimaryRef; enrichments: readonly DatasetEnrichment[] }>((data) => {
     if (data.dataset === undefined) throw new Error("Select a dataset");
     return {
       dataset: data.dataset.primary,
