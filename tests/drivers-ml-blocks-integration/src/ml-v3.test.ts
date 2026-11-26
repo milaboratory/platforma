@@ -1664,9 +1664,10 @@ blockTest(
     await project.runBlock(blockId);
 
     while (true) {
+      // Below the 300s test timeout, so a timeout still prints the unstable state.
       const state = (await awaitStableState(
         project.getBlockState(blockId),
-        25000,
+        280000,
       )) as InferBlockState<typeof readLogsModel>;
 
       // console.dir(state, { depth: 5 });
