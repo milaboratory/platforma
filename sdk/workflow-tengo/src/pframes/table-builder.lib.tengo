@@ -32,6 +32,7 @@ assets := import(":assets")
 maps := import(":maps")
 pSpec := import(":pframes.spec")
 bquery := import(":workflow.bquery")
+columnId := import(":pframes.column-id")
 
 buildTableTpl := assets.importTemplate(":pframes.build-table")
 
@@ -108,40 +109,33 @@ isPrimaryRef := func(value) {
 	return ll.isMap(value) && value.__isPrimaryRef == "v1"
 }
 
-isEnrichmentRef := func(value) {
-	return ll.isMap(value) && value.__isEnrichment == "v1"
+parseColumnId := columnId.parse
+
+isColumnId := func(query) {
+	return !is_undefined(parseColumnId(query))
 }
 
-// `{ ref: EnrichmentRef, label }` from `enrichmentMatchesToRefs`. The
-// per-element label becomes the export header.
-isLabeledEnrichment := func(value) {
+// `{ id, label }` — a column id with the header its column is exported under.
+isLabeledColumnId := func(value) {
 	return ll.isMap(value) &&
 		is_string(value.label) &&
-		isEnrichmentRef(value.ref)
+		isColumnId(value.id)
 }
 
-decodeGlobalPObjectId := func(id) {
+// Only a block output can be resolved by its id.
+decodeBlockOutputId := func(id) {
 	ll.assert(is_string(id),
-		"expected PObjectId string, got %v", id)
+		"expected a column id string, got %v", id)
 	decoded := json.decode(id)
 	ll.assert(ll.isMap(decoded) && is_string(decoded.blockId) && is_string(decoded.name),
-		"EnrichmentRef id is not a global PlRef; local-form ids must be " +
-		"pre-resolved to {spec, data} on the model side. Got: %v", decoded)
+		"column id does not name a block output; pass such a column resolved, " +
+		"as {spec, data}. Got: %v", decoded)
 	return { __isRef: true, blockId: decoded.blockId, name: decoded.name }
-}
-
-// step.linker is either a global-form PObjectId string or a resolved {spec, data}.
-enrichmentStepColumn := func(step) {
-	ll.assert(step.type == "linker",
-		"unsupported enrichment step type %q (only \"linker\" is allowed)", step.type)
-	ll.assert(!is_undefined(step.linker),
-		"linker step missing 'linker' field: %v", step)
-	return step.linker
 }
 
 // Anchored ColumnQuerySpec that needs `bquery.anchoredQuery` to resolve.
 isQuerySpec := func(q) {
-	return !isUnresolved(q) && !isResolvedColumn(q) && !isEnrichmentRef(q)
+	return !isUnresolved(q) && !isResolvedColumn(q) && !isColumnId(q)
 }
 
 // Returns true if `value` holds a ref by `isRef` anywhere in its structure, outside resolved columns
@@ -185,7 +179,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 		unresolved = func(value) { return holdsRef(value, q.isRef) }
 	}
 	querySpec := func(v) {
-		return !unresolved(v) && !isResolvedColumn(v) && !isEnrichmentRef(v)
+		return !unresolved(v) && !isResolvedColumn(v) && !isColumnId(v)
 	}
 
 	ll.assert(!is_undefined(VALID_FORMATS[format]),
@@ -249,7 +243,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 		 * Adds a single enrichment column. Expects exactly one match for query specs.
 		 *
 		 * @param query: ColumnQuerySpec (anchored axes reference primary names) |
-		 *               PColumnResult | PlRef | EnrichmentRef | ResolvedEnrichmentRef
+		 *               PColumnResult | PlRef | column id (see `:pframes.column-id`)
 		 * @param opts: (optional) {
 		 *                header?: string — column header in exported file,
 		 *                join?: "left" | "full" | "inner" — overrides setColumnJoin for this column
@@ -262,7 +256,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 				header = opts[0].header
 			}
 			join := columnJoinOpt(opts)
-			if unresolved(query) || isEnrichmentRef(query) {
+			if unresolved(query) || isColumnId(query) {
 				_hasUnresolved = true
 			}
 			_columns = append(_columns, {
@@ -278,7 +272,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 		 * Adds multiple enrichment columns from a multi-match query or an array
 		 * of pre-resolved columns. Empty match set is allowed (produces no enrichments).
 		 *
-		 * @param query: ColumnQuerySpec | (PColumnResult | EnrichmentRef | ResolvedEnrichmentRef)[] | PlRef
+		 * @param query: ColumnQuerySpec | (PColumnResult | column id | { id: column id, label })[] | PlRef
 		 * @param opts: (optional) {
 		 *                headerPrefix?: string, headerSuffix?: string,
 		 *                join?: "left" | "full" | "inner" — overrides setColumnJoin for these columns
@@ -294,26 +288,26 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 			}
 			join := columnJoinOpt(opts)
 
-			// Per-element entries. Labeled enrichments override the
-			// shared header prefix/suffix with their own label.
+			// Per-element entries. A labeled column id overrides the
+			// shared header prefix/suffix with its own label.
 			if is_array(query) {
 				for col in query {
-					ll.assert(isResolvedColumn(col) || isEnrichmentRef(col) || isLabeledEnrichment(col),
-						"array elements must be resolved columns {spec, data}, EnrichmentRefs, " +
-						"or labeled enrichments {ref, label}; got: %v", col)
+					ll.assert(isResolvedColumn(col) || isColumnId(col) || isLabeledColumnId(col),
+						"array elements must be resolved columns {spec, data}, column ids, " +
+						"or labeled column ids {id, label}; got: %v", col)
 
 					entryQuery := col
 					entryHeader := undefined
 					entryPrefix := headerPrefix
 					entrySuffix := headerSuffix
-					if isLabeledEnrichment(col) {
-						entryQuery = col.ref
+					if isLabeledColumnId(col) {
+						entryQuery = col.id
 						entryHeader = col.label
 						entryPrefix = undefined
 						entrySuffix = undefined
 					}
 
-					if unresolved(entryQuery) || isEnrichmentRef(entryQuery) {
+					if unresolved(entryQuery) || isColumnId(entryQuery) {
 						_hasUnresolved = true
 					}
 					_columns = append(_columns, {
@@ -328,7 +322,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 				return self
 			}
 
-			if unresolved(query) || isEnrichmentRef(query) {
+			if unresolved(query) || isColumnId(query) {
 				_hasUnresolved = true
 			}
 			_columns = append(_columns, {
@@ -448,13 +442,13 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 			}
 
 			// Resolve a column reference into {spec, data} futures.
-			// Accepts: PObjectId string | PlRef map | resolved {spec, data}.
+			// Accepts: block output id string | PlRef map | resolved {spec, data}.
 			resolveColumn := func(value) {
 				if is_string(value) {
 					if maps.containsKey(q, "isRef") {
 						ll.panic("serialized value ids are not supported by this query API; pass a ref {block, workflow, name}, got %v", value)
 					}
-					ref := decodeGlobalPObjectId(value)
+					ref := decodeBlockOutputId(value)
 					r := q.resolve(ref, _ctx)
 					return {
 						spec: r.getFutureInputField("spec"),
@@ -552,8 +546,8 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 			}
 
 			// Per-entry shape: flat {spec, data} for single, `multiResult`
-			// for multi-match queries, and resolved hit + path-step list
-			// for EnrichmentRefs.
+			// for multi-match queries, and the resolved column + its resolved
+			// linker columns for column ids.
 			columnEntries := []
 			for idx, c in _columns {
 				entry := {
@@ -563,24 +557,23 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 					headerSuffix: c.headerSuffix,
 					join: c.join
 				}
-				if isEnrichmentRef(c.query) {
-					resolvedHit := resolveColumn(c.query.hit)
-					entry.spec = resolvedHit.spec
-					entry.data = resolvedHit.data
+				byId := parseColumnId(c.query)
+				if !is_undefined(byId) {
+					resolvedColumn := resolveColumn(byId.column)
+					entry.spec = resolvedColumn.spec
+					entry.data = resolvedColumn.data
 					steps := []
-					if !is_undefined(c.query.path) {
-						for _, step in c.query.path {
-							resolvedStep := resolveColumn(enrichmentStepColumn(step))
-							steps = append(steps, {
-								type: step.type,
-								spec: resolvedStep.spec,
-								data: resolvedStep.data
-							})
-						}
+					for _, linker in byId.path {
+						resolvedLinker := resolveColumn(linker)
+						steps = append(steps, {
+							type: "linker",
+							spec: resolvedLinker.spec,
+							data: resolvedLinker.data
+						})
 					}
 					entry.path = steps
-					if !is_undefined(c.query.qualifications) && len(c.query.qualifications) > 0 {
-						entry.qualifications = c.query.qualifications
+					if len(byId.qualifications) > 0 {
+						entry.qualifications = byId.qualifications
 					}
 				} else if isResolvedColumn(c.query) {
 					entry.spec = c.query.spec

@@ -1,0 +1,48 @@
+test := import(":test")
+json := import("json")
+columnId := import(":pframes.column-id")
+
+OUTPUT_ID := "{\"__isRef\":true,\"blockId\":\"b1\",\"name\":\"score\"}"
+LINKER_ID := "{\"__isRef\":true,\"blockId\":\"b2\",\"name\":\"linker\"}"
+QUALIFICATIONS := [{ axis: { name: "pl7.app/sampleId" }, contextDomain: { "pl7.app/blockId": "b1" } }]
+
+TestParsesBlockOutputId := func() {
+	test.isEqual({ column: OUTPUT_ID, path: [], qualifications: [] }, columnId.parse(OUTPUT_ID))
+}
+
+TestParsesDiscoveredId := func() {
+	id := string(json.encode({
+		__isDiscovered: true,
+		column: OUTPUT_ID,
+		path: [{ type: "linker", column: LINKER_ID }],
+		columnQualifications: QUALIFICATIONS
+	}))
+	test.isEqual(
+		{ column: OUTPUT_ID, path: [LINKER_ID], qualifications: QUALIFICATIONS },
+		columnId.parse(id))
+}
+
+TestParsesDiscoveredIdWithoutPath := func() {
+	id := string(json.encode({ __isDiscovered: true, column: OUTPUT_ID }))
+	test.isEqual({ column: OUTPUT_ID, path: [], qualifications: [] }, columnId.parse(id))
+}
+
+TestParsesDecodedDiscoveredKey := func() {
+	resolved := { spec: { kind: "PColumn" }, data: "data_ref" }
+	parsed := columnId.parse({
+		__isDiscovered: true,
+		column: resolved,
+		path: [{ type: "linker", column: resolved }]
+	})
+	test.isEqual({ column: resolved, path: [resolved], qualifications: [] }, parsed)
+}
+
+TestRejectsWhatIsNotColumnId := func() {
+	test.isTrue(is_undefined(columnId.parse("pl7.app/score")), "a plain string")
+	test.isTrue(is_undefined(columnId.parse("{not json")), "a string that is not JSON")
+	test.isTrue(is_undefined(columnId.parse("{\"name\":\"x\"}")), "JSON of another map")
+	test.isTrue(is_undefined(columnId.parse({ name: "pl7.app/score" })), "a query spec")
+	test.isTrue(is_undefined(columnId.parse({ __isRef: true, blockId: "b1", name: "x" })), "a ref map")
+	test.isTrue(is_undefined(columnId.parse({ spec: {}, data: "d" })), "a resolved column")
+	test.isTrue(is_undefined(columnId.parse(undefined)), "undefined")
+}

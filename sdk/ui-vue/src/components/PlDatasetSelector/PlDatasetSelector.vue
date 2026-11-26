@@ -14,9 +14,9 @@ export default {
 
 <script lang="ts" setup>
 import type {
+  DatasetEnrichment,
   DatasetOption,
   DatasetSelection,
-  LabeledEnrichmentRefs,
   PObjectId,
   PlRef,
 } from "@platforma-sdk/model";
@@ -71,7 +71,7 @@ const props = withDefaults(
   },
 );
 
-type Selection = { primary: PlRef; filter?: PlRef; enrichments?: LabeledEnrichmentRefs };
+type Selection = { primary: PlRef; filter?: PlRef; enrichments?: readonly DatasetEnrichment[] };
 
 // `deepEqual` (used by PlDropdown for matching) treats `{a, b: undefined}` and
 // `{a}` as different shapes, so the option list and the selection value must
@@ -79,7 +79,7 @@ type Selection = { primary: PlRef; filter?: PlRef; enrichments?: LabeledEnrichme
 function makeSelection(
   primary: PlRef,
   filter: PlRef | undefined,
-  enrichments: LabeledEnrichmentRefs | undefined,
+  enrichments: readonly DatasetEnrichment[] | undefined,
 ): Selection {
   return {
     primary,

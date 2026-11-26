@@ -13,7 +13,7 @@ import {
 import type { RenderCtxBase } from "../../render";
 import type { DatasetOption } from "./dataset_selection";
 import { filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
-import { enrichmentVariantsToRefs, findEnrichmentColumns } from "./enrichment_discovery";
+import { findEnrichmentColumns, labelEnrichments } from "./enrichment_discovery";
 
 export type BuildDatasetOptions = {
   /**
@@ -104,7 +104,7 @@ export function buildDatasetOptions(
     const enrichments =
       enrichmentSearch === undefined
         ? []
-        : enrichmentVariantsToRefs(
+        : labelEnrichments(
             findEnrichmentColumns({ ...enrichmentSearch, anchorSpec: datasetSpec }),
             opts?.labelOptions,
           );

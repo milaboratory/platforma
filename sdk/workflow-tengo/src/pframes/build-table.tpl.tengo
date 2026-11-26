@@ -21,7 +21,7 @@ self.defineOutputs(["result"])
 // Input shape:
 // - primaries: v1 ResolvedPrimaryRef + builder metadata.
 // - columns: flat {spec, data} (single), `multiResult` BQueryResult (multi),
-//   or EnrichmentRef with a resolved-hop list.
+//   or a column with the resolved linker columns that lead to it.
 // All specs must be ready before PFrame registration; multi-match data needs
 // inputs locked before resultUnmarshaller can iterate.
 self.awaitState("AllInputsSet")

@@ -1,5 +1,6 @@
 import {
   Annotation,
+  createColumnDiscoveredId,
   createGlobalPObjectId,
   createPlRef,
   isPColumnSpec,
@@ -183,9 +184,9 @@ describe("buildDatasetOptions", () => {
     expect(withNone).toEqual(without);
     expect(withAll?.[0].enrichments).toEqual([
       {
-        ref: expect.objectContaining({
-          hit: createGlobalPObjectId("b2", "pathwayScore"),
-          path: [{ type: "linker", linker: createGlobalPObjectId("b2", "pathwayToGene") }],
+        id: createColumnDiscoveredId({
+          column: createGlobalPObjectId("b2", "pathwayScore"),
+          path: [{ type: "linker", column: createGlobalPObjectId("b2", "pathwayToGene") }],
         }),
         label: expect.any(String),
       },

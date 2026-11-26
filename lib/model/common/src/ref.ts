@@ -1,6 +1,4 @@
 import { z } from "zod";
-import type { AxisQualification } from "./drivers/pframe/spec/selectors";
-import type { PObjectId } from "./pool/spec";
 
 /** One output of one block: the block and the name of the output in its output context. */
 export const BlockOutput = z.object({
@@ -132,65 +130,6 @@ export function createPrimaryRef(column: PlRef, filter?: PlRef): PrimaryRef {
 
 /** Block args accept either form — backward compatible. */
 export type DatasetInput = PlRef | PrimaryRef;
-
-/** Many-to-one linker hop. */
-export type EnrichmentLinkerStep = {
-  readonly type: "linker";
-  readonly linker: PObjectId;
-};
-
-/** Step from primary to hit. `path[0]` applied first. */
-export type EnrichmentStep = EnrichmentLinkerStep;
-
-/**
- * Enrichment column reached via {@link path} linker hops; omitted means zero-hop.
- * `hit` and `path[].linker` are global-form {@link PObjectId}s
- * (`canonicalize({ __isRef: true, blockId, name })`) which the workflow decodes
- * to a PlRef before resolving. For a prerun-sourced hop, supply a resolved
- * `{spec, data}` map in place of the id — `tableBuilder` accepts both.
- */
-export type EnrichmentRef = {
-  readonly __isEnrichment: "v1";
-  readonly hit: PObjectId;
-  readonly path?: readonly EnrichmentStep[];
-  readonly qualifications?: readonly AxisQualification[];
-};
-
-export function isEnrichmentRef(value: unknown): value is EnrichmentRef {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    (value as { __isEnrichment?: unknown }).__isEnrichment === "v1" &&
-    "hit" in value
-  );
-}
-
-export type CreateEnrichmentRefOptions = {
-  readonly path?: readonly EnrichmentStep[];
-  readonly qualifications?: readonly AxisQualification[];
-};
-
-export function createEnrichmentRef(
-  hit: PObjectId,
-  options: CreateEnrichmentRefOptions = {},
-): EnrichmentRef {
-  const { path, qualifications } = options;
-  return {
-    __isEnrichment: "v1",
-    hit,
-    ...(path !== undefined && path.length > 0 ? { path } : {}),
-    ...(qualifications !== undefined && qualifications.length > 0 ? { qualifications } : {}),
-  };
-}
-
-/** {@link EnrichmentRef} plus the export header label. */
-export type LabeledEnrichmentRef = {
-  readonly ref: EnrichmentRef;
-  readonly label: string;
-};
-
-/** Auto-attached enrichment payload; not user-picked. */
-export type LabeledEnrichmentRefs = readonly LabeledEnrichmentRef[];
 
 /** Compare two PlRefs and returns true if they are qual */
 export function plRefsEqual(ref1: PlRef, ref2: PlRef, ignoreEnrichments: boolean = false) {

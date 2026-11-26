@@ -1,6 +1,12 @@
 import { flushPromises, mount } from "@vue/test-utils";
-import type { DatasetOption, DatasetSelection } from "@platforma-sdk/model";
-import { createDatasetSelection, createPlRef, createPrimaryRef } from "@platforma-sdk/model";
+import type { DatasetEnrichment, DatasetOption, DatasetSelection } from "@platforma-sdk/model";
+import {
+  createColumnDiscoveredId,
+  createDatasetSelection,
+  createGlobalPObjectId,
+  createPlRef,
+  createPrimaryRef,
+} from "@platforma-sdk/model";
 import { describe, expect, it } from "vitest";
 import PlDatasetSelector from "../PlDatasetSelector.vue";
 
@@ -9,10 +15,14 @@ const datasetB = createPlRef("2", "out-b", true);
 const filterA1 = createPlRef("1", "filter-a1");
 const filterA2 = createPlRef("1", "filter-a2");
 
-import type { PObjectId } from "@platforma-sdk/model";
-const enrichmentA = "enrichment-a" as PObjectId;
-const enrichmentsA = [
-  { ref: { __isEnrichment: "v1" as const, hit: enrichmentA }, label: "Enrichment A" },
+const enrichmentsA: DatasetEnrichment[] = [
+  {
+    id: createColumnDiscoveredId({
+      column: createGlobalPObjectId("3", "enrichment-a"),
+      path: [{ type: "linker", column: createGlobalPObjectId("3", "linker-a") }],
+    }),
+    label: "Enrichment A",
+  },
 ];
 
 const optionsWithFilters: DatasetOption[] = [
