@@ -26,6 +26,7 @@ import { LRUCache } from "lru-cache";
 import canonicalize from "canonicalize";
 import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import { WorkerManager } from "../../worker/WorkerManager";
+import * as v from "valibot";
 import { z } from "zod";
 
 type PreparedCacheKey = Branded<string, "PreparedCacheKey">;
@@ -47,7 +48,7 @@ function parseStringConfig(configContent: string): BlockConfigContainer {
     throw new Error("Invalid config content");
   }
 
-  if (!Code.safeParse(res.data.code).success) {
+  if (!v.is(Code, res.data.code)) {
     throw new Error("parseStringConfig:No code bundle");
   }
 
