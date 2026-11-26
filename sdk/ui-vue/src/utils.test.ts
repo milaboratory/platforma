@@ -1,7 +1,7 @@
 import * as v from "valibot";
 import { describe, expect, test } from "vitest";
 import { createModel } from "./createModel";
-import { formatSchemaIssues } from "./utils";
+import { formatSchemaIssues, formatZodError } from "./utils";
 
 // Issues and messages as Zod 3.25.76 reports them; the expected strings are its `flatten()` format.
 const zodFieldIssues = [
@@ -17,6 +17,7 @@ describe("formatSchemaIssues", () => {
   test("matches the ZodError flatten format", () => {
     expect(formatSchemaIssues(zodFieldIssues)).toBe(zodFieldMessage);
     expect(formatSchemaIssues(zodFormIssues)).toBe("Expected object, received string");
+    expect(formatZodError({ issues: zodFieldIssues })).toBe(zodFieldMessage);
   });
 
   test("reads keys from path segment objects", () => {
