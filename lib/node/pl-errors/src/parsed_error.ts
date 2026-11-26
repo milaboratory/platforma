@@ -13,6 +13,21 @@ export class ModelAPIVersionMismatchError extends Error {
   }
 }
 
+/**
+ * Thrown when a block is asked to start from initialization params its model does not accept:
+ * the kind's parser rejected them, the block's init factory failed on them, or the block version
+ * cannot be created from params at all. Nothing was created when this is thrown.
+ */
+export class BlockInitParamsRejectedError extends Error {
+  constructor(
+    /** Why the block declined the params, in the block's own words. */
+    public readonly reason: string,
+  ) {
+    super(`Block rejected its initialization params: ${reason}`);
+    this.name = "BlockInitParamsRejectedError";
+  }
+}
+
 /** Pl Backend throws arbitrary errors, and we're trying to parse them here. */
 
 import { z } from "zod";

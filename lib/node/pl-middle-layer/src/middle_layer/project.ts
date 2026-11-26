@@ -73,7 +73,17 @@ import type {
 import type { ColumnLink } from "@milaboratories/pl-model-common";
 import { activeConfigs } from "./active_cfg";
 import { NavigationStates } from "./navigation_states";
-import { checkBlockFlag, extractConfig, BLOCK_STORAGE_FACADE_VERSION } from "@platforma-sdk/model";
+import {
+  checkBlockFlag,
+  extractConfig,
+  BLOCK_STORAGE_FACADE_VERSION,
+  BlockStorageFacadeCallbacks,
+  type BlockKindReference,
+} from "@platforma-sdk/model";
+import {
+  BlockInitParamsRejectedError,
+  ModelAPIVersionMismatchError,
+} from "@milaboratories/pl-errors";
 import fs from "node:fs/promises";
 import canonicalize from "canonicalize";
 import type { ProjectOverviewLight } from "./project_overview_light";
@@ -118,6 +128,27 @@ function resetBlockState(computables: BlockStateComputables): void {
   computables.dependencies.resetState();
   computables.dependents.resetState();
 }
+
+/** Options of {@link Project.addBlock}. */
+export type AddBlockOps = {
+  /**
+   * Start the block from initialization params instead of the model's default state. The block's
+   * model checks the params against its kind and builds its initial storage from them. Only a
+   * block with model API version 2 whose SDK has the params initializer can be created this way.
+   */
+  init?: {
+    /** The kind's initialization params, as a template entry holds them. */
+    params: unknown;
+    /**
+     * Ids used inside `params` in place of block ids, each mapped to the id of a block of this
+     * project. The block's model replaces them in every reference it recognizes. An id that is
+     * not listed is left as it is, so params that already hold real block ids need no map.
+     */
+    blockIds?: Readonly<Record<string, string>>;
+  };
+  /** Refuse to add a block whose model API version differs from this one. */
+  requireModelAPIVersion?: number;
+};
 
 /** Data access object, to manipulate and read single opened (!) project data. */
 export class Project {
@@ -378,8 +409,13 @@ export class Project {
    * @param before id of the block to insert new block before
    * @param blockId internal id to be assigned for the block, this arg can be omitted
    *                 then, randomly generated UUID will be assigned automatically
+   * @param ops see {@link AddBlockOps}
    *
    * @return returns newly created block id
+   * @throws ModelAPIVersionMismatchError when `ops.requireModelAPIVersion` differs from the
+   *   block's model API version; nothing is created
+   * @throws BlockInitParamsRejectedError when the block does not accept `ops.init.params`;
+   *   nothing is created
    * */
   public async addBlock(
     blockLabel: string,
@@ -387,12 +423,52 @@ export class Project {
     before?: string,
     author: AuthorMarker | undefined = undefined,
     blockId: string = randomUUID(),
+    ops: AddBlockOps = {},
   ): Promise<string> {
     const preparedBp = await this.env.bpPreparer.prepare(blockPackSpec);
     const blockCfg = extractConfig(preparedBp.config);
 
+    if (
+      ops.requireModelAPIVersion !== undefined &&
+      blockCfg.modelAPIVersion !== ops.requireModelAPIVersion
+    )
+      throw new ModelAPIVersionMismatchError(
+        blockId,
+        ops.requireModelAPIVersion,
+        blockCfg.modelAPIVersion,
+      );
+
     this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
     throwIfMissingServerCapabilities(this.env.pl, preparedBp.requiredCapabilities);
+
+    // The block's own model turns the params into its initial storage, and may decline them.
+    // Asked before the template is cached and before the transaction, so a refusal changes
+    // nothing on the backend.
+    let initialStorage: string | undefined;
+    if (ops.init !== undefined) {
+      if (blockCfg.modelAPIVersion !== BLOCK_STORAGE_FACADE_VERSION)
+        throw new ModelAPIVersionMismatchError(
+          blockId,
+          BLOCK_STORAGE_FACADE_VERSION,
+          blockCfg.modelAPIVersion,
+        );
+      if (
+        blockCfg.blockLifecycleCallbacks[BlockStorageFacadeCallbacks.StorageInitialFromParams] ===
+        undefined
+      )
+        throw new BlockInitParamsRejectedError(
+          "this version of the block was built before blocks could be created from " +
+            "initialization params; use a newer version of the block",
+        );
+      const storage = this.env.projectHelper.getInitialStorageFromParamsInVM(
+        blockCfg,
+        ops.init.params,
+        new Map(Object.entries(ops.init.blockIds ?? {})),
+      );
+      if (storage.error !== undefined)
+        throw new BlockInitParamsRejectedError(storage.error.message);
+      initialStorage = storage.value;
+    }
 
     // Pre-materialize template via cache (separate transaction(s))
     const cachedBp = await cacheBlockPackTemplate(this.env.pl, preparedBp);
@@ -400,7 +476,7 @@ export class Project {
     // Build NewBlockSpec based on model API version
     const newBlockSpec =
       blockCfg.modelAPIVersion === BLOCK_STORAGE_FACADE_VERSION
-        ? { storageMode: "fromModel" as const, blockPack: cachedBp }
+        ? { storageMode: "fromModel" as const, blockPack: cachedBp, initialStorage }
         : {
             storageMode: "legacy" as const,
             blockPack: cachedBp,
@@ -703,6 +779,28 @@ export class Project {
       { name: "mutateBlockStorage", lockId: this.projectLockId },
     );
     await this.projectTree.refreshState();
+  }
+
+  /**
+   * Reads the block's initialization params as its own model projects them from the current
+   * storage, with the kind the block declares: the entry a template export writes for this block.
+   * Passing the result as {@link AddBlockOps.init} to {@link addBlock} with the same block pack
+   * recreates the block's configuration.
+   *
+   * @returns `kind` is undefined for a block that declares none; `params` is undefined when the
+   *   block has no storage yet
+   * @throws when the project has no such block, or the block's model fails to project its params
+   */
+  public async getBlockInitializationParams(
+    blockId: string,
+  ): Promise<{ kind: BlockKindReference | undefined; params: unknown }> {
+    return await withProject(
+      this.env.projectHelper,
+      this.env.pl,
+      this.rid,
+      (prj) => prj.getBlockInitializationParams(blockId),
+      { name: "getBlockInitializationParams", lockId: this.projectLockId },
+    );
   }
 
   /** Update block settings */

@@ -1,11 +1,6 @@
 import { test, expect } from "vitest";
 import { withMcpServer } from "./with-mcp";
-
-function parseResult(result: unknown): unknown {
-  const r = result as { content?: { type: string; text: string }[] };
-  if (!r.content?.[0]) throw new Error("No content in result");
-  return JSON.parse(r.content[0].text);
-}
+import { parseResult } from "./tool-call";
 
 test("create and list projects", { timeout: 30_000 }, async () => {
   await withMcpServer(async ({ client }) => {
