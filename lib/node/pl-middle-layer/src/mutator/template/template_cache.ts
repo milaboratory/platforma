@@ -257,7 +257,7 @@ function flattenV2Tree(data: TemplateData): CacheableNode[] {
 
         const overrideRef = tx.createStruct(
           PlTemplateOverrideV1.type,
-          JSON.stringify(PlTemplateOverrideV1.fromV2Data(tpl)),
+          JSON.stringify(PlTemplateOverrideV1.fromV2Data(tpl).data),
         );
         const overrideFld = PlTemplateOverrideV1.tplField(overrideRef);
         tx.createField(overrideFld, "Service");
@@ -415,7 +415,7 @@ function flattenV3Tree(data: CompiledTemplateV3): CacheableNode[] {
 
         const overrideRef = tx.createStruct(
           PlTemplateOverrideV1.type,
-          JSON.stringify(PlTemplateOverrideV1.fromV3Data(tpl)),
+          JSON.stringify(PlTemplateOverrideV1.fromV3Data(tpl).data),
         );
         const overrideFld = PlTemplateOverrideV1.tplField(overrideRef);
         tx.createField(overrideFld, "Service");
