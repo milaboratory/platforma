@@ -1,10 +1,10 @@
 import { Annotation, Pl, stringifyJson } from "@milaboratories/pl-middle-layer";
-import { awaitStableState, tplTest } from "@platforma-sdk/test";
+import { awaitStableState, getFileContent, tplTest } from "@platforma-sdk/test";
 import { vi } from "vitest";
 import dedent from "dedent";
-import { Timeout, getFileContent } from "../pt/helpers";
+import { LONG_TEST_TIMEOUT } from "@milaboratories/test-helpers";
 
-vi.setConfig({ testTimeout: Timeout });
+vi.setConfig({ testTimeout: LONG_TEST_TIMEOUT });
 
 // Primary data: 3 rows, 1 axis (id) + 1 value column (score)
 const primaryCsv = dedent`
@@ -541,7 +541,7 @@ async function runQuerySpecConsumer(
     { csv: multiMatchCsv, spec: multiMatchSpec },
     { blockId: producerBlockId },
   );
-  const ctx = await awaitStableState(producer.context(), Timeout);
+  const ctx = await awaitStableState(producer.context(), LONG_TEST_TIMEOUT);
 
   const consumer = await helper.renderWorkflow(
     "pframes.table-builder-multi-consumer",

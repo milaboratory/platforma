@@ -12,6 +12,7 @@
 - `@mi-tests/tengo-integration-3` = `tests/tengo-builder/3-software-dep`
 - `@mi-tests/tengo-integration-2` = `tests/tengo-builder/2-artifacts`
 - `@platforma-sdk/workflow-tengo-tests` = `tests/workflow-tengo`
+- `@platforma-sdk/workflow-tengo-ptabler-tests` = `tests/workflow-tengo-ptabler`
 - `@milaboratories/example-pl-package-runenv-1` = `tests/package-builder/20.runenv`
 - `@milaboratories/example-pl-package-asset-1` = `tests/package-builder/10.asset`
 - `@milaboratories/example-pl-package-integration-1` = `tests/package-builder/30.software-pkg`
