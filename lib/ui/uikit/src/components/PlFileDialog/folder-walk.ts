@@ -6,29 +6,32 @@
  * Symlinks never reach this code: Chromium omits them from dropped folders.
  */
 
-export interface EntryLike {
+export interface DroppedEntry {
   readonly name: string;
   readonly isFile: boolean;
   readonly isDirectory: boolean;
 }
 
-export interface FileEntryLike extends EntryLike {
+export interface DroppedFileEntry extends DroppedEntry {
   file(success: (file: File) => void, error?: (err: DOMException) => void): void;
 }
 
-export interface DirectoryReaderLike {
-  readEntries(success: (entries: EntryLike[]) => void, error?: (err: DOMException) => void): void;
+export interface DroppedDirectoryReader {
+  readEntries(
+    success: (entries: DroppedEntry[]) => void,
+    error?: (err: DOMException) => void,
+  ): void;
 }
 
-export interface DirectoryEntryLike extends EntryLike {
-  createReader(): DirectoryReaderLike;
+export interface DroppedDirectoryEntry extends DroppedEntry {
+  createReader(): DroppedDirectoryReader;
 }
 
-function isFileEntry(entry: EntryLike): entry is FileEntryLike {
+function isFileEntry(entry: DroppedEntry): entry is DroppedFileEntry {
   return entry.isFile && "file" in entry;
 }
 
-function isDirectoryEntry(entry: EntryLike): entry is DirectoryEntryLike {
+function isDirectoryEntry(entry: DroppedEntry): entry is DroppedDirectoryEntry {
   return entry.isDirectory && "createReader" in entry;
 }
 
@@ -64,11 +67,11 @@ export function matchesExtensions(name: string, extensions: string[] | undefined
  * `readEntries` returns at most 100 entries per call, and an empty batch at the end.
  * One call silently loses the rest of a bigger folder, so read until empty.
  */
-async function readAllEntries(dir: DirectoryEntryLike): Promise<EntryLike[]> {
+async function readAllEntries(dir: DroppedDirectoryEntry): Promise<DroppedEntry[]> {
   const reader = dir.createReader();
   const readBatch = () =>
-    new Promise<EntryLike[]>((resolve, reject) => reader.readEntries(resolve, reject));
-  const all: EntryLike[] = [];
+    new Promise<DroppedEntry[]>((resolve, reject) => reader.readEntries(resolve, reject));
+  const all: DroppedEntry[] = [];
   let batch = await readBatch();
   while (batch.length > 0) {
     all.push(...batch);
@@ -77,18 +80,18 @@ async function readAllEntries(dir: DirectoryEntryLike): Promise<EntryLike[]> {
   return all;
 }
 
-function readFile(entry: FileEntryLike): Promise<File> {
+function readFile(entry: DroppedFileEntry): Promise<File> {
   return new Promise((resolve, reject) => entry.file(resolve, reject));
 }
 
-export type CollectOptions = {
-  /** Normalized extensions (leading dot); `undefined` accepts every file. */
-  extensions: string[] | undefined;
-  /** When `false`, dropped folders are skipped and only top-level files are taken. */
-  allowFolders: boolean;
+export type CollectDroppedFilesOptions = {
+  /** Normalized extensions (leading dot); omitted accepts every file. */
+  extensions?: string[];
+  /** Unless `true`, dropped folders are skipped and only top-level files are taken. */
+  allowFolders?: boolean;
 };
 
-export type CollectResult = {
+export type CollectDroppedFilesResult = {
   files: File[];
   /** Number of top-level folders skipped because folders are not allowed. */
   skippedFolders: number;
@@ -100,13 +103,13 @@ export type CollectResult = {
  * hidden entries and `__MACOSX` are skipped as well.
  */
 export async function collectDroppedFiles(
-  entries: EntryLike[],
-  { extensions, allowFolders }: CollectOptions,
-): Promise<CollectResult> {
+  entries: DroppedEntry[],
+  { extensions, allowFolders = false }: CollectDroppedFilesOptions = {},
+): Promise<CollectDroppedFilesResult> {
   const files: File[] = [];
   let skippedFolders = 0;
 
-  const walk = async (dir: DirectoryEntryLike): Promise<void> => {
+  const walk = async (dir: DroppedDirectoryEntry): Promise<void> => {
     for (const child of await readAllEntries(dir)) {
       if (isJunkName(child.name)) continue;
       if (isDirectoryEntry(child)) await walk(child);

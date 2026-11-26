@@ -2,14 +2,14 @@
 import style from "./pl-file-dialog.module.scss";
 import type { ImportedFiles } from "../../types";
 import { PlIcon24 } from "../PlIcon24";
-import { computed, reactive } from "vue";
+import { computed, shallowRef } from "vue";
 import {
   getRawPlatformaInstance,
   type ImportFileHandle,
   type OpenDialogFilter,
 } from "@platforma-sdk/model";
 import { normalizeExtensions } from "./utils";
-import { collectDroppedFiles, mapWithConcurrency, type EntryLike } from "./folder-walk";
+import { collectDroppedFiles, mapWithConcurrency, type DroppedEntry } from "./folder-walk";
 
 const props = defineProps<{
   importFiles: (value: ImportedFiles) => void;
@@ -23,10 +23,8 @@ const foldersEnabled = computed(() => props.multi === true && props.allowFolders
 /** Each handle is a round trip to the main process, one per file. */
 const HANDLE_CONCURRENCY = 16;
 
-const data = reactive({
-  error: undefined as unknown,
-  collecting: false,
-});
+const error = shallowRef<unknown>();
+const collecting = shallowRef(false);
 
 const label = computed(() => {
   if (foldersEnabled.value) return "Drag & Drop files or folders here or click to add";
@@ -53,28 +51,28 @@ const emptyDropMessage = (skippedFolders: number) => {
 };
 
 const onDrop = async (ev: DragEvent) => {
-  data.error = undefined;
+  error.value = undefined;
   // Entries must be taken synchronously: dataTransfer is emptied after the first await.
-  const entries: EntryLike[] = [...(ev.dataTransfer?.items ?? [])]
+  const entries: DroppedEntry[] = [...(ev.dataTransfer?.items ?? [])]
     .map((item) => item.webkitGetAsEntry())
     .filter((entry): entry is FileSystemEntry => entry !== null);
 
-  data.collecting = true;
+  collecting.value = true;
   try {
     const { files, skippedFolders } = await collectDroppedFiles(entries, {
       extensions: normalizeExtensions(props.extensions),
       allowFolders: foldersEnabled.value,
     });
     if (files.length === 0) {
-      data.error = emptyDropMessage(skippedFolders);
+      error.value = emptyDropMessage(skippedFolders);
       return;
     }
     const handles = await toHandles(files);
     if (handles?.length) props.importFiles({ files: handles });
   } catch (err) {
-    data.error = err;
+    error.value = err;
   } finally {
-    data.collecting = false;
+    collecting.value = false;
   }
 };
 
@@ -101,7 +99,7 @@ const openNativeDialog = async () => {
           });
         }
       })
-      .catch((err) => (data.error = err));
+      .catch((err) => (error.value = err));
   } else {
     getRawPlatformaInstance()
       ?.lsDriver.showOpenSingleFileDialog({
@@ -115,7 +113,7 @@ const openNativeDialog = async () => {
           });
         }
       })
-      .catch((err) => (data.error = err));
+      .catch((err) => (error.value = err));
   }
 };
 </script>
@@ -133,11 +131,11 @@ const openNativeDialog = async () => {
     <span v-if="extensions" :class="style.supported" data-testid="pl-file-dialog-local-formats"
       >Supported formats: {{ extensions.join(", ") }}</span
     >
-    <span v-if="data.collecting" :class="style.supported" data-testid="pl-file-dialog-local-busy"
+    <span v-if="collecting" :class="style.supported" data-testid="pl-file-dialog-local-busy"
       >Collecting files…</span
     >
-    <span v-if="data.error" class="alert-error" data-testid="pl-file-dialog-local-error">{{
-      data.error
+    <span v-if="error" class="alert-error" data-testid="pl-file-dialog-local-error">{{
+      error
     }}</span>
   </div>
 </template>

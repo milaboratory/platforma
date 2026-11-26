@@ -3,16 +3,16 @@ import {
   collectDroppedFiles,
   isJunkName,
   mapWithConcurrency,
-  type DirectoryEntryLike,
-  type EntryLike,
-  type FileEntryLike,
+  type DroppedDirectoryEntry,
+  type DroppedEntry,
+  type DroppedFileEntry,
 } from "./folder-walk";
 
 // Fixtures mirror the browser's FileSystemEntry shapes. Directory readers hand out
 // entries in batches of at most 100, like Chromium's readEntries.
 const READ_BATCH = 100;
 
-function fileEntry(name: string): FileEntryLike {
+function fileEntry(name: string): DroppedFileEntry {
   return {
     name,
     isFile: true,
@@ -21,7 +21,7 @@ function fileEntry(name: string): FileEntryLike {
   };
 }
 
-function dirEntry(name: string, children: EntryLike[]): DirectoryEntryLike {
+function dirEntry(name: string, children: DroppedEntry[]): DroppedDirectoryEntry {
   return {
     name,
     isFile: false,
@@ -39,7 +39,7 @@ function dirEntry(name: string, children: EntryLike[]): DirectoryEntryLike {
   };
 }
 
-function folderOf(name: string, count: number): DirectoryEntryLike {
+function folderOf(name: string, count: number): DroppedDirectoryEntry {
   return dirEntry(
     name,
     Array.from({ length: count }, (_, i) => fileEntry(`W${String(i + 1).padStart(3, "0")}.ab1`)),
@@ -51,7 +51,6 @@ const names = (files: File[]) => files.map((f) => f.name);
 describe("collectDroppedFiles", () => {
   test("reads a folder past the 100-entry batch limit", async () => {
     const { files } = await collectDroppedFiles([folderOf("plate1", 384)], {
-      extensions: undefined,
       allowFolders: true,
     });
     expect(files).toHaveLength(384);
@@ -63,7 +62,6 @@ describe("collectDroppedFiles", () => {
       dirEntry("plates", [folderOf("plate1", 2), dirEntry("plate2", [folderOf("sub", 1)])]),
     ];
     const { files } = await collectDroppedFiles(drop, {
-      extensions: undefined,
       allowFolders: true,
     });
     expect(names(files)).toEqual(["lone.ab1", "W001.ab1", "W002.ab1", "W001.ab1"]);
@@ -89,7 +87,6 @@ describe("collectDroppedFiles", () => {
       ]),
     ];
     const { files } = await collectDroppedFiles(drop, {
-      extensions: undefined,
       allowFolders: true,
     });
     expect(names(files)).toEqual(["A01.ab1"]);
@@ -97,21 +94,20 @@ describe("collectDroppedFiles", () => {
 
   test("skips folders when folders are not allowed", async () => {
     const drop = [fileEntry("A01.ab1"), folderOf("plate1", 3)];
-    const result = await collectDroppedFiles(drop, { extensions: undefined, allowFolders: false });
+    const result = await collectDroppedFiles(drop);
     expect(names(result.files)).toEqual(["A01.ab1"]);
     expect(result.skippedFolders).toBe(1);
   });
 
   test("an empty folder yields nothing", async () => {
     const { files } = await collectDroppedFiles([dirEntry("empty", [])], {
-      extensions: undefined,
       allowFolders: true,
     });
     expect(files).toEqual([]);
   });
 
   test("a reader error rejects", async () => {
-    const broken: DirectoryEntryLike = {
+    const broken: DroppedDirectoryEntry = {
       name: "broken",
       isFile: false,
       isDirectory: true,
@@ -119,9 +115,7 @@ describe("collectDroppedFiles", () => {
         readEntries: (_success, error) => error?.(new DOMException("denied", "NotReadableError")),
       }),
     };
-    await expect(
-      collectDroppedFiles([broken], { extensions: undefined, allowFolders: true }),
-    ).rejects.toThrow("denied");
+    await expect(collectDroppedFiles([broken], { allowFolders: true })).rejects.toThrow("denied");
   });
 });
 

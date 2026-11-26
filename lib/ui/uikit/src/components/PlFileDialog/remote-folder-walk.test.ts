@@ -6,10 +6,10 @@ import type {
   StorageHandle,
 } from "@platforma-sdk/model";
 import {
-  createLimiter,
+  createConcurrencyLimiter,
   expandRemoteFolders,
   FolderListError,
-  type ListFiles,
+  type ListRemoteFolder,
 } from "./remote-folder-walk";
 
 const storage: StorageHandle = "remote://test";
@@ -21,7 +21,7 @@ function fakeStorage(paths: string[]) {
   const calls: string[] = [];
   let inFlight = 0;
   let peak = 0;
-  const listFiles: ListFiles = async (_storage, dir): Promise<ListFilesResult> => {
+  const listFiles: ListRemoteFolder = async (_storage, dir): Promise<ListFilesResult> => {
     calls.push(dir);
     inFlight++;
     peak = Math.max(peak, inFlight);
@@ -76,7 +76,7 @@ describe("expandRemoteFolders", () => {
 
   test("skips hidden entries and __MACOSX without listing them", async () => {
     const { listFiles, calls } = fakeStorage(plates);
-    await expandRemoteFolders(listFiles, storage, ["data/plate-1"], { extensions: undefined });
+    await expandRemoteFolders(listFiles, storage, ["data/plate-1"]);
     expect(calls.some((c) => c.includes("__MACOSX"))).toBe(false);
   });
 
@@ -96,7 +96,6 @@ describe("expandRemoteFolders", () => {
     const storageFake = fakeStorage(files);
     const seen: number[] = [];
     const result = await expandRemoteFolders(storageFake.listFiles, storage, ["p"], {
-      extensions: undefined,
       concurrency: 3,
       onProgress: (p) => seen.push(p.filesFound),
     });
@@ -108,11 +107,10 @@ describe("expandRemoteFolders", () => {
   test("walks sharing one limiter stay within it together", async () => {
     const files = Array.from({ length: 20 }, (_, i) => `p${i % 2}/W${i}/forward/IGH.ab1`);
     const storageFake = fakeStorage(files);
-    const limit = createLimiter(3);
+    const limit = createConcurrencyLimiter(3);
     const [a, b] = await Promise.all(
       ["p0", "p1"].map((folder) =>
         expandRemoteFolders(storageFake.listFiles, storage, [folder], {
-          extensions: undefined,
           limit,
         }),
       ),
@@ -126,7 +124,6 @@ describe("expandRemoteFolders", () => {
     const { listFiles } = fakeStorage(plates);
     const controller = new AbortController();
     const run = expandRemoteFolders(listFiles, storage, ["data/plate-1"], {
-      extensions: undefined,
       signal: controller.signal,
       onProgress: () => controller.abort(),
     });
@@ -134,21 +131,21 @@ describe("expandRemoteFolders", () => {
   });
 
   test("a listing error rejects", async () => {
-    const failing: ListFiles = async () => {
+    const failing: ListRemoteFolder = async () => {
       throw new Error("storage unavailable");
     };
-    await expect(
-      expandRemoteFolders(failing, storage, ["x"], { extensions: undefined }),
-    ).rejects.toThrow("storage unavailable");
+    await expect(expandRemoteFolders(failing, storage, ["x"])).rejects.toThrow(
+      "storage unavailable",
+    );
   });
 
   test("a listing error names the folder that failed", async () => {
     const { listFiles } = fakeStorage(plates);
-    const failing: ListFiles = (storageHandle, dir) =>
+    const failing: ListRemoteFolder = (storageHandle, dir) =>
       dir === "data/plate-1/A02"
         ? Promise.reject(new Error("too big"))
         : listFiles(storageHandle, dir);
-    const run = expandRemoteFolders(failing, storage, ["data/plate-1"], { extensions: undefined });
+    const run = expandRemoteFolders(failing, storage, ["data/plate-1"]);
     await expect(run).rejects.toBeInstanceOf(FolderListError);
     await expect(run).rejects.toMatchObject({ path: "data/plate-1/A02" });
   });
@@ -156,12 +153,11 @@ describe("expandRemoteFolders", () => {
   test("a listing error stops the other branches of the walk", async () => {
     const files = Array.from({ length: 20 }, (_, i) => `p/F${i}/forward/IGH.ab1`);
     const storageFake = fakeStorage(files);
-    const failing: ListFiles = (storageHandle, dir) =>
+    const failing: ListRemoteFolder = (storageHandle, dir) =>
       dir === "p/F0"
         ? Promise.reject(new Error("too big"))
         : storageFake.listFiles(storageHandle, dir);
     const run = expandRemoteFolders(failing, storage, ["p"], {
-      extensions: undefined,
       concurrency: 1,
     });
     await expect(run).rejects.toMatchObject({ path: "p/F0" });
@@ -172,14 +168,12 @@ describe("expandRemoteFolders", () => {
 
   test("an aborted walk sends no calls still queued behind other walks", async () => {
     const storageFake = fakeStorage(plates);
-    const limit = createLimiter(1);
+    const limit = createConcurrencyLimiter(1);
     const controller = new AbortController();
     const other = expandRemoteFolders(storageFake.listFiles, storage, ["data/plate-3"], {
-      extensions: undefined,
       limit,
     });
     const aborted = expandRemoteFolders(storageFake.listFiles, storage, ["data/plate-1"], {
-      extensions: undefined,
       limit,
       signal: controller.signal,
     });

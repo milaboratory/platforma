@@ -1,37 +1,25 @@
-import type { Option } from "@milaboratories/helpers";
-import type { StorageEntry } from "@platforma-sdk/model";
+import type { Ref } from "vue";
 import type { FileDialogItem } from "./utils";
 import { computed } from "vue";
 
-export const defaultData = () => ({
-  dirPath: "" as string,
-  search: "",
-  storageEntry: undefined as StorageEntry | undefined,
-  items: [] as FileDialogItem[],
-  error: "",
-  storageOptions: [] as Option<StorageEntry>[],
-  selected: [],
-  lastSelected: undefined as number | undefined,
-  currentLoadingPath: undefined as string | undefined,
-  showHiddenItems: false,
-});
-
-export type Data = ReturnType<typeof defaultData>;
-
-export function useVisibleItems(data: Data) {
+export function useVisibleItems(
+  items: Ref<readonly FileDialogItem[]>,
+  showHiddenItems: Ref<boolean>,
+  search: Ref<string>,
+) {
   return computed(() => {
-    let items = data.items;
+    let visible = items.value;
 
-    if (!data.showHiddenItems) {
-      items = items.filter((it) => !it.name.startsWith("."));
+    if (!showHiddenItems.value) {
+      visible = visible.filter((it) => !it.name.startsWith("."));
     }
 
-    if (data.search) {
-      const search = data.search.toLocaleLowerCase();
-      items = items.filter((it) => it.name.toLocaleLowerCase().includes(search));
+    if (search.value) {
+      const query = search.value.toLocaleLowerCase();
+      visible = visible.filter((it) => it.name.toLocaleLowerCase().includes(query));
     }
 
-    return items;
+    return visible;
   });
 }
 

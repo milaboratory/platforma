@@ -7,22 +7,25 @@
 import type { ImportFileHandle, ListFilesResult, StorageHandle } from "@platforma-sdk/model";
 import { isJunkName, matchesExtensions } from "./folder-walk";
 
-export type ListFiles = (storage: StorageHandle, fullPath: string) => Promise<ListFilesResult>;
+export type ListRemoteFolder = (
+  storage: StorageHandle,
+  fullPath: string,
+) => Promise<ListFilesResult>;
 
-export type ExpandProgress = { foldersListed: number; filesFound: number };
+export type RemoteFolderWalkProgress = { foldersListed: number; filesFound: number };
 
-export type ExpandOptions = {
-  /** Normalized extensions (leading dot); `undefined` accepts every file. */
-  extensions: string[] | undefined;
+export type RemoteFolderWalkOptions = {
+  /** Normalized extensions (leading dot); omitted accepts every file. */
+  extensions?: string[];
   signal?: AbortSignal;
-  onProgress?: (progress: ExpandProgress) => void;
+  onProgress?: (progress: RemoteFolderWalkProgress) => void;
   /** At most this many `listFiles` calls in flight; ignored when `limit` is given. */
   concurrency?: number;
   /** A limiter shared with other walks, so several walks together stay within one cap. */
-  limit?: Limiter;
+  limit?: ConcurrencyLimiter;
 };
 
-export type ExpandResult = {
+export type RemoteFolderWalkResult = {
   /** Files of each selected folder in path order, folders in the order given. */
   handles: ImportFileHandle[];
   /** Selected folders that yielded no file to import. */
@@ -41,9 +44,9 @@ export class FolderListError extends Error {
 }
 
 /** Runs the given calls at most `limit` at a time. */
-export type Limiter = <T>(fn: () => Promise<T>) => Promise<T>;
+export type ConcurrencyLimiter = <T>(fn: () => Promise<T>) => Promise<T>;
 
-export function createLimiter(limit: number): Limiter {
+export function createConcurrencyLimiter(limit: number): ConcurrencyLimiter {
   let active = 0;
   const waiting: (() => void)[] = [];
   return async <T>(fn: () => Promise<T>): Promise<T> => {
@@ -63,13 +66,13 @@ export function createLimiter(limit: number): Limiter {
  * `extensions`. The selected folder itself is taken whatever its name: the user picked it.
  */
 export async function expandRemoteFolders(
-  listFiles: ListFiles,
+  listFiles: ListRemoteFolder,
   storage: StorageHandle,
   folders: string[],
-  { extensions, signal, onProgress, concurrency = 8, limit }: ExpandOptions,
-): Promise<ExpandResult> {
-  const limited = limit ?? createLimiter(concurrency);
-  const progress: ExpandProgress = { foldersListed: 0, filesFound: 0 };
+  { extensions, signal, onProgress, concurrency = 8, limit }: RemoteFolderWalkOptions = {},
+): Promise<RemoteFolderWalkResult> {
+  const limited = limit ?? createConcurrencyLimiter(concurrency);
+  const progress: RemoteFolderWalkProgress = { foldersListed: 0, filesFound: 0 };
   // The first failed listing fails the whole walk, so it also stops the other branches.
   const failure = new AbortController();
   const stop = signal ? AbortSignal.any([signal, failure.signal]) : failure.signal;
