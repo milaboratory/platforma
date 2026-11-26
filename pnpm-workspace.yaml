@@ -153,6 +153,7 @@ packages:
   # Tests
 
   - tests/workflow-tengo
+  - tests/workflow-tengo-ptabler
   - tests/workflow-tengo/wasm-fixture
   - tests/software/venv-identity
   - tests/helper

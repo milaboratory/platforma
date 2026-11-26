@@ -1,11 +1,11 @@
 import { deepClone } from "@milaboratories/helpers";
 import { Annotation, field, Pl } from "@milaboratories/pl-middle-layer";
-import { tplTest } from "@platforma-sdk/test";
+import { getFileContent, tplTest } from "@platforma-sdk/test";
 import { vi } from "vitest";
 import dedent from "dedent";
-import { Timeout, getFileContent } from "../pt/helpers";
+import { LONG_TEST_TIMEOUT } from "@milaboratories/test-helpers";
 
-vi.setConfig({ testTimeout: Timeout });
+vi.setConfig({ testTimeout: LONG_TEST_TIMEOUT });
 
 // dummy csv data
 const csvData = dedent`

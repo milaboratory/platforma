@@ -299,13 +299,13 @@ TestMyNewFeature := func() {
 
 **For Integration Tests:** Add comprehensive workflow tests that verify the complete pipeline from Tengo API through PTabler execution.
 
-**📁 Integration tests:** `tests/workflow-tengo/src/pt/` - contains `pt.test.ts` (TypeScript orchestration) and various `.tpl.tengo` templates (workflow logic).
+**📁 Integration tests:** `tests/workflow-tengo-ptabler/src/pt/` - contains `pt.test.ts` (TypeScript orchestration) and various `.tpl.tengo` templates (workflow logic).
 
 #### **Step 5.1: Integration Test Structure**
 
 The integration tests use a sophisticated dual-language approach combining **TypeScript test orchestration** with **Tengo workflow templates**:
 
-**📁 See implementation:** `tests/workflow-tengo/src/pt/pt.test.ts` and accompanying `.tpl.tengo` files for complete examples.
+**📁 See implementation:** `tests/workflow-tengo-ptabler/src/pt/pt.test.ts` and accompanying `.tpl.tengo` files for complete examples.
 
 **TypeScript Test File (`pt.test.ts`):**
 - Orchestrates the test execution using Platforma's test framework

@@ -22,5 +22,5 @@ Perfect for researchers who need flexible data processing that can intelligently
 # Running single test
 
 ```sh
-pnpm build:dev --filter='@platforma-sdk/workflow-tengo-tests...' && (cd tests/workflow-tengo && PL_ADDRESS="http://127.0.0.1:6345" PL_TEST_USER="default" PL_TEST_PASSWORD="__password__" pnpm run test pt -t "pt write frame test" --retry 0)
+pnpm build:dev --filter='@platforma-sdk/workflow-tengo-ptabler-tests...' && (cd tests/workflow-tengo-ptabler && PL_ADDRESS="http://127.0.0.1:6345" PL_TEST_USER="default" PL_TEST_PASSWORD="__password__" pnpm run test pt -t "pt write frame test" --retry 0)
 ```

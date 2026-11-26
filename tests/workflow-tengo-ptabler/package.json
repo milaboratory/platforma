@@ -1,0 +1,31 @@
+{
+  "name": "@platforma-sdk/workflow-tengo-ptabler-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tests of the pt (ptabler) Tengo SDK library",
+  "type": "module",
+  "scripts": {
+    "build": "shx rm -rf dist && pl-tengo build",
+    "test": "vitest run --coverage",
+    "fmt": "ts-builder format"
+  },
+  "dependencies": {
+    "@platforma-open/milaboratories.software-test-utils": "catalog:",
+    "@platforma-sdk/workflow-tengo": "workspace:*"
+  },
+  "devDependencies": {
+    "@milaboratories/build-configs": "workspace:*",
+    "@milaboratories/pl-middle-layer": "workspace:*",
+    "@milaboratories/test-helpers": "workspace:*",
+    "@milaboratories/ts-builder": "workspace:*",
+    "@milaboratories/ts-configs": "workspace:*",
+    "@platforma-sdk/tengo-builder": "workspace:*",
+    "@platforma-sdk/test": "workspace:*",
+    "@types/node": "catalog:",
+    "@vitest/coverage-istanbul": "catalog:",
+    "dedent": "catalog:",
+    "es-toolkit": "catalog:",
+    "shx": "catalog:",
+    "vitest": "catalog:"
+  }
+}

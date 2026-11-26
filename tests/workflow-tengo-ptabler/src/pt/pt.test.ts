@@ -6,13 +6,13 @@ import {
   pTableValue,
   type PTableColumnSpec,
 } from "@milaboratories/pl-middle-layer";
-import { awaitStableState, tplTest } from "@platforma-sdk/test";
+import { awaitStableState, getFileContent, getTableData, tplTest } from "@platforma-sdk/test";
 import { vi } from "vitest";
 import dedent from "dedent";
 import { mapValues } from "es-toolkit";
-import { Timeout, getFileContent, getTableData } from "./helpers";
+import { LONG_TEST_TIMEOUT } from "@milaboratories/test-helpers";
 
-vi.setConfig({ testTimeout: Timeout });
+vi.setConfig({ testTimeout: LONG_TEST_TIMEOUT });
 
 const normalizeCsv = (str: string) => str.replace(/\r\n/g, "\n").trim();
 const normalizeTsv = normalizeCsv;
@@ -197,7 +197,7 @@ tplTest.concurrent.for([
       { blockId: "block1" },
     );
 
-    const context1 = await awaitStableState(workflow1.context(), Timeout);
+    const context1 = await awaitStableState(workflow1.context(), LONG_TEST_TIMEOUT);
     const workflow2 = await helper.renderWorkflow(
       "pt.read_frame",
       false,

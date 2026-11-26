@@ -1,11 +1,11 @@
 import type { AnchoredPColumnId, FilteredPColumnId } from "@milaboratories/pl-middle-layer";
 import { canonicalizeJson, createPlRef } from "@milaboratories/pl-middle-layer";
-import { awaitStableState, tplTest } from "@platforma-sdk/test";
+import { awaitStableState, getFileContent, tplTest } from "@platforma-sdk/test";
 import dedent from "dedent";
 import { vi } from "vitest";
-import { Timeout, getFileContent } from "./helpers";
+import { LONG_TEST_TIMEOUT } from "@milaboratories/test-helpers";
 
-vi.setConfig({ testTimeout: Timeout });
+vi.setConfig({ testTimeout: LONG_TEST_TIMEOUT });
 
 tplTest.concurrent(
   "pt frameFromColumnBundle test - should return frame from column bundle with filtered columns",
@@ -24,7 +24,7 @@ tplTest.concurrent(
       { blockId: "b1" },
     );
 
-    const ctx = await awaitStableState(wf1.context(), Timeout);
+    const ctx = await awaitStableState(wf1.context(), LONG_TEST_TIMEOUT);
 
     const wf2 = await helper.renderWorkflow(
       "pt.frameFromBundle.exports",
