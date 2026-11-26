@@ -1,0 +1,58 @@
+/*
+ * Discovered columns in block args.
+ *
+ * A discovered column is a column reached from another one through linker columns.
+ * It is named by its key, `{ __isDiscovered: true, column, path?, columnQualifications? }`:
+ * `column` is the column reached, `path` the linker columns that lead to it, `path[0]`
+ * applied first. The id of a discovered column is the canonical JSON string of its key.
+ */
+
+ll := import(":ll")
+json := import("json")
+text := import("text")
+
+/**
+ * The column a discovered column reaches, with the linker columns that lead to it.
+ *
+ * @param x: any - the id of a discovered column, or its key as a map. In a key given as
+ *               a map, `column` and `path[].column` may be resolved columns {spec, data}
+ *               in place of column ids.
+ * @return column: { column, path, qualifications } | undefined - `column` and the entries
+ *                 of `path` as the key gives them; `qualifications` are the axis
+ *                 qualifications of `column`. Undefined when x is not a discovered column.
+ */
+parse := func(x) {
+	key := x
+	if is_string(x) {
+		if !text.has_prefix(x, "{") {
+			return undefined
+		}
+		key = json.decode(x)
+		if is_error(key) {
+			return undefined
+		}
+	}
+	if !ll.isMap(key) || key.__isDiscovered != true {
+		return undefined
+	}
+
+	path := []
+	if !is_undefined(key.path) {
+		for step in key.path {
+			ll.assert(step.type == "linker",
+				"discovered-column: unsupported path step type %q (only \"linker\" is allowed)", step.type)
+			ll.assert(!is_undefined(step.column),
+				"discovered-column: linker step has no column: %v", step)
+			path = append(path, step.column)
+		}
+	}
+	qualifications := []
+	if !is_undefined(key.columnQualifications) {
+		qualifications = key.columnQualifications
+	}
+	return { column: key.column, path: path, qualifications: qualifications }
+}
+
+export ll.toStrict({
+	parse: parse
+})

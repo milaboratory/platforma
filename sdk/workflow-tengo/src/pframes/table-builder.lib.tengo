@@ -27,12 +27,13 @@
 
 ll := import(":ll")
 json := import("json")
+text := import("text")
 render := import(":render")
 assets := import(":assets")
 maps := import(":maps")
 pSpec := import(":pframes.spec")
 bquery := import(":workflow.bquery")
-columnId := import(":pframes.column-id")
+discoveredColumn := import(":pframes.discovered-column")
 
 buildTableTpl := assets.importTemplate(":pframes.build-table")
 
@@ -109,7 +110,43 @@ isPrimaryRef := func(value) {
 	return ll.isMap(value) && value.__isPrimaryRef == "v1"
 }
 
-parseColumnId := columnId.parse
+// The id of a block output is the canonical JSON string of `{ __isRef: true, blockId, name }`.
+// Returns the ref the id encodes; undefined when `id` is not such an id.
+parseBlockOutputId := func(id) {
+	if !is_string(id) || !text.has_prefix(id, "{") {
+		return undefined
+	}
+	decoded := json.decode(id)
+	if is_error(decoded) || !ll.isMap(decoded) || decoded.__isRef != true {
+		return undefined
+	}
+	if !is_string(decoded.blockId) || !is_string(decoded.name) {
+		return undefined
+	}
+	return { __isRef: true, blockId: decoded.blockId, name: decoded.name }
+}
+
+// Only a block output can be resolved by its id.
+decodeBlockOutputId := func(id) {
+	ref := parseBlockOutputId(id)
+	ll.assert(!is_undefined(ref),
+		"column id does not name a block output; pass such a column resolved, " +
+		"as {spec, data}. Got: %v", id)
+	return ref
+}
+
+// A column the builder finds by id: a block output, or a discovered column — a
+// block output reached from the primary through linker columns.
+//
+// Returns `{ column, path, qualifications }`: the column, the linker columns that
+// lead to it and the qualifications of its axes; undefined when `query` is not a
+// column id.
+parseColumnId := func(query) {
+	if !is_undefined(parseBlockOutputId(query)) {
+		return { column: query, path: [], qualifications: [] }
+	}
+	return discoveredColumn.parse(query)
+}
 
 isColumnId := func(query) {
 	return !is_undefined(parseColumnId(query))
@@ -120,17 +157,6 @@ isLabeledColumnId := func(value) {
 	return ll.isMap(value) &&
 		is_string(value.label) &&
 		isColumnId(value.id)
-}
-
-// Only a block output can be resolved by its id.
-decodeBlockOutputId := func(id) {
-	ll.assert(is_string(id),
-		"expected a column id string, got %v", id)
-	decoded := json.decode(id)
-	ll.assert(ll.isMap(decoded) && is_string(decoded.blockId) && is_string(decoded.name),
-		"column id does not name a block output; pass such a column resolved, " +
-		"as {spec, data}. Got: %v", decoded)
-	return { __isRef: true, blockId: decoded.blockId, name: decoded.name }
 }
 
 // Anchored ColumnQuerySpec that needs `bquery.anchoredQuery` to resolve.
@@ -243,7 +269,7 @@ tableBuilderWith := func(q, format, ...ctxArg) {
 		 * Adds a single enrichment column. Expects exactly one match for query specs.
 		 *
 		 * @param query: ColumnQuerySpec (anchored axes reference primary names) |
-		 *               PColumnResult | PlRef | column id (see `:pframes.column-id`)
+		 *               PColumnResult | PlRef | column id (see parseColumnId)
 		 * @param opts: (optional) {
 		 *                header?: string — column header in exported file,
 		 *                join?: "left" | "full" | "inner" — overrides setColumnJoin for this column
