@@ -1,5 +1,4 @@
 ---
-"@platforma-sdk/test": minor
 ---
 
-Export `getFileContent` and `getTableData`: they wait for a blob or a PColumn collection in a workflow or template output and return its text or its table data.
+Test-only change: move the ptabler tests to their own package. `@platforma-sdk/test` exports the shared output readers `getFileContent` and `getTableData`.
