@@ -117,7 +117,7 @@ describe("decodeFoldersDocument", () => {
       JSON.stringify({ ...validDocument, folders: [{ id: "f1" }] }),
     );
     expect(decoded.problem?.message).toBe(
-      `the folder document does not match schema ${FOLDERS_SCHEMA_VERSION}: folders.0.name: Required`,
+      `the folder document does not match schema ${FOLDERS_SCHEMA_VERSION}: folders.0.name: Invalid key: Expected "name" but received undefined`,
     );
   });
 

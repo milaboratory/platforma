@@ -10,7 +10,7 @@ import { consolidateBlockPackDescription } from "./model";
 import fsp from "node:fs/promises";
 import path from "node:path";
 import { gunzipSync } from "node:zlib";
-import { calculateSha256 } from "../util";
+import { calculateSha256, parseSchema } from "../util";
 
 /**
  * Returns the capability tokens the workflow's compiled template declares
@@ -114,7 +114,7 @@ export async function buildBlockPackDist(
     }),
   );
 
-  const manifest: BlockPackManifest = BlockPackManifest.parse({
+  const manifest: BlockPackManifest = parseSchema(BlockPackManifest, {
     schema: "v2",
     description: {
       ...descriptionRelative,

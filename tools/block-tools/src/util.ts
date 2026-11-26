@@ -1,6 +1,7 @@
 import type { BigIntStats } from "node:fs";
 import fsp from "node:fs/promises";
 import { createHash } from "node:crypto";
+import * as v from "valibot";
 
 export async function tryLoadFile<T>(
   file: string,
@@ -32,4 +33,16 @@ export function calculateSha256(bytes: Uint8Array<ArrayBufferLike> | ArrayBuffer
       .digest("hex")
       .toUpperCase(),
   );
+}
+
+/** Parses `value` with `schema`; on failure throws an error that lists every issue with its path. */
+export function parseSchema<Schema extends v.GenericSchema>(
+  schema: Schema,
+  value: unknown,
+): v.InferOutput<Schema> {
+  const result = v.safeParse(schema, value);
+  if (!result.success) {
+    throw new Error(v.summarize(result.issues), { cause: new v.ValiError(result.issues) });
+  }
+  return result.output;
 }
