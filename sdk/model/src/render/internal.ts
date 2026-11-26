@@ -7,7 +7,12 @@ import type {
   SUniversalPColumnId,
 } from "@milaboratories/pl-model-common";
 export type { AccessorHandle };
-import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
+import type {
+  CommonFieldTraverseOps,
+  FieldTraversalStep,
+  GetFieldStep,
+  ResourceType,
+} from "./traversal_ops";
 import type {
   ArchiveFormat,
   AnyFunction,
@@ -58,6 +63,9 @@ export interface GlobalCfgRenderCtxMethods<AHandle = AccessorHandle, FHandle = F
     commonOptions: CommonFieldTraverseOps,
     ...steps: (FieldTraversalStep | string)[]
   ): AHandle | undefined;
+
+  /** The field with its error; `undefined` when the resource has no such field. */
+  getField(handle: AHandle, step: GetFieldStep): { value?: AHandle; error?: AHandle } | undefined;
 
   getResourceType(handle: AHandle): ResourceType;
 

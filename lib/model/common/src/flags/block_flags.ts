@@ -30,6 +30,12 @@ export type BlockCodeKnownFeatureFlags = {
    * would run such incomplete args, so it must refuse the block.
    */
   readonly requiresArgsIssues?: boolean;
+  /**
+   * The block model reads a field of a resource together with its error. Set for every block
+   * the SDK builds. A runtime that does not offer this read cannot run such a model, so it must
+   * refuse the block.
+   */
+  readonly requiresFieldErrors?: boolean;
 } & ServiceRequireFlags;
 
 /**
@@ -51,6 +57,7 @@ export const AllRequiresFeatureFlags = [
   "requiresPFramesVersion",
   "requiresModelAPIVersion",
   "requiresArgsIssues",
+  "requiresFieldErrors",
 ] as const;
 
 //

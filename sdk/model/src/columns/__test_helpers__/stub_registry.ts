@@ -12,7 +12,8 @@
  *  - {@link StubLeafConfig} — fine-grained control: omit `spec` to simulate
  *    "no spec field reachable from this leaf"; set `accessorLocked: false`
  *    to simulate a still-resolving leaf accessor; set `specHasData: false`
- *    to simulate "spec resource exists but bytes not yet written".
+ *    to simulate "spec resource exists but bytes not yet written"; set `data`
+ *    to plant a `.data` field with a data resource, an error, or both.
  *
  * Registry-wide `isFinal` is also configurable — pass `{ isFinal: false }`
  * to simulate a still-enumerating registry where missing ids should report
@@ -26,8 +27,8 @@ import type {
   PObjectSpec,
 } from "@milaboratories/pl-model-common";
 import { isPColumnSpec } from "@milaboratories/pl-model-common";
-import type { GlobalCfgRenderCtx } from "../../render/internal";
-import type { TreeNodeAccessor } from "../../render/accessor";
+import type { AccessorHandle, GlobalCfgRenderCtx } from "../../render/internal";
+import { TreeNodeAccessor } from "../../render/accessor";
 import { _ctxProvidersCache } from "../column_providers";
 import type { ColumnsProvider } from "../column_providers";
 import { DataColumn, type DataColumnRecipe } from "../data_column";
@@ -40,7 +41,19 @@ export type StubLeafConfig = {
   accessorLocked?: boolean;
   /** Drives `spec.hasData()` (ignored when `spec` is omitted). Default `true`. */
   specHasData?: boolean;
+  /** The `${id}.data` field. Omit to simulate a missing field. */
+  data?: StubDataField;
 };
+
+/**
+ * State of a stubbed `.data` field:
+ *  - `ready`:            a data resource with bytes
+ *  - `pending`:          a data resource without bytes yet
+ *  - `unset`:            the field is there without a value
+ *  - `errored`:          the field holds an error and no value
+ *  - `erroredWithValue`: the field holds an error and a data resource
+ */
+export type StubDataField = "ready" | "pending" | "unset" | "errored" | "erroredWithValue";
 
 /** Either the shorthand `PColumnSpec` or a {@link StubLeafConfig}. */
 export type StubLeafInput = PColumnSpec | StubLeafConfig;
@@ -86,6 +99,7 @@ type NormalizedLeafConfig = {
   spec?: PObjectSpec;
   accessorLocked: boolean;
   specHasData: boolean;
+  data?: StubDataField;
 };
 
 function normalizeLeafInput(raw: StubLeafInput): NormalizedLeafConfig {
@@ -96,7 +110,22 @@ function normalizeLeafInput(raw: StubLeafInput): NormalizedLeafConfig {
     spec: raw.spec,
     accessorLocked: raw.accessorLocked ?? true,
     specHasData: raw.specHasData ?? true,
+    data: raw.data,
   };
+}
+
+/** A data resource that answers `hasData()` without a render ctx. */
+class StubDataAccessor extends TreeNodeAccessor {
+  constructor(
+    handle: AccessorHandle,
+    private readonly bytes: boolean,
+  ) {
+    super(handle, []);
+  }
+
+  override hasData(): boolean {
+    return this.bytes;
+  }
 }
 
 let stubAccessorSeq = 0;
@@ -115,6 +144,15 @@ function stubAccessorFor(id: PObjectId, cfg: NormalizedLeafConfig): TreeNodeAcce
   // for the same id should produce a fresh cache lookup (otherwise tests
   // that vary leaf state for the same id see stale spec accessors).
   const handle = `${id}#${++stubAccessorSeq}`;
+  const dataField = `${id}.data`;
+  const dataValue =
+    cfg.data === undefined || cfg.data === "unset" || cfg.data === "errored"
+      ? undefined
+      : new StubDataAccessor(`${handle}:data` as AccessorHandle, cfg.data !== "pending");
+  const dataError =
+    cfg.data === "errored" || cfg.data === "erroredWithValue"
+      ? new TreeNodeAccessor(`${handle}:data-error` as AccessorHandle, [])
+      : undefined;
   const stub = {
     handle,
     resolvePath: [],
@@ -122,8 +160,15 @@ function stubAccessorFor(id: PObjectId, cfg: NormalizedLeafConfig): TreeNodeAcce
       const field = typeof step === "string" ? step : step?.field;
       return field === specField ? specHolder : undefined;
     },
+    getField: (step: { field: string }) =>
+      step.field === dataField && cfg.data !== undefined
+        ? { value: dataValue, error: dataError }
+        : undefined,
     getDataAsJson: <T>() => cfg.spec as unknown as T,
-    listInputFields: () => (cfg.spec !== undefined ? [specField] : []),
+    listInputFields: () => [
+      ...(cfg.spec !== undefined ? [specField] : []),
+      ...(cfg.data !== undefined ? [dataField] : []),
+    ],
     getInputsLocked: () => cfg.accessorLocked,
   };
   return stub as unknown as TreeNodeAccessor;

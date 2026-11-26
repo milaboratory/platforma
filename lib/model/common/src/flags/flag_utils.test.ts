@@ -212,3 +212,30 @@ describe("requiresArgsIssues", () => {
     ).toBe(true);
   });
 });
+
+describe("requiresFieldErrors", () => {
+  it("refuses a block that reads fields with their errors in a runtime that does not offer it", () => {
+    const capabilities = new RuntimeCapabilities().addSupportedRequirement(
+      "requiresModelAPIVersion",
+      2,
+    );
+    const blockFlags: BlockCodeFeatureFlags = {
+      requiresModelAPIVersion: 2,
+      requiresFieldErrors: true,
+    };
+
+    expect(capabilities.getIncompatibleFlags(blockFlags)).toEqual(
+      new Map([["requiresFieldErrors", true]]),
+    );
+  });
+
+  it("accepts it in a runtime that offers the read", () => {
+    const capabilities = new RuntimeCapabilities()
+      .addSupportedRequirement("requiresModelAPIVersion", 2)
+      .addSupportedRequirement("requiresFieldErrors");
+
+    expect(
+      capabilities.checkCompatibility({ requiresModelAPIVersion: 2, requiresFieldErrors: true }),
+    ).toBe(true);
+  });
+});

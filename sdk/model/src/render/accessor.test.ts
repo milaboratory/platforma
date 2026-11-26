@@ -104,3 +104,42 @@ test("getDataAsJsonOrUndefined throws when a ready resource has no error and no 
   });
   expect(() => acc.getDataAsJsonOrUndefined()).toThrow("Resource has no content.");
 });
+
+test("getField gives the value and the error of a field that holds both", () => {
+  const VALUE_HANDLE = "value-handle" as AccessorHandle;
+  const acc = accessorWithCtx({ getField: () => ({ value: VALUE_HANDLE, error: ERROR_HANDLE }) }, [
+    "outputs",
+  ]);
+
+  const field = acc.getField({ field: "col.data", assertFieldType: "Input" });
+
+  expect(field?.value?.handle).toBe(VALUE_HANDLE);
+  expect(field?.value?.resolvePath).toEqual(["outputs", "col.data"]);
+  expect(field?.error?.handle).toBe(ERROR_HANDLE);
+  expect(field?.error?.resolvePath).toEqual(["outputs", "col.data", "error"]);
+});
+
+test("getField gives neither a value nor an error for a field that is not resolved yet", () => {
+  const acc = accessorWithCtx({ getField: () => ({}) });
+
+  expect(acc.getField("col.data")).toEqual({ value: undefined, error: undefined });
+});
+
+test("getField gives undefined for a field the resource does not have", () => {
+  const acc = accessorWithCtx({ getField: () => undefined });
+
+  expect(acc.getField("col.data")).toBeUndefined();
+});
+
+test("getField asks the runtime for the field of its own resource", () => {
+  const getField = vi.fn(() => undefined);
+  const acc = accessorWithCtx({ getField });
+
+  acc.getField("col.data");
+  acc.getField({ field: "col.spec", assertFieldType: "Input" });
+
+  expect(getField.mock.calls).toEqual([
+    [HANDLE, { field: "col.data" }],
+    [HANDLE, { field: "col.spec", assertFieldType: "Input" }],
+  ]);
+});

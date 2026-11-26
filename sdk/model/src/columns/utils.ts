@@ -108,30 +108,46 @@ export function queriesQualifications(
 }
 
 /**
- * Whether the recipe's underlying data resources actually carry bytes —
- * strictly stronger than `getDataStatus() === "present"`, which only tells
- * that the `.data` field is wired onto the accessor.
+ * What reading a recipe's data finds: bytes in every data resource it depends
+ * on (`ready`), data still to come (`pending`), or data that failed (`errored`).
+ */
+export type ColumnDataState = "ready" | "pending" | "errored";
+
+/**
+ * The state of the recipe's underlying data resources — strictly stronger
+ * than `getDataStatus() === "present"`, which only tells that the `.data`
+ * field is wired onto the accessor.
  *
  * Walks every physical leaf the recipe depends on via
  * {@link ColumnRecipe.getReferencedIds} (resolves each id back to a
- * {@link DataColumnRecipe} through the ambient ctx) and ANDs `hasData()` across
- * all of them. Inline {@link PColumnValues} payloads count as present.
+ * {@link DataColumnRecipe} through the ambient ctx), in order, and stops at
+ * the first leaf whose data is not ready: a leaf after it is not read. Inline
+ * {@link PColumnValues} payloads count as ready.
  *
- * Returns `false` if any leaf cannot be re-resolved in `opts.ctx` (treat as
- * "not yet ready") rather than throwing — this is a UI-facing predicate, not
- * a contract assertion.
+ * `pending` if any leaf cannot be re-resolved in `opts.ctx` (treat as "not
+ * yet ready") rather than throwing — this is a UI-facing probe, not a
+ * contract assertion.
  */
+export function getColumnDataState(
+  recipe: ColumnRecipe,
+  opts: { ctx?: GlobalCfgRenderCtx } = {},
+): ColumnDataState {
+  for (const id of recipe.getReferencedIds()) {
+    const leaf = DataColumnImpl.fromId(id, opts);
+    if (leaf === undefined) return "pending";
+    if (leaf.getDataStatus() !== "present") return "pending";
+    if (leaf instanceof DataColumnImpl && leaf.hasDataError()) return "errored";
+    if (!isLeafDataPresent(leaf.getData())) return "pending";
+  }
+  return "ready";
+}
+
+/** Whether the recipe's underlying data resources actually carry bytes. */
 export function hasColumnData(
   recipe: ColumnRecipe,
   opts: { ctx?: GlobalCfgRenderCtx } = {},
 ): boolean {
-  for (const id of recipe.getReferencedIds()) {
-    const leaf = DataColumnImpl.fromId(id, opts);
-    if (leaf === undefined) return false;
-    if (leaf.getDataStatus() !== "present") return false;
-    if (!isLeafDataPresent(leaf.getData())) return false;
-  }
-  return true;
+  return getColumnDataState(recipe, opts) === "ready";
 }
 
 function isLeafDataPresent(data: ColumnData): boolean {

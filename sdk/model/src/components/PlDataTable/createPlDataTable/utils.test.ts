@@ -5,13 +5,18 @@ import {
   type PObjectId,
 } from "@milaboratories/pl-model-common";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
-import { deriveAllLabels, evaluateRules, type LabelableColumn } from "./utils";
+import { buildDataStatusMap, deriveAllLabels, evaluateRules, type LabelableColumn } from "./utils";
 import type { ColumnOrderRule, ColumnVisibilityRule } from "./createPlDataTableV3";
 import { DataColumn, type DataColumnRecipe } from "../../../columns";
 import {
   createTestCollectionDriver,
   type TestCollectionDriverHandle,
 } from "../../../columns/__test_helpers__/collection_driver";
+import {
+  installStubRegistry,
+  type StubLeafConfig,
+} from "../../../columns/__test_helpers__/stub_registry";
+import { getCfgRenderCtx } from "../../../internal";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -245,5 +250,40 @@ describe("evaluateRules", () => {
     const result = evaluateRules(rules, [dup, dup, dup]);
 
     expect(result.get(gid("d"))?.visibility).toBe("hidden");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildDataStatusMap
+// ---------------------------------------------------------------------------
+
+describe("buildDataStatusMap", () => {
+  test("tells ready, computing, absent and failed data apart", () => {
+    const spec = makeSpec();
+    const leaves: [PObjectId, StubLeafConfig][] = [
+      [gid("ready"), { spec, data: "ready" }],
+      [gid("no-bytes"), { spec, data: "pending" }],
+      [gid("unset"), { spec, data: "unset" }],
+      [gid("resolving"), { spec, accessorLocked: false }],
+      [gid("absent"), { spec }],
+      [gid("errored"), { spec, data: "errored" }],
+      [gid("errored-with-value"), { spec, data: "erroredWithValue" }],
+    ];
+    installStubRegistry(getCfgRenderCtx(), new Map(leaves));
+    const columns = leaves.map(([id]) => {
+      const column = DataColumn.fromId(id);
+      if (column === undefined) throw new Error(`no column for ${id}`);
+      return column;
+    });
+
+    expect(buildDataStatusMap(columns)).toEqual({
+      [gid("ready")]: "ready",
+      [gid("no-bytes")]: "computing",
+      [gid("unset")]: "computing",
+      [gid("resolving")]: "computing",
+      [gid("absent")]: "absent",
+      [gid("errored")]: "error",
+      [gid("errored-with-value")]: "error",
+    });
   });
 });

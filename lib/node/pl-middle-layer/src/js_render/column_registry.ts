@@ -5,10 +5,10 @@ import {
   ColumnRegistry,
   extractPObjectId,
   PColumnValues,
+  readLeafData,
   ResultPoolEntriesProvider,
   SpecOverrides,
   type ColumnEntriesProvider,
-  type LeafEntry,
   type PColumn,
   type PColumnSpec,
   type PObjectId,
@@ -84,24 +84,11 @@ export function resolvePColumnById(
     throw new Error(`column ${String(pid)} has no resolved spec`);
   }
 
+  const data = readLeafData(leaf);
+
   return {
     id: id as PObjectId,
     spec: applySpecOverrides(spec, overrides),
-    data: readColumnData(leaf),
+    data: data.type === "resource" ? data.resource : [],
   };
-}
-
-//
-// Internals
-//
-
-/**
- * The data resource of a column, or an empty value list when its `.data` field
- * has no value yet or holds an error. The field's error counts even when the
- * field also has a value: the data resource behind it failed.
- */
-function readColumnData(leaf: LeafEntry<PlTreeNodeAccessor>): PColumnValues | PlTreeNodeAccessor {
-  const field = leaf.accessor.getField({ field: `${leaf.name}.data`, assertFieldType: "Input" });
-  if (field === undefined || field.error !== undefined) return [];
-  return field.value ?? [];
 }

@@ -15,7 +15,12 @@ import {
 import { getCfgRenderCtx } from "../internal";
 import { FutureRef } from "./future";
 import type { AccessorHandle } from "./internal";
-import type { CommonFieldTraverseOps, FieldTraversalStep, ResourceType } from "./traversal_ops";
+import type {
+  CommonFieldTraverseOps,
+  FieldTraversalStep,
+  GetFieldStep,
+  ResourceType,
+} from "./traversal_ops";
 
 export function ifDef<T, R>(value: T | undefined, cb: (value: T) => R): R | undefined {
   return value === undefined ? undefined : cb(value);
@@ -145,6 +150,28 @@ export class TreeNodeAccessor {
       getCfgRenderCtx().resolveWithCommon(this.handle, commonOptions, ...steps),
       (accessor) => new TreeNodeAccessor(accessor, resolvePath),
     );
+  }
+
+  /**
+   * The field with its error: a field holds a value, an error, both, or
+   * neither while it is not resolved yet. `undefined` when the resource has no
+   * such field. An error in the field is returned here; {@link traverse}
+   * throws it.
+   */
+  public getField(
+    step: GetFieldStep | string,
+  ): { value?: TreeNodeAccessor; error?: TreeNodeAccessor } | undefined {
+    const fieldStep = typeof step === "string" ? { field: step } : step;
+    const field = getCfgRenderCtx().getField(this.handle, fieldStep);
+    if (field === undefined) return undefined;
+    const resolvePath = [...this.resolvePath, fieldStep.field];
+    return {
+      value: ifDef(field.value, (accessor) => new TreeNodeAccessor(accessor, resolvePath)),
+      error: ifDef(
+        field.error,
+        (accessor) => new TreeNodeAccessor(accessor, [...resolvePath, "error"]),
+      ),
+    };
   }
 
   public get resourceType(): ResourceType {

@@ -52,6 +52,16 @@ export interface UpstreamBlockCtx<AHandle = string> {
 }
 
 /**
+ * A field as the resource tree holds it: a value, an error, both, or neither
+ * while the field is not resolved yet. The optional members follow the host
+ * `ValueAndError`, so the host accessor satisfies {@link AccessorLike} as is.
+ */
+export interface FieldLike<A> {
+  readonly value?: A;
+  readonly error?: A;
+}
+
+/**
  * Minimal accessor surface used by column-providers / column-registry
  * traversal.
  *
@@ -72,6 +82,13 @@ export interface AccessorLike<Self extends AccessorLike<Self>> {
    * `PlTreeNodeAccessor.traverse` is the canonical method.
    */
   traverse(step: FieldTraversalStepLike): Self | undefined;
+
+  /**
+   * The field with its error, where {@link traverse} throws the error.
+   * `undefined` when the node has no such field. Same shape on sandbox and
+   * host.
+   */
+  getField(step: FieldTraversalStepLike): FieldLike<Self> | undefined;
 
   /** List input-field names on this node. */
   listInputFields(): string[];

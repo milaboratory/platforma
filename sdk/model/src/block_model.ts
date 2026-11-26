@@ -172,6 +172,7 @@ export class BlockModelV3<
     requiresCreatePTable: 2,
     requiresPFramesVersion: REQUIRES_PFRAMES_VERSION,
     requiresArgsIssues: true,
+    requiresFieldErrors: true,
     ...BLOCK_SERVICE_FLAGS,
   } satisfies BlockCodeKnownFeatureFlags;
 
