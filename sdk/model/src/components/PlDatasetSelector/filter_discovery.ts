@@ -1,14 +1,12 @@
-import { Annotation, extractPObjectId } from "@milaboratories/pl-model-common";
+import { Annotation, columnProducer, createPlRef } from "@milaboratories/pl-model-common";
 import type {
   ColumnsCollectionDriverModel,
   Option,
   PColumnSpec,
   PlRef,
-  PObjectId,
   PObjectSpec,
 } from "@milaboratories/pl-model-common";
-import canonicalize from "canonicalize";
-import type { ColumnRecipe, ColumnsSource } from "../../columns";
+import type { ColumnRecipe, ColumnsSource, ColumnsSourceShorthand } from "../../columns";
 import { ColumnsCollection, collectLinkerColumns } from "../../columns";
 import {
   deriveDistinctLabels,
@@ -17,7 +15,7 @@ import {
 } from "../../labels/derive_distinct_labels";
 
 export interface FindFilterColumnsOptions {
-  sources: ReadonlyArray<ColumnsSource>;
+  sources: ReadonlyArray<ColumnsCollection | ColumnsSource | ColumnsSourceShorthand>;
   anchorSpec: PColumnSpec;
   /** Override the resolved `columnsCollection` service (primarily for tests). */
   driver?: ColumnsCollectionDriverModel;
@@ -43,8 +41,6 @@ export function findFilterColumns(options: FindFilterColumnsOptions): ColumnReci
 }
 
 export type FilterMatchOptions = {
-  /** Maps result-pool column id back to its source PlRef (see {@link buildRefMap}). */
-  refsByObjectId: ReadonlyMap<PObjectId, PlRef>;
   /** Spec of the dataset the filters are subsets of. */
   datasetSpec: PObjectSpec;
   /**
@@ -59,8 +55,8 @@ export type FilterMatchOptions = {
 /**
  * Derive labeled options from filter column variants, for use in DatasetOption.filters.
  *
- * Entries whose column id has no PlRef in `refsByObjectId` are silently
- * skipped — they cannot be exposed as user-selectable options.
+ * A filter is stored as a reference to a block output, so a column that is
+ * not one — a column of the current block — is silently skipped.
  */
 export function filterMatchesToOptions(
   variants: ColumnRecipe[],
@@ -68,17 +64,16 @@ export function filterMatchesToOptions(
 ): Option[] {
   if (variants.length === 0) return [];
 
-  const { refsByObjectId, datasetSpec, labelOptions } = options;
+  const { datasetSpec, labelOptions } = options;
 
   // One Option per variant — `deriveDistinctLabels` disambiguates labels by
-  // path. All variants of the same column share a terminal PObjectId, so the
-  // ref lookup happens once per variant.
+  // path.
   const entries: (Entry & { ref: PlRef })[] = variants.flatMap((variant) => {
-    const ref = refsByObjectId.get(extractPObjectId(variant.id));
-    if (ref === undefined) return [];
+    const producer = columnProducer(variant.id);
+    if (producer === undefined) return [];
     return [
       {
-        ref,
+        ref: createPlRef(producer.blockId, producer.name),
         spec: variant.getSpec(),
         linkerPath: collectLinkerColumns(variant).map((linker) => ({ spec: linker.getSpec() })),
       },
@@ -97,9 +92,4 @@ export function filterMatchesToOptions(
   });
 
   return entries.map(({ ref }, i) => ({ ref, label: labels[i] }));
-}
-
-/** Build the `refsByObjectId` map from `ctx.resultPool.getSpecs().entries`. */
-export function buildRefMap(entries: readonly { readonly ref: PlRef }[]): Map<PObjectId, PlRef> {
-  return new Map(entries.map((e) => [canonicalize(e.ref)! as PObjectId, e.ref]));
 }

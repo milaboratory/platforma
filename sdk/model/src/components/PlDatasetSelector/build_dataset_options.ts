@@ -1,24 +1,26 @@
 import type { MultiColumnSelector, Option, PObjectSpec } from "@milaboratories/pl-model-common";
-import { isPColumnSpec, multiColumnSelectorsToPredicate } from "@milaboratories/pl-model-common";
-import type { DeriveLabelsOptions } from "../../labels/derive_distinct_labels";
+import {
+  columnProducer,
+  createPlRef,
+  multiColumnSelectorsToPredicate,
+} from "@milaboratories/pl-model-common";
+import type { ColumnRecipe } from "../../columns";
+import { ColumnsCollection } from "../../columns";
+import {
+  deriveDistinctLabels,
+  type DeriveLabelsOptions,
+} from "../../labels/derive_distinct_labels";
 import type { RenderCtxBase } from "../../render";
 import type { DatasetOption } from "./dataset_selection";
-import { buildRefMap, filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
+import { filterMatchesToOptions, findFilterColumns } from "./filter_discovery";
 import { enrichmentVariantsToRefs, findEnrichmentColumns } from "./enrichment_discovery";
-import { ColumnsProvider, getCtxProviders } from "../../columns";
-
-type SpecPredicateOption =
-  | MultiColumnSelector
-  | MultiColumnSelector[]
-  | ((spec: PObjectSpec) => boolean);
-
-function toPredicate(opt: SpecPredicateOption | undefined): (spec: PObjectSpec) => boolean {
-  if (opt === undefined) return () => true;
-  return typeof opt === "function" ? opt : multiColumnSelectorsToPredicate(opt);
-}
 
 export type BuildDatasetOptions = {
-  /** Which result pool columns qualify as datasets. Defaults to all. */
+  /**
+   * Which result pool columns qualify as datasets. Defaults to all. A selector
+   * is matched by the host; a predicate reads the spec of every result pool
+   * column, so prefer a selector when it can say the same.
+   */
   primary?: SpecPredicateOption;
   /**
    * Restricts which result pool columns are considered as filters. Intersected
@@ -57,62 +59,83 @@ export function buildDatasetOptions(
   ctx: RenderCtxBase,
   opts?: BuildDatasetOptions,
 ): DatasetOption[] | undefined {
-  const primaryPredicate = toPredicate(opts?.primary);
+  const pool = ColumnsCollection(["result_pool"], { ctx: ctx.ctx });
+
+  // A dataset is stored as a reference to a block output, so only a column
+  // that is one can be offered.
+  const datasets = findDatasets(pool, opts?.primary).flatMap((column) => {
+    const producer = columnProducer(column.id);
+    return producer === undefined ? [] : [{ column, producer }];
+  });
+  if (datasets.length === 0) return [];
+
+  const labels = deriveDistinctLabels(datasets.map(({ column }) => column.getSpec()));
+  const requireEnrichments = opts?.requireEnrichments ?? true;
   const filterPredicate = toPredicate(opts?.filter);
 
-  const options = ctx.resultPool.getOptions(
-    (spec) => isPColumnSpec(spec) && primaryPredicate(spec),
-    {
-      refsWithEnrichments: opts?.requireEnrichments ?? true,
-    },
-  );
-  if (options.length === 0) return [];
+  const withEnrichments = opts?.withEnrichments;
+  const enrichmentSearch =
+    withEnrichments === undefined
+      ? undefined
+      : {
+          // Enrichments are also looked for among this block's own columns.
+          // Built once: every dataset searches the same set.
+          sources: [ColumnsCollection(["current_block", pool], { ctx: ctx.ctx })],
+          maxHops: opts?.enrichmentMaxHops,
+          ...(typeof withEnrichments === "function"
+            ? { predicate: withEnrichments }
+            : { include: withEnrichments }),
+        };
 
-  const refMap = buildRefMap(ctx.resultPool.getSpecs().entries);
+  return datasets.map(({ column, producer }, i): DatasetOption => {
+    const datasetSpec = column.getSpec();
+    const primary: Option = {
+      ref: createPlRef(producer.blockId, producer.name, requireEnrichments),
+      label: labels[i],
+    };
 
-  const withEnrichments = opts?.withEnrichments ?? false;
-  const filterSource = ColumnsProvider(ctx.ctx.getUpstreamBlockCtx());
-  // Hoist providers once: getCtxProviders walks the full output tree, so
-  // calling it per dataset option would be O(N × tree).
-  const enrichmentSources = withEnrichments ? getCtxProviders(ctx) : undefined;
+    const filters = filterMatchesToOptions(
+      findFilterColumns({ sources: [pool], anchorSpec: datasetSpec }).filter((match) =>
+        filterPredicate(match.getSpec()),
+      ),
+      { datasetSpec, labelOptions: opts?.labelOptions },
+    );
 
-  return options.map((primary: Option): DatasetOption => {
-    const datasetSpec = ctx.resultPool.getPColumnSpecByRef(primary.ref);
-    if (!datasetSpec) return { primary };
-
-    const filterMatches = findFilterColumns({
-      sources: [filterSource],
-      anchorSpec: datasetSpec,
-    }).filter((m) => filterPredicate(m.getSpec()!));
-
-    const filters =
-      filterMatches.length === 0
-        ? undefined
-        : filterMatchesToOptions(filterMatches, {
-            refsByObjectId: refMap,
-            datasetSpec,
-            labelOptions: opts?.labelOptions,
-          });
-
-    let enrichments;
-    if (enrichmentSources && withEnrichments) {
-      const enrichmentVariants = findEnrichmentColumns({
-        sources: enrichmentSources,
-        anchorSpec: datasetSpec,
-        maxHops: opts?.enrichmentMaxHops,
-        ...(typeof withEnrichments === "function"
-          ? { predicate: withEnrichments }
-          : { include: withEnrichments }),
-      });
-      if (enrichmentVariants.length > 0) {
-        enrichments = enrichmentVariantsToRefs(enrichmentVariants, opts?.labelOptions);
-      }
-    }
+    const enrichments =
+      enrichmentSearch === undefined
+        ? []
+        : enrichmentVariantsToRefs(
+            findEnrichmentColumns({ ...enrichmentSearch, anchorSpec: datasetSpec }),
+            opts?.labelOptions,
+          );
 
     return {
       primary,
-      ...(filters !== undefined && filters.length > 0 ? { filters } : {}),
-      ...(enrichments !== undefined && enrichments.length > 0 ? { enrichments } : {}),
+      ...(filters.length > 0 ? { filters } : {}),
+      ...(enrichments.length > 0 ? { enrichments } : {}),
     };
   });
+}
+
+// Internals
+
+type SpecPredicateOption =
+  | MultiColumnSelector
+  | MultiColumnSelector[]
+  | ((spec: PObjectSpec) => boolean);
+
+function toPredicate(opt: SpecPredicateOption | undefined): (spec: PObjectSpec) => boolean {
+  if (opt === undefined) return () => true;
+  return typeof opt === "function" ? opt : multiColumnSelectorsToPredicate(opt);
+}
+
+function findDatasets(
+  pool: ColumnsCollection,
+  primary: SpecPredicateOption | undefined,
+): ColumnRecipe[] {
+  if (primary === undefined) return pool.getColumns();
+  if (typeof primary === "function") {
+    return pool.getColumns().filter((column) => primary(column.getSpec()));
+  }
+  return pool.filter({ include: primary }).getColumns();
 }

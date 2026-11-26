@@ -3,9 +3,9 @@
  * `ColumnsCollectionDriverImpl` (so the discover / filter algebra is exercised
  * end-to-end) with stub bindings backed by an in-memory `(id → spec)` map.
  *
- * Accessor-based source kinds (`"accessor"`, `"result_pool"`) throw — they
- * have no meaning outside a render ctx. Tests should stick to `"ids"` /
- * `"collection"` sources.
+ * The `"accessor"` source kind throws — it has no meaning outside a render
+ * ctx. A `"result_pool"` source holds the registered columns whose id names a
+ * block output; tests otherwise stick to `"ids"` / `"collection"` sources.
  *
  * Calling {@link TestCollectionDriverHandle.installAmbientCtx} additionally
  * installs a minimal `globalThis.cfgRenderCtx` AND plants a stub
@@ -14,6 +14,7 @@
  * `ColumnsCollection.getColumns()`).
  */
 import type {
+  AccessorLike,
   ColumnEntriesProvider,
   ColumnsCollectionDriverHost,
   ColumnsCollectionDriverModel,
@@ -21,8 +22,15 @@ import type {
   PObjectId,
   PObjectSpec,
   ServiceName,
+  UpstreamBlockCtx,
 } from "@milaboratories/pl-model-common";
-import { extractPObjectId, isPColumnSpec, Services } from "@milaboratories/pl-model-common";
+import {
+  columnProducer,
+  extractPObjectId,
+  isPColumnSpec,
+  ResourceTypeName,
+  Services,
+} from "@milaboratories/pl-model-common";
 import { ColumnsCollectionDriverImpl } from "@milaboratories/columns-collection-driver";
 import { SpecDriver } from "@milaboratories/pf-spec-driver";
 import type { GlobalCfgRenderCtx } from "../../render/internal";
@@ -82,7 +90,7 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
     resolveAccessor: () => {
       throw new Error("test collection driver: no accessor support");
     },
-    getUpstreamBlockCtxes: () => [],
+    getUpstreamBlockCtxes: () => buildPoolBlocks(specMap),
     getSpecDriver: () => specDriver,
     resolveSpec: (id) => specMap.get(extractPObjectId(id)),
   };
@@ -145,6 +153,38 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
       await specDriver.dispose();
     },
   };
+}
+
+interface PoolCtxStub extends AccessorLike<PoolCtxStub> {}
+
+/**
+ * Upstream blocks that export the registered columns whose id names a block
+ * output, one block per block id. Only the column names are served: the driver
+ * reads the specs through `resolveSpec`.
+ */
+function buildPoolBlocks(
+  specMap: ReadonlyMap<PObjectId, PObjectSpec>,
+): UpstreamBlockCtx<PoolCtxStub>[] {
+  const namesByBlock = new Map<string, string[]>();
+  for (const id of specMap.keys()) {
+    const producer = columnProducer(id);
+    if (producer === undefined) continue;
+    namesByBlock.set(producer.blockId, [
+      ...(namesByBlock.get(producer.blockId) ?? []),
+      producer.name,
+    ]);
+  }
+  return [...namesByBlock].map(([blockId, names]) => {
+    const prodCtx: PoolCtxStub = {
+      resourceType: { name: ResourceTypeName.PFrame },
+      traverse: () => undefined,
+      listInputFields: () => names.map((name) => `${name}.spec`),
+      getInputsLocked: () => true,
+      hasData: () => false,
+      getDataAsJson: () => undefined,
+    };
+    return { blockId, prodCtx };
+  });
 }
 
 /**

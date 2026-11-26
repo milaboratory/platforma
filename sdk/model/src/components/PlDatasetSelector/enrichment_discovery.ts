@@ -13,7 +13,7 @@ import type {
   PColumnSpec,
   PObjectSpec,
 } from "@milaboratories/pl-model-common";
-import type { ColumnRecipe, ColumnsSource } from "../../columns";
+import type { ColumnRecipe, ColumnsSource, ColumnsSourceShorthand } from "../../columns";
 import {
   hasSingleDataColumn,
   ColumnsCollection,
@@ -29,7 +29,7 @@ import {
 } from "../../labels/derive_distinct_labels";
 
 export interface FindEnrichmentColumnsOptions {
-  sources: ReadonlyArray<ColumnsSource>;
+  sources: ReadonlyArray<ColumnsCollection | ColumnsSource | ColumnsSourceShorthand>;
   anchorSpec: PColumnSpec;
   maxHops?: number;
   include?: MultiColumnSelector | MultiColumnSelector[];
