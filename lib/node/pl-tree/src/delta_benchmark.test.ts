@@ -1,7 +1,13 @@
 import { test } from "vitest";
-import { field, hasCapability, TestHelpers } from "@milaboratories/pl-client";
-import type { PlClient, PlTransaction, SignedResourceId } from "@milaboratories/pl-client";
-import { DefaultFinalResourceDataPredicate } from "@milaboratories/pl-client";
+import { field, hasCapability, Pl, TestHelpers, TreeFinality } from "@milaboratories/pl-client";
+import type {
+  FieldType,
+  FinalResourceDataPredicate,
+  PlClient,
+  PlTransaction,
+  ResourceRef,
+  SignedResourceId,
+} from "@milaboratories/pl-client";
 import { TestStructuralResourceType1 } from "./test_utils";
 import { PlTreeState } from "./state";
 import { constructTreeLoadingRequest, initialTreeLoadingStat, loadTreeState } from "./sync";
@@ -17,6 +23,10 @@ import type { ExtendedResourceData } from "./state";
  * through `SynchronizedTreeState`.
  *
  *   PL_TREE_BENCH=1 pnpm exec vitest run src/delta_benchmark.test.ts
+ *
+ * A second run seeds ephemeral maps of values in place of the structs, and crosses the arms with
+ * two finality tables: the tree's own, and the tree's own plus the row that held a ready
+ * EphStdMap final. The difference is the polling cost of a map that is never final.
  *
  * Delta arms report as skipped on a backend without `treeChangedSince:v2`, rather than
  * silently measuring the fallback.
@@ -44,59 +54,117 @@ const ARMS: Arm[] = [
   { label: "backend-delta     prune=off", mode: "backend-delta", pruning: false },
 ];
 
+/** The finality table an arm runs under. */
+type Finality = { name: string; predicate: FinalResourceDataPredicate };
+
+const TREE_FINALITY: Finality = { name: "tree", predicate: TreeFinality.predicate() };
+
+const MAP_FINAL_AT_READY: Finality = {
+  name: "map-final-at-ready",
+  predicate: TreeFinality.extend("map final at ready", [
+    {
+      match: { name: Pl.EphStdMap.name },
+      rule: "readyOrDuplicateOrError",
+      why: "the row that held a ready EphStdMap final, for the cost comparison",
+    },
+  ]).predicate(),
+};
+
 /** Stands in for the real project pruning, without importing the middle layer. */
 const benchPruning = (r: ExtendedResourceData): FieldData[] =>
   r.fields.filter((f) => !f.name.startsWith("pruneMe"));
 
+type SeededTree = { root: SignedResourceId; leaves: SignedResourceId[] };
+
+/** What a child of the root is, what it holds, and which resources the polls write KV on. */
+type Shape = {
+  name: string;
+  child: (tx: PlTransaction) => ResourceRef;
+  childField: FieldType;
+  /** `key` is unique per leaf: equal values deduplicate into one resource. */
+  leaf: (tx: PlTransaction, key: string) => ResourceRef;
+  /** Runs after the child gets its fields. */
+  close: (tx: PlTransaction, child: ResourceRef) => void;
+  touchedName: string;
+  touched: (tree: SeededTree) => SignedResourceId[];
+};
+
+const STRUCT_SHAPE: Shape = {
+  name: "structs",
+  child: (tx) => tx.createStruct(TestStructuralResourceType1, PAYLOAD),
+  childField: "Dynamic",
+  leaf: (tx) => tx.createStruct(TestStructuralResourceType1, PAYLOAD),
+  close: () => {},
+  touchedName: "a leaf (quiet-parent shape)",
+  touched: (tree) => tree.leaves,
+};
+
+const MAP_SHAPE: Shape = {
+  name: "EphStdMaps of json values",
+  child: (tx) => tx.createEphemeral(Pl.EphStdMap),
+  childField: "Input",
+  leaf: (tx, key) =>
+    tx.createValue(Pl.JsonObject, JSON.stringify({ key, payload: PAYLOAD.toString() })),
+  // A map is ready, and so final under the old row, only with its inputs locked.
+  close: (tx, child) => tx.lockInputs(child),
+  // A json value is final at creation, so a KV write on it is never read again.
+  touchedName: "the root",
+  touched: (tree) => [tree.root],
+};
+
 async function seedTree(
   pl: PlClient,
-): Promise<{ root: SignedResourceId; leaves: SignedResourceId[] }> {
+  shape: Shape,
+): Promise<{ root: SignedResourceId; touched: SignedResourceId[] }> {
   return await pl.withWriteTx(
     "BenchSeed",
     async (tx) => {
       const root = tx.createStruct(TestStructuralResourceType1, PAYLOAD);
-      const rootField = field(tx.clientRoot, "benchRoot");
+      const rootField = field(tx.clientRoot, `benchRoot-${shape.name}`);
       tx.createField(rootField, "Dynamic");
       tx.setField(rootField, root);
 
       const leaves: Promise<SignedResourceId>[] = [];
       for (let c = 0; c < CHILDREN; c++) {
-        const child = tx.createStruct(TestStructuralResourceType1, PAYLOAD);
+        const child = shape.child(tx);
         const cf = field(root, `child${c}`);
         tx.createField(cf, "Dynamic");
         tx.setField(cf, child);
 
         // A field the pruning function removes, so prune=on and prune=off differ.
-        const pruned = tx.createStruct(TestStructuralResourceType1, PAYLOAD);
+        const pruned = shape.leaf(tx, `pruned${c}`);
         const pf = field(child, "pruneMe");
-        tx.createField(pf, "Dynamic");
+        tx.createField(pf, shape.childField);
         tx.setField(pf, pruned);
 
         for (let g = 0; g < GRANDCHILDREN; g++) {
-          const grand = tx.createStruct(TestStructuralResourceType1, PAYLOAD);
+          const grand = shape.leaf(tx, `leaf${c}.${g}`);
           const gf = field(child, `g${g}`);
-          tx.createField(gf, "Dynamic");
+          tx.createField(gf, shape.childField);
           tx.setField(gf, grand);
           leaves.push(grand.globalId);
         }
+        shape.close(tx, child);
       }
 
       await tx.commit();
-      return { root: await root.globalId, leaves: await Promise.all(leaves) };
+      const tree = { root: await root.globalId, leaves: await Promise.all(leaves) };
+      return { root: tree.root, touched: shape.touched(tree) };
     },
     { sync: true },
   );
 }
 
-/** One mutation between polls: a KV write on a leaf. The parent is not rewritten, so this is
- * the quiet-parent shape, which is the case frontier seeding exists to reach. */
-async function touchLeaf(pl: PlClient, leaf: SignedResourceId, arm: string, round: number) {
+/** One mutation between polls: a KV write on a resource the shape names. On a leaf the parent is
+ * not rewritten, so this is the quiet-parent shape, which is the case frontier seeding exists to
+ * reach. */
+async function touch(pl: PlClient, target: SignedResourceId, arm: string, round: number) {
   await pl.withWriteTx(
     "BenchTouch",
     async (tx: PlTransaction) => {
       // Keyed by arm: the tree is shared and never reset, and state.ts compares KV values,
       // so a later arm rewriting the same key with the same bytes observes no change at all.
-      tx.setKValue(leaf, `bench-${arm}-${round}`, Buffer.from(`r${round}`));
+      tx.setKValue(target, `bench-${arm}-${round}`, Buffer.from(`r${round}`));
       await tx.commit();
     },
     { sync: true },
@@ -122,13 +190,15 @@ type Row = {
 async function runArm(
   pl: PlClient,
   arm: Arm,
-  seed: { root: SignedResourceId; leaves: SignedResourceId[] },
+  seed: { root: SignedResourceId; touched: SignedResourceId[] },
+  finality: Finality,
+  label: string,
 ): Promise<Row | undefined> {
   const caps = pl.serverInfo.capabilities ?? [];
   if (arm.mode === "backend-delta" && !hasCapability(caps, "treeChangedSince:v2")) return undefined;
 
   // Scalar, not an array: the constructor takes SignedResourceId | Set<SignedResourceId>.
-  const state = new PlTreeState(seed.root, DefaultFinalResourceDataPredicate);
+  const state = new PlTreeState(seed.root, finality.predicate);
   const stat: TreeLoadingStat = initialTreeLoadingStat();
   let token: Uint8Array | undefined;
   let changedAtColdLoad = 0;
@@ -137,9 +207,8 @@ async function runArm(
   // purpose: it is where the arms are meant to look alike.
   for (let cycle = 0; cycle <= POLL_CYCLES; cycle++) {
     if (cycle > 0) {
-      const leaf = seed.leaves[cycle % seed.leaves.length];
-      if (leaf !== undefined)
-        await touchLeaf(pl, leaf, arm.label.trim().replace(/\s+/g, "-"), cycle);
+      const target = seed.touched[cycle % seed.touched.length];
+      if (target !== undefined) await touch(pl, target, label.trim().replace(/\s+/g, "-"), cycle);
     }
 
     const request = constructTreeLoadingRequest(state, {
@@ -162,7 +231,7 @@ async function runArm(
   }
 
   return {
-    arm: arm.label,
+    arm: label,
     roundTrips: stat.roundTrips,
     resources: stat.retrievedResources,
     bytes: stat.retrievedResourceDataBytes + stat.retrievedKeyValueBytes,
@@ -176,19 +245,20 @@ async function runArm(
   };
 }
 
-function report(rows: Row[], skipped: string[], failed: string[] = []) {
+function report(shape: Shape, rows: Row[], skipped: string[], failed: string[]) {
   const pad = (s: string | number, n: number) => String(s).padStart(n);
+  const armWidth = Math.max("arm".length, ...rows.map((r) => r.arm.length)) + 1;
   const lines = [
     "",
     "=== tree loading cost ===",
-    `tree: ${CHILDREN} children x ${GRANDCHILDREN} grandchildren, ${POLL_CYCLES} polls after load,`,
-    `      one KV write on a leaf between polls (quiet-parent shape)`,
+    `tree: ${CHILDREN} ${shape.name} x ${GRANDCHILDREN} leaves, ${POLL_CYCLES} polls after load,`,
+    `      one KV write on ${shape.touchedName} between polls`,
     "",
-    `${"arm".padEnd(28)} ${pad("trips", 6)} ${pad("res", 6)} ${pad("bytes", 8)} ${pad("seeds", 6)} ${pad("resolv", 7)} ${pad("unchgd", 7)} ${pad("wasted", 8)} ${pad("chgd", 5)} ${pad("pruned", 7)} ${pad("ms", 7)}`,
+    `${"arm".padEnd(armWidth)}${pad("trips", 6)} ${pad("res", 6)} ${pad("bytes", 8)} ${pad("seeds", 6)} ${pad("resolv", 7)} ${pad("unchgd", 7)} ${pad("wasted", 8)} ${pad("chgd", 5)} ${pad("pruned", 7)} ${pad("ms", 7)}`,
   ];
   for (const r of rows) {
     lines.push(
-      `${r.arm.padEnd(28)} ${pad(r.roundTrips, 6)} ${pad(r.resources, 6)} ${pad(r.bytes, 8)} ${pad(r.seeds, 6)} ${pad(r.resolutions, 7)} ${pad(r.unchanged, 7)} ${pad(r.wastedBytes, 8)} ${pad(r.changedSteady, 5)} ${pad(r.prunedFields, 7)} ${pad(r.ms, 7)}`,
+      `${r.arm.padEnd(armWidth)}${pad(r.roundTrips, 6)} ${pad(r.resources, 6)} ${pad(r.bytes, 8)} ${pad(r.seeds, 6)} ${pad(r.resolutions, 7)} ${pad(r.unchanged, 7)} ${pad(r.wastedBytes, 8)} ${pad(r.changedSteady, 5)} ${pad(r.prunedFields, 7)} ${pad(r.ms, 7)}`,
     );
   }
 
@@ -234,27 +304,38 @@ function report(rows: Row[], skipped: string[], failed: string[] = []) {
   console.log(lines.join("\n"));
 }
 
-test("benchmark: tree loading cost by algorithm", async () => {
-  if (process.env.PL_TREE_BENCH !== "1") return;
-
+async function runBenchmark(shape: Shape, finalities: Finality[]) {
   await TestHelpers.withTempRoot(async (pl) => {
-    const seed = await seedTree(pl);
+    const seed = await seedTree(pl, shape);
     const rows: Row[] = [];
     const skipped: string[] = [];
 
     const failed: string[] = [];
-    for (const arm of ARMS) {
-      // One arm failing must not lose the other five: this runs against a real backend, and
-      // an algorithm that errors is itself a result worth reporting.
-      try {
-        const row = await runArm(pl, arm, seed);
-        if (row === undefined) skipped.push(arm.label.trim());
-        else rows.push(row);
-      } catch (e: unknown) {
-        failed.push(`${arm.label.trim()}: ${e instanceof Error ? e.message : String(e)}`);
+    for (const finality of finalities) {
+      for (const arm of ARMS) {
+        // One arm failing must not lose the others: this runs against a real backend, and
+        // an algorithm that errors is itself a result worth reporting.
+        const label = `${arm.label} ${finality.name}`;
+        try {
+          const row = await runArm(pl, arm, seed, finality, label);
+          if (row === undefined) skipped.push(label.trim());
+          else rows.push(row);
+        } catch (e: unknown) {
+          failed.push(`${label.trim()}: ${e instanceof Error ? e.message : String(e)}`);
+        }
       }
     }
 
-    report(rows, skipped, failed);
+    report(shape, rows, skipped, failed);
   });
+}
+
+test("benchmark: tree loading cost by algorithm", async () => {
+  if (process.env.PL_TREE_BENCH !== "1") return;
+  await runBenchmark(STRUCT_SHAPE, [TREE_FINALITY]);
+}, 600_000);
+
+test("benchmark: polling cost of an ephemeral map that is never final", async () => {
+  if (process.env.PL_TREE_BENCH !== "1") return;
+  await runBenchmark(MAP_SHAPE, [MAP_FINAL_AT_READY, TREE_FINALITY]);
 }, 600_000);

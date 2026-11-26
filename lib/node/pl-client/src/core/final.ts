@@ -6,11 +6,15 @@ export { ResourceTypeName, ResourceTypePrefix };
 export type { FinalResourceDataPredicate } from "./finality";
 export { readyOrDuplicateOrError } from "./finality";
 
-// The finality tables, one layer per consumer. Every layer accepts two backend writes after
+// The finality tables, one layer per consumer. Every layer accepts three backend writes after
 // final: a data-loss error cascade, lifting the error of a stored blob found lost or corrupt to
-// the resources built from it, and the first duplicate's `hasOriginalListeners` flag on its
-// original, backend-internal and never on the wire. An entry's `why` names any other write
-// it accepts. A layer adds only the types whose later writes its consumer does not observe.
+// the resources built from it; a late error, lifted by the core from an entry that fails after
+// the resource above it is ready, because ready asks only that every input points to a resource
+// with a final status, and work below that resource can still fail; and the first duplicate's
+// `hasOriginalListeners` flag on its original, backend-internal and never on the wire. A reader
+// of a final resource misses the first two. An entry's `why` names any other write it accepts,
+// and a type that must show a late error gets a `never` entry. A layer adds only the types whose
+// later writes its consumer does not observe.
 
 // Where the backend's filter stops earlier than the predicate. An early stop is safe: the
 // backend sends a body-less stop marker, and the streaming loader fetches every stopped resource
@@ -36,6 +40,9 @@ const value = (name: string): FinalityEntry => ({
   why: "a value, written once at creation",
 });
 
+const noFillAfterReady =
+  "no controller fills it after ready; a late error from an entry below it is not seen";
+
 const settledAtReady = (name: string, why: string): FinalityEntry => ({
   match: { name },
   rule: "readyOrDuplicateOrError",
@@ -50,8 +57,8 @@ const never = (match: FinalityEntry["match"], why: string): FinalityEntry => ({
 });
 
 /** The base layer: nothing observable (state, fields, KV) changes after the rule holds, whatever
- * the consumer prunes. Exceptions: the data-loss error cascade, the `hasOriginalListeners` flag,
- * and the writes its entries name. */
+ * the consumer prunes. Exceptions: the data-loss error cascade, the late error, the
+ * `hasOriginalListeners` flag, and the writes its entries name. */
 export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
   value(ResourceTypeName.JsonObject),
   value(ResourceTypeName.JsonGzObject),
@@ -92,7 +99,6 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
   ...[
     ResourceTypeName.StdMap,
     ResourceTypeName.StdMapSlash,
-    ResourceTypeName.EphStdMap,
     ResourceTypeName.PFrame,
     ResourceTypeName.ParquetChunk,
     ResourceTypeName.BContext,
@@ -102,9 +108,7 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
     ResourceTypeName.BResolveSingleNoResult,
     ResourceTypeName.BQueryResult,
     ResourceTypeName.TengoLib,
-  ].map((name) =>
-    settledAtReady(name, "its inputs are final at ready, and no controller fills it afterwards"),
-  ),
+  ].map((name) => settledAtReady(name, noFillAfterReady)),
   ...[
     ResourceTypeName.TengoTemplate,
     ResourceTypeName.SoftwareInfo,
@@ -122,7 +126,7 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
   {
     match: { prefix: ResourceTypePrefix.PColumnData },
     rule: "readyOrDuplicateOrError",
-    why: "its inputs are final at ready, and no controller fills it afterwards",
+    why: noFillAfterReady,
     stopRule: earlyOnFieldErrors,
   },
   {
@@ -155,6 +159,12 @@ export const StrictFinality: FinalityTable = FinalityTable.of("strict", [
       "as resolution finishes",
     stopRule: earlyOnFieldErrorsWithOutputs,
   },
+  never(
+    { name: ResourceTypeName.EphStdMap },
+    "it is ready once its entries resolve to resources, not once those resources settle; an " +
+      "entry that fails later, such as a v2 effect's failed import, puts its error on the map " +
+      "after ready",
+  ),
   never({ name: ResourceTypeName.UserProject }, "blocks and fields come and go over its life"),
   never({ name: ResourceTypeName.Projects }, "projects are added and removed"),
   never({ name: ResourceTypeName.ClientRoot }, "its fields are added and removed"),
