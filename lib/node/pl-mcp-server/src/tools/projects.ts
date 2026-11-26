@@ -42,12 +42,20 @@ export function registerProjectTools(server: McpServer, ctx: ToolContext): void 
       description: "Open a project for editing. Required before working with blocks.",
       inputSchema: {
         projectId: z.string().describe("Project ID from list_projects or create_project"),
+        activate: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe(
+            "Switch the application window to this project (default true). " +
+              "Pass false to work on the project without changing what the user sees.",
+          ),
       },
     },
-    async ({ projectId }) => {
+    async ({ projectId, activate }) => {
       const entry = await ctx.resolveProject(projectId);
       await ctx.requireMl().openProject(entry.id);
-      await ctx.callbacks.onProjectOpened?.(projectId);
+      await ctx.callbacks.onProjectOpened?.(projectId, { activate });
       return textResult({ ok: true });
     },
   );

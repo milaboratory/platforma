@@ -621,6 +621,28 @@ export class ProjectMutator {
     );
   }
 
+  /**
+   * The block's initialization params as its own model projects them from the current storage,
+   * with the kind the block declares: what a template export writes for this block.
+   *
+   * Read-only, like {@link exportAsTemplateV1}.
+   *
+   * @returns `params` is undefined when the block has no storage yet
+   * @throws when the project has no such block, or the block's model fails to project its params
+   */
+  public getBlockInitializationParams(blockId: string): {
+    kind: BlockKindReference | undefined;
+    params: unknown;
+  } {
+    const info = this.getBlockInfo(blockId);
+    const derived = this.deriveTemplateParams(blockId);
+    if (derived?.error !== undefined)
+      throw new Error(
+        `Block ${blockId} failed to derive its initialization params: ${derived.error}`,
+      );
+    return { kind: info.kind, params: derived?.value };
+  }
+
   private deriveTemplateParams(blockId: string): TemplateParamsResult | undefined {
     const info = this.blockInfos.get(blockId);
     // A block in the structure with no loaded info, or with no storage yet, has no

@@ -1,12 +1,7 @@
 import { test, expect } from "vitest";
 import { withMcpServer } from "./with-mcp";
+import { parseResult } from "./tool-call";
 import path from "node:path";
-
-function parseResult(result: unknown): unknown {
-  const r = result as { content?: { type: string; text: string }[] };
-  if (!r.content?.[0]) throw new Error("No content in result");
-  return JSON.parse(r.content[0].text);
-}
 
 const enterNumbersBlockFolder = path.resolve(
   import.meta.dirname,

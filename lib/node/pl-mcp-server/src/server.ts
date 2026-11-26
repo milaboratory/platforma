@@ -9,6 +9,7 @@ import { registerPingTool } from "./tools/ping";
 import { registerConnectionTools } from "./tools/connection";
 import { registerProjectTools } from "./tools/projects";
 import { registerBlockTools } from "./tools/blocks";
+import { registerBlockParamsTools } from "./tools/block-params";
 import { registerBlockStateTools } from "./tools/block-state";
 import { registerBlockActionContextTools } from "./tools/block-action-context";
 import { registerAwaitTools } from "./tools/await";
@@ -19,7 +20,11 @@ import { registerUIInteractionTools } from "./tools/ui-interaction";
 
 export interface PlMcpServerCallbacks {
   onProjectCreated?: (projectId: string) => void | Promise<void>;
-  onProjectOpened?: (projectId: string) => void | Promise<void>;
+  /**
+   * A project was opened through MCP. `activate: false` asks the application to keep showing
+   * what it shows now instead of switching to the project.
+   */
+  onProjectOpened?: (projectId: string, ops: { activate: boolean }) => void | Promise<void>;
   onProjectClosed?: (projectId: string) => void | Promise<void>;
   onProjectDeleted?: (projectId: string) => void | Promise<void>;
   /** Capture the current application window as a PNG screenshot. Returns base64-encoded PNG. */
@@ -247,6 +252,7 @@ export class PlMcpServer {
     registerConnectionTools(server, ctx);
     registerProjectTools(server, ctx);
     registerBlockTools(server, ctx);
+    registerBlockParamsTools(server, ctx);
     registerBlockStateTools(server, ctx);
     registerBlockActionContextTools(server, ctx);
     registerAwaitTools(server, ctx);

@@ -1,46 +1,182 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { BlockPackSpecAny } from "@milaboratories/pl-middle-layer";
+import type { BlockPackSpecAny, Project } from "@milaboratories/pl-middle-layer";
+import { BlockKindRef, CentralBlockRegistry } from "@milaboratories/pl-middle-layer";
+import {
+  BlockInitParamsRejectedError,
+  ModelAPIVersionMismatchError,
+} from "@milaboratories/pl-errors";
+import { BLOCK_STORAGE_FACADE_VERSION, type BlockKindReference } from "@platforma-sdk/model";
 import { z } from "zod";
-import type { ToolContext } from "./types";
+import type { AuthorMarker, ToolContext } from "./types";
 import { errorResult, textResult } from "./types";
+
+/** Where a kind is resolved when the caller names no registry. */
+function centralBlockRegistryUrl(): string {
+  if (CentralBlockRegistry.type !== "remote-v2")
+    throw new Error("The central block registry is expected to be a v2 remote registry.");
+  return CentralBlockRegistry.url;
+}
+
+function errorMessage(e: unknown): string {
+  return e instanceof Error ? e.message : String(e);
+}
+
+const addBlockInput = {
+  projectId: z.string().describe("Project ID (must be opened)"),
+  label: z.string().describe("Block label"),
+  spec: z
+    .union([
+      z.object({
+        type: z.literal("kind"),
+        kind: z
+          .string()
+          .describe(
+            'Block kind reference "<package name>@<version or range>", ' +
+              'e.g. "@platforma-open/milaboratories.samples-and-data.kind@1.2.0"',
+          ),
+        registryUrl: z
+          .string()
+          .optional()
+          .describe("Registry to resolve the kind in (default: the central block registry)"),
+        allowUnstable: z
+          .boolean()
+          .optional()
+          .describe("Also consider blocks not published to the stable channel"),
+      }),
+      z.object({
+        type: z.literal("from-registry-v2"),
+        registryUrl: z.string().describe("Registry URL"),
+        id: z.object({
+          organization: z.string(),
+          name: z.string(),
+          version: z.string(),
+        }),
+      }),
+      z.object({
+        type: z.literal("dev-v2"),
+        folder: z.string().describe("Path to block folder"),
+      }),
+    ])
+    .describe("Which block to add"),
+  params: z
+    .record(z.unknown())
+    .optional()
+    .describe("Initialization params of the block's kind. Omit for the default state."),
+  blockIds: z
+    .record(z.string())
+    .optional()
+    .describe(
+      "Ids used inside `params` in place of block ids, each mapped to a block id of this " +
+        "project. Needed only when `params` do not already hold ids of this project.",
+    ),
+  before: z
+    .string()
+    .optional()
+    .describe("ID of the block to insert the new block before (default: add at the end)"),
+};
+
+/** Input of the `add_block` tool. */
+export type AddBlockInput = z.infer<z.ZodObject<typeof addBlockInput>>;
+
+/** What `add_block` needs from the application. */
+export type AddBlockDeps = {
+  project: Pick<Project, "addBlock">;
+  /** Resolves a kind reference to the block implementing it; throws when there is none. */
+  resolveKind: (
+    kind: BlockKindReference,
+    registryUrl: string | undefined,
+    allowUnstable: boolean,
+  ) => Promise<BlockPackSpecAny>;
+  author: AuthorMarker;
+};
+
+/**
+ * Adds the block the input describes, started from its params when it carries them. Every way the
+ * block can be refused comes back as an error result saying nothing was created.
+ */
+export async function addBlock(deps: AddBlockDeps, input: AddBlockInput) {
+  const { label, spec, params, blockIds, before } = input;
+
+  let blockPackSpec: BlockPackSpecAny;
+  if (spec.type === "kind") {
+    try {
+      blockPackSpec = await deps.resolveKind(
+        BlockKindRef.parse(spec.kind),
+        spec.registryUrl,
+        spec.allowUnstable ?? false,
+      );
+    } catch (e: unknown) {
+      return errorResult(
+        `Kind "${spec.kind}" was not resolved to a block: ${errorMessage(e)}. Nothing was created.`,
+        "Check the kind name and version. Pass allowUnstable: true if the block is not " +
+          "published to the stable channel, or registryUrl if it lives in another registry.",
+      );
+    }
+  } else {
+    blockPackSpec = spec;
+  }
+
+  try {
+    const blockId = await deps.project.addBlock(
+      label,
+      blockPackSpec,
+      before,
+      deps.author,
+      undefined,
+      {
+        init: params === undefined ? undefined : { params, blockIds },
+        requireModelAPIVersion: BLOCK_STORAGE_FACADE_VERSION,
+      },
+    );
+    return textResult({ blockId });
+  } catch (e: unknown) {
+    if (e instanceof ModelAPIVersionMismatchError)
+      return errorResult(
+        "This block is built on the legacy block API, which MCP does not support. " +
+          "Nothing was created.",
+        "Use a newer version of the block.",
+      );
+    if (e instanceof BlockInitParamsRejectedError)
+      return errorResult(
+        `The block did not accept the params: ${e.reason}. Nothing was created.`,
+        "Fix the params and call add_block again. get_block_params on a configured block " +
+          "of the same kind shows the expected shape.",
+      );
+    throw e;
+  }
+}
 
 export function registerBlockTools(server: McpServer, ctx: ToolContext): void {
   server.registerTool(
     "add_block",
     {
       description:
-        "Add a block to an opened project. Spec can be from-registry-v2 (for published blocks) or dev-v2 (for local dev blocks).",
-      inputSchema: {
-        projectId: z.string().describe("Project ID (must be opened)"),
-        label: z.string().describe("Block label"),
-        spec: z
-          .union([
-            z.object({
-              type: z.literal("from-registry-v2"),
-              registryUrl: z.string().describe("Registry URL"),
-              id: z.object({
-                organization: z.string(),
-                name: z.string(),
-                version: z.string(),
-              }),
-            }),
-            z.object({
-              type: z.literal("dev-v2"),
-              folder: z.string().describe("Path to block folder"),
-            }),
-          ])
-          .describe("Block pack specification"),
-      },
+        "Add a block to an opened project, optionally configured from initialization params.\n\n" +
+        "`spec` names the block: `kind` (a block kind reference, resolved to the newest block " +
+        "implementing it), `from-registry-v2` (an exact published block) or `dev-v2` (a local dev " +
+        "block folder).\n\n" +
+        "`params` are the initialization params of the block's kind: the block's own model checks " +
+        "them and builds its initial state from them. Without `params` the block starts in its " +
+        "default state. get_block_params shows the params of an existing block.\n\n" +
+        "References to other blocks inside `params` must hold real block ids of this project, " +
+        "copied from tool results. Params copied from another project or a template hold other " +
+        "ids: map each of them to a block of this project with `blockIds`.\n\n" +
+        "Only blocks on the current block API can be added. On any error nothing is created.",
+      inputSchema: addBlockInput,
     },
-    async ({ projectId, label, spec }) => {
-      const project = await ctx.getOpenedProject(projectId);
-      const blockId = await project.addBlock(
-        label,
-        spec as BlockPackSpecAny,
-        undefined,
-        ctx.getAuthorMarker(),
+    async (input) => {
+      const ml = ctx.requireMl();
+      return await addBlock(
+        {
+          project: await ctx.getOpenedProject(input.projectId),
+          resolveKind: (kind, registryUrl, allowUnstable) =>
+            ml.blockRegistryProvider
+              .getRegistry(registryUrl ?? centralBlockRegistryUrl())
+              .resolveKind(kind, { allowUnstable }),
+          author: ctx.getAuthorMarker(),
+        },
+        input,
       );
-      return textResult({ blockId });
     },
   );
 
