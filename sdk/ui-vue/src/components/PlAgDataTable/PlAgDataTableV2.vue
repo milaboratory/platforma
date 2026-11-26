@@ -447,6 +447,7 @@ watch(
         visibleTableHandle: settings.model?.visibleTableHandle,
         columnsMeta: settings.model?.columnsMeta,
         sheets: settings.sheets ?? [],
+        sheetsState: sheetsState.value,
         dataRenderedTracker,
         hiddenColIds: hiddenColIds.value?.map((id) => canonicalizeJson<PTableColumnId>(id)),
         cellButtonAxisParams: {

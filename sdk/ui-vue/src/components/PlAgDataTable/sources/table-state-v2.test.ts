@@ -73,7 +73,9 @@ describe("resolveSheetsState", () => {
       { label: "S2", value: "s2" },
     ],
     defaultValue: "s2",
+    selection: "single",
   };
+  const multiple: PlDataTableSheet = { ...sheet, selection: "multiple" };
   const axisId = getAxisId(axis("sample"));
 
   it("keeps a saved value the sheet still offers", () => {
@@ -93,6 +95,36 @@ describe("resolveSheetsState", () => {
 
   it("gives a sheet without options no entry", () => {
     expect(resolveSheetsState([{ ...sheet, options: [] }], [])).toEqual([]);
+  });
+
+  it("keeps all values, or the saved values a sheet showing several still offers", () => {
+    expect(resolveSheetsState([multiple], [{ axisId, allValues: true }])).toEqual([
+      { axisId, allValues: true },
+    ]);
+    expect(resolveSheetsState([multiple], [{ axisId, values: ["s1", "gone", "s2"] }])).toEqual([
+      { axisId, values: ["s1", "s2"] },
+    ]);
+  });
+
+  it("shows the default on a sheet showing several once no saved value is left", () => {
+    expect(resolveSheetsState([multiple], [{ axisId, values: ["gone"] }])).toEqual([
+      { axisId, values: ["s2"] },
+    ]);
+    expect(resolveSheetsState([multiple], [{ axisId, values: [] }])).toEqual([
+      { axisId, values: ["s2"] },
+    ]);
+  });
+
+  it("carries a saved state over when the sheet changes how many values it shows", () => {
+    expect(resolveSheetsState([multiple], [{ axisId, value: "s1" }])).toEqual([
+      { axisId, values: ["s1"] },
+    ]);
+    expect(resolveSheetsState([sheet], [{ axisId, values: ["gone", "s1"] }])).toEqual([
+      { axisId, value: "s1" },
+    ]);
+    expect(resolveSheetsState([sheet], [{ axisId, allValues: true }])).toEqual([
+      { axisId, value: "s2" },
+    ]);
   });
 });
 
