@@ -49,6 +49,5 @@ export type FileDialogItem = {
   name: string;
   canBeSelected: boolean;
   isDir: boolean;
-  selected: boolean;
   handle: ImportFileHandle | undefined;
 };

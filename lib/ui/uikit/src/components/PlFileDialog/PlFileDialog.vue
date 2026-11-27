@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import style from "./pl-file-dialog.module.scss";
-import { computed, ref, useTemplateRef } from "vue";
+import { computed, shallowRef, useTemplateRef } from "vue";
 import { notEmpty } from "@milaboratories/helpers";
 import type { ImportedFiles, SimpleOption } from "../../types";
 import { PlDialogModal } from "../PlDialogModal";
@@ -10,11 +10,6 @@ import { PlBtnGroup } from "../PlBtnGroup";
 import Remote from "./Remote.vue";
 import Local from "./Local.vue";
 
-const emit = defineEmits<{
-  (e: "update:modelValue", value: boolean): void;
-  (e: "import:files", value: ImportedFiles): void;
-}>();
-
 const props = withDefaults(
   defineProps<{
     /**
@@ -23,6 +18,15 @@ const props = withDefaults(
      * When `true`, the modal is open. When `false`, the modal is closed.
      */
     modelValue: boolean;
+    /**
+     * Called when the modal asks to open or close; `v-model` binds it.
+     */
+    "onUpdate:modelValue"?: (value: boolean) => void;
+    /**
+     * Called with the files to import, right before the modal closes;
+     * `@import:files` binds it.
+     */
+    "onImport:files"?: (value: ImportedFiles) => void;
     /**
      * Specifies the file extensions that are allowed for selection.
      *
@@ -37,6 +41,16 @@ const props = withDefaults(
      * When `false` or not specified, only a single file can be selected.
      */
     multi?: boolean;
+    /**
+     * Lets the user import whole folders, together with `multi`: dropped on the
+     * "My Computer" tab, or selected on the "Remote" tab. A folder becomes the files below
+     * it, matching `extensions`; hidden and system entries are skipped.
+     *
+     * Files keep their full paths, so files with the same name from different folders
+     * arrive side by side. Turn it on only where the block can tell them apart.
+     * Default: `false`.
+     */
+    allowFolders?: boolean;
     /**
      * The custom title of the dialog.
      */
@@ -59,7 +73,7 @@ const props = withDefaults(
   },
 );
 
-const mode = ref<"local" | "remote">("local");
+const mode = shallowRef<"local" | "remote">("local");
 
 const defaultTitle = computed(() =>
   props.multi ? "Select Files to Import" : "Select File to Import",
@@ -76,19 +90,25 @@ const modeOptions = [
   },
 ] satisfies SimpleOption[];
 
-const closeModal = () => emit("update:modelValue", false);
+const closeModal = () => props["onUpdate:modelValue"]?.(false);
 
 const remoteRef = useTemplateRef("remote");
 
-const submit = () => {
-  if (remoteRef.value?.isReady) {
-    emit("import:files", notEmpty(remoteRef.value?.getFilesToImport()));
-    closeModal();
-  }
+const submit = async () => {
+  const remote = remoteRef.value;
+  if (!remote?.isReady) return;
+  // Undefined when cancelled or nothing to import; Remote shows why.
+  const files = await remote.getFilesToImport();
+  if (files) importFiles(files);
+};
+
+const cancel = () => {
+  if (remoteRef.value?.isImporting) remoteRef.value.cancelImport();
+  else closeModal();
 };
 
 const importFiles = (importedFiles: ImportedFiles) => {
-  emit("import:files", importedFiles);
+  props["onImport:files"]?.(importedFiles);
   closeModal();
 };
 </script>
@@ -110,20 +130,33 @@ const importFiles = (importedFiles: ImportedFiles) => {
     <div style="margin: 0 24px">
       <PlBtnGroup v-model="mode" :options="modeOptions" data-testid="pl-file-dialog-mode" />
     </div>
-    <Remote v-if="mode === 'remote'" ref="remote" v-bind="$props" :submit="submit" />
-    <Local v-if="mode === 'local'" :import-files="importFiles" v-bind="$props" />
+    <Remote
+      v-if="mode === 'remote'"
+      ref="remote"
+      :model-value="modelValue"
+      :extensions="extensions"
+      :multi="multi"
+      :allow-folders="allowFolders"
+      :auto-select-storage="autoSelectStorage"
+      :submit="submit"
+    />
+    <Local
+      v-if="mode === 'local'"
+      :import-files="importFiles"
+      :extensions="extensions"
+      :multi="multi"
+      :allow-folders="allowFolders"
+    />
     <template v-if="mode === 'remote'" #actions>
       <PlBtnPrimary
         style="min-width: 160px"
         :disabled="!remoteRef?.isReady"
+        :loading="remoteRef?.isImporting"
         data-testid="pl-file-dialog-import"
         @click.stop="submit"
         >Import</PlBtnPrimary
       >
-      <PlBtnGhost
-        :justify-center="false"
-        data-testid="pl-file-dialog-cancel"
-        @click.stop="closeModal"
+      <PlBtnGhost :justify-center="false" data-testid="pl-file-dialog-cancel" @click.stop="cancel"
         >Cancel</PlBtnGhost
       >
     </template>
