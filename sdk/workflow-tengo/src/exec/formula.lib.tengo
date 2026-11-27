@@ -51,6 +51,7 @@ slices := import(":slices")
 maps := import(":maps")
 sets := import(":sets")
 units := import(":units")
+fmt := import("fmt")
 
 // ---- AST node shapes -------------------------------------------------------
 // const:      { op: "const", value: <int> }
@@ -186,6 +187,16 @@ evaluate = func(node, resolver) {
 	ll.panic("exec.formula.evaluate: unknown op %q", op)
 }
 
+// _fail reports an invalid formula result: through the caller's `fail` when given, else a panic. A
+// caller that gives `fail` gets the invalid result back and must not use it.
+_fail := func(fail, msg) {
+	if len(fail) > 0 && !is_undefined(fail[0]) {
+		fail[0](msg)
+		return
+	}
+	ll.panic("%s", msg)
+}
+
 // evaluateResource evaluates a formula destined for a resource quota (ram / cpu /
 // gpu) and asserts the result is usable: a positive integer. It first rejects a
 // comparison/logic op at the top level — Tengo's && / || return the deciding
@@ -195,30 +206,41 @@ evaluate = func(node, resolver) {
 // underflows, or a metric that floored to 0) BEFORE it reaches the quota as an
 // opaque "trueb" RAM string or a 0-core request. `label` ("ram" / "cpu" /
 // "gpuMemory") names the offending dimension.
-evaluateResource := func(node, resolver, label) {
+//
+// `fail`, optional, is called with the message instead of panicking with it, for a caller that
+// adds context to the error (the outcome router keeps the failed attempt and its history); the
+// result is then invalid and must not be used.
+// evaluateScratch takes it too.
+evaluateResource := func(node, resolver, label, ...fail) {
 	node = _unwrap(node)
-	ll.assert(!sets.hasElement(_BOOL_OPS, node.op),
-		"exec resource formula (%s) must compute a number, but its top-level op is %q (a comparison/logic op). Use comparisons and logic only inside f.when(...).",
-		label, node.op)
+	if sets.hasElement(_BOOL_OPS, node.op) {
+		_fail(fail, fmt.sprintf("exec resource formula (%s) must compute a number, but its top-level op is %q (a comparison/logic op). Use comparisons and logic only inside f.when(...).",
+			label, node.op))
+		return 0
+	}
 	v := evaluate(node, resolver)
-	ll.assert(is_int(v) && v > 0,
-		"exec resource formula (%s) must evaluate to a positive integer, got %v. If a metric can be zero or a subtraction can underflow, floor it with .atLeast(...) or .between(...).",
-		label, v)
+	if !is_int(v) || v <= 0 {
+		_fail(fail, fmt.sprintf("exec resource formula (%s) must evaluate to a positive integer, got %v. If a metric can be zero or a subtraction can underflow, floor it with .atLeast(...) or .between(...).",
+			label, v))
+	}
 	return v
 }
 
 // evaluateScratch is evaluateResource for a scratch request, where 0 is a valid answer:
 // the command gets its temporary directory and no sized device, the same meaning a
 // static `scratchFreeSpace: 0` has. A negative result is still an error.
-evaluateScratch := func(node, resolver) {
+evaluateScratch := func(node, resolver, ...fail) {
 	node = _unwrap(node)
-	ll.assert(!sets.hasElement(_BOOL_OPS, node.op),
-		"exec resource formula (scratchFreeSpace) must compute a number, but its top-level op is %q (a comparison/logic op). Use comparisons and logic only inside f.when(...).",
-		node.op)
+	if sets.hasElement(_BOOL_OPS, node.op) {
+		_fail(fail, fmt.sprintf("exec resource formula (scratchFreeSpace) must compute a number, but its top-level op is %q (a comparison/logic op). Use comparisons and logic only inside f.when(...).",
+			node.op))
+		return 0
+	}
 	v := evaluate(node, resolver)
-	ll.assert(is_int(v) && v >= 0,
-		"exec resource formula (scratchFreeSpace) must evaluate to a non-negative integer, got %v. Floor a subtraction that can underflow with .atLeast(0).",
-		v)
+	if !is_int(v) || v < 0 {
+		_fail(fail, fmt.sprintf("exec resource formula (scratchFreeSpace) must evaluate to a non-negative integer, got %v. Floor a subtraction that can underflow with .atLeast(0).",
+			v))
+	}
 	return v
 }
 

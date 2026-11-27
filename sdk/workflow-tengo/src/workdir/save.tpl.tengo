@@ -18,7 +18,9 @@ self.body(func(inputs) {
 	fileSets := inputs.fileSets
 	fileSetsContent := inputs.fileSetsContent
 
-	wdBuilder := wdSave.builder(wdBefore)
+	// WorkdirSave v3 (exec fallbacks): set only by the save chain of a RunCommand v3 exec
+	v3 := inputs.saveVersion == 3
+	wdBuilder := wdSave.builder(wdBefore, { v3: v3 })
 
 	for file in maps.getKeys(files) {
 		wdBuilder.saveFile(file)
@@ -95,7 +97,7 @@ self.body(func(inputs) {
 	maps.forEach(fileSetsMatch, func(fSetName, list) {
 		r := smart.mapBuilder()
 		for f in list {
-			r.addRef(f, filesResult.getFutureInputField(f))
+			r.addRef(f, wd.getSavedFile(f))
 		}
 		fileSetsResult.addRef(fSetName, r.build())
 	})
@@ -109,7 +111,7 @@ self.body(func(inputs) {
 		fileSetsContentResult.addRef(fSetName, r.build())
 	})
 
-	return {
+	result := {
 		files           : filesResult,
 		filesContent    : filesContentResult,
 		fileSets        : fileSetsResult.build(),
@@ -117,4 +119,8 @@ self.body(func(inputs) {
 		workdir         : wd.getWorkdirAfter(),
 		progress        : wd.getProgress()
 	}
+	if v3 {
+		result.outcome = wd.getOutcome()
+	}
+	return result
 })

@@ -255,3 +255,48 @@ tplTest.concurrent(
     }
   },
 );
+
+tplTest.concurrent(
+  "the runner reports a command with fallbacks (RunCommand v3) into the action context tree",
+  async ({ helper, expect, pl }) => {
+    //
+    // Scenario:
+    //  1. Render a template with its own context; it runs a command with fallbacks, which runs as a
+    //     RunCommand v3.
+    //  2. The command finishes on its first plan.
+    //  3. The runner recorded Running and Completed on that command in the tree: the command is
+    //     linked to the action context, so its run records carry the block.
+    //
+
+    if (!hasActionContextPrimitives(pl)) return;
+
+    const result = await helper.renderTemplate(
+      true,
+      "action-context.exec-fallbacks-root",
+      ["context", "out"],
+      () => ({}),
+    );
+
+    // 1-2. The command finishes on its first plan.
+    expect(await result.computeOutput("out", (a) => a?.getDataAsString()).awaitStableValue()).eq(
+      "ok",
+    );
+
+    // 3. The exec transitions land asynchronously after the commits: poll the tree.
+    const rootRef = await result.computeOutput("context", (a) => a?.id).awaitStableValue();
+    for (let attempt = 0; ; attempt++) {
+      const root = await pl.withReadTx("readActionContext", async (tx) =>
+        readActionContextNode(tx, rootRef!),
+      );
+      const states: string[] = [];
+      const walk = (node: ActionContextNode) => {
+        for (const t of transitions(node, "exec")) states.push((t as { state: string }).state);
+        node.children.forEach(walk);
+      };
+      walk(root);
+      if (states.includes("Running") && states.includes("Completed")) break;
+      expect(attempt, `exec states so far: ${states.join(",")}`).toBeLessThan(100);
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+  },
+);

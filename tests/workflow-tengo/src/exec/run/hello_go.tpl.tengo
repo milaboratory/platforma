@@ -16,6 +16,7 @@ self.body(func(inputs) {
 	run := exec.builder().
         software(sw).
 		inLightQueue().
+		cpu(1).mem("100MiB").
 		arg(inputs.text).
 		saveStdoutContent().
 		run()

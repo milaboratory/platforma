@@ -1,0 +1,33 @@
+// exec-fallbacks: as exec, but the command has fallbacks, so it always runs as a RunCommand v3
+
+self := import("@platforma-sdk/workflow-tengo:tpl")
+smart := import("@platforma-sdk/workflow-tengo:smart")
+exec := import("@platforma-sdk/workflow-tengo:exec")
+assets := import("@platforma-sdk/workflow-tengo:assets")
+
+self.defineOutputs(["context", "out"])
+
+shellSw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:shell")
+
+self.body(func(inputs) {
+	contextId := self.actionContext().id()
+
+	step := func(script) {
+		return exec.builder().
+			cpu(1).ram("50Mi").
+			software(shellSw).
+			arg("-c").
+			arg(script).
+			inLightQueue().
+			saveStdoutContent()
+	}
+
+	run := step("printf ok").
+		fallbacks({ SoftwareError: [{ exitCode: 2, name: "other", builder: step("printf other") }] }).
+		run()
+
+	return {
+		context: smart.resource(contextId),
+		out: run.getStdoutContent()
+	}
+})

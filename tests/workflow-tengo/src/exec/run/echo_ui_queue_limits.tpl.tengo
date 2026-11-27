@@ -9,6 +9,8 @@ sw := assets.importSoftware("@platforma-open/milaboratories.software-test-utils:
 self.body(func(inputs) {
 	limitsRun := exec.builder().
 		setQueue(inputs.queue).
+		// the test reads the queue's defaults: no requests on purpose
+		_queueDefaultRequests().
 		software(sw).
 		argWithVar("{system.cpu},{system.ram.bytes},"+inputs.id).
 		saveStdoutContent().
