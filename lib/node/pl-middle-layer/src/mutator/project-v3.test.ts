@@ -6,7 +6,7 @@ import { outputRef } from "../model/args";
 import { argsFingerprint } from "../model/args_derivation";
 import { ProjectHelper } from "../model/project_helper";
 import { blockArgsAuthorKey, projectFieldName } from "../model/project_model";
-import { TestBPPreparer } from "../test/block_packs";
+import { prepareInstalled } from "../test/block_packs";
 import { createProject, ProjectMutator } from "./project";
 import type { AuthorMarker, BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import { createBlockStorage } from "@platforma-sdk/model";
@@ -31,6 +31,9 @@ test("v3 blocks: basic test with unified state", async () => {
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
+    // Installed before any transaction opens: an open transaction cannot see it.
+    const installedBPSpecEnterV3 = await prepareInstalled(pl, BPSpecEnterV3);
+    const installedBPSpecSumV3 = await prepareInstalled(pl, BPSpecSumV3);
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
       tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
@@ -46,7 +49,7 @@ test("v3 blocks: basic test with unified state", async () => {
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
         {
           storageMode: "fromModel",
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+          blockPack: installedBPSpecEnterV3,
         },
       );
       // Set initial test data
@@ -79,7 +82,7 @@ test("v3 blocks: basic test with unified state", async () => {
         { id: "enter2", label: "Enter Numbers V3 #2", renderingMode: "Heavy" },
         {
           storageMode: "fromModel",
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+          blockPack: installedBPSpecEnterV3,
         },
       );
       mut.setStates([
@@ -104,7 +107,7 @@ test("v3 blocks: basic test with unified state", async () => {
         { id: "sum1", label: "Sum Numbers V3", renderingMode: "Heavy" },
         {
           storageMode: "fromModel",
-          blockPack: await TestBPPreparer.prepare(BPSpecSumV3),
+          blockPack: installedBPSpecSumV3,
         },
       );
       // Set sources to reference upstream blocks
@@ -164,6 +167,7 @@ test("v3 blocks: prerunArgs skip test", async () => {
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
+    const installedBPSpecEnterV3 = await prepareInstalled(pl, BPSpecEnterV3);
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
       tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
@@ -178,7 +182,7 @@ test("v3 blocks: prerunArgs skip test", async () => {
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
         {
           storageMode: "fromModel",
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+          blockPack: installedBPSpecEnterV3,
         },
       );
       // Set initial state: [3, 1, 2] - has one even number (2)
@@ -293,6 +297,7 @@ test("v3 blocks: migrateBlockPack preserves state and re-derives args and prerun
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
+    const installedBPSpecEnterV3 = await prepareInstalled(pl, BPSpecEnterV3);
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
       tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
@@ -307,7 +312,7 @@ test("v3 blocks: migrateBlockPack preserves state and re-derives args and prerun
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
         {
           storageMode: "fromModel",
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+          blockPack: installedBPSpecEnterV3,
         },
       );
       mut.setStates([
@@ -337,7 +342,7 @@ test("v3 blocks: migrateBlockPack preserves state and re-derives args and prerun
     // Call migrateBlockPack without newClearState (state-preserved path)
     await pl.withWriteTx("MigrateBlockPack", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
-      mut.migrateBlockPack("enter1", await TestBPPreparer.prepare(BPSpecEnterV3));
+      mut.migrateBlockPack("enter1", installedBPSpecEnterV3);
       mut.save();
       await tx.commit();
     });
@@ -365,6 +370,7 @@ test("v3 blocks: migrateBlockPack with storage migration re-derives args and pre
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
+    const installedBPSpecEnterV3 = await prepareInstalled(pl, BPSpecEnterV3);
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
       tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
@@ -379,7 +385,7 @@ test("v3 blocks: migrateBlockPack with storage migration re-derives args and pre
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
         {
           storageMode: "fromModel",
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+          blockPack: installedBPSpecEnterV3,
         },
       );
       mut.setStates([
@@ -405,7 +411,7 @@ test("v3 blocks: migrateBlockPack with storage migration re-derives args and pre
     // Call migrateBlockPack (state-preserved) — triggers v1→v2→v3 migration
     await pl.withWriteTx("MigrateBlockPack", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
-      mut.migrateBlockPack("enter1", await TestBPPreparer.prepare(BPSpecEnterV3));
+      mut.migrateBlockPack("enter1", installedBPSpecEnterV3);
       mut.save();
       await tx.commit();
     });
@@ -441,6 +447,7 @@ test("v3 blocks: resetToInitialStorage derives prerunArgs even when args() throw
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
+    const installedBPSpecEnterV3 = await prepareInstalled(pl, BPSpecEnterV3);
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
       tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
@@ -455,7 +462,7 @@ test("v3 blocks: resetToInitialStorage derives prerunArgs even when args() throw
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
         {
           storageMode: "fromModel",
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+          blockPack: installedBPSpecEnterV3,
         },
       );
       mut.setStates([
@@ -512,6 +519,7 @@ test("v3 blocks: migrateBlockPack assigns author marker", async () => {
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
+    const installedBPSpecEnterV3 = await prepareInstalled(pl, BPSpecEnterV3);
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
       tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
@@ -526,7 +534,7 @@ test("v3 blocks: migrateBlockPack assigns author marker", async () => {
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
         {
           storageMode: "fromModel",
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+          blockPack: installedBPSpecEnterV3,
         },
       );
       mut.setStates([
@@ -544,7 +552,7 @@ test("v3 blocks: migrateBlockPack assigns author marker", async () => {
     const testAuthor: AuthorMarker = { authorId: "test-author-123", localVersion: 1 };
     await pl.withWriteTx("MigrateWithAuthor", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj, testAuthor);
-      mut.migrateBlockPack("enter1", await TestBPPreparer.prepare(BPSpecEnterV3));
+      mut.migrateBlockPack("enter1", installedBPSpecEnterV3);
       mut.save();
       await tx.commit();
     });
@@ -568,6 +576,7 @@ test("v3 blocks: migrateBlockPack does not crash when args() returns undefined",
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
+    const installedBPSpecEnterV3 = await prepareInstalled(pl, BPSpecEnterV3);
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
       tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
@@ -582,7 +591,7 @@ test("v3 blocks: migrateBlockPack does not crash when args() returns undefined",
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
         {
           storageMode: "fromModel",
-          blockPack: await TestBPPreparer.prepare(BPSpecEnterV3),
+          blockPack: installedBPSpecEnterV3,
         },
       );
       mut.setStates([
@@ -600,7 +609,7 @@ test("v3 blocks: migrateBlockPack does not crash when args() returns undefined",
     // args() returns undefined (previously crashed inside createJsonFieldValue).
     await pl.withWriteTx("MigrateBlockPack", async (tx) => {
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
-      mut.migrateBlockPack("enter1", await TestBPPreparer.prepare(BPSpecEnterV3));
+      mut.migrateBlockPack("enter1", installedBPSpecEnterV3);
       mut.save();
       await tx.commit();
     });
@@ -629,6 +638,7 @@ test("v3 blocks: every args derivation records the errors found in the args, non
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
+    const installedBPSpecEnterV3 = await prepareInstalled(pl, BPSpecEnterV3);
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
       tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
@@ -640,7 +650,7 @@ test("v3 blocks: every args derivation records the errors found in the args, non
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
-        { storageMode: "fromModel", blockPack: await TestBPPreparer.prepare(BPSpecEnterV3) },
+        { storageMode: "fromModel", blockPack: installedBPSpecEnterV3 },
       );
       mut.setStates([
         {
@@ -668,6 +678,7 @@ test("v3 blocks: args without an args errors record of their own are kept and ru
   const quickJs = await getQuickJS();
 
   await TestHelpers.withTempRoot(async (pl) => {
+    const installedBPSpecEnterV3 = await prepareInstalled(pl, BPSpecEnterV3);
     const prj = await pl.withWriteTx("CreatingProject", async (tx) => {
       const prjRef = await createProject(tx);
       tx.createField(field(tx.clientRoot, "prj"), "Dynamic", prjRef);
@@ -679,7 +690,7 @@ test("v3 blocks: args without an args errors record of their own are kept and ru
       const mut = await ProjectMutator.load(new ProjectHelper(quickJs), tx, prj);
       mut.addBlock(
         { id: "enter1", label: "Enter Numbers V3", renderingMode: "Heavy" },
-        { storageMode: "fromModel", blockPack: await TestBPPreparer.prepare(BPSpecEnterV3) },
+        { storageMode: "fromModel", blockPack: installedBPSpecEnterV3 },
       );
       mut.setStates([
         {

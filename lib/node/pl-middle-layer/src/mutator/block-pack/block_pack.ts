@@ -3,9 +3,10 @@ import { field } from "@milaboratories/pl-client";
 import { loadTemplate } from "../template/template_loading";
 import type { BlockPackExplicit, BlockPackSpecAny, BlockPackSpecPrepared } from "../../model";
 import type { Signer } from "@milaboratories/ts-helpers";
-import { assertNever } from "@milaboratories/ts-helpers";
+import { assertNever, notEmpty } from "@milaboratories/ts-helpers";
 import type { Branded } from "@milaboratories/pl-model-common";
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import type { Dispatcher } from "undici";
 import { request } from "undici";
@@ -19,12 +20,13 @@ import {
   RegistryV1,
 } from "@platforma-sdk/block-tools";
 import type { BlockPackInfo } from "../../model/block_pack";
+import type { InstallablePackTemplate, PreparedTemplate } from "../../model/template_spec";
 import { resolveDevPacket } from "../../dev_env";
 import { getDevV2PacketMtime, getFromPackV2Mtime } from "../../block_registry";
 import type { V2RegistryProvider } from "../../block_registry/registry-v2-provider";
 import { LRUCache } from "lru-cache";
 import canonicalize from "canonicalize";
-import type { BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
+import type { BlockPackFromRegistryV2, BlockPackSpec } from "@milaboratories/pl-model-middle-layer";
 import { WorkerManager } from "../../worker/WorkerManager";
 import { z } from "zod";
 
@@ -74,6 +76,9 @@ export class BlockPackPreparer {
     },
     sizeCalculation: (value) => value.byteLength,
   });
+
+  /** Parsed packs by sha256, so adding a block again does not parse its workflow again. */
+  private readonly loadedPackCache = new LRUCache<string, LoadedPack>({ max: 50 });
 
   /** Cache of prepared block packs for registry specs (immutable by version). */
   private readonly preparedCache = new LRUCache<PreparedCacheKey, BlockPackSpecPrepared>({
@@ -156,7 +161,23 @@ export class BlockPackPreparer {
       if (cached) return cached;
     }
 
+    const registryPack =
+      spec.type === "from-registry-v2" ? await this.prepareRegistryPack(spec) : undefined;
+    if (registryPack !== undefined) {
+      if (key) this.preparedCache.set(key, registryPack);
+      return registryPack;
+    }
+
     const explicit = await this.prepareWithoutUnpacking(spec);
+
+    // Local dev packs are parsed when installed, which also checks their required capabilities.
+    const { localPath, content } = explicit.template;
+    if (localPath !== undefined)
+      return {
+        ...explicit,
+        type: "prepared",
+        template: { type: "local-pack", path: localPath, sha256: packSha256(content) },
+      };
 
     await using workerManager = new WorkerManager();
 
@@ -177,6 +198,73 @@ export class BlockPackPreparer {
     }
 
     return result;
+  }
+
+  /**
+   * Prepares a v2 registry block from its manifest alone, without downloading the workflow.
+   * Undefined when the manifest does not list the workflow pack's sha256.
+   */
+  private async prepareRegistryPack(
+    spec: BlockPackFromRegistryV2,
+  ): Promise<BlockPackSpecPrepared | undefined> {
+    const registry = this.v2RegistryProvider.getRegistry(spec.registryUrl);
+    const [manifest, components] = await Promise.all([
+      registry.getManifest(spec.id),
+      registry.getComponents(spec.id),
+    ]);
+    const workflowPath = manifest.description.components.workflow.main.path;
+    const workflowFile = manifest.files.find((f) => f.name === workflowPath);
+    if (workflowFile === undefined) return undefined;
+
+    return {
+      type: "prepared",
+      template: {
+        type: "registry-pack",
+        url: components.workflow.main.url,
+        sha256: workflowFile.sha256.toLowerCase(),
+      },
+      config: parseBufferConfig(await this.remoteContentCache.forceFetch(components.model.url)),
+      frontend: { type: "url", url: components.ui.url },
+      source: spec,
+      requiredCapabilities: manifest.description.meta.requiredCapabilities,
+    };
+  }
+
+  /** Downloads or reads a pack, checks its sha256 and parses it. */
+  public async loadPack(template: InstallablePackTemplate): Promise<LoadedPack> {
+    let content: Uint8Array | undefined;
+    if (template.type === "local-pack") {
+      // A rebuild after prepare would pair this config with another build's workflow.
+      content = await fs.promises.readFile(template.path);
+      if (packSha256(content) !== template.sha256)
+        throw new Error(
+          `workflow pack ${template.path} changed after the block was prepared; add the block again`,
+        );
+    }
+
+    const cached = this.loadedPackCache.get(template.sha256);
+    if (cached !== undefined) return cached;
+
+    if (content === undefined && template.type === "registry-pack") {
+      content = new Uint8Array(await this.remoteContentCache.forceFetch(template.url));
+      const sha256 = packSha256(content);
+      if (sha256 !== template.sha256) {
+        // Do not keep a broken download for the next attempt.
+        this.remoteContentCache.delete(template.url);
+        throw new Error(
+          `workflow pack ${template.url} has sha256 ${sha256}, expected ${template.sha256}`,
+        );
+      }
+    }
+
+    await using workerManager = new WorkerManager();
+    const parsed = await workerManager.process("parseTemplate", notEmpty(content));
+    const loaded: LoadedPack = {
+      template: { type: "prepared", data: parsed },
+      requiredCapabilities: requiredCapabilitiesFromTemplate(parsed),
+    };
+    this.loadedPackCache.set(template.sha256, loaded);
+    return loaded;
   }
 
   private async prepareWithoutUnpacking(
@@ -234,6 +322,7 @@ export class BlockPackPreparer {
           template: {
             type: "explicit",
             content: workflowContent,
+            localPath: description.components.workflow.main.file,
           },
           config,
           frontend: {
@@ -276,6 +365,7 @@ export class BlockPackPreparer {
           template: {
             type: "explicit",
             content: workflowContent,
+            localPath: description.components.workflow.main.file,
           },
           config,
           frontend: {
@@ -349,7 +439,17 @@ export class BlockPackPreparer {
   }
 }
 
+/** A pack parsed on the client, with the capabilities it declares. */
+type LoadedPack = { template: PreparedTemplate; requiredCapabilities?: string[] };
+
+/** Lowercase hex sha256 of a gzipped workflow pack, the key the backend installs it by. */
+export function packSha256(content: Uint8Array): string {
+  return createHash("sha256").update(content).digest("hex");
+}
+
 function createCustomBlockPack(tx: PlTransaction, spec: BlockPackSpecPrepared): AnyResourceRef {
+  if (spec.template.type === "registry-pack" || spec.template.type === "local-pack")
+    throw new Error("BUG: a pack must be installed by cacheBlockPackTemplate first");
   const blockPackInfo: BlockPackInfo = { config: spec.config, source: spec.source };
   const bp = tx.createStruct(BlockPackCustomType, JSON.stringify(blockPackInfo));
   tx.createField(field(bp, BlockPackTemplateField), "Input", loadTemplate(tx, spec.template));
