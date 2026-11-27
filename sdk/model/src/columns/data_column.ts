@@ -6,6 +6,7 @@ import {
   isPlRef,
   PlRef,
   PObjectId,
+  readLeafData,
   type LeafEntry,
   type PColumn,
   type PColumnSpec,
@@ -72,6 +73,7 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
       getSpec: () => PColumnSpec;
       getData: () => ColumnData;
       getDataStatus: () => ColumnFieldStatus;
+      hasDataError: () => boolean;
     },
   ) {}
 
@@ -102,6 +104,16 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
       this.dataStatusCache = { value: this.options.getDataStatus() };
     }
     return this.dataStatusCache.value;
+  }
+
+  /**
+   * Whether the column's data failed: its `.data` field holds an error, and
+   * {@link getData} gives `undefined`. Reads the field, as {@link getData}
+   * does, so it is asked only where the data is read anyway;
+   * {@link getDataStatus} does not read it.
+   */
+  hasDataError(): boolean {
+    return this.options.hasDataError();
   }
 
   /**
@@ -145,8 +157,9 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
     if (spec === undefined || !isPColumnSpec(spec)) return undefined;
     return new DataColumnImpl(entry.id, {
       getSpec: () => spec,
-      getData: () => readDataAccessor(entry),
+      getData: () => readDataNode(entry),
       getDataStatus: () => readDataStatus(entry),
+      hasDataError: () => readData(entry).type === "errored",
     });
   }
 
@@ -167,6 +180,7 @@ export class DataColumnImpl implements DataColumnRecipe<PObjectId> {
       getSpec: () => pColumn.spec,
       getData: () => pColumn.data,
       getDataStatus: () => "present",
+      hasDataError: () => false,
     });
   }
 
@@ -299,10 +313,14 @@ function getLeafEntryStatus(entry: LeafEntry<TreeNodeAccessor>): ColumnResolutio
   return "present";
 }
 
-const readDataAccessor = memoizeByEntry(
-  ({ accessor, name }: LeafEntry<TreeNodeAccessor>): undefined | TreeNodeAccessor =>
-    accessor.traverse({ field: `${name}.data`, assertFieldType: "Input", ignoreError: true }),
-);
+/** One read of the leaf's `.data` field, shared by everything that asks about the leaf's data. */
+const readData = memoizeByEntry((entry: LeafEntry<TreeNodeAccessor>) => readLeafData(entry));
+
+/** The leaf's data resource; `undefined` while it is not there, and when the data failed. */
+function readDataNode(entry: LeafEntry<TreeNodeAccessor>): undefined | TreeNodeAccessor {
+  const data = readData(entry);
+  return data.type === "resource" ? data.resource : undefined;
+}
 
 const readDataStatus = memoizeByEntry(
   ({ accessor, name }: LeafEntry<TreeNodeAccessor>): ColumnFieldStatus => {

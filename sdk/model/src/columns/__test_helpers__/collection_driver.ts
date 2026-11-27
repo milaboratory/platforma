@@ -154,7 +154,7 @@ export function createTestCollectionDriver(): TestCollectionDriverHandle {
  * `readDataStatus` (in `data_column.ts`) actually call:
  *   - `traverse({field: `${name}.spec`, ignoreError: true})` →
  *     stub-accessor whose `getDataAsJson()` returns the spec.
- *   - `traverse({field: `${name}.data`})` → `undefined` (data is not
+ *   - `getField({field: `${name}.data`})` → `undefined` (data is not
  *     materialised in tests).
  *   - `listInputFields()` → `[]` (data absent).
  *   - `getInputsLocked()` → `true` (no pending resolution).
@@ -194,6 +194,7 @@ function stubAccessorFor(id: PObjectId, spec: PObjectSpec): TreeNodeAccessor {
       const field = typeof first === "string" ? first : first?.field;
       return field === specField ? specHolder : undefined;
     },
+    getField: () => undefined,
     getDataAsJson: <T>() => spec as unknown as T,
     listInputFields: () => [],
     getInputsLocked: () => true,

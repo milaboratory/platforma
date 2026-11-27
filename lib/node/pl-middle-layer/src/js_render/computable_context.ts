@@ -7,6 +7,7 @@ import type {
   CommonFieldTraverseOps as CommonFieldTraverseOpsFromSDK,
   DataInfo,
   FieldTraversalStep as FieldTraversalStepFromSDK,
+  GetFieldStep as GetFieldStepFromSDK,
   PColumn,
   PColumnValues,
   PFrameDef,
@@ -138,6 +139,15 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
     ...steps: (FieldTraversalStepFromSDK | string)[]
   ): string | undefined {
     return this.wrapAccessor(this.getAccessor(handle).traverseWithCommon(commonOptions, ...steps));
+  }
+
+  getField(
+    handle: string,
+    step: GetFieldStepFromSDK,
+  ): { value?: string; error?: string } | undefined {
+    const field = this.getAccessor(handle).getField(step);
+    if (field === undefined) return undefined;
+    return { value: this.wrapAccessor(field.value), error: this.wrapAccessor(field.error) };
   }
 
   getResourceType(handle: string): ResourceTypeFromSDK {
@@ -702,6 +712,16 @@ export class ComputableContextHelper implements JsRenderInternal.GlobalCfgRender
             ...steps.map(
               (step) => parent.importObjectViaJson(step) as FieldTraversalStepFromSDK | string,
             ),
+          ),
+          undefined,
+        );
+      });
+
+      exportCtxFunction("getField", (handle, step) => {
+        return parent.exportObjectUniversal(
+          this.getField(
+            vm.getString(handle),
+            parent.importObjectViaJson(step) as GetFieldStepFromSDK,
           ),
           undefined,
         );

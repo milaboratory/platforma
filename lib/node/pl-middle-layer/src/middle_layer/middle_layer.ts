@@ -2005,6 +2005,8 @@ export class MiddleLayer {
     runtimeCapabilities.addSupportedRequirement("requiresPFramesVersion", REQUIRES_PFRAMES_VERSION);
     // The project overview and production rendering refuse to run args argsIssues found errors in
     runtimeCapabilities.addSupportedRequirement("requiresArgsIssues");
+    // The model reads a field together with its error
+    runtimeCapabilities.addSupportedRequirement("requiresFieldErrors");
     registerServiceCapabilities((flag, value) =>
       runtimeCapabilities.addSupportedRequirement(flag, value),
     );
