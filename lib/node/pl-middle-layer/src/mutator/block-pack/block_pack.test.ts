@@ -10,6 +10,7 @@ import path from "node:path";
 import { expect, test } from "vitest";
 import { V2RegistryProvider } from "../../block_registry/registry-v2-provider";
 import { BlockPackSpecAny } from "../../model";
+import { cacheBlockPackTemplate } from "../template/template_cache";
 import { BlockPackPreparer, createBlockPack } from "./block_pack";
 
 const preparation = new BlockPackPreparer(
@@ -31,6 +32,13 @@ test.each([
   },
   {
     spec: {
+      type: "from-registry-v2",
+      registryUrl: "https://blocks.pl-open.science",
+      id: { organization: "milaboratories", name: "gpu-test", version: "0.9.0" },
+    } as BlockPackSpecAny,
+  },
+  {
+    spec: {
       type: "dev-v1",
       folder: path.resolve("integration", "block-beta-sum-numbers"),
     } as BlockPackSpecAny,
@@ -43,11 +51,12 @@ test.each([
   const specPrepared = await preparation.prepare(spec);
 
   await TestHelpers.withTempRoot(async (pl) => {
+    const cachedBp = await cacheBlockPackTemplate(pl, specPrepared, { preparer: preparation });
     const f0 = { resourceId: pl.clientRoot, fieldName: "test0" };
 
     const bp = await pl.withWriteTx("test", async (tx) => {
       tx.createField(f0, "Dynamic");
-      const bp = createBlockPack(tx, specPrepared);
+      const bp = createBlockPack(tx, cachedBp);
       tx.setField(f0, bp);
       await tx.commit();
       return await toGlobalResourceId(bp);

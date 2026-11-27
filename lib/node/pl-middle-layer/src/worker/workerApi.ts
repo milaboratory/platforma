@@ -5,6 +5,7 @@ import { parseTemplate } from "@milaboratories/pl-model-backend";
  * Add there all heavy synchronous operations that can be moved to the worker thread.
  */
 export const workerApi = {
+  /** @deprecated client-side template path; the backend installs packs via TengoTemplateInstall. */
   parseTemplate: async (payload: Uint8Array) => {
     const t1 = performance.now();
     const result = parseTemplate(payload);

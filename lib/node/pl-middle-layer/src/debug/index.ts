@@ -4,6 +4,7 @@ export type MlDebugFlags = {
   logTreeStats?: "cumulative" | "per-request";
   logProjectMutationStat: boolean;
   logTemplateCacheStat: boolean;
+  disableTemplateInstall: boolean;
   dumpInitialTreeState: boolean;
   logOutputStatus?: "any" | "unstable-only";
   logOutputRecalculations?: boolean;
@@ -49,6 +50,7 @@ export function getDebugFlags() {
     dumpInitialTreeState: process.env.MI_DUMP_INITIAL_TREE_STATE !== undefined,
     logProjectMutationStat: process.env.MI_LOG_PROJECT_MUTATION_STAT !== undefined,
     logTemplateCacheStat: process.env.MI_LOG_TEMPLATE_CACHE_STAT !== undefined,
+    disableTemplateInstall: process.env.MI_DISABLE_TEMPLATE_INSTALL !== undefined,
     logOutputRecalculations: process.env.MI_LOG_OUTPUT_RECALCULATIONS !== undefined,
     logProjectOverviewStat: process.env.MI_LOG_PROJECT_OVERVIEW_STAT !== undefined,
     logJsExecStat: process.env.MI_LOG_JS_EXEC_STAT !== undefined,

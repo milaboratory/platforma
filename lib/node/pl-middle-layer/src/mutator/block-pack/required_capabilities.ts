@@ -1,5 +1,6 @@
 import { gunzipSync } from "node:zlib";
 import type { CompiledTemplateV3, TemplateData } from "@milaboratories/pl-model-backend";
+import type { PlClient } from "@milaboratories/pl-client";
 
 /**
  * Reads the capability tokens a template declares it requires via
@@ -41,4 +42,28 @@ export function deriveRequiredCapabilities(
     return undefined;
   }
   return requiredCapabilitiesFromTemplate(parsed as TemplateData | CompiledTemplateV3);
+}
+
+/** Throws when the connected backend doesn't advertise every capability the
+ * block-pack requires (as declared in `meta.requiredCapabilities`).
+ *
+ * The matching set is the desktop's install gate moved server-side so both
+ * the UI (`AddBlockModal`) and direct middle-layer callers (the MCP server's
+ * `add_block` tool, programmatic block installs, tests) reject incompatible
+ * blocks consistently. */
+export function throwIfMissingServerCapabilities(
+  pl: PlClient,
+  requiredCapabilities: readonly string[] | undefined,
+): void {
+  if (!requiredCapabilities || requiredCapabilities.length === 0) return;
+  const advertised = (pl.serverInfo.capabilities ?? []) as readonly string[];
+  const filterFn = (c: string) => !advertised.includes(c);
+  if (!requiredCapabilities.some(filterFn)) return;
+  const missing = requiredCapabilities.filter(filterFn);
+  throw new Error(
+    `Block cannot be added: connected backend does not advertise capabilities ` +
+      `${JSON.stringify(missing)}. ` +
+      `Backend advertises ${JSON.stringify(advertised)}. ` +
+      `Upgrade the backend or remove the requirement from the block manifest.`,
+  );
 }

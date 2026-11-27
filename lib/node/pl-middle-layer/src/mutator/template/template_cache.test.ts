@@ -22,6 +22,7 @@ import {
   dropTemplateCache,
   flattenTemplateTree,
   getOrCreateTemplateCache,
+  installTemplateOnBackend,
   loadTemplateCached,
   runGc,
   TemplateCacheType,
@@ -203,6 +204,27 @@ describe("cacheBlockPackTemplate", () => {
       expect(cached.config).toBe(spec.config);
     });
   }, 15000);
+
+  test("drops a failed backend install so the client falls back", async (ctx) => {
+    await TestHelpers.withTempRoot(async (pl) => {
+      if (!pl.hasCapability("templateInstall:v1")) ctx.skip();
+      const testCache = await createTestCacheInTx(pl);
+      const sha256 = "0".repeat(64);
+
+      const installed = await installTemplateOnBackend(pl, testCache, {
+        type: "registry-pack",
+        url: "https://untrusted.invalid/main.plj.gz",
+        sha256,
+      });
+      expect(installed).toBeUndefined();
+
+      const installKept = await pl.withReadTx("check", (tx) =>
+        tx.fieldExists(field(testCache, `install_${sha256}`)),
+      );
+      expect(installKept).toBe(false);
+    });
+    // Above the 60 s install timeout, for a backend slow to refuse the import.
+  }, 70_000);
 
   test("returns already-cached spec unchanged", async () => {
     await TestHelpers.withTempRoot(async (pl) => {

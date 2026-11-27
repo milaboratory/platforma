@@ -86,7 +86,7 @@ import type { BlockPackProvider, TemplateResolveOutcome } from "../model/templat
 import { resolveTemplateEntries } from "../model/template_resolve";
 import type { PreparedTemplateEntry } from "../mutator/template_construct";
 import { applyTemplateEntries } from "../mutator/template_construct";
-import { throwIfMissingServerCapabilities } from "./project";
+import { throwIfMissingServerCapabilities } from "../mutator/block-pack/required_capabilities";
 import { cacheBlockPackTemplate } from "../mutator/template/template_cache";
 import { ProjectMetaKey } from "../model/project_model";
 import type { ProjectId } from "../model/project_model";
@@ -812,7 +812,11 @@ export class MiddleLayer {
         this.env.runtimeCapabilities.throwIfIncompatible(blockCfg.featureFlags);
         throwIfMissingServerCapabilities(this.pl, preparedBp.requiredCapabilities);
 
-        const cachedBp = await cacheBlockPackTemplate(this.pl, preparedBp);
+        const cachedBp = await cacheBlockPackTemplate(this.pl, preparedBp, {
+          preparer: this.env.bpPreparer,
+          signer: this.env.signer,
+          logger: this.env.logger,
+        });
 
         // Offered to the block's kind while nothing has been created yet. Every entry is
         // checked, including one whose file omitted `params` — the parser read that as `{}`,
